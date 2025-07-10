@@ -1,6 +1,6 @@
 # Create Frontend Release
 
-This command guides you through creating a comprehensive frontend release with semantic versioning analysis, automated change detection, security scanning, multi-stage human verification, and intelligent team notifications.
+This command guides you through creating a comprehensive frontend release with semantic versioning analysis, automated change detection, security scanning, and multi-stage human verification.
 
 <task>
 Create a frontend release with version type: $ARGUMENTS
@@ -49,10 +49,6 @@ echo "Last stable release: $LAST_STABLE"
 ## Configuration Options
 
 **Environment Variables:**
-- `SLACK_WEBHOOK_URL` - Slack webhook for notifications
-- `SLACK_CHANNEL="#releases"` - Target Slack channel
-- `EMAIL_DISTRIBUTION_LIST` - Email addresses for notifications
-- `NOTIFICATION_METHOD="slack,email,file"` - Try notification methods in order
 - `RELEASE_SKIP_SECURITY_SCAN=true` - Skip security audit
 - `RELEASE_AUTO_APPROVE=true` - Skip some confirmation prompts
 - `RELEASE_DRY_RUN=true` - Simulate release without executing
@@ -249,35 +245,7 @@ For minor/major releases:
    ```
 5. **CONTENT REVIEW**: Release notes clear and helpful for users?
 
-### Step 9: Team Coordination Check
-
-1. Verify release timing:
-   - Not during feature freeze period
-   - No conflicting releases scheduled
-   - Team availability for support
-2. Check for blocking issues:
-   ```bash
-   gh issue list --label "release-blocker" --state open
-   ```
-3. Create pre-release notification template:
-   ```bash
-   cat > pre-release-notification.md << EOF
-   📢 **Preparing Release v${NEW_VERSION}**
-   
-   Release in progress - ETA: ~60-90 minutes
-   
-   **Changes included:**
-   ${CHANGELOG_SUMMARY}
-   
-   **Next steps:**
-   - PR creation and testing
-   - Final verification
-   - Multi-channel publishing
-   EOF
-   ```
-4. **TIMING CONFIRMATION**: Good time to release?
-
-### Step 10: Create Version Bump PR
+### Step 9: Create Version Bump PR
 
 **For standard version bumps (patch/minor/major):**
 ```bash
@@ -345,7 +313,6 @@ echo "Workflow triggered. Waiting for PR creation..."
    ## Post-Release Tasks
    - [ ] Verify all distribution channels
    - [ ] Update external documentation
-   - [ ] Team notification
    - [ ] Monitor for issues
    EOF
    ```
@@ -480,105 +447,7 @@ echo "Workflow triggered. Waiting for PR creation..."
 
 4. **DISTRIBUTION VERIFICATION**: All channels published successfully?
 
-### Step 16: Intelligent Team Notification
-
-1. **Prepare notification content:**
-   ```bash
-   cat > notification-content.md << EOF
-   🚀 **ComfyUI Frontend v${NEW_VERSION} Released!**
-
-   ## What's New
-   ${RELEASE_HIGHLIGHTS}
-
-   ## Distribution Status
-   ✅ GitHub Release: https://github.com/Comfy-Org/ComfyUI_frontend/releases/tag/v${NEW_VERSION}
-   ✅ PyPI Package: https://pypi.org/project/comfyui-frontend-package/${NEW_VERSION}/
-   ✅ npm Types: https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types/v/${NEW_VERSION}
-
-   ## Quick Stats
-   - 📦 ${COMMITS_COUNT} commits included
-   - 👥 ${CONTRIBUTORS_COUNT} contributors
-   - 🕒 ${DAYS_SINCE_LAST_RELEASE} days since last release
-
-   ## Changelog
-   ${CHANGELOG}
-   EOF
-   ```
-
-2. **Try intelligent notification (Slack first):**
-   ```bash
-   # Function to attempt Slack notification
-   send_slack_notification() {
-     local message=$(cat notification-content.md)
-     
-     # Try Slack CLI first
-     if command -v slack >/dev/null 2>&1 && [ -n "$SLACK_CHANNEL" ]; then
-       echo "Attempting Slack CLI notification..."
-       if slack chat send --channel "$SLACK_CHANNEL" --text "$message"; then
-         return 0
-       fi
-     fi
-     
-     # Try webhook if URL is configured
-     if [ -n "$SLACK_WEBHOOK_URL" ]; then
-       echo "Attempting Slack webhook notification..."
-       if curl -X POST -H 'Content-type: application/json' \
-         --data "{\"text\":\"$(echo "$message" | sed 's/"/\\"/g')\"}" \
-         "$SLACK_WEBHOOK_URL"; then
-         return 0
-       fi
-     fi
-     
-     # Try asking Claude to send Slack message
-     echo "Attempting Claude-managed Slack notification..."
-     echo "Claude, please send this message to the #releases Slack channel:"
-     cat notification-content.md
-     
-     return 1
-   }
-   ```
-
-3. **Execute notification strategy:**
-   ```bash
-   if send_slack_notification; then
-     echo "✅ Slack notification sent successfully"
-   else
-     echo "⚠️ Slack notification failed, creating fallback templates"
-     
-     # Create comprehensive notification templates
-     cat > team-notification-template.md << EOF
-   # 📢 Release Notification Templates
-
-   ## Slack Message
-   Copy and paste this into ${SLACK_CHANNEL:-#releases} channel:
-
-   ---
-   $(cat notification-content.md)
-   ---
-
-   ## Email Template
-   **Subject:** ComfyUI Frontend v${NEW_VERSION} Released
-
-   $(cat notification-content.md)
-
-   **Email Recipients:** ${EMAIL_DISTRIBUTION_LIST:-team@company.com}
-
-   ## Discord Template
-   Same content as Slack, formatted for Discord channels.
-
-   ## Internal Documentation
-   Consider updating:
-   - Release timeline documentation
-   - Version compatibility matrices
-   - Integration guides
-   EOF
-     
-     echo "📝 Notification templates saved to team-notification-template.md"
-     echo "Please manually send notifications using the templates above."
-   fi
-   ```
-
-### Step 17: Post-Release Monitoring Setup
+### Step 16: Post-Release Monitoring Setup
 
 1. **Monitor immediate release health:**
    ```bash
@@ -640,10 +509,6 @@ echo "Workflow triggered. Waiting for PR creation..."
    - ✅ PyPI Package: Available
    - ✅ npm Types: Available
 
-   ## Team Notification
-   - Method: ${NOTIFICATION_METHOD_USED}
-   - Status: ${NOTIFICATION_STATUS}
-
    ## Next Steps
    - Monitor for 24-48 hours
    - Address any critical issues immediately
@@ -652,7 +517,6 @@ echo "Workflow triggered. Waiting for PR creation..."
    ## Files Generated
    - \`release-notes-${NEW_VERSION}-$(date +%Y%m%d).md\` - Detailed changelog
    - \`github-release-notes-${NEW_VERSION}.md\` - GitHub release notes
-   - \`team-notification-template.md\` - Communication templates
    - \`post-release-checklist.md\` - Follow-up tasks
    EOF
    ```
@@ -705,10 +569,9 @@ The command implements multiple quality gates:
 1. **🔒 Security Gate**: Vulnerability scanning, secret detection
 2. **🧪 Quality Gate**: Full test suite, linting, type checking
 3. **📋 Content Gate**: Changelog accuracy, release notes quality
-4. **🔄 Process Gate**: Team coordination, timing verification
+4. **🔄 Process Gate**: Release timing verification
 5. **✅ Verification Gate**: Multi-channel publishing confirmation
 6. **📊 Monitoring Gate**: Post-release health tracking
-7. **💬 Communication Gate**: Intelligent team notification
 
 ## Common Scenarios
 
@@ -719,14 +582,12 @@ The command implements multiple quality gates:
 - Analyzes features since last release
 - Generates changelog automatically
 - Creates comprehensive release notes
-- Sends team notifications
 
 ### Scenario 2: Critical Security Patch
 ```bash
 /project:create-frontend-release patch "Security fixes for CVE-2024-XXXX"
 ```
 - Expedited security scanning
-- Immediate team notification
 - Enhanced monitoring setup
 
 ### Scenario 3: Major Version with Breaking Changes
@@ -735,14 +596,12 @@ The command implements multiple quality gates:
 ```
 - Comprehensive breaking change analysis
 - Migration guide generation
-- Extended team coordination
 
 ### Scenario 4: Pre-release Testing
 ```bash
 /project:create-frontend-release prerelease
 ```
 - Creates alpha/beta/rc versions
-- Limited team notifications
 - Draft release status
 
 ## Common Issues and Solutions
@@ -816,4 +675,4 @@ Additional time needed if:
 - [skip ci] issue encountered
 - Manual version bump needed
 
-This enhanced process provides enterprise-grade release management with intelligent automation, comprehensive safety checks, multi-channel verification, and smart team communication workflows.
+This enhanced process provides enterprise-grade release management with intelligent automation, comprehensive safety checks, and multi-channel verification.
