@@ -1,10 +1,10 @@
 <template>
   <div class="comfyui-body grid h-full w-full overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top">
-      <TopMenubar v-if="useNewMenu === 'Top'" />
+      <TopMenubar v-if="showTopMenu" />
     </div>
     <div id="comfyui-body-bottom" class="comfyui-body-bottom">
-      <TopMenubar v-if="useNewMenu === 'Bottom'" />
+      <TopMenubar v-if="showBottomMenu" />
     </div>
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useBreakpoints, useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
@@ -70,6 +70,12 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const breakpoints = useBreakpoints({ md: 961 })
+const isMobile = breakpoints.smaller('md')
+const showTopMenu = computed(() => isMobile.value || useNewMenu.value === 'Top')
+const showBottomMenu = computed(
+  () => !isMobile.value && useNewMenu.value === 'Bottom'
+)
 
 watch(
   () => colorPaletteStore.completedActivePalette,
