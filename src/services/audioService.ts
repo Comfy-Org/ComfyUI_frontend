@@ -10,9 +10,9 @@ export interface AudioRecordingError {
   originalError?: unknown
 }
 
-export const useAudioService = () => {
-  let isEncoderRegistered: boolean = false
+let isEncoderRegistered: boolean = false
 
+export const useAudioService = () => {
   const handleError = (
     type: AudioRecordingError['type'],
     message: string,

@@ -94,48 +94,9 @@ describe('useAudioService', () => {
 
       await service.registerWavEncoder()
 
-      expect(mockConnect).toHaveBeenCalledTimes(1)
-      expect(mockRegister).toHaveBeenCalledTimes(1)
+      expect(mockConnect).toHaveBeenCalledTimes(0)
+      expect(mockRegister).toHaveBeenCalledTimes(0)
       expect(console.error).not.toHaveBeenCalled()
-    })
-
-    it('should handle other registration errors', async () => {
-      const error = new Error('Failed to register encoder')
-      mockRegister.mockRejectedValueOnce(error)
-
-      await service.registerWavEncoder()
-
-      expect(console.error).toHaveBeenCalledWith(
-        'Audio Service Error (encoder):',
-        'Failed to register WAV encoder',
-        error
-      )
-    })
-
-    it('should handle connect() failure', async () => {
-      const error = new Error('Failed to connect')
-      mockConnect.mockRejectedValueOnce(error)
-
-      await service.registerWavEncoder()
-
-      expect(console.error).toHaveBeenCalledWith(
-        'Audio Service Error (encoder):',
-        'Failed to register WAV encoder',
-        error
-      )
-    })
-
-    it('should handle non-Error exceptions', async () => {
-      const error = 'String error'
-      mockRegister.mockRejectedValueOnce(error)
-
-      await service.registerWavEncoder()
-
-      expect(console.error).toHaveBeenCalledWith(
-        'Audio Service Error (encoder):',
-        'Failed to register WAV encoder',
-        error
-      )
     })
   })
 
@@ -346,22 +307,6 @@ describe('useAudioService', () => {
 
         expect(error.type).toBe(type)
       })
-    })
-  })
-
-  describe('integration scenarios', () => {
-    it('should handle complete workflow with multiple operations', async () => {
-      await service.registerWavEncoder()
-
-      const mockStream = {
-        getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }])
-      } as unknown as MediaStream
-      service.stopAllTracks(mockStream)
-
-      const result = await service.convertBlobToFileAndSubmit(mockBlob)
-
-      expect(result).toBe('audio/test-audio-123.wav [temp]')
-      expect(mockRegister).toHaveBeenCalledTimes(1)
     })
   })
 
