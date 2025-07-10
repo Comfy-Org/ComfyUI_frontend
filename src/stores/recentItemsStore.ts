@@ -11,10 +11,8 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
   const workflowStore = useWorkflowStore()
   const modelStore = useModelStore()
   const settings = useSettingStore()
-  const recentlyUsedModelLog = ref<Record<string, number> | null>(null)
-  const modelLog = ref<ComfyModelLog>(
-    new ComfyModelLog({ modified: Date.now(), size: 1, created: Date.now() })
-  )
+  const modelLog = ref<ComfyModelLog | null>(null)
+
   // Computed properties for "Recently Added" based on file timestamps
   const maxRecentItemCount = computed(() =>
     settings.get('Comfy.Sidebar.RecentItems.MaxCount')
@@ -54,32 +52,27 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
       .slice(0, maxRecentItemCount.value)
   })
 
-  // Enhanced recently used models combining file timestamps and usage log
   const recentlyUsedModels = computed(() => {
-    // transform the model usage log, into an array of {last_used :number, key:key}
-    return Object.entries(recentlyUsedModelLog.value || {})
+    if (!modelLog.value) return []
+
+    return Object.entries(modelLog.value.activeState)
       .map(([key, lastUsed]) => ({ key, last_used: lastUsed }))
       .filter((a) => typeof a.last_used === 'number')
-      .sort((a, b) => {
-        return b.last_used - a.last_used
-      })
+      .sort((a, b) => b.last_used - a.last_used)
       .slice(0, maxRecentItemCount.value)
       .map((entry) => modelStore.models.find((m) => m.key === entry.key))
       .filter((a) => !!a) as ComfyModelDef[]
   })
 
   const logModelUsage = async (model: ComfyModelDef) => {
-    // save last used time in model usage log
-    const lastUsed = Date.now()
-    recentlyUsedModelLog.value ??= {}
-    recentlyUsedModelLog.value[model.key] = lastUsed
+    if (!modelLog.value) return
+    modelLog.value.updateModelUsage(model.key)
     await modelLog.value.save()
   }
 
   const loadRecentModels = async () => {
-    // Load the model usage log
-    if (recentlyUsedModelLog.value === null) {
-      recentlyUsedModelLog.value = await modelLog.value.get()
+    if (!modelLog.value) {
+      modelLog.value = await ComfyModelLog.fromAPI()
     }
   }
 
