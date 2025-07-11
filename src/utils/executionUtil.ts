@@ -145,6 +145,13 @@ export const graphToPrompt = async (
       const resolvedInput = node.resolveInput(i)
       if (!resolvedInput) continue
 
+      // Input resolved to a SubgraphNode widget
+      const { value } = resolvedInput
+      if (value) {
+        inputs[input.name] = Array.isArray(value) ? { __value__: value } : value
+        continue
+      }
+
       inputs[input.name] = [
         String(resolvedInput.origin_id),
         // @ts-expect-error link.origin_slot is already number.
