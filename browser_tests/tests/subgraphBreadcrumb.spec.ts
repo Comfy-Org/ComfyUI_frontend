@@ -24,7 +24,10 @@ test.describe('Subgraph Breadcrumb Title Sync', () => {
     })
 
     // Wait for breadcrumb to appear
-    await comfyPage.page.waitForSelector('.subgraph-breadcrumb')
+    await comfyPage.page.waitForSelector('.subgraph-breadcrumb', {
+      state: 'visible',
+      timeout: 10000
+    })
 
     // Get initial breadcrumb text
     const breadcrumb = comfyPage.page.locator('.subgraph-breadcrumb')
