@@ -36,7 +36,7 @@ function getResourceURL(
     app.getRandParam().substring(1)
   ].join('&')
 
-  return `/view?${params}`
+  return `/view?${params}${app.getClientIdParam()}`
 }
 
 async function uploadFile(
