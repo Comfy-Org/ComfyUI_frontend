@@ -15,7 +15,7 @@ Examples:
 - `minor --skip-changelog` - Skip automated changelog generation
 - `minor --dry-run` - Simulate release without executing
 
-If no arguments provided, the command will analyze recent changes and recommend the appropriate version type.
+If no arguments provided, the command will always perform prerelease if the current version is prerelease, or patch in other cases. This command will never perform minor or major releases without explicit direction.
 </task>
 
 ## Prerequisites
@@ -35,7 +35,7 @@ Before starting, ensure:
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 if [[ "$CURRENT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
   echo "⚠️  Current version $CURRENT_VERSION is a pre-release"
-  echo "Consider promoting to stable (e.g., 1.24.0-1 → 1.24.0) first"
+  echo "Consider releasing stable (e.g., 1.24.0-1 → 1.24.0) first"
 fi
 ```
 
@@ -111,29 +111,7 @@ echo "Last stable release: $LAST_STABLE"
    ```
 7. **HUMAN ANALYSIS**: Review change summary and verify scope
 
-### Step 3: Semantic Version Determination
-
-Based on analysis, determine version type:
-
-**Pre-release Handling:**
-- If current version is pre-release (e.g., 1.24.0-1):
-  - Consider promoting to stable (1.24.0) instead of new version
-  - Or create new minor/major if significant changes added
-
-**Automatic Detection:**
-- **MAJOR**: Breaking changes detected (`BREAKING CHANGE`, `!` in commits)
-- **MINOR**: New features without breaking changes (`feat:` commits)
-- **PATCH**: Only bug fixes, docs, or dependency updates
-
-**Version Workflow Limitations:**
-- ⚠️ Cannot use "stable" as version_type - not in allowed values
-- Allowed values: patch, minor, major, prepatch, preminor, premajor, prerelease
-- For pre-release → stable promotion, must manually update version
-
-**Manual Override Options:**
-- If arguments provided, validate against detected changes
-- **CONFIRMATION REQUIRED**: Version type correct for these changes?
-- **WARNING**: If manual override conflicts with detected breaking changes
+### Step 3: Version Preview
 
 **Version Preview:**
 - Current: `${CURRENT_VERSION}`
@@ -179,7 +157,6 @@ Based on analysis, determine version type:
 
 ### Step 6: Breaking Change Analysis
 
-For minor/major releases:
 1. Analyze API changes in:
    - Public TypeScript interfaces
    - Extension APIs
@@ -256,7 +233,7 @@ gh workflow run version-bump.yaml -f version_type=${VERSION_TYPE}
 echo "Workflow triggered. Waiting for PR creation..."
 ```
 
-**For pre-release → stable promotion:**
+**For releasing a stable version:**
 1. Must manually create branch and update version:
    ```bash
    git checkout -b version-bump-${NEW_VERSION}
@@ -603,31 +580,20 @@ The command implements multiple quality gates:
 ```
 - Creates alpha/beta/rc versions
 - Draft release status
+- Python package specs require that prereleases use alpha/beta/rc as the preid
 
 ## Common Issues and Solutions
 
 ### Issue: Pre-release Version Confusion
 **Problem**: Not sure whether to promote pre-release or create new version
 **Solution**: 
-- If no new commits since pre-release: promote to stable
-- If new commits exist: consider new minor version
+- Follow semver standards: a prerelease version is followed by a normal release.  It should have the same major, minor, and patch versions as the prerelease.
 
 ### Issue: Wrong Commit Count
 **Problem**: Changelog includes commits from other branches
 **Solution**: Always use `--first-parent` flag with git log
 
-### Issue: Release Workflow Doesn't Trigger
-**Problem**: update-locales adds [skip ci] to PR
-**Solution**: 
-1. Create patch release to trigger workflow
-2. Alternative: Revert version and re-run version bump workflow
-3. Fix update-locales to skip [skip ci] for Release PRs
-
 **Update**: Sometimes update-locales doesn't add [skip ci] - always verify!
-
-### Issue: Version Workflow Limitations
-**Problem**: Cannot use "stable" as version_type
-**Solution**: Manually create PR for pre-release → stable promotion
 
 ### Issue: Missing PRs in Changelog
 **Problem**: PR was merged to different branch
@@ -638,6 +604,11 @@ gh pr view ${PR_NUMBER} --json baseRefName
 
 ### Issue: Release Failed Due to [skip ci]
 **Problem**: Release workflow didn't trigger after merge
+**Prevention**: Always avoid this scenario
+- Ensure that `[skip ci]` or similar flags are NOT in the `HEAD` commit message of the PR
+  - Push a new, empty commit to the PR
+- Always double-check this immediately before merging
+
 **Recovery Strategy**:
 1. Revert version in a new PR (e.g., 1.24.0 → 1.24.0-1)
 2. Merge the revert PR
