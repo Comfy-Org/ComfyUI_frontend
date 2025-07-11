@@ -1,10 +1,10 @@
 <template>
-
-
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode">
+  <LiteGraphCanvasSplitterOverlay
+    v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
+  >
     <template #side-bar-panel>
       <SideToolbar />
     </template>
@@ -13,14 +13,21 @@
     </template>
     <template #graph-canvas-panel>
       <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
-        <SecondRowWorkflowTabs v-if="workflowTabsPosition === 'Topbar (2nd-row)'" />
+        <SecondRowWorkflowTabs
+          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
+        />
         <SubgraphBreadcrumb />
       </div>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
-  <canvas id="graph-canvas" ref="canvasRef" tabindex="1" class="w-full h-full touch-none" />
+  <canvas
+    id="graph-canvas"
+    ref="canvasRef"
+    tabindex="1"
+    class="w-full h-full touch-none"
+  />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover />
@@ -57,7 +64,6 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
-import { useContextMenuOverride } from '@/composables/useContextMenuOverride';
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
@@ -72,6 +78,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { newUserService } from '@/services/newUserService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -82,16 +89,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-/*const runtimeError = ref<string | null>(null)
-window.addEventListener('error', (event) => {
-    runtimeError.value = `Error: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`
-  })
 
-  window.addEventListener('unhandledrejection', (event) => {
-    runtimeError.value = `Unhandled Promise Rejection: ${event.reason}`
-  })
-*/
-useContextMenuOverride()
 const emit = defineEmits<{
   ready: []
 }>()
@@ -275,7 +273,6 @@ useLitegraphSettings()
 useNodeBadge()
 
 onMounted(async () => {
-
   useGlobalLitegraph()
   useContextMenuTranslation()
   useCopy()
@@ -306,6 +303,9 @@ onMounted(async () => {
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
+
+  await newUserService().initializeIfNewUser(settingStore)
+
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
@@ -354,6 +354,7 @@ onMounted(async () => {
     },
     { immediate: true }
   )
+
   emit('ready')
   // Fix deletion (by keyboard) on video elements/nodes
   const handleVideoDeleteKey = (event: KeyboardEvent) => {
@@ -377,8 +378,5 @@ onMounted(async () => {
   const cleanup = useEventListener(window, 'keydown', handleVideoDeleteKey, {
     capture: true  // Capture phase to intercept early
   })
-
-
 })
-
 </script>
