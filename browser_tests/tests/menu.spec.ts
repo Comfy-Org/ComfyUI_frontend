@@ -76,7 +76,7 @@ test.describe('Menu', () => {
     test('Displays keybinding next to item', async ({ comfyPage }) => {
       await comfyPage.menu.topbar.openTopbarMenu()
       const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('Workflow')
-      await workflowMenuItem.click()
+      await workflowMenuItem.hover()
       const exportTag = comfyPage.page.locator('.keybinding-tag', {
         hasText: 'Ctrl + s'
       })
