@@ -18,15 +18,19 @@ export type ExecutionId = string
  */
 export type ExecutableLGraphNode = Omit<ExecutableNodeDTO, "graph" | "node" | "subgraphNode">
 
+/**
+ * The end result of resolving a DTO input.
+ * When a widget value is returned, {@link widgetInfo} is present and {@link origin_slot} is `-1`.
+ */
 type ResolvedInput = {
   /** DTO for the node that the link originates from. */
   node: ExecutableLGraphNode
-  /** Full unique execution ID of the node that the link originates from. */
+  /** Full unique execution ID of the node that the link originates from. In the case of a widget value, this is the ID of the subgraph node. */
   origin_id: ExecutionId
-  /** The slot index of the output on the node that the link originates from. */
+  /** The slot index of the output on the node that the link originates from. `-1` when widget value is set. */
   origin_slot: number
-  /** Actual value (e.g. for widgets). */
-  value?: unknown
+  /** Boxed widget value (e.g. for widgets). If this box is `undefined`, then an input link is connected, and widget values from the subgraph node are ignored. */
+  widgetInfo?: { value: unknown }
 }
 
 /**
@@ -152,8 +156,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         return {
           node: this,
           origin_id: this.id,
-          origin_slot: slot,
-          value: widget.value,
+          origin_slot: -1,
+          widgetInfo: { value: widget.value },
         }
       }
 
