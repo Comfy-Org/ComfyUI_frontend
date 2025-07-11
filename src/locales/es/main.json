@@ -610,12 +610,14 @@
     "title": "Mantenimiento"
   },
   "manager": {
+    "applyChanges": "Aplicar cambios",
     "changingVersion": "Cambiando versión de {from} a {to}",
     "createdBy": "Creado Por",
     "dependencies": "Dependencias",
     "discoverCommunityContent": "Descubre paquetes de nodos, extensiones y más creados por la comunidad...",
     "downloads": "Descargas",
     "errorConnecting": "Error al conectar con el Registro de Nodos Comfy.",
+    "extensionsSuccessfullyInstalled": "¡Extensión(es) instalada(s) correctamente y lista(s) para usar!",
     "failed": "Falló ({count})",
     "filter": {
       "disabled": "Deshabilitado",
@@ -627,6 +629,7 @@
     "installAllMissingNodes": "Instalar todos los nodos faltantes",
     "installSelected": "Instalar Seleccionado",
     "installationQueue": "Cola de Instalación",
+    "installingDependencies": "Instalando dependencias...",
     "lastUpdated": "Última Actualización",
     "latestVersion": "Última",
     "legacyManagerUI": "Usar UI antigua",
@@ -643,6 +646,7 @@
     "packsSelected": "Paquetes Seleccionados",
     "repository": "Repositorio",
     "restartToApplyChanges": "Para aplicar los cambios, por favor reinicia ComfyUI",
+    "restartingBackend": "Reiniciando el backend para aplicar los cambios...",
     "searchPlaceholder": "Buscar",
     "selectVersion": "Seleccionar Versión",
     "sort": {
@@ -667,8 +671,8 @@
     "uninstallSelected": "Desinstalar Seleccionado",
     "uninstalling": "Desinstalando",
     "update": "Actualizar",
-    "updateSelected": "Actualizar seleccionados",
     "updateAll": "Actualizar todo",
+    "updateSelected": "Actualizar seleccionados",
     "updatingAllPacks": "Actualizando todos los paquetes",
     "version": "Versión"
   },
@@ -804,7 +808,6 @@
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
     "Toggle Workflows Sidebar": "Alternar barra lateral de los flujos de trabajo",
-    "Toggle the Custom Nodes Manager": "Alternar el Administrador de Nodos Personalizados",
     "Toggle the Custom Nodes Manager Progress Bar": "Alternar la Barra de Progreso del Administrador de Nodos Personalizados",
     "Undo": "Deshacer",
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
