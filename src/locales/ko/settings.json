@@ -326,7 +326,8 @@
       "Bottom": "하단",
       "Disabled": "비활성화",
       "Top": "상단"
-    }
+    },
+    "tooltip": "메뉴 바 위치입니다. 모바일 기기에서는 메뉴가 항상 상단에 표시됩니다."
   },
   "Comfy_Validation_NodeDefs": {
     "name": "노드 정의 유효성 검사 (느림)",
