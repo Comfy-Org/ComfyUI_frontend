@@ -48,7 +48,7 @@ export function useCoreCommands(): ComfyCommand[] {
     const result: LGraphNode[] = []
     if (selectedNodes) {
       for (const i in selectedNodes) {
-        const node = selectedNodes[i]
+        const node = selectedNodes[i]!
         result.push(node)
       }
     }
@@ -66,14 +66,14 @@ export function useCoreCommands(): ComfyCommand[] {
   }
 
   const moveSelectedNodes = (
-    positionUpdater: (pos: Point, gridSize: number) => Point
+    positionUpdater: (pos: [number, number], gridSize: number) => Point
   ) => {
     const selectedNodes = getSelectedNodes()
     if (selectedNodes.length === 0) return
 
     const gridSize = useSettingStore().get('Comfy.SnapToGrid.GridSize')
     selectedNodes.forEach((node) => {
-      node.pos = positionUpdater(node.pos, gridSize)
+      node.pos = positionUpdater(node.pos as [number, number], gridSize)
     })
     app.canvas.state.selectionChanged = true
     app.canvas.setDirty(true, true)

@@ -38,7 +38,7 @@ export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
   const computeStyle = (position: PositionConfig): CSSProperties => {
     const { pos, size, scale = lgCanvas.ds.scale } = position
     const [left, top] = canvasPosToClientPos(pos)
-    const [width, height] = size
+    const [width, height] = size as [number, number]
 
     return useTransform
       ? {

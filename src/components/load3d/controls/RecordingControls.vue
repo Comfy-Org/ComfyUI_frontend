@@ -103,7 +103,7 @@ const resizeNodeMatchOutput = () => {
   const outputHeight = node.widgets?.find((w) => w.name === 'height')
 
   if (outputWidth && outputHeight && outputHeight.value && outputWidth.value) {
-    const [oldWidth, oldHeight] = node.size
+    const [oldWidth, oldHeight] = node.size as [number, number]
 
     const scene = node.widgets?.find((w) => w.name === 'image')
 

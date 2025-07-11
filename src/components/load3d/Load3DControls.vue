@@ -132,7 +132,8 @@ const props = defineProps<{
 
 const isMenuOpen = ref(false)
 const activeCategory = ref<string>('scene')
-const categoryLabels: Record<string, string> = {
+type Category = 'scene' | 'model' | 'camera' | 'light' | 'export'
+const categoryLabels: Record<Category, string> = {
   scene: 'load3d.scene',
   model: 'load3d.model',
   camera: 'load3d.camera',
@@ -140,11 +141,11 @@ const categoryLabels: Record<string, string> = {
   export: 'load3d.export'
 }
 
-const availableCategories = computed(() => {
-  const baseCategories = ['scene', 'model', 'camera', 'light']
+const availableCategories = computed<Category[]>(() => {
+  const baseCategories = ['scene', 'model', 'camera', 'light'] as Category[]
 
   if (!props.inputSpec.isAnimation) {
-    return [...baseCategories, 'export']
+    return [...baseCategories, 'export'] as Category[]
   }
 
   return baseCategories

@@ -30,7 +30,10 @@
           <DeviceInfo :device="device" />
         </TabPanel>
       </TabView>
-      <DeviceInfo v-else :device="props.stats.devices[0]" />
+      <DeviceInfo
+        v-else-if="props.stats.devices[0]"
+        :device="props.stats.devices[0]"
+      />
     </div>
   </div>
 </template>

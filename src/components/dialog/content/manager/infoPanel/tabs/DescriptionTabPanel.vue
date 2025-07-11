@@ -47,7 +47,7 @@ const isLicenseFile = (filename: string): boolean => {
 const extractBaseRepoUrl = (repoUrl: string): string => {
   const githubRepoPattern = /^(https?:\/\/github\.com\/[^/]+\/[^/]+)/i
   const match = repoUrl.match(githubRepoPattern)
-  return match ? match[1] : repoUrl
+  return match?.[1] ?? repoUrl
 }
 
 const createLicenseUrl = (filename: string, repoUrl: string): string => {

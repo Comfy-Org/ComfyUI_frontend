@@ -92,7 +92,7 @@ const missingModels = computed(() => {
       downloading: false,
       completed: false,
       progress: 0,
-      error: null,
+      error: undefined,
       name: model.name,
       directory: model.directory,
       url: model.url,

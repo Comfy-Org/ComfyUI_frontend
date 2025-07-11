@@ -218,10 +218,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflowPaths = ref<string[]>([])
   const openWorkflowPathSet = computed(() => new Set(openWorkflowPaths.value))
   const openWorkflows = computed(() =>
-    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
+    openWorkflowPaths.value
+      .map((path) => workflowLookup.value[path])
+      .filter((workflow): workflow is ComfyWorkflow => workflow !== undefined)
   )
   const reorderWorkflows = (from: number, to: number) => {
     const movedTab = openWorkflowPaths.value[from]
+    if (movedTab === undefined) return
     openWorkflowPaths.value.splice(from, 1)
     openWorkflowPaths.value.splice(to, 0, movedTab)
   }

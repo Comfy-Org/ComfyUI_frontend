@@ -100,7 +100,7 @@ const applyColor = (colorOption: ColorOption | null) => {
   const canvasColorOption =
     colorName === NO_COLOR_OPTION.name
       ? null
-      : LGraphCanvas.node_colors[colorName]
+      : LGraphCanvas.node_colors[colorName] ?? null
 
   for (const item of canvasStore.selectedItems) {
     if (isColorable(item)) {

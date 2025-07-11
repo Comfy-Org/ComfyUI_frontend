@@ -237,7 +237,7 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
     showSearchBox(e.detail.originalEvent)
   } else if (e.detail.subType === 'group-double-click') {
     const group = e.detail.group
-    const [_, y] = group.pos
+    const [_, y] = group.pos as [number, number]
     const relativeY = e.detail.originalEvent.canvasY - y
     // Show search box if the click is NOT on the title bar
     if (relativeY > group.titleHeight) {

@@ -149,7 +149,7 @@ const {
   toggle: toggleSideNav
 } = useResponsiveCollapse()
 
-const tabs = ref<TabItem[]>([
+const tabs = ref<[TabItem, ...TabItem[]]>([
   { id: ManagerTab.All, label: t('g.all'), icon: 'pi-list' },
   { id: ManagerTab.Installed, label: t('g.installed'), icon: 'pi-box' },
   {
@@ -368,7 +368,7 @@ const resultsWithKeys = computed(
 
 const selectedNodePacks = ref<components['schemas']['Node'][]>([])
 const selectedNodePack = computed<components['schemas']['Node'] | null>(() =>
-  selectedNodePacks.value.length === 1 ? selectedNodePacks.value[0] : null
+  selectedNodePacks.value.length === 1 ? selectedNodePacks.value[0]! : null
 )
 
 const getLoadingCount = () => {

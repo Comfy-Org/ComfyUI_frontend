@@ -9,11 +9,11 @@ import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
-export const getSettingInfo = (setting: SettingParams) => {
-  const parts = setting.category || setting.id.split('.')
+export const getSettingInfo = (setting?: SettingParams) => {
+  const parts = setting?.category || setting?.id.split('.')
   return {
-    category: parts[0] ?? 'Other',
-    subCategory: parts[1] ?? 'Other'
+    category: parts?.[0] ?? 'Other',
+    subCategory: parts?.[1] ?? 'Other'
   }
 }
 

@@ -101,10 +101,11 @@ export function useSettingSearch() {
       const groupLabel = info.subCategory
 
       if (activeCategory === null || activeCategory.label === info.category) {
-        if (!groupedSettings[groupLabel]) {
+        if (groupedSettings[groupLabel] === undefined) {
           groupedSettings[groupLabel] = []
         }
-        groupedSettings[groupLabel].push(setting)
+        if (!setting) return
+        groupedSettings[groupLabel]!.push(setting)
       }
     })
 

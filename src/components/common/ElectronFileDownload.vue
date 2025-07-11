@@ -87,7 +87,7 @@ import { formatSize } from '@/utils/formatUtil'
 const props = defineProps<{
   url: string
   hint?: string
-  label?: string
+  label: `${string}/${string}`
   error?: string
 }>()
 
@@ -101,8 +101,7 @@ const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
 const electronDownloadStore = useElectronDownloadStore()
-// @ts-expect-error fixme ts strict error
-const [savePath, filename] = props.label.split('/')
+const [savePath, filename] = props.label.split('/') as [string, string]
 
 electronDownloadStore.$subscribe((_, { downloads }) => {
   const download = downloads.find((download) => props.url === download.url)

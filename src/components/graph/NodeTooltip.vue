@@ -63,6 +63,7 @@ const onIdle = () => {
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
   const nodeDef = nodeDefStore.nodeDefsByName[node.type ?? '']
+  if (!nodeDef) return
 
   if (
     ctor.title_mode !== LiteGraph.NO_TITLE &&
@@ -79,7 +80,7 @@ const onIdle = () => {
     canvas.graph_mouse[1],
     [0, 0]
   )
-  if (inputSlot !== -1) {
+  if (inputSlot !== -1 && node.inputs[inputSlot]) {
     const inputName = node.inputs[inputSlot].name
     const translatedTooltip = st(
       `nodeDefs.${normalizeI18nKey(node.type ?? '')}.inputs.${normalizeI18nKey(inputName)}.tooltip`,

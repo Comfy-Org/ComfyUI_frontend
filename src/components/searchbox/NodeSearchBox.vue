@@ -164,7 +164,7 @@ const setHoverSuggestion = (index: number) => {
     hoveredSuggestion.value = null
     return
   }
-  const value = suggestions.value[index]
+  const value = suggestions.value[index] ?? null
   hoveredSuggestion.value = value
 }
 </script>

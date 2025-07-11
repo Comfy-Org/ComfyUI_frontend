@@ -15,7 +15,7 @@ export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
     const keys = key(item)
     let parent = root
     for (let i = 0; i < keys.length; i++) {
-      const k = keys[i]
+      const k = keys[i]!
       // 'a/b/c/' represents an empty folder 'c' in folder 'b' in folder 'a'
       // 'a/b/c/' is split into ['a', 'b', 'c', '']
       if (k === '' && i === keys.length - 1) break

@@ -36,7 +36,7 @@ export function useNodeCanvasImagePreview() {
     )
 
     if (widgetIdx > -1) {
-      node.widgets[widgetIdx].onRemove?.()
+      node.widgets[widgetIdx]?.onRemove?.()
       node.widgets.splice(widgetIdx, 1)
     }
   }

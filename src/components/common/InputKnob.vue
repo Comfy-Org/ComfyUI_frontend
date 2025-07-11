@@ -77,9 +77,7 @@ const updateValue = (newValue: number | null) => {
 const displayValue = (value: number): string => {
   updateValue(value)
   const stepString = (props.step ?? 1).toString()
-  const resolution = stepString.includes('.')
-    ? stepString.split('.')[1].length
-    : 0
+  const resolution = stepString.split('.')[1]?.length ?? 0
   return value.toFixed(props.resolution ?? resolution)
 }
 

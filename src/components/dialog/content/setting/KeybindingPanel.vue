@@ -177,7 +177,7 @@ const commandsData = computed<ICommandData[]>(() => {
       `commands.${normalizeI18nKey(command.id)}.label`,
       command.label ?? ''
     ),
-    keybinding: keybindingStore.getKeybindingByCommandId(command.id),
+    keybinding: keybindingStore.getKeybindingByCommandId(command.id) ?? null,
     source: command.source
   }))
 })
@@ -206,7 +206,7 @@ const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
     return null
   }
 
-  return keybindingStore.getKeybinding(newBindingKeyCombo.value)
+  return keybindingStore.getKeybinding(newBindingKeyCombo.value) ?? null
 })
 
 function editKeybinding(commandData: ICommandData) {

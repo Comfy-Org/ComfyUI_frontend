@@ -1,5 +1,5 @@
 <template>
-  <div v-if="nodePacks?.length" class="flex flex-col items-center mb-6">
+  <div v-if="nodePacks[0]" class="flex flex-col items-center mb-6">
     <slot name="thumbnail">
       <PackIcon :node-pack="nodePacks[0]" width="24" height="24" />
     </slot>

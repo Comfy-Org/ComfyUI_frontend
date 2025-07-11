@@ -230,7 +230,7 @@ watch(
       for (const error of nodeErrors.errors) {
         if (error.extra_info && error.extra_info.input_name) {
           const inputIndex = node.findInputSlot(error.extra_info.input_name)
-          if (inputIndex !== -1) {
+          if (inputIndex !== -1 && node.inputs[inputIndex]) {
             node.inputs[inputIndex].hasErrors = true
           }
         }

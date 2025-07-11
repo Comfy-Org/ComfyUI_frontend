@@ -71,7 +71,7 @@ watch(
       inputFontStyle.value = { fontSize: `${group.font_size * scale}px` }
     } else if (target instanceof LGraphNode) {
       const node = target
-      const [x, y] = node.getBounding()
+      const [x, y] = node.getBounding() as [number, number, number, number]
       updatePosition({
         pos: [x, y],
         size: [node.width, LiteGraph.NODE_TITLE_HEIGHT]
@@ -88,7 +88,7 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
     }
 
     const group: LGraphGroup = event.detail.group
-    const [_, y] = group.pos
+    const [_, y] = group.pos as [number, number]
 
     const e = event.detail.originalEvent
     const relativeY = e.canvasY - y
@@ -102,7 +102,7 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
     }
 
     const node: LGraphNode = event.detail.node
-    const [_, y] = node.pos
+    const [_, y] = node.pos as [number, number]
 
     const e = event.detail.originalEvent
     const relativeY = e.canvasY - y

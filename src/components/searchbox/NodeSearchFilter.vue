@@ -53,7 +53,7 @@ const updateSelectedFilterValue = () => {
   if (filterValues.value.includes(selectedFilterValue.value)) {
     return
   }
-  selectedFilterValue.value = filterValues.value[0]
+  selectedFilterValue.value = filterValues.value[0] ?? ''
 }
 
 const submit = () => {

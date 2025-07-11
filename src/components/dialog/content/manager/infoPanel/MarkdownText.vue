@@ -68,8 +68,8 @@ const parsedSegments = computed(() => {
     // Add the link
     segments.push({
       type: 'link',
-      text: linkMatch[1],
-      url: linkMatch[2]
+      text: linkMatch[1]!,
+      url: linkMatch[2]!
     })
 
     lastIndex = linkMatch.index + linkMatch[0].length
