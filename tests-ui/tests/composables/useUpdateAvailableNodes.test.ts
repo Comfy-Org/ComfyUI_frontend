@@ -84,9 +84,11 @@ describe('useUpdateAvailableNodes', () => {
       }
     })
 
-    mockIsSemVer.mockImplementation((version: string) => {
-      return !version.includes('nightly')
-    })
+    mockIsSemVer.mockImplementation(
+      (version: string): version is `${number}.${number}.${number}` => {
+        return !version.includes('nightly')
+      }
+    )
 
     mockCompareVersions.mockImplementation(
       (latest: string | undefined, installed: string | undefined) => {
