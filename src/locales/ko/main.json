@@ -1236,8 +1236,8 @@
         "image2image": "이미지 투 이미지",
         "inpaint_example": "인페인트",
         "inpaint_model_outpainting": "아웃페인팅",
-        "lora": "로라",
-        "lora_multiple": "다중 로라"
+        "lora": "LoRA",
+        "lora_multiple": "다중 LoRA"
       },
       "ControlNet": {
         "2_pass_pose_worship": "포즈 컨트롤넷 2패스",

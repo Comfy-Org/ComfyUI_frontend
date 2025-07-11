@@ -1248,7 +1248,7 @@
       },
       "Flux": {
         "flux_canny_model_example": "Flux Canny Model",
-        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_depth_lora_example": "Flux Depth LoRA",
         "flux_dev_checkpoint_example": "Flux Dev fp8 文生图",
         "flux_dev_full_text_to_image": "Flux Dev 全量文生图",
         "flux_fill_inpaint_example": "Flux 局部重绘",

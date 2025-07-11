@@ -1236,8 +1236,8 @@
         "image2image": "画像から画像へ",
         "inpaint_example": "Inpaint",
         "inpaint_model_outpainting": "Outpainting",
-        "lora": "Lora",
-        "lora_multiple": "Lora複数"
+        "lora": "LoRA",
+        "lora_multiple": "LoRA複数"
       },
       "ControlNet": {
         "2_pass_pose_worship": "2 Pass Pose Worship",
@@ -1248,7 +1248,7 @@
       },
       "Flux": {
         "flux_canny_model_example": "Flux Cannyモデル",
-        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_depth_lora_example": "Flux Depth LoRA",
         "flux_dev_checkpoint_example": "Flux Dev fp8",
         "flux_dev_full_text_to_image": "Flux Devフルテキストから画像へ",
         "flux_fill_inpaint_example": "Flux Inpaint",

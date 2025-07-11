@@ -1236,8 +1236,8 @@
         "image2image": "圖片轉圖片",
         "inpaint_example": "Inpaint",
         "inpaint_model_outpainting": "外延",
-        "lora": "Lora",
-        "lora_multiple": "Lora Multiple"
+        "lora": "LoRA",
+        "lora_multiple": "多重LoRA"
       },
       "ControlNet": {
         "2_pass_pose_worship": "Pose ControlNet 2 Pass",
@@ -1248,15 +1248,15 @@
       },
       "Flux": {
         "flux_canny_model_example": "Flux Canny Model",
-        "flux_depth_lora_example": "Flux Depth Lora",
-        "flux_dev_checkpoint_example": "Flux Dev",
+        "flux_depth_lora_example": "Flux Depth LoRA",
+        "flux_dev_checkpoint_example": "Flux Dev fp8",
         "flux_dev_full_text_to_image": "Flux Dev 完整文字轉圖",
         "flux_fill_inpaint_example": "Flux Inpaint",
         "flux_fill_outpaint_example": "Flux Outpaint",
         "flux_kontext_dev_basic": "Flux Kontext Dev（基礎）",
-        "flux_kontext_dev_grouped": "Flux Kontext Dev（分組）",
+        "flux_kontext_dev_grouped": "Flux Kontext Dev（組合版）",
         "flux_redux_model_example": "Flux Redux Model",
-        "flux_schnell": "Flux Schnell",
+        "flux_schnell": "Flux Schnell fp8",
         "flux_schnell_full_text_to_image": "Flux Schnell 完整文字轉圖"
       },
       "Image": {

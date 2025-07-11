@@ -1236,8 +1236,8 @@
         "image2image": "Изображение в изображение",
         "inpaint_example": "Inpaint",
         "inpaint_model_outpainting": "Outpainting",
-        "lora": "Lora",
-        "lora_multiple": "Lora Multiple"
+        "lora": "LoRA",
+        "lora_multiple": "LoRA Multiple"
       },
       "ControlNet": {
         "2_pass_pose_worship": "2 Pass Pose Worship",
@@ -1248,7 +1248,7 @@
       },
       "Flux": {
         "flux_canny_model_example": "Flux Canny Model",
-        "flux_depth_lora_example": "Flux Depth Lora",
+        "flux_depth_lora_example": "Flux Depth LoRA",
         "flux_dev_checkpoint_example": "Flux Dev fp8",
         "flux_dev_full_text_to_image": "Flux Dev полный текст в изображение",
         "flux_fill_inpaint_example": "Flux Inpaint",
