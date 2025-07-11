@@ -85,7 +85,7 @@ export class Topbar {
       .locator('.p-tieredmenu-item')
       .filter({ has: topLevelMenuItem })
     await topLevelMenu.waitFor({ state: 'visible' })
-    await topLevelMenu.click()
+    await topLevelMenu.hover()
 
     let currentMenu = topLevelMenu
     for (let i = 1; i < path.length; i++) {
@@ -96,8 +96,9 @@ export class Topbar {
         )
         .first()
       await menuItem.waitFor({ state: 'visible' })
-      await menuItem.click()
+      await menuItem.hover()
       currentMenu = menuItem
     }
+    await currentMenu.click()
   }
 }
