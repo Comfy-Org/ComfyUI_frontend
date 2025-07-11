@@ -610,12 +610,14 @@
     "title": "维护"
   },
   "manager": {
+    "applyChanges": "套用變更",
     "changingVersion": "将版本从 {from} 更改为 {to}",
     "createdBy": "创建者",
     "dependencies": "依赖关系",
     "discoverCommunityContent": "发现社区制作的节点包，扩展等等...",
     "downloads": "下载",
     "errorConnecting": "连接到Comfy节点注册表时出错。",
+    "extensionsSuccessfullyInstalled": "擴充功能安裝成功，已可使用！",
     "failed": "失败 ({count})",
     "filter": {
       "disabled": "已禁用",
@@ -627,6 +629,7 @@
     "installAllMissingNodes": "安装所有缺失节点",
     "installSelected": "安装选定",
     "installationQueue": "安装队列",
+    "installingDependencies": "正在安裝相依套件……",
     "lastUpdated": "最后更新",
     "latestVersion": "最新",
     "legacyManagerUI": "使用旧版UI",
@@ -643,6 +646,7 @@
     "packsSelected": "选定的包",
     "repository": "仓库",
     "restartToApplyChanges": "要应用更改，请重新启动ComfyUI",
+    "restartingBackend": "正在重新啟動後端以套用變更……",
     "searchPlaceholder": "搜索",
     "selectVersion": "选择版本",
     "sort": {
@@ -667,8 +671,8 @@
     "uninstallSelected": "卸载所选",
     "uninstalling": "正在卸载",
     "update": "更新",
-    "updateSelected": "更新所选",
     "updateAll": "全部更新",
+    "updateSelected": "更新所选",
     "updatingAllPacks": "更新所有包",
     "version": "版本"
   },

@@ -610,12 +610,14 @@
     "title": "Обслуживание"
   },
   "manager": {
+    "applyChanges": "Применить изменения",
     "changingVersion": "Изменение версии с {from} на {to}",
     "createdBy": "Создано",
     "dependencies": "Зависимости",
     "discoverCommunityContent": "Откройте для себя пакеты узлов, расширения и многое другое, созданные сообществом...",
     "downloads": "Загрузки",
     "errorConnecting": "Ошибка подключения к реестру Comfy Node.",
+    "extensionsSuccessfullyInstalled": "Расширение(я) успешно установлены и готовы к использованию!",
     "failed": "Не удалось ({count})",
     "filter": {
       "disabled": "Отключено",
@@ -627,6 +629,7 @@
     "installAllMissingNodes": "Установить все отсутствующие узлы",
     "installSelected": "Установить выбранное",
     "installationQueue": "Очередь установки",
+    "installingDependencies": "Установка зависимостей...",
     "lastUpdated": "Последнее обновление",
     "latestVersion": "Последняя",
     "legacyManagerUI": "Использовать устаревший UI",
@@ -643,6 +646,7 @@
     "packsSelected": "Выбрано пакетов",
     "repository": "Репозиторий",
     "restartToApplyChanges": "Чтобы применить изменения, пожалуйста, перезапустите ComfyUI",
+    "restartingBackend": "Перезапуск бэкенда для применения изменений...",
     "searchPlaceholder": "Поиск",
     "selectVersion": "Выберите версию",
     "sort": {
@@ -667,8 +671,8 @@
     "uninstallSelected": "Удалить выбранное",
     "uninstalling": "Удаление",
     "update": "Обновить",
-    "updateSelected": "Обновить выбранное",
     "updateAll": "Обновить все",
+    "updateSelected": "Обновить выбранное",
     "updatingAllPacks": "Обновление всех пакетов",
     "version": "Версия"
   },
@@ -804,7 +808,6 @@
     "Toggle Terminal Bottom Panel": "Переключение нижней панели терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
     "Toggle Workflows Sidebar": "Показать/скрыть боковую панель рабочих процессов",
-    "Toggle the Custom Nodes Manager": "Переключить менеджер пользовательских узлов",
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
