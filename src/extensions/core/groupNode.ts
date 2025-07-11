@@ -1323,45 +1323,6 @@ export class GroupNodeHandler {
       // @ts-expect-error fixme ts strict error
       (_, id) => id
     )
-    /*
-    // Handle progress_state events for multiple executing nodes
-    const progress_state = handleEvent.call(
-      this,
-      'progress_state',
-      (d) => {
-        // Check if any of our inner nodes are in this progress state update
-        for (const nodeId in d.nodes) {
-          const innerNodeIndex = this.innerNodes?.findIndex((n) => n.id == nodeId);
-          if (innerNodeIndex > -1) return nodeId;
-        }
-        return null;
-      },
-      (d, id, node) => {
-        // Create a new progress_state event with just our group node
-        const newProgressState = { ...d };
-        newProgressState.nodes = { [id]: { 
-          node: id, 
-          state: 'running',
-          value: 0,
-          max: 1,
-          prompt_id: d.prompt_id 
-        }};
-        
-        // If we have a specific running internal node, update its state
-        if (node.runningInternalNodeId !== null) {
-          const innerNodeId = this.innerNodes[node.runningInternalNodeId].id;
-          if (d.nodes[innerNodeId]) {
-            newProgressState.nodes[id] = {
-              ...d.nodes[innerNodeId],
-              node: id
-            };
-          }
-        }
-        
-        return newProgressState;
-      }
-    );
-    */
 
     const executed = handleEvent.call(
       this,

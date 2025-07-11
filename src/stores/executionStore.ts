@@ -90,17 +90,13 @@ export const useExecutionStore = defineStore('execution', () => {
       return mergedState
     } else if (newState.state === 'running') {
       const newPerc = newState.max > 0 ? newState.value / newState.max : 0.0
-      if (mergedState.state === 'running') {
-        const oldPerc =
-          mergedState.max > 0 ? mergedState.value / mergedState.max : 0.0
-        if (oldPerc === 0.0) {
-          mergedState.value = newState.value
-          mergedState.max = newState.max
-        } else if (newPerc < oldPerc) {
-          mergedState.value = newState.value
-          mergedState.max = newState.max
-        }
-      } else {
+      const oldPerc =
+        mergedState.max > 0 ? mergedState.value / mergedState.max : 0.0
+      if (
+        mergedState.state !== 'running' ||
+        oldPerc === 0.0 ||
+        newPerc < oldPerc
+      ) {
         mergedState.value = newState.value
         mergedState.max = newState.max
       }
@@ -117,7 +113,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
     const states = nodeProgressStates.value // Apparently doing this inside `Object.entries` causes issues
     for (const [_, state] of Object.entries(states)) {
-      // Convert the node ID to a NodeLocatorId
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')
@@ -141,7 +136,7 @@ export const useExecutionStore = defineStore('execution', () => {
       .map(([nodeId, _]) => nodeId)
   })
 
-  // For backward compatibility - stores the primary executing node ID
+  // @deprecated For backward compatibility - stores the primary executing node ID
   const executingNodeId = computed<NodeId | null>(() => {
     return executingNodeIds.value.length > 0 ? executingNodeIds.value[0] : null
   })
