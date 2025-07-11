@@ -136,7 +136,7 @@ export { LGraphNode, type NodeId } from "./LGraphNode"
 export { type LinkId, LLink } from "./LLink"
 export { clamp, createBounds } from "./measure"
 export { Reroute, type RerouteId } from "./Reroute"
-export { type ExecutableLGraphNode, ExecutableNodeDTO } from "./subgraph/ExecutableNodeDTO"
+export { type ExecutableLGraphNode, ExecutableNodeDTO, type ExecutionId } from "./subgraph/ExecutableNodeDTO"
 export { SubgraphNode } from "./subgraph/SubgraphNode"
 export type { CanvasPointerEvent } from "./types/events"
 export {

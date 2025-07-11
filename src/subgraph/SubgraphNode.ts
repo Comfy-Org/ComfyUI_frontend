@@ -14,7 +14,7 @@ import { NodeInputSlot } from "@/node/NodeInputSlot"
 import { NodeOutputSlot } from "@/node/NodeOutputSlot"
 import { toConcreteWidget } from "@/widgets/widgetMap"
 
-import { type ExecutableLGraphNode, ExecutableNodeDTO } from "./ExecutableNodeDTO"
+import { type ExecutableLGraphNode, ExecutableNodeDTO, type ExecutionId } from "./ExecutableNodeDTO"
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -273,26 +273,34 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     console.debug(`[SubgraphNode.resolveSubgraphOutputLink] No inner link found for output slot [${slot}] ${outputSlot.name}`, this)
   }
 
-  /** @internal Used to flatten the subgraph before execution. Recursive; call with no args. */
+  /** @internal Used to flatten the subgraph before execution. */
   getInnerNodes(
-    /** The list of nodes to add to. */
-    nodes: ExecutableLGraphNode[] = [],
-    /** The set of visited nodes. */
-    visited = new Set<SubgraphNode>(),
+    /** The set of computed node DTOs for this execution. */
+    executableNodes: Map<ExecutionId, ExecutableLGraphNode>,
     /** The path of subgraph node IDs. */
     subgraphNodePath: readonly NodeId[] = [],
+    /** Internal recursion param. The list of nodes to add to. */
+    nodes: ExecutableLGraphNode[] = [],
+    /** Internal recursion param. The set of visited nodes. */
+    visited = new Set<SubgraphNode>(),
   ): ExecutableLGraphNode[] {
     if (visited.has(this)) throw new RecursionError("while flattening subgraph")
     visited.add(this)
 
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
 
+    // Store the subgraph node DTO
+    const parentSubgraphNode = this.graph.rootGraph.resolveSubgraphIdPath(subgraphNodePath).at(-1)
+    const subgraphNodeDto = new ExecutableNodeDTO(this, subgraphNodePath, executableNodes, parentSubgraphNode)
+    executableNodes.set(subgraphNodeDto.id, subgraphNodeDto)
+
     for (const node of this.subgraph.nodes) {
       if ("getInnerNodes" in node) {
-        node.getInnerNodes(nodes, new Set(visited), subgraphInstanceIdPath)
+        node.getInnerNodes(executableNodes, subgraphInstanceIdPath, nodes, new Set(visited))
       } else {
         // Create minimal DTOs rather than cloning the node
-        const aVeryRealNode = new ExecutableNodeDTO(node, subgraphInstanceIdPath, this)
+        const aVeryRealNode = new ExecutableNodeDTO(node, subgraphInstanceIdPath, executableNodes, this)
+        executableNodes.set(aVeryRealNode.id, aVeryRealNode)
         nodes.push(aVeryRealNode)
       }
     }
