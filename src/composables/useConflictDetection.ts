@@ -3,8 +3,6 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useDialogService } from '@/services/dialogService'
-import { useExtensionStore } from '@/stores/extensionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -41,9 +39,6 @@ export function useConflictDetection() {
 
   // Registry API request cancellation
   const abortController = ref<AbortController | null>(null)
-
-  // Dialog service for showing conflict modal
-  const dialogService = useDialogService()
 
   // Computed properties
   const hasConflicts = computed(() =>
@@ -551,39 +546,13 @@ export function useConflictDetection() {
 
   /**
    * Detects extension loading and execution conflicts.
-   * @returns Array of conflict detection results for extensions
+   * Currently not used - focusing on custom node packs only per requirements.
+   * @returns Empty array as extension checking is not required
    */
   function detectExtensionConflicts(): ConflictDetectionResult[] {
-    const results: ConflictDetectionResult[] = []
-    const extensionStore = useExtensionStore()
-
-    // Check for extensions that failed to load or execute
-    // This is a placeholder - actual implementation would need extension error tracking
-    for (const extension of extensionStore.extensions) {
-      // Check if extension is disabled due to incompatibility
-      if (!extensionStore.isExtensionEnabled(extension.name)) {
-        // Only report as conflict if it's not intentionally disabled
-        if (!extensionStore.isExtensionReadOnly(extension.name)) {
-          const conflicts: ConflictDetail[] = [
-            {
-              type: 'frontend_version', // or create new type 'extension_error'
-              current_value: 'extension_disabled',
-              required_value: 'extension_compatible'
-            }
-          ]
-
-          results.push({
-            package_id: extension.name,
-            package_name: extension.name,
-            has_conflict: true,
-            conflicts,
-            is_compatible: false
-          })
-        }
-      }
-    }
-
-    return results
+    // Extension conflict detection removed per requirements
+    // Only custom node packs are checked via Manager API
+    return []
   }
 
   /**
@@ -641,31 +610,21 @@ export function useConflictDetection() {
         importFailResults
       )
 
-      // 5. Detect extension conflicts
-      const extensionResults = detectExtensionConflicts()
-      console.log(
-        '[ConflictDetection] Extension conflicts detected:',
-        extensionResults
-      )
+      // 5. Combine all results
+      const allResults = [...packageResults, ...importFailResults]
 
-      // 6. Combine all results
-      const allResults = [
-        ...packageResults,
-        ...importFailResults,
-        ...extensionResults
-      ]
-
-      // 7. Generate summary information
+      // 6. Generate summary information
       const summary = generateSummary(allResults, Date.now() - startTime)
 
-      // 8. Update state
+      // 7. Update state
       detectionResults.value = allResults
       detectionSummary.value = summary
       lastDetectionTime.value = new Date().toISOString()
 
       console.log('[ConflictDetection] Conflict detection completed:', summary)
 
-      // Show dialog if conflicts are detected
+      // Store conflict results for later UI display
+      // Dialog will be shown based on specific events, not on app mount
       if (allResults.some((result) => result.has_conflict)) {
         const conflictedResults = allResults.filter(
           (result) => result.has_conflict
@@ -675,10 +634,12 @@ export function useConflictDetection() {
         const mergedConflicts = mergeConflictsByPackageName(conflictedResults)
 
         console.log(
-          '[ConflictDetection] Showing dialog with conflicts:',
+          '[ConflictDetection] Conflicts detected (stored for UI):',
           mergedConflicts
         )
-        dialogService.showNodeConflictDialog({ conflicts: mergedConflicts })
+
+        // TODO: Show red dot on Help Center
+        // TODO: Store conflict state for event-based dialog triggers
       }
 
       const response: ConflictDetectionResponse = {
