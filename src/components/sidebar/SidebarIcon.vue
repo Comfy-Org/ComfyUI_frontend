@@ -19,10 +19,12 @@
     @click="emit('click', $event)"
   >
     <template #icon>
-      <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
-        <i :class="icon + ' side-bar-button-icon'" />
-      </OverlayBadge>
-      <i v-else :class="icon + ' side-bar-button-icon'" />
+      <slot name="icon">
+        <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
+          <i :class="icon + ' side-bar-button-icon'" />
+        </OverlayBadge>
+        <i v-else :class="icon + ' side-bar-button-icon'" />
+      </slot>
     </template>
   </Button>
 </template>

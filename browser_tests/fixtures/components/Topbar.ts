@@ -15,10 +15,6 @@ export class Topbar {
       .innerText()
   }
 
-  async openSubmenuMobile() {
-    await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
-  }
-
   getMenuItem(itemLabel: string): Locator {
     return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
   }
@@ -68,31 +64,41 @@ export class Topbar {
     await this.getSaveDialog().waitFor({ state: 'hidden', timeout: 500 })
   }
 
+  async openTopbarMenu() {
+    await this.page.locator('.comfyui-logo-wrapper').click()
+    const menu = this.page.locator('.comfy-command-menu')
+    await menu.waitFor({ state: 'visible' })
+    return menu
+  }
+
   async triggerTopbarCommand(path: string[]) {
     if (path.length < 2) {
       throw new Error('Path is too short')
     }
 
+    const menu = await this.openTopbarMenu()
     const tabName = path[0]
-    const topLevelMenu = this.page.locator(
-      `.top-menubar .p-menubar-item-label:text-is("${tabName}")`
+    const topLevelMenuItem = this.page.locator(
+      `.p-menubar-item-label:text-is("${tabName}")`
     )
+    const topLevelMenu = menu
+      .locator('.p-tieredmenu-item')
+      .filter({ has: topLevelMenuItem })
     await topLevelMenu.waitFor({ state: 'visible' })
-    await topLevelMenu.click()
+    await topLevelMenu.hover()
 
+    let currentMenu = topLevelMenu
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
-      const menuItem = this.page
+      const menuItem = currentMenu
         .locator(
-          `.top-menubar .p-menubar-submenu .p-menubar-item:has-text("${commandName}")`
+          `.p-tieredmenu-submenu .p-tieredmenu-item:has-text("${commandName}")`
         )
         .first()
       await menuItem.waitFor({ state: 'visible' })
       await menuItem.hover()
-
-      if (i === path.length - 1) {
-        await menuItem.click()
-      }
+      currentMenu = menuItem
     }
+    await currentMenu.click()
   }
 }
