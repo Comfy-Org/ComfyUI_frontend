@@ -1712,7 +1712,7 @@ const ext: ComfyExtension = {
       combo: {
         alt: true,
         key: 'g',
-        code: 'KeyG'
+        code: 'KeyG',
       }
     },
     {
@@ -1721,7 +1721,7 @@ const ext: ComfyExtension = {
         alt: true,
         shift: true,
         key: 'G',
-        code: 'KeyG'
+        code: 'KeyG',
       }
     }
   ],
