@@ -19,9 +19,14 @@ export type ExecutionId = string
 export type ExecutableLGraphNode = Omit<ExecutableNodeDTO, "graph" | "node" | "subgraphNode">
 
 type ResolvedInput = {
+  /** DTO for the node that the link originates from. */
   node: ExecutableLGraphNode
-  origin_id: NodeId
+  /** Full unique execution ID of the node that the link originates from. */
+  origin_id: ExecutionId
+  /** The slot index of the output on the node that the link originates from. */
   origin_slot: number
+  /** Actual value (e.g. for widgets). */
+  value?: unknown
 }
 
 /**
@@ -139,7 +144,18 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
       // Nothing connected
       const linkId = subgraphNodeInput.link
-      if (linkId == null) return
+      if (linkId == null) {
+        const widget = subgraphNode.getWidgetFromSlot(subgraphNodeInput)
+        if (!widget) return
+
+        // Special case: SubgraphNode widget.
+        return {
+          node: this,
+          origin_id: this.id,
+          origin_slot: slot,
+          value: widget.value,
+        }
+      }
 
       const outerLink = subgraphNode.graph.getLink(linkId)
       if (!outerLink) throw new InvalidLinkError(`No outer link found for slot [${link.origin_slot}] ${input.name}`)
