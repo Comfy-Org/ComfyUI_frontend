@@ -159,7 +159,7 @@ const toggleExpanded = () => {
 
 const removeTask = async (task: TaskItemImpl) => {
   if (task.isRunning) {
-    await api.interrupt()
+    await api.interrupt(task.promptId)
   }
   await queueStore.delete(task)
 }
