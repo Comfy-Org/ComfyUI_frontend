@@ -11,6 +11,7 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
+  HistoryResponse,
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
@@ -711,13 +712,17 @@ export class ComfyApi extends EventTarget {
     max_items: number = 200
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      const res = await this.fetchApi(`/history?max_items=${max_items}`)
-      const json: Promise<HistoryTaskItem[]> = await res.json()
+      const res = await this.fetchApi(`/history_v2?max_items=${max_items}`)
+      const json: HistoryResponse = await res.json()
+
+      // Extract history data from new format: { history: [{prompt_id: "...", ...}, ...] }
       return {
-        History: Object.values(json).map((item) => ({
-          ...item,
-          taskType: 'History'
-        }))
+        History: json.history.map(
+          (item): HistoryTaskItem => ({
+            ...item,
+            taskType: 'History'
+          })
+        )
       }
     } catch (error) {
       console.error(error)
