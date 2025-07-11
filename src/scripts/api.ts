@@ -695,7 +695,8 @@ export class ComfyApi extends EventTarget {
         Running: data.queue_running.map((prompt: Record<number, any>) => ({
           taskType: 'Running',
           prompt,
-          remove: { name: 'Cancel', cb: () => api.interrupt() }
+          // prompt[1] is the prompt id
+          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
         })),
         Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
           taskType: 'Pending',
@@ -776,10 +777,15 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Interrupts the execution of the running prompt
+   * Interrupts the execution of the running prompt. If runningPromptId is provided,
+   * it is included in the payload as a helpful hint to the backend.
+   * @param {string | null} [runningPromptId] Optional Running Prompt ID to interrupt
    */
-  async interrupt() {
-    await this.#postItem('interrupt', null)
+  async interrupt(runningPromptId: string | null) {
+    await this.#postItem(
+      'interrupt',
+      runningPromptId ? { prompt_id: runningPromptId } : undefined
+    )
   }
 
   /**

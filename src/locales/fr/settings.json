@@ -335,7 +335,8 @@
       "Bottom": "Bas",
       "Disabled": "Désactivé",
       "Top": "Haut"
-    }
+    },
+    "tooltip": "Position de la barre de menu. Sur les appareils mobiles, le menu est toujours affiché en haut."
   },
   "Comfy_Validation_NodeDefs": {
     "name": "Valider les définitions de nœuds (lent)",
