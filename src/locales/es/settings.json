@@ -326,7 +326,8 @@
       "Bottom": "Abajo",
       "Disabled": "Deshabilitado",
       "Top": "Arriba"
-    }
+    },
+    "tooltip": "Posición de la barra de menú. En dispositivos móviles, el menú siempre se muestra en la parte superior."
   },
   "Comfy_Validation_NodeDefs": {
     "name": "Validar definiciones de nodos (lento)",
