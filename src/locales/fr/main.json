@@ -82,6 +82,12 @@
       "title": "Créer un compte"
     }
   },
+  "breadcrumbsMenu": {
+    "clearWorkflow": "Effacer le workflow",
+    "deleteWorkflow": "Supprimer le workflow",
+    "duplicate": "Dupliquer",
+    "enterNewName": "Entrez un nouveau nom"
+  },
   "chatHistory": {
     "cancelEdit": "Annuler",
     "cancelEditTooltip": "Annuler la modification",
@@ -697,13 +703,17 @@
     "batchCountTooltip": "Le nombre de fois que la génération du flux de travail doit être mise en file d'attente",
     "clear": "Effacer le flux de travail",
     "clipspace": "Ouvrir Clipspace",
+    "dark": "Sombre",
     "disabled": "Désactivé",
     "disabledTooltip": "Le flux de travail ne sera pas mis en file d'attente automatiquement",
     "execute": "Exécuter",
+    "help": "Aide",
     "hideMenu": "Masquer le menu",
     "instant": "Instantané",
     "instantTooltip": "Le flux de travail sera mis en file d'attente immédiatement après la fin d'une génération",
     "interrupt": "Annuler l'exécution en cours",
+    "light": "Clair",
+    "manageExtensions": "Gérer les extensions",
     "onChange": "Sur modification",
     "onChangeTooltip": "Le flux de travail sera mis en file d'attente une fois une modification effectuée",
     "refresh": "Actualiser les définitions des nœuds",
@@ -711,7 +721,9 @@
     "run": "Exécuter",
     "runWorkflow": "Exécuter le workflow (Maj pour mettre en file d'attente en premier)",
     "runWorkflowFront": "Exécuter le workflow (Mettre en file d'attente en premier)",
+    "settings": "Paramètres",
     "showMenu": "Afficher le menu",
+    "theme": "Thème",
     "toggleBottomPanel": "Basculer le panneau inférieur"
   },
   "menuLabels": {
@@ -1158,7 +1170,6 @@
       },
       "showFlatList": "Afficher la liste plate"
     },
-    "themeToggle": "Changer de thème",
     "workflowTab": {
       "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce flux de travail ?",
       "confirmDeleteTitle": "Supprimer le flux de travail ?",

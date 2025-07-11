@@ -82,6 +82,12 @@
       "title": "创建一个账户"
     }
   },
+  "breadcrumbsMenu": {
+    "clearWorkflow": "清除工作流程",
+    "deleteWorkflow": "刪除工作流程",
+    "duplicate": "複製",
+    "enterNewName": "輸入新名稱"
+  },
   "chatHistory": {
     "cancelEdit": "取消",
     "cancelEditTooltip": "取消编辑",
@@ -697,13 +703,17 @@
     "batchCountTooltip": "工作流生成次数",
     "clear": "清空工作流",
     "clipspace": "打开剪贴板",
+    "dark": "深色",
     "disabled": "禁用",
     "disabledTooltip": "工作流将不会自动执行",
     "execute": "执行",
+    "help": "說明",
     "hideMenu": "隐藏菜单",
     "instant": "实时",
     "instantTooltip": "工作流将会在生成完成后立即执行",
     "interrupt": "取消当前任务",
+    "light": "淺色",
+    "manageExtensions": "管理擴充功能",
     "onChange": "更改时",
     "onChangeTooltip": "一旦进行更改，工作流将添加到执行队列",
     "refresh": "刷新节点",
@@ -711,7 +721,9 @@
     "run": "运行",
     "runWorkflow": "运行工作流程（Shift排在前面）",
     "runWorkflowFront": "运行工作流程（排在前面）",
+    "settings": "設定",
     "showMenu": "显示菜单",
+    "theme": "主題",
     "toggleBottomPanel": "底部面板"
   },
   "menuLabels": {
@@ -1158,7 +1170,6 @@
       },
       "showFlatList": "平铺结果"
     },
-    "themeToggle": "主题切换",
     "workflowTab": {
       "confirmDelete": "您确定要删除此工作流吗？",
       "confirmDeleteTitle": "删除工作流？",

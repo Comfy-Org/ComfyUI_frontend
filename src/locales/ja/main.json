@@ -82,6 +82,12 @@
       "title": "アカウントを作成する"
     }
   },
+  "breadcrumbsMenu": {
+    "clearWorkflow": "ワークフローをクリア",
+    "deleteWorkflow": "ワークフローを削除",
+    "duplicate": "複製",
+    "enterNewName": "新しい名前を入力"
+  },
   "chatHistory": {
     "cancelEdit": "キャンセル",
     "cancelEditTooltip": "編集をキャンセル",
@@ -697,13 +703,17 @@
     "batchCountTooltip": "ワークフロー生成回数",
     "clear": "ワークフローをクリア",
     "clipspace": "クリップスペースを開く",
+    "dark": "ダーク",
     "disabled": "無効",
     "disabledTooltip": "ワークフローは自動的にキューに追加されません",
     "execute": "実行",
+    "help": "ヘルプ",
     "hideMenu": "メニューを隠す",
     "instant": "即時",
     "instantTooltip": "生成完了後すぐにキューに追加",
     "interrupt": "現在の実行を中止",
+    "light": "ライト",
+    "manageExtensions": "拡張機能の管理",
     "onChange": "変更時",
     "onChangeTooltip": "変更が行われるとワークフローがキューに追加されます",
     "refresh": "ノードを更新",
@@ -711,7 +721,9 @@
     "run": "実行する",
     "runWorkflow": "ワークフローを実行する (Shiftで先頭にキュー)",
     "runWorkflowFront": "ワークフローを実行する (先頭にキュー)",
+    "settings": "設定",
     "showMenu": "メニューを表示",
+    "theme": "テーマ",
     "toggleBottomPanel": "下部パネルを切り替え"
   },
   "menuLabels": {
@@ -1158,7 +1170,6 @@
       },
       "showFlatList": "フラットリストを表示"
     },
-    "themeToggle": "テーマの切り替え",
     "workflowTab": {
       "confirmDelete": "このワークフローを削除してもよろしいですか？",
       "confirmDeleteTitle": "ワークフローを削除しますか？",
