@@ -290,6 +290,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     options: [
       { value: 'en', text: 'English' },
       { value: 'zh', text: '中文' },
+      { value: 'zh-TW', text: '繁體中文' },
       { value: 'ru', text: 'Русский' },
       { value: 'ja', text: '日本語' },
       { value: 'ko', text: '한국어' },
@@ -329,6 +330,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.20.3'
+  },
+  {
+    id: 'Comfy.Notification.ShowVersionUpdates',
+    category: ['Comfy', 'Notification Preferences'],
+    name: 'Show version updates',
+    tooltip: 'Show updates for new models, and major new features.',
+    type: 'boolean',
+    defaultValue: true
   },
   {
     id: 'Comfy.ConfirmClear',
@@ -431,6 +440,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top', 'Bottom'],
+    tooltip:
+      'Menu bar position. On mobile devices, the menu is always shown at the top.',
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
@@ -746,6 +757,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: 'Comfy.InstalledVersion',
+    name: 'The frontend version that was running when the user first installed ComfyUI',
+    type: 'hidden',
+    defaultValue: null,
+    versionAdded: '1.24.0'
   },
   {
     id: 'LiteGraph.ContextMenu.Scaling',

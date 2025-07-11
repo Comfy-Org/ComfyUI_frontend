@@ -65,7 +65,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   /**
    * @deprecated Use `settingStore.getDefaultValue` instead.
    */
-  getSettingDefaultValue<K extends keyof Settings>(id: K): Settings[K] {
+  getSettingDefaultValue<K extends keyof Settings>(
+    id: K
+  ): Settings[K] | undefined {
     return useSettingStore().getDefaultValue(id)
   }
 
