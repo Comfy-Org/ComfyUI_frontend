@@ -19,6 +19,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -39,6 +40,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const firebaseAuthActions = useFirebaseAuthActions()
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
+  const executionStore = useExecutionStore()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -203,7 +205,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-stop',
       label: 'Interrupt',
       function: async () => {
-        await api.interrupt()
+        await api.interrupt(executionStore.activePromptId)
         toastStore.add({
           severity: 'info',
           summary: t('g.interrupted'),
