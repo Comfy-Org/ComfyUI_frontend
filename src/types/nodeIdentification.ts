@@ -15,7 +15,7 @@ import type { NodeId } from '@/schemas/comfyWorkflowSchema'
  * Unlike hierarchical IDs which change based on the instance path,
  * NodeLocatorId remains the same for all instances of a particular node.
  */
-export type NodeLocatorId = string & { __brand: 'NodeLocatorId' }
+export type NodeLocatorId = string
 
 /**
  * A hierarchical identifier representing a node's position in nested subgraphs.
@@ -24,7 +24,7 @@ export type NodeLocatorId = string & { __brand: 'NodeLocatorId' }
  * Format: Colon-separated path of node IDs
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
  */
-export type HierarchicalNodeId = string & { __brand: 'HierarchicalNodeId' }
+export type HierarchicalNodeId = string
 
 /**
  * Type guard to check if a value is a NodeLocatorId
