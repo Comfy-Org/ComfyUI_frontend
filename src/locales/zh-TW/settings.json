@@ -326,7 +326,8 @@
       "Bottom": "下方",
       "Disabled": "停用",
       "Top": "上方"
-    }
+    },
+    "tooltip": "選單列位置。在行動裝置上，選單始終顯示在頂部。"
   },
   "Comfy_Validation_NodeDefs": {
     "name": "驗證節點定義（較慢）",

@@ -336,6 +336,7 @@
     "noTasksFoundMessage": "佇列中沒有任務。",
     "noWorkflowsFound": "找不到工作流程。",
     "nodes": "節點",
+    "nodesRunning": "節點執行中",
     "ok": "確定",
     "openNewIssue": "開啟新問題",
     "overwrite": "覆蓋",

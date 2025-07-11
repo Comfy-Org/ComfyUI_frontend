@@ -326,7 +326,8 @@
       "Bottom": "下",
       "Disabled": "無効",
       "Top": "上"
-    }
+    },
+    "tooltip": "メニューバーの位置。モバイルデバイスでは、メニューは常に上部に表示されます。"
   },
   "Comfy_Validation_NodeDefs": {
     "name": "ノード定義を検証（遅い）",

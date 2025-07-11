@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
   DisplayComponentWsMessage,
   EmbeddingsResponse,
@@ -11,10 +12,12 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
+  FeatureFlagsWsMessage,
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
   PendingTaskItem,
+  ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
@@ -103,8 +106,19 @@ interface BackendApiCalls {
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
+  /** Binary preview with metadata (node_id, prompt_id) */
+  b_preview_with_metadata: {
+    blob: Blob
+    nodeId: string
+    parentNodeId: string
+    displayNodeId: string
+    realNodeId: string
+    promptId: string
+  }
   progress_text: ProgressTextWsMessage
+  progress_state: ProgressStateWsMessage
   display_component: DisplayComponentWsMessage
+  feature_flags: FeatureFlagsWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -233,6 +247,27 @@ export class ComfyApi extends EventTarget {
   socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
+
+  /**
+   * Feature flags supported by this frontend client.
+   */
+  clientFeatureFlags: Record<string, any> = { ...defaultClientFeatureFlags }
+
+  /**
+   * Feature flags received from the backend server.
+   */
+  serverFeatureFlags: Record<string, any> = {}
+
+  /**
+   * Alias for serverFeatureFlags for test compatibility.
+   */
+  get feature_flags() {
+    return this.serverFeatureFlags
+  }
+
+  set feature_flags(value: Record<string, any>) {
+    this.serverFeatureFlags = value
+  }
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -375,6 +410,15 @@ export class ComfyApi extends EventTarget {
 
     this.socket.addEventListener('open', () => {
       opened = true
+
+      // Send feature flags as the first message
+      this.socket!.send(
+        JSON.stringify({
+          type: 'feature_flags',
+          data: this.clientFeatureFlags
+        })
+      )
+
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
       }
@@ -432,6 +476,33 @@ export class ComfyApi extends EventTarget {
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
               break
+            case 4:
+              // PREVIEW_IMAGE_WITH_METADATA
+              const decoder4 = new TextDecoder()
+              const metadataLength = view.getUint32(4)
+              const metadataBytes = event.data.slice(8, 8 + metadataLength)
+              const metadata = JSON.parse(decoder4.decode(metadataBytes))
+              const imageData4 = event.data.slice(8 + metadataLength)
+
+              let imageMime4 = metadata.image_type
+
+              const imageBlob4 = new Blob([imageData4], {
+                type: imageMime4
+              })
+
+              // Dispatch enhanced preview event with metadata
+              this.dispatchCustomEvent('b_preview_with_metadata', {
+                blob: imageBlob4,
+                nodeId: metadata.node_id,
+                displayNodeId: metadata.display_node_id,
+                parentNodeId: metadata.parent_node_id,
+                realNodeId: metadata.real_node_id,
+                promptId: metadata.prompt_id
+              })
+
+              // Also dispatch legacy b_preview for backward compatibility
+              this.dispatchCustomEvent('b_preview', imageBlob4)
+              break
             default:
               throw new Error(
                 `Unknown binary websocket message of type ${eventType}`
@@ -461,12 +532,21 @@ export class ComfyApi extends EventTarget {
             case 'execution_cached':
             case 'execution_success':
             case 'progress':
+            case 'progress_state':
             case 'executed':
             case 'graphChanged':
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
               this.dispatchCustomEvent(msg.type, msg.data)
+              break
+            case 'feature_flags':
+              // Store server feature flags
+              this.serverFeatureFlags = msg.data
+              console.log(
+                'Server feature flags received:',
+                this.serverFeatureFlags
+              )
               break
             default:
               if (this.#registered.has(msg.type)) {
@@ -962,6 +1042,47 @@ export class ComfyApi extends EventTarget {
   async getCustomNodesI18n(): Promise<Record<string, any>> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
+
+  /**
+   * Checks if the server supports a specific feature.
+   * @param featureName The name of the feature to check
+   * @returns true if the feature is supported, false otherwise
+   */
+  serverSupportsFeature(featureName: string): boolean {
+    return this.serverFeatureFlags[featureName] === true
+  }
+
+  /**
+   * Gets a server feature flag value.
+   * @param featureName The name of the feature to get
+   * @param defaultValue The default value if the feature is not found
+   * @returns The feature value or default
+   */
+  getServerFeature<T = any>(featureName: string, defaultValue?: T): T {
+    return this.serverFeatureFlags[featureName] ?? defaultValue
+  }
+
+  /**
+   * Gets all server feature flags.
+   * @returns Copy of all server feature flags
+   */
+  getServerFeatures(): Record<string, any> {
+    return { ...this.serverFeatureFlags }
+  }
+
+  /**
+   * Updates the client feature flags.
+   *
+   * This is intentionally disabled for now. When we introduce an official Public API
+   * for the frontend, we'll introduce a function for custom frontend extensions to
+   * add their own feature flags in a way that won't interfere with other extensions
+   * or the builtin frontend flags.
+   */
+  /*
+  setClientFeatureFlags(flags: Record<string, any>): void {
+    this.clientFeatureFlags = flags
+  }
+  */
 }
 
 export const api = new ComfyApi()

@@ -336,6 +336,7 @@
     "noTasksFoundMessage": "キューにタスクがありません。",
     "noWorkflowsFound": "ワークフローが見つかりません。",
     "nodes": "ノード",
+    "nodesRunning": "ノードが実行中",
     "ok": "OK",
     "openNewIssue": "新しい問題を開く",
     "overwrite": "上書き",

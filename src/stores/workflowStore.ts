@@ -4,10 +4,21 @@ import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import type {
+  HierarchicalNodeId,
+  NodeLocatorId
+} from '@/types/nodeIdentification'
+import {
+  createHierarchicalNodeId,
+  createNodeLocatorId,
+  parseHierarchicalNodeId,
+  parseNodeLocatorId
+} from '@/types/nodeIdentification'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -163,6 +174,15 @@ export interface WorkflowStore {
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
   executionIdToCurrentId: (id: string) => any
+  nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
+  hierarchicalIdToNodeLocatorId: (
+    hierarchicalId: HierarchicalNodeId | string
+  ) => NodeLocatorId | null
+  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId | string) => NodeId | null
+  nodeLocatorIdToHierarchicalId: (
+    locatorId: NodeLocatorId | string,
+    targetSubgraph?: Subgraph
+  ) => HierarchicalNodeId | null
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -488,6 +508,136 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   watch(activeWorkflow, updateActiveGraph)
 
+  /**
+   * Convert a node ID to a NodeLocatorId
+   * @param nodeId The local node ID
+   * @param subgraph The subgraph containing the node (defaults to active subgraph)
+   * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
+   */
+  const nodeIdToNodeLocatorId = (
+    nodeId: NodeId,
+    subgraph?: Subgraph
+  ): NodeLocatorId => {
+    const targetSubgraph = subgraph ?? activeSubgraph.value
+    if (!targetSubgraph) {
+      // Node is in the root graph, return the node ID as-is
+      return String(nodeId) as NodeLocatorId
+    }
+
+    return createNodeLocatorId(targetSubgraph.id, nodeId)
+  }
+
+  /**
+   * Convert a hierarchical ID to a NodeLocatorId
+   * @param hierarchicalId The hierarchical node ID (e.g., "123:456:789")
+   * @returns The NodeLocatorId or null if conversion fails
+   */
+  const hierarchicalIdToNodeLocatorId = (
+    hierarchicalId: HierarchicalNodeId | string
+  ): NodeLocatorId | null => {
+    // Handle simple node IDs (root graph - no colons)
+    if (!hierarchicalId.includes(':')) {
+      return hierarchicalId as NodeLocatorId
+    }
+
+    const parts = parseHierarchicalNodeId(hierarchicalId)
+    if (!parts || parts.length === 0) return null
+
+    const nodeId = parts[parts.length - 1]
+    const subgraphNodeIds = parts.slice(0, -1)
+
+    if (subgraphNodeIds.length === 0) {
+      // Node is in root graph, return the node ID as-is
+      return String(nodeId) as NodeLocatorId
+    }
+
+    try {
+      const subgraphs = getSubgraphsFromInstanceIds(
+        comfyApp.graph,
+        subgraphNodeIds.map((id) => String(id))
+      )
+      const immediateSubgraph = subgraphs[subgraphs.length - 1]
+      return createNodeLocatorId(immediateSubgraph.id, nodeId)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Extract the node ID from a NodeLocatorId
+   * @param locatorId The NodeLocatorId
+   * @returns The local node ID or null if invalid
+   */
+  const nodeLocatorIdToNodeId = (
+    locatorId: NodeLocatorId | string
+  ): NodeId | null => {
+    const parsed = parseNodeLocatorId(locatorId)
+    return parsed?.localNodeId ?? null
+  }
+
+  /**
+   * Convert a NodeLocatorId to a hierarchical ID for a specific context
+   * @param locatorId The NodeLocatorId
+   * @param targetSubgraph The subgraph context (defaults to active subgraph)
+   * @returns The hierarchical ID or null if the node is not accessible from the target context
+   */
+  const nodeLocatorIdToHierarchicalId = (
+    locatorId: NodeLocatorId | string,
+    targetSubgraph?: Subgraph
+  ): HierarchicalNodeId | null => {
+    const parsed = parseNodeLocatorId(locatorId)
+    if (!parsed) return null
+
+    const { subgraphUuid, localNodeId } = parsed
+
+    // If no subgraph UUID, this is a root graph node
+    if (!subgraphUuid) {
+      return String(localNodeId) as HierarchicalNodeId
+    }
+
+    // Find the path from root to the subgraph with this UUID
+    const findSubgraphPath = (
+      graph: LGraph | Subgraph,
+      targetUuid: string,
+      path: NodeId[] = []
+    ): NodeId[] | null => {
+      if (isSubgraph(graph) && graph.id === targetUuid) {
+        return path
+      }
+
+      for (const node of graph._nodes) {
+        if (node.isSubgraphNode?.() && (node as any).subgraph) {
+          const result = findSubgraphPath((node as any).subgraph, targetUuid, [
+            ...path,
+            node.id
+          ])
+          if (result) return result
+        }
+      }
+
+      return null
+    }
+
+    const path = findSubgraphPath(comfyApp.graph, subgraphUuid)
+    if (!path) return null
+
+    // If we have a target subgraph, check if the path goes through it
+    if (
+      targetSubgraph &&
+      !path.some((_, idx) => {
+        const subgraphs = getSubgraphsFromInstanceIds(
+          comfyApp.graph,
+          path.slice(0, idx + 1).map((id) => String(id))
+        )
+        return subgraphs[subgraphs.length - 1] === targetSubgraph
+      })
+    ) {
+      return null
+    }
+
+    return createHierarchicalNodeId([...path, localNodeId])
+  }
+
   return {
     activeWorkflow,
     isActive,
@@ -514,7 +664,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSubgraphActive,
     activeSubgraph,
     updateActiveGraph,
-    executionIdToCurrentId
+    executionIdToCurrentId,
+    nodeIdToNodeLocatorId,
+    hierarchicalIdToNodeLocatorId,
+    nodeLocatorIdToNodeId,
+    nodeLocatorIdToHierarchicalId
   }
 }) satisfies () => WorkflowStore
 

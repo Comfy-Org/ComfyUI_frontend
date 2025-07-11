@@ -33,6 +33,7 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -107,7 +108,11 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          if (this.id == app.runningNodeId) {
+          const nodeId = String(this.id)
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const state =
+            useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
+          if (state === 'running') {
             return { color: '#0f0' }
           }
         }
@@ -362,7 +367,11 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          if (this.id == app.runningNodeId) {
+          const nodeId = String(this.id)
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const state =
+            useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
+          if (state === 'running') {
             return { color: '#0f0' }
           }
         }
