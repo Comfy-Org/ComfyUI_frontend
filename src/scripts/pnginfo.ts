@@ -13,6 +13,175 @@ export function getFlacMetadata(file: File): Promise<Record<string, string>> {
   return getFromFlacFile(file)
 }
 
+export function getAvifMetadata(file: File): Promise<Record<string, string>> {
+  return new Promise<Record<string, string>>((r) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const avif = new Uint8Array(event.target?.result as ArrayBuffer)
+      const dataView = new DataView(avif.buffer)
+
+      // Check for ftyp box and 'avif' brand
+      if (
+        dataView.getUint32(4) !== 0x66747970 ||
+        dataView.getUint32(8) !== 0x61766966
+      ) {
+        console.error('Not a valid AVIF file')
+        r({})
+        return
+      }
+
+      let offset = 0
+      let exifOffset = -1
+      let exifLength = -1
+      const txt_chunks: Record<string, string> = {}
+
+      while (offset < avif.length) {
+        const boxLength = dataView.getUint32(offset)
+        if (boxLength === 0) break
+        const boxType = String.fromCharCode(
+          ...avif.slice(offset + 4, offset + 8)
+        )
+        if (boxType === 'meta') {
+          let metaOffset = offset + 12
+          while (metaOffset < offset + boxLength) {
+            const innerBoxLength = dataView.getUint32(metaOffset)
+            if (innerBoxLength === 0) break
+            const innerBoxType = String.fromCharCode(
+              ...avif.slice(metaOffset + 4, metaOffset + 8)
+            )
+            if (innerBoxType === 'iloc') {
+              const ilocVersion = dataView.getUint8(metaOffset + 8)
+              const sizes = dataView.getUint16(metaOffset + 12)
+              const offsetSize = (sizes >> 12) & 0x0f
+              const lengthSize = (sizes >> 8) & 0x0f
+              const baseOffsetSize = (sizes >> 4) & 0x0f
+              const indexSize =
+                ilocVersion === 1 || ilocVersion === 2 ? sizes & 0x0f : 0
+
+              let ilocOffset = metaOffset + 14
+              let itemCount
+              if (ilocVersion < 2) {
+                itemCount = dataView.getUint16(ilocOffset)
+                ilocOffset += 2
+              } else {
+                itemCount = dataView.getUint32(ilocOffset)
+                ilocOffset += 4
+              }
+
+              for (let i = 0; i < itemCount; i++) {
+                if (ilocVersion < 2) {
+                  ilocOffset += 2 // item_ID (16 bit)
+                } else {
+                  ilocOffset += 4 // item_ID (32 bit)
+                }
+
+                if (ilocVersion === 1 || ilocVersion === 2) {
+                  ilocOffset += 2 // construction_method (16 bit)
+                }
+
+                ilocOffset += 2 // data_reference_index (16 bit)
+                ilocOffset += baseOffsetSize // base_offset
+
+                const extentCount = dataView.getUint16(ilocOffset)
+                ilocOffset += 2
+
+                for (let j = 0; j < extentCount; j++) {
+                  if (
+                    (ilocVersion === 1 || ilocVersion === 2) &&
+                    indexSize > 0
+                  ) {
+                    ilocOffset += indexSize
+                  }
+
+                  let currentOffset = 0
+                  switch (offsetSize) {
+                    case 1:
+                      currentOffset = dataView.getUint8(ilocOffset)
+                      break
+                    case 2:
+                      currentOffset = dataView.getUint16(ilocOffset)
+                      break
+                    case 4:
+                      currentOffset = dataView.getUint32(ilocOffset)
+                      break
+                    case 8:
+                      currentOffset = Number(dataView.getBigUint64(ilocOffset))
+                      break
+                  }
+                  ilocOffset += offsetSize
+
+                  let currentLength = 0
+                  switch (lengthSize) {
+                    case 1:
+                      currentLength = dataView.getUint8(ilocOffset)
+                      break
+                    case 2:
+                      currentLength = dataView.getUint16(ilocOffset)
+                      break
+                    case 4:
+                      currentLength = dataView.getUint32(ilocOffset)
+                      break
+                    case 8:
+                      currentLength = Number(dataView.getBigUint64(ilocOffset))
+                      break
+                  }
+                  ilocOffset += lengthSize
+
+                  exifOffset = currentOffset
+                  exifLength = currentLength
+                }
+              }
+            }
+            metaOffset += innerBoxLength
+          }
+        }
+        offset += boxLength
+      }
+
+      if (exifOffset !== -1 && exifLength !== -1) {
+        const itemData = avif.subarray(exifOffset, exifOffset + exifLength)
+        let tiffHeaderOffset = -1
+        // Search for TIFF header (MM* or II*)
+        for (let i = 0; i < itemData.length - 4; i++) {
+          if (
+            (itemData[i] === 0x4d &&
+              itemData[i + 1] === 0x4d &&
+              itemData[i + 2] === 0x00 &&
+              itemData[i + 3] === 0x2a) ||
+            (itemData[i] === 0x49 &&
+              itemData[i + 1] === 0x49 &&
+              itemData[i + 2] === 0x2a &&
+              itemData[i + 3] === 0x00)
+          ) {
+            tiffHeaderOffset = i
+            break
+          }
+        }
+
+        if (tiffHeaderOffset !== -1) {
+          const exifData = itemData.subarray(tiffHeaderOffset)
+          const data: Record<string, any> = parseExifData(exifData)
+          for (const key in data) {
+            const value = data[key]
+            if (typeof value === 'string') {
+              const index = value.indexOf(':')
+              if (index !== -1) {
+                txt_chunks[value.slice(0, index)] = value.slice(index + 1)
+              } else {
+                txt_chunks[key] = value
+              }
+            }
+          }
+        } else {
+          console.log('Warning: TIFF header not found in EXIF data.')
+        }
+      }
+      r(txt_chunks)
+    }
+    reader.readAsArrayBuffer(file)
+  })
+}
+
 // @ts-expect-error fixme ts strict error
 function parseExifData(exifData) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
