@@ -46,7 +46,7 @@ export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
 
     return {
       node: inputNodeDto,
-      origin_id: inputNode.id,
+      origin_id: String(inputNode.id),
       origin_slot: link.origin_slot
     }
   }
