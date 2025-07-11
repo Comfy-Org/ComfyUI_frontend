@@ -858,6 +858,27 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
+        await api.freeMemory({ freeExecutionCache: false })
+      }
+    },
+    {
+      id: 'Comfy.Memory.UnloadModelsAndExecutionCache',
+      icon: 'mdi mdi-vacuum-outline',
+      label: 'Unload Models and Execution Cache',
+      versionAdded: '1.16.4',
+      function: async () => {
+        if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('g.commandProhibited', {
+              command: 'Comfy.Memory.UnloadModelsAndExecutionCache'
+            }),
+            life: 3000
+          })
+          return
+        }
+        await api.freeMemory({ freeExecutionCache: true })
       }
     }
   ]
