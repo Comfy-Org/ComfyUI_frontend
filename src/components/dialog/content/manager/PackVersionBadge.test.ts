@@ -6,7 +6,6 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
 
 import PackVersionBadge from './PackVersionBadge.vue'
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
@@ -120,7 +119,7 @@ describe('PackVersionBadge', () => {
 
     const badge = wrapper.find('[role="button"]')
     expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
+    expect(badge.find('span').text()).toBe('nightly')
   })
 
   it('falls back to NIGHTLY when nodePack.id is missing', () => {
@@ -134,7 +133,7 @@ describe('PackVersionBadge', () => {
 
     const badge = wrapper.find('[role="button"]')
     expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
+    expect(badge.find('span').text()).toBe('nightly')
   })
 
   it('toggles the popover when button is clicked', async () => {
