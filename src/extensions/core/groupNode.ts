@@ -1,5 +1,11 @@
-import { LiteGraph } from '@comfyorg/litegraph'
-import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
+import {
+  type ExecutableLGraphNode,
+  type ExecutionId,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@comfyorg/litegraph'
+import { type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 
 import { t } from '@/i18n'
 import {
@@ -13,6 +19,8 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyExtension } from '@/types/comfy'
+import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
+import { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
@@ -25,8 +33,6 @@ type GroupNodeWorkflowData = {
   links: ComfyLink[]
   nodes: ComfyNode[]
 }
-
-const GROUP = Symbol()
 
 // v1 Prefix + Separator: workflow/
 // v2 Prefix + Separator: workflow> (ComfyUI_frontend v1.2.63)
@@ -813,6 +819,7 @@ export class GroupNodeHandler {
         innerNodeIndex++
       ) {
         const innerNode = this.innerNodes[innerNodeIndex]
+        innerNode.graph ??= this.node.graph
 
         for (const w of innerNode.widgets ?? []) {
           if (w.type === 'converted-widget') {
@@ -899,7 +906,20 @@ export class GroupNodeHandler {
       return link
     }
 
-    this.node.getInnerNodes = () => {
+    /** @internal Used to flatten the subgraph before execution. Recursive; call with no args. */
+    this.node.getInnerNodes = (
+      computedNodeDtos: Map<ExecutionId, ExecutableLGraphNode>,
+      /** The path of subgraph node IDs. */
+      subgraphNodePath: readonly NodeId[] = [],
+      /** The list of nodes to add to. */
+      nodes: ExecutableLGraphNode[] = [],
+      /** The set of visited nodes. */
+      visited = new Set<LGraphNode>()
+    ): ExecutableLGraphNode[] => {
+      if (visited.has(this.node))
+        throw new Error('RecursionError: while flattening subgraph')
+      visited.add(this.node)
+
       if (!this.innerNodes) {
         // @ts-expect-error fixme ts strict error
         this.node.setInnerNodes(
@@ -910,6 +930,8 @@ export class GroupNodeHandler {
             innerNode.configure(n)
             // @ts-expect-error fixme ts strict error
             innerNode.id = `${this.node.id}:${i}`
+            // @ts-expect-error fixme ts strict error
+            innerNode.graph = this.node.graph
             return innerNode
           })
         )
@@ -917,7 +939,31 @@ export class GroupNodeHandler {
 
       this.updateInnerWidgets()
 
-      return this.innerNodes
+      const subgraphInstanceIdPath = [...subgraphNodePath, this.node.id]
+
+      // Assertion: Deprecated, does not matter.
+      const subgraphNode = (this.node.graph?.getNodeById(
+        subgraphNodePath.at(-1)
+      ) ?? undefined) as SubgraphNode | undefined
+
+      for (const node of this.innerNodes) {
+        node.graph ??= this.node.graph
+
+        // Create minimal DTOs rather than cloning the node
+        const currentId = String(node.id)
+        node.id = currentId.split(':').at(-1)
+        const aVeryRealNode = new ExecutableGroupNodeChildDTO(
+          node,
+          subgraphInstanceIdPath,
+          computedNodeDtos,
+          subgraphNode
+        )
+        node.id = currentId
+        aVeryRealNode.groupNodeHandler = this
+
+        nodes.push(aVeryRealNode)
+      }
+      return nodes
     }
 
     // @ts-expect-error fixme ts strict error
@@ -1503,6 +1549,9 @@ export class GroupNodeHandler {
 
       this.linkOutputs(node, i)
       app.graph.remove(node)
+
+      // Set internal ID to what is expected after workflow is reloaded
+      node.id = `${this.node.id}:${i}`
     }
 
     this.linkInputs()
@@ -1608,8 +1657,14 @@ async function convertSelectedNodesToGroupNode() {
   if (nodes.length === 1) {
     throw new Error('Please select multiple nodes to convert to group node')
   }
-  if (nodes.some((n) => GroupNodeHandler.isGroupNode(n))) {
-    throw new Error('Selected nodes contain a group node')
+
+  for (const node of nodes) {
+    if (node instanceof SubgraphNode) {
+      throw new Error('Selected nodes contain a subgraph node')
+    }
+    if (GroupNodeHandler.isGroupNode(node)) {
+      throw new Error('Selected nodes contain a group node')
+    }
   }
   return await GroupNodeHandler.fromNodes(nodes)
 }
