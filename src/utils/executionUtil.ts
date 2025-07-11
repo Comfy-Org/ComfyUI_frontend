@@ -145,9 +145,9 @@ export const graphToPrompt = async (
       const resolvedInput = node.resolveInput(i)
       if (!resolvedInput) continue
 
-      // Input resolved to a SubgraphNode widget
-      const { value } = resolvedInput
-      if (value) {
+      // Resolved to an actual widget value rather than a node connection
+      if (resolvedInput.widgetInfo) {
+        const { value } = resolvedInput.widgetInfo
         inputs[input.name] = Array.isArray(value) ? { __value__: value } : value
         continue
       }
