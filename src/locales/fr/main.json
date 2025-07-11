@@ -628,12 +628,14 @@
     "title": "Maintenance"
   },
   "manager": {
+    "applyChanges": "Appliquer les modifications",
     "changingVersion": "Changement de version de {from} à {to}",
     "createdBy": "Créé par",
     "dependencies": "Dépendances",
     "discoverCommunityContent": "Découvrez les packs de nœuds, extensions et plus encore créés par la communauté...",
     "downloads": "Téléchargements",
     "errorConnecting": "Erreur de connexion au registre de nœuds Comfy.",
+    "extensionsSuccessfullyInstalled": "Extension(s) installée(s) avec succès et prêtes à l'emploi !",
     "failed": "Échoué ({count})",
     "filter": {
       "disabled": "Désactivé",
@@ -645,6 +647,7 @@
     "installAllMissingNodes": "Installer tous les nœuds manquants",
     "installSelected": "Installer sélectionné",
     "installationQueue": "File d'attente d'installation",
+    "installingDependencies": "Installation des dépendances...",
     "lastUpdated": "Dernière mise à jour",
     "latestVersion": "Dernière",
     "legacyManagerUI": "Utiliser l'interface utilisateur héritée",
@@ -661,6 +664,7 @@
     "packsSelected": "Packs sélectionnés",
     "repository": "Référentiel",
     "restartToApplyChanges": "Pour appliquer les modifications, veuillez redémarrer ComfyUI",
+    "restartingBackend": "Redémarrage du backend pour appliquer les modifications...",
     "searchPlaceholder": "Recherche",
     "selectVersion": "Sélectionner la version",
     "sort": {
@@ -685,8 +689,8 @@
     "uninstallSelected": "Désinstaller sélectionné",
     "uninstalling": "Désinstallation",
     "update": "Mettre à jour",
-    "updateSelected": "Mettre à jour la sélection",
     "updateAll": "Tout mettre à jour",
+    "updateSelected": "Mettre à jour la sélection",
     "updatingAllPacks": "Mise à jour de tous les paquets",
     "version": "Version"
   },
@@ -838,7 +842,6 @@
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
     "Toggle Workflows Sidebar": "Afficher/Masquer la barre latérale des workflows",
-    "Toggle the Custom Nodes Manager": "Basculer le gestionnaire de nœuds personnalisés",
     "Toggle the Custom Nodes Manager Progress Bar": "Basculer la barre de progression du gestionnaire de nœuds personnalisés",
     "Undo": "Annuler",
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",

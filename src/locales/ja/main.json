@@ -628,12 +628,14 @@
     "title": "メンテナンス"
   },
   "manager": {
+    "applyChanges": "変更を適用",
     "changingVersion": "バージョンを {from} から {to} に変更",
     "createdBy": "作成者",
     "dependencies": "依存関係",
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
+    "extensionsSuccessfullyInstalled": "拡張機能のインストールが完了し、使用可能になりました！",
     "failed": "失敗しました ({count})",
     "filter": {
       "disabled": "無効",
@@ -645,6 +647,7 @@
     "installAllMissingNodes": "すべての不足しているノードをインストール",
     "installSelected": "選択したものをインストール",
     "installationQueue": "インストールキュー",
+    "installingDependencies": "依存関係をインストールしています...",
     "lastUpdated": "最終更新日",
     "latestVersion": "最新",
     "legacyManagerUI": "レガシーUIを使用する",
@@ -661,6 +664,7 @@
     "packsSelected": "選択したパック",
     "repository": "リポジトリ",
     "restartToApplyChanges": "変更を適用するには、ComfyUIを再起動してください",
+    "restartingBackend": "変更を適用するためにバックエンドを再起動しています...",
     "searchPlaceholder": "検索",
     "selectVersion": "バージョンを選択",
     "sort": {
@@ -685,8 +689,8 @@
     "uninstallSelected": "選択したものをアンインストール",
     "uninstalling": "アンインストール中",
     "update": "更新",
-    "updateSelected": "選択を更新",
     "updateAll": "すべて更新",
+    "updateSelected": "選択を更新",
     "updatingAllPacks": "すべてのパッケージを更新中",
     "version": "バージョン"
   },
