@@ -821,7 +821,7 @@ function loadBrushFromCache(key: string): Brush | null {
     const brushString = getStorageValue(key)
     if (brushString) {
       const brush = JSON.parse(brushString) as Brush
-      //console.log('Loaded brush from cache:', brush)
+      console.log('Loaded brush from cache:', brush)
       return brush
     } else {
       console.log('No brush found in cache.')
@@ -1095,40 +1095,29 @@ class MaskEditorDialog extends ComfyDialog {
     this.uiManager.setSaveButtonEnabled(false)
     this.keyboardManager.removeListeners()
 
-    const maskUploadStatus = await requestWithRetries(() =>
-      this.uploadMask(refs.maskedImage, formDatas.maskedImage, 'selectedIndex')
-    )
-    const paintUploadStatus = await requestWithRetries(() =>
-      this.uploadImage(refs.paint, formDatas.paint)
-    )
-    const paintedImageUploadStatus = await requestWithRetries(() =>
-      this.uploadImage(refs.paintedImage, formDatas.paintedImage, false)
-    )
+    try {
+      await this.uploadMask(
+        refs.maskedImage,
+        formDatas.maskedImage,
+        'selectedIndex'
+      )
+      await this.uploadImage(refs.paint, formDatas.paint)
+      await this.uploadImage(refs.paintedImage, formDatas.paintedImage, false)
 
-    // IMPORTANT: why are we using `uploadMask` here?
-    // This is because the backend combines the mask with the painted image during the upload process. We do NOT want to combine the mask with the original image here, because the spec for CanvasRenderingContext2D does not allow for setting pixels to transparent while preserving their RGB values.
-    // See: <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/putImageData#data_loss_due_to_browser_optimization>
-    // It is possible that WebGL contexts can achieve this, but WebGL is extremely complex, and the backend functionality is here for this purpose!
-    // Refer to the backend repo's `server.py`, search for `@routes.post("/upload/mask")`
-    const paintedMaskedImageUploadStatus = await requestWithRetries(() =>
-      this.uploadMask(
+      // IMPORTANT: We using `uploadMask` here, because the backend combines the mask with the painted image during the upload process. We do NOT want to combine the mask with the original image on the frontend, because the spec for CanvasRenderingContext2D does not allow for setting pixels to transparent while preserving their RGB values.
+      // See: <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/putImageData#data_loss_due_to_browser_optimization>
+      // It is possible that WebGL contexts can achieve this, but WebGL is extremely complex, and the backend functionality is here for this purpose!
+      // Refer to the backend repo's `server.py`, search for `@routes.post("/upload/mask")`
+      await this.uploadMask(
         refs.paintedMaskedImage,
         formDatas.paintedMaskedImage,
         'combinedIndex'
       )
-    )
 
-    if (
-      _.every([
-        maskUploadStatus.success,
-        paintUploadStatus.success,
-        paintedImageUploadStatus.success,
-        paintedMaskedImageUploadStatus.success
-      ])
-    ) {
       ComfyApp.onClipspaceEditorSave()
       this.destroy()
-    } else {
+    } catch (error) {
+      console.error('Error during upload:', error)
       this.uiManager.setSaveButtonText(t('g.save'))
       this.uiManager.setSaveButtonEnabled(true)
       this.keyboardManager.addListeners()
@@ -1155,31 +1144,21 @@ class MaskEditorDialog extends ComfyDialog {
   private async uploadImage(
     filepath: Ref,
     formData: FormData,
-    andSaveToClipspace = true,
-    retries = 3
+    isPaintLayer = true
   ) {
-    if (retries <= 0) {
-      throw new Error('Max retries reached')
-      return
-    }
-    await api
-      .fetchApi('/upload/image', {
+    const success = requestWithRetries(() =>
+      api.fetchApi('/upload/image', {
         method: 'POST',
         body: formData
       })
-      .then((response) => {
-        if (!response.ok) {
-          console.log('Failed to upload mask:', response)
-          this.uploadImage(filepath, formData, andSaveToClipspace, retries - 1)
-        }
-      })
-      .catch((error) => {
-        console.error('Error:', error)
-      })
+    )
+    if (!success) {
+      throw new Error('Upload failed.')
+    }
 
-    if (!andSaveToClipspace) {
+    if (!isPaintLayer) {
       ClipspaceDialog.invalidatePreview()
-      return
+      return success
     }
     try {
       const paintedIndex = ComfyApp.clipspace?.paintedIndex
@@ -1193,9 +1172,6 @@ class MaskEditorDialog extends ComfyDialog {
             app.getRandParam()
         )
         ComfyApp.clipspace.imgs[paintedIndex] = newImage
-
-        console.log('UPLOADIMAGE: ', ComfyApp.clipspace)
-        console.log('UPLOADIMAGE: ', ComfyApp.clipspace.imgs[paintedIndex])
 
         // Update images array if it exists
         if (ComfyApp.clipspace.images) {
@@ -1211,27 +1187,17 @@ class MaskEditorDialog extends ComfyDialog {
   private async uploadMask(
     filepath: Ref,
     formData: FormData,
-    clipspaceLocation: 'selectedIndex' | 'combinedIndex',
-    retries = 3
+    clipspaceLocation: 'selectedIndex' | 'combinedIndex'
   ) {
-    if (retries <= 0) {
-      throw new Error('Max retries reached')
-      return
-    }
-    await api
-      .fetchApi('/upload/mask', {
+    const success = await requestWithRetries(() =>
+      api.fetchApi('/upload/mask', {
         method: 'POST',
         body: formData
       })
-      .then((response) => {
-        if (!response.ok) {
-          console.log('Failed to upload mask:', response)
-          this.uploadMask(filepath, formData, clipspaceLocation, -1)
-        }
-      })
-      .catch((error) => {
-        console.error('Error:', error)
-      })
+    )
+    if (!success) {
+      throw new Error('Upload failed.')
+    }
 
     try {
       const nameOfIndexToSaveTo = (
@@ -2242,12 +2208,7 @@ class BrushTool {
       compositionOp = CompositionOperation.SourceOver //pen
     }
 
-    // Only check for line drawing if using the Pen tool
-    if (
-      currentTool === Tools.MaskPen &&
-      event.shiftKey &&
-      this.lineStartPoint
-    ) {
+    if (event.shiftKey && this.lineStartPoint) {
       this.isDrawingLine = true
       this.drawLine(this.lineStartPoint, coords_canvas, compositionOp)
     } else {
@@ -2613,19 +2574,6 @@ class BrushTool {
       maskCtx.globalCompositeOperation = CompositionOperation.DestinationOut
       rgbCtx.globalCompositeOperation = CompositionOperation.DestinationOut
     }
-
-    /*
-      if (currentTool === Tools.Eraser) {
-        maskCtx.globalCompositeOperation = CompositionOperation.DestinationOut
-        rgbCtx.globalCompositeOperation = CompositionOperation.DestinationOut
-      } else if (currentTool === Tools.Pen) {
-        maskCtx.globalCompositeOperation = CompositionOperation.DestinationOut
-      } else if (currentTool === Tools.RGBPaint) {
-        rgbCtx.globalCompositeOperation = CompositionOperation.DestinationOut
-      }
-    }
-
-      */
   }
 
   private generateEquidistantPoints(
@@ -2732,11 +2680,7 @@ class UIManager {
   private image!: HTMLImageElement
   private paint_image!: HTMLImageElement
   private imageURL!: URL
-  // @ts-expect-error unused variable
-  private paint_URL!: URL
   private darkMode: boolean = true
-  // @ts-expect-error unused variable
-  private colorPicker!: HTMLInputElement
 
   private createColorPicker(): HTMLInputElement {
     const colorPicker = document.createElement('input')
@@ -3327,12 +3271,6 @@ class UIManager {
       this.setActiveLayer('rgb')
     })
     this.setActiveLayer('mask')
-
-    //layer_selection_container.appendChild(mask_layer_button);
-    //layer_selection_container.appendChild(rgb_layer_button);
-
-    // image_layer_settings_container.appendChild(image_layer_settings_title);
-    // image_layer_settings_container.appendChild(layer_selection_container);
 
     const mask_layer_title = this.createContainerTitle('Mask Layer')
     const mask_layer_container = this.createContainer(false)
@@ -3974,7 +3912,7 @@ class UIManager {
       ComfyApp.clipspace.imgs[ComfyApp.clipspace.selectedIndex].src
     )
     this.imageURL = rgb_url
-    // console.log(rgb_url)
+    console.log(rgb_url)
     rgb_url.searchParams.delete('channel')
     rgb_url.searchParams.set('channel', 'rgb')
     this.image = new Image()
@@ -3989,7 +3927,6 @@ class UIManager {
     const paintedIndex = ComfyApp.clipspace.paintedIndex
     if (ComfyApp.clipspace.imgs[paintedIndex]) {
       const paintURL = new URL(ComfyApp.clipspace.imgs[paintedIndex].src)
-      this.paint_URL = paintURL
       this.paint_image = new Image()
       this.paint_image = await new Promise<HTMLImageElement>(
         (resolve, reject) => {
@@ -4002,7 +3939,6 @@ class UIManager {
     } else if (ComfyApp.clipspace.images) {
       if (ComfyApp.clipspace.images[paintedIndex]) {
         const paintURL = new URL(ComfyApp.clipspace.images[paintedIndex].src)
-        this.paint_URL = paintURL
         this.paint_image = new Image()
         this.paint_image = await new Promise<HTMLImageElement>(
           (resolve, reject) => {
@@ -4031,7 +3967,6 @@ class UIManager {
     orig_image: HTMLImageElement,
     mask_image: HTMLImageElement,
     paint_image: HTMLImageElement
-    //painted_image: HTMLImageElement
   ) {
     this.imgCanvas.width = orig_image.width
     this.imgCanvas.height = orig_image.height
@@ -4052,7 +3987,6 @@ class UIManager {
 
     imgCtx!.drawImage(orig_image, 0, 0, orig_image.width, orig_image.height)
     if (paint_image) {
-      // rgbCtx.globalCompositeOperation = 'source-over'
       rgbCtx!.drawImage(
         paint_image,
         0,
@@ -4389,7 +4323,6 @@ class ToolManager {
     // RGB painting
     if (this.currentTool === Tools.PaintPen && event.buttons === 1) {
       this.messageBroker.publish('draw', event)
-      // this.messageBroker.publish('saveState')
       return
     }
 
@@ -5365,18 +5298,20 @@ const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
   messageBroker.publish('updateBrushPreview')
 }
 
-// NOTE: This originally was re-implemented at each individual call site, which is obviously a poorly-maintainable approach. I moved it to be implemented here once, but this should likely be either be implemented as a project-wide utility, or better yet, we should use a networking library that already has retry logic built-in, such as TanStack Query or axios-retry.
-// - @duckcomfy
 const requestWithRetries = async (
-  mkRequest: () => Promise<void>
+  mkRequest: () => Promise<Response>,
+  maxRetries: number = 3
 ): Promise<{ success: boolean }> => {
-  const maxRetries = 3
   let attempt = 0
   let success = false
   while (attempt < maxRetries && !success) {
     try {
-      await mkRequest()
-      success = true
+      const response = await mkRequest()
+      if (response.ok) {
+        success = true
+      } else {
+        console.log('Failed to upload mask:', response)
+      }
     } catch (error) {
       console.error(`Upload attempt ${attempt + 1} failed:`, error)
       attempt++
@@ -5398,12 +5333,11 @@ const removeImageRgbValuesAndInvertAlpha = (imageData: Uint8ClampedArray) =>
 type Ref = { filename: string; subfolder?: string; type?: string }
 
 /**
- * Note: the images' positions are important here. As far as I understand what the positions mean is hardcoded in `src/scripts/app.ts` in the `copyToClipspace` method.
+ * Note: the images' positions are important here. What the positions mean is hardcoded in `src/scripts/app.ts` in the `copyToClipspace` method.
  * - `newMainOutput` should be the fully composited image: base image + mask (in the alpha channel) + paint.
  * - The first array element of `extraImagesShownButNotOutputted` should be JUST the paint layer, with a transparent background.
- * - There is code for a second array element, but it is still unclear to me if it is used anywhere useful.
+ * - It is possible to add more images in the clipspace array, but is not useful currently.
  * With this configuration, the MaskEditor will properly load the paint layer separately from the base image, ensuring it is editable.
- * - @duckcomfy
  * */
 const replaceClipspaceImages = (
   newMainOutput: Ref,

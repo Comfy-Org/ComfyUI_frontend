@@ -351,15 +351,8 @@ export class ComfyApp {
       selectedIndex = node.imageIndex
     }
 
-    var paintedIndex = 1
-    if (selectedIndex != 0) {
-      paintedIndex = selectedIndex + 1
-    }
-
-    var combinedIndex = 2
-    if (selectedIndex != 0) {
-      combinedIndex = selectedIndex + 2
-    }
+    const paintedIndex = selectedIndex + 1
+    const combinedIndex = selectedIndex + 2
 
     ComfyApp.clipspace = {
       widgets: widgets,
