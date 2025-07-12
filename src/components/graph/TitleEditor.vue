@@ -41,7 +41,15 @@ const previousCanvasDraggable = ref(true)
 
 const onEdit = (newValue: string) => {
   if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
-    titleEditorStore.titleEditorTarget.title = newValue.trim()
+    const trimmedTitle = newValue.trim()
+    titleEditorStore.titleEditorTarget.title = trimmedTitle
+
+    // If this is a subgraph node, sync the runtime subgraph name for breadcrumb reactivity
+    const target = titleEditorStore.titleEditorTarget
+    if (target instanceof LGraphNode && target.isSubgraphNode?.()) {
+      target.subgraph.name = trimmedTitle
+    }
+
     app.graph.setDirtyCanvas(true, true)
   }
   showInput.value = false
