@@ -56,8 +56,8 @@ var styles = `
     height: 100%;
     display: flex;
     align-items: center;
-    overflow-y: hidden;
-    width: 220px;
+    overflow-y: auto;
+    width: 250px;
   }
   #maskEditor_sidePanelShortcuts {
     display: flex;
@@ -2682,7 +2682,7 @@ class UIManager {
   private imageURL!: URL
   private darkMode: boolean = true
   private maskLayerContainer: HTMLElement | null = null
-  private paintLayerContainer: HTMLElement| null = null
+  private paintLayerContainer: HTMLElement | null = null
 
   private createColorPicker(): HTMLInputElement {
     const colorPicker = document.createElement('input')
@@ -3236,23 +3236,23 @@ class UIManager {
     })()
   }
   updateButtonsVisibility() {
-      allImageLayers.forEach((layer) => {
-        const button = this.layerButtons[layer]
-        if (layer === this.activeLayer) {
-          button.style.opacity = '0.5'
-          button.disabled = true
-        } else {
-          button.style.opacity = '1'
-          button.disabled = false
-        }
-      })
-    }
+    allImageLayers.forEach((layer) => {
+      const button = this.layerButtons[layer]
+      if (layer === this.activeLayer) {
+        button.style.opacity = '0.5'
+        button.disabled = true
+      } else {
+        button.style.opacity = '1'
+        button.disabled = false
+      }
+    })
+  }
 
   // New method to update button visibility based on current tool
   async updateLayerButtonsForTool() {
     const currentTool = await this.messageBroker.pull('currentTool')
     const isEraserTool = currentTool === Tools.Eraser
-    
+
     // Show/hide buttons based on whether eraser tool is active
     Object.values(this.layerButtons).forEach((button) => {
       if (isEraserTool) {
@@ -3286,7 +3286,7 @@ class UIManager {
     if (this.paintLayerContainer) {
       this.paintLayerContainer.style.border = 'none'
     }
-    
+
     // Add blue border to active layer container
     if (this.activeLayer === 'mask' && this.maskLayerContainer) {
       this.maskLayerContainer.style.border = '2px solid #007acc'
@@ -3320,11 +3320,11 @@ class UIManager {
     this.layerButtons.rgb.addEventListener('click', async () => {
       this.setActiveLayer('rgb')
     })
-    
+
     // Initially hide the buttons (they'll be shown when eraser tool is selected)
     this.layerButtons.mask.style.display = 'none'
     this.layerButtons.rgb.style.display = 'none'
-    
+
     this.setActiveLayer('mask')
 
     // 1. MASK LAYER CONTAINER
@@ -3363,7 +3363,9 @@ class UIManager {
     this.maskLayerContainer = mask_layer_container
 
     // 2. MASK BLENDING OPTIONS CONTAINER
-    const mask_blending_options_title = this.createContainerTitle('Mask Blending Options')
+    const mask_blending_options_title = this.createContainerTitle(
+      'Mask Blending Options'
+    )
     const mask_blending_options_container = this.createContainer(false)
     // mask_blending_options_container.classList.add(accentColor)
     mask_blending_options_container.classList.add('maskEditor_layerRow')
@@ -3424,12 +3426,10 @@ class UIManager {
     const paint_layer_container = this.createContainer(false)
     paint_layer_container.classList.add(accentColor)
     paint_layer_container.classList.add('maskEditor_layerRow')
-    
+
     const paint_layer_checkbox = document.createElement('input')
     paint_layer_checkbox.setAttribute('type', 'checkbox')
-    paint_layer_checkbox.classList.add(
-      'maskEditor_sidePanelLayerCheckbox'
-    )
+    paint_layer_checkbox.classList.add('maskEditor_sidePanelLayerCheckbox')
     paint_layer_checkbox.checked = true
     paint_layer_checkbox.addEventListener('change', (event) => {
       if (!(event.target as HTMLInputElement)!.checked) {
@@ -3449,7 +3449,7 @@ class UIManager {
         <path class="cls-1" d="M 9.82 14.515 c 0 2.23 -3.23 1.59 -4.82 0 c 1.65 -0.235 2.375 -1.29 3.53 -1.29 c 0.715 0 1.29 0.58 1.29 1.29 Z"/>
       </svg>
     `
-    
+
     paint_layer_container.appendChild(paint_layer_checkbox)
     paint_layer_container.appendChild(paint_layer_image_container)
     paint_layer_container.appendChild(this.layerButtons.rgb)
@@ -3496,7 +3496,9 @@ class UIManager {
 
     // APPEND ALL CONTAINERS IN ORDER
     image_layer_settings_container.appendChild(image_layer_settings_title)
-    image_layer_settings_container.appendChild(mask_layer_opacity_sliderObj.container)
+    image_layer_settings_container.appendChild(
+      mask_layer_opacity_sliderObj.container
+    )
     image_layer_settings_container.appendChild(mask_blending_options_title)
     image_layer_settings_container.appendChild(mask_blending_options_container)
     image_layer_settings_container.appendChild(mask_layer_title)
