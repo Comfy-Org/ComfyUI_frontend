@@ -12,6 +12,7 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
   private getControls: () => OrbitControls
   private nodeStorage: NodeStorageInterface
 
+  // @ts-expect-error unused variable
   private renderer: THREE.WebGLRenderer
 
   constructor(
