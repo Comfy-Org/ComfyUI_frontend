@@ -12,19 +12,19 @@ import type { NodeId } from '@/schemas/comfyWorkflowSchema'
  * - "a1b2c3d4-e5f6-7890-abcd-ef1234567890:123" (node in subgraph)
  * - "456" (node in root graph)
  *
- * Unlike hierarchical IDs which change based on the instance path,
+ * Unlike execution IDs which change based on the instance path,
  * NodeLocatorId remains the same for all instances of a particular node.
  */
 export type NodeLocatorId = string
 
 /**
- * A hierarchical identifier representing a node's position in nested subgraphs.
+ * An execution identifier representing a node's position in nested subgraphs.
  * Also known as ExecutionId in some contexts.
  *
  * Format: Colon-separated path of node IDs
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
  */
-export type HierarchicalNodeId = string
+export type NodeExecutionId = string
 
 /**
  * Type guard to check if a value is a NodeLocatorId
@@ -52,13 +52,11 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
 }
 
 /**
- * Type guard to check if a value is a HierarchicalNodeId
+ * Type guard to check if a value is a NodeExecutionId
  */
-export function isHierarchicalNodeId(
-  value: unknown
-): value is HierarchicalNodeId {
+export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
   if (typeof value !== 'string') return false
-  // Must contain at least one colon to be hierarchical
+  // Must contain at least one colon to be an execution ID
   return value.includes(':')
 }
 
@@ -103,12 +101,12 @@ export function createNodeLocatorId(
 }
 
 /**
- * Parse a HierarchicalNodeId into its component node IDs
- * @param id The HierarchicalNodeId to parse
- * @returns Array of node IDs from root to target, or null if not hierarchical
+ * Parse a NodeExecutionId into its component node IDs
+ * @param id The NodeExecutionId to parse
+ * @returns Array of node IDs from root to target, or null if not an execution ID
  */
-export function parseHierarchicalNodeId(id: string): NodeId[] | null {
-  if (!isHierarchicalNodeId(id)) return null
+export function parseNodeExecutionId(id: string): NodeId[] | null {
+  if (!isNodeExecutionId(id)) return null
 
   return id
     .split(':')
@@ -116,12 +114,10 @@ export function parseHierarchicalNodeId(id: string): NodeId[] | null {
 }
 
 /**
- * Create a HierarchicalNodeId from an array of node IDs
+ * Create a NodeExecutionId from an array of node IDs
  * @param nodeIds Array of node IDs from root to target
- * @returns A properly formatted HierarchicalNodeId
+ * @returns A properly formatted NodeExecutionId
  */
-export function createHierarchicalNodeId(
-  nodeIds: NodeId[]
-): HierarchicalNodeId {
-  return nodeIds.join(':') as HierarchicalNodeId
+export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
+  return nodeIds.join(':') as NodeExecutionId
 }

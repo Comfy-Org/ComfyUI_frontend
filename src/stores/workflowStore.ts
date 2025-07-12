@@ -9,14 +9,11 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
-import type {
-  HierarchicalNodeId,
-  NodeLocatorId
-} from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
-  createHierarchicalNodeId,
+  createNodeExecutionId,
   createNodeLocatorId,
-  parseHierarchicalNodeId,
+  parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
 import { getPathDetails } from '@/utils/formatUtil'
@@ -175,14 +172,14 @@ export interface WorkflowStore {
   updateActiveGraph: () => void
   executionIdToCurrentId: (id: string) => any
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
-  hierarchicalIdToNodeLocatorId: (
-    hierarchicalId: HierarchicalNodeId | string
+  nodeExecutionIdToNodeLocatorId: (
+    nodeExecutionId: NodeExecutionId | string
   ) => NodeLocatorId | null
   nodeLocatorIdToNodeId: (locatorId: NodeLocatorId | string) => NodeId | null
-  nodeLocatorIdToHierarchicalId: (
+  nodeLocatorIdToNodeExecutionId: (
     locatorId: NodeLocatorId | string,
     targetSubgraph?: Subgraph
-  ) => HierarchicalNodeId | null
+  ) => NodeExecutionId | null
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -493,7 +490,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return
     }
 
-    // Parse the hierarchical ID (e.g., "123:456:789")
+    // Parse the execution ID (e.g., "123:456:789")
     const subgraphNodeIds = id.split(':')
 
     // Start from the root graph
@@ -528,19 +525,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Convert a hierarchical ID to a NodeLocatorId
-   * @param hierarchicalId The hierarchical node ID (e.g., "123:456:789")
+   * Convert an execution ID to a NodeLocatorId
+   * @param nodeExecutionId The execution node ID (e.g., "123:456:789")
    * @returns The NodeLocatorId or null if conversion fails
    */
-  const hierarchicalIdToNodeLocatorId = (
-    hierarchicalId: HierarchicalNodeId | string
+  const nodeExecutionIdToNodeLocatorId = (
+    nodeExecutionId: NodeExecutionId | string
   ): NodeLocatorId | null => {
     // Handle simple node IDs (root graph - no colons)
-    if (!hierarchicalId.includes(':')) {
-      return hierarchicalId as NodeLocatorId
+    if (!nodeExecutionId.includes(':')) {
+      return nodeExecutionId as NodeLocatorId
     }
 
-    const parts = parseHierarchicalNodeId(hierarchicalId)
+    const parts = parseNodeExecutionId(nodeExecutionId)
     if (!parts || parts.length === 0) return null
 
     const nodeId = parts[parts.length - 1]
@@ -576,15 +573,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Convert a NodeLocatorId to a hierarchical ID for a specific context
+   * Convert a NodeLocatorId to an execution ID for a specific context
    * @param locatorId The NodeLocatorId
    * @param targetSubgraph The subgraph context (defaults to active subgraph)
-   * @returns The hierarchical ID or null if the node is not accessible from the target context
+   * @returns The execution ID or null if the node is not accessible from the target context
    */
-  const nodeLocatorIdToHierarchicalId = (
+  const nodeLocatorIdToNodeExecutionId = (
     locatorId: NodeLocatorId | string,
     targetSubgraph?: Subgraph
-  ): HierarchicalNodeId | null => {
+  ): NodeExecutionId | null => {
     const parsed = parseNodeLocatorId(locatorId)
     if (!parsed) return null
 
@@ -592,7 +589,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     // If no subgraph UUID, this is a root graph node
     if (!subgraphUuid) {
-      return String(localNodeId) as HierarchicalNodeId
+      return String(localNodeId) as NodeExecutionId
     }
 
     // Find the path from root to the subgraph with this UUID
@@ -635,7 +632,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return null
     }
 
-    return createHierarchicalNodeId([...path, localNodeId])
+    return createNodeExecutionId([...path, localNodeId])
   }
 
   return {
@@ -666,9 +663,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     updateActiveGraph,
     executionIdToCurrentId,
     nodeIdToNodeLocatorId,
-    hierarchicalIdToNodeLocatorId,
+    nodeExecutionIdToNodeLocatorId,
     nodeLocatorIdToNodeId,
-    nodeLocatorIdToHierarchicalId
+    nodeLocatorIdToNodeExecutionId
   }
 }) satisfies () => WorkflowStore
 

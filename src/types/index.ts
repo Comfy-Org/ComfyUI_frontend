@@ -33,13 +33,13 @@ export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 export type { InputSpec } from '@/schemas/nodeDefSchema'
 export type {
   NodeLocatorId,
-  HierarchicalNodeId,
+  NodeExecutionId,
   isNodeLocatorId,
-  isHierarchicalNodeId,
+  isNodeExecutionId,
   parseNodeLocatorId,
   createNodeLocatorId,
-  parseHierarchicalNodeId,
-  createHierarchicalNodeId
+  parseNodeExecutionId,
+  createNodeExecutionId
 } from './nodeIdentification'
 export type {
   EmbeddingsResponse,
