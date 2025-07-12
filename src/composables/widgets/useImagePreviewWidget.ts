@@ -35,7 +35,9 @@ const renderPreview = (
     node.pointerDown = null
   }
 
-  const imgs = node.imgs ?? []
+  const imgs = (node.imgs ?? []).filter(
+    (img) => img.getAttribute('data-nopreview') !== 'true'
+  )
   let { imageIndex } = node
   const numImages = imgs.length
   if (numImages === 1 && !imageIndex) {

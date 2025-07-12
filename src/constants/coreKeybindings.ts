@@ -181,5 +181,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       shift: true
     },
     commandId: 'Comfy.Graph.ConvertToSubgraph'
-  }
+  },
+  { combo: { key: ']' }, commandId: 'Comfy.MaskEditor.BrushSize.Increase' },
+  { combo: { key: '[' }, commandId: 'Comfy.MaskEditor.BrushSize.Decrease' }
 ]
