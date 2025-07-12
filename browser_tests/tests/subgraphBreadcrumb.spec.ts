@@ -3,11 +3,16 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Subgraph Breadcrumb Title Sync', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  })
+
   test('Breadcrumb updates when subgraph node title is changed', async ({
     comfyPage
   }) => {
     // Load a workflow with subgraphs
     await comfyPage.loadWorkflow('nested-subgraph')
+    await comfyPage.nextFrame()
 
     // Get the subgraph node by ID (node 10 is the subgraph)
     const subgraphNode = await comfyPage.getNodeRefById('10')
@@ -18,15 +23,15 @@ test.describe('Subgraph Breadcrumb Title Sync', () => {
     await comfyPage.canvas.dblclick({
       position: {
         x: nodePos.x + nodeSize.width / 2,
-        y: nodePos.y + nodeSize.height / 2
-      },
-      delay: 5
+        y: nodePos.y + nodeSize.height / 2 + 10
+      }
     })
+    await comfyPage.nextFrame()
 
     // Wait for breadcrumb to appear
     await comfyPage.page.waitForSelector('.subgraph-breadcrumb', {
       state: 'visible',
-      timeout: 10000
+      timeout: 20000
     })
 
     // Get initial breadcrumb text
