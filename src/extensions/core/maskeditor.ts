@@ -840,11 +840,11 @@ class MaskEditorDialog extends ComfyDialog {
 
   //new
   private uiManager!: UIManager
-
+  // @ts-expect-error unused variable
   private toolManager!: ToolManager
-
+  // @ts-expect-error unused variable
   private panAndZoomManager!: PanAndZoomManager
-
+  // @ts-expect-error unused variable
   private brushTool!: BrushTool
   private paintBucketTool!: PaintBucketTool
   private colorSelectTool!: ColorSelectTool
@@ -1265,6 +1265,7 @@ class MaskEditorDialog extends ComfyDialog {
 }
 
 class CanvasHistory {
+  // @ts-expect-error unused variable
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
 
@@ -1638,6 +1639,7 @@ class PaintBucketTool {
 }
 
 class ColorSelectTool {
+  // @ts-expect-error unused variable
   private maskEditor!: MaskEditorDialog
   private messageBroker!: MessageBroker
   private width: number | null = null
@@ -2594,7 +2596,6 @@ class BrushTool {
   }
 
   private async init_shape(compositionOperation: CompositionOperation) {
-    const currentTool = await this.messageBroker.pull('currentTool')
     const maskBlendMode = await this.messageBroker.pull('maskBlendMode')
     const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
     const rgbCtx = this.rgbCtx || (await this.messageBroker.pull('rgbCtx'))
@@ -2714,16 +2715,16 @@ class UIManager {
   private brushSettingsHTML!: HTMLDivElement
   private paintBucketSettingsHTML!: HTMLDivElement
   private colorSelectSettingsHTML!: HTMLDivElement
-
+  // @ts-expect-error unused variable
   private maskOpacitySlider!: HTMLInputElement
   private brushHardnessSlider!: HTMLInputElement
   private brushSizeSlider!: HTMLInputElement
-
+  // @ts-expect-error unused variable
   private brushOpacitySlider!: HTMLInputElement
   private sidebarImage!: HTMLImageElement
   private saveButton!: HTMLButtonElement
   private toolPanel!: HTMLDivElement
-
+  // @ts-expect-error unused variable
   private sidePanel!: HTMLDivElement
   private pointerZone!: HTMLDivElement
   private canvasBackground!: HTMLDivElement
@@ -2731,8 +2732,10 @@ class UIManager {
   private image!: HTMLImageElement
   private paint_image!: HTMLImageElement
   private imageURL!: URL
+  // @ts-expect-error unused variable
   private paint_URL!: URL
   private darkMode: boolean = true
+  // @ts-expect-error unused variable
   private colorPicker!: HTMLInputElement
 
   private createColorPicker(): HTMLInputElement {
@@ -3944,7 +3947,6 @@ class UIManager {
     const maskCtx = this.maskCtx
     const maskCanvas = this.maskCanvas
 
-    const rgbCtx = this.rgbCtx
     const rgbCanvas = this.rgbCanvas
 
     imgCtx!.clearRect(0, 0, this.imgCanvas.width, this.imgCanvas.height)
@@ -4364,14 +4366,6 @@ class ToolManager {
     return this.currentTool
   }
 
-  private activeLayer: 'mask' | 'rgb' = 'mask'
-
-  private async handleLayerSelection(layer: 'mask' | 'rgb') {
-    this.activeLayer = layer
-    this.messageBroker.publish('setActiveLayer', layer)
-    this.messageBroker.publish('updateCursor')
-  }
-
   private async handlePointerDown(event: PointerEvent) {
     event.preventDefault()
     if (event.pointerType == 'touch') return
@@ -4387,11 +4381,6 @@ class ToolManager {
 
     // RGB painting
     if (this.currentTool === Tools.PaintPen && event.button === 0) {
-      const offset = { x: event.offsetX, y: event.offsetY }
-      const coords_canvas = await this.messageBroker.pull(
-        'screenToCanvas',
-        offset
-      )
       this.messageBroker.publish('drawStart', event)
       this.messageBroker.publish('saveState')
       return
@@ -4769,7 +4758,6 @@ class PanAndZoomManager {
     const newZoom = this.zoom_ratio
 
     const maskCanvas = await this.messageBroker.pull('maskCanvas')
-    const rgbCanvas = await this.messageBroker.pull('rgbCanvas')
 
     // Get mouse position relative to the container
     const rect = maskCanvas.getBoundingClientRect()
@@ -5180,6 +5168,7 @@ class MessageBroker {
 class KeyboardManager {
   private keysDown: string[] = []
 
+  // @ts-expect-error unused variable
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
