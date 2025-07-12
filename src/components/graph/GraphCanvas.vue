@@ -64,6 +64,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
+import { useContextMenuOverride } from '@/composables/useContextMenuOverride';
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
@@ -89,7 +90,9 @@ import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+  
 
+useContextMenuOverride()
 const emit = defineEmits<{
   ready: []
 }>()
@@ -354,7 +357,10 @@ onMounted(async () => {
     },
     { immediate: true }
   )
+  
 
   emit('ready')
+
 })
+
 </script>
