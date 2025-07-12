@@ -387,9 +387,8 @@ export class ComfyApp {
             node.images = ComfyApp.clipspace.images
           }
 
-          if (app.nodeOutputs[node.id + '']) {
+          if (app.nodeOutputs[node.id + ''])
             app.nodeOutputs[node.id + ''].images = node.images
-          }
         }
 
         if (ComfyApp.clipspace.imgs) {
