@@ -269,10 +269,10 @@ export async function importA1111(graph, parameters) {
         return text.replaceAll(
           new RegExp(
             '\\b(' +
-            embeddings
-              .map((e) => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-              .join('\\b|\\b') +
-            ')\\b',
+              embeddings
+                .map((e) => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                .join('\\b|\\b') +
+              ')\\b',
             'ig'
           ),
           'embedding:$1'
@@ -322,7 +322,7 @@ export async function importA1111(graph, parameters) {
         model(v) {
           setWidgetValue(ckptNode, 'ckpt_name', v, true)
         },
-        vae() { },
+        vae() {},
         // @ts-expect-error fixme ts strict error
         'cfg scale'(v) {
           setWidgetValue(samplerNode, 'cfg', +v)
