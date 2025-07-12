@@ -1,6 +1,7 @@
 import { LiteGraph } from '@comfyorg/litegraph'
 
 import { api } from './api'
+import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
 
@@ -13,8 +14,12 @@ export function getFlacMetadata(file: File): Promise<Record<string, string>> {
   return getFromFlacFile(file)
 }
 
+export function getAvifMetadata(file: File): Promise<Record<string, string>> {
+  return getFromAvifFile(file)
+}
+
 // @ts-expect-error fixme ts strict error
-function parseExifData(exifData) {
+export function parseExifData(exifData) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
   const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
 
