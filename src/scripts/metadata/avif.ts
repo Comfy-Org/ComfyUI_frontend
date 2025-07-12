@@ -1,4 +1,279 @@
-import { ComfyMetadata, ComfyMetadataTags } from '@/types/metadataTypes'
+import {
+  ComfyMetadata,
+  ComfyMetadataTags,
+  type AvifIinfBox,
+  type AvifIlocBox,
+  type AvifInfeBox,
+  type IsobmffBoxContentRange
+} from '@/types/metadataTypes'
+
+const readNullTerminatedString = (
+  dataView: DataView,
+  start: number,
+  end: number
+): { str: string; length: number } => {
+  let length = 0
+  while (start + length < end && dataView.getUint8(start + length) !== 0) {
+    length++
+  }
+  const str = new TextDecoder('utf-8').decode(
+    new Uint8Array(dataView.buffer, dataView.byteOffset + start, length)
+  )
+  return { str, length: length + 1 } // Include null terminator
+}
+
+const parseInfeBox = (dataView: DataView, start: number): AvifInfeBox => {
+  const version = dataView.getUint8(start)
+  const flags = dataView.getUint32(start) & 0xffffff
+  let offset = start + 4
+
+  let item_ID: number, item_protection_index: number, item_type: string
+
+  if (version >= 2) {
+    if (version === 2) {
+      item_ID = dataView.getUint16(offset)
+      offset += 2
+    } else {
+      item_ID = dataView.getUint32(offset)
+      offset += 4
+    }
+
+    item_protection_index = dataView.getUint16(offset)
+    offset += 2
+    item_type = String.fromCharCode(...new Uint8Array(dataView.buffer, dataView.byteOffset + offset, 4))
+    offset += 4
+
+    const { str: item_name, length: name_len } = readNullTerminatedString(
+      dataView,
+      offset,
+      dataView.byteLength
+    )
+    offset += name_len
+
+    const content_type = readNullTerminatedString(dataView, offset, dataView.byteLength).str
+
+    return {
+      box_header: { size: 0, type: 'infe' }, // Size is dynamic
+      version,
+      flags,
+      item_ID,
+      item_protection_index,
+      item_type,
+      item_name,
+      content_type
+    }
+  }
+  throw new Error(`Unsupported infe box version: ${version}`)
+}
+
+const parseIinfBox = (dataView: DataView, range: IsobmffBoxContentRange): AvifIinfBox => {
+  if (!range) throw new Error('iinf box not found')
+
+  const version = dataView.getUint8(range.start)
+  const flags = dataView.getUint32(range.start) & 0xffffff
+  let offset = range.start + 4
+
+  const entry_count = version === 0 ? dataView.getUint16(offset) : dataView.getUint32(offset)
+  offset += version === 0 ? 2 : 4
+
+  const entries: AvifInfeBox[] = []
+  for (let i = 0; i < entry_count; i++) {
+    const boxSize = dataView.getUint32(offset)
+    const boxType = String.fromCharCode(...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4))
+
+    if (boxType === 'infe') {
+      const infe = parseInfeBox(dataView, offset + 8)
+      infe.box_header.size = boxSize
+      entries.push(infe)
+    }
+    offset += boxSize
+  }
+
+  return {
+    box_header: { size: range.end - range.start + 8, type: 'iinf' },
+    version,
+    flags,
+    entry_count,
+    entries
+  }
+}
+
+const parseIlocBox = (dataView: DataView, range: IsobmffBoxContentRange): AvifIlocBox => {
+  if (!range) throw new Error('iloc box not found')
+
+  const version = dataView.getUint8(range.start)
+  const flags = dataView.getUint32(range.start) & 0xffffff
+  let offset = range.start + 4
+
+  const sizes = dataView.getUint8(offset++)
+  const offset_size = (sizes >> 4) & 0x0f
+  const length_size = sizes & 0x0f
+
+  const base_offset_size = (dataView.getUint8(offset) >> 4) & 0x0f
+  const index_size = (version === 1 || version === 2) ? dataView.getUint8(offset) & 0x0f : 0
+  offset++
+
+  const item_count = version < 2 ? dataView.getUint16(offset) : dataView.getUint32(offset)
+  offset += version < 2 ? 2 : 4
+
+  const items = []
+  for (let i = 0; i < item_count; i++) {
+    const item_ID = version < 2 ? dataView.getUint16(offset) : dataView.getUint32(offset)
+    offset += version < 2 ? 2 : 4
+
+    if (version === 1 || version === 2) {
+      offset += 2 // construction_method
+    }
+
+    const data_reference_index = dataView.getUint16(offset)
+    offset += 2
+
+    const base_offset = base_offset_size > 0 ? dataView.getUint32(offset) : 0 // Simplified
+    offset += base_offset_size
+
+    const extent_count = dataView.getUint16(offset)
+    offset += 2
+
+    const extents = []
+    for (let j = 0; j < extent_count; j++) {
+      if ((version === 1 || version === 2) && index_size > 0) {
+        offset += index_size
+      }
+      const extent_offset = dataView.getUint32(offset) // Simplified
+      offset += offset_size
+      const extent_length = dataView.getUint32(offset) // Simplified
+      offset += length_size
+      extents.push({ extent_offset, extent_length })
+    }
+    items.push({ item_ID, data_reference_index, base_offset, extent_count, extents })
+  }
+
+  return {
+    box_header: { size: range.end - range.start + 8, type: 'iloc' },
+    version,
+    flags,
+    offset_size,
+    length_size,
+    base_offset_size,
+    index_size,
+    item_count,
+    items
+  }
+}
+
+function findBox(
+  dataView: DataView,
+  start: number,
+  end: number,
+  type: string
+): IsobmffBoxContentRange {
+  let offset = start
+  while (offset < end) {
+    if (offset + 8 > end) break
+    const boxLength = dataView.getUint32(offset)
+    const boxType = String.fromCharCode(...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4))
+
+    if (boxLength === 0) break
+
+    if (boxType === type) {
+      return { start: offset + 8, end: offset + boxLength }
+    }
+    if (offset + boxLength > end) break
+    offset += boxLength
+  }
+  return null
+}
+
+function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
+  const metadata: ComfyMetadata = {}
+  const dataView = new DataView(buffer)
+
+  if (dataView.getUint32(4) !== 0x66747970 || dataView.getUint32(8) !== 0x61766966) {
+    console.error('Not a valid AVIF file')
+    return {}
+  }
+
+  const metaBox = findBox(dataView, 0, dataView.byteLength, 'meta')
+  if (!metaBox) return {}
+
+  const metaBoxContentStart = metaBox.start + 4 // Skip version and flags
+
+  const iinfBoxRange = findBox(dataView, metaBoxContentStart, metaBox.end, 'iinf')
+  const iinf = parseIinfBox(dataView, iinfBoxRange)
+
+  const exifInfe = iinf.entries.find(e => e.item_type === 'Exif')
+  if (!exifInfe) return {}
+
+  const ilocBoxRange = findBox(dataView, metaBoxContentStart, metaBox.end, 'iloc')
+  const iloc = parseIlocBox(dataView, ilocBoxRange)
+
+  const exifIloc = iloc.items.find(i => i.item_ID === exifInfe.item_ID)
+  if (!exifIloc || exifIloc.extents.length === 0) return {}
+
+  const exifExtent = exifIloc.extents[0]
+  const itemData = new Uint8Array(buffer, exifExtent.extent_offset, exifExtent.extent_length)
+
+  let tiffHeaderOffset = -1
+  for (let i = 0; i < itemData.length - 4; i++) {
+    if (
+      (itemData[i] === 0x4d &&
+        itemData[i + 1] === 0x4d &&
+        itemData[i + 2] === 0x00 &&
+        itemData[i + 3] === 0x2a) || // MM*
+      (itemData[i] === 0x49 &&
+        itemData[i + 1] === 0x49 &&
+        itemData[i + 2] === 0x2a &&
+        itemData[i + 3] === 0x00) // II*
+    ) {
+      tiffHeaderOffset = i
+      break
+    }
+  }
+
+  if (tiffHeaderOffset !== -1) {
+    const exifData = itemData.subarray(tiffHeaderOffset)
+    const data: Record<string, any> = parseExifData(exifData)
+    for (const key in data) {
+      const value = data[key]
+      if (typeof value === 'string') {
+        if (key === 'usercomment') {
+          try {
+            const metadataJson = JSON.parse(value)
+            if (metadataJson.prompt) {
+              metadata[ComfyMetadataTags.PROMPT] = metadataJson.prompt
+            }
+            if (metadataJson.workflow) {
+              metadata[ComfyMetadataTags.WORKFLOW] = metadataJson.workflow
+            }
+          } catch (e) {
+            console.error('Failed to parse usercomment JSON', e)
+          }
+        } else {
+          const [metadataKey, ...metadataValueParts] = value.split(':')
+          const metadataValue = metadataValueParts.join(':').trim()
+          if (
+            metadataKey.toLowerCase() ===
+              ComfyMetadataTags.PROMPT.toLowerCase() ||
+            metadataKey.toLowerCase() ===
+              ComfyMetadataTags.WORKFLOW.toLowerCase()
+          ) {
+            try {
+              const jsonValue = JSON.parse(metadataValue)
+              metadata[metadataKey.toLowerCase() as keyof ComfyMetadata] =
+                jsonValue
+            } catch (e) {
+              console.error(`Failed to parse JSON for ${metadataKey}`, e)
+            }
+          }
+        }
+      }
+    }
+  } else {
+    console.log('Warning: TIFF header not found in EXIF data.')
+  }
+
+  return metadata
+}
 
 // @ts-expect-error fixme ts strict error
 export function parseExifData(exifData) {
@@ -58,282 +333,6 @@ export function parseExifData(exifData) {
   // Parse the first IFD
   const ifdData = parseIFD(ifdOffset)
   return ifdData
-}
-
-function findBox(
-  dataView: DataView,
-  start: number,
-  end: number,
-  type: string
-): { start: number; end: number } | null {
-  let offset = start
-  while (offset < end) {
-    if (offset + 8 > end) break
-    const boxLength = dataView.getUint32(offset)
-    const boxType = String.fromCharCode(
-      dataView.getUint8(offset + 4),
-      dataView.getUint8(offset + 5),
-      dataView.getUint8(offset + 6),
-      dataView.getUint8(offset + 7)
-    )
-
-    if (boxLength === 0) break
-
-    if (boxType === type) {
-      return { start: offset + 8, end: offset + boxLength } // The box start is right after the box type fourcc. Easier to navigate around.
-    }
-    if (offset + boxLength > end) break
-    offset += boxLength
-  }
-  return null
-}
-
-function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
-  const metadata: ComfyMetadata = {}
-  const dataView = new DataView(buffer)
-  const avif = new Uint8Array(buffer)
-
-  // Check for ftyp box and 'avif' brand
-  if (
-    dataView.getUint32(4) !== 0x66747970 || // ftyp
-    dataView.getUint32(8) !== 0x61766966 // avif
-  ) {
-    console.error('Not a valid AVIF file')
-    return {}
-  }
-
-  const metaBox = findBox(dataView, 0, dataView.byteLength, 'meta')
-  if (!metaBox) {
-    console.error('meta box not found')
-    return {}
-  }
-
-  const metaBoxContentStart = metaBox.start + 4 // Skip version and flags
-
-  const iinfBox = findBox(dataView, metaBoxContentStart, metaBox.end, 'iinf')
-  if (!iinfBox) {
-    console.error('iinf box not found')
-    return {}
-  }
-
-  const iinfVersion = dataView.getUint8(iinfBox.start) // We start exactly at the end of the 'iinf' fourcc. The next byte always is the version. AVIF usually uses 0x00.
-  let entryCount
-  let currentOffset
-  if (iinfVersion === 0) {
-    entryCount = dataView.getUint16(iinfBox.start + 4)
-    currentOffset = iinfBox.start + 6
-  } else {
-    entryCount = dataView.getUint32(iinfBox.start + 4)
-    currentOffset = iinfBox.start + 8
-  }
-
-  let exifItemId = -1
-  for (let i = 0; i < entryCount; i++) {
-    if (currentOffset + 8 > iinfBox.end) break
-    const infeSize = dataView.getUint32(currentOffset)
-    const infeType = String.fromCharCode(
-      ...new Uint8Array(buffer, currentOffset + 4, 4)
-    )
-
-    if (infeType === 'infe') {
-      const infeVersion = dataView.getUint8(currentOffset + 8)
-      const infeContentStart = currentOffset + 12
-
-      if (infeVersion >= 2) {
-        let itemId
-        let itemTypeStr = ''
-        if (infeVersion === 2) {
-          itemId = dataView.getUint16(infeContentStart)
-          itemTypeStr = String.fromCharCode(
-            ...new Uint8Array(buffer, infeContentStart + 4, 4)
-          )
-        } else {
-          // version 3
-          itemId = dataView.getUint32(infeContentStart)
-          itemTypeStr = String.fromCharCode(
-            ...new Uint8Array(buffer, infeContentStart + 6, 4)
-          )
-        }
-
-        if (itemTypeStr === 'Exif') {
-          exifItemId = itemId
-          break
-        }
-      }
-    }
-    if (infeSize === 0) break
-    currentOffset += infeSize
-  }
-
-  if (exifItemId === -1) {
-    console.error('Exif item not found')
-    return {}
-  }
-
-  const ilocBox = findBox(dataView, metaBoxContentStart, metaBox.end, 'iloc')
-  if (!ilocBox) {
-    console.error('iloc box not found')
-    return {}
-  }
-
-  const ilocVersion = dataView.getUint8(ilocBox.start)
-  const sizes = dataView.getUint16(ilocBox.start + 4) // Version + flags are 4 bytes large. They usually are all 0x00.
-  const offsetSize = (sizes >> 12) & 0x0f
-  const lengthSize = (sizes >> 8) & 0x0f
-  const baseOffsetSize = (sizes >> 4) & 0x0f
-  const indexSize = ilocVersion === 1 || ilocVersion === 2 ? sizes & 0x0f : 0
-
-  let ilocParseOffset = ilocBox.start + 6
-  let ilocItemCount
-  if (ilocVersion < 2) {
-    ilocItemCount = dataView.getUint16(ilocParseOffset)
-    ilocParseOffset += 2
-  } else {
-    ilocItemCount = dataView.getUint32(ilocParseOffset)
-    ilocParseOffset += 4
-  }
-
-  let exifOffset = -1
-  let exifLength = -1
-
-  for (let i = 0; i < ilocItemCount; i++) {
-    let currentItemId
-    if (ilocVersion < 2) {
-      currentItemId = dataView.getUint16(ilocParseOffset)
-      ilocParseOffset += 2
-    } else {
-      currentItemId = dataView.getUint32(ilocParseOffset)
-      ilocParseOffset += 4
-    }
-
-    if (ilocVersion === 1 || ilocVersion === 2) {
-      ilocParseOffset += 2 // construction_method
-    }
-
-    ilocParseOffset += 2 // data_reference_index
-
-    let baseOffset = 0
-    if (baseOffsetSize > 0) {
-      ilocParseOffset += baseOffsetSize
-    }
-
-    const extentCount = dataView.getUint16(ilocParseOffset)
-    ilocParseOffset += 2
-
-    const extentsStartOffset = ilocParseOffset
-
-    if (currentItemId === exifItemId) {
-      for (let j = 0; j < extentCount; j++) {
-        if ((ilocVersion === 1 || ilocVersion === 2) && indexSize > 0) {
-          ilocParseOffset += indexSize
-        }
-
-        let currentExtentOffset = 0
-        switch (offsetSize) {
-          case 1:
-            currentExtentOffset = dataView.getUint8(ilocParseOffset)
-            break
-          case 2:
-            currentExtentOffset = dataView.getUint16(ilocParseOffset)
-            break
-          case 4:
-            currentExtentOffset = dataView.getUint32(ilocParseOffset)
-            break
-          case 8:
-            currentExtentOffset = Number(dataView.getBigUint64(ilocParseOffset))
-            break
-        }
-        ilocParseOffset += offsetSize
-
-        let currentExtentLength = 0
-        switch (lengthSize) {
-          case 1:
-            currentExtentLength = dataView.getUint8(ilocParseOffset)
-            break
-          case 2:
-            currentExtentLength = dataView.getUint16(ilocParseOffset)
-            break
-          case 4:
-            currentExtentLength = dataView.getUint32(ilocParseOffset)
-            break
-          case 8:
-            currentExtentLength = Number(dataView.getBigUint64(ilocParseOffset))
-            break
-        }
-        ilocParseOffset += lengthSize
-
-        exifOffset = baseOffset + currentExtentOffset
-        exifLength = currentExtentLength
-        break
-      }
-      break
-    }
-    ilocParseOffset =
-      extentsStartOffset + extentCount * (indexSize + offsetSize + lengthSize)
-  }
-
-  if (exifOffset !== -1 && exifLength !== -1) {
-    const itemData = avif.subarray(exifOffset, exifOffset + exifLength)
-    let tiffHeaderOffset = -1
-    for (let i = 0; i < itemData.length - 4; i++) {
-      if (
-        (itemData[i] === 0x4d &&
-          itemData[i + 1] === 0x4d &&
-          itemData[i + 2] === 0x00 &&
-          itemData[i + 3] === 0x2a) || // MM*
-        (itemData[i] === 0x49 &&
-          itemData[i + 1] === 0x49 &&
-          itemData[i + 2] === 0x2a &&
-          itemData[i + 3] === 0x00) // II*
-      ) {
-        tiffHeaderOffset = i
-        break
-      }
-    }
-
-    if (tiffHeaderOffset !== -1) {
-      const exifData = itemData.subarray(tiffHeaderOffset)
-      const data: Record<string, any> = parseExifData(exifData)
-      for (const key in data) {
-        const value = data[key]
-        if (typeof value === 'string') {
-          if (key === 'usercomment') {
-            try {
-              const metadataJson = JSON.parse(value)
-              if (metadataJson.prompt) {
-                metadata[ComfyMetadataTags.PROMPT] = metadataJson.prompt
-              }
-              if (metadataJson.workflow) {
-                metadata[ComfyMetadataTags.WORKFLOW] = metadataJson.workflow
-              }
-            } catch (e) {
-              console.error('Failed to parse usercomment JSON', e)
-            }
-          } else {
-            const [metadataKey, ...metadataValueParts] = value.split(':')
-            const metadataValue = metadataValueParts.join(':').trim()
-            if (
-              metadataKey.toLowerCase() ===
-                ComfyMetadataTags.PROMPT.toLowerCase() ||
-              metadataKey.toLowerCase() ===
-                ComfyMetadataTags.WORKFLOW.toLowerCase()
-            ) {
-              try {
-                const jsonValue = JSON.parse(metadataValue)
-                metadata[metadataKey.toLowerCase() as keyof ComfyMetadata] =
-                  jsonValue
-              } catch (e) {
-                console.error(`Failed to parse JSON for ${metadataKey}`, e)
-              }
-            }
-          }
-        }
-      }
-    } else {
-      console.log('Warning: TIFF header not found in EXIF data.')
-    }
-  }
-  return metadata
 }
 
 export function getFromAvifFile(file: File): Promise<Record<string, string>> {
