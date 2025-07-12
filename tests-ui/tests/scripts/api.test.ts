@@ -4,6 +4,7 @@ import type {
   HistoryResponse,
   RawHistoryItem
 } from '../../../src/schemas/apiSchema'
+import type { ComfyWorkflowJSON } from '../../../src/schemas/comfyWorkflowSchema'
 import { ComfyApi } from '../../../src/scripts/api'
 
 describe('ComfyApi getHistory', () => {
@@ -122,5 +123,126 @@ describe('ComfyApi getHistory', () => {
 
       expect(mockFetchApi).toHaveBeenCalledWith('/history_v2?max_items=200')
     })
+  })
+})
+
+describe('ComfyApi getWorkflowFromHistory', () => {
+  let api: ComfyApi
+
+  beforeEach(() => {
+    api = new ComfyApi()
+  })
+
+  const mockWorkflow: ComfyWorkflowJSON = {
+    last_node_id: 1,
+    last_link_id: 0,
+    nodes: [],
+    links: [],
+    groups: [],
+    config: {},
+    extra: {},
+    version: 0.4
+  }
+
+  it('should fetch workflow data for a specific prompt', async () => {
+    const promptId = 'test_prompt_id'
+    const mockResponse = {
+      [promptId]: {
+        prompt: {
+          priority: 0,
+          prompt_id: promptId,
+          extra_data: {
+            extra_pnginfo: {
+              workflow: mockWorkflow
+            }
+          }
+        },
+        outputs: {},
+        status: {
+          status_str: 'success',
+          completed: true,
+          messages: []
+        }
+      }
+    }
+
+    const mockFetchApi = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue(mockResponse)
+    })
+    api.fetchApi = mockFetchApi
+
+    const result = await api.getWorkflowFromHistory(promptId)
+
+    expect(mockFetchApi).toHaveBeenCalledWith(`/history_v2/${promptId}`)
+    expect(result).toEqual(mockWorkflow)
+  })
+
+  it('should return null when prompt_id is not found', async () => {
+    const promptId = 'non_existent_prompt'
+    const mockResponse = {}
+
+    const mockFetchApi = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue(mockResponse)
+    })
+    api.fetchApi = mockFetchApi
+
+    const result = await api.getWorkflowFromHistory(promptId)
+
+    expect(mockFetchApi).toHaveBeenCalledWith(`/history_v2/${promptId}`)
+    expect(result).toBeNull()
+  })
+
+  it('should return null when workflow data is missing', async () => {
+    const promptId = 'test_prompt_id'
+    const mockResponse = {
+      [promptId]: {
+        prompt: {
+          priority: 0,
+          prompt_id: promptId,
+          extra_data: {}
+        },
+        outputs: {},
+        status: {
+          status_str: 'success',
+          completed: true,
+          messages: []
+        }
+      }
+    }
+
+    const mockFetchApi = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue(mockResponse)
+    })
+    api.fetchApi = mockFetchApi
+
+    const result = await api.getWorkflowFromHistory(promptId)
+
+    expect(result).toBeNull()
+  })
+
+  it('should handle API errors gracefully', async () => {
+    const promptId = 'test_prompt_id'
+    const mockFetchApi = vi.fn().mockRejectedValue(new Error('Network error'))
+    api.fetchApi = mockFetchApi
+
+    const result = await api.getWorkflowFromHistory(promptId)
+
+    expect(result).toBeNull()
+  })
+
+  it('should handle malformed response gracefully', async () => {
+    const promptId = 'test_prompt_id'
+    const mockResponse = {
+      [promptId]: null
+    }
+
+    const mockFetchApi = vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue(mockResponse)
+    })
+    api.fetchApi = mockFetchApi
+
+    const result = await api.getWorkflowFromHistory(promptId)
+
+    expect(result).toBeNull()
   })
 })

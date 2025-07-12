@@ -214,12 +214,11 @@ const menuItems = computed<MenuItem[]>(() => {
           void workflowService.loadTaskWorkflow(menuTargetTask.value)
         }
       },
-      disabled:
-        !menuTargetTask.value?.workflow &&
-        !(
-          menuTargetTask.value?.isHistory &&
-          menuTargetTask.value?.prompt.prompt_id
-        )
+      disabled: !(
+        menuTargetTask.value?.workflow ||
+        (menuTargetTask.value?.isHistory &&
+          menuTargetTask.value?.prompt.prompt_id)
+      )
     },
     {
       label: t('g.goToNode'),

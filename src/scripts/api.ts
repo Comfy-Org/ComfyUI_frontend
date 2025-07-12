@@ -743,13 +743,13 @@ export class ComfyApi extends EventTarget {
       const json = await res.json()
 
       // The /history_v2/{prompt_id} endpoint returns data for a specific prompt
-      // The response format is: { prompt_id: { prompt: [...], outputs: {...}, status: {...} } }
+      // The response format is: { prompt_id: { prompt: {priority, prompt_id, extra_data}, outputs: {...}, status: {...} } }
       const historyItem = json[prompt_id]
       if (!historyItem) return null
 
-      // Extract workflow from the prompt array
-      // prompt[3] contains extra_data which has extra_pnginfo.workflow
-      const workflow = historyItem.prompt?.[3]?.extra_pnginfo?.workflow
+      // Extract workflow from the prompt object
+      // prompt.extra_data contains extra_pnginfo.workflow
+      const workflow = historyItem.prompt?.extra_data?.extra_pnginfo?.workflow
       return workflow || null
     } catch (error) {
       console.error(`Failed to fetch workflow for prompt ${prompt_id}:`, error)

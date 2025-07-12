@@ -73,7 +73,7 @@ export default class TaskHistory {
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(this.tasks)
+      body: JSON.stringify({ history: this.tasks })
     })
   }
 
@@ -95,7 +95,7 @@ export default class TaskHistory {
 
   async setupRoutes() {
     return this.comfyPage.page.route(
-      /.*\/api\/(view|history)(\?.*)?$/,
+      /.*\/api\/(view|history|history_v2)(\?.*)?$/,
       async (route) => {
         const request = route.request()
         const method = request.method()
