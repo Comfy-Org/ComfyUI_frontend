@@ -56,7 +56,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   /**
    * Convert execution context node IDs to NodeLocatorIds
-   * @param nodeId The node ID from execution context (could be hierarchical)
+   * @param nodeId The node ID from execution context (could be execution ID)
    * @returns The NodeLocatorId
    */
   const executionIdToNodeLocatorId = (
@@ -69,7 +69,7 @@ export const useExecutionStore = defineStore('execution', () => {
       return nodeIdStr as NodeLocatorId
     }
 
-    // It's a hierarchical node ID
+    // It's an execution node ID
     const parts = nodeIdStr.split(':')
     const localNodeId = parts[parts.length - 1]
     const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
@@ -77,7 +77,7 @@ export const useExecutionStore = defineStore('execution', () => {
     return nodeLocatorId
   }
 
-  const mergeHierarchicalProgressStates = (
+  const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
     newState: NodeProgressState
   ): NodeProgressState => {
@@ -119,7 +119,7 @@ export const useExecutionStore = defineStore('execution', () => {
         const locatorId = executionIdToNodeLocatorId(executionId)
         if (!locatorId) continue
 
-        result[locatorId] = mergeHierarchicalProgressStates(
+        result[locatorId] = mergeExecutionProgressStates(
           result[locatorId],
           state
         )
@@ -336,7 +336,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodeId, text } = e.detail
     if (!text || !nodeId) return
 
-    // Handle hierarchical node IDs for subgraphs
+    // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
@@ -347,7 +347,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleDisplayComponent(e: CustomEvent<DisplayComponentWsMessage>) {
     const { node_id: nodeId, component, props = {} } = e.detail
 
-    // Handle hierarchical node IDs for subgraphs
+    // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
@@ -388,16 +388,15 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Convert a NodeLocatorId to an execution context ID (hierarchical ID)
+   * Convert a NodeLocatorId to an execution context ID
    * @param locatorId The NodeLocatorId
-   * @returns The hierarchical execution ID or null if conversion fails
+   * @returns The execution ID or null if conversion fails
    */
   const nodeLocatorIdToExecutionId = (
     locatorId: NodeLocatorId | string
   ): string | null => {
-    const hierarchicalId =
-      workflowStore.nodeLocatorIdToHierarchicalId(locatorId)
-    return hierarchicalId
+    const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
+    return executionId
   }
 
   return {

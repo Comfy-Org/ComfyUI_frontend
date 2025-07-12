@@ -641,19 +641,19 @@ describe('useWorkflowStore', () => {
       })
     })
 
-    describe('hierarchicalIdToNodeLocatorId', () => {
-      it('should convert hierarchical ID to NodeLocatorId', () => {
-        const result = store.hierarchicalIdToNodeLocatorId('123:456')
+    describe('nodeExecutionIdToNodeLocatorId', () => {
+      it('should convert execution ID to NodeLocatorId', () => {
+        const result = store.nodeExecutionIdToNodeLocatorId('123:456')
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
       it('should return simple node ID for root level nodes', () => {
-        const result = store.hierarchicalIdToNodeLocatorId('123')
+        const result = store.nodeExecutionIdToNodeLocatorId('123')
         expect(result).toBe('123')
       })
 
-      it('should return null for invalid hierarchical IDs', () => {
-        const result = store.hierarchicalIdToNodeLocatorId('999:456')
+      it('should return null for invalid execution IDs', () => {
+        const result = store.nodeExecutionIdToNodeLocatorId('999:456')
         expect(result).toBeNull()
       })
     })
@@ -687,33 +687,33 @@ describe('useWorkflowStore', () => {
       })
     })
 
-    describe('nodeLocatorIdToHierarchicalId', () => {
-      it('should convert NodeLocatorId to hierarchical ID', () => {
+    describe('nodeLocatorIdToNodeExecutionId', () => {
+      it('should convert NodeLocatorId to execution ID', () => {
         // Need to mock isSubgraph to identify our mockSubgraph
         vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
           return obj === store.activeSubgraph
         })
 
-        const result = store.nodeLocatorIdToHierarchicalId(
+        const result = store.nodeLocatorIdToNodeExecutionId(
           'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
         )
         expect(result).toBe('123:456')
       })
 
       it('should handle simple node IDs (root graph)', () => {
-        const result = store.nodeLocatorIdToHierarchicalId('123')
+        const result = store.nodeLocatorIdToNodeExecutionId('123')
         expect(result).toBe('123')
       })
 
       it('should return null for unknown subgraph UUID', () => {
-        const result = store.nodeLocatorIdToHierarchicalId(
+        const result = store.nodeLocatorIdToNodeExecutionId(
           'unknown-uuid-1234-5678-90ab-cdef12345678:456'
         )
         expect(result).toBeNull()
       })
 
       it('should return null for invalid NodeLocatorId', () => {
-        const result = store.nodeLocatorIdToHierarchicalId('invalid:format')
+        const result = store.nodeLocatorIdToNodeExecutionId('invalid:format')
         expect(result).toBeNull()
       })
     })

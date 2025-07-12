@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import {
   type NodeLocatorId,
-  createHierarchicalNodeId,
+  createNodeExecutionId,
   createNodeLocatorId,
-  isHierarchicalNodeId,
+  isNodeExecutionId,
   isNodeLocatorId,
-  parseHierarchicalNodeId,
+  parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
 
@@ -118,66 +118,66 @@ describe('nodeIdentification', () => {
     })
   })
 
-  describe('HierarchicalNodeId', () => {
-    describe('isHierarchicalNodeId', () => {
-      it('should return true for hierarchical IDs', () => {
-        expect(isHierarchicalNodeId('123:456')).toBe(true)
-        expect(isHierarchicalNodeId('123:456:789')).toBe(true)
-        expect(isHierarchicalNodeId('node_1:node_2')).toBe(true)
+  describe('NodeExecutionId', () => {
+    describe('isNodeExecutionId', () => {
+      it('should return true for execution IDs', () => {
+        expect(isNodeExecutionId('123:456')).toBe(true)
+        expect(isNodeExecutionId('123:456:789')).toBe(true)
+        expect(isNodeExecutionId('node_1:node_2')).toBe(true)
       })
 
-      it('should return false for non-hierarchical IDs', () => {
-        expect(isHierarchicalNodeId('123')).toBe(false)
-        expect(isHierarchicalNodeId('node_1')).toBe(false)
-        expect(isHierarchicalNodeId('')).toBe(false)
-        expect(isHierarchicalNodeId(123)).toBe(false)
-        expect(isHierarchicalNodeId(null)).toBe(false)
-        expect(isHierarchicalNodeId(undefined)).toBe(false)
+      it('should return false for non-execution IDs', () => {
+        expect(isNodeExecutionId('123')).toBe(false)
+        expect(isNodeExecutionId('node_1')).toBe(false)
+        expect(isNodeExecutionId('')).toBe(false)
+        expect(isNodeExecutionId(123)).toBe(false)
+        expect(isNodeExecutionId(null)).toBe(false)
+        expect(isNodeExecutionId(undefined)).toBe(false)
       })
     })
 
-    describe('parseHierarchicalNodeId', () => {
-      it('should parse hierarchical IDs correctly', () => {
-        expect(parseHierarchicalNodeId('123:456')).toEqual([123, 456])
-        expect(parseHierarchicalNodeId('123:456:789')).toEqual([123, 456, 789])
-        expect(parseHierarchicalNodeId('node_1:node_2')).toEqual([
+    describe('parseNodeExecutionId', () => {
+      it('should parse execution IDs correctly', () => {
+        expect(parseNodeExecutionId('123:456')).toEqual([123, 456])
+        expect(parseNodeExecutionId('123:456:789')).toEqual([123, 456, 789])
+        expect(parseNodeExecutionId('node_1:node_2')).toEqual([
           'node_1',
           'node_2'
         ])
-        expect(parseHierarchicalNodeId('123:node_2:456')).toEqual([
+        expect(parseNodeExecutionId('123:node_2:456')).toEqual([
           123,
           'node_2',
           456
         ])
       })
 
-      it('should return null for non-hierarchical IDs', () => {
-        expect(parseHierarchicalNodeId('123')).toBeNull()
-        expect(parseHierarchicalNodeId('')).toBeNull()
+      it('should return null for non-execution IDs', () => {
+        expect(parseNodeExecutionId('123')).toBeNull()
+        expect(parseNodeExecutionId('')).toBeNull()
       })
     })
 
-    describe('createHierarchicalNodeId', () => {
-      it('should create hierarchical IDs from node arrays', () => {
-        expect(createHierarchicalNodeId([123, 456])).toBe('123:456')
-        expect(createHierarchicalNodeId([123, 456, 789])).toBe('123:456:789')
-        expect(createHierarchicalNodeId(['node_1', 'node_2'])).toBe(
+    describe('createNodeExecutionId', () => {
+      it('should create execution IDs from node arrays', () => {
+        expect(createNodeExecutionId([123, 456])).toBe('123:456')
+        expect(createNodeExecutionId([123, 456, 789])).toBe('123:456:789')
+        expect(createNodeExecutionId(['node_1', 'node_2'])).toBe(
           'node_1:node_2'
         )
-        expect(createHierarchicalNodeId([123, 'node_2', 456])).toBe(
+        expect(createNodeExecutionId([123, 'node_2', 456])).toBe(
           '123:node_2:456'
         )
       })
 
       it('should handle single node ID', () => {
-        const result = createHierarchicalNodeId([123])
+        const result = createNodeExecutionId([123])
         expect(result).toBe('123')
-        // Single node IDs are not hierarchical
-        expect(isHierarchicalNodeId(result)).toBe(false)
+        // Single node IDs are not execution IDs
+        expect(isNodeExecutionId(result)).toBe(false)
       })
 
       it('should handle empty array', () => {
-        expect(createHierarchicalNodeId([])).toBe('')
+        expect(createNodeExecutionId([])).toBe('')
       })
     })
   })
@@ -195,11 +195,11 @@ describe('nodeIdentification', () => {
       expect(parsed!.localNodeId).toBe(nodeId)
     })
 
-    it('should round-trip HierarchicalNodeId correctly', () => {
+    it('should round-trip NodeExecutionId correctly', () => {
       const nodeIds: NodeId[] = [123, 'node_2', 456]
 
-      const hierarchicalId = createHierarchicalNodeId(nodeIds)
-      const parsed = parseHierarchicalNodeId(hierarchicalId)
+      const executionId = createNodeExecutionId(nodeIds)
+      const parsed = parseNodeExecutionId(executionId)
 
       expect(parsed).toEqual(nodeIds)
     })

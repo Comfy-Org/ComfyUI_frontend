@@ -8,9 +8,9 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 // Mock the workflowStore
 vi.mock('@/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
-    hierarchicalIdToNodeLocatorId: vi.fn(),
+    nodeExecutionIdToNodeLocatorId: vi.fn(),
     nodeIdToNodeLocatorId: vi.fn(),
-    nodeLocatorIdToHierarchicalId: vi.fn()
+    nodeLocatorIdToNodeExecutionId: vi.fn()
   }))
 }))
 
@@ -105,9 +105,9 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
     // Create the mock workflowStore instance
     const mockWorkflowStore = {
-      hierarchicalIdToNodeLocatorId: vi.fn(),
+      nodeExecutionIdToNodeLocatorId: vi.fn(),
       nodeIdToNodeLocatorId: vi.fn(),
-      nodeLocatorIdToHierarchicalId: vi.fn()
+      nodeLocatorIdToNodeExecutionId: vi.fn()
     }
 
     // Mock the useWorkflowStore function to return our mock
@@ -119,7 +119,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   })
 
   describe('executionIdToNodeLocatorId', () => {
-    it('should convert hierarchical execution ID to NodeLocatorId', () => {
+    it('should convert execution ID to NodeLocatorId', () => {
       // Mock subgraph structure
       const mockSubgraph = {
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -166,24 +166,24 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   })
 
   describe('nodeLocatorIdToExecutionId', () => {
-    it('should convert NodeLocatorId to hierarchical execution ID', () => {
-      const mockHierarchicalId = '123:456'
-      vi.spyOn(workflowStore, 'nodeLocatorIdToHierarchicalId').mockReturnValue(
-        mockHierarchicalId as any
+    it('should convert NodeLocatorId to execution ID', () => {
+      const mockExecutionId = '123:456'
+      vi.spyOn(workflowStore, 'nodeLocatorIdToNodeExecutionId').mockReturnValue(
+        mockExecutionId as any
       )
 
       const result = store.nodeLocatorIdToExecutionId(
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
       )
 
-      expect(workflowStore.nodeLocatorIdToHierarchicalId).toHaveBeenCalledWith(
+      expect(workflowStore.nodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
       )
-      expect(result).toBe(mockHierarchicalId)
+      expect(result).toBe(mockExecutionId)
     })
 
     it('should return null when conversion fails', () => {
-      vi.spyOn(workflowStore, 'nodeLocatorIdToHierarchicalId').mockReturnValue(
+      vi.spyOn(workflowStore, 'nodeLocatorIdToNodeExecutionId').mockReturnValue(
         null
       )
 
