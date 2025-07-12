@@ -356,5 +356,27 @@ onMounted(async () => {
   )
 
   emit('ready')
+  // Fix deletion (by keyboard) on video elements/nodes
+  const handleVideoDeleteKey = (event: KeyboardEvent) => {
+    // Use modern event.key API only
+    if (event.key === 'Delete') {
+      const activeElement = document.activeElement
+
+      // Check if focused element is a video
+      if (activeElement instanceof HTMLVideoElement) {
+        // Prevent the delete key from reaching LiteGraph
+        event.preventDefault()
+        event.stopPropagation()
+
+        // Optional: Log for debugging
+        console.debug('Prevented delete key on video element')
+      }
+    }
+  }
+
+  // Add event listener with cleanup support
+  useEventListener(window, 'keydown', handleVideoDeleteKey, {
+    capture: true  // Capture phase to intercept early
+  })
 })
 </script>
