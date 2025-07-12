@@ -1,9 +1,9 @@
 import {
-  ComfyMetadata,
-  ComfyMetadataTags,
   type AvifIinfBox,
   type AvifIlocBox,
   type AvifInfeBox,
+  ComfyMetadata,
+  ComfyMetadataTags,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
 
@@ -40,7 +40,9 @@ const parseInfeBox = (dataView: DataView, start: number): AvifInfeBox => {
 
     item_protection_index = dataView.getUint16(offset)
     offset += 2
-    item_type = String.fromCharCode(...new Uint8Array(dataView.buffer, dataView.byteOffset + offset, 4))
+    item_type = String.fromCharCode(
+      ...new Uint8Array(dataView.buffer, dataView.byteOffset + offset, 4)
+    )
     offset += 4
 
     const { str: item_name, length: name_len } = readNullTerminatedString(
@@ -50,7 +52,11 @@ const parseInfeBox = (dataView: DataView, start: number): AvifInfeBox => {
     )
     offset += name_len
 
-    const content_type = readNullTerminatedString(dataView, offset, dataView.byteLength).str
+    const content_type = readNullTerminatedString(
+      dataView,
+      offset,
+      dataView.byteLength
+    ).str
 
     return {
       box_header: { size: 0, type: 'infe' }, // Size is dynamic
@@ -66,20 +72,26 @@ const parseInfeBox = (dataView: DataView, start: number): AvifInfeBox => {
   throw new Error(`Unsupported infe box version: ${version}`)
 }
 
-const parseIinfBox = (dataView: DataView, range: IsobmffBoxContentRange): AvifIinfBox => {
+const parseIinfBox = (
+  dataView: DataView,
+  range: IsobmffBoxContentRange
+): AvifIinfBox => {
   if (!range) throw new Error('iinf box not found')
 
   const version = dataView.getUint8(range.start)
   const flags = dataView.getUint32(range.start) & 0xffffff
   let offset = range.start + 4
 
-  const entry_count = version === 0 ? dataView.getUint16(offset) : dataView.getUint32(offset)
+  const entry_count =
+    version === 0 ? dataView.getUint16(offset) : dataView.getUint32(offset)
   offset += version === 0 ? 2 : 4
 
   const entries: AvifInfeBox[] = []
   for (let i = 0; i < entry_count; i++) {
     const boxSize = dataView.getUint32(offset)
-    const boxType = String.fromCharCode(...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4))
+    const boxType = String.fromCharCode(
+      ...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4)
+    )
 
     if (boxType === 'infe') {
       const infe = parseInfeBox(dataView, offset + 8)
@@ -98,7 +110,10 @@ const parseIinfBox = (dataView: DataView, range: IsobmffBoxContentRange): AvifIi
   }
 }
 
-const parseIlocBox = (dataView: DataView, range: IsobmffBoxContentRange): AvifIlocBox => {
+const parseIlocBox = (
+  dataView: DataView,
+  range: IsobmffBoxContentRange
+): AvifIlocBox => {
   if (!range) throw new Error('iloc box not found')
 
   const version = dataView.getUint8(range.start)
@@ -110,15 +125,18 @@ const parseIlocBox = (dataView: DataView, range: IsobmffBoxContentRange): AvifIl
   const length_size = sizes & 0x0f
 
   const base_offset_size = (dataView.getUint8(offset) >> 4) & 0x0f
-  const index_size = (version === 1 || version === 2) ? dataView.getUint8(offset) & 0x0f : 0
+  const index_size =
+    version === 1 || version === 2 ? dataView.getUint8(offset) & 0x0f : 0
   offset++
 
-  const item_count = version < 2 ? dataView.getUint16(offset) : dataView.getUint32(offset)
+  const item_count =
+    version < 2 ? dataView.getUint16(offset) : dataView.getUint32(offset)
   offset += version < 2 ? 2 : 4
 
   const items = []
   for (let i = 0; i < item_count; i++) {
-    const item_ID = version < 2 ? dataView.getUint16(offset) : dataView.getUint32(offset)
+    const item_ID =
+      version < 2 ? dataView.getUint16(offset) : dataView.getUint32(offset)
     offset += version < 2 ? 2 : 4
 
     if (version === 1 || version === 2) {
@@ -145,7 +163,13 @@ const parseIlocBox = (dataView: DataView, range: IsobmffBoxContentRange): AvifIl
       offset += length_size
       extents.push({ extent_offset, extent_length })
     }
-    items.push({ item_ID, data_reference_index, base_offset, extent_count, extents })
+    items.push({
+      item_ID,
+      data_reference_index,
+      base_offset,
+      extent_count,
+      extents
+    })
   }
 
   return {
@@ -171,7 +195,9 @@ function findBox(
   while (offset < end) {
     if (offset + 8 > end) break
     const boxLength = dataView.getUint32(offset)
-    const boxType = String.fromCharCode(...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4))
+    const boxType = String.fromCharCode(
+      ...new Uint8Array(dataView.buffer, dataView.byteOffset + offset + 4, 4)
+    )
 
     if (boxLength === 0) break
 
@@ -188,7 +214,10 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
   const metadata: ComfyMetadata = {}
   const dataView = new DataView(buffer)
 
-  if (dataView.getUint32(4) !== 0x66747970 || dataView.getUint32(8) !== 0x61766966) {
+  if (
+    dataView.getUint32(4) !== 0x66747970 ||
+    dataView.getUint32(8) !== 0x61766966
+  ) {
     console.error('Not a valid AVIF file')
     return {}
   }
@@ -198,20 +227,34 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
 
   const metaBoxContentStart = metaBox.start + 4 // Skip version and flags
 
-  const iinfBoxRange = findBox(dataView, metaBoxContentStart, metaBox.end, 'iinf')
+  const iinfBoxRange = findBox(
+    dataView,
+    metaBoxContentStart,
+    metaBox.end,
+    'iinf'
+  )
   const iinf = parseIinfBox(dataView, iinfBoxRange)
 
-  const exifInfe = iinf.entries.find(e => e.item_type === 'Exif')
+  const exifInfe = iinf.entries.find((e) => e.item_type === 'Exif')
   if (!exifInfe) return {}
 
-  const ilocBoxRange = findBox(dataView, metaBoxContentStart, metaBox.end, 'iloc')
+  const ilocBoxRange = findBox(
+    dataView,
+    metaBoxContentStart,
+    metaBox.end,
+    'iloc'
+  )
   const iloc = parseIlocBox(dataView, ilocBoxRange)
 
-  const exifIloc = iloc.items.find(i => i.item_ID === exifInfe.item_ID)
+  const exifIloc = iloc.items.find((i) => i.item_ID === exifInfe.item_ID)
   if (!exifIloc || exifIloc.extents.length === 0) return {}
 
   const exifExtent = exifIloc.extents[0]
-  const itemData = new Uint8Array(buffer, exifExtent.extent_offset, exifExtent.extent_length)
+  const itemData = new Uint8Array(
+    buffer,
+    exifExtent.extent_offset,
+    exifExtent.extent_length
+  )
 
   let tiffHeaderOffset = -1
   for (let i = 0; i < itemData.length - 4; i++) {
