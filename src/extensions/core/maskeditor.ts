@@ -57,7 +57,7 @@ var styles = `
     display: flex;
     align-items: center;
     overflow-y: auto;
-    width: 250px;
+    width: 220px;
   }
   #maskEditor_sidePanelShortcuts {
     display: flex;
