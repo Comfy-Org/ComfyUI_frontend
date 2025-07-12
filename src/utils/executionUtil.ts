@@ -1,4 +1,9 @@
-import type { LGraph, NodeId } from '@comfyorg/litegraph'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraph,
+  NodeId
+} from '@comfyorg/litegraph'
 import {
   ExecutableNodeDTO,
   LGraphEventMode,
@@ -10,6 +15,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
 
+import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
@@ -54,7 +60,9 @@ export const graphToPrompt = async (
   const { sortNodes = false, queueNodeIds } = options
 
   for (const node of graph.computeExecutionOrder(false)) {
-    const innerNodes = node.getInnerNodes ? node.getInnerNodes() : [node]
+    const innerNodes = node.getInnerNodes
+      ? node.getInnerNodes(new Map())
+      : [node]
     for (const innerNode of innerNodes) {
       if (innerNode.isVirtualNode) {
         innerNode.applyToGraph?.()
@@ -78,82 +86,87 @@ export const graphToPrompt = async (
   workflow.extra ??= {}
   workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
-  const computedNodeDtos = graph
-    .computeExecutionOrder(false)
-    .map(
-      (node) =>
-        new ExecutableNodeDTO(
+  const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+  for (const node of graph.computeExecutionOrder(false)) {
+    const dto: ExecutableLGraphNode = isGroupNode(node)
+      ? new ExecutableGroupNodeDTO(node, [], nodeDtoMap)
+      : new ExecutableNodeDTO(
           node,
           [],
+          nodeDtoMap,
           node instanceof SubgraphNode ? node : undefined
         )
-    )
+
+    for (const innerNode of dto.getInnerNodes()) {
+      nodeDtoMap.set(innerNode.id, innerNode)
+    }
+
+    nodeDtoMap.set(dto.id, dto)
+  }
 
   let output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
-  for (const outerNode of computedNodeDtos) {
+  for (const node of nodeDtoMap.values()) {
     // Don't serialize muted nodes
     if (
-      outerNode.mode === LGraphEventMode.NEVER ||
-      outerNode.mode === LGraphEventMode.BYPASS
+      node.isVirtualNode ||
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
     ) {
       continue
     }
 
-    for (const node of outerNode.getInnerNodes()) {
-      if (
-        node.isVirtualNode ||
-        node.mode === LGraphEventMode.NEVER ||
-        node.mode === LGraphEventMode.BYPASS
-      ) {
+    const inputs: ComfyApiWorkflow[string]['inputs'] = {}
+    const { widgets } = node
+
+    // Store all widget values
+    if (widgets) {
+      for (const [i, widget] of widgets.entries()) {
+        if (!widget.name || widget.options?.serialize === false) continue
+
+        const widgetValue = widget.serializeValue
+          ? await widget.serializeValue(node, i)
+          : widget.value
+        // By default, Array values are reserved to represent node connections.
+        // We need to wrap the array as an object to avoid the misinterpretation
+        // of the array as a node connection.
+        // The backend automatically unwraps the object to an array during
+        // execution.
+        inputs[widget.name] = Array.isArray(widgetValue)
+          ? {
+              __value__: widgetValue
+            }
+          : widgetValue
+      }
+    }
+
+    // Store all node links
+    for (const [i, input] of node.inputs.entries()) {
+      const resolvedInput = node.resolveInput(i)
+      if (!resolvedInput) continue
+
+      // Resolved to an actual widget value rather than a node connection
+      if (resolvedInput.widgetInfo) {
+        const { value } = resolvedInput.widgetInfo
+        inputs[input.name] = Array.isArray(value) ? { __value__: value } : value
         continue
       }
 
-      const inputs: ComfyApiWorkflow[string]['inputs'] = {}
-      const { widgets } = node
+      inputs[input.name] = [
+        String(resolvedInput.origin_id),
+        // @ts-expect-error link.origin_slot is already number.
+        parseInt(resolvedInput.origin_slot)
+      ]
+    }
 
-      // Store all widget values
-      if (widgets) {
-        for (const [i, widget] of widgets.entries()) {
-          if (!widget.name || widget.options?.serialize === false) continue
-
-          const widgetValue = widget.serializeValue
-            ? await widget.serializeValue(node, i)
-            : widget.value
-          // By default, Array values are reserved to represent node connections.
-          // We need to wrap the array as an object to avoid the misinterpretation
-          // of the array as a node connection.
-          // The backend automatically unwraps the object to an array during
-          // execution.
-          inputs[widget.name] = Array.isArray(widgetValue)
-            ? {
-                __value__: widgetValue
-              }
-            : widgetValue
-        }
-      }
-
-      // Store all node links
-      for (const [i, input] of node.inputs.entries()) {
-        const resolvedInput = node.resolveInput(i)
-        if (!resolvedInput) continue
-
-        inputs[input.name] = [
-          String(resolvedInput.origin_id),
-          // @ts-expect-error link.origin_slot is already number.
-          parseInt(resolvedInput.origin_slot)
-        ]
-      }
-
-      output[String(node.id)] = {
-        inputs,
-        // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
-        // comfyClass.
-        class_type: node.comfyClass!,
-        // Ignored by the backend.
-        _meta: {
-          title: node.title
-        }
+    output[String(node.id)] = {
+      inputs,
+      // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
+      // comfyClass.
+      class_type: node.comfyClass!,
+      // Ignored by the backend.
+      _meta: {
+        title: node.title
       }
     }
   }
