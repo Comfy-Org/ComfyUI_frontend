@@ -22,7 +22,8 @@ function getKeyCode(key: string): string {
     c: 'KeyC',
     b: 'KeyB',
     '`': 'Backquote',
-    f: 'KeyF'
+    f: 'KeyF',
+    e: 'KeyE',
   }
   return keyToCodeMap[key] || key
 }
@@ -230,7 +231,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'e',
       ctrl: true,
       shift: true,
-      code: 'KeyE'
+      code: getKeyCode('e')
     },
     commandId: 'Comfy.Graph.ConvertToSubgraph'
   }

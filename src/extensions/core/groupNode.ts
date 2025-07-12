@@ -1768,7 +1768,7 @@ const ext: ComfyExtension = {
         alt: true,
         key: 'g',
         code: 'KeyG',
-      }
+      },
     },
     {
       commandId: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
@@ -1777,7 +1777,7 @@ const ext: ComfyExtension = {
         shift: true,
         key: 'G',
         code: 'KeyG',
-      }
+      },
     }
   ],
   setup() {
