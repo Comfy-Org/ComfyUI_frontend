@@ -375,7 +375,7 @@ onMounted(async () => {
   }
 
   // Add event listener with cleanup support
-  const cleanup = useEventListener(window, 'keydown', handleVideoDeleteKey, {
+  useEventListener(window, 'keydown', handleVideoDeleteKey, {
     capture: true  // Capture phase to intercept early
   })
 })
