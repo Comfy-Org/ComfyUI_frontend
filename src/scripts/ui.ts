@@ -264,15 +264,16 @@ class ComfyList {
                   ? item.remove
                   : {
                       name: 'Delete',
-                      cb: () => api.deleteItem(this.#type, item.prompt[1])
+                      cb: () =>
+                        api.deleteItem(this.#type, item.prompt.prompt_id)
                     }
-              return $el('div', { textContent: item.prompt[0] + ': ' }, [
+              return $el('div', { textContent: item.prompt.priority + ': ' }, [
                 $el('button', {
                   textContent: 'Load',
                   onclick: async () => {
                     await app.loadGraphData(
                       // @ts-expect-error fixme ts strict error
-                      item.prompt[3].extra_pnginfo.workflow,
+                      item.prompt.extra_data.extra_pnginfo.workflow,
                       true,
                       false
                     )

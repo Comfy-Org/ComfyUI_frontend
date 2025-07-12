@@ -11,6 +11,7 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
+  HistoryResponse,
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
@@ -23,6 +24,7 @@ import type {
   StatusWsMessage,
   StatusWsMessageStatus,
   SystemStats,
+  TaskPrompt,
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
@@ -686,13 +688,12 @@ export class ComfyApi extends EventTarget {
       const data = await res.json()
       return {
         // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: Record<number, any>) => ({
+        Running: data.queue_running.map((prompt: TaskPrompt) => ({
           taskType: 'Running',
           prompt,
-          // prompt[1] is the prompt id
-          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
+          remove: { name: 'Cancel', cb: () => api.interrupt(prompt.prompt_id) }
         })),
-        Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
+        Pending: data.queue_pending.map((prompt: TaskPrompt) => ({
           taskType: 'Pending',
           prompt
         }))
@@ -711,17 +712,48 @@ export class ComfyApi extends EventTarget {
     max_items: number = 200
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      const res = await this.fetchApi(`/history?max_items=${max_items}`)
-      const json: Promise<HistoryTaskItem[]> = await res.json()
+      const res = await this.fetchApi(`/history_v2?max_items=${max_items}`)
+      const json: HistoryResponse = await res.json()
+
+      // Extract history data from new format: { history: [{prompt_id: "...", ...}, ...] }
       return {
-        History: Object.values(json).map((item) => ({
-          ...item,
-          taskType: 'History'
-        }))
+        History: json.history.map(
+          (item): HistoryTaskItem => ({
+            ...item,
+            taskType: 'History'
+          })
+        )
       }
     } catch (error) {
       console.error(error)
       return { History: [] }
+    }
+  }
+
+  /**
+   * Gets workflow data for a specific prompt from history
+   * @param prompt_id The prompt ID to fetch workflow for
+   * @returns Workflow data for the specific prompt
+   */
+  async getWorkflowFromHistory(
+    prompt_id: string
+  ): Promise<ComfyWorkflowJSON | null> {
+    try {
+      const res = await this.fetchApi(`/history_v2/${prompt_id}`)
+      const json = await res.json()
+
+      // The /history_v2/{prompt_id} endpoint returns data for a specific prompt
+      // The response format is: { prompt_id: { prompt: [...], outputs: {...}, status: {...} } }
+      const historyItem = json[prompt_id]
+      if (!historyItem) return null
+
+      // Extract workflow from the prompt array
+      // prompt[3] contains extra_data which has extra_pnginfo.workflow
+      const workflow = historyItem.prompt?.[3]?.extra_pnginfo?.workflow
+      return workflow || null
+    } catch (error) {
+      console.error(`Failed to fetch workflow for prompt ${prompt_id}:`, error)
+      return null
     }
   }
 

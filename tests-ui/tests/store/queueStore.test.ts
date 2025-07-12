@@ -6,7 +6,11 @@ describe('TaskItemImpl', () => {
   it('should remove animated property from outputs during construction', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -26,7 +30,11 @@ describe('TaskItemImpl', () => {
   it('should handle outputs without animated property', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -42,7 +50,11 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from core', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -64,7 +76,11 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from VHS', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -93,7 +109,11 @@ describe('TaskItemImpl', () => {
   it('should recognize mp4 video from core', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -128,7 +148,11 @@ describe('TaskItemImpl', () => {
       it(`should recognize ${extension} audio`, () => {
         const taskItem = new TaskItemImpl(
           'History',
-          [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+          {
+            priority: 0,
+            prompt_id: 'prompt-id',
+            extra_data: { client_id: 'client-id' }
+          },
           { status_str: 'success', messages: [], completed: true },
           {
             'node-1': {

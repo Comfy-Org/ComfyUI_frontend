@@ -34,17 +34,21 @@ const getContentType = (filename: string, fileType: OutputFileType) => {
 }
 
 const setQueueIndex = (task: TaskItem) => {
-  task.prompt[0] = TaskHistory.queueIndex++
+  task.prompt.priority = TaskHistory.queueIndex++
 }
 
 const setPromptId = (task: TaskItem) => {
-  task.prompt[1] = uuidv4()
+  task.prompt.prompt_id = uuidv4()
 }
 
 export default class TaskHistory {
   static queueIndex = 0
   static readonly defaultTask: Readonly<HistoryTaskItem> = {
-    prompt: [0, 'prompt-id', {}, { client_id: uuidv4() }, []],
+    prompt: {
+      priority: 0,
+      prompt_id: 'prompt-id',
+      extra_data: { client_id: uuidv4() }
+    },
     outputs: {},
     status: {
       status_str: 'success',
@@ -75,7 +79,7 @@ export default class TaskHistory {
 
   private async handleGetView(route: Route) {
     const fileName = getFilenameParam(route.request())
-    if (!this.outputContentTypes.has(fileName)) route.continue()
+    if (!this.outputContentTypes.has(fileName)) return route.continue()
 
     const asset = this.loadAsset(fileName)
     return route.fulfill({
