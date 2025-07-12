@@ -267,21 +267,18 @@ app.registerExtension({
         let currentStream: MediaStream | null = null
         let recordWidget: IBaseWidget | null = null
 
+        let stopPromise: Promise<void> | null = null
+        let stopResolve: (() => void) | null = null
+
         audioUIWidget.serializeValue = async () => {
           if (isRecording && mediaRecorder) {
-            console.log('Auto-stopping recording before serialization...')
+            stopPromise = new Promise((resolve) => {
+              stopResolve = resolve
+            })
+
             mediaRecorder.stop()
 
-            await new Promise((resolve) => setTimeout(resolve, 500))
-
-            if (isRecording) {
-              console.warn('Force stopping recording...')
-              useAudioService().stopAllTracks(currentStream)
-              isRecording = false
-              if (recordWidget) {
-                recordWidget.label = t('g.startRecording')
-              }
-            }
+            await stopPromise
           }
 
           const audioSrc = audioUIWidget.element.src
@@ -336,6 +333,12 @@ app.registerExtension({
                   if (recordWidget) {
                     recordWidget.label = t('g.startRecording')
                   }
+
+                  if (stopResolve) {
+                    stopResolve()
+                    stopResolve = null
+                    stopPromise = null
+                  }
                 }
 
                 mediaRecorder.onerror = (event) => {
@@ -345,6 +348,12 @@ app.registerExtension({
 
                   if (recordWidget) {
                     recordWidget.label = t('g.startRecording')
+                  }
+
+                  if (stopResolve) {
+                    stopResolve()
+                    stopResolve = null
+                    stopPromise = null
                   }
                 }
 
