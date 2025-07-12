@@ -623,9 +623,15 @@ export class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(
-    folder: string
-  ): Promise<{ name: string; pathIndex: number }[]> {
+  async getModels(folder: string): Promise<
+    {
+      name: string
+      pathIndex: number
+      created: number
+      modified: number
+      size: number
+    }[]
+  > {
     const res = await this.fetchApi(`/experiment/models/${folder}`)
     if (res.status === 404) {
       return []
