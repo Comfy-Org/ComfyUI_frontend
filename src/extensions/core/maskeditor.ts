@@ -2681,6 +2681,8 @@ class UIManager {
   private paint_image!: HTMLImageElement
   private imageURL!: URL
   private darkMode: boolean = true
+  private maskLayerContainer: HTMLElement | null = null
+  private paintLayerContainer: HTMLElement| null = null
 
   private createColorPicker(): HTMLInputElement {
     const colorPicker = document.createElement('input')
@@ -3040,18 +3042,18 @@ class UIManager {
 
     resetBrushSettingsButton.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Arc)
-      this.messageBroker.publish('setBrushSize', 10)
-      this.messageBroker.publish('setBrushOpacity', 0.7)
+      this.messageBroker.publish('setBrushSize', 20)
+      this.messageBroker.publish('setBrushOpacity', 1)
       this.messageBroker.publish('setBrushHardness', 1)
-      this.messageBroker.publish('setBrushSmoothingPrecision', 10)
+      this.messageBroker.publish('setBrushSmoothingPrecision', 60)
 
       circle_shape.style.background = 'var(--p-button-text-primary-color)'
       square_shape.style.background = ''
 
-      thicknesSliderObj.slider.value = '10'
-      opacitySliderObj.slider.value = '0.7'
+      thicknesSliderObj.slider.value = '20'
+      opacitySliderObj.slider.value = '1'
       hardnessSliderObj.slider.value = '1'
-      brushSmoothingPrecisionSliderObj.slider.value = '10'
+      brushSmoothingPrecisionSliderObj.slider.value = '60'
 
       this.setBrushBorderRadius()
       this.updateBrushPreview()
@@ -3222,15 +3224,45 @@ class UIManager {
 
   activeLayer: 'mask' | 'rgb' = 'mask'
   layerButtons: Record<ImageLayer, HTMLButtonElement> = {
-    mask: document.createElement('button'),
-    rgb: document.createElement('button')
+    mask: (() => {
+      const btn = document.createElement('button')
+      btn.style.fontSize = '12px'
+      return btn
+    })(),
+    rgb: (() => {
+      const btn = document.createElement('button')
+      btn.style.fontSize = '12px'
+      return btn
+    })()
   }
   updateButtonsVisibility() {
-    allImageLayers.forEach((layer) => {
-      this.layerButtons[layer].style.display = 'block'
+      allImageLayers.forEach((layer) => {
+        const button = this.layerButtons[layer]
+        if (layer === this.activeLayer) {
+          button.style.opacity = '0.5'
+          button.disabled = true
+        } else {
+          button.style.opacity = '1'
+          button.disabled = false
+        }
+      })
+    }
+
+  // New method to update button visibility based on current tool
+  async updateLayerButtonsForTool() {
+    const currentTool = await this.messageBroker.pull('currentTool')
+    const isEraserTool = currentTool === Tools.Eraser
+    
+    // Show/hide buttons based on whether eraser tool is active
+    Object.values(this.layerButtons).forEach((button) => {
+      if (isEraserTool) {
+        button.style.display = 'block'
+      } else {
+        button.style.display = 'none'
+      }
     })
-    this.layerButtons[this.activeLayer].style.display = 'none'
   }
+
   async setActiveLayer(layer: 'mask' | 'rgb') {
     this.messageBroker.publish('setActiveLayer', layer)
     this.activeLayer = layer
@@ -3242,6 +3274,24 @@ class UIManager {
     }
     if (currentTool === Tools.PaintPen && layer === 'mask') {
       this.setToolTo(Tools.MaskPen)
+    }
+    this.updateActiveLayerHighlight()
+  }
+
+  updateActiveLayerHighlight() {
+    // Remove blue border from all containers
+    if (this.maskLayerContainer) {
+      this.maskLayerContainer.style.border = 'none'
+    }
+    if (this.paintLayerContainer) {
+      this.paintLayerContainer.style.border = 'none'
+    }
+    
+    // Add blue border to active layer container
+    if (this.activeLayer === 'mask' && this.maskLayerContainer) {
+      this.maskLayerContainer.style.border = '2px solid #007acc'
+    } else if (this.activeLayer === 'rgb' && this.paintLayerContainer) {
+      this.paintLayerContainer.style.border = '2px solid #007acc'
     }
   }
 
@@ -3261,17 +3311,23 @@ class UIManager {
     layer_selection_container.classList.add(accentColor)
     layer_selection_container.classList.add('maskEditor_layerRow')
 
-    this.layerButtons.mask.innerText = 'Activate Mask Layer'
+    this.layerButtons.mask.innerText = 'Activate Layer'
     this.layerButtons.mask.addEventListener('click', async () => {
       this.setActiveLayer('mask')
     })
 
-    this.layerButtons.rgb.innerText = 'Activate Paint Layer'
+    this.layerButtons.rgb.innerText = 'Activate Layer'
     this.layerButtons.rgb.addEventListener('click', async () => {
       this.setActiveLayer('rgb')
     })
+    
+    // Initially hide the buttons (they'll be shown when eraser tool is selected)
+    this.layerButtons.mask.style.display = 'none'
+    this.layerButtons.rgb.style.display = 'none'
+    
     this.setActiveLayer('mask')
 
+    // 1. MASK LAYER CONTAINER
     const mask_layer_title = this.createContainerTitle('Mask Layer')
     const mask_layer_container = this.createContainer(false)
     mask_layer_container.classList.add(accentColor)
@@ -3287,7 +3343,7 @@ class UIManager {
       if (!(event.target as HTMLInputElement)!.checked) {
         this.maskCanvas.style.opacity = '0'
       } else {
-        this.maskCanvas.style.opacity = String(this.mask_opacity) //change name
+        this.maskCanvas.style.opacity = String(this.mask_opacity)
       }
     })
 
@@ -3296,16 +3352,29 @@ class UIManager {
       'maskEditor_sidePanelLayerPreviewContainer'
     )
     mask_layer_image_container.innerHTML =
-      '<svg viewBox="0 0 20 20" style="">   <path class="cls-1" d="M1.31,5.32v9.36c0,.55.45,1,1,1h15.38c.55,0,1-.45,1-1V5.32c0-.55-.45-1-1-1H2.31c-.55,0-1,.45-1,1ZM11.19,13.44c-2.91.94-5.57-1.72-4.63-4.63.34-1.05,1.19-1.9,2.24-2.24,2.91-.94,5.57,1.72,4.63,4.63-.34,1.05-1.19,1.9-2.24,2.24Z"/> </svg>'
+      '<svg viewBox="0 0 20 20" style="">   <path class="cls-1" d="M1.31,5.32v9.36c0,.55.45,1,1,1h15.38c.55,0,1-.45,1-1V5.32c0-.55-.45-1-1-1H2.31c-.55,0-1,.45-1,1ZM11.19,13.44c-2.91.94-5.57-1.72-4.63-4.63.34-1.05,1.19-1.9,2.24-2.24,2.91-.94,5.57,1.72,4.63,4.63-.34,1.05-1.19-1.9-2.24,2.24Z"/> </svg>'
 
+    // Add checkbox, image container, and activate button to mask layer container
+    mask_layer_container.appendChild(mask_layer_visibility_checkbox)
+    mask_layer_container.appendChild(mask_layer_image_container)
+    mask_layer_container.appendChild(this.layerButtons.mask)
+
+    // Store reference to container for highlighting
+    this.maskLayerContainer = mask_layer_container
+
+    // 2. MASK BLENDING OPTIONS CONTAINER
+    const mask_blending_options_title = this.createContainerTitle('Mask Blending Options')
+    const mask_blending_options_container = this.createContainer(false)
+    // mask_blending_options_container.classList.add(accentColor)
+    mask_blending_options_container.classList.add('maskEditor_layerRow')
+    mask_blending_options_container.style.marginTop = '-9px'
+    mask_blending_options_container.style.marginBottom = '-6px'
     var blending_options = ['black', 'white', 'negative']
-
     const sidePanelDropdownAccent = this.darkMode
       ? 'maskEditor_sidePanelDropdown_dark'
       : 'maskEditor_sidePanelDropdown_light'
 
     var mask_layer_dropdown = document.createElement('select')
-    mask_layer_dropdown.classList.add(sidePanelDropdownAccent)
     mask_layer_dropdown.classList.add(sidePanelDropdownAccent)
     blending_options.forEach((option) => {
       var option_element = document.createElement('option')
@@ -3325,10 +3394,12 @@ class UIManager {
       this.updateMaskColor()
     })
 
-    mask_layer_container.appendChild(mask_layer_visibility_checkbox)
-    mask_layer_container.appendChild(mask_layer_image_container)
-    mask_layer_container.appendChild(mask_layer_dropdown)
+    // Center the dropdown in its container
+    // mask_blending_options_container.style.display = 'flex'
+    // mask_blending_options_container.style.justifyContent = 'center'
+    mask_blending_options_container.appendChild(mask_layer_dropdown)
 
+    // 3. MASK OPACITY SLIDER
     const mask_layer_opacity_sliderObj = this.createSlider(
       t('maskEditor.Mask Opacity'),
       0.0,
@@ -3348,58 +3419,19 @@ class UIManager {
     )
     this.maskOpacitySlider = mask_layer_opacity_sliderObj.slider
 
-    const image_layer_title = this.createContainerTitle(
-      t('maskEditor.Image Layer')
-    )
-
-    const image_layer_container = this.createContainer(false)
-    image_layer_container.classList.add(accentColor)
-    image_layer_container.classList.add('maskEditor_layerRow')
-
-    const image_layer_visibility_checkbox = document.createElement('input')
-    image_layer_visibility_checkbox.setAttribute('type', 'checkbox')
-    image_layer_visibility_checkbox.classList.add(
+    // 4. PAINT LAYER CONTAINER
+    const paint_layer_title = this.createContainerTitle('Paint Layer')
+    const paint_layer_container = this.createContainer(false)
+    paint_layer_container.classList.add(accentColor)
+    paint_layer_container.classList.add('maskEditor_layerRow')
+    
+    const paint_layer_checkbox = document.createElement('input')
+    paint_layer_checkbox.setAttribute('type', 'checkbox')
+    paint_layer_checkbox.classList.add(
       'maskEditor_sidePanelLayerCheckbox'
     )
-    image_layer_visibility_checkbox.checked = true
-    image_layer_visibility_checkbox.addEventListener('change', (event) => {
-      if (!(event.target as HTMLInputElement)!.checked) {
-        this.imgCanvas.style.opacity = '0'
-      } else {
-        this.imgCanvas.style.opacity = '1'
-      }
-    })
-
-    const image_layer_image_container = document.createElement('div')
-    image_layer_image_container.classList.add(
-      'maskEditor_sidePanelLayerPreviewContainer'
-    )
-
-    const image_layer_image = document.createElement('img')
-    image_layer_image.id = 'maskEditor_sidePanelImageLayerImage'
-    image_layer_image.src =
-      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ??
-      ''
-    this.sidebarImage = image_layer_image
-
-    image_layer_image_container.appendChild(image_layer_image)
-
-    image_layer_container.appendChild(image_layer_visibility_checkbox)
-    image_layer_container.appendChild(image_layer_image_container)
-    image_layer_container.appendChild(this.layerButtons.mask)
-
-    // Add RGB layer controls similar to Image layer
-    const rgbLayerContainer = this.createContainer(false)
-    rgbLayerContainer.classList.add(accentColor)
-    rgbLayerContainer.classList.add('maskEditor_layerRow')
-
-    const rgbLayerContainer_checkbox = document.createElement('input')
-    rgbLayerContainer_checkbox.setAttribute('type', 'checkbox')
-    rgbLayerContainer_checkbox.classList.add(
-      'maskEditor_sidePanelLayerCheckbox'
-    )
-    rgbLayerContainer_checkbox.checked = true
-    rgbLayerContainer_checkbox.addEventListener('change', (event) => {
+    paint_layer_checkbox.checked = true
+    paint_layer_checkbox.addEventListener('change', (event) => {
       if (!(event.target as HTMLInputElement)!.checked) {
         this.rgbCanvas.style.opacity = '0'
       } else {
@@ -3407,32 +3439,85 @@ class UIManager {
       }
     })
 
-    const rgb_layer_image_container = document.createElement('div')
-    rgb_layer_image_container.classList.add(
+    const paint_layer_image_container = document.createElement('div')
+    paint_layer_image_container.classList.add(
       'maskEditor_sidePanelLayerPreviewContainer'
     )
-    rgb_layer_image_container.innerHTML = `
+    paint_layer_image_container.innerHTML = `
       <svg viewBox="0 0 20 20">
         <path class="cls-1" d="M 17 6.965 c 0 0.235 -0.095 0.47 -0.275 0.655 l -6.51 6.52 c -0.045 0.035 -0.09 0.075 -0.135 0.11 c -0.035 -0.695 -0.605 -1.24 -1.305 -1.245 c 0.035 -0.06 0.08 -0.12 0.135 -0.17 l 6.52 -6.52 c 0.36 -0.36 0.945 -0.36 1.3 0 c 0.175 0.175 0.275 0.415 0.275 0.65 Z"/>
         <path class="cls-1" d="M 9.82 14.515 c 0 2.23 -3.23 1.59 -4.82 0 c 1.65 -0.235 2.375 -1.29 3.53 -1.29 c 0.715 0 1.29 0.58 1.29 1.29 Z"/>
       </svg>
     `
-    rgbLayerContainer.appendChild(rgbLayerContainer_checkbox)
-    rgbLayerContainer.appendChild(rgb_layer_image_container)
-    rgbLayerContainer.appendChild(this.layerButtons.rgb)
+    
+    paint_layer_container.appendChild(paint_layer_checkbox)
+    paint_layer_container.appendChild(paint_layer_image_container)
+    paint_layer_container.appendChild(this.layerButtons.rgb)
 
+    // Store reference to container for highlighting
+    this.paintLayerContainer = paint_layer_container
+
+    // 5. BASE IMAGE LAYER CONTAINER
+    const base_image_layer_title = this.createContainerTitle('Base Image Layer')
+    const base_image_layer_container = this.createContainer(false)
+    base_image_layer_container.classList.add(accentColor)
+    base_image_layer_container.classList.add('maskEditor_layerRow')
+
+    const base_image_layer_visibility_checkbox = document.createElement('input')
+    base_image_layer_visibility_checkbox.setAttribute('type', 'checkbox')
+    base_image_layer_visibility_checkbox.classList.add(
+      'maskEditor_sidePanelLayerCheckbox'
+    )
+    base_image_layer_visibility_checkbox.checked = true
+    base_image_layer_visibility_checkbox.addEventListener('change', (event) => {
+      if (!(event.target as HTMLInputElement)!.checked) {
+        this.imgCanvas.style.opacity = '0'
+      } else {
+        this.imgCanvas.style.opacity = '1'
+      }
+    })
+
+    const base_image_layer_image_container = document.createElement('div')
+    base_image_layer_image_container.classList.add(
+      'maskEditor_sidePanelLayerPreviewContainer'
+    )
+
+    const base_image_layer_image = document.createElement('img')
+    base_image_layer_image.id = 'maskEditor_sidePanelImageLayerImage'
+    base_image_layer_image.src =
+      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ??
+      ''
+    this.sidebarImage = base_image_layer_image
+
+    base_image_layer_image_container.appendChild(base_image_layer_image)
+
+    base_image_layer_container.appendChild(base_image_layer_visibility_checkbox)
+    base_image_layer_container.appendChild(base_image_layer_image_container)
+
+    // APPEND ALL CONTAINERS IN ORDER
     image_layer_settings_container.appendChild(image_layer_settings_title)
+    image_layer_settings_container.appendChild(mask_layer_opacity_sliderObj.container)
+    image_layer_settings_container.appendChild(mask_blending_options_title)
+    image_layer_settings_container.appendChild(mask_blending_options_container)
     image_layer_settings_container.appendChild(mask_layer_title)
     image_layer_settings_container.appendChild(mask_layer_container)
-    image_layer_settings_container.appendChild(
-      mask_layer_opacity_sliderObj.container
-    )
-    image_layer_settings_container.appendChild(image_layer_title)
-    image_layer_settings_container.appendChild(image_layer_container)
+    image_layer_settings_container.appendChild(paint_layer_title)
+    image_layer_settings_container.appendChild(paint_layer_container)
+    image_layer_settings_container.appendChild(base_image_layer_title)
+    image_layer_settings_container.appendChild(base_image_layer_container)
 
-    image_layer_settings_container.appendChild(rgbLayerContainer)
+    // Initialize the active layer highlighting
+    this.updateActiveLayerHighlight()
+
+    // Initialize button visibility based on current tool
+    this.updateLayerButtonsForTool()
 
     return image_layer_settings_container
+  }
+
+  // Method to be called when tool changes
+  async onToolChange() {
+    await this.updateLayerButtonsForTool()
   }
 
   private createHeadline(title: string) {
@@ -3701,6 +3786,7 @@ class UIManager {
       }
     }
     this.messageBroker.publish('setTool', tool)
+    this.onToolChange()
     const newActiveLayer = this.toolSettings[tool].newActiveLayerOnSet
     if (newActiveLayer) {
       this.setActiveLayer(newActiveLayer)
@@ -5266,13 +5352,13 @@ app.registerExtension({
       id: 'Comfy.MaskEditor.BrushSize.Increase',
       icon: 'pi pi-plus-circle',
       label: 'Increase Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old + 8, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old + 4, 1, 100))
     },
     {
       id: 'Comfy.MaskEditor.BrushSize.Decrease',
       icon: 'pi pi-minus-circle',
       label: 'Decrease Brush Size in MaskEditor',
-      function: () => changeBrushSize((old) => _.clamp(old - 8, 1, 100))
+      function: () => changeBrushSize((old) => _.clamp(old - 4, 1, 100))
     }
   ],
   init() {
