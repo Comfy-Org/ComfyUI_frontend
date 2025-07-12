@@ -43,6 +43,7 @@ var styles = `
     backdrop-filter: blur(10px);
     overflow: hidden;
     user-select: none;
+    --mask-editor-top-bar-height: 44px;
   }
   #maskEditor_sidePanelContainer {
     height: 100%;
@@ -58,11 +59,15 @@ var styles = `
     align-items: center;
     overflow-y: auto;
     width: 220px;
+    padding: 0 10px;
+  }
+  #maskEditor_sidePanelContent {
+    width: 100%;
   }
   #maskEditor_sidePanelShortcuts {
     display: flex;
     flex-direction: row;
-    width: 200px;
+    width: 100%;
     margin-top: 10px;
     gap: 10px;
     justify-content: center;
@@ -83,7 +88,7 @@ var styles = `
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 200px;
+    width: 100%;
     padding: 10px;
   }
   .maskEditor_sidePanelTitle {
@@ -172,12 +177,12 @@ var styles = `
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 200px;
+    width: 100%;
     align-items: center;
   }
   .maskEditor_sidePanelLayer {
     display: flex;
-    width: 200px;
+    width: 100%;
     height: 50px;
   }
   .maskEditor_sidePanelLayerVisibilityContainer {
@@ -315,7 +320,7 @@ var styles = `
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 200px;
+    width: 100%;
     padding: 10px;
   }
   #canvasBackground {
@@ -330,10 +335,10 @@ var styles = `
     margin-top: 10px;
   }
   .maskEditor_sidePanelSeparator {
-    width: 200px;
+    width: 100%;
     height: 2px;
     background: var(--border-color);
-    margin-top: 5px;
+    margin-top: 1.5em;
     margin-bottom: 5px;
   }
   #maskEditor_pointerZone {
@@ -365,14 +370,15 @@ var styles = `
   }
   #maskEditor_uiHorizontalContainer {
     width: 100%;
-    height: 100%;
+    height: calc(100% - var(--mask-editor-top-bar-height));
     display: flex;
   }
   #maskEditor_topBar {
     display: flex;
-    height: 44px;
+    height: var(--mask-editor-top-bar-height);
     align-items: center;
     background: var(--comfy-menu-bg);
+    flex-shrink: 0;
   }
   #maskEditor_topBarTitle {
     margin: 0;
@@ -386,7 +392,7 @@ var styles = `
     margin-right: 0.5rem;
     position: absolute;
     right: 0;
-    width: 200px;
+    width: 100%;
   }
   #maskEditor_topBarShortcutsContainer {
     display: flex;
@@ -524,6 +530,7 @@ var styles = `
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-bottom: 12px;
   }
 
   .maskEditor_sidePanelContainerRow {
@@ -670,7 +677,7 @@ var styles = `
 
   .maskEditor_layerRow {
     height: 50px;
-    width: 200px;
+    width: 100%;
     border-radius: 10px;
   }
 
@@ -2894,8 +2901,10 @@ class UIManager {
   }
 
   private async createSidePanel() {
-    const side_panel = this.createContainer(true)
-    side_panel.id = 'maskEditor_sidePanel'
+    const sidePanelWrapper = this.createContainer(true)
+    const side_panel = document.createElement('div')
+    sidePanelWrapper.id = 'maskEditor_sidePanel'
+    side_panel.id = 'maskEditor_sidePanelContent'
 
     const brush_settings = await this.createBrushSettings()
     brush_settings.id = 'maskEditor_brushSettings'
@@ -2918,8 +2927,9 @@ class UIManager {
     side_panel.appendChild(color_select_settings)
     side_panel.appendChild(separator)
     side_panel.appendChild(image_layer_settings)
+    sidePanelWrapper.appendChild(side_panel)
 
-    return side_panel
+    return sidePanelWrapper
   }
 
   private async createBrushSettings() {
@@ -3248,7 +3258,6 @@ class UIManager {
     })
   }
 
-  // New method to update button visibility based on current tool
   async updateLayerButtonsForTool() {
     const currentTool = await this.messageBroker.pull('currentTool')
     const isEraserTool = currentTool === Tools.Eraser
