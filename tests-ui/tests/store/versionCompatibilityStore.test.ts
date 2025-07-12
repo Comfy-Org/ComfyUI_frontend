@@ -98,6 +98,21 @@ describe('useVersionCompatibilityStore', () => {
       expect(store.isFrontendNewer).toBe(false)
       expect(store.hasVersionMismatch).toBe(false)
     })
+
+    it('should not detect mismatch when versions are not valid semver', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '080e6d4af809a46852d1c4b7ed85f06e8a3a72be', // git hash
+          required_frontend_version: '1.29.2.45' // invalid semver
+        }
+      }
+
+      await store.checkVersionCompatibility()
+
+      expect(store.isFrontendOutdated).toBe(false)
+      expect(store.isFrontendNewer).toBe(false)
+      expect(store.hasVersionMismatch).toBe(false)
+    })
   })
 
   describe('warning display logic', () => {

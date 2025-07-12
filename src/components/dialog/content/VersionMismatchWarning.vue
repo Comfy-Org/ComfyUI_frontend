@@ -71,10 +71,9 @@ const handleDismiss = () => {
 
 const handleUpdate = () => {
   // Open ComfyUI documentation or update instructions
-  window.open('https://docs.comfy.org/get_started/introduction', '_blank')
+  window.open(
+    'https://docs.comfy.org/installation/update_comfyui#missing-or-outdated-frontend%2C-workflow-templates%2C-node-after-updates',
+    '_blank'
+  )
 }
 </script>
-
-<style scoped>
-/* Custom styles if needed */
-</style>

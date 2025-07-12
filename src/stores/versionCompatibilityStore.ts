@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import config from '@/config'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { compareVersions } from '@/utils/formatUtil'
+import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
@@ -25,7 +25,12 @@ export const useVersionCompatibilityStore = defineStore(
     )
 
     const isFrontendOutdated = computed(() => {
-      if (!frontendVersion.value || !requiredFrontendVersion.value) {
+      if (
+        !frontendVersion.value ||
+        !requiredFrontendVersion.value ||
+        !isSemVer(frontendVersion.value) ||
+        !isSemVer(requiredFrontendVersion.value)
+      ) {
         return false
       }
       return (
@@ -35,7 +40,12 @@ export const useVersionCompatibilityStore = defineStore(
     })
 
     const isFrontendNewer = computed(() => {
-      if (!frontendVersion.value || !backendVersion.value) {
+      if (
+        !frontendVersion.value ||
+        !backendVersion.value ||
+        !isSemVer(frontendVersion.value) ||
+        !isSemVer(backendVersion.value)
+      ) {
         return false
       }
       const versionDiff = compareVersions(
@@ -49,13 +59,16 @@ export const useVersionCompatibilityStore = defineStore(
       return isFrontendOutdated.value || isFrontendNewer.value
     })
 
+    const currentVersionKey = computed(
+      () =>
+        `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+    )
+
     const shouldShowWarning = computed(() => {
       if (!hasVersionMismatch.value || isDismissed.value) {
         return false
       }
-
-      const currentVersionKey = `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
-      return dismissedVersion.value !== currentVersionKey
+      return dismissedVersion.value !== currentVersionKey.value
     })
 
     const warningMessage = computed(() => {
@@ -83,12 +96,11 @@ export const useVersionCompatibilityStore = defineStore(
 
     async function dismissWarning() {
       isDismissed.value = true
-      const currentVersionKey = `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
-      dismissedVersion.value = currentVersionKey
+      dismissedVersion.value = currentVersionKey.value
 
       await settingStore.set(
         'Comfy.VersionMismatch.DismissedVersion',
-        currentVersionKey
+        currentVersionKey.value
       )
     }
 
@@ -98,8 +110,7 @@ export const useVersionCompatibilityStore = defineStore(
       )
       if (dismissed) {
         dismissedVersion.value = dismissed
-        const currentVersionKey = `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
-        isDismissed.value = dismissed === currentVersionKey
+        isDismissed.value = dismissed === currentVersionKey.value
       }
     }
 
