@@ -304,6 +304,23 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }
+  function updateNodeDefDisplayName(nodeType: string, newDisplayName: string) {
+    const existingNodeDef = nodeDefsByName.value[nodeType]
+    if (!existingNodeDef) return
+
+    // Remove old display name mapping
+    delete nodeDefsByDisplayName.value[existingNodeDef.display_name]
+
+    // Create new node definition with updated display name
+    const updatedNodeDef = new ComfyNodeDefImpl({
+      ...existingNodeDef,
+      display_name: newDisplayName
+    })
+
+    // Update both mappings
+    nodeDefsByName.value[nodeType] = updatedNodeDef
+    nodeDefsByDisplayName.value[newDisplayName] = updatedNodeDef
+  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
     // @ts-expect-error Optional chaining used in index
@@ -324,6 +341,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
+    updateNodeDefDisplayName,
     fromLGraphNode
   }
 })
