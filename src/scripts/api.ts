@@ -1033,20 +1033,6 @@ export class ComfyApi extends EventTarget {
   getServerFeatures(): Record<string, any> {
     return { ...this.serverFeatureFlags }
   }
-
-  /**
-   * Updates the client feature flags.
-   *
-   * This is intentionally disabled for now. When we introduce an official Public API
-   * for the frontend, we'll introduce a function for custom frontend extensions to
-   * add their own feature flags in a way that won't interfere with other extensions
-   * or the builtin frontend flags.
-   */
-  /*
-  setClientFeatureFlags(flags: Record<string, any>): void {
-    this.clientFeatureFlags = flags
-  }
-  */
 }
 
 export const api = new ComfyApi()
