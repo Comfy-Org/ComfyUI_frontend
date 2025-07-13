@@ -2285,20 +2285,23 @@ class BrushTool {
       totalLength += Math.sqrt(dx * dx + dy * dy)
     }
 
-    const maxSteps = 30;
-    const minSteps = 2;
+    const maxSteps = 30
+    const minSteps = 2
 
     // Convert 1-100 range to 0-1 range
-    const smoothing = Math.min(Math.max(this.brushSettings.smoothingPrecision, 1), 100); // clamp 1-100
-    const normalizedSmoothing = (smoothing - 1) / 99; // Convert to 0-1 range
+    const smoothing = Math.min(
+      Math.max(this.brushSettings.smoothingPrecision, 1),
+      100
+    ) // clamp 1-100
+    const normalizedSmoothing = (smoothing - 1) / 99 // Convert to 0-1 range
 
     // Optionality to use exponential curve
     const stepNr = Math.round(
       minSteps + (maxSteps - minSteps) * Math.pow(normalizedSmoothing, 1)
-    );
+    )
 
     // Calculate step distance capped by brush size
-    const distanceBetweenPoints = totalLength / stepNr;
+    const distanceBetweenPoints = totalLength / stepNr
 
     let interpolatedPoints = points
 
@@ -2470,10 +2473,7 @@ class BrushTool {
           hardness,
           this.formatRgba(this.rgbColor, opacity * 0.5)
         )
-        gradient.addColorStop(
-          1,
-          this.formatRgba(this.rgbColor, 0)
-        )
+        gradient.addColorStop(1, this.formatRgba(this.rgbColor, 0))
       }
 
       rgbCtx.fillStyle = gradient
@@ -4182,7 +4182,7 @@ class UIManager {
     const centerY = cursorPoint.y + pan_offset.y
     const brush = this.brush
     const hardness = brushSettings.hardness
-    
+
     // Now that brush size is constant, preview is simple
     const brushRadius = brushSettings.size * zoom_ratio
     const previewSize = brushRadius * 2
