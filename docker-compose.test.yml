@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  comfyui:
+    build: .
+    ports:
+      - "8188:8188"
+    volumes:
+      - .:/app/ComfyUI_frontend
+      - /app/ComfyUI_frontend/node_modules
+      # Share ComfyUI backend directories with playwright container
+      - comfyui_user_data:/app/ComfyUI/user
+      - comfyui_models:/app/ComfyUI/models
+    environment:
+      - EXTRA_SERVER_PARAMS=--enable-cors-header --listen 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/api/system_stats"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      - test-network
+
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile.playwright
+    working_dir: /app
+    ports:
+      - "9323:9323"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+      # Mount the same shared volumes for backend state access
+      - comfyui_user_data:/app/ComfyUI/user
+      - comfyui_models:/app/ComfyUI/models
+    env_file:
+      - .env_example
+    environment:
+      # Override specific values for Docker environment
+      - PLAYWRIGHT_TEST_URL=http://comfyui:8188
+      - TEST_COMFYUI_DIR=/app/ComfyUI
+      - DEV_SERVER_COMFYUI_URL=http://comfyui:8188
+      - VITE_REMOTE_DEV=false
+      - NODE_OPTIONS=--max-old-space-size=4096
+      - UV_THREADPOOL_SIZE=128
+      - PLAYWRIGHT_WORKERS=4
+    depends_on:
+      comfyui:
+        condition: service_healthy
+    command: >
+      sh -c "
+        npx playwright test --reporter=html,line &&
+        npx playwright show-report --host=0.0.0.0 --port=9323 || true
+      "
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  comfyui_user_data:
+  comfyui_models:
