@@ -28,6 +28,13 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry'
   },
+  /* Global expect configuration for screenshot tolerance */
+  expect: {
+    toHaveScreenshot: {
+      /* Allow 3% difference in pixel values during local testing */
+      maxDiffPixelRatio: process.env.CI ? undefined : 0.03
+    }
+  },
   /* Path to global setup file. Exported function runs once before all the tests */
   globalSetup: './browser_tests/globalSetup.ts',
   /* Path to global teardown file. Exported function runs once after all the tests */
