@@ -2456,12 +2456,45 @@ class BrushTool {
     const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
     const currentTool = await this.messageBroker.pull('currentTool')
 
+    // Helper function to draw soft square brush
+    const drawSoftSquare = (
+      ctx: CanvasRenderingContext2D,
+      color: string,
+      centerOpacity: number
+    ) => {
+      const steps = 10
+      const hardRadius = brushRadius * hardness
+
+      for (let i = 0; i < steps; i++) {
+        const progress = i / (steps - 1)
+        const currentRadius = hardRadius + (brushRadius - hardRadius) * progress
+        const currentOpacity = centerOpacity * (1 - progress)
+
+        ctx.fillStyle = color.replace(/[\d.]+\)$/, `${currentOpacity})`)
+        ctx.beginPath()
+        ctx.rect(
+          x - currentRadius,
+          y - currentRadius,
+          currentRadius * 2,
+          currentRadius * 2
+        )
+        ctx.fill()
+      }
+    }
+
     // RGB brush logic
     if (
       this.activeLayer === 'rgb' &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
       const rgbaColor = this.formatRgba(this.rgbColor, opacity)
+
+      if (brushType === BrushShape.Rect && hardness < 1) {
+        drawSoftSquare(rgbCtx, rgbaColor, opacity)
+        return
+      }
+
+      // Original logic for circles and hard squares
       let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
 
       if (hardness === 1) {
@@ -2493,6 +2526,16 @@ class BrushTool {
     }
 
     // Mask brush logic
+    if (brushType === BrushShape.Rect && hardness < 1) {
+      const baseColor = isErasing
+        ? `rgba(255, 255, 255, ${opacity})`
+        : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+
+      drawSoftSquare(maskCtx, baseColor, opacity)
+      return
+    }
+
+    // Original logic for circles and hard squares
     let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
 
     if (hardness === 1) {
