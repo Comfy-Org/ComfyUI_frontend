@@ -1023,7 +1023,6 @@ class MaskEditorDialog extends ComfyDialog {
       paintedImage: `clipspace-painted-${timestamp}.png`,
       paintedMaskedImage: `clipspace-painted-masked-${timestamp}.png`
     }
-
     const toRef = (filename: string): Ref => ({
       filename,
       subfolder: 'clipspace',
@@ -1154,7 +1153,7 @@ class MaskEditorDialog extends ComfyDialog {
     formData: FormData,
     isPaintLayer = true
   ) {
-    const success = requestWithRetries(() =>
+    const success = await requestWithRetries(() =>
       api.fetchApi('/upload/image', {
         method: 'POST',
         body: formData
