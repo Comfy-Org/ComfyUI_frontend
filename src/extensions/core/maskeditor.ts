@@ -10,6 +10,10 @@ import { $el, ComfyDialog } from '../../scripts/ui'
 import { getStorageValue, setStorageValue } from '../../scripts/utils'
 import { hexToRgb } from '../../utils/colorUtil'
 import { ClipspaceDialog } from './clipspace'
+import {
+  imageLayerFilenamesByTimestamp,
+  imageLayerFilenamesIfApplicable
+} from './maskEditorLayerFilenames'
 import { MaskEditorDialogOld } from './maskEditorOld'
 
 var styles = `
@@ -1016,18 +1020,8 @@ class MaskEditorDialog extends ComfyDialog {
       CompositionOperation.SourceOver
     refinedMaskCanvasCtx.putImageData(refinedMaskOnlyData, 0, 0)
 
-    const timestamp = performance.now()
-    const filenames = {
-      maskedImage: `clipspace-mask-${timestamp}.png`,
-      paint: `clipspace-paint-${timestamp}.png`,
-      paintedImage: `clipspace-painted-${timestamp}.png`,
-      paintedMaskedImage: `clipspace-painted-masked-${timestamp}.png`
-    }
-    const toRef = (filename: string): Ref => ({
-      filename,
-      subfolder: 'clipspace',
-      type: 'input'
-    })
+    const timestamp = Math.round(performance.now())
+    const filenames = imageLayerFilenamesByTimestamp(timestamp)
     const refs = {
       maskedImage: toRef(filenames.maskedImage),
       paint: toRef(filenames.paint),
@@ -1172,12 +1166,7 @@ class MaskEditorDialog extends ComfyDialog {
       if (ComfyApp.clipspace?.imgs && paintedIndex !== undefined) {
         // Create and set new image
         const newImage = new Image()
-        newImage.src = api.apiURL(
-          '/view?' +
-            new URLSearchParams(filepath).toString() +
-            app.getPreviewFormatParam() +
-            app.getRandParam()
-        )
+        newImage.src = mkFileUrl({ ref: filepath, preview: true })
         ComfyApp.clipspace.imgs[paintedIndex] = newImage
 
         // Update images array if it exists
@@ -1218,12 +1207,7 @@ class MaskEditorDialog extends ComfyDialog {
       if (!ComfyApp.clipspace?.imgs || indexToSaveTo === undefined) return
       // Create and set new image
       const newImage = new Image()
-      newImage.src = api.apiURL(
-        '/view?' +
-          new URLSearchParams(filepath).toString() +
-          app.getPreviewFormatParam() +
-          app.getRandParam()
-      )
+      newImage.src = mkFileUrl({ ref: filepath, preview: true })
       ComfyApp.clipspace.imgs[indexToSaveTo] = newImage
 
       // Update images array if it exists
@@ -3979,29 +3963,51 @@ class UIManager {
     imgCtx!.clearRect(0, 0, this.imgCanvas.width, this.imgCanvas.height)
     maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
 
-    const alpha_url = new URL(
-      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ??
-        ''
-    )
-    alpha_url.searchParams.delete('channel')
-    alpha_url.searchParams.delete('preview')
-    alpha_url.searchParams.set('channel', 'a')
-    let mask_image: HTMLImageElement = await this.loadImage(alpha_url)
+    const mainImageUrl =
+      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src
 
     // original image load
-    if (
-      !ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src
-    ) {
+    if (!mainImageUrl) {
       throw new Error(
         'Unable to access image source - clipspace or image is null'
       )
     }
 
-    const rgb_url = new URL(
-      ComfyApp.clipspace.imgs[ComfyApp.clipspace.selectedIndex].src
-    )
+    const mainImageFilename =
+      new URL(mainImageUrl).searchParams.get('filename') ?? undefined
+
+    const combinedImageFilename =
+      ComfyApp.clipspace?.combinedIndex !== undefined &&
+      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace.combinedIndex]?.src
+        ? new URL(
+            ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
+          ).searchParams.get('filename')
+        : undefined
+
+    const imageLayerFilenames =
+      mainImageFilename !== undefined
+        ? imageLayerFilenamesIfApplicable(
+            combinedImageFilename ?? mainImageFilename
+          )
+        : undefined
+
+    const inputUrls = {
+      baseImagePlusMask: imageLayerFilenames?.maskedImage
+        ? mkFileUrl({ ref: toRef(imageLayerFilenames.maskedImage) })
+        : mainImageUrl,
+      paintLayer: imageLayerFilenames?.paint
+        ? mkFileUrl({ ref: toRef(imageLayerFilenames.paint) })
+        : undefined
+    }
+
+    const alpha_url = new URL(inputUrls.baseImagePlusMask)
+    alpha_url.searchParams.delete('channel')
+    alpha_url.searchParams.delete('preview')
+    alpha_url.searchParams.set('channel', 'a')
+    let mask_image: HTMLImageElement = await this.loadImage(alpha_url)
+
+    const rgb_url = new URL(inputUrls.baseImagePlusMask)
     this.imageURL = rgb_url
-    console.log(rgb_url)
     rgb_url.searchParams.delete('channel')
     rgb_url.searchParams.set('channel', 'rgb')
     this.image = new Image()
@@ -4013,9 +4019,8 @@ class UIManager {
       img.src = rgb_url.toString()
     })
 
-    const paintedIndex = ComfyApp.clipspace.paintedIndex
-    if (ComfyApp.clipspace.imgs[paintedIndex]) {
-      const paintURL = new URL(ComfyApp.clipspace.imgs[paintedIndex].src)
+    if (inputUrls.paintLayer) {
+      const paintURL = new URL(inputUrls.paintLayer)
       this.paint_image = new Image()
       this.paint_image = await new Promise<HTMLImageElement>(
         (resolve, reject) => {
@@ -4025,19 +4030,6 @@ class UIManager {
           img.src = paintURL.toString()
         }
       )
-    } else if (ComfyApp.clipspace.images) {
-      if (ComfyApp.clipspace.images[paintedIndex]) {
-        const paintURL = new URL(ComfyApp.clipspace.images[paintedIndex].src)
-        this.paint_image = new Image()
-        this.paint_image = await new Promise<HTMLImageElement>(
-          (resolve, reject) => {
-            const img = new Image()
-            img.onload = () => resolve(img)
-            img.onerror = reject
-            img.src = paintURL.toString()
-          }
-        )
-      }
     }
 
     maskCanvas.width = this.image.width
@@ -5532,4 +5524,23 @@ const iconsHtml: Record<Tools, string> = {
       <path class="cls-1" d="M19.64,29.03c0,4.46-6.46,3.18-9.64,0,3.3-.47,4.75-2.58,7.06-2.58,1.43,0,2.58,1.16,2.58,2.58Z"/>
     </svg>
   `
+}
+
+const toRef = (filename: string): Ref => ({
+  filename,
+  subfolder: 'clipspace',
+  type: 'input'
+})
+
+const mkFileUrl = (props: { ref: Ref; preview?: boolean }) => {
+  const pathPlusQueryParams = api.apiURL(
+    '/view?' +
+      new URLSearchParams(props.ref).toString() +
+      app.getPreviewFormatParam() +
+      app.getRandParam()
+  )
+  const imageElement = new Image()
+  imageElement.src = pathPlusQueryParams
+  const fullyResolvedUrl = imageElement.src
+  return fullyResolvedUrl
 }

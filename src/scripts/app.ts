@@ -479,10 +479,6 @@ export class ComfyApp {
         }
       }
 
-      node.imgs?.forEach((imgEl) => {
-        if (imgEl.src === combinedImgSrc) return
-        imgEl.setAttribute('data-nopreview', 'true')
-      })
       app.graph.setDirtyCanvas(true)
     }
   }
