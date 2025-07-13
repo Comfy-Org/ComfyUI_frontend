@@ -28,11 +28,13 @@ describe('API Feature Flags', () => {
 
     // Reset API state
     api.feature_flags = {}
-    api.clientFeatureFlags = {
+
+    // Mock getClientFeatureFlags to return test feature flags
+    vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
       supports_preview_metadata: true,
       api_version: '1.0.0',
       capabilities: ['bulk_operations', 'async_nodes']
-    }
+    })
   })
 
   afterEach(() => {
@@ -162,18 +164,33 @@ describe('API Feature Flags', () => {
   })
 
   describe('Client feature flags configuration', () => {
-    it('should use default client feature flags', () => {
-      // Verify default flags are loaded from config
-      expect(api.clientFeatureFlags).toHaveProperty(
-        'supports_preview_metadata',
-        true
-      )
-      expect(api.clientFeatureFlags).toHaveProperty('api_version', '1.0.0')
-      expect(api.clientFeatureFlags).toHaveProperty('capabilities')
-      expect(api.clientFeatureFlags.capabilities).toEqual([
-        'bulk_operations',
-        'async_nodes'
-      ])
+    it('should use mocked client feature flags', () => {
+      // Verify mocked flags are returned
+      const clientFlags = api.getClientFeatureFlags()
+      expect(clientFlags).toEqual({
+        supports_preview_metadata: true,
+        api_version: '1.0.0',
+        capabilities: ['bulk_operations', 'async_nodes']
+      })
+    })
+
+    it('should return a copy of client feature flags', () => {
+      // Temporarily restore the real implementation for this test
+      vi.mocked(api.getClientFeatureFlags).mockRestore()
+
+      // Verify that modifications to returned object don't affect original
+      const clientFlags1 = api.getClientFeatureFlags()
+      const clientFlags2 = api.getClientFeatureFlags()
+
+      // Should be different objects
+      expect(clientFlags1).not.toBe(clientFlags2)
+
+      // But with same content
+      expect(clientFlags1).toEqual(clientFlags2)
+
+      // Modifying one should not affect the other
+      clientFlags1.test_flag = true
+      expect(api.getClientFeatureFlags()).not.toHaveProperty('test_flag')
     })
   })
 

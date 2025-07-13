@@ -238,9 +238,12 @@ export class ComfyApi extends EventTarget {
   reportedUnknownMessageTypes = new Set<string>()
 
   /**
-   * Feature flags supported by this frontend client.
+   * Get feature flags supported by this frontend client.
+   * Returns a copy to prevent external modification.
    */
-  clientFeatureFlags: Record<string, any> = { ...defaultClientFeatureFlags }
+  getClientFeatureFlags(): Record<string, any> {
+    return { ...defaultClientFeatureFlags }
+  }
 
   /**
    * Feature flags received from the backend server.
@@ -404,7 +407,7 @@ export class ComfyApi extends EventTarget {
       this.socket!.send(
         JSON.stringify({
           type: 'feature_flags',
-          data: this.clientFeatureFlags
+          data: this.getClientFeatureFlags()
         })
       )
 
