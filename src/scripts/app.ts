@@ -333,19 +333,17 @@ export class ComfyApp {
       }))
     }
 
-    var imgs: HTMLImageElement[] | undefined = undefined
+    var imgs = undefined
     var orig_imgs = undefined
     if (node.imgs != undefined) {
-      const initClipspaceImgsWith = (source: HTMLImageElement[]) => {
-        imgs = []
-        orig_imgs = []
-        for (let i = 0; i < source.length; i++) {
-          imgs[i] = new Image()
-          imgs[i].src = source[i].src
-          orig_imgs[i] = imgs[i]
-        }
+      imgs = []
+      orig_imgs = []
+
+      for (let i = 0; i < node.imgs.length; i++) {
+        imgs[i] = new Image()
+        imgs[i].src = node.imgs[i].src
+        orig_imgs[i] = imgs[i]
       }
-      initClipspaceImgsWith(node.maskEditorLayers ?? node.imgs)
     }
 
     var selectedIndex = 0
@@ -423,7 +421,7 @@ export class ComfyApp {
         node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
       }
 
-      // Store layers separately if the combined image exists
+      // Paste the combined canvas if it exists
       if (
         ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
         node.imgs &&
@@ -431,11 +429,7 @@ export class ComfyApp {
       ) {
         const combinedImg = new Image()
         combinedImg.src = combinedImgSrc
-        const layers = [...node.imgs, combinedImg]
-        node.imgs = [combinedImg]
-        node.maskEditorLayers = layers
-      } else {
-        node.maskEditorLayers = undefined
+        node.imgs.push(combinedImg) // Add the combined canvas to the node's images
       }
 
       if (node.widgets) {
@@ -485,6 +479,10 @@ export class ComfyApp {
         }
       }
 
+      node.imgs?.forEach((imgEl) => {
+        if (imgEl.src === combinedImgSrc) return
+        imgEl.setAttribute('data-nopreview', 'true')
+      })
       app.graph.setDirtyCanvas(true)
     }
   }

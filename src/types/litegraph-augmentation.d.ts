@@ -204,6 +204,5 @@ declare module '@comfyorg/litegraph' {
    */
   interface LGraphNode {
     widgets_values?: unknown[]
-    maskEditorLayers?: HTMLImageElement[]
   }
 }
