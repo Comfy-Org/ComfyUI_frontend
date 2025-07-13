@@ -8,6 +8,7 @@ import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 import { getStorageValue, setStorageValue } from '../../scripts/utils'
+import { hexToRgb } from '../../utils/colorUtil'
 import { ClipspaceDialog } from './clipspace'
 import { MaskEditorDialogOld } from './maskEditorOld'
 
@@ -1015,12 +1016,12 @@ class MaskEditorDialog extends ComfyDialog {
       CompositionOperation.SourceOver
     refinedMaskCanvasCtx.putImageData(refinedMaskOnlyData, 0, 0)
 
+    const timestamp = performance.now()
     const filenames = {
-      maskedImage: 'clipspace-mask-' + performance.now() + '.png',
-      paint: 'clipspace-paint-' + performance.now() + '.png',
-      paintedImage: 'clipspace-painted-' + performance.now() + '.png',
-      paintedMaskedImage:
-        'clipspace-painted-masked-' + performance.now() + '.png'
+      maskedImage: `clipspace-mask-${timestamp}.png`,
+      paint: `clipspace-paint-${timestamp}.png`,
+      paintedImage: `clipspace-painted-${timestamp}.png`,
+      paintedMaskedImage: `clipspace-painted-masked-${timestamp}.png`
     }
 
     const toRef = (filename: string): Ref => ({
@@ -2462,19 +2463,18 @@ class BrushTool {
       this.activeLayer === 'rgb' &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
-      const rgbaColor = this.hexToRgba(this.rgbColor, opacity)
+      const rgbaColor = this.formatRgba(this.rgbColor, opacity)
       let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
-      console.log(hardness)
       if (hardness === 1) {
         gradient.addColorStop(0, rgbaColor)
         gradient.addColorStop(
           1,
-          this.hexToRgba(this.rgbColor, brushSettingsSliderOpacity)
+          this.formatRgba(this.rgbColor, brushSettingsSliderOpacity)
         )
       } else {
         gradient.addColorStop(0, rgbaColor)
         gradient.addColorStop(hardness, rgbaColor)
-        gradient.addColorStop(1, this.hexToRgba(this.rgbColor, 0))
+        gradient.addColorStop(1, this.formatRgba(this.rgbColor, 0))
       }
       rgbCtx.fillStyle = gradient
       rgbCtx.beginPath()
@@ -2551,15 +2551,8 @@ class BrushTool {
     maskCtx.fill()
   }
 
-  private hexToRgba(hex: string, alpha: number): string {
-    // Remove # if present
-    hex = hex.replace(/^#/, '')
-
-    // Parse r, g, b values
-    const r = parseInt(hex.substring(0, 2), 16)
-    const g = parseInt(hex.substring(2, 4), 16)
-    const b = parseInt(hex.substring(4, 6), 16)
-
+  private formatRgba(hex: string, alpha: number): string {
+    const { r, g, b } = hexToRgb(hex)
     return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
