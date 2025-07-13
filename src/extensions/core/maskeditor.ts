@@ -2285,14 +2285,16 @@ class BrushTool {
       totalLength += Math.sqrt(dx * dx + dy * dy)
     }
 
-    const maxSteps = 20;
+    const maxSteps = 30;
     const minSteps = 2;
 
-    const smoothing = Math.min(Math.max(this.brushSettings.smoothingPrecision, 0), 1); // clamp 0-1
+    // Convert 1-100 range to 0-1 range
+    const smoothing = Math.min(Math.max(this.brushSettings.smoothingPrecision, 1), 100); // clamp 1-100
+    const normalizedSmoothing = (smoothing - 1) / 99; // Convert to 0-1 range
 
-    // Use exponential smoothing curve for gradual increase
+    // Optionality to use exponential curve
     const stepNr = Math.round(
-      minSteps + (maxSteps - minSteps) * Math.pow(smoothing, 1.7)
+      minSteps + (maxSteps - minSteps) * Math.pow(normalizedSmoothing, 1)
     );
 
     // Calculate step distance capped by brush size
