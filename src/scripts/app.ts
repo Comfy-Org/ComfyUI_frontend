@@ -421,7 +421,7 @@ export class ComfyApp {
         node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
       }
 
-      // Paste the combined canvas if it exists
+      // Store only combined image inside the node if it exists
       if (
         ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
         node.imgs &&
@@ -429,7 +429,7 @@ export class ComfyApp {
       ) {
         const combinedImg = new Image()
         combinedImg.src = combinedImgSrc
-        node.imgs.push(combinedImg) // Add the combined canvas to the node's images
+        node.imgs = [combinedImg]
       }
 
       if (node.widgets) {
