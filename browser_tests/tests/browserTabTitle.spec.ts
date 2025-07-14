@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-// Testing Danger workflow triggers
 test.describe('Browser tab title', () => {
   test.describe('Beta Menu', () => {
     test.beforeEach(async ({ comfyPage }) => {
