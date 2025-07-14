@@ -116,39 +116,41 @@ curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/
 # 2. Load REPOSITORY_GUIDE.md for deep architectural understanding
 curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md > review_knowledge/repository_guide.md
 
-# 3. Load relevant knowledge based on changed files
+# 3. Discover and load relevant knowledge folders
+echo "Discovering available knowledge folders..."
+# Fetch the knowledge directory listing
+KNOWLEDGE_FOLDERS=$(curl -s https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/knowledge | jq -r '.[] | select(.type=="dir") | .name')
+
+echo "Available knowledge folders: $KNOWLEDGE_FOLDERS"
+
+# Analyze changed files to determine which knowledge folders might be relevant
 CHANGED_FILES=$(cat changed_files.txt)
 
-# Node system knowledge
-if echo "$CHANGED_FILES" | grep -qE "(node|extension|widget)"; then
-  curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/.claude/knowledge/node-system.md > review_knowledge/node_system.md
-fi
+# For each knowledge folder, check if it might be relevant to the PR
+for folder in $KNOWLEDGE_FOLDERS; do
+  # Simple heuristic: if folder name appears in changed file paths or PR context
+  if echo "$CHANGED_FILES $PR_TITLE $PR_BODY" | grep -qi "$folder"; then
+    echo "Loading knowledge folder: $folder"
+    # Fetch all files in that knowledge folder
+    curl -s https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/knowledge/$folder | \
+      jq -r '.[] | select(.type=="file") | .download_url' | \
+      while read url; do
+        filename=$(basename "$url")
+        curl -s "$url" > "review_knowledge/${folder}_${filename}"
+      done
+  fi
+done
 
-# UI/Components knowledge
-if echo "$CHANGED_FILES" | grep -qE "(components|views|composables)"; then
-  curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/.claude/knowledge/ui-components.md > review_knowledge/ui_components.md
-fi
-
-# State management knowledge
-if echo "$CHANGED_FILES" | grep -qE "(stores|pinia)"; then
-  curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/.claude/knowledge/state-management.md > review_knowledge/state_management.md
-fi
-
-# API patterns knowledge
-if echo "$CHANGED_FILES" | grep -qE "(api|service)"; then
-  curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/.claude/knowledge/api-patterns.md > review_knowledge/api_patterns.md
-fi
-
-# 4. Load validation rules
+# 4. Load validation rules from the repository
 echo "Loading validation rules..."
-curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/.claude/commands/validation/frontend-code-standards.md > review_knowledge/frontend_standards.md
-curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/.claude/commands/validation/security-audit.md > review_knowledge/security_audit.md
-curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/.claude/commands/validation/performance-check.md > review_knowledge/performance_check.md
+VALIDATION_FILES=$(curl -s https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/commands/validation | jq -r '.[] | select(.name | contains("frontend") or contains("security") or contains("performance")) | .download_url')
 
-# 5. Load global CLAUDE.md
-curl -s https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/CLAUDE.md > review_knowledge/global_claude.md
+for url in $VALIDATION_FILES; do
+  filename=$(basename "$url")
+  curl -s "$url" > "review_knowledge/validation_${filename}"
+done
 
-# 6. Load local project guidelines
+# 5. Load local project guidelines
 if [ -f "CLAUDE.md" ]; then
   cp CLAUDE.md review_knowledge/local_claude.md
 fi
