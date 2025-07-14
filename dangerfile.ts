@@ -17,8 +17,8 @@ const shouldRunChecks = async () => {
   for (const file of srcChanges) {
     const diff = await danger.git.diffForFile(file)
     if (diff) {
-      const additions = (diff.added?.match(/\n/g) || []).length
-      const deletions = (diff.removed?.match(/\n/g) || []).length
+      const additions = diff.added?.split('\n').filter(line => line.trim()).length || 0
+      const deletions = diff.removed?.split('\n').filter(line => line.trim()).length || 0
       totalLinesChanged += additions + deletions
     }
   }
