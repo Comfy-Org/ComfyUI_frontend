@@ -161,7 +161,7 @@ fi
 
 ## Phase 3: Deep Analysis Instructions
 
-Now perform a comprehensive analysis. This is NOT a superficial check - analyze like a senior engineer would:
+Perform a comprehensive analysis covering these areas:
 
 ### 3.1 Architectural Analysis
 Based on the repository guide and project summary, evaluate:
@@ -177,6 +177,7 @@ Based on the repository guide and project summary, evaluate:
 - DRY violations that aren't caught by simple duplication checks
 - Proper abstraction levels
 - Interface design and API clarity
+- No leftover debug code (console.log, commented code, TODO comments)
 
 ### 3.3 Security Deep Dive
 Beyond obvious vulnerabilities:
@@ -187,8 +188,8 @@ Beyond obvious vulnerabilities:
 - Extension security boundaries
 
 ### 3.4 Performance Analysis
-- Bundle size impact
 - Render performance implications
+- Layout thrashing prevention
 - Memory leak potential
 - Network request optimization
 - State management efficiency
@@ -201,11 +202,17 @@ Beyond obvious vulnerabilities:
 
 ## Phase 4: Create Detailed Review Comments
 
-For each issue found, create a detailed inline comment with:
-1. Clear explanation of the issue
-2. Why it matters in this specific context
-3. Concrete suggestion for improvement
-4. Code example when applicable
+CRITICAL: Keep comments extremely concise and effective. Use only as many words as absolutely necessary.
+- NO markdown formatting (no #, ##, ###, **, etc.)
+- NO emojis
+- Get to the point immediately
+- Burden the reader as little as possible
+
+For each issue found, create a concise inline comment with:
+1. What's wrong (one line)
+2. Why it matters (one line)
+3. How to fix it (one line)
+4. Code example only if essential
 
 ```bash
 # Helper function for comprehensive comments
