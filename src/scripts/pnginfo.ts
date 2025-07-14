@@ -19,7 +19,7 @@ export function getAvifMetadata(file: File): Promise<Record<string, string>> {
 }
 
 // @ts-expect-error fixme ts strict error
-export function parseExifData(exifData) {
+function parseExifData(exifData) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
   const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
 

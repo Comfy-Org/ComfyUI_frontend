@@ -392,10 +392,10 @@ export function getFromAvifFile(file: File): Promise<Record<string, string>> {
         const comfyMetadata = parseAvifMetadata(buffer)
         const result: Record<string, string> = {}
         if (comfyMetadata.prompt) {
-          result['Prompt'] = JSON.stringify(comfyMetadata.prompt)
+          result.prompt = JSON.stringify(comfyMetadata.prompt)
         }
         if (comfyMetadata.workflow) {
-          result['Workflow'] = JSON.stringify(comfyMetadata.workflow)
+          result.workflow = JSON.stringify(comfyMetadata.workflow)
         }
         resolve(result)
       } catch (e) {

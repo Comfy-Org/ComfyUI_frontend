@@ -1357,10 +1357,7 @@ export class ComfyApp {
         this.showErrorOnFileLoad(file)
       }
     } else if (file.type === 'image/avif') {
-      const pngInfo = await getAvifMetadata(file)
-      // Support loading workflows from that webp custom node.
-      const workflow = pngInfo?.workflow || pngInfo?.Workflow
-      const prompt = pngInfo?.prompt || pngInfo?.Prompt
+      const { workflow, prompt } = await getAvifMetadata(file)
 
       if (workflow) {
         this.loadGraphData(JSON.parse(workflow), true, true, fileName)
