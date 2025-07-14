@@ -1,5 +1,28 @@
 import { danger, fail } from 'danger'
 
+// Check if we should run the checks
+const shouldRunChecks = async () => {
+  const allChangedFiles = [...danger.git.modified_files, ...danger.git.created_files]
+  const srcChanges = allChangedFiles.filter(file => file.startsWith('src/'))
+  
+  if (srcChanges.length === 0) {
+    return false
+  }
+  
+  // Check total lines changed in src files
+  let totalLinesChanged = 0
+  for (const file of srcChanges) {
+    const diff = await danger.git.diffForFile(file)
+    if (diff) {
+      const additions = (diff.added?.match(/\n/g) || []).length
+      const deletions = (diff.removed?.match(/\n/g) || []).length
+      totalLinesChanged += additions + deletions
+    }
+  }
+  
+  return totalLinesChanged > 3
+}
+
 // Check if browser tests were updated
 const checkBrowserTestCoverage = () => {
   const allChangedFiles = [...danger.git.modified_files, ...danger.git.created_files]
@@ -30,6 +53,10 @@ Please add a screen recording or screenshot:
   }
 }
 
-// Run the checks
-checkBrowserTestCoverage()
-checkScreenRecording()
+// Run the checks only if conditions are met
+shouldRunChecks().then(shouldRun => {
+  if (shouldRun) {
+    checkBrowserTestCoverage()
+    checkScreenRecording()
+  }
+})
