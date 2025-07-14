@@ -262,6 +262,17 @@ KNOWLEDGE_FOUND=false
 KNOWLEDGE_CACHE_DIR=".claude-knowledge-cache"
 mkdir -p "$KNOWLEDGE_CACHE_DIR"
 
+# Option to use cloned prompt library for better performance
+PROMPT_LIBRARY_PATH="../comfy-claude-prompt-library"
+if [ -d "$PROMPT_LIBRARY_PATH" ]; then
+  echo "Using local prompt library at $PROMPT_LIBRARY_PATH"
+  USE_LOCAL_PROMPT_LIBRARY=true
+  log_lesson "Improvements" "Using local prompt library is much faster than API calls"
+else
+  echo "No local prompt library found, will use GitHub API"
+  USE_LOCAL_PROMPT_LIBRARY=false
+fi
+
 # Function to fetch with cache
 fetch_with_cache() {
   local url=$1
@@ -311,7 +322,17 @@ fetch_with_cache() {
 
 # Load REPOSITORY_GUIDE.md for deep architectural understanding
 echo "Loading ComfyUI Frontend repository guide..."
-fetch_with_cache "https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md" "review_knowledge/repository_guide.md"
+if [ "$USE_LOCAL_PROMPT_LIBRARY" = "true" ] && [ -f "$PROMPT_LIBRARY_PATH/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md" ]; then
+  if [ "$KNOWLEDGE_FOUND" = "false" ]; then
+    mkdir -p review_knowledge
+    KNOWLEDGE_FOUND=true
+  fi
+  cp "$PROMPT_LIBRARY_PATH/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md" "review_knowledge/repository_guide.md"
+  echo "Loaded repository guide from local prompt library"
+  log_lesson "Improvements" "Local prompt library access is much faster"
+else
+  fetch_with_cache "https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md" "review_knowledge/repository_guide.md"
+fi
 
 # 3. Discover and load relevant knowledge folders from GitHub API
 echo "Discovering available knowledge folders..."
