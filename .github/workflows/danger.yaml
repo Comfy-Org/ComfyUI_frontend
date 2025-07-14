@@ -1,7 +1,13 @@
 name: Danger PR Review
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, edited, synchronize]
+
+permissions:
+  contents: read
+  issues: write # What Danger needs to comment on PRs
+  pull-requests: write
+  statuses: write
 
 jobs:
   danger:
@@ -10,6 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Setup Node.js
