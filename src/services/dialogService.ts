@@ -23,7 +23,11 @@ import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsCo
 import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
+import {
+  type DialogComponentProps,
+  type ShowDialogOptions,
+  useDialogStore
+} from '@/stores/dialogStore'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -428,9 +432,13 @@ export const useDialogService = () => {
   }
 
   function showNodeConflictDialog(
-    props: InstanceType<typeof NodeConflictDialogContent>['$props'] = {}
+    options: InstanceType<typeof NodeConflictDialogContent>['$props'] & {
+      dialogComponentProps?: DialogComponentProps
+    } = {}
   ) {
-    dialogStore.showDialog({
+    const { dialogComponentProps, ...props } = options
+
+    return dialogStore.showDialog({
       key: 'global-node-conflict',
       headerComponent: NodeConflictHeader,
       footerComponent: NodeConflictFooter,
@@ -447,7 +455,8 @@ export const useDialogService = () => {
                 '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 !bg-black text-white'
             }
           }
-        }
+        },
+        ...dialogComponentProps
       },
       props
     })

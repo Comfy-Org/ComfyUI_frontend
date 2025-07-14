@@ -1,5 +1,6 @@
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -39,6 +40,9 @@ export function useConflictDetection() {
 
   // Registry API request cancellation
   const abortController = ref<AbortController | null>(null)
+
+  // Acknowledgment management
+  const acknowledgment = useConflictAcknowledgment()
 
   // Computed properties
   const hasConflicts = computed(() =>
@@ -627,7 +631,12 @@ export function useConflictDetection() {
           mergedConflicts
         )
 
-        // TODO: Show red dot on Help Center
+        // Check for ComfyUI version change to reset acknowledgments
+        if (sysEnv.comfyui_version !== 'unknown') {
+          acknowledgment.checkComfyUIVersionChange(sysEnv.comfyui_version)
+        }
+
+        // TODO: Show red dot on Help Center based on acknowledgment.shouldShowRedDot
         // TODO: Store conflict state for event-based dialog triggers
       }
 
@@ -697,6 +706,62 @@ export function useConflictDetection() {
 
   // Helper functions (implementations at the bottom of the file)
 
+  /**
+   * Check if conflicts should trigger modal display after "What's New" dismissal
+   */
+  async function shouldShowConflictModalAfterUpdate(): Promise<boolean> {
+    console.log(
+      '[ConflictDetection] Checking if conflict modal should show after update...'
+    )
+
+    // Ensure conflict detection has run
+    if (detectionResults.value.length === 0) {
+      console.log(
+        '[ConflictDetection] No detection results, running conflict detection...'
+      )
+      await performConflictDetection()
+    }
+
+    // Check if this is a version update scenario
+    // In a real scenario, this would check actual version change
+    // For now, we'll assume it's an update if we have conflicts and modal hasn't been dismissed
+    const hasActualConflicts = hasConflicts.value
+    const canShowModal = acknowledgment.shouldShowConflictModal.value
+
+    console.log('[ConflictDetection] Modal check:', {
+      hasConflicts: hasActualConflicts,
+      canShowModal: canShowModal,
+      conflictedPackagesCount: conflictedPackages.value.length
+    })
+
+    return hasActualConflicts && canShowModal
+  }
+
+  /**
+   * Mark conflict modal as dismissed
+   */
+  function dismissConflictModal(): void {
+    acknowledgment.dismissConflictModal()
+  }
+
+  /**
+   * Mark red dot notification as dismissed
+   */
+  function dismissRedDotNotification(): void {
+    acknowledgment.dismissRedDotNotification()
+  }
+
+  /**
+   * Acknowledge a specific conflict
+   */
+  function acknowledgePackageConflict(
+    packageId: string,
+    conflictType: string
+  ): void {
+    const currentVersion = systemEnvironment.value?.comfyui_version || 'unknown'
+    acknowledgment.acknowledgeConflict(packageId, conflictType, currentVersion)
+  }
+
   return {
     // State
     isDetecting: readonly(isDetecting),
@@ -712,11 +777,20 @@ export function useConflictDetection() {
     bannedPackages,
     securityPendingPackages,
 
+    // Acknowledgment state
+    shouldShowConflictModal: acknowledgment.shouldShowConflictModal,
+    shouldShowRedDot: acknowledgment.shouldShowRedDot,
+    acknowledgedPackageIds: acknowledgment.acknowledgedPackageIds,
+
     // Methods
     performConflictDetection,
     detectSystemEnvironment,
     initializeConflictDetection,
-    cancelRequests
+    cancelRequests,
+    shouldShowConflictModalAfterUpdate,
+    dismissConflictModal,
+    dismissRedDotNotification,
+    acknowledgePackageConflict
   }
 }
 

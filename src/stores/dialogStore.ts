@@ -28,7 +28,7 @@ interface CustomDialogComponentProps {
   pt?: DialogPassThroughOptions
 }
 
-type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
+export type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
   CustomDialogComponentProps
 
 interface DialogInstance {

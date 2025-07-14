@@ -42,6 +42,7 @@
           'sidebar-right': sidebarLocation === 'right',
           'small-sidebar': sidebarSize === 'small'
         }"
+        @whats-new-dismissed="handleWhatsNewDismissed"
       />
     </Teleport>
 
@@ -63,6 +64,8 @@ import { computed, onMounted, ref } from 'vue'
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useDialogService } from '@/services/dialogService'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -70,6 +73,8 @@ import SidebarIcon from './SidebarIcon.vue'
 
 const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
+const conflictDetection = useConflictDetection()
+const dialogService = useDialogService()
 const { shouldShowRedDot } = storeToRefs(releaseStore)
 const isHelpCenterVisible = ref(false)
 
@@ -85,6 +90,52 @@ const toggleHelpCenter = () => {
 
 const closeHelpCenter = () => {
   isHelpCenterVisible.value = false
+}
+
+/**
+ * Handle What's New popup dismissal
+ * Check if conflict modal should be shown after ComfyUI update
+ */
+const handleWhatsNewDismissed = async () => {
+  console.log(
+    "[HelpCenter] What's New popup dismissed, checking for conflicts..."
+  )
+
+  try {
+    // Check if conflict modal should be shown after update
+    const shouldShow =
+      await conflictDetection.shouldShowConflictModalAfterUpdate()
+
+    if (shouldShow) {
+      console.log('[HelpCenter] Conflict modal should be shown after update')
+      showConflictModal()
+    } else {
+      console.log('[HelpCenter] No conflicts or already acknowledged')
+    }
+  } catch (error) {
+    console.error('[HelpCenter] Error checking conflict modal:', error)
+  }
+}
+
+/**
+ * Show the node conflict dialog with current conflict data
+ */
+const showConflictModal = () => {
+  // Pass conflict data to the dialog, including onClose callback
+  const conflictData = {
+    conflictedPackages: conflictDetection.conflictedPackages.value
+  }
+
+  // Show dialog with onClose callback in dialogComponentProps
+  dialogService.showNodeConflictDialog({
+    ...conflictData,
+    dialogComponentProps: {
+      onClose: () => {
+        conflictDetection.dismissConflictModal()
+        console.log('[HelpCenter] Conflict modal dismissed by user')
+      }
+    }
+  })
 }
 
 // Initialize release store on mount

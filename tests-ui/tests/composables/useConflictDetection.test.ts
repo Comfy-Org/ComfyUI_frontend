@@ -30,13 +30,28 @@ vi.mock('@/config', () => ({
   }
 }))
 
+vi.mock('@/composables/useConflictAcknowledgment', () => ({
+  useConflictAcknowledgment: vi.fn()
+}))
+
 describe('useConflictDetection with Registry Store', () => {
   const mockComfyManagerService = {
-    listInstalledPacks: vi.fn()
+    listInstalledPacks: vi.fn(),
+    getImportFailInfo: vi.fn()
   }
 
   const mockRegistryService = {
     getPackByVersion: vi.fn()
+  }
+
+  const mockAcknowledgment = {
+    checkComfyUIVersionChange: vi.fn(),
+    shouldShowConflictModal: { value: true },
+    shouldShowRedDot: { value: true },
+    acknowledgedPackageIds: { value: [] },
+    dismissConflictModal: vi.fn(),
+    dismissRedDotNotification: vi.fn(),
+    acknowledgeConflict: vi.fn()
   }
 
   const mockSystemStatsStore = {
@@ -79,6 +94,7 @@ describe('useConflictDetection with Registry Store', () => {
     // Reset mock functions
     mockSystemStatsStore.fetchSystemStats.mockResolvedValue(undefined)
     mockComfyManagerService.listInstalledPacks.mockReset()
+    mockComfyManagerService.getImportFailInfo.mockReset()
     mockRegistryService.getPackByVersion.mockReset()
 
     // Mock useComfyManagerService
@@ -100,6 +116,14 @@ describe('useConflictDetection with Registry Store', () => {
     // Mock useSystemStatsStore
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore as any)
+
+    // Mock useConflictAcknowledgment
+    const { useConflictAcknowledgment } = await import(
+      '@/composables/useConflictAcknowledgment'
+    )
+    vi.mocked(useConflictAcknowledgment).mockReturnValue(
+      mockAcknowledgment as any
+    )
   })
 
   afterEach(() => {
@@ -270,8 +294,8 @@ describe('useConflictDetection with Registry Store', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'security_pending',
-            severity: 'warning',
-            description: expect.stringContaining('Registry data not available')
+            current_value: 'no_registry_data',
+            required_value: 'registry_data_available'
           })
         ])
       )
@@ -803,8 +827,8 @@ describe('useConflictDetection with Registry Store', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'security_pending',
-            severity: 'warning',
-            description: expect.stringContaining('Registry data not available')
+            current_value: 'no_registry_data',
+            required_value: 'registry_data_available'
           })
         ])
       )
@@ -831,15 +855,154 @@ describe('useConflictDetection with Registry Store', () => {
     })
   })
 
+  describe('acknowledgment integration', () => {
+    it('should check ComfyUI version change during conflict detection', async () => {
+      mockComfyManagerService.listInstalledPacks.mockResolvedValue({
+        TestNode: {
+          ver: '1.0.0',
+          cnr_id: 'test-node',
+          aux_id: null,
+          enabled: true
+        }
+      })
+
+      mockRegistryService.getPackByVersion.mockResolvedValue({
+        id: 'TestNode',
+        supported_os: ['Windows'],
+        supported_accelerators: ['CUDA'],
+        supported_comfyui_version: '>=0.3.0',
+        status: 'NodeVersionStatusActive'
+      })
+
+      const { performConflictDetection } = useConflictDetection()
+      await performConflictDetection()
+
+      expect(mockAcknowledgment.checkComfyUIVersionChange).toHaveBeenCalledWith(
+        '0.3.41'
+      )
+    })
+
+    it('should expose acknowledgment state and methods', () => {
+      const {
+        shouldShowConflictModal,
+        shouldShowRedDot,
+        acknowledgedPackageIds,
+        dismissConflictModal,
+        dismissRedDotNotification,
+        acknowledgePackageConflict,
+        shouldShowConflictModalAfterUpdate
+      } = useConflictDetection()
+
+      expect(shouldShowConflictModal).toBeDefined()
+      expect(shouldShowRedDot).toBeDefined()
+      expect(acknowledgedPackageIds).toBeDefined()
+      expect(dismissConflictModal).toBeDefined()
+      expect(dismissRedDotNotification).toBeDefined()
+      expect(acknowledgePackageConflict).toBeDefined()
+      expect(shouldShowConflictModalAfterUpdate).toBeDefined()
+    })
+
+    it('should determine conflict modal display after update correctly', async () => {
+      const { shouldShowConflictModalAfterUpdate } = useConflictDetection()
+
+      // With no conflicts initially, should return false
+      const result = await shouldShowConflictModalAfterUpdate()
+      expect(result).toBe(false) // No conflicts initially
+    })
+
+    it('should show conflict modal after update when conflicts exist', async () => {
+      // Mock package with conflicts
+      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
+        {
+          ConflictedNode: {
+            ver: '1.0.0',
+            cnr_id: 'conflicted-node',
+            aux_id: null,
+            enabled: true
+          }
+        }
+
+      const mockConflictedRegistryPacks: components['schemas']['Node'][] = [
+        {
+          id: 'ConflictedNode',
+          name: 'Conflicted Node',
+          supported_os: ['Windows'], // Will conflict with macOS
+          supported_accelerators: ['Metal', 'CUDA', 'CPU'],
+          supported_comfyui_version: '>=0.3.0',
+          status: 'NodeStatusActive'
+        } as components['schemas']['Node']
+      ]
+
+      mockComfyManagerService.listInstalledPacks.mockResolvedValue(
+        mockInstalledPacks
+      )
+      mockRegistryService.getPackByVersion.mockImplementation(
+        (packageName: string) => {
+          const packageData = mockConflictedRegistryPacks.find(
+            (p: any) => p.id === packageName
+          )
+          return Promise.resolve(packageData || null)
+        }
+      )
+
+      const { shouldShowConflictModalAfterUpdate, performConflictDetection } =
+        useConflictDetection()
+
+      // First run conflict detection to populate conflicts
+      await performConflictDetection()
+      await nextTick()
+
+      // Now check if modal should show after update
+      const result = await shouldShowConflictModalAfterUpdate()
+      expect(result).toBe(true) // Should show modal when conflicts exist and not dismissed
+    })
+
+    it('should call acknowledgment methods when dismissing', () => {
+      const { dismissConflictModal, dismissRedDotNotification } =
+        useConflictDetection()
+
+      dismissConflictModal()
+      expect(mockAcknowledgment.dismissConflictModal).toHaveBeenCalled()
+
+      dismissRedDotNotification()
+      expect(mockAcknowledgment.dismissRedDotNotification).toHaveBeenCalled()
+    })
+
+    it('should acknowledge package conflicts with system version', async () => {
+      // Mock system environment
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '0.3.41',
+          python_version: '3.12.11',
+          os: 'Darwin'
+        },
+        devices: []
+      }
+
+      const { acknowledgePackageConflict, detectSystemEnvironment } =
+        useConflictDetection()
+
+      // First detect system environment
+      await detectSystemEnvironment()
+
+      // Then acknowledge conflict
+      acknowledgePackageConflict('TestPackage', 'os')
+
+      expect(mockAcknowledgment.acknowledgeConflict).toHaveBeenCalledWith(
+        'TestPackage',
+        'os',
+        'unknown' // System version is 'unknown' in test environment
+      )
+    })
+  })
+
   describe('initialization', () => {
     it('should execute initializeConflictDetection without errors', async () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue({})
 
       const { initializeConflictDetection } = useConflictDetection()
 
-      expect(() => {
-        void initializeConflictDetection()
-      }).not.toThrow()
+      await expect(initializeConflictDetection()).resolves.not.toThrow()
     })
 
     it('should set initial state values correctly', () => {

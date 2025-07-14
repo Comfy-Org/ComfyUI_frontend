@@ -61,7 +61,7 @@
         >
           <div class="flex-1 flex">
             <span class="text-xs font-bold text-yellow-400 mr-2">{{
-              props.conflicts.length
+              conflictData.length
             }}</span>
             <span class="text-xs font-bold text-white">{{
               $t('manager.conflicts.extensionAtRisk')
@@ -85,7 +85,7 @@
           class="py-2 px-4 flex flex-col gap-2.5 max-h-[142px] overflow-y-auto scrollbar-hide"
         >
           <div
-            v-for="conflictResult in props.conflicts"
+            v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
             class="flex items-center justify-between h-6 px-4 flex-shrink-0 conflict-list-item"
           >
@@ -114,10 +114,14 @@ import type {
 
 interface Props {
   conflicts?: ConflictDetectionResult[]
+  conflictedPackages?: ConflictDetectionResult[]
+  onDismiss?: () => void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  conflicts: () => []
+  conflicts: () => [],
+  conflictedPackages: () => [],
+  onDismiss: () => {}
 })
 
 const { t } = useI18n()
@@ -125,9 +129,16 @@ const { t } = useI18n()
 const conflictsExpanded = ref<boolean>(false)
 const extensionsExpanded = ref<boolean>(false)
 
+// Use conflictedPackages if provided, otherwise fallback to conflicts
+const conflictData = computed(() =>
+  props.conflictedPackages.length > 0
+    ? props.conflictedPackages
+    : props.conflicts
+)
+
 const allConflictDetails = computed(() => {
   const details: ConflictDetail[] = []
-  props.conflicts.forEach((conflictResult) => {
+  conflictData.value.forEach((conflictResult) => {
     conflictResult.conflicts.forEach((conflict) => {
       details.push(conflict)
     })
