@@ -17,6 +17,8 @@ const shouldRunChecks = async () => {
   for (const file of srcChanges) {
     const diff = await danger.git.diffForFile(file)
     if (diff) {
+      // Count only lines with actual content (non-empty after trimming whitespace)
+      // This excludes empty lines and lines containing only spaces/tabs
       const additions = diff.added?.split('\n').filter(line => line.trim()).length || 0
       const deletions = diff.removed?.split('\n').filter(line => line.trim()).length || 0
       totalLinesChanged += additions + deletions
