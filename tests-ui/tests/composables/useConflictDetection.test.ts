@@ -231,7 +231,8 @@ describe('useConflictDetection with Registry Store', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'banned',
-            severity: 'error'
+            current_value: 'installed',
+            required_value: 'not_banned'
           })
         ])
       )
@@ -380,8 +381,8 @@ describe('useConflictDetection with Registry Store', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'os',
-            severity: 'error',
-            description: expect.stringContaining('Unsupported operating system')
+            current_value: 'macOS',
+            required_value: expect.stringContaining('Windows')
           })
         ])
       )
@@ -433,10 +434,8 @@ describe('useConflictDetection with Registry Store', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'accelerator',
-            severity: 'error',
-            description: expect.stringContaining(
-              'Required GPU/accelerator not available'
-            )
+            current_value: expect.any(String),
+            required_value: expect.stringContaining('CUDA')
           })
         ])
       )
@@ -487,12 +486,13 @@ describe('useConflictDetection with Registry Store', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'banned',
-            severity: 'error',
-            description: expect.stringContaining('Package is banned')
+            current_value: 'installed',
+            required_value: 'not_banned'
           })
         ])
       )
-      expect(bannedNode.recommended_action.action_type).toBe('disable')
+      // Banned nodes should have 'banned' conflict type
+      expect(bannedNode.conflicts.some((c) => c.type === 'banned')).toBe(true)
     })
 
     it('should treat locally disabled packages as banned', async () => {
@@ -541,12 +541,13 @@ describe('useConflictDetection with Registry Store', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'banned',
-            severity: 'error',
-            description: expect.stringContaining('Package is disabled locally')
+            current_value: 'installed',
+            required_value: 'not_banned'
           })
         ])
       )
-      expect(disabledNode.recommended_action.action_type).toBe('disable')
+      // Disabled nodes should have 'banned' conflict type
+      expect(disabledNode.conflicts.some((c) => c.type === 'banned')).toBe(true)
     })
   })
 
@@ -599,8 +600,8 @@ describe('useConflictDetection with Registry Store', () => {
       expect(hasConflicts.value).toBe(true)
     })
 
-    it('should return only error-level conflicts for criticalConflicts', async () => {
-      // Mock package with error-level conflict
+    it('should return packages with conflicts', async () => {
+      // Mock package with conflicts
       const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
         {
           ErrorNode: {
@@ -634,17 +635,15 @@ describe('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { criticalConflicts, performConflictDetection } =
+      const { conflictedPackages, performConflictDetection } =
         useConflictDetection()
 
       await performConflictDetection()
       await nextTick()
 
-      expect(criticalConflicts.value.length).toBeGreaterThan(0)
+      expect(conflictedPackages.value.length).toBeGreaterThan(0)
       expect(
-        criticalConflicts.value.every(
-          (conflict) => conflict.severity === 'error'
-        )
+        conflictedPackages.value.every((result) => result.has_conflict === true)
       ).toBe(true)
     })
 

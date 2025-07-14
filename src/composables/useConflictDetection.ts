@@ -545,17 +545,6 @@ export function useConflictDetection() {
   }
 
   /**
-   * Detects extension loading and execution conflicts.
-   * Currently not used - focusing on custom node packs only per requirements.
-   * @returns Empty array as extension checking is not required
-   */
-  function detectExtensionConflicts(): ConflictDetectionResult[] {
-    // Extension conflict detection removed per requirements
-    // Only custom node packs are checked via Manager API
-    return []
-  }
-
-  /**
    * Performs complete conflict detection.
    * @returns Promise that resolves to conflict detection response
    */
