@@ -4,342 +4,7 @@
  */
 
 export interface paths {
-  '/customnode/getmappings': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get node-to-package mappings
-     * @description Provides unified mapping between nodes and node packages
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Source mode (e.g., "local", "remote") */
-          mode?: components['parameters']['modeParam']
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Successful operation */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': {
-              [key: string]: unknown[][]
-            }
-          }
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/fetch_updates': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Check for updates
-     * @description Fetches updates for custom nodes
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Source mode (e.g., "local", "remote") */
-          mode?: components['parameters']['modeParam']
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description No updates available */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Updates found */
-        201: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Error occurred */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/installed': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get installed custom nodes
-     * @description Returns a list of installed node packages
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Lists mode, default or imported */
-          mode?: 'default' | 'imported'
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Successful operation */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': {
-              [key: string]: components['schemas']['NodePackageMetadata']
-            }
-          }
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/getlist': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get custom node list
-     * @description Provides a list of available custom nodes
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Source mode (e.g., "local", "remote") */
-          mode?: components['parameters']['modeParam']
-          /** @description Skip update check */
-          skip_update?: boolean
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Successful operation */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': {
-              channel?: string
-              node_packs?: {
-                [key: string]: components['schemas']['NodePackageMetadata']
-              }
-            }
-          }
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/alternatives': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get alternative node options
-     * @description Provides alternatives for nodes
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Source mode (e.g., "local", "remote") */
-          mode?: components['parameters']['modeParam']
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Successful operation */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': {
-              [key: string]: Record<string, never>
-            }
-          }
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/versions/{node_name}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get available versions for a node
-     * @description Lists all available versions for a specific node
-     */
-    get: {
-      parameters: {
-        query?: never
-        header?: never
-        path: {
-          node_name: string
-        }
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Successful operation */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': {
-              version?: string
-            }[]
-          }
-        }
-        /** @description Node not found */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/disabled_versions/{node_name}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get disabled versions for a node
-     * @description Lists all disabled versions for a specific node
-     */
-    get: {
-      parameters: {
-        query?: never
-        header?: never
-        path: {
-          node_name: string
-        }
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Successful operation */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': {
-              version?: string
-            }[]
-          }
-        }
-        /** @description Node not found */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/import_fail_info': {
+  '/v2/manager/queue/task': {
     parameters: {
       query?: never
       header?: never
@@ -349,8 +14,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Get import failure information
-     * @description Returns information about why a node failed to import
+     * Add task to queue
+     * @description Adds a new task to the processing queue
      */
     post: {
       parameters: {
@@ -361,77 +26,26 @@ export interface paths {
       }
       requestBody: {
         content: {
-          'application/json': {
-            cnr_id?: string
-            url?: string
-          }
+          'application/json': components['schemas']['QueueTaskItem']
         }
       }
       responses: {
-        /** @description Successful operation */
+        /** @description Task queued successfully */
         200: {
           headers: {
             [name: string]: unknown
           }
           content?: never
         }
-        /** @description No information available */
+        /** @description Invalid task data */
         400: {
           headers: {
             [name: string]: unknown
           }
           content?: never
         }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/customnode/install/git_url': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Install custom node via Git URL
-     * @description Installs a custom node from a Git repository URL
-     */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'text/plain': string
-        }
-      }
-      responses: {
-        /** @description Installation successful or already installed */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Installation failed */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
+        /** @description Internal server error */
+        500: {
           headers: {
             [name: string]: unknown
           }
@@ -445,190 +59,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/customnode/install/pip': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Install custom node dependencies via pip
-     * @description Installs Python package dependencies for custom nodes
-     */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'text/plain': string
-        }
-      }
-      responses: {
-        /** @description Installation successful */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/externalmodel/getlist': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get external model list
-     * @description Provides a list of available external models
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Source mode (e.g., "local", "remote") */
-          mode?: components['parameters']['modeParam']
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Successful operation */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': {
-              models?: components['schemas']['ModelMetadata'][]
-            }
-          }
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/update_all': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Update all custom nodes
-     * @description Queues update operations for all installed custom nodes
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Source mode (e.g., "local", "remote") */
-          mode?: components['parameters']['modeParam']
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Update queued successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Processing already in progress */
-        401: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/reset': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Reset queue
-     * @description Resets the operation queue
-     */
-    get: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Queue reset successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/status': {
+  '/v2/manager/queue/status': {
     parameters: {
       query?: never
       header?: never
@@ -637,11 +68,14 @@ export interface paths {
     }
     /**
      * Get queue status
-     * @description Returns the current status of the operation queue
+     * @description Returns the current status of the operation queue with optional client filtering
      */
     get: {
       parameters: {
-        query?: never
+        query?: {
+          /** @description Client ID for filtering tasks */
+          client_id?: components['parameters']['clientIdParam']
+        }
         header?: never
         path?: never
         cookie?: never
@@ -667,48 +101,50 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/queue/install': {
+  '/v2/manager/queue/history': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    get?: never
-    put?: never
     /**
-     * Install custom node
-     * @description Queues installation of a custom node
+     * Get task history
+     * @description Get task history with optional filtering
      */
-    post: {
+    get: {
       parameters: {
-        query?: never
+        query?: {
+          /** @description Batch history ID (for file-based history) */
+          id?: string
+          /** @description Client ID for filtering tasks */
+          client_id?: components['parameters']['clientIdParam']
+          /** @description Specific task ID to retrieve */
+          ui_id?: components['parameters']['uiIdParam']
+          /** @description Maximum number of items to return */
+          max_items?: components['parameters']['maxItemsParam']
+          /** @description Offset for pagination */
+          offset?: components['parameters']['offsetParam']
+        }
         header?: never
         path?: never
         cookie?: never
       }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['NodePackageMetadata']
-        }
-      }
+      requestBody?: never
       responses: {
-        /** @description Installation queued successfully */
+        /** @description Successful operation */
         200: {
           headers: {
             [name: string]: unknown
           }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
+          content: {
+            'application/json':
+              | components['schemas']['HistoryResponse']
+              | Record<string, never>
           }
-          content?: never
         }
-        /** @description Target node not found or security issue */
-        404: {
+        /** @description Error retrieving history */
+        400: {
           headers: {
             [name: string]: unknown
           }
@@ -716,13 +152,61 @@ export interface paths {
         }
       }
     }
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
     patch?: never
     trace?: never
   }
-  '/manager/queue/start': {
+  '/v2/manager/queue/history_list': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get available batch history files
+     * @description Returns a list of batch history IDs sorted by modification time
+     */
+    get: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Successful operation */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['HistoryListResponse']
+          }
+        }
+        /** @description Error retrieving history list */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/manager/queue/start': {
     parameters: {
       query?: never
       header?: never
@@ -766,240 +250,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/queue/fix': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Fix custom node
-     * @description Attempts to fix a broken custom node installation
-     */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['NodePackageMetadata']
-        }
-      }
-      responses: {
-        /** @description Fix operation queued successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/reinstall': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Reinstall custom node
-     * @description Uninstalls and then reinstalls a custom node
-     */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['NodePackageMetadata']
-        }
-      }
-      responses: {
-        /** @description Reinstall operation queued successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/uninstall': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Uninstall custom node
-     * @description Queues uninstallation of a custom node
-     */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['NodePackageMetadata']
-        }
-      }
-      responses: {
-        /** @description Uninstallation queued successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/update': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Update custom node
-     * @description Queues update of a custom node
-     */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['NodePackageMetadata']
-        }
-      }
-      responses: {
-        /** @description Update queued successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/disable': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Disable custom node
-     * @description Disables a custom node without uninstalling it
-     */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['NodePackageMetadata']
-        }
-      }
-      responses: {
-        /** @description Disable operation queued successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/queue/update_comfyui': {
+  '/v2/manager/queue/reset': {
     parameters: {
       query?: never
       header?: never
@@ -1007,8 +258,8 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Update ComfyUI
-     * @description Queues an update operation for ComfyUI itself
+     * Reset queue
+     * @description Resets the operation queue
      */
     get: {
       parameters: {
@@ -1019,7 +270,7 @@ export interface paths {
       }
       requestBody?: never
       responses: {
-        /** @description Update queued successfully */
+        /** @description Queue reset successfully */
         200: {
           headers: {
             [name: string]: unknown
@@ -1036,7 +287,121 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/queue/install_model': {
+  '/v2/manager/queue/update_all': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Update all custom nodes
+     * @description Queues update operations for all installed custom nodes
+     */
+    get: {
+      parameters: {
+        query: {
+          /** @description Source mode (e.g., "local", "remote") */
+          mode?: components['parameters']['modeParam']
+          /** @description Required client ID that initiated the request */
+          client_id: components['parameters']['clientIdRequiredParam']
+          /** @description Required unique task identifier */
+          ui_id: components['parameters']['uiIdRequiredParam']
+        }
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Update queued successfully */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Missing required parameters */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Processing already in progress */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Security policy violation */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/manager/queue/update_comfyui': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Update ComfyUI
+     * @description Queues an update operation for ComfyUI itself
+     */
+    get: {
+      parameters: {
+        query: {
+          /** @description Required client ID that initiated the request */
+          client_id: components['parameters']['clientIdRequiredParam']
+          /** @description Required unique task identifier */
+          ui_id: components['parameters']['uiIdRequiredParam']
+        }
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Update queued successfully */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Missing required parameters */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/manager/queue/install_model': {
     parameters: {
       query?: never
       header?: never
@@ -1091,7 +456,196 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/snapshot/getlist': {
+  '/v2/customnode/getmappings': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get node-to-package mappings
+     * @description Provides unified mapping between nodes and node packages
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Source mode (e.g., "local", "remote") */
+          mode?: components['parameters']['modeParam']
+        }
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Successful operation */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ManagerMappings']
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/customnode/fetch_updates': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Check for updates
+     * @description Fetches updates for custom nodes
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Source mode (e.g., "local", "remote") */
+          mode?: components['parameters']['modeParam']
+        }
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description No updates available */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Updates found */
+        201: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Error occurred */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/customnode/installed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get installed custom nodes
+     * @description Returns a list of installed node packages
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Lists mode, default or imported */
+          mode?: 'default' | 'imported'
+        }
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Successful operation */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['InstalledPacksResponse']
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/customnode/import_fail_info': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Get import failure information
+     * @description Returns information about why a node failed to import
+     */
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': {
+            cnr_id?: string
+            url?: string
+          }
+        }
+      }
+      responses: {
+        /** @description Successful operation */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description No information available */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/snapshot/getlist': {
     parameters: {
       query?: never
       header?: never
@@ -1132,7 +686,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/snapshot/remove': {
+  '/v2/snapshot/remove': {
     parameters: {
       query?: never
       header?: never
@@ -1186,7 +740,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/snapshot/restore': {
+  '/v2/snapshot/restore': {
     parameters: {
       query?: never
       header?: never
@@ -1240,7 +794,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/snapshot/get_current': {
+  '/v2/snapshot/get_current': {
     parameters: {
       query?: never
       header?: never
@@ -1286,7 +840,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/snapshot/save': {
+  '/v2/snapshot/save': {
     parameters: {
       query?: never
       header?: never
@@ -1330,7 +884,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/comfyui_manager/comfyui_versions': {
+  '/v2/comfyui_manager/comfyui_versions': {
     parameters: {
       query?: never
       header?: never
@@ -1379,7 +933,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/comfyui_manager/comfyui_switch_version': {
+  '/v2/comfyui_manager/comfyui_switch_version': {
     parameters: {
       query?: never
       header?: never
@@ -1392,9 +946,13 @@ export interface paths {
      */
     get: {
       parameters: {
-        query?: {
+        query: {
           /** @description Target version */
-          ver?: string
+          ver: string
+          /** @description Required client ID that initiated the request */
+          client_id: components['parameters']['clientIdRequiredParam']
+          /** @description Required unique task identifier */
+          ui_id: components['parameters']['uiIdRequiredParam']
         }
         header?: never
         path?: never
@@ -1402,14 +960,14 @@ export interface paths {
       }
       requestBody?: never
       responses: {
-        /** @description Version switch successful */
+        /** @description Version switch queued successfully */
         200: {
           headers: {
             [name: string]: unknown
           }
           content?: never
         }
-        /** @description Error switching version */
+        /** @description Missing required parameters or error switching version */
         400: {
           headers: {
             [name: string]: unknown
@@ -1426,93 +984,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/reboot': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Reboot ComfyUI
-     * @description Restarts the ComfyUI server
-     */
-    get: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Reboot initiated */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Security policy violation */
-        403: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/preview_method': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get or set preview method
-     * @description Gets or sets the latent preview method
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description New preview method */
-          value?: 'auto' | 'latent2rgb' | 'taesd' | 'none'
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Setting updated or current value returned */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'text/plain': string
-          }
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/db_mode': {
+  '/v2/manager/db_mode': {
     parameters: {
       query?: never
       header?: never
@@ -1554,49 +1026,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/policy/component': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get or set component policy
-     * @description Gets or sets the component policy
-     */
-    get: {
-      parameters: {
-        query?: {
-          /** @description New component policy */
-          value?: string
-        }
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody?: never
-      responses: {
-        /** @description Setting updated or current value returned */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'text/plain': string
-          }
-        }
-      }
-    }
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/policy/update': {
+  '/v2/manager/policy/update': {
     parameters: {
       query?: never
       header?: never
@@ -1638,7 +1068,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/channel_url_list': {
+  '/v2/manager/channel_url_list': {
     parameters: {
       query?: never
       header?: never
@@ -1686,73 +1116,18 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/component/save': {
+  '/v2/manager/reboot': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    get?: never
-    put?: never
     /**
-     * Save component
-     * @description Saves a reusable workflow component
+     * Reboot ComfyUI
+     * @description Restarts the ComfyUI server
      */
-    post: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': {
-            name?: string
-            workflow?: Record<string, never>
-          }
-        }
-      }
-      responses: {
-        /** @description Component saved successfully */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'text/plain': string
-          }
-        }
-        /** @description Error saving component */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/manager/component/loads': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Load components
-     * @description Loads all available workflow components
-     */
-    post: {
+    get: {
       parameters: {
         query?: never
         header?: never
@@ -1761,17 +1136,15 @@ export interface paths {
       }
       requestBody?: never
       responses: {
-        /** @description Components loaded successfully */
+        /** @description Reboot initiated */
         200: {
           headers: {
             [name: string]: unknown
           }
-          content: {
-            'application/json': Record<string, never>
-          }
+          content?: never
         }
-        /** @description Error loading components */
-        400: {
+        /** @description Security policy violation */
+        403: {
           headers: {
             [name: string]: unknown
           }
@@ -1779,13 +1152,15 @@ export interface paths {
         }
       }
     }
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
     patch?: never
     trace?: never
   }
-  '/manager/version': {
+  '/v2/manager/version': {
     parameters: {
       query?: never
       header?: never
@@ -1824,7 +1199,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/manager/notice': {
+  '/v2/manager/is_legacy_manager_ui': {
     parameters: {
       query?: never
       header?: never
@@ -1832,8 +1207,8 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get manager notice
-     * @description Returns HTML content with notices and version information
+     * Check if legacy manager UI is enabled
+     * @description Returns whether the legacy manager UI is enabled
      */
     get: {
       parameters: {
@@ -1850,7 +1225,9 @@ export interface paths {
             [name: string]: unknown
           }
           content: {
-            'text/html': string
+            'application/json': {
+              is_legacy_manager_ui?: boolean
+            }
           }
         }
       }
@@ -1867,9 +1244,316 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
-    Error: {
+    QueueTaskItem: {
+      /** @description Unique identifier for the task */
+      ui_id: string
+      /** @description Client identifier that initiated the task */
+      client_id: string
+      /**
+       * @description Type of task being performed
+       * @enum {string}
+       */
+      kind:
+        | 'install'
+        | 'uninstall'
+        | 'update'
+        | 'update-all'
+        | 'update-comfyui'
+        | 'fix'
+        | 'disable'
+        | 'enable'
+        | 'install-model'
+      params:
+        | components['schemas']['InstallPackParams']
+        | components['schemas']['UpdatePackParams']
+        | components['schemas']['UpdateAllPacksParams']
+        | components['schemas']['UpdateComfyUIParams']
+        | components['schemas']['FixPackParams']
+        | components['schemas']['UninstallPackParams']
+        | components['schemas']['DisablePackParams']
+        | components['schemas']['EnablePackParams']
+        | components['schemas']['ModelMetadata']
+    }
+    TaskHistoryItem: {
+      /** @description Unique identifier for the task */
+      ui_id: string
+      /** @description Client identifier that initiated the task */
+      client_id: string
+      /** @description Type of task that was performed */
+      kind: string
+      /**
+       * Format: date-time
+       * @description ISO timestamp when task completed
+       */
+      timestamp: string
+      /** @description Task result message or details */
+      result: string
+      status?: components['schemas']['TaskExecutionStatus']
+    }
+    TaskExecutionStatus: {
+      /**
+       * @description Overall task execution status
+       * @enum {string}
+       */
+      status_str: 'success' | 'error' | 'skip'
+      /** @description Whether the task completed */
+      completed: boolean
+      /** @description Additional status messages */
+      messages: string[]
+    }
+    TaskStateMessage: {
+      /** @description Map of task IDs to their history items */
+      history: {
+        [key: string]: components['schemas']['TaskHistoryItem']
+      }
+      /** @description Currently executing tasks */
+      running_queue: components['schemas']['QueueTaskItem'][]
+      /** @description Tasks waiting to be executed */
+      pending_queue: components['schemas']['QueueTaskItem'][]
+      /** @description Map of currently installed node packages by name */
+      installed_packs: {
+        [key: string]: components['schemas']['ManagerPackInstalled']
+      }
+    }
+    /**
+     * @description WebSocket message type constants for manager events
+     * @enum {string}
+     */
+    ManagerMessageName:
+      | 'cm-task-completed'
+      | 'cm-task-started'
+      | 'cm-queue-status'
+    MessageTaskDone: {
+      /** @description Task identifier */
+      ui_id: string
+      /** @description Task result message */
+      result: string
+      /** @description Type of task */
+      kind: string
+      status?: components['schemas']['TaskExecutionStatus']
+      /**
+       * Format: date-time
+       * @description ISO timestamp when task completed
+       */
+      timestamp: string
+      state: components['schemas']['TaskStateMessage']
+    }
+    MessageTaskStarted: {
+      /** @description Task identifier */
+      ui_id: string
+      /** @description Type of task */
+      kind: string
+      /**
+       * Format: date-time
+       * @description ISO timestamp when task started
+       */
+      timestamp: string
+      state: components['schemas']['TaskStateMessage']
+    }
+    MessageTaskFailed: {
+      /** @description Task identifier */
+      ui_id: string
       /** @description Error message */
-      error?: string
+      error: string
+      /** @description Type of task */
+      kind: string
+      /**
+       * Format: date-time
+       * @description ISO timestamp when task failed
+       */
+      timestamp: string
+      state: components['schemas']['TaskStateMessage']
+    }
+    /** @description Union type for all possible WebSocket message updates */
+    MessageUpdate:
+      | components['schemas']['MessageTaskDone']
+      | components['schemas']['MessageTaskStarted']
+      | components['schemas']['MessageTaskFailed']
+    ManagerPackInfo: {
+      /** @description Either github-author/github-repo or name of pack from the registry */
+      id: string
+      /** @description Semantic version or Git commit hash */
+      version: string
+      /** @description Task ID - generated internally */
+      ui_id?: string
+    }
+    ManagerPackInstalled: {
+      /** @description The version of the pack that is installed (Git commit hash or semantic version) */
+      ver: string
+      /** @description The name of the pack if installed from the registry */
+      cnr_id?: string | null
+      /** @description The name of the pack if installed from github (author/repo-name format) */
+      aux_id?: string | null
+      /** @description Whether the pack is enabled */
+      enabled: boolean
+    }
+    /**
+     * @description Version selection for pack installation
+     * @enum {string}
+     */
+    SelectedVersion: 'latest' | 'nightly'
+    /**
+     * @description Channel for pack sources
+     * @enum {string}
+     */
+    ManagerChannel:
+      | 'default'
+      | 'recent'
+      | 'legacy'
+      | 'forked'
+      | 'dev'
+      | 'tutorial'
+    /**
+     * @description Source for pack information
+     * @enum {string}
+     */
+    ManagerDatabaseSource: 'remote' | 'local' | 'cache'
+    /**
+     * @description Current state of a pack
+     * @enum {string}
+     */
+    ManagerPackState:
+      | 'installed'
+      | 'disabled'
+      | 'not_installed'
+      | 'import_failed'
+      | 'needs_update'
+    /**
+     * @description Type of installation used for the pack
+     * @enum {string}
+     */
+    ManagerPackInstallType: 'git-clone' | 'copy' | 'cnr'
+    ManagerPack: components['schemas']['ManagerPackInfo'] & {
+      /** @description Pack author name or 'Unclaimed' if added via GitHub crawl */
+      author?: string
+      /** @description Files included in the pack */
+      files?: string[]
+      /** @description The type of installation reference */
+      reference?: string
+      /** @description The display name of the pack */
+      title?: string
+      cnr_latest?: components['schemas']['SelectedVersion']
+      /** @description GitHub repository URL */
+      repository?: string
+      state?: components['schemas']['ManagerPackState']
+      /**
+       * @description Update availability status
+       * @enum {string|null}
+       */
+      'update-state'?: 'false' | 'true' | null
+      /** @description GitHub stars count */
+      stars?: number
+      /**
+       * Format: date-time
+       * @description Last update timestamp
+       */
+      last_update?: string
+      /** @description Health status of the pack */
+      health?: string
+      /** @description Pack description */
+      description?: string
+      /** @description Whether the pack is trusted */
+      trust?: boolean
+      install_type?: components['schemas']['ManagerPackInstallType']
+    }
+    InstallPackParams: components['schemas']['ManagerPackInfo'] & {
+      /** @description Semantic version, Git commit hash, latest, or nightly */
+      selected_version: string | components['schemas']['SelectedVersion']
+      /** @description GitHub repository URL (required if selected_version is nightly) */
+      repository?: string
+      /** @description PyPi dependency names */
+      pip?: string[]
+      mode: components['schemas']['ManagerDatabaseSource']
+      channel: components['schemas']['ManagerChannel']
+      /** @description Whether to skip post-installation steps */
+      skip_post_install?: boolean
+    }
+    UpdateAllPacksParams: {
+      mode?: components['schemas']['ManagerDatabaseSource']
+      /** @description Task ID - generated internally */
+      ui_id?: string
+    }
+    UpdatePackParams: {
+      /** @description Name of the node package to update */
+      node_name: string
+      /** @description Current version of the node package */
+      node_ver?: string | null
+    }
+    UpdateComfyUIParams: {
+      /**
+       * @description Whether to update to stable version (true) or nightly (false)
+       * @default true
+       */
+      is_stable: boolean
+      /** @description Specific version to switch to (for version switching operations) */
+      target_version?: string | null
+    }
+    FixPackParams: {
+      /** @description Name of the node package to fix */
+      node_name: string
+      /** @description Version of the node package */
+      node_ver: string
+    }
+    UninstallPackParams: {
+      /** @description Name of the node package to uninstall */
+      node_name: string
+      /**
+       * @description Whether this is an unknown/unregistered package
+       * @default false
+       */
+      is_unknown: boolean
+    }
+    DisablePackParams: {
+      /** @description Name of the node package to disable */
+      node_name: string
+      /**
+       * @description Whether this is an unknown/unregistered package
+       * @default false
+       */
+      is_unknown: boolean
+    }
+    EnablePackParams: {
+      /** @description ComfyUI Node Registry ID of the package to enable */
+      cnr_id: string
+    }
+    QueueStatus: {
+      /** @description Total number of tasks (pending + running) */
+      total_count: number
+      /** @description Number of completed tasks */
+      done_count: number
+      /** @description Number of tasks currently running */
+      in_progress_count: number
+      /** @description Number of tasks waiting to be executed */
+      pending_count?: number
+      /** @description Whether the task worker is active */
+      is_processing: boolean
+      /** @description Client ID (when filtered by client) */
+      client_id?: string
+    }
+    ManagerMappings: {
+      [key: string]: [
+        string[],
+        {
+          /** @description The display name of the pack */
+          title_aux?: string
+        }
+      ]
+    }
+    ModelMetadata: {
+      /** @description Name of the model */
+      name: string
+      /** @description Type of model */
+      type: string
+      /** @description Base model type */
+      base?: string
+      /** @description Path for saving the model */
+      save_path?: string
+      /** @description Download URL */
+      url: string
+      /** @description Target filename */
+      filename: string
+      /** @description ID for UI reference */
+      ui_id?: string
     }
     NodePackageMetadata: {
       /** @description Display name of the node package */
@@ -1896,43 +1580,206 @@ export interface components {
       /** @description Source mode */
       mode?: string
     }
-    ModelMetadata: {
-      /** @description Name of the model */
-      name?: string
-      /** @description Type of model */
-      type?: string
-      /** @description Base model type */
-      base?: string
-      /** @description Path for saving the model */
-      save_path?: string
-      /** @description Download URL */
-      url?: string
-      /** @description Target filename */
-      filename?: string
-      /** @description ID for UI reference */
-      ui_id?: string
-    }
     /** @description Name of the snapshot */
     SnapshotItem: string
-    QueueStatus: {
-      /** @description Total number of tasks */
-      total_count?: number
-      /** @description Number of completed tasks */
-      done_count?: number
-      /** @description Number of tasks in progress */
-      in_progress_count?: number
-      /** @description Whether the queue is currently processing */
-      is_processing?: boolean
+    Error: {
+      /** @description Error message */
+      error: string
+    }
+    /** @description Map of pack names to their installation info */
+    InstalledPacksResponse: {
+      [key: string]: components['schemas']['ManagerPackInstalled']
+    }
+    HistoryResponse: {
+      /** @description Map of task IDs to their history items */
+      history?: {
+        [key: string]: components['schemas']['TaskHistoryItem']
+      }
+    }
+    HistoryListResponse: {
+      /** @description List of available batch history IDs */
+      ids?: string[]
+    }
+    InstalledNodeInfo: {
+      /** @description Node package name */
+      name: string
+      /** @description Installed version */
+      version: string
+      /** @description Git repository URL */
+      repository_url?: string | null
+      /** @description Installation method (cnr, git, pip, etc.) */
+      install_method: string
+      /**
+       * @description Whether the node is currently enabled
+       * @default true
+       */
+      enabled: boolean
+      /**
+       * Format: date-time
+       * @description ISO timestamp of installation
+       */
+      install_date?: string | null
+    }
+    InstalledModelInfo: {
+      /** @description Model filename */
+      name: string
+      /** @description Full path to model file */
+      path: string
+      /** @description Model type (checkpoint, lora, vae, etc.) */
+      type: string
+      /** @description File size in bytes */
+      size_bytes?: number | null
+      /** @description Model file hash for verification */
+      hash?: string | null
+      /**
+       * Format: date-time
+       * @description ISO timestamp when added
+       */
+      install_date?: string | null
+    }
+    ComfyUIVersionInfo: {
+      /** @description ComfyUI version string */
+      version: string
+      /** @description Git commit hash */
+      commit_hash?: string | null
+      /** @description Git branch name */
+      branch?: string | null
+      /**
+       * @description Whether this is a stable release
+       * @default false
+       */
+      is_stable: boolean
+      /**
+       * Format: date-time
+       * @description ISO timestamp of last update
+       */
+      last_updated?: string | null
+    }
+    BatchOperation: {
+      /** @description Unique operation identifier */
+      operation_id: string
+      /**
+       * @description Type of operation
+       * @enum {string}
+       */
+      operation_type:
+        | 'install'
+        | 'update'
+        | 'uninstall'
+        | 'fix'
+        | 'disable'
+        | 'enable'
+        | 'install-model'
+      /** @description Target of the operation (node name, model name, etc.) */
+      target: string
+      /** @description Target version for the operation */
+      target_version?: string | null
+      /**
+       * @description Operation result
+       * @enum {string}
+       */
+      result: 'success' | 'failed' | 'skipped'
+      /** @description Error message if operation failed */
+      error_message?: string | null
+      /**
+       * Format: date-time
+       * @description ISO timestamp when operation started
+       */
+      start_time: string
+      /**
+       * Format: date-time
+       * @description ISO timestamp when operation completed
+       */
+      end_time?: string | null
+      /** @description Client that initiated the operation */
+      client_id?: string | null
+    }
+    ComfyUISystemState: {
+      /**
+       * Format: date-time
+       * @description ISO timestamp when snapshot was taken
+       */
+      snapshot_time: string
+      comfyui_version: components['schemas']['ComfyUIVersionInfo']
+      /** @description ComfyUI frontend version if available */
+      frontend_version?: string | null
+      /** @description Python interpreter version */
+      python_version: string
+      /** @description Operating system and platform information */
+      platform_info: string
+      /** @description Map of installed node packages by name */
+      installed_nodes?: {
+        [key: string]: components['schemas']['InstalledNodeInfo']
+      }
+      /** @description Map of installed models by name */
+      installed_models?: {
+        [key: string]: components['schemas']['InstalledModelInfo']
+      }
+      /** @description ComfyUI Manager configuration settings */
+      manager_config?: {
+        [key: string]: unknown
+      }
+    }
+    BatchExecutionRecord: {
+      /** @description Unique batch identifier */
+      batch_id: string
+      /**
+       * Format: date-time
+       * @description ISO timestamp when batch started
+       */
+      start_time: string
+      /**
+       * Format: date-time
+       * @description ISO timestamp when batch completed
+       */
+      end_time?: string | null
+      state_before: components['schemas']['ComfyUISystemState']
+      /** @description System state after batch execution */
+      state_after?: components['schemas']['ComfyUISystemState']
+      /** @description List of operations performed in this batch */
+      operations?: components['schemas']['BatchOperation'][]
+      /**
+       * @description Total number of operations in batch
+       * @default 0
+       */
+      total_operations: number
+      /**
+       * @description Number of successful operations
+       * @default 0
+       */
+      successful_operations: number
+      /**
+       * @description Number of failed operations
+       * @default 0
+       */
+      failed_operations: number
+      /**
+       * @description Number of skipped operations
+       * @default 0
+       */
+      skipped_operations: number
     }
   }
   responses: never
   parameters: {
     /** @description Source mode (e.g., "local", "remote") */
-    modeParam: 'local' | 'remote' | 'default'
+    modeParam: components['schemas']['ManagerDatabaseSource']
     /** @description Target identifier */
     targetParam: string
     /** @description New value to set */
     valueParam: string
+    /** @description Client ID for filtering tasks */
+    clientIdParam: string
+    /** @description Specific task ID to retrieve */
+    uiIdParam: string
+    /** @description Required client ID that initiated the request */
+    clientIdRequiredParam: string
+    /** @description Required unique task identifier */
+    uiIdRequiredParam: string
+    /** @description Maximum number of items to return */
+    maxItemsParam: number
+    /** @description Offset for pagination */
+    offsetParam: number
   }
   requestBodies: never
   headers: never
