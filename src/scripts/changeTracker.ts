@@ -1,4 +1,5 @@
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import type { PromptOptionalParams } from '@comfyorg/litegraph/dist/types/optionalParams'
 import * as jsondiffpatch from 'jsondiffpatch'
 import _ from 'lodash'
 import log from 'loglevel'
@@ -294,14 +295,21 @@ export class ChangeTracker {
       title: string,
       value: any,
       callback: (v: any) => void,
-      event: any
+      event: any,
+      optionalParams?: PromptOptionalParams
     ) {
       const extendedCallback = (v: any) => {
         callback(v)
         checkState()
       }
       logger.debug('checkState on prompt')
-      return prompt.apply(this, [title, value, extendedCallback, event])
+      return prompt.apply(this, [
+        title,
+        value,
+        extendedCallback,
+        event,
+        optionalParams
+      ])
     }
 
     // Handle litegraph context menu for COMBO widgets
