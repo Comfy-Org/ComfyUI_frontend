@@ -64,7 +64,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
-import { useContextMenuOverride } from '@/composables/useContextMenuOverride';
+import { useContextMenuOverride } from '@/composables/useContextMenuOverride'
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
