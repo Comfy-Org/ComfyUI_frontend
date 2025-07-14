@@ -4,6 +4,7 @@ import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgme
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -36,6 +37,8 @@ export function useConflictDetection() {
 
   // Conflict detection results
   const detectionResults = ref<ConflictDetectionResult[]>([])
+  // Store merged conflicts separately for testing
+  const storedMergedConflicts = ref<ConflictDetectionResult[]>([])
   const detectionSummary = ref<ConflictDetectionSummary | null>(null)
 
   // Registry API request cancellation
@@ -44,25 +47,18 @@ export function useConflictDetection() {
   // Acknowledgment management
   const acknowledgment = useConflictAcknowledgment()
 
-  // Computed properties
-  const hasConflicts = computed(() =>
-    detectionResults.value.some((result) => result.has_conflict)
-  )
+  // Store management
+  const conflictStore = useConflictDetectionStore()
 
-  const conflictedPackages = computed(() =>
-    detectionResults.value.filter((result) => result.has_conflict)
-  )
+  // Computed properties - use store instead of local state
+  const hasConflicts = computed(() => conflictStore.hasConflicts)
+  const conflictedPackages = computed(() => {
+    return conflictStore.conflictedPackages
+  })
 
-  const bannedPackages = computed(() =>
-    detectionResults.value.filter((result) =>
-      result.conflicts.some((conflict) => conflict.type === 'banned')
-    )
-  )
-
-  const securityPendingPackages = computed(() =>
-    detectionResults.value.filter((result) =>
-      result.conflicts.some((conflict) => conflict.type === 'security_pending')
-    )
+  const bannedPackages = computed(() => conflictStore.bannedPackages)
+  const securityPendingPackages = computed(
+    () => conflictStore.securityPendingPackages
   )
 
   /**
@@ -631,6 +627,17 @@ export function useConflictDetection() {
           mergedConflicts
         )
 
+        // Store merged conflicts in Pinia store for UI usage
+        conflictStore.setConflictedPackages(mergedConflicts)
+
+        // Also update local state for backward compatibility
+        detectionResults.value.splice(
+          0,
+          detectionResults.value.length,
+          ...mergedConflicts
+        )
+        storedMergedConflicts.value = [...mergedConflicts]
+
         // Check for ComfyUI version change to reset acknowledgments
         if (sysEnv.comfyui_version !== 'unknown') {
           acknowledgment.checkComfyUIVersionChange(sysEnv.comfyui_version)
@@ -638,6 +645,19 @@ export function useConflictDetection() {
 
         // TODO: Show red dot on Help Center based on acknowledgment.shouldShowRedDot
         // TODO: Store conflict state for event-based dialog triggers
+
+        // Use merged conflicts in response as well
+        const response: ConflictDetectionResponse = {
+          success: true,
+          summary,
+          results: mergedConflicts,
+          detected_system_environment: sysEnv
+        }
+        return response
+      } else {
+        // No conflicts detected, clear the results
+        conflictStore.clearConflicts()
+        detectionResults.value = []
       }
 
       const response: ConflictDetectionResponse = {
