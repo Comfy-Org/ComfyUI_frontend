@@ -87,22 +87,21 @@ jobs:
               messages.push(...results.markdowns.map(m => m.message));
             }
             
+            // Find existing bot comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(prNumber)
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('<!-- pr-checks-comment -->')
+            );
+            
             // Post comment if there are any messages
             if (messages.length > 0) {
               const body = messages.join('\n\n');
-              
-              // Find and update existing comment or create new one
-              const comments = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: parseInt(prNumber)
-              });
-              
-              const botComment = comments.data.find(comment => 
-                comment.user.type === 'Bot' && 
-                comment.body.includes('<!-- pr-checks-comment -->')
-              );
-              
               const commentBody = `<!-- pr-checks-comment -->\n${body}`;
               
               if (botComment) {
@@ -118,6 +117,15 @@ jobs:
                   repo: context.repo.repo,
                   issue_number: parseInt(prNumber),
                   body: commentBody
+                });
+              }
+            } else {
+              // No messages - delete existing comment if present
+              if (botComment) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id
                 });
               }
             }

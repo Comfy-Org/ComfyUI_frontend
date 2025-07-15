@@ -92,32 +92,34 @@ jobs:
         if: always()
         run: |
           # Initialize results
-          WARNINGS=""
+          WARNINGS_JSON=""
           
           # Only run checks if should_run is true
           if [ "${{ steps.check-changes.outputs.should_run }}" == "true" ]; then
             # Check browser test coverage
             if [ "${{ steps.check-coverage.outputs.has_browser_tests }}" != "true" ]; then
-              WARNINGS="${WARNINGS}⚠️ **Warning: E2E Test Coverage Missing**\n\nIf this PR modifies behavior that can be covered by browser-based E2E tests, those tests are required. PRs lacking applicable test coverage may not be reviewed until added. Please add or update browser tests to ensure code quality and prevent regressions.\n\n"
+              if [ -n "$WARNINGS_JSON" ]; then
+                WARNINGS_JSON="${WARNINGS_JSON},"
+              fi
+              WARNINGS_JSON="${WARNINGS_JSON}{\"message\":\"⚠️ **Warning: E2E Test Coverage Missing**\\n\\nIf this PR modifies behavior that can be covered by browser-based E2E tests, those tests are required. PRs lacking applicable test coverage may not be reviewed until added. Please add or update browser tests to ensure code quality and prevent regressions.\"}"
             fi
             
             # Check screen recording
             if [ "${{ steps.check-recording.outputs.has_recording }}" != "true" ]; then
-              WARNINGS="${WARNINGS}⚠️ **Warning: Visual Documentation Missing**\n\nIf this PR changes user-facing behavior, visual proof (screen recording or screenshot) is required. PRs without applicable visual documentation may not be reviewed until provided.\nYou can add it by:\n\n- GitHub: Drag & drop media directly into the PR description\n\n- YouTube: Include a link to a short demo\n\n"
+              if [ -n "$WARNINGS_JSON" ]; then
+                WARNINGS_JSON="${WARNINGS_JSON},"
+              fi
+              WARNINGS_JSON="${WARNINGS_JSON}{\"message\":\"⚠️ **Warning: Visual Documentation Missing**\\n\\nIf this PR changes user-facing behavior, visual proof (screen recording or screenshot) is required. PRs without applicable visual documentation may not be reviewed until provided.\\nYou can add it by:\\n\\n- GitHub: Drag & drop media directly into the PR description\\n\\n- YouTube: Include a link to a short demo\"}"
             fi
           fi
           
           # Create results JSON
-          if [ -n "$WARNINGS" ]; then
+          if [ -n "$WARNINGS_JSON" ]; then
             # Create JSON with warnings
             cat > pr-check-results.json << EOF
           {
             "fails": [],
-            "warnings": [
-              {
-                "message": "$(echo -e "$WARNINGS" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')"
-              }
-            ],
+            "warnings": [$WARNINGS_JSON],
             "messages": [],
             "markdowns": []
           }
