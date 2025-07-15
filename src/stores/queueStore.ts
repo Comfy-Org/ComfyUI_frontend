@@ -276,23 +276,15 @@ export class TaskItemImpl {
   }
 
   get queueIndex() {
-    return this.prompt[0]
+    return this.prompt.priority
   }
 
   get promptId() {
-    return this.prompt[1]
-  }
-
-  get promptInputs() {
-    return this.prompt[2]
+    return this.prompt.prompt_id
   }
 
   get extraData() {
-    return this.prompt[3]
-  }
-
-  get outputsToExecute() {
-    return this.prompt[4]
+    return this.prompt.extra_data
   }
 
   get extraPngInfo() {
@@ -408,13 +400,11 @@ export class TaskItemImpl {
       (output: ResultItemImpl, i: number) =>
         new TaskItemImpl(
           this.taskType,
-          [
-            this.queueIndex,
-            `${this.promptId}-${i}`,
-            this.promptInputs,
-            this.extraData,
-            this.outputsToExecute
-          ],
+          {
+            priority: this.queueIndex,
+            prompt_id: `${this.promptId}-${i}`,
+            extra_data: this.extraData
+          },
           this.status,
           {
             [output.nodeId]: {
@@ -479,11 +469,11 @@ export const useQueueStore = defineStore('queue', () => {
       pendingTasks.value = toClassAll(queue.Pending)
 
       const allIndex = new Set<number>(
-        history.History.map((item: TaskItem) => item.prompt[0])
+        history.History.map((item: TaskItem) => item.prompt.priority)
       )
       const newHistoryItems = toClassAll(
         history.History.filter(
-          (item) => item.prompt[0] > lastHistoryQueueIndex.value
+          (item) => item.prompt.priority > lastHistoryQueueIndex.value
         )
       )
       const existingHistoryItems = historyTasks.value.filter((item) =>

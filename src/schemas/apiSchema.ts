@@ -161,13 +161,6 @@ export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 // End of ws messages
 
-const zPromptInputItem = z.object({
-  inputs: z.record(z.string(), z.any()),
-  class_type: zNodeType
-})
-
-const zPromptInputs = z.record(zPromptInputItem)
-
 const zExtraPngInfo = z
   .object({
     workflow: zComfyWorkflow
@@ -179,7 +172,6 @@ const zExtraData = z.object({
   extra_pnginfo: zExtraPngInfo.optional(),
   client_id: z.string()
 })
-const zOutputsToExecute = z.array(zNodeId)
 
 const zExecutionStartMessage = z.tuple([
   z.literal('execution_start'),
@@ -220,13 +212,11 @@ const zStatus = z.object({
   messages: z.array(zStatusMessage)
 })
 
-const zTaskPrompt = z.tuple([
-  zQueueIndex,
-  zPromptId,
-  zPromptInputs,
-  zExtraData,
-  zOutputsToExecute
-])
+const zTaskPrompt = z.object({
+  priority: zQueueIndex,
+  prompt_id: zPromptId,
+  extra_data: zExtraData
+})
 
 const zRunningTaskItem = z.object({
   taskType: z.literal('Running'),
@@ -262,6 +252,20 @@ const zHistoryTaskItem = z.object({
   meta: zTaskMeta.optional()
 })
 
+// Raw history item from backend (without taskType)
+const zRawHistoryItem = z.object({
+  prompt_id: zPromptId,
+  prompt: zTaskPrompt,
+  status: zStatus.optional(),
+  outputs: zTaskOutput,
+  meta: zTaskMeta.optional()
+})
+
+// New API response format: { history: [{prompt_id: "...", ...}, ...] }
+const zHistoryResponse = z.object({
+  history: z.array(zRawHistoryItem)
+})
+
 const zTaskItem = z.union([
   zRunningTaskItem,
   zPendingTaskItem,
@@ -284,6 +288,8 @@ export type RunningTaskItem = z.infer<typeof zRunningTaskItem>
 export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
 // `/history`
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
+export type RawHistoryItem = z.infer<typeof zRawHistoryItem>
+export type HistoryResponse = z.infer<typeof zHistoryResponse>
 export type TaskItem = z.infer<typeof zTaskItem>
 
 export function validateTaskItem(taskItem: unknown) {
