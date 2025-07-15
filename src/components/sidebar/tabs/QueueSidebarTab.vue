@@ -106,8 +106,8 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import { ComfyNode } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import {
   ResultItemImpl,
@@ -126,6 +126,7 @@ const toast = useToast()
 const queueStore = useQueueStore()
 const settingStore = useSettingStore()
 const commandStore = useCommandStore()
+const workflowService = useWorkflowService()
 const { t } = useI18n()
 
 // Expanded view: show all outputs in a flat list.
@@ -208,8 +209,16 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       label: t('g.loadWorkflow'),
       icon: 'pi pi-file-export',
-      command: () => menuTargetTask.value?.loadWorkflow(app),
-      disabled: !menuTargetTask.value?.workflow
+      command: () => {
+        if (menuTargetTask.value) {
+          void workflowService.loadTaskWorkflow(menuTargetTask.value)
+        }
+      },
+      disabled: !(
+        menuTargetTask.value?.workflow ||
+        (menuTargetTask.value?.isHistory &&
+          menuTargetTask.value?.prompt.prompt_id)
+      )
     },
     {
       label: t('g.goToNode'),
