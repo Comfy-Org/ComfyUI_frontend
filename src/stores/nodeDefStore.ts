@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
+import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import axios from 'axios'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
@@ -304,6 +304,28 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }
+  function updateNodeDefDisplayName(nodeType: string, newDisplayName: string) {
+    const existingNodeDef = nodeDefsByName.value[nodeType]
+    if (!existingNodeDef) return
+
+    // Remove old display name mapping
+    delete nodeDefsByDisplayName.value[existingNodeDef.display_name]
+
+    // Clone and mutate like bookmark store does to preserve references
+    const clonedNodeDef = _.clone(existingNodeDef) as any
+    clonedNodeDef.display_name = newDisplayName
+
+    // Update both mappings
+    nodeDefsByName.value[nodeType] = clonedNodeDef
+    nodeDefsByDisplayName.value[newDisplayName] = clonedNodeDef
+
+    // Also update the LiteGraph registered node type's static title
+    // This is necessary for new instances to use the updated display name
+    const RegisteredNodeClass = LiteGraph.registered_node_types[nodeType]
+    if (RegisteredNodeClass) {
+      RegisteredNodeClass.title = newDisplayName
+    }
+  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
     // @ts-expect-error Optional chaining used in index
@@ -324,6 +346,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
+    updateNodeDefDisplayName,
     fromLGraphNode
   }
 })

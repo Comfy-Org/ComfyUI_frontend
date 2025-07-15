@@ -22,9 +22,11 @@ import EditableText from '@/components/common/EditableText.vue'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { app } from '@/scripts/app'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
+const nodeDefStore = useNodeDefStore()
 
 const showInput = ref(false)
 const editedTitle = ref('')
@@ -48,6 +50,9 @@ const onEdit = (newValue: string) => {
     const target = titleEditorStore.titleEditorTarget
     if (target instanceof LGraphNode && target.isSubgraphNode?.()) {
       target.subgraph.name = trimmedTitle
+      
+      // Also update the node definition display name in the store
+      nodeDefStore.updateNodeDefDisplayName(target.type, trimmedTitle)
     }
 
     app.graph.setDirtyCanvas(true, true)
