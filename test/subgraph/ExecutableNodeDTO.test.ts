@@ -448,7 +448,7 @@ describe("ExecutableNodeDTO Scale Testing", () => {
       { depth: 1, expectedId: "1:999" },
       { depth: 3, expectedId: "1:2:3:999" },
       { depth: 5, expectedId: "1:2:3:4:5:999" },
-      { depth: 10, expectedId: "1:2:3:4:5:6:7:8:9:10:999" }
+      { depth: 10, expectedId: "1:2:3:4:5:6:7:8:9:10:999" },
     ]
 
     for (const testCase of testCases) {

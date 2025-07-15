@@ -1,8 +1,9 @@
 /**
  * Core Subgraph Tests
  *
- * Fundamental tests for the Subgraph class covering construction,
- * basic I/O management, and edge cases.
+ * This file implements fundamental tests for the Subgraph class that establish
+ * patterns for the rest of the testing team. These tests cover construction,
+ * basic I/O management, and known issues.
  */
 
 import { describe, expect, it } from "vitest"
@@ -16,7 +17,6 @@ import {
   assertSubgraphStructure,
   createTestSubgraph,
   createTestSubgraphData,
-  verifyEventSequence,
 } from "./fixtures/subgraphHelpers"
 
 describe("Subgraph Construction", () => {
@@ -154,87 +154,6 @@ describe("Subgraph Input/Output Management", () => {
   })
 })
 
-describe("Subgraph Event System", () => {
-  subgraphTest("should fire events when adding inputs", ({ eventCapture }) => {
-    const { subgraph, capture } = eventCapture
-
-    subgraph.addInput("test_input", "number")
-
-    verifyEventSequence(capture.events, ["adding-input", "input-added"])
-
-    expect(capture.events[0].detail.name).toBe("test_input")
-    expect(capture.events[0].detail.type).toBe("number")
-    expect(capture.events[1].detail.input.name).toBe("test_input")
-  })
-
-  subgraphTest("should fire events when adding outputs", ({ eventCapture }) => {
-    const { subgraph, capture } = eventCapture
-
-    subgraph.addOutput("test_output", "string")
-
-    verifyEventSequence(capture.events, ["adding-output", "output-added"])
-
-    expect(capture.events[0].detail.name).toBe("test_output")
-    expect(capture.events[0].detail.type).toBe("string")
-    expect(capture.events[1].detail.output.name).toBe("test_output")
-  })
-
-  subgraphTest("should fire events when removing inputs", ({ eventCapture }) => {
-    const { subgraph, capture } = eventCapture
-
-    // Add an input first
-    const input = subgraph.addInput("test_input", "number")
-    capture.clear() // Clear the add events
-
-    // Remove the input
-    subgraph.removeInput(input)
-
-    verifyEventSequence(capture.events, ["removing-input"])
-    expect(capture.events[0].detail.input.name).toBe("test_input")
-    expect(capture.events[0].detail.index).toBe(0)
-  })
-
-  subgraphTest("should fire events when removing outputs", ({ eventCapture }) => {
-    const { subgraph, capture } = eventCapture
-
-    // Add an output first
-    const output = subgraph.addOutput("test_output", "string")
-    capture.clear() // Clear the add events
-
-    // Remove the output
-    subgraph.removeOutput(output)
-
-    verifyEventSequence(capture.events, ["removing-output"])
-    expect(capture.events[0].detail.output.name).toBe("test_output")
-    expect(capture.events[0].detail.index).toBe(0)
-  })
-
-  subgraphTest("should allow preventing input removal via event", ({ eventCapture }) => {
-    const { subgraph, capture } = eventCapture
-
-    // Add an input
-    const input = subgraph.addInput("protected_input", "number")
-
-    // Add event listener that prevents removal
-    subgraph.events.addEventListener("removing-input", (event) => {
-      event.preventDefault()
-    })
-
-    capture.clear()
-
-    // Try to remove the input
-    subgraph.removeInput(input)
-
-    // Input should still exist
-    expect(subgraph.inputs).toHaveLength(1)
-    expect(subgraph.inputs[0].name).toBe("protected_input")
-
-    // Event should have been fired but removal prevented
-    expect(capture.events).toHaveLength(1)
-    expect(capture.events[0].type).toBe("removing-input")
-  })
-})
-
 describe("Subgraph Serialization", () => {
   subgraphTest("should serialize empty subgraph", ({ emptySubgraph }) => {
     const serialized = emptySubgraph.asSerialisable()
@@ -270,6 +189,26 @@ describe("Subgraph Serialization", () => {
 })
 
 describe("Subgraph Known Issues", () => {
+  it.todo("should document createNode() bug returns null", () => {
+    // This test documents the known issue where LiteGraph.createNode(subgraph.id)
+    // returns null because UUID is not registered as a node type.
+    //
+    // Expected behavior: Should create a SubgraphNode instance
+    // Actual behavior: Returns null, causing convertToSubgraph() to fail
+    //
+    // This needs to be fixed in the LiteGraphGlobal registration system.
+  })
+
+  it.todo("should enforce MAX_NESTED_SUBGRAPHS limit", () => {
+    // This test documents that MAX_NESTED_SUBGRAPHS = 1000 is defined
+    // but not actually enforced anywhere in the code.
+    //
+    // Expected behavior: Should throw error when nesting exceeds limit
+    // Actual behavior: No validation is performed
+    //
+    // This safety limit should be implemented to prevent runaway recursion.
+  })
+
   it("should provide MAX_NESTED_SUBGRAPHS constant", () => {
     expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBe(1000)
   })

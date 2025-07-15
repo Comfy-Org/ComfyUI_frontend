@@ -64,9 +64,7 @@ describe("SubgraphNode Construction", () => {
     expect(subgraphNode.inputs).toHaveLength(subgraph.inputs.length)
     expect(subgraphNode.outputs).toHaveLength(subgraph.outputs.length)
   })
-})
 
-describe("SubgraphNode Synchronization", () => {
   subgraphTest("should update slots when subgraph definition changes", ({ subgraphWithNode }) => {
     const { subgraph, subgraphNode } = subgraphWithNode
 
@@ -80,7 +78,9 @@ describe("SubgraphNode Synchronization", () => {
     expect(subgraphNode.inputs.at(-1)?.name).toBe("new_input")
     expect(subgraphNode.inputs.at(-1)?.type).toBe("string")
   })
+})
 
+describe("SubgraphNode Synchronization", () => {
   it("should sync input addition", () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -358,7 +358,20 @@ describe("SubgraphNode Execution", () => {
     // This causes infinite recursion instead of throwing the error
     // Fix: Change `new Set(visited)` to just `visited`
   })
+
+  it.todo("should handle nested subgraph execution")
+
+  it.todo("should resolve cross-boundary links")
 })
+
+describe("SubgraphNode Edge Cases", () => {
+  it.todo("should detect circular references")
+
+  it.todo("should handle deep nesting")
+
+  it.todo("should validate against MAX_NESTED_SUBGRAPHS")
+})
+
 describe("SubgraphNode Integration", () => {
   it("should be addable to a parent graph", () => {
     const subgraph = createTestSubgraph()

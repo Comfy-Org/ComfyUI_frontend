@@ -1,6 +1,14 @@
 # Subgraph Testing Fixtures and Utilities
 
-Testing infrastructure for LiteGraph's subgraph functionality. A subgraph is a graph-within-a-graph that can be reused as a single node, with input/output slots mapping to internal IO nodes.
+This directory contains the testing infrastructure for LiteGraph's subgraph functionality. These utilities provide a consistent, easy-to-use API for writing subgraph tests.
+
+## What is a Subgraph?
+
+A subgraph in LiteGraph is a graph-within-a-graph that can be reused as a single node. It has:
+- Input slots that map to an internal input node
+- Output slots that map to an internal output node
+- Internal nodes and connections
+- The ability to be instantiated multiple times as SubgraphNode instances
 
 ## Quick Start
 
@@ -22,9 +30,10 @@ it("should do something", () => {
 })
 
 // Option 2: Use pre-configured fixtures
-subgraphTest("should handle events", ({ simpleSubgraph }) => {
+subgraphTest("should handle events", ({ simpleSubgraph, eventCapture }) => {
   // simpleSubgraph comes pre-configured with 1 input, 1 output, and 2 nodes
   expect(simpleSubgraph.inputs).toHaveLength(1)
+  // Your test logic here
 })
 ```
 
@@ -230,10 +239,73 @@ interface NestedSubgraphOptions {
 
 ### Common Pitfalls
 
-1. **Array items don't have index property** - Use `indexOf()` instead
-2. **IO nodes have `subgraph` property** - Not `graph` like regular nodes
-3. **Links are stored in a Map** - Use `.size` not `.length`
-4. **Event detail structures** - Check exact property names:
-   - `"adding-input"`: `{ name, type }`
-   - `"input-added"`: `{ input, index }`
+1. **Array vs Index**: The `inputs` and `outputs` arrays don't have an `index` property on items. Use `indexOf()`:
+   ```typescript
+   // ❌ Wrong
+   expect(input.index).toBe(0)
+   
+   // ✅ Correct
+   expect(subgraph.inputs.indexOf(input)).toBe(0)
+   ```
 
+2. **Graph vs Subgraph Property**: SubgraphInputNode/OutputNode have `subgraph`, not `graph`:
+   ```typescript
+   // ❌ Wrong
+   expect(inputNode.graph).toBe(subgraph)
+   
+   // ✅ Correct
+   expect(inputNode.subgraph).toBe(subgraph)
+   ```
+
+3. **Event Detail Structure**: Events have specific detail structures:
+   ```typescript
+   // Input events
+   "adding-input": { name: string, type: string }
+   "input-added": { input: SubgraphInput, index: number }
+   
+   // Output events  
+   "adding-output": { name: string, type: string }
+   "output-added": { output: SubgraphOutput, index: number }
+   ```
+
+4. **Links are stored in a Map**: Use `.size` not `.length`:
+   ```typescript
+   // ❌ Wrong
+   expect(subgraph.links.length).toBe(1)
+   
+   // ✅ Correct
+   expect(subgraph.links.size).toBe(1)
+   ```
+
+## Testing Best Practices
+
+- Always use helper functions instead of manual setup
+- Use fixtures for common scenarios to avoid repetitive code
+- Clean up event listeners with `capture.cleanup()` after event tests
+- Use `verifyEventSequence()` to test event ordering
+- Remember fixtures are created fresh for each test (no shared state)
+- Use `assertSubgraphStructure()` for comprehensive validation
+
+## Debugging Tips
+
+- Use `logSubgraphStructure(subgraph)` to print subgraph details
+- Check `subgraph.rootGraph` to verify graph hierarchy
+- Event capture includes timestamps for debugging timing issues
+- All factory functions accept optional parameters for customization
+
+## Adding New Test Utilities
+
+When extending the test infrastructure:
+
+1. Add new helper functions to `subgraphHelpers.ts`
+2. Add new fixtures to `subgraphFixtures.ts`
+3. Update this README with usage examples
+4. Follow existing patterns for consistency
+5. Add TypeScript types for all parameters
+
+## Performance Notes
+
+- Helper functions are optimized for test clarity, not performance
+- Use `structuredClone()` for deep copying test data
+- Event capture systems automatically clean up listeners
+- Fixtures are created fresh for each test to avoid state contamination

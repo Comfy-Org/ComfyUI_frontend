@@ -1,8 +1,8 @@
 /**
  * Vitest Fixtures for Subgraph Testing
  *
- * Reusable Vitest fixtures for subgraph testing.
- * Each fixture provides a clean, pre-configured subgraph
+ * This file provides reusable Vitest fixtures that other developers can use
+ * in their test files. Each fixture provides a clean, pre-configured subgraph
  * setup for different testing scenarios.
  */
 

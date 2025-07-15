@@ -1,9 +1,9 @@
 /**
  * Test Helper Functions for Subgraph Testing
  *
- * Core utilities for creating and testing subgraphs.
- * Provides consistent APIs for test subgraph creation, node management,
- * and behavior verification.
+ * This file contains the core utilities that all subgraph developers will use.
+ * These functions provide consistent ways to create test subgraphs, nodes, and
+ * verify their behavior.
  */
 
 import type { ISlotType, NodeId } from "@/litegraph"
@@ -55,16 +55,20 @@ export interface CapturedEvent<T = unknown> {
 }
 
 /**
- * Creates a test subgraph with the specified configuration.
- * This is the primary function for creating test subgraphs.
+ * Creates a test subgraph with specified inputs, outputs, and nodes.
+ * This is the primary function for creating subgraphs in tests.
  * @param options Configuration options for the subgraph
  * @returns A configured Subgraph instance
  * @example
  * ```typescript
+ * // Create empty subgraph
+ * const subgraph = createTestSubgraph()
+ *
+ * // Create subgraph with specific I/O
  * const subgraph = createTestSubgraph({
- *   name: "My Test Subgraph",
- *   inputCount: 2,
- *   outputCount: 1
+ *   inputs: [{ name: "value", type: "number" }],
+ *   outputs: [{ name: "result", type: "string" }],
+ *   nodeCount: 3
  * })
  * ```
  */
@@ -78,7 +82,6 @@ export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph 
   if (options.outputs && options.outputCount) {
     throw new Error(`Cannot specify both 'outputs' array and 'outputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`)
   }
-
   const rootGraph = new LGraph()
 
   // Create the base subgraph data
@@ -153,14 +156,17 @@ export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph 
 
 /**
  * Creates a SubgraphNode instance from a subgraph definition.
- * @param subgraph The subgraph definition to instantiate
- * @param options Configuration options for the node instance
- * @returns A SubgraphNode instance
+ * The node is automatically added to a test parent graph.
+ * @param subgraph The subgraph definition to create a node from
+ * @param options Configuration options for the subgraph node
+ * @returns A configured SubgraphNode instance
  * @example
  * ```typescript
- * const subgraph = createTestSubgraph()
+ * const subgraph = createTestSubgraph({ inputs: [{ name: "value", type: "number" }] })
  * const subgraphNode = createTestSubgraphNode(subgraph, {
- *   pos: [100, 200]
+ *   id: 42,
+ *   pos: [100, 200],
+ *   size: [180, 100]
  * })
  * ```
  */
