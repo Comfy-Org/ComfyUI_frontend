@@ -5,7 +5,7 @@ import type { ExportedSubgraph, ExposedWidget, ISerialisedGraph, Serialisable, S
 
 import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
 import { type BaseLGraph, LGraph } from "@/LGraph"
-import { createUuidv4 } from "@/litegraph"
+import { createUuidv4 } from "@/utils/uuid"
 
 import { SubgraphInput } from "./SubgraphInput"
 import { SubgraphInputNode } from "./SubgraphInputNode"
