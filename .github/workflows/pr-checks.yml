@@ -14,7 +14,6 @@ jobs:
       should_run: ${{ steps.check-changes.outputs.should_run }}
       has_browser_tests: ${{ steps.check-coverage.outputs.has_browser_tests }}
       has_screen_recording: ${{ steps.check-recording.outputs.has_recording }}
-      check_failed: ${{ steps.final-check.outputs.failed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -93,37 +92,37 @@ jobs:
         if: always()
         run: |
           # Initialize results
-          FAILS=""
+          WARNINGS=""
           
           # Only run checks if should_run is true
           if [ "${{ steps.check-changes.outputs.should_run }}" == "true" ]; then
             # Check browser test coverage
             if [ "${{ steps.check-coverage.outputs.has_browser_tests }}" != "true" ]; then
-              FAILS="${FAILS}🧪 **E2E Test Coverage Missing**\n\nAll changes should be covered under E2E testing. Please add or update browser tests.\n\n"
+              WARNINGS="${WARNINGS}⚠️ **Warning: E2E Test Coverage Missing**\n\nIf this PR modifies behavior that can be covered by browser-based E2E tests, those tests are required. PRs lacking applicable test coverage may not be reviewed until added. Please add or update browser tests to ensure code quality and prevent regressions.\n\n"
             fi
             
             # Check screen recording
             if [ "${{ steps.check-recording.outputs.has_recording }}" != "true" ]; then
-              FAILS="${FAILS}📹 **Visual Documentation Missing**\n\nPlease add a screen recording or screenshot:\n- GitHub: Drag & drop media to PR description\n- YouTube: Add YouTube link\n\n"
+              WARNINGS="${WARNINGS}⚠️ **Warning: Visual Documentation Missing**\n\nIf this PR changes user-facing behavior, visual proof (screen recording or screenshot) is required. PRs without applicable visual documentation may not be reviewed until provided.\nYou can add it by:\n\n- GitHub: Drag & drop media directly into the PR description\n\n- YouTube: Include a link to a short demo\n\n"
             fi
           fi
           
           # Create results JSON
-          if [ -n "$FAILS" ]; then
-            # Create JSON with fails
+          if [ -n "$WARNINGS" ]; then
+            # Create JSON with warnings
             cat > pr-check-results.json << EOF
           {
-            "fails": [
+            "fails": [],
+            "warnings": [
               {
-                "message": "$(echo -e "$FAILS" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')"
+                "message": "$(echo -e "$WARNINGS" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')"
               }
             ],
-            "warnings": [],
             "messages": [],
             "markdowns": []
           }
           EOF
-            echo "failed=true" >> "$GITHUB_OUTPUT"
+            echo "failed=false" >> "$GITHUB_OUTPUT"
           else
             # Create JSON with success
             cat > pr-check-results.json << 'EOF'
@@ -151,9 +150,3 @@ jobs:
             pr-number.txt
             pr-sha.txt
           retention-days: 1
-
-      - name: Fail if checks failed
-        if: steps.final-check.outputs.failed == 'true'
-        run: |
-          echo "PR checks failed. See job summary for details."
-          exit 1

@@ -125,12 +125,17 @@ jobs:
             // Set commit status based on failures
             if (prSha) {
               const hasFailures = results.fails && results.fails.length > 0;
+              const hasWarnings = results.warnings && results.warnings.length > 0;
               await github.rest.repos.createCommitStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 sha: prSha,
                 state: hasFailures ? 'failure' : 'success',
                 context: 'pr-checks',
-                description: hasFailures ? `${results.fails.length} check(s) failed` : 'All checks passed'
+                description: hasFailures 
+                  ? `${results.fails.length} check(s) failed` 
+                  : hasWarnings 
+                    ? `${results.warnings.length} warning(s)` 
+                    : 'All checks passed'
               });
             }
