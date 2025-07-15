@@ -12,6 +12,10 @@ export interface TemplateInfo {
   localizedTitle?: string
   localizedDescription?: string
   sourceModule?: string
+  /**
+   * Minimum version of ComfyUI required to use this template
+   */
+  versionRequired?: string
 }
 
 export interface WorkflowTemplates {
