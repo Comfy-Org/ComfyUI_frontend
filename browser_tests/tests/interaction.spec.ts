@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 import { Position } from '@vueuse/core'
 
+// Test update for PR review validation
+
 import {
   type ComfyPage,
   comfyPageFixture as test,
