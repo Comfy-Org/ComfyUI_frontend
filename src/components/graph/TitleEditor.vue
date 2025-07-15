@@ -50,7 +50,7 @@ const onEdit = (newValue: string) => {
     const target = titleEditorStore.titleEditorTarget
     if (target instanceof LGraphNode && target.isSubgraphNode?.()) {
       target.subgraph.name = trimmedTitle
-      
+
       // Also update the node definition display name in the store
       nodeDefStore.updateNodeDefDisplayName(target.type, trimmedTitle)
     }

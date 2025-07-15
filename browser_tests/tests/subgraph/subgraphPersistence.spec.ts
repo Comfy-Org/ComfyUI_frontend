@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from '@/browser_tests/fixtures/ComfyPage'
+
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Subgraph Persistence', () => {
   test('Node library updates when subgraph title changes', async ({
