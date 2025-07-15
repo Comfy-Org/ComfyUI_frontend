@@ -26,6 +26,8 @@ interface CustomDialogComponentProps {
   modal?: boolean
   position?: DialogPosition
   pt?: DialogPassThroughOptions
+  closeOnEscape?: boolean
+  dismissableMask?: boolean
 }
 
 type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
@@ -130,7 +132,7 @@ export const useDialogStore = defineStore('dialog', () => {
       dialogStack.value.shift()
     }
 
-    const dialog: DialogInstance = {
+    const dialog = {
       key: options.key,
       visible: true,
       title: options.title,
