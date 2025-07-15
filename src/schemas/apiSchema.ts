@@ -113,6 +113,8 @@ const zLogRawResponse = z.object({
   entries: z.array(zLogEntry)
 })
 
+const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
+
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -132,6 +134,7 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type DisplayComponentWsMessage = z.infer<
   typeof zDisplayComponentWsMessage
 >
+export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 // End of ws messages
 
 const zPromptInputItem = z.object({
