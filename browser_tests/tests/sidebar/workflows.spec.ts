@@ -187,12 +187,14 @@ test.describe('Workflows sidebar', () => {
 
   test('Can save workflow as with same name', async ({ comfyPage }) => {
     await comfyPage.menu.topbar.saveWorkflow('workflow5.json')
+    await comfyPage.nextFrame()
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow5.json'
     ])
 
     await comfyPage.menu.topbar.saveWorkflowAs('workflow5.json')
     await comfyPage.confirmDialog.click('overwrite')
+    await comfyPage.nextFrame()
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow5.json'
     ])
