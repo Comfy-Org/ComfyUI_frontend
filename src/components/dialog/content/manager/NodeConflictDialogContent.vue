@@ -1,6 +1,6 @@
 <template>
-  <div class="w-[552px] max-h-[246px]">
-    <ContentDivider :width="0.3" />
+  <div class="w-[552px] max-h-[246px] flex flex-col">
+    <ContentDivider :width="1" />
     <div class="px-4 py-6 w-full h-full flex flex-col gap-2">
       <!-- Description -->
       <!-- <div>
@@ -97,7 +97,7 @@
         </div>
       </div>
     </div>
-    <ContentDivider :width="0.3" />
+    <ContentDivider :width="1" />
   </div>
 </template>
 

@@ -12,7 +12,7 @@
     v-bind="$attrs"
     @click="onClick"
   >
-    <span class="py-2 px-3 whitespace-nowrap">
+    <span class="py-2 px-3 whitespace-nowrap text-xs">
       <template v-if="loading">
         {{ loadingMessage ?? $t('g.loading') }}
       </template>
