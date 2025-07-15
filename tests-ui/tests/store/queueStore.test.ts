@@ -3,10 +3,94 @@ import { describe, expect, it } from 'vitest'
 import { TaskItemImpl } from '@/stores/queueStore'
 
 describe('TaskItemImpl', () => {
+  describe('prompt property accessors', () => {
+    it('should correctly access queueIndex from priority', () => {
+      const taskItem = new TaskItemImpl('Pending', {
+        priority: 5,
+        prompt_id: 'test-id',
+        extra_data: { client_id: 'client-id' }
+      })
+
+      expect(taskItem.queueIndex).toBe(5)
+    })
+
+    it('should correctly access promptId from prompt_id', () => {
+      const taskItem = new TaskItemImpl('History', {
+        priority: 0,
+        prompt_id: 'unique-prompt-id',
+        extra_data: { client_id: 'client-id' }
+      })
+
+      expect(taskItem.promptId).toBe('unique-prompt-id')
+    })
+
+    it('should correctly access extraData', () => {
+      const extraData = {
+        client_id: 'client-id',
+        extra_pnginfo: {
+          workflow: {
+            last_node_id: 1,
+            last_link_id: 0,
+            nodes: [],
+            links: [],
+            groups: [],
+            config: {},
+            extra: {},
+            version: 0.4
+          }
+        }
+      }
+      const taskItem = new TaskItemImpl('Running', {
+        priority: 1,
+        prompt_id: 'test-id',
+        extra_data: extraData
+      })
+
+      expect(taskItem.extraData).toEqual(extraData)
+    })
+
+    it('should correctly access workflow from extraPngInfo', () => {
+      const workflow = {
+        last_node_id: 1,
+        last_link_id: 0,
+        nodes: [],
+        links: [],
+        groups: [],
+        config: {},
+        extra: {},
+        version: 0.4
+      }
+      const taskItem = new TaskItemImpl('History', {
+        priority: 0,
+        prompt_id: 'test-id',
+        extra_data: {
+          client_id: 'client-id',
+          extra_pnginfo: { workflow }
+        }
+      })
+
+      expect(taskItem.workflow).toEqual(workflow)
+    })
+
+    it('should return undefined workflow when extraPngInfo is missing', () => {
+      const taskItem = new TaskItemImpl('History', {
+        priority: 0,
+        prompt_id: 'test-id',
+        extra_data: { client_id: 'client-id' }
+      })
+
+      expect(taskItem.workflow).toBeUndefined()
+    })
+  })
+
   it('should remove animated property from outputs during construction', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -26,7 +110,11 @@ describe('TaskItemImpl', () => {
   it('should handle outputs without animated property', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -42,7 +130,11 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from core', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -64,7 +156,11 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from VHS', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -93,7 +189,11 @@ describe('TaskItemImpl', () => {
   it('should recognize mp4 video from core', () => {
     const taskItem = new TaskItemImpl(
       'History',
-      [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+      {
+        priority: 0,
+        prompt_id: 'prompt-id',
+        extra_data: { client_id: 'client-id' }
+      },
       { status_str: 'success', messages: [], completed: true },
       {
         'node-1': {
@@ -128,7 +228,11 @@ describe('TaskItemImpl', () => {
       it(`should recognize ${extension} audio`, () => {
         const taskItem = new TaskItemImpl(
           'History',
-          [0, 'prompt-id', {}, { client_id: 'client-id' }, []],
+          {
+            priority: 0,
+            prompt_id: 'prompt-id',
+            extra_data: { client_id: 'client-id' }
+          },
           { status_str: 'success', messages: [], completed: true },
           {
             'node-1': {
