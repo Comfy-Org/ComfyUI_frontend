@@ -1,0 +1,159 @@
+name: PR Checks
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check-changes.outputs.should_run }}
+      has_browser_tests: ${{ steps.check-coverage.outputs.has_browser_tests }}
+      has_screen_recording: ${{ steps.check-recording.outputs.has_recording }}
+      check_failed: ${{ steps.final-check.outputs.failed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure base branch is available
+        run: |
+          # Fetch the specific base commit to ensure it's available for git diff
+          git fetch origin ${{ github.event.pull_request.base.sha }}
+
+      - name: Check if significant changes exist
+        id: check-changes
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }})
+          
+          # Filter for src/ files
+          SRC_FILES=$(echo "$CHANGED_FILES" | grep '^src/' || true)
+          
+          if [ -z "$SRC_FILES" ]; then
+            echo "No src/ files changed"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Count lines changed in src files
+          TOTAL_LINES=0
+          for file in $SRC_FILES; do
+            if [ -f "$file" ]; then
+              # Count added lines (non-empty)
+              ADDED=$(git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} -- "$file" | grep '^+' | grep -v '^+++' | grep -v '^+$' | wc -l)
+              # Count removed lines (non-empty)
+              REMOVED=$(git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} -- "$file" | grep '^-' | grep -v '^---' | grep -v '^-$' | wc -l)
+              TOTAL_LINES=$((TOTAL_LINES + ADDED + REMOVED))
+            fi
+          done
+          
+          echo "Total lines changed in src/: $TOTAL_LINES"
+          
+          if [ $TOTAL_LINES -gt 3 ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check browser test coverage
+        id: check-coverage
+        if: steps.check-changes.outputs.should_run == 'true'
+        run: |
+          # Check if browser tests were updated
+          BROWSER_TEST_CHANGES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | grep '^browser_tests/.*\.ts$' || true)
+          
+          if [ -n "$BROWSER_TEST_CHANGES" ]; then
+            echo "has_browser_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_browser_tests=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for screen recording
+        id: check-recording
+        if: steps.check-changes.outputs.should_run == 'true'
+        run: |
+          # Check PR body for screen recording
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          # Check for GitHub user attachments or YouTube links
+          if echo "$PR_BODY" | grep -qiE 'github\.com/user-attachments/assets/[a-f0-9-]+|youtube\.com/watch|youtu\.be/'; then
+            echo "has_recording=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_recording=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Final check and create results
+        id: final-check
+        if: always()
+        run: |
+          # Initialize results
+          FAILS=""
+          
+          # Only run checks if should_run is true
+          if [ "${{ steps.check-changes.outputs.should_run }}" == "true" ]; then
+            # Check browser test coverage
+            if [ "${{ steps.check-coverage.outputs.has_browser_tests }}" != "true" ]; then
+              FAILS="${FAILS}🧪 **E2E Test Coverage Missing**\n\nAll changes should be covered under E2E testing. Please add or update browser tests.\n\n"
+            fi
+            
+            # Check screen recording
+            if [ "${{ steps.check-recording.outputs.has_recording }}" != "true" ]; then
+              FAILS="${FAILS}📹 **Visual Documentation Missing**\n\nPlease add a screen recording or screenshot:\n- GitHub: Drag & drop media to PR description\n- YouTube: Add YouTube link\n\n"
+            fi
+          fi
+          
+          # Create results JSON
+          if [ -n "$FAILS" ]; then
+            # Create JSON with fails
+            cat > pr-check-results.json << EOF
+          {
+            "fails": [
+              {
+                "message": "$(echo -e "$FAILS" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')"
+              }
+            ],
+            "warnings": [],
+            "messages": [],
+            "markdowns": []
+          }
+          EOF
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          else
+            # Create JSON with success
+            cat > pr-check-results.json << 'EOF'
+          {
+            "fails": [],
+            "warnings": [],
+            "messages": [],
+            "markdowns": []
+          }
+          EOF
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
+          
+          # Write PR metadata
+          echo "${{ github.event.pull_request.number }}" > pr-number.txt
+          echo "${{ github.event.pull_request.head.sha }}" > pr-sha.txt
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-check-results-${{ github.run_id }}
+          path: |
+            pr-check-results.json
+            pr-number.txt
+            pr-sha.txt
+          retention-days: 1
+
+      - name: Fail if checks failed
+        if: steps.final-check.outputs.failed == 'true'
+        run: |
+          echo "PR checks failed. See job summary for details."
+          exit 1
