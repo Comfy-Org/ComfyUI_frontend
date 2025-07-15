@@ -241,14 +241,14 @@ export class ComfyApi extends EventTarget {
    * Get feature flags supported by this frontend client.
    * Returns a copy to prevent external modification.
    */
-  getClientFeatureFlags(): Record<string, any> {
+  getClientFeatureFlags(): Record<string, unknown> {
     return { ...defaultClientFeatureFlags }
   }
 
   /**
    * Feature flags received from the backend server.
    */
-  serverFeatureFlags: Record<string, any> = {}
+  serverFeatureFlags: Record<string, unknown> = {}
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -1011,15 +1011,15 @@ export class ComfyApi extends EventTarget {
    * @param defaultValue The default value if the feature is not found
    * @returns The feature value or default
    */
-  getServerFeature<T = any>(featureName: string, defaultValue?: T): T {
-    return this.serverFeatureFlags[featureName] ?? defaultValue
+  getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
   }
 
   /**
    * Gets all server feature flags.
    * @returns Copy of all server feature flags
    */
-  getServerFeatures(): Record<string, any> {
+  getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
   }
 }
