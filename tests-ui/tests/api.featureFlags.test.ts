@@ -27,7 +27,7 @@ describe('API Feature Flags', () => {
     global.WebSocket = vi.fn().mockImplementation(() => mockWebSocket) as any
 
     // Reset API state
-    api.feature_flags = {}
+    api.serverFeatureFlags = {}
 
     // Mock getClientFeatureFlags to return test feature flags
     vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
@@ -91,7 +91,7 @@ describe('API Feature Flags', () => {
       await initPromise
 
       // Check that server features were stored
-      expect(api.feature_flags).toEqual({
+      expect(api.serverFeatureFlags).toEqual({
         supports_preview_metadata: true,
         async_execution: true,
         supported_formats: ['webp', 'jpeg', 'png'],
@@ -133,14 +133,14 @@ describe('API Feature Flags', () => {
       await initPromise
 
       // Server features should remain empty
-      expect(api.feature_flags).toEqual({})
+      expect(api.serverFeatureFlags).toEqual({})
     })
   })
 
   describe('Feature checking methods', () => {
     beforeEach(() => {
       // Set up some test features
-      api.feature_flags = {
+      api.serverFeatureFlags = {
         supports_preview_metadata: true,
         async_execution: false,
         capabilities: ['isolated_nodes', 'dynamic_models']
@@ -197,11 +197,11 @@ describe('API Feature Flags', () => {
   describe('Integration with preview messages', () => {
     it('should affect preview message handling based on feature support', () => {
       // Test with metadata support
-      api.feature_flags = { supports_preview_metadata: true }
+      api.serverFeatureFlags = { supports_preview_metadata: true }
       expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(true)
 
       // Test without metadata support
-      api.feature_flags = {}
+      api.serverFeatureFlags = {}
       expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(false)
     })
   })

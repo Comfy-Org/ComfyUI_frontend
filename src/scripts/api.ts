@@ -251,17 +251,6 @@ export class ComfyApi extends EventTarget {
   serverFeatureFlags: Record<string, any> = {}
 
   /**
-   * Alias for serverFeatureFlags for test compatibility.
-   */
-  get feature_flags() {
-    return this.serverFeatureFlags
-  }
-
-  set feature_flags(value: Record<string, any>) {
-    this.serverFeatureFlags = value
-  }
-
-  /**
    * The auth token for the comfy org account if the user is logged in.
    * This is only used for {@link queuePrompt} now. It is not directly
    * passed as parameter to the function because some custom nodes are hijacking
