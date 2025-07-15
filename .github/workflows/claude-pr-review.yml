@@ -4,6 +4,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  id-token: write
 
 on:
   pull_request:
@@ -61,12 +62,13 @@ jobs:
           npm install -g typescript @vue/compiler-sfc
 
       - name: Run Claude PR Review
-        uses: anthropics/claude-code-action@main
+        uses: anthropics/claude-code-base-action@beta
         with:
-          prompt_file: .claude/commands/comprehensive-pr-review.md
+          prompt: "Please run the comprehensive PR review command located at .claude/commands/comprehensive-pr-review.md for PR #${{ github.event.pull_request.number }}. The PR_NUMBER environment variable is already set."
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           max_turns: 1
           timeout_minutes: 30
+          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
