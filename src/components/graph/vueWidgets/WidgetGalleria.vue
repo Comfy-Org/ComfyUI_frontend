@@ -9,7 +9,6 @@
       v-bind="filteredProps"
       :disabled="readonly"
       :show-thumbnails="showThumbnails"
-      :show-indicators="showIndicators"
       :show-nav-buttons="showNavButtons"
       class="max-w-full"
     >
@@ -81,13 +80,6 @@ const galleryImages = computed(() => {
 const showThumbnails = computed(() => {
   return (
     props.widget.options?.showThumbnails !== false &&
-    galleryImages.value.length > 1
-  )
-})
-
-const showIndicators = computed(() => {
-  return (
-    props.widget.options?.showIndicators !== false &&
     galleryImages.value.length > 1
   )
 })
