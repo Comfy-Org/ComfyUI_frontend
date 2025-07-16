@@ -11,6 +11,17 @@
       :show-thumbnails="showThumbnails"
       :show-nav-buttons="showNavButtons"
       class="max-w-full"
+      :pt="{
+        thumbnailContent: {
+          class: 'py-4 px-2'
+        },
+        thumbnailPrevButton: {
+          class: 'm-0'
+        },
+        thumbnailNextButton: {
+          class: 'm-0'
+        }
+      }"
     >
       <template #item="{ item }">
         <img
