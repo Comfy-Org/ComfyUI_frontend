@@ -8,6 +8,8 @@ import { app } from '@/scripts/app'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 
+const TRACKPAD_DETECTION_THRESHOLD = 50
+
 function addMultilineWidget(
   node: LGraphNode,
   name: string,
@@ -73,9 +75,10 @@ function addMultilineWidget(
     }
 
     // Detect if this is likely a trackpad gesture vs mouse wheel
-    // Trackpads usually have deltaX or smaller deltaY values (< 50)
-    // Mouse wheels typically have larger discrete deltaY values (>= 50)
-    const isLikelyTrackpad = Math.abs(deltaX) > 0 || Math.abs(deltaY) < 50
+    // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
+    // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
+    const isLikelyTrackpad =
+      Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
 
     // Trackpad gestures: when enabled, trackpad panning goes to canvas
     if (gesturesEnabled && isLikelyTrackpad) {
