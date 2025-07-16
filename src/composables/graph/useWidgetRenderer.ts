@@ -43,6 +43,10 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   COLOR: WidgetType.COLOR,
   image: WidgetType.IMAGE,
   IMAGE: WidgetType.IMAGE,
+  imagecompare: WidgetType.IMAGECOMPARE,
+  IMAGECOMPARE: WidgetType.IMAGECOMPARE,
+  galleria: WidgetType.GALLERIA,
+  GALLERIA: WidgetType.GALLERIA,
   file: WidgetType.FILEUPLOAD,
   FILEUPLOAD: WidgetType.FILEUPLOAD,
 
