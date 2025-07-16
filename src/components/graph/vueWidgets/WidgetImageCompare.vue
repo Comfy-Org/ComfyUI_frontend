@@ -1,8 +1,5 @@
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
-      widget.name
-    }}</label>
     <div
       class="image-compare-container relative overflow-hidden rounded border border-gray-300 dark-theme:border-gray-600"
     >
@@ -47,19 +44,6 @@
               <div class="w-0.5 h-3 bg-gray-600"></div>
             </div>
           </div>
-        </div>
-        <!-- Labels -->
-        <div
-          v-if="showLabels"
-          class="absolute top-2 left-2 px-2 py-1 bg-black bg-opacity-50 text-white text-xs rounded"
-        >
-          {{ beforeLabel }}
-        </div>
-        <div
-          v-if="showLabels"
-          class="absolute top-2 right-2 px-2 py-1 bg-black bg-opacity-50 text-white text-xs rounded"
-        >
-          {{ afterLabel }}
         </div>
       </div>
     </div>
@@ -114,9 +98,6 @@ const beforeAlt = computed(
   () => props.widget.value?.beforeAlt || 'Before image'
 )
 const afterAlt = computed(() => props.widget.value?.afterAlt || 'After image')
-const beforeLabel = computed(() => props.widget.value?.beforeLabel || 'Before')
-const afterLabel = computed(() => props.widget.value?.afterLabel || 'After')
-const showLabels = computed(() => props.widget.value?.showLabels !== false)
 
 onMounted(() => {
   if (props.widget.value?.initialPosition !== undefined) {
