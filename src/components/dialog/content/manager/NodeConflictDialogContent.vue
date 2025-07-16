@@ -121,8 +121,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   conflicts: () => [],
   conflictedPackages: () => [],
-  onDismiss: () => {}
+  onDismiss: undefined
 })
+
+console.log('NodeConflictDialogContent - all props:', props)
 
 const { t } = useI18n()
 

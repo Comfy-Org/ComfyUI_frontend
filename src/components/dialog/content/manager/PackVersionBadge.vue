@@ -2,7 +2,7 @@
   <div>
     <div
       class="inline-flex items-center gap-1 rounded-2xl text-xs cursor-pointer py-1"
-      :class="{ 'bg-gray-100 dark-theme:bg-neutral-700': fill }"
+      :class="{ 'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill }"
       aria-haspopup="true"
       role="button"
       tabindex="0"

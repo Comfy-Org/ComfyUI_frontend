@@ -39,6 +39,21 @@ vi.mock('@vueuse/core', () => ({
   whenever: vi.fn()
 }))
 
+vi.mock('@/config', () => ({
+  default: {
+    app_version: '1.24.0-1'
+  }
+}))
+
+vi.mock('@/stores/systemStatsStore', () => ({
+  useSystemStatsStore: vi.fn(() => ({
+    systemStats: {
+      system: { os: 'Darwin' },
+      devices: [{ type: 'mps', name: 'Metal' }]
+    }
+  }))
+}))
+
 describe('PackCard', () => {
   let pinia: ReturnType<typeof createPinia>
 

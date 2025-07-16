@@ -157,6 +157,9 @@
     "selectVersion": "Select Version",
     "downloads": "Downloads",
     "repository": "Repository",
+    "conflicts": {
+      "warningTooltip": "This package may have compatibility issues with your current environment"
+    },
     "installingDependencies": "Installing dependencies...",
     "uninstall": "Uninstall",
     "uninstalling": "Uninstalling",
@@ -210,6 +213,7 @@
       "conflicts": "Conflicts",
       "conflictInfoTitle": "Why is this happening?",
       "installAnyway": "Install Anyway",
+      "enableAnyway": "Enable Anyway",
       "conflictMessages": {
         "comfyui_version": "ComfyUI version mismatch (current: {current}, required: {required})",
         "frontend_version": "Frontend version mismatch (current: {current}, required: {required})",

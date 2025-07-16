@@ -12,11 +12,12 @@
         }"
         @click="handleConflictInfoClick"
       />
-      <PackInstallButton
+      <Button
+        v-if="props.buttonText"
+        :label="props.buttonText"
+        severity="secondary"
         size="small"
-        variant="default"
-        :node-packs="[]"
-        :label="$t('manager.conflicts.installAnyway')"
+        @click="handleButtonClick"
       />
     </div>
     <div></div>
@@ -26,9 +27,33 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
-import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+
+interface Props {
+  buttonText?: string
+  onButtonClick?: () => void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  buttonText: undefined,
+  onButtonClick: undefined
+})
+
+const dialogStore = useDialogStore()
+
+console.log('NodeConflictFooter - received props:', props)
 
 const handleConflictInfoClick = () => {
   console.log('faq')
+}
+
+const handleButtonClick = () => {
+  // Close the conflict dialog
+  dialogStore.closeDialog({ key: 'global-node-conflict' })
+
+  // Execute the custom button action if provided
+  if (props.onButtonClick) {
+    props.onButtonClick()
+  }
 }
 </script>
