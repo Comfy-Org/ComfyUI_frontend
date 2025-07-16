@@ -64,7 +64,15 @@ jobs:
       - name: Run Claude PR Review
         uses: anthropics/claude-code-base-action@beta
         with:
-          prompt: "Execute the comprehensive PR review script by reading .claude/commands/comprehensive-pr-review.md and running all the bash code blocks within it. The PR_NUMBER environment variable is already set to ${{ github.event.pull_request.number }}. This will analyze the PR and post review comments."
+          prompt: |
+            Read .claude/commands/comprehensive-pr-review.md and follow ALL instructions within it:
+            1. Execute the bash code blocks in Phases 0-2 to set up the environment
+            2. Then perform the deep analysis described in Phases 3-6 by:
+               - Reading the changed files listed in changed_files.txt
+               - Analyzing them according to the criteria in the review command
+               - Using the post_review_comment bash function to post inline comments for issues found
+            3. Finally execute Phase 7 to post the summary
+            The PR_NUMBER environment variable is already set to ${{ github.event.pull_request.number }}.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           max_turns: 30
           timeout_minutes: 30
