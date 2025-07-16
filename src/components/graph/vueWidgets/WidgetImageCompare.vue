@@ -31,7 +31,7 @@
         </div>
         <!-- Slider handle -->
         <div
-          class="absolute top-0 h-full w-0.5 bg-white shadow-lg cursor-col-resize z-10"
+          class="absolute top-0 h-full w-0 cursor-col-resize z-10"
           :style="{ left: `${sliderPosition}%` }"
           @mousedown="startDrag"
           @touchstart="startDrag"
