@@ -27,12 +27,14 @@ describe('API Feature Flags', () => {
     global.WebSocket = vi.fn().mockImplementation(() => mockWebSocket) as any
 
     // Reset API state
-    api.feature_flags = {}
-    api.clientFeatureFlags = {
+    api.serverFeatureFlags = {}
+
+    // Mock getClientFeatureFlags to return test feature flags
+    vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
       supports_preview_metadata: true,
       api_version: '1.0.0',
       capabilities: ['bulk_operations', 'async_nodes']
-    }
+    })
   })
 
   afterEach(() => {
@@ -89,7 +91,7 @@ describe('API Feature Flags', () => {
       await initPromise
 
       // Check that server features were stored
-      expect(api.feature_flags).toEqual({
+      expect(api.serverFeatureFlags).toEqual({
         supports_preview_metadata: true,
         async_execution: true,
         supported_formats: ['webp', 'jpeg', 'png'],
@@ -131,14 +133,14 @@ describe('API Feature Flags', () => {
       await initPromise
 
       // Server features should remain empty
-      expect(api.feature_flags).toEqual({})
+      expect(api.serverFeatureFlags).toEqual({})
     })
   })
 
   describe('Feature checking methods', () => {
     beforeEach(() => {
       // Set up some test features
-      api.feature_flags = {
+      api.serverFeatureFlags = {
         supports_preview_metadata: true,
         async_execution: false,
         capabilities: ['isolated_nodes', 'dynamic_models']
@@ -162,29 +164,44 @@ describe('API Feature Flags', () => {
   })
 
   describe('Client feature flags configuration', () => {
-    it('should use default client feature flags', () => {
-      // Verify default flags are loaded from config
-      expect(api.clientFeatureFlags).toHaveProperty(
-        'supports_preview_metadata',
-        true
-      )
-      expect(api.clientFeatureFlags).toHaveProperty('api_version', '1.0.0')
-      expect(api.clientFeatureFlags).toHaveProperty('capabilities')
-      expect(api.clientFeatureFlags.capabilities).toEqual([
-        'bulk_operations',
-        'async_nodes'
-      ])
+    it('should use mocked client feature flags', () => {
+      // Verify mocked flags are returned
+      const clientFlags = api.getClientFeatureFlags()
+      expect(clientFlags).toEqual({
+        supports_preview_metadata: true,
+        api_version: '1.0.0',
+        capabilities: ['bulk_operations', 'async_nodes']
+      })
+    })
+
+    it('should return a copy of client feature flags', () => {
+      // Temporarily restore the real implementation for this test
+      vi.mocked(api.getClientFeatureFlags).mockRestore()
+
+      // Verify that modifications to returned object don't affect original
+      const clientFlags1 = api.getClientFeatureFlags()
+      const clientFlags2 = api.getClientFeatureFlags()
+
+      // Should be different objects
+      expect(clientFlags1).not.toBe(clientFlags2)
+
+      // But with same content
+      expect(clientFlags1).toEqual(clientFlags2)
+
+      // Modifying one should not affect the other
+      clientFlags1.test_flag = true
+      expect(api.getClientFeatureFlags()).not.toHaveProperty('test_flag')
     })
   })
 
   describe('Integration with preview messages', () => {
     it('should affect preview message handling based on feature support', () => {
       // Test with metadata support
-      api.feature_flags = { supports_preview_metadata: true }
+      api.serverFeatureFlags = { supports_preview_metadata: true }
       expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(true)
 
       // Test without metadata support
-      api.feature_flags = {}
+      api.serverFeatureFlags = {}
       expect(api.serverSupportsFeature('supports_preview_metadata')).toBe(false)
     })
   })

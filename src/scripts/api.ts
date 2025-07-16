@@ -249,25 +249,17 @@ export class ComfyApi extends EventTarget {
   reportedUnknownMessageTypes = new Set<string>()
 
   /**
-   * Feature flags supported by this frontend client.
+   * Get feature flags supported by this frontend client.
+   * Returns a copy to prevent external modification.
    */
-  clientFeatureFlags: Record<string, any> = { ...defaultClientFeatureFlags }
+  getClientFeatureFlags(): Record<string, unknown> {
+    return { ...defaultClientFeatureFlags }
+  }
 
   /**
    * Feature flags received from the backend server.
    */
-  serverFeatureFlags: Record<string, any> = {}
-
-  /**
-   * Alias for serverFeatureFlags for test compatibility.
-   */
-  get feature_flags() {
-    return this.serverFeatureFlags
-  }
-
-  set feature_flags(value: Record<string, any>) {
-    this.serverFeatureFlags = value
-  }
+  serverFeatureFlags: Record<string, unknown> = {}
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -415,7 +407,7 @@ export class ComfyApi extends EventTarget {
       this.socket!.send(
         JSON.stringify({
           type: 'feature_flags',
-          data: this.clientFeatureFlags
+          data: this.getClientFeatureFlags()
         })
       )
 
@@ -769,7 +761,8 @@ export class ComfyApi extends EventTarget {
         Running: data.queue_running.map((prompt: Record<number, any>) => ({
           taskType: 'Running',
           prompt,
-          remove: { name: 'Cancel', cb: () => api.interrupt() }
+          // prompt[1] is the prompt id
+          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
         })),
         Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
           taskType: 'Pending',
@@ -850,10 +843,15 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Interrupts the execution of the running prompt
+   * Interrupts the execution of the running prompt. If runningPromptId is provided,
+   * it is included in the payload as a helpful hint to the backend.
+   * @param {string | null} [runningPromptId] Optional Running Prompt ID to interrupt
    */
-  async interrupt() {
-    await this.#postItem('interrupt', null)
+  async interrupt(runningPromptId: string | null) {
+    await this.#postItem(
+      'interrupt',
+      runningPromptId ? { prompt_id: runningPromptId } : undefined
+    )
   }
 
   /**
@@ -1052,31 +1050,17 @@ export class ComfyApi extends EventTarget {
    * @param defaultValue The default value if the feature is not found
    * @returns The feature value or default
    */
-  getServerFeature<T = any>(featureName: string, defaultValue?: T): T {
-    return this.serverFeatureFlags[featureName] ?? defaultValue
+  getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
   }
 
   /**
    * Gets all server feature flags.
    * @returns Copy of all server feature flags
    */
-  getServerFeatures(): Record<string, any> {
+  getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
   }
-
-  /**
-   * Updates the client feature flags.
-   *
-   * This is intentionally disabled for now. When we introduce an official Public API
-   * for the frontend, we'll introduce a function for custom frontend extensions to
-   * add their own feature flags in a way that won't interfere with other extensions
-   * or the builtin frontend flags.
-   */
-  /*
-  setClientFeatureFlags(flags: Record<string, any>): void {
-    this.clientFeatureFlags = flags
-  }
-  */
 }
 
 export const api = new ComfyApi()
