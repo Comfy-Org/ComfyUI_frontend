@@ -1,8 +1,5 @@
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
-      widget.name
-    }}</label>
     <Galleria
       v-model:activeIndex="activeIndex"
       :value="galleryImages"
