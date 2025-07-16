@@ -22,7 +22,7 @@
         />
         <!-- Before image (overlay layer) -->
         <div
-          class="absolute top-0 left-0 h-full overflow-hidden transition-all duration-300 ease-in-out"
+          class="absolute top-0 left-0 h-full overflow-hidden"
           :style="{ width: `${sliderPosition}%` }"
         >
           <Image
@@ -34,7 +34,7 @@
         </div>
         <!-- Slider handle -->
         <div
-          class="absolute top-0 h-full w-0.5 bg-white shadow-lg cursor-col-resize z-10 transition-all duration-100"
+          class="absolute top-0 h-full w-0.5 bg-white shadow-lg cursor-col-resize z-10"
           :style="{ left: `${sliderPosition}%` }"
           @mousedown="startDrag"
           @touchstart="startDrag"
