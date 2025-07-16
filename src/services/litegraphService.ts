@@ -33,6 +33,7 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -87,6 +88,14 @@ export const useLitegraphService = () => {
 
       constructor() {
         super(app.graph, subgraph, instanceData)
+
+        // Set up callback for promoted widget registration
+        this.onPromotedWidgetAdded = (widget) => {
+          const domWidgetStore = useDomWidgetStore()
+          if (!domWidgetStore.widgetStates.has(widget.id)) {
+            domWidgetStore.registerWidget(widget)
+          }
+        }
 
         this.#setupStrokeStyles()
         this.#addInputs(ComfyNode.nodeData.inputs)

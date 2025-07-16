@@ -61,10 +61,15 @@ const updateDomClipping = () => {
   if (!lgCanvas || !widgetElement.value) return
 
   const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
-  if (!selectedNode) return
+  if (!selectedNode) {
+    // Clear clipping when no node is selected
+    updateClipPath(widgetElement.value, lgCanvas.canvas, false, undefined)
+    return
+  }
 
-  const node = widget.node
-  const isSelected = selectedNode === node
+  // Use containerNode for promoted widgets, otherwise use widget.node
+  const positioningNode = widget.containerNode || widget.node
+  const isSelected = selectedNode === positioningNode
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
@@ -143,11 +148,28 @@ if (isDOMWidget(widget)) {
 const inputSpec = widget.node.constructor.nodeData
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
-onMounted(() => {
-  if (isDOMWidget(widget) && widgetElement.value) {
-    widgetElement.value.appendChild(widget.element)
+// Mount DOM element when widget is or becomes visible
+const mountElementIfVisible = () => {
+  if (widgetState.visible && isDOMWidget(widget) && widgetElement.value) {
+    // Only append if not already a child
+    if (!widgetElement.value.contains(widget.element)) {
+      widgetElement.value.appendChild(widget.element)
+    }
   }
+}
+
+// Check on mount
+onMounted(() => {
+  mountElementIfVisible()
 })
+
+// And watch for visibility changes
+watch(
+  () => widgetState.visible,
+  () => {
+    mountElementIfVisible()
+  }
+)
 </script>
 
 <style scoped>
