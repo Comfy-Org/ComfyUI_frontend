@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 
@@ -407,5 +408,64 @@ describe('useKeybindingStore', () => {
     expect(store.getKeybindingByCommandId('test.command')).toEqual(
       defaultKeybinding
     )
+  })
+})
+
+describe('Keybinding Store - Layout Independence', () => {
+  it('should treat the same physical key as equal regardless of keyboard layout', () => {
+    const eventEn = {
+      key: 's',
+      code: 'KeyS',
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false,
+      shiftKey: false
+    } as KeyboardEvent
+
+    const eventRu = {
+      key: 'ы',
+      code: 'KeyS',
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false,
+      shiftKey: false
+    } as KeyboardEvent
+
+    const comboEn = KeyComboImpl.fromEvent(eventEn)
+    const comboRu = KeyComboImpl.fromEvent(eventRu)
+
+    expect(comboEn.code).toBe('KeyS')
+    expect(comboRu.code).toBe('KeyS')
+    expect(comboEn.equals(comboRu)).toBe(true)
+    expect(comboEn.serialize()).toBe(comboRu.serialize())
+    expect(comboEn.serialize()).toBe('KeyS:true:false:false')
+    expect(comboEn.toString()).toBe('Ctrl + s')
+    expect(comboRu.toString()).toBe('Ctrl + ы')
+  })
+
+  it('should differentiate between different physical keys', () => {
+    const eventS = {
+      key: 's',
+      code: 'KeyS',
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false,
+      shiftKey: false
+    } as KeyboardEvent
+
+    const eventA = {
+      key: 'a',
+      code: 'KeyA',
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false,
+      shiftKey: false
+    } as KeyboardEvent
+
+    const comboS = KeyComboImpl.fromEvent(eventS)
+    const comboA = KeyComboImpl.fromEvent(eventA)
+
+    expect(comboS.equals(comboA)).toBe(false)
+    expect(comboS.serialize()).not.toBe(comboA.serialize())
   })
 })

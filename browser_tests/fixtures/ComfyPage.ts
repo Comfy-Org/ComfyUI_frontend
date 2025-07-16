@@ -366,10 +366,113 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.click('button.comfy-close-menu-btn')
-    await this.nextFrame()
+    const btn = this.page.locator('button.comfy-close-menu-btn')
+    if (await btn.isVisible()) {
+      await btn.click()
+      await this.nextFrame()
+    }
   }
 
+  async closeDialog() {
+    const btn = this.page.locator('.p-dialog-close-button')
+    if (await btn.isVisible()) {
+      await btn.click()
+      await expect(this.page.locator('.p-dialog')).toBeHidden()
+    }
+  }
+
+  async resizeNode(
+    nodePos: Position,
+    nodeSize: Size,
+    ratioX: number,
+    ratioY: number,
+    revertAfter: boolean = false
+  ) {
+    const bottomRight = {
+      x: nodePos.x + nodeSize.width,
+      y: nodePos.y + nodeSize.height
+    }
+    const target = {
+      x: nodePos.x + nodeSize.width * ratioX,
+      y: nodePos.y + nodeSize.height * ratioY
+    }
+    // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
+    await this.dragAndDrop(
+      { x: bottomRight.x - 2, y: bottomRight.y - 1 },
+      target
+    )
+    await this.nextFrame()
+    if (revertAfter) {
+      await this.dragAndDrop({ x: target.x - 2, y: target.y - 1 }, bottomRight)
+      await this.nextFrame()
+    }
+  }
+
+  async resizeKsamplerNode(
+    percentX: number,
+    percentY: number,
+    revertAfter: boolean = false
+  ) {
+    const ksamplerPos = {
+      x: 863,
+      y: 156
+    }
+    const ksamplerSize = {
+      width: 315,
+      height: 292
+    }
+    return this.resizeNode(
+      ksamplerPos,
+      ksamplerSize,
+      percentX,
+      percentY,
+      revertAfter
+    )
+  }
+
+  async resizeLoadCheckpointNode(
+    percentX: number,
+    percentY: number,
+    revertAfter: boolean = false
+  ) {
+    const loadCheckpointPos = {
+      x: 26,
+      y: 444
+    }
+    const loadCheckpointSize = {
+      width: 315,
+      height: 127
+    }
+    return this.resizeNode(
+      loadCheckpointPos,
+      loadCheckpointSize,
+      percentX,
+      percentY,
+      revertAfter
+    )
+  }
+
+  async resizeEmptyLatentNode(
+    percentX: number,
+    percentY: number,
+    revertAfter: boolean = false
+  ) {
+    const emptyLatentPos = {
+      x: 473,
+      y: 579
+    }
+    const emptyLatentSize = {
+      width: 315,
+      height: 136
+    }
+    return this.resizeNode(
+      emptyLatentPos,
+      emptyLatentSize,
+      percentX,
+      percentY,
+      revertAfter
+    )
+  }
   async clickDialogButton(prompt: string, buttonText: string = 'Yes') {
     const modal = this.page.locator(
       `.comfy-modal-content:has-text("${prompt}")`

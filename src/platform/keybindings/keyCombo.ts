@@ -5,12 +5,14 @@ import type { KeyCombo } from './types'
 
 export class KeyComboImpl implements KeyCombo {
   key: string
+  code: string
   ctrl: boolean
   alt: boolean
   shift: boolean
 
   constructor(obj: KeyCombo) {
     this.key = obj.key
+    this.code = obj.code ?? ''
     this.ctrl = obj.ctrl ?? false
     this.alt = obj.alt ?? false
     this.shift = obj.shift ?? false
@@ -19,6 +21,7 @@ export class KeyComboImpl implements KeyCombo {
   static fromEvent(event: KeyboardEvent) {
     return new KeyComboImpl({
       key: event.key,
+      code: event.code,
       ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
       shift: event.shiftKey
@@ -28,16 +31,33 @@ export class KeyComboImpl implements KeyCombo {
   equals(other: unknown): boolean {
     const raw = toRaw(other)
 
-    return raw instanceof KeyComboImpl
-      ? this.key.toUpperCase() === raw.key.toUpperCase() &&
-          this.ctrl === raw.ctrl &&
-          this.alt === raw.alt &&
-          this.shift === raw.shift
-      : false
+    if (!(raw instanceof KeyComboImpl)) {
+      return false
+    }
+
+    const thisCode = this.code
+    const otherCode = raw.code
+
+    if (thisCode && otherCode) {
+      return (
+        thisCode === otherCode &&
+        this.ctrl === raw.ctrl &&
+        this.alt === raw.alt &&
+        this.shift === raw.shift
+      )
+    }
+
+    return (
+      this.key.toUpperCase() === raw.key.toUpperCase() &&
+      this.ctrl === raw.ctrl &&
+      this.alt === raw.alt &&
+      this.shift === raw.shift
+    )
   }
 
   serialize(): string {
-    return `${this.key.toUpperCase()}:${this.ctrl}:${this.alt}:${this.shift}`
+    const identity = this.code || this.key.toUpperCase()
+    return `${identity}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
   toString(): string {
