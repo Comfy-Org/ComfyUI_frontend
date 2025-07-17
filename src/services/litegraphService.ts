@@ -34,7 +34,6 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -91,9 +90,37 @@ export const useLitegraphService = () => {
 
         // Set up callback for promoted widget registration
         this.onPromotedWidgetAdded = (widget) => {
+          // Only handle DOM widgets
+          if (
+            !('id' in widget) ||
+            !('element' in widget || 'component' in widget)
+          )
+            return
+
           const domWidgetStore = useDomWidgetStore()
-          if (!domWidgetStore.widgetStates.has(widget.id)) {
-            domWidgetStore.registerWidget(widget)
+          const domWidget = widget as any // Type assertion since we've verified the properties exist
+          if (!domWidgetStore.widgetStates.has(domWidget.id)) {
+            domWidgetStore.registerWidget(domWidget)
+            // Set initial visibility based on whether the containerNode is in the current graph
+            const widgetState = domWidgetStore.widgetStates.get(domWidget.id)
+            if (widgetState && widget.containerNode) {
+              const canvasStore = useCanvasStore()
+              const currentGraph = canvasStore.canvas?.graph
+              widgetState.visible =
+                currentGraph?.nodes.includes(widget.containerNode) ?? false
+            }
+          }
+        }
+
+        // Set up callback for promoted widget removal
+        this.onPromotedWidgetRemoved = (widget) => {
+          // Only handle DOM widgets
+          if (!('id' in widget)) return
+
+          const domWidgetStore = useDomWidgetStore()
+          const domWidget = widget as any // Type assertion since we've verified the property exists
+          if (domWidgetStore.widgetStates.has(domWidget.id)) {
+            domWidgetStore.unregisterWidget(domWidget.id)
           }
         }
 

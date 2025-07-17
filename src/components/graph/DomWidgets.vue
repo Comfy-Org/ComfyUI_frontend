@@ -41,14 +41,29 @@ const updateWidgets = () => {
     // Use containerNode for promoted widgets, otherwise use widget.node
     const node = widget.containerNode || widget.node
 
-    const visible =
-      node &&
-      currentGraph?.nodes.includes(node) &&
-      lgCanvas.isNodeVisible(node) &&
-      !(widget.options.hideOnZoom && lowQuality) &&
-      widget.isVisible()
+    let visible = false
+    if (node) {
+      // Determine which graph context this widget should be visible in
+      const isPromotedWidget = !!widget.containerNode
+      const isInParentGraph =
+        widget.containerNode &&
+        currentGraph?.nodes.includes(widget.containerNode)
+      const isInSubgraph = currentGraph?.nodes.includes(widget.node)
 
-    widgetState.visible = visible ?? false
+      // Promoted widgets: only visible when viewing parent graph
+      // Regular widgets: only visible when viewing their own graph
+      const isInCorrectContext = isPromotedWidget
+        ? isInParentGraph
+        : isInSubgraph
+
+      visible =
+        !!isInCorrectContext &&
+        lgCanvas.isNodeVisible(node) &&
+        !(widget.options.hideOnZoom && lowQuality) &&
+        widget.isVisible()
+    }
+
+    widgetState.visible = visible
 
     if (widgetState.visible && node) {
       const margin = widget.margin
