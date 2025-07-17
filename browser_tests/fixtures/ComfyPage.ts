@@ -509,7 +509,9 @@ export const comfyPageFixture = base.extend<{
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
-    const username = `playwright-test-${parallelIndex}`
+    // Add a random suffix for uniqueness per test run
+    const uniqueSuffix = Math.random().toString(36).slice(2, 10)
+    const username = `playwright-test-${parallelIndex}-${uniqueSuffix}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
