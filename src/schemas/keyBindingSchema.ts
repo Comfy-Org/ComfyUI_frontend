@@ -3,6 +3,7 @@ import { z } from 'zod'
 // KeyCombo schema
 export const zKeyCombo = z.object({
   key: z.string(),
+  code: z.string().optional(), // Add this line
   ctrl: z.boolean().optional(),
   alt: z.boolean().optional(),
   shift: z.boolean().optional(),
