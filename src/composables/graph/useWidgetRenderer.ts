@@ -52,7 +52,11 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
 
   // Button widget
   button: WidgetType.BUTTON,
-  BUTTON: WidgetType.BUTTON
+  BUTTON: WidgetType.BUTTON,
+
+  // Chart widget
+  chart: WidgetType.CHART,
+  CHART: WidgetType.CHART
 } as const
 
 /**
