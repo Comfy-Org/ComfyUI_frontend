@@ -8,7 +8,6 @@
   >
     <SplitterPanel
       v-show="sidebarPanelVisible"
-      v-if="sidebarLocation === 'left'"
       class="side-bar-panel"
       :min-size="10"
       :size="20"
@@ -32,16 +31,6 @@
         </SplitterPanel>
       </Splitter>
     </SplitterPanel>
-
-    <SplitterPanel
-      v-show="sidebarPanelVisible"
-      v-if="sidebarLocation === 'right'"
-      class="side-bar-panel"
-      :min-size="10"
-      :size="20"
-    >
-      <slot name="side-bar-panel" />
-    </SplitterPanel>
   </Splitter>
 </template>
 
@@ -55,9 +44,6 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const settingStore = useSettingStore()
-const sidebarLocation = computed<'left' | 'right'>(() =>
-  settingStore.get('Comfy.Sidebar.Location')
-)
 
 const unifiedWidth = computed(() =>
   settingStore.get('Comfy.Sidebar.UnifiedWidth')
