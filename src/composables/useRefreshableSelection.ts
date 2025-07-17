@@ -28,9 +28,10 @@ export const useRefreshableSelection = () => {
   })
 
   const refreshableWidgets = computed(() =>
-    selectedNodes.value.flatMap(
-      (node) => node.widgets?.filter(isRefreshableWidget) ?? []
-    )
+    selectedNodes.value.flatMap((node) => {
+      if (!node.widgets) return []
+      return (node.widgets as IBaseWidget[]).filter(isRefreshableWidget)
+    })
   )
 
   const isRefreshable = computed(() => refreshableWidgets.value.length > 0)
