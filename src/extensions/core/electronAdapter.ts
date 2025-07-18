@@ -1,7 +1,8 @@
 import log from 'loglevel'
 
-import { PYTHON_MIRROR } from '@/constants/uvMirrors'
-import { t } from '@/i18n'
+import { PYTHON_MIRROR } from '@/constants/mirrors'
+import { getDesktopGuideUrl } from '@/constants/urls'
+import { i18n, t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useToastStore } from '@/stores/toastStore'
@@ -159,7 +160,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         label: 'Desktop User Guide',
         icon: 'pi pi-book',
         function() {
-          window.open('https://comfyorg.notion.site/', '_blank')
+          window.open(getDesktopGuideUrl(i18n.global.locale.value), '_blank')
         }
       },
       {

@@ -38,23 +38,14 @@ import { useI18n } from 'vue-i18n'
 
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { MODEL_SOURCES } from '@/constants/urls'
 import { useSettingStore } from '@/stores/settingStore'
 import { isElectron } from '@/utils/envUtil'
 
-// TODO: Read this from server internal API rather than hardcoding here
-// as some installations may wish to use custom sources
-const allowedSources = [
-  'https://civitai.com/',
-  'https://huggingface.co/',
-  'http://localhost:' // Included for testing usage only
-]
+/** @todo Read this from server internal API rather than hardcoding here */
+const allowedSources = MODEL_SOURCES.allowedDomains
 const allowedSuffixes = ['.safetensors', '.sft']
-// Models that fail above conditions but are still allowed
-const whiteListedUrls = new Set([
-  'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',
-  'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
-  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
-])
+const whiteListedUrls = new Set(MODEL_SOURCES.whitelistedUrls)
 
 interface ModelInfo {
   name: string

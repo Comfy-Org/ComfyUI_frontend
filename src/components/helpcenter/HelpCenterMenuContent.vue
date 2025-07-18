@@ -123,6 +123,7 @@ import Button from 'primevue/button'
 import { type CSSProperties, computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { COMFY_URLS, GITHUB_REPOS, getDesktopGuideUrl } from '@/constants/urls'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
@@ -143,11 +144,10 @@ interface MenuItem {
 
 // Constants
 const EXTERNAL_LINKS = {
-  DOCS: 'https://docs.comfy.org/',
-  DISCORD: 'https://www.comfy.org/discord',
-  GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
-  UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
+  DOCS: COMFY_URLS.docs.base,
+  DISCORD: COMFY_URLS.community.discord,
+  GITHUB: GITHUB_REPOS.comfyui,
+  UPDATE_GUIDE: COMFY_URLS.docs.installation.update
 } as const
 
 const TIME_UNITS = {
@@ -199,7 +199,7 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
       action: () => {
-        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+        openExternalLink(getDesktopGuideUrl(locale.value))
         emit('close')
       }
     },
@@ -451,8 +451,8 @@ const onUpdate = (_: ReleaseNote): void => {
 const getChangelogUrl = (): string => {
   const isChineseLocale = locale.value === 'zh'
   return isChineseLocale
-    ? 'https://docs.comfy.org/zh-CN/changelog'
-    : 'https://docs.comfy.org/changelog'
+    ? COMFY_URLS.docs.changelog.zh
+    : COMFY_URLS.docs.changelog.en
 }
 
 // Lifecycle
