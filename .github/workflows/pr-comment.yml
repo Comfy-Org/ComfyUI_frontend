@@ -1,0 +1,149 @@
+name: PR Comment
+on:
+  workflow_run:
+    workflows: ["PR Checks"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  issues: write
+  statuses: write
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-check-results-${{ github.event.workflow_run.id }}
+          path: /tmp/pr-artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          
+      - name: Post results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Helper function to safely read files
+            function safeReadFile(filePath) {
+              try {
+                if (!fs.existsSync(filePath)) return null;
+                return fs.readFileSync(filePath, 'utf8').trim();
+              } catch (e) {
+                console.error(`Error reading ${filePath}:`, e);
+                return null;
+              }
+            }
+            
+            // Read artifact files
+            const artifactDir = '/tmp/pr-artifacts';
+            const prNumber = safeReadFile(path.join(artifactDir, 'pr-number.txt'));
+            const prSha = safeReadFile(path.join(artifactDir, 'pr-sha.txt'));
+            const resultsJson = safeReadFile(path.join(artifactDir, 'pr-check-results.json'));
+            
+            // Validate PR number
+            if (!prNumber || isNaN(parseInt(prNumber))) {
+              throw new Error('Invalid or missing PR number');
+            }
+            
+            // Parse and validate results
+            let results;
+            try {
+              results = JSON.parse(resultsJson || '{}');
+            } catch (e) {
+              console.error('Failed to parse check results:', e);
+              
+              // Post error comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(prNumber),
+                body: `⚠️ PR checks failed to complete properly. Error parsing results: ${e.message}`
+              });
+              return;
+            }
+            
+            // Format check messages
+            const messages = [];
+            
+            if (results.fails && results.fails.length > 0) {
+              messages.push('### ❌ Failures\n' + results.fails.map(f => f.message).join('\n\n'));
+            }
+            
+            if (results.warnings && results.warnings.length > 0) {
+              messages.push('### ⚠️ Warnings\n' + results.warnings.map(w => w.message).join('\n\n'));
+            }
+            
+            if (results.messages && results.messages.length > 0) {
+              messages.push('### 💬 Messages\n' + results.messages.map(m => m.message).join('\n\n'));
+            }
+            
+            if (results.markdowns && results.markdowns.length > 0) {
+              messages.push(...results.markdowns.map(m => m.message));
+            }
+            
+            // Find existing bot comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(prNumber)
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('<!-- pr-checks-comment -->')
+            );
+            
+            // Post comment if there are any messages
+            if (messages.length > 0) {
+              const body = messages.join('\n\n');
+              const commentBody = `<!-- pr-checks-comment -->\n${body}`;
+              
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: commentBody
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(prNumber),
+                  body: commentBody
+                });
+              }
+            } else {
+              // No messages - delete existing comment if present
+              if (botComment) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id
+                });
+              }
+            }
+            
+            // Set commit status based on failures
+            if (prSha) {
+              const hasFailures = results.fails && results.fails.length > 0;
+              const hasWarnings = results.warnings && results.warnings.length > 0;
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: prSha,
+                state: hasFailures ? 'failure' : 'success',
+                context: 'pr-checks',
+                description: hasFailures 
+                  ? `${results.fails.length} check(s) failed` 
+                  : hasWarnings 
+                    ? `${results.warnings.length} warning(s)` 
+                    : 'All checks passed'
+              });
+            }

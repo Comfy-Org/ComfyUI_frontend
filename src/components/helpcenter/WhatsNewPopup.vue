@@ -217,7 +217,8 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 24px;
-  overflow: hidden;
+  max-height: 80vh;
+  overflow-y: auto;
   padding: 32px 32px 24px;
   border-radius: 12px;
 }
