@@ -864,13 +864,19 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.click('button.comfy-close-menu-btn')
-    await this.nextFrame()
+    const btn = this.page.locator('button.comfy-close-menu-btn')
+    if (await btn.isVisible()) {
+      await btn.click()
+      await this.nextFrame()
+    }
   }
 
   async closeDialog() {
-    await this.page.locator('.p-dialog-close-button').click()
-    await expect(this.page.locator('.p-dialog')).toBeHidden()
+    const btn = this.page.locator('.p-dialog-close-button')
+    if (await btn.isVisible()) {
+      await btn.click()
+      await expect(this.page.locator('.p-dialog')).toBeHidden()
+    }
   }
 
   async resizeNode(
@@ -1082,7 +1088,9 @@ export const comfyPageFixture = base.extend<{
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
-    const username = `playwright-test-${parallelIndex}`
+    // Add a random suffix for uniqueness per test run
+    const uniqueSuffix = Math.random().toString(36).slice(2, 10)
+    const username = `playwright-test-${parallelIndex}-${uniqueSuffix}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
