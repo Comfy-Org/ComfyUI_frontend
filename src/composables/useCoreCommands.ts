@@ -11,6 +11,7 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
+import { COMFY_URLS, GITHUB_REPOS } from '@/constants/urls'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -543,10 +544,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Issues',
       versionAdded: '1.5.5',
       function: () => {
-        window.open(
-          'https://github.com/comfyanonymous/ComfyUI/issues',
-          '_blank'
-        )
+        window.open(GITHUB_REPOS.comfyuiIssues, '_blank')
       }
     },
     {
@@ -556,7 +554,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Docs',
       versionAdded: '1.5.5',
       function: () => {
-        window.open('https://docs.comfy.org/', '_blank')
+        window.open(COMFY_URLS.docs.base, '_blank')
       }
     },
     {
@@ -566,7 +564,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Comfy-Org Discord',
       versionAdded: '1.5.5',
       function: () => {
-        window.open('https://www.comfy.org/discord', '_blank')
+        window.open(COMFY_URLS.community.discord, '_blank')
       }
     },
     {
@@ -646,7 +644,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'ComfyUI Forum',
       versionAdded: '1.8.2',
       function: () => {
-        window.open('https://forum.comfy.org/', '_blank')
+        window.open(COMFY_URLS.community.forum.base, '_blank')
       }
     },
     {
