@@ -80,19 +80,25 @@ describe('URL Constants', () => {
 
       validLanguageCodes.forEach((lang) => {
         const result = COMFY_URLS.docs.getLocalized('test-path', lang)
-        expect(result).toMatch(/^\/docs\/(([a-z]{2}-[A-Z]{2}\/)?test-path)$/)
+        expect(result).toMatch(
+          /^https:\/\/docs\.comfy\.org\/(([a-z]{2}-[A-Z]{2}\/)?test-path)$/
+        )
       })
     })
 
     it('should properly format localized paths', () => {
       expect(COMFY_URLS.docs.getLocalized('test-path', 'en')).toBe(
-        '/docs/test-path'
+        'https://docs.comfy.org/test-path'
       )
       expect(COMFY_URLS.docs.getLocalized('test-path', 'zh')).toBe(
-        '/docs/zh-CN/test-path'
+        'https://docs.comfy.org/zh-CN/test-path'
       )
-      expect(COMFY_URLS.docs.getLocalized('/', 'en')).toBe('/docs/')
-      expect(COMFY_URLS.docs.getLocalized('/', 'zh')).toBe('/docs/zh-CN/')
+      expect(COMFY_URLS.docs.getLocalized('', 'en')).toBe(
+        'https://docs.comfy.org/'
+      )
+      expect(COMFY_URLS.docs.getLocalized('', 'zh')).toBe(
+        'https://docs.comfy.org/zh-CN/'
+      )
     })
 
     it('should generate platform and locale-aware desktop guide URLs', () => {
@@ -133,11 +139,12 @@ describe('URL Constants', () => {
       })
     })
 
-    it('should have valid domain allowlist for model sources', () => {
-      const domainPattern = /^[a-z0-9]+([-.][a-z0-9]+)*\.[a-z]{2,}$/i
+    it('should have valid URL allowlist for model sources', () => {
+      const urlPattern =
+        /^https?:\/\/([a-z0-9]+([-.][a-z0-9]+)*\.[a-z]{2,}|localhost)(:[0-9]+)?\/?.*$/i
 
-      MODEL_SOURCES.allowedDomains.forEach((domain) => {
-        expect(domain).toMatch(domainPattern)
+      MODEL_SOURCES.allowedDomains.forEach((url) => {
+        expect(url).toMatch(urlPattern)
       })
     })
   })
