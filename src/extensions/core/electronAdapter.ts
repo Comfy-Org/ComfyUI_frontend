@@ -1,7 +1,7 @@
 import log from 'loglevel'
 
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
-import { t } from '@/i18n'
+import { i18n, t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -14,6 +14,19 @@ const DESKTOP_DOCS = {
   WINDOWS: 'https://docs.comfy.org/installation/desktop/windows',
   MACOS: 'https://docs.comfy.org/installation/desktop/macos'
 } as const
+
+// Generate platform and language-aware desktop guide URL
+const getDesktopGuideUrl = (): string => {
+  const isChineseLocale = i18n.global.locale.value === 'zh'
+  const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+
+  const platform = isMacOS ? 'macos' : 'windows'
+  const baseUrl = isChineseLocale
+    ? 'https://docs.comfy.org/zh-CN/installation/desktop'
+    : 'https://docs.comfy.org/installation/desktop'
+
+  return `${baseUrl}/${platform}`
+}
 
 ;(async () => {
   if (!isElectron()) return

@@ -552,6 +552,19 @@ const getChangelogUrl = (): string => {
     : 'https://docs.comfy.org/changelog'
 }
 
+// Generate platform and language-aware desktop guide URL
+const getDesktopGuideUrl = (): string => {
+  const isChineseLocale = locale.value === 'zh'
+  const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+
+  const platform = isMacOS ? 'macos' : 'windows'
+  const baseUrl = isChineseLocale
+    ? 'https://docs.comfy.org/zh-CN/installation/desktop'
+    : 'https://docs.comfy.org/installation/desktop'
+
+  return `${baseUrl}/${platform}`
+}
+
 // Lifecycle
 onMounted(async () => {
   telemetry?.trackHelpCenterOpened({ source: 'sidebar' })
