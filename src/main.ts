@@ -36,11 +36,8 @@ Sentry.init({
   dsn: __SENTRY_DSN__,
   enabled: __SENTRY_ENABLED__,
   release: __COMFYUI_FRONTEND_VERSION__,
-  integrations: [],
-  autoSessionTracking: false,
-  defaultIntegrations: false,
   normalizeDepth: 8,
-  tracesSampleRate: 0
+  tracesSampleRate: 1.0
 })
 app.directive('tooltip', Tooltip)
 app
