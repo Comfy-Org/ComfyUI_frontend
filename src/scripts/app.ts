@@ -75,6 +75,7 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import {
+  getAvifMetadata,
   getFlacMetadata,
   getLatentMetadata,
   getPngMetadata,
@@ -1352,6 +1353,16 @@ export class ComfyApp {
           fileName,
           this.graph.serialize() as unknown as ComfyWorkflowJSON
         )
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'image/avif') {
+      const { workflow, prompt } = await getAvifMetadata(file)
+
+      if (workflow) {
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
+      } else if (prompt) {
+        this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
         this.showErrorOnFileLoad(file)
       }
