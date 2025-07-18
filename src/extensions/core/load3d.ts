@@ -21,8 +21,6 @@ async function handleModelUpload(files: FileList, node: any) {
     (w: any) => w.name === 'model_file'
   ) as IStringWidget
 
-  node.properties['Texture'] = undefined
-
   try {
     const resourceFolder = (node.properties['Resource Folder'] as string) || ''
 
@@ -215,8 +213,6 @@ useExtensionService().registerExtension({
           const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
             modelWidget.value = ''
-
-            node.properties['Texture'] = undefined
           }
         })
 
