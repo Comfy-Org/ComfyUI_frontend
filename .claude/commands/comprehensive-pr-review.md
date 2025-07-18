@@ -517,6 +517,14 @@ After all inline comments, create a detailed summary:
 # Initialize metrics tracking
 REVIEW_START_TIME=$(date +%s)
 
+# Debug: Show what we're about to post
+echo "About to post review summary with:"
+echo "- Critical: $CRITICAL_COUNT"  
+echo "- High: $HIGH_COUNT"
+echo "- Medium: $MEDIUM_COUNT"
+echo "- Low: $LOW_COUNT"
+echo "- Total issues: $((CRITICAL_COUNT + HIGH_COUNT + MEDIUM_COUNT + LOW_COUNT))"
+
 # Create the comprehensive summary
 gh pr review $PR_NUMBER --comment --body "# Comprehensive PR Review
 
