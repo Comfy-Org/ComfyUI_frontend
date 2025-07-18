@@ -180,6 +180,7 @@ export interface ClipboardItems {
   groups?: ISerialisedGroup[]
   reroutes?: SerialisableReroute[]
   links?: SerialisableLLink[]
+  subgraphs?: ExportedSubgraph[]
 }
 
 /** @deprecated */

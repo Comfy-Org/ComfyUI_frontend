@@ -36,6 +36,7 @@ import type { ClipboardItems, SubgraphIO } from "./types/serialisation"
 import type { NeverNever } from "./types/utility"
 import type { PickNevers } from "./types/utility"
 import type { IBaseWidget } from "./types/widgets"
+import type { UUID } from "./utils/uuid"
 
 import { LinkConnector } from "@/canvas/LinkConnector"
 
@@ -46,7 +47,7 @@ import { strokeShape } from "./draw"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { LGraphGroup } from "./LGraphGroup"
 import { LGraphNode, type NodeId, type NodeProperty } from "./LGraphNode"
-import { LiteGraph, Rectangle, SubgraphNode } from "./litegraph"
+import { createUuidv4, LiteGraph, Rectangle, SubgraphNode } from "./litegraph"
 import { type LinkId, LLink } from "./LLink"
 import {
   containsRect,
@@ -188,6 +189,8 @@ interface ClipboardPasteResult {
   links: Map<LinkId, LLink>
   /** Map: original reroute IDs to newly created reroutes */
   reroutes: Map<RerouteId, Reroute>
+  /** Map: original subgraph IDs to newly created subgraphs */
+  subgraphs: Map<UUID, Subgraph>
 }
 
 /** Options for {@link LGraphCanvas.pasteFromClipboard}. */
@@ -2106,9 +2109,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // clone node ALT dragging
     if (LiteGraph.alt_drag_do_clone_nodes && e.altKey && !e.ctrlKey && node && this.allow_interaction) {
+      let newType = node.type
+
+      if (node instanceof SubgraphNode) {
+        const cloned = node.subgraph
+          .clone()
+          .asSerialisable()
+
+        const subgraph = graph.createSubgraph(cloned)
+        subgraph.configure(cloned)
+        newType = subgraph.id
+      }
+
       const node_data = node.clone()?.serialize()
       if (node_data?.type != null) {
-        const cloned = LiteGraph.createNode(node_data.type)
+        const cloned = LiteGraph.createNode(newType)
         if (cloned) {
           cloned.configure(node_data)
           cloned.pos[0] += 5
@@ -3305,7 +3320,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       groups: [],
       reroutes: [],
       links: [],
+      subgraphs: [],
     }
+
+    const subgraphs = new Set<Subgraph>()
 
     // Create serialisable objects
     for (const item of items ?? this.selectedItems) {
@@ -3328,6 +3346,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (link) serialisable.links.push(link)
           }
         }
+
+        // Find all unique referenced subgraphs
+        if (item instanceof SubgraphNode) {
+          subgraphs.add(item.subgraph)
+        }
       } else if (item instanceof LGraphGroup) {
         // Groups
         serialisable.groups.push(item.serialize())
@@ -3335,6 +3358,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // Reroutes
         serialisable.reroutes.push(item.asSerialisable())
       }
+    }
+
+    // Add unique subgraph entries
+    // TODO: Must find all nested subgraphs
+    for (const subgraph of subgraphs) {
+      const cloned = subgraph
+        .clone(true)
+        .asSerialisable()
+      serialisable.subgraphs.push(cloned)
     }
 
     localStorage.setItem(
@@ -3391,6 +3423,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     parsed.groups ??= []
     parsed.reroutes ??= []
     parsed.links ??= []
+    parsed.subgraphs ??= []
 
     // Find top-left-most boundary
     let offsetX = Infinity
@@ -3415,10 +3448,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodes: new Map<NodeId, LGraphNode>(),
       links: new Map<LinkId, LLink>(),
       reroutes: new Map<RerouteId, Reroute>(),
+      subgraphs: new Map<UUID, Subgraph>(),
     }
     const { created, nodes, links, reroutes } = results
 
     // const failedNodes: ISerialisedNode[] = []
+
+    // Subgraphs
+    for (const info of parsed.subgraphs) {
+      // SubgraphV2: Remove always-clone behaviour
+      const originalId = info.id
+      info.id = createUuidv4()
+
+      const subgraph = graph.createSubgraph(info)
+      subgraph.configure(info)
+      results.subgraphs.set(originalId, subgraph)
+    }
 
     // Groups
     for (const info of parsed.groups) {
@@ -3432,6 +3477,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Nodes
     for (const info of parsed.nodes) {
+      // If the subgraph was cloned, update references to use the new subgraph ID.
+      const subgraph = results.subgraphs.get(info.type)
+      if (subgraph) info.type = subgraph.id
+
       const node = info.type == null ? null : LiteGraph.createNode(info.type)
       if (!node) {
         // failedNodes.push(info)
