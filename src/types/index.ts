@@ -32,6 +32,16 @@ export type { ComfyApp } from '@/scripts/app'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 export type { InputSpec } from '@/schemas/nodeDefSchema'
 export type {
+  NodeLocatorId,
+  NodeExecutionId,
+  isNodeLocatorId,
+  isNodeExecutionId,
+  parseNodeLocatorId,
+  createNodeLocatorId,
+  parseNodeExecutionId,
+  createNodeExecutionId
+} from './nodeIdentification'
+export type {
   EmbeddingsResponse,
   ExtensionsResponse,
   PromptResponse,

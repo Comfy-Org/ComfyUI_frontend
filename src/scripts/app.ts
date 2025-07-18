@@ -194,6 +194,8 @@ export class ComfyApp {
 
   /**
    * @deprecated Use useExecutionStore().executingNodeId instead
+   * TODO: Update to support multiple executing nodes. This getter returns only the first executing node.
+   * Consider updating consumers to handle multiple nodes or use executingNodeIds array.
    */
   get runningNodeId(): NodeId | null {
     return useExecutionStore().executingNodeId
@@ -635,10 +637,6 @@ export class ComfyApp {
 
     api.addEventListener('executing', () => {
       this.graph.setDirtyCanvas(true, false)
-      // @ts-expect-error fixme ts strict error
-      this.revokePreviews(this.runningNodeId)
-      // @ts-expect-error fixme ts strict error
-      delete this.nodePreviewImages[this.runningNodeId]
     })
 
     api.addEventListener('executed', ({ detail }) => {
@@ -689,15 +687,13 @@ export class ComfyApp {
       this.canvas.draw(true, true)
     })
 
-    api.addEventListener('b_preview', ({ detail }) => {
-      const id = this.runningNodeId
-      if (id == null) return
-
-      const blob = detail
+    api.addEventListener('b_preview_with_metadata', ({ detail }) => {
+      // Enhanced preview with explicit node context
+      const { blob, displayNodeId } = detail
+      this.revokePreviews(displayNodeId)
       const blobUrl = URL.createObjectURL(blob)
-      // Ensure clean up if `executing` event is missed.
-      this.revokePreviews(id)
-      this.nodePreviewImages[id] = [blobUrl]
+      // Preview cleanup is now handled in progress_state event to support multiple concurrent previews
+      this.nodePreviewImages[displayNodeId] = [blobUrl]
     })
 
     api.init()
