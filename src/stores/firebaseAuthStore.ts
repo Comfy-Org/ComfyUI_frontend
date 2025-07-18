@@ -83,6 +83,16 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     currentUser.value = user
     isInitialized.value = true
 
+    if (user && (window as any).mixpanel) {
+      ;(window as any).mixpanel
+        .identify(user.uid)(window as any)
+        .mixpanel.people.set({
+          $email: user.email,
+          $name: user.displayName,
+          $created: user.metadata.creationTime
+        })
+    }
+
     // Reset balance when auth state changes
     balance.value = null
     lastBalanceUpdateTime.value = null
