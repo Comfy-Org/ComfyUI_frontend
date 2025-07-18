@@ -39,7 +39,8 @@ describe('useWorkflowStore', () => {
       filenames.map((filename) => ({
         path: filename,
         modified: new Date().getTime(),
-        size: 1 // size !== -1 for remote workflows
+        size: 1, // size !== -1 for remote workflows
+        created: new Date().getTime()
       }))
     )
     return await store.syncWorkflows()
