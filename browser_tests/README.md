@@ -26,6 +26,12 @@ The `.env` file will not exist until you create it yourself.
 
 A template with helpful information can be found in `.env_example`.
 
+### Running ComfyUI Backend
+When running browser tests, ComfyUI must be started with the `--cache-none` argument to disable execution caching:
+```bash
+python main.py --cache-none
+```
+
 ### Multiple Tests
 If you are running Playwright tests in parallel or running the same test multiple times, the flag `--multi-user` must be added to the main ComfyUI process.
 

@@ -88,7 +88,7 @@ jobs:
 
       - name: Start ComfyUI server
         run: |
-          python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
+          python main.py --cpu --multi-user --cache-none --front-end-root ../ComfyUI_frontend/dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
@@ -97,7 +97,7 @@ jobs:
         working-directory: ComfyUI_frontend
 
       - name: Run Playwright tests (${{ matrix.browser }})
-        run: npx playwright test --project=${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }} --workers=1
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
