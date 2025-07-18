@@ -16,7 +16,6 @@
         <SecondRowWorkflowTabs
           v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
         />
-        <SubgraphBreadcrumb />
       </div>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
     </template>
@@ -50,7 +49,6 @@ import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
-import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'

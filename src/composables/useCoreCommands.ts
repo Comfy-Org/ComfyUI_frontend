@@ -171,7 +171,11 @@ export function useCoreCommands(): ComfyCommand[] {
           confirm('Clear workflow?')
         ) {
           app.clean()
-          app.graph.clear()
+          if (app.canvas.subgraph) {
+            app.canvas.subgraph.clear()
+          } else {
+            app.graph.clear()
+          }
           api.dispatchCustomEvent('graphCleared')
         }
       }
