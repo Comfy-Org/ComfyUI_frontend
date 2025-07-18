@@ -776,6 +776,118 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * Clicks on a litegraph context menu item (uses .litemenu-entry selector).
+   * Use this for canvas/node context menus, not PrimeVue menus.
+   */
+  async clickLitegraphContextMenuItem(name: string): Promise<void> {
+    await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
+    await this.nextFrame()
+  }
+
+  /**
+   * Right-clicks on a subgraph input slot to open the context menu.
+   * Must be called when inside a subgraph.
+   *
+   * This method uses the actual slot positions from the subgraph.inputs array,
+   * which contain the correct coordinates for each input slot. These positions
+   * are different from the visual node positions and are specifically where
+   * the slots are rendered on the input node.
+   *
+   * @param inputName Optional name of the specific input slot to target (e.g., 'text').
+   *                  If not provided, tries all available input slots until one works.
+   * @returns Promise that resolves when the context menu appears
+   */
+  async rightClickSubgraphInputSlot(inputName?: string): Promise<void> {
+    const foundSlot = await this.page.evaluate(async (targetInputName) => {
+      const app = window['app']
+      const currentGraph = app.canvas.graph
+
+      // Check if we're in a subgraph
+      if (currentGraph.constructor.name !== 'Subgraph') {
+        throw new Error(
+          'Not in a subgraph - this method only works inside subgraphs'
+        )
+      }
+
+      // Get the input node
+      const inputNode = currentGraph.inputNode
+      if (!inputNode) {
+        throw new Error('No input node found in subgraph')
+      }
+
+      // Get available inputs
+      const inputs = currentGraph.inputs
+      if (!inputs || inputs.length === 0) {
+        throw new Error('No input slots found in subgraph')
+      }
+
+      // Filter to specific input if requested
+      const inputsToTry = targetInputName
+        ? inputs.filter((inp) => inp.name === targetInputName)
+        : inputs
+
+      if (inputsToTry.length === 0) {
+        throw new Error(
+          targetInputName
+            ? `Input slot '${targetInputName}' not found`
+            : 'No input slots available to try'
+        )
+      }
+
+      // Try right-clicking on each input slot position until one works
+      for (const input of inputsToTry) {
+        if (!input.pos) continue
+
+        const testX = input.pos[0]
+        const testY = input.pos[1]
+
+        // Create a right-click event at the input slot position
+        const rightClickEvent = {
+          canvasX: testX,
+          canvasY: testY,
+          button: 2, // Right mouse button
+          preventDefault: () => {},
+          stopPropagation: () => {}
+        }
+
+        // Trigger the input node's right-click handler
+        if (inputNode.onPointerDown) {
+          inputNode.onPointerDown(
+            rightClickEvent,
+            app.canvas.pointer,
+            app.canvas.linkConnector
+          )
+        }
+
+        // Wait briefly for menu to appear
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        // Check if litegraph context menu appeared
+        const menuExists = document.querySelector('.litemenu-entry')
+        if (menuExists) {
+          return { success: true, inputName: input.name, x: testX, y: testY }
+        }
+      }
+
+      return { success: false }
+    }, inputName)
+
+    if (!foundSlot.success) {
+      throw new Error(
+        inputName
+          ? `Could not open context menu for input slot '${inputName}'`
+          : 'Could not find any input slot position to right-click'
+      )
+    }
+
+    // Wait for the litegraph context menu to be visible
+    await this.page.waitForSelector('.litemenu-entry', {
+      state: 'visible',
+      timeout: 5000
+    })
+  }
+
   async doubleClickCanvas() {
     await this.page.mouse.dblclick(10, 10, { delay: 5 })
     await this.nextFrame()
