@@ -49,7 +49,7 @@ describe('URL Constants', () => {
   describe('Mirror Configuration', () => {
     it('should have valid mirror URLs', () => {
       const urlPattern =
-        /^https?:\/\/[a-z0-9]+([-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$/i
+        /^https?:\/\/[a-z0-9]+([-.][a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$/i
 
       expect(PYTHON_MIRROR.mirror).toMatch(urlPattern)
       expect(PYTHON_MIRROR.fallbackMirror).toMatch(urlPattern)
