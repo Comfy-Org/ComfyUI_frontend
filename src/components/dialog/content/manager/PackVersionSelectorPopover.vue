@@ -30,16 +30,25 @@
       <template #option="slotProps">
         <div class="flex justify-between items-center w-full p-1">
           <div class="flex items-center gap-2">
-            <i
-              v-if="getVersionCompatibility(slotProps.option.value).hasConflict"
-              v-tooltip="{
-                value: getVersionCompatibility(slotProps.option.value)
-                  .conflictMessage,
-                showDelay: 300
-              }"
-              class="pi pi-exclamation-triangle text-yellow-500"
-            />
-            <VerifiedIcon v-else :size="16" />
+            <!-- Show no icon for nightly versions since compatibility is uncertain -->
+            <template v-if="slotProps.option.value === 'nightly'">
+              <div class="w-4"></div>
+              <!-- Empty space to maintain alignment -->
+            </template>
+            <template v-else>
+              <i
+                v-if="
+                  getVersionCompatibility(slotProps.option.value).hasConflict
+                "
+                v-tooltip="{
+                  value: getVersionCompatibility(slotProps.option.value)
+                    .conflictMessage,
+                  showDelay: 300
+                }"
+                class="pi pi-exclamation-triangle text-yellow-500"
+              />
+              <VerifiedIcon v-else :size="16" />
+            </template>
             <span>{{ slotProps.option.label }}</span>
           </div>
           <i
@@ -151,18 +160,25 @@ const onNodePackChange = async () => {
   const versions = await fetchVersions()
   fetchedVersions.value = versions
 
+  // Get latest version number to exclude from the list
+  const latestVersionNumber = nodePack.latest_version?.version
+
   const availableVersionOptions = versions
     .map((version) => ({
       value: version.version ?? '',
       label: version.version ?? ''
     }))
-    .filter((option) => option.value)
+    .filter((option) => option.value && option.value !== latestVersionNumber) // Exclude latest version from the list
 
-  // Add Latest option
+  // Add Latest option with actual version number
+  const latestLabel = latestVersionNumber
+    ? `${t('manager.latestVersion')} (${latestVersionNumber})`
+    : t('manager.latestVersion')
+
   const defaultVersions = [
     {
       value: 'latest' as ManagerComponents['schemas']['SelectedVersion'],
-      label: t('manager.latestVersion')
+      label: latestLabel
     }
   ]
 
@@ -170,7 +186,7 @@ const onNodePackChange = async () => {
   if (nodePack.repository?.length) {
     defaultVersions.push({
       value: 'nightly' as ManagerComponents['schemas']['SelectedVersion'],
-      label: t('manager.nightlyVersion')
+      label: t('manager.nightlyVersion') // Keep as just "nightly" - no version number
     })
   }
 
@@ -194,13 +210,19 @@ const handleSubmit = async () => {
     throw new Error('Node ID is required for installation')
   }
 
+  // Convert 'latest' to actual version number for installation
+  const actualVersion =
+    selectedVersion.value === 'latest'
+      ? nodePack.latest_version?.version ?? 'latest'
+      : selectedVersion.value
+
   await managerStore.installPack.call({
     id: nodePack.id,
-    version: selectedVersion.value,
+    version: actualVersion,
     repository: nodePack.repository ?? '',
     channel: 'default' as ManagerComponents['schemas']['ManagerChannel'],
     mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
-    selected_version: selectedVersion.value
+    selected_version: actualVersion
   })
 
   isQueueing.value = false
@@ -209,17 +231,49 @@ const handleSubmit = async () => {
 
 // Function to get version data (either from nodePack or fetchedVersions)
 const getVersionData = (version: string) => {
-  if (version === 'latest' || version === 'nightly') {
-    // For default versions, use nodePack data
+  // Use latest_version data for both "latest" and the actual latest version number
+  const latestVersionNumber = nodePack.latest_version?.version
+  const useLatestVersionData =
+    version === 'latest' || version === latestVersionNumber
+
+  if (useLatestVersionData) {
+    // For "latest" and the actual latest version number, use consistent data from latest_version
+    const latestVersionData = nodePack.latest_version
     return {
-      supported_os: nodePack.supported_os,
-      supported_accelerators: nodePack.supported_accelerators,
-      supported_comfyui_version: nodePack.supported_comfyui_version,
+      supported_os: latestVersionData?.supported_os ?? nodePack.supported_os,
+      supported_accelerators:
+        latestVersionData?.supported_accelerators ??
+        nodePack.supported_accelerators,
+      supported_comfyui_version:
+        latestVersionData?.supported_comfyui_version ??
+        nodePack.supported_comfyui_version,
       supported_comfyui_frontend_version:
+        latestVersionData?.supported_comfyui_frontend_version ??
         nodePack.supported_comfyui_frontend_version,
+      supported_python_version:
+        (latestVersionData as any)?.supported_python_version ??
+        (nodePack as any).supported_python_version,
+      is_banned:
+        (latestVersionData as any)?.is_banned ?? (nodePack as any).is_banned,
+      has_registry_data:
+        (latestVersionData as any)?.has_registry_data ??
+        (nodePack as any).has_registry_data
+    }
+  }
+
+  if (version === 'nightly') {
+    // For nightly, we can't determine exact compatibility since it's dynamic Git HEAD
+    // But we can assume it's generally compatible (nightly = latest development)
+    // Use nodePack data as fallback, but nightly is typically more permissive
+    return {
+      supported_os: nodePack.supported_os || [], // If no OS restrictions, assume all supported
+      supported_accelerators: nodePack.supported_accelerators || [], // If no accelerator restrictions, assume all supported
+      supported_comfyui_version: nodePack.supported_comfyui_version, // Use latest known requirement
+      supported_comfyui_frontend_version:
+        nodePack.supported_comfyui_frontend_version, // Use latest known requirement
       supported_python_version: (nodePack as any).supported_python_version,
-      is_banned: (nodePack as any).is_banned,
-      has_registry_data: (nodePack as any).has_registry_data
+      is_banned: false, // Nightly versions from repositories are typically not banned
+      has_registry_data: false // Nightly doesn't come from registry
     }
   }
 
