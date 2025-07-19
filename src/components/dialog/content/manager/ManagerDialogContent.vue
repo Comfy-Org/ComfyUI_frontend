@@ -26,6 +26,27 @@
         }"
       >
         <div class="px-6 flex flex-col h-full">
+          <!-- Conflict Warning Banner -->
+          <div
+            v-if="hasConflicts && !isConflictBannerDismissed"
+            class="bg-yellow-600 bg-opacity-20 border border-yellow-400 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6"
+          >
+            <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
+            <div class="flex flex-col gap-2">
+              <p class="text-sm font-bold m-0">
+                {{ $t('manager.conflicts.warningBanner.title') }}
+              </p>
+              <p class="text-xs m-0">
+                {{ $t('manager.conflicts.warningBanner.message') }}
+              </p>
+              <p
+                class="text-sm font-bold m-0 cursor-pointer"
+                @click="onClickWarningLink"
+              >
+                {{ $t('manager.conflicts.warningBanner.button') }}
+              </p>
+            </div>
+          </div>
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
@@ -70,7 +91,9 @@
                     :is-selected="
                       selectedNodePacks.some((pack) => pack.id === item.id)
                     "
-                    @click.stop="(event) => selectNodePack(item, event)"
+                    @click.stop="
+                      (event: MouseEvent) => selectNodePack(item, event)
+                    "
                   />
                 </template>
               </VirtualGrid>
@@ -93,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { useStorage, whenever } from '@vueuse/core'
 import { merge } from 'lodash'
 import Button from 'primevue/button'
 import {
@@ -123,6 +146,7 @@ import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
@@ -134,6 +158,7 @@ const { initialTab } = defineProps<{
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
+const conflictDetectionStore = useConflictDetectionStore()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
 
@@ -149,6 +174,19 @@ const {
   isOpen: isSideNavOpen,
   toggle: toggleSideNav
 } = useResponsiveCollapse()
+
+// Conflict banner state using useStorage for reactivity
+const CONFLICT_BANNER_DISMISSED_KEY = 'comfy_manager_conflict_banner_dismissed'
+const isConflictBannerDismissed = useStorage(
+  CONFLICT_BANNER_DISMISSED_KEY,
+  false
+)
+
+// Help center conflict seen state
+const hasSeenConflicts = useStorage('comfy_help_center_conflict_seen', false)
+
+// Computed properties for conflicts
+const hasConflicts = computed(() => conflictDetectionStore.hasConflicts)
 
 const tabs = ref<TabItem[]>([
   { id: ManagerTab.All, label: t('g.all'), icon: 'pi-list' },
@@ -313,6 +351,13 @@ watch([isAllTab, searchResults], () => {
   displayPacks.value = searchResults.value
 })
 
+const onClickWarningLink = () => {
+  window.open(
+    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    '_blank'
+  )
+}
+
 const onResultsChange = () => {
   switch (selectedTab.value?.id) {
     case ManagerTab.Installed:
@@ -464,7 +509,33 @@ whenever(selectedNodePack, async () => {
 let gridContainer: HTMLElement | null = null
 onMounted(() => {
   gridContainer = document.getElementById('results-grid')
+
+  // Listen for when this component will be destroyed
+  window.addEventListener('beforeunload', handleDialogClose)
+
+  // Also try watching for when the dialog key changes
+  const interval = setInterval(() => {
+    const dialogOpen = document.querySelector('[data-pc-name="dialog"]')
+    if (!dialogOpen) {
+      handleDialogClose()
+      clearInterval(interval)
+    }
+  }, 1000)
+
+  // Store interval reference for cleanup
+  ;(window as any).__managerDialogInterval = interval
 })
+
+const handleDialogClose = () => {
+  if (hasConflicts.value) {
+    localStorage.setItem('comfy_help_center_conflict_seen', 'true')
+    localStorage.setItem('comfy_manager_conflict_banner_dismissed', 'true')
+
+    // Also try to update refs
+    hasSeenConflicts.value = true
+    isConflictBannerDismissed.value = true
+  }
+}
 watch([searchQuery, selectedTab], () => {
   gridContainer ??= document.getElementById('results-grid')
   if (gridContainer) {
@@ -480,9 +551,31 @@ onBeforeUnmount(() => {
     searchMode: searchMode.value,
     sortField: sortField.value
   })
+
+  // ALWAYS mark conflicts as seen when dialog closes (if there are any conflicts)
+  // User has now seen the Manager Dialog with potential yellow banner
+  if (hasConflicts.value) {
+    hasSeenConflicts.value = true
+    isConflictBannerDismissed.value = true
+
+    // Also force localStorage directly as backup
+    localStorage.setItem('comfy_help_center_conflict_seen', 'true')
+    localStorage.setItem('comfy_manager_conflict_banner_dismissed', 'true')
+  }
 })
 
 onUnmounted(() => {
   getPackById.cancel()
+
+  // Cleanup
+  window.removeEventListener('beforeunload', handleDialogClose)
+  const interval = (window as any).__managerDialogInterval
+  if (interval) {
+    clearInterval(interval)
+    delete (window as any).__managerDialogInterval
+  }
+
+  // Final attempt to set localStorage
+  handleDialogClose()
 })
 </script>
