@@ -134,14 +134,15 @@ describe('PackVersionSelectorPopover', () => {
 
     const options = listbox.props('options')!
     // Check that we have both special options and version options
-    expect(options.length).toBe(defaultMockVersions.length + 2) // 2 special options + version options
+    // Latest version (1.0.0) should be excluded from the version list to avoid duplication
+    expect(options.length).toBe(defaultMockVersions.length + 1) // 2 special options + version options minus 1 duplicate
 
     // Check that special options exist
     expect(options.some((o) => o.value === 'nightly')).toBe(true)
     expect(options.some((o) => o.value === 'latest')).toBe(true)
 
-    // Check that version options exist
-    expect(options.some((o) => o.value === '1.0.0')).toBe(true)
+    // Check that version options exist (excluding latest version 1.0.0)
+    expect(options.some((o) => o.value === '1.0.0')).toBe(false) // Should be excluded as it's the latest
     expect(options.some((o) => o.value === '0.9.0')).toBe(true)
     expect(options.some((o) => o.value === '0.8.0')).toBe(true)
   })
@@ -424,7 +425,14 @@ describe('PackVersionSelectorPopover', () => {
         supported_os: ['windows'],
         supported_accelerators: ['CPU'],
         supported_comfyui_version: '>=0.1.0',
-        supported_comfyui_frontend_version: '>=1.0.0'
+        supported_comfyui_frontend_version: '>=1.0.0',
+        latest_version: {
+          version: '1.0.0',
+          supported_os: ['windows', 'linux'],
+          supported_accelerators: ['CPU'], // latest_version data takes precedence
+          supported_comfyui_version: '>=0.1.0',
+          supported_comfyui_frontend_version: '>=1.0.0'
+        }
       }
 
       const wrapper = mountComponent({
@@ -437,9 +445,10 @@ describe('PackVersionSelectorPopover', () => {
       vm.getVersionCompatibility('1.0.0')
 
       // Verify that checkVersionCompatibility was called with correct data
+      // Since 1.0.0 is the latest version, it should use latest_version data
       expect(mockCheckVersionCompatibility).toHaveBeenCalledWith({
         supported_os: ['windows', 'linux'],
-        supported_accelerators: ['CUDA', 'CPU'],
+        supported_accelerators: ['CPU'], // latest_version data takes precedence
         supported_comfyui_version: '>=0.1.0',
         supported_comfyui_frontend_version: '>=1.0.0',
         supported_python_version: undefined,
