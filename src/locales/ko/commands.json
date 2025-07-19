@@ -167,6 +167,12 @@
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
     "label": "사용자 정의 노드 (베타)"
   },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "커스텀 노드 (레거시)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "매니저 메뉴 (레거시)"
+  },
   "Comfy_Manager_ShowMissingPacks": {
     "label": "누락된 팩 설치"
   },
