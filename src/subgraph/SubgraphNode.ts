@@ -95,7 +95,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   #addSubgraphInputListeners(subgraphInput: SubgraphInput, input: INodeInputSlot & Partial<ISubgraphInput>) {
-    input._listenerController?.abort()
+    if (input._listenerController && typeof input._listenerController.abort === "function") {
+      input._listenerController.abort()
+    }
     input._listenerController = new AbortController()
     const { signal } = input._listenerController
 
@@ -131,7 +133,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     for (const input of this.inputs) {
-      input._listenerController?.abort()
+      if (input._listenerController && typeof input._listenerController.abort === "function") {
+        input._listenerController.abort()
+      }
     }
 
     this.inputs.length = 0
@@ -309,7 +313,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override onRemoved(): void {
     for (const input of this.inputs) {
-      input._listenerController?.abort()
+      if (input._listenerController && typeof input._listenerController.abort === "function") {
+        input._listenerController.abort()
+      }
     }
   }
 }
