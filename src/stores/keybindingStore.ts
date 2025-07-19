@@ -9,11 +9,13 @@ export class KeybindingImpl implements Keybinding {
   commandId: string
   combo: KeyComboImpl
   targetElementId?: string
+  condition?: string
 
   constructor(obj: Keybinding) {
     this.commandId = obj.commandId
     this.combo = new KeyComboImpl(obj.combo)
     this.targetElementId = obj.targetElementId
+    this.condition = obj.condition
   }
 
   equals(other: unknown): boolean {
@@ -22,7 +24,8 @@ export class KeybindingImpl implements Keybinding {
     return raw instanceof KeybindingImpl
       ? this.commandId === raw.commandId &&
           this.combo.equals(raw.combo) &&
-          this.targetElementId === raw.targetElementId
+          this.targetElementId === raw.targetElementId &&
+          this.condition === raw.condition
       : false
   }
 }

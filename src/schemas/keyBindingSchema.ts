@@ -17,7 +17,8 @@ export const zKeybinding = z.object({
   // Note: Currently only used to distinguish between global keybindings
   // and litegraph canvas keybindings.
   // Do NOT use this field in extensions as it has no effect.
-  targetElementId: z.string().optional()
+  targetElementId: z.string().optional(),
+  condition: z.string().optional()
 })
 
 // Infer types from schemas
