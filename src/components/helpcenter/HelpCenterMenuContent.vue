@@ -128,6 +128,7 @@ import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
@@ -170,6 +171,7 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
+const systemStatsStore = useSystemStatsStore()
 
 // Emits
 const emit = defineEmits<{
@@ -199,7 +201,12 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
       action: () => {
-        openExternalLink(getDesktopGuideUrl(locale.value))
+        openExternalLink(
+          getDesktopGuideUrl(
+            locale.value,
+            systemStatsStore.systemStats?.system?.os
+          )
+        )
         emit('close')
       }
     },

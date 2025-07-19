@@ -80,13 +80,23 @@ export const DEVELOPER_TOOLS = {
 }
 
 // Platform and locale-aware desktop guide URL generator
-export const getDesktopGuideUrl = (locale: string): string => {
+export const getDesktopGuideUrl = (
+  locale: string,
+  systemStatsOs?: string
+): string => {
   const isChineseLocale = locale === 'zh'
-  const isMacOS =
-    typeof navigator !== 'undefined' &&
-    navigator.platform.toUpperCase().indexOf('MAC') >= 0
 
-  const platform = isMacOS ? 'macos' : 'windows'
+  let platform = 'windows' // default
+
+  if (systemStatsOs) {
+    const os = systemStatsOs.toLowerCase()
+    if (os.includes('darwin') || os.includes('mac')) {
+      platform = 'macos'
+    } else if (os.includes('windows')) {
+      platform = 'windows'
+    }
+  }
+
   const baseUrl = isChineseLocale
     ? `https://docs.${COMFY_BASE_DOMAIN}/zh-CN/installation/desktop`
     : `https://docs.${COMFY_BASE_DOMAIN}/installation/desktop`

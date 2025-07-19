@@ -102,23 +102,35 @@ describe('URL Constants', () => {
     })
 
     it('should generate platform and locale-aware desktop guide URLs', () => {
-      // Test English locale
-      const enUrl = getDesktopGuideUrl('en')
-      expect(enUrl).toMatch(
-        /^https:\/\/docs\.comfy\.org\/installation\/desktop\/(windows|macos)$/
+      // Test default (no OS provided) - should default to Windows
+      const defaultUrl = getDesktopGuideUrl('en')
+      expect(defaultUrl).toBe(
+        'https://docs.comfy.org/installation/desktop/windows'
       )
 
-      // Test Chinese locale
-      const zhUrl = getDesktopGuideUrl('zh')
-      expect(zhUrl).toMatch(
-        /^https:\/\/docs\.comfy\.org\/zh-CN\/installation\/desktop\/(windows|macos)$/
+      // Test with systemStats OS parameter - macOS
+      const macUrl = getDesktopGuideUrl('en', 'Darwin 23.1.0')
+      expect(macUrl).toBe('https://docs.comfy.org/installation/desktop/macos')
+
+      // Test with systemStats OS parameter - Windows
+      const winUrl = getDesktopGuideUrl('en', 'Windows 10')
+      expect(winUrl).toBe('https://docs.comfy.org/installation/desktop/windows')
+
+      // Test Chinese locale with systemStats
+      const zhMacUrl = getDesktopGuideUrl('zh', 'macOS 14.0')
+      expect(zhMacUrl).toBe(
+        'https://docs.comfy.org/zh-CN/installation/desktop/macos'
+      )
+
+      // Test Chinese locale defaults to Windows
+      const zhDefaultUrl = getDesktopGuideUrl('zh')
+      expect(zhDefaultUrl).toBe(
+        'https://docs.comfy.org/zh-CN/installation/desktop/windows'
       )
 
       // Test other locales default to English
-      const frUrl = getDesktopGuideUrl('fr')
-      expect(frUrl).toMatch(
-        /^https:\/\/docs\.comfy\.org\/installation\/desktop\/(windows|macos)$/
-      )
+      const frUrl = getDesktopGuideUrl('fr', 'Windows 11')
+      expect(frUrl).toBe('https://docs.comfy.org/installation/desktop/windows')
     })
   })
 
