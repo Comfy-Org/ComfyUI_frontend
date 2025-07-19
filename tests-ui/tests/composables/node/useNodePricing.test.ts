@@ -227,7 +227,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.02/Run')
+      expect(price).toBe('$0.020/Run')
     })
 
     it('should return $0.018 for 512x512 size', () => {
@@ -255,7 +255,7 @@ describe('useNodePricing', () => {
       const node = createMockNode('OpenAIDalle2', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.016-0.02/Run (varies with size)')
+      expect(price).toBe('$0.016-0.02 x n/Run (varies with size & n)')
     })
   })
 
@@ -295,19 +295,19 @@ describe('useNodePricing', () => {
       const node = createMockNode('OpenAIGPTImage1', [])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.011-0.30/Run (varies with quality)')
+      expect(price).toBe('$0.011-0.30 x n/Run (varies with quality & n)')
     })
   })
 
   describe('dynamic pricing - IdeogramV3', () => {
-    it('should return $0.08 for Quality rendering speed', () => {
+    it('should return $0.09 for Quality rendering speed', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('IdeogramV3', [
         { name: 'rendering_speed', value: 'Quality' }
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.08/Run')
+      expect(price).toBe('$0.09/Run')
     })
 
     it('should return $0.06 for Balanced rendering speed', () => {
@@ -348,7 +348,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.24/Run') // 0.08 * 3
+      expect(price).toBe('$0.27/Run') // 0.09 * 3
     })
 
     it('should multiply price by num_images for Turbo rendering speed', () => {
@@ -892,6 +892,135 @@ describe('useNodePricing', () => {
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('$0.04/Run') // 0.04 * 1
       })
+    })
+  })
+
+  describe('OpenAI nodes dynamic pricing with n parameter', () => {
+    it('should calculate dynamic pricing for OpenAIDalle2 based on size and n', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIDalle2', [
+        { name: 'size', value: '1024x1024' },
+        { name: 'n', value: 3 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.060/Run') // 0.02 * 3
+    })
+
+    it('should calculate dynamic pricing for OpenAIGPTImage1 based on quality and n', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIGPTImage1', [
+        { name: 'quality', value: 'low' },
+        { name: 'n', value: 2 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.011-0.02 x 2/Run')
+    })
+
+    it('should fall back to static display when n widget is missing for OpenAIDalle2', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('OpenAIDalle2', [
+        { name: 'size', value: '512x512' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.018/Run') // n defaults to 1
+    })
+  })
+
+  describe('KlingImageGenerationNode dynamic pricing with n parameter', () => {
+    it('should calculate dynamic pricing for text-to-image with kling-v1', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingImageGenerationNode', [
+        { name: 'model_name', value: 'kling-v1' },
+        { name: 'n', value: 4 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.0140/Run') // 0.0035 * 4
+    })
+
+    it('should calculate dynamic pricing for text-to-image with kling-v1-5', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      // Mock node without image input (text-to-image mode)
+      const node = createMockNode('KlingImageGenerationNode', [
+        { name: 'model_name', value: 'kling-v1-5' },
+        { name: 'n', value: 2 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.0280/Run') // For kling-v1-5 text-to-image: 0.014 * 2
+    })
+
+    it('should fall back to static display when model widget is missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingImageGenerationNode', [])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.0035-0.028 x n/Run (varies with modality & model)')
+    })
+  })
+
+  describe('New Recraft nodes dynamic pricing', () => {
+    it('should calculate dynamic pricing for RecraftGenerateImageNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('RecraftGenerateImageNode', [
+        { name: 'n', value: 3 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.12/Run') // 0.04 * 3
+    })
+
+    it('should calculate dynamic pricing for RecraftVectorizeImageNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('RecraftVectorizeImageNode', [
+        { name: 'n', value: 5 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05/Run') // 0.01 * 5
+    })
+
+    it('should calculate dynamic pricing for RecraftGenerateVectorImageNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('RecraftGenerateVectorImageNode', [
+        { name: 'n', value: 2 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.16/Run') // 0.08 * 2
+    })
+  })
+
+  describe('Widget names for reactive updates', () => {
+    it('should include n parameter for OpenAI nodes', () => {
+      const { getRelevantWidgetNames } = useNodePricing()
+
+      expect(getRelevantWidgetNames('OpenAIDalle2')).toEqual(['size', 'n'])
+      expect(getRelevantWidgetNames('OpenAIGPTImage1')).toEqual([
+        'quality',
+        'n'
+      ])
+    })
+
+    it('should include n parameter for Kling and new Recraft nodes', () => {
+      const { getRelevantWidgetNames } = useNodePricing()
+
+      expect(getRelevantWidgetNames('KlingImageGenerationNode')).toEqual([
+        'modality',
+        'model_name',
+        'n'
+      ])
+      expect(getRelevantWidgetNames('RecraftVectorizeImageNode')).toEqual(['n'])
+      expect(getRelevantWidgetNames('RecraftGenerateImageNode')).toEqual(['n'])
+      expect(getRelevantWidgetNames('RecraftGenerateVectorImageNode')).toEqual([
+        'n'
+      ])
+      expect(
+        getRelevantWidgetNames('RecraftGenerateColorFromImageNode')
+      ).toEqual(['n'])
     })
   })
 })

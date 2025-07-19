@@ -54,7 +54,7 @@
     </Teleport>
 
     <!-- What's New Section -->
-    <section class="whats-new-section">
+    <section v-if="showVersionUpdates" class="whats-new-section">
       <h3 class="section-description">{{ $t('helpCenter.whatsNew') }}</h3>
 
       <!-- Release Items -->
@@ -126,6 +126,7 @@ import { useI18n } from 'vue-i18n'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
@@ -161,13 +162,14 @@ const TIME_UNITS = {
 const SUBMENU_CONFIG = {
   DELAY_MS: 100,
   OFFSET_PX: 8,
-  Z_INDEX: 1002
+  Z_INDEX: 10001
 } as const
 
 // Composables
 const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
+const settingStore = useSettingStore()
 
 // Emits
 const emit = defineEmits<{
@@ -182,6 +184,9 @@ let hoverTimeout: number | null = null
 
 // Computed
 const hasReleases = computed(() => releaseStore.releases.length > 0)
+const showVersionUpdates = computed(() =>
+  settingStore.get('Comfy.Notification.ShowVersionUpdates')
+)
 
 const moreMenuItem = computed(() =>
   menuItems.value.find((item) => item.key === 'more')

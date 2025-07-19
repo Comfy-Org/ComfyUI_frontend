@@ -14,7 +14,7 @@ Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` dir
 _ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
 
 ### Node.js & Playwright Prerequisites
-Ensure you have Node.js v20 or later installed. Then, set up the Chromium test driver:
+Ensure you have Node.js v20 or v22 installed. Then, set up the Chromium test driver:
 ```bash
 npx playwright install chromium --with-deps
 ```

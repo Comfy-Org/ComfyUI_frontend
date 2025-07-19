@@ -6,7 +6,7 @@ import type {
   LLink,
   Vector2
 } from '@comfyorg/litegraph'
-import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
 import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import {
@@ -78,7 +78,7 @@ export class PrimitiveNode extends LGraphNode {
         app.canvas,
         node,
         app.canvas.graph_mouse,
-        {} as CanvasMouseEvent
+        {} as CanvasPointerEvent
       )
     }
   }

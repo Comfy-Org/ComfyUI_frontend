@@ -61,6 +61,12 @@ describe('useReleaseStore', () => {
     vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
 
+    // Default showVersionUpdates to true
+    mockSettingStore.get.mockImplementation((key: string) => {
+      if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+      return null
+    })
+
     store = useReleaseStore()
   })
 
@@ -111,6 +117,107 @@ describe('useReleaseStore', () => {
 
       store.releases = [mockRelease]
       expect(store.shouldShowUpdateButton).toBe(false)
+    })
+  })
+
+  describe('showVersionUpdates setting', () => {
+    beforeEach(() => {
+      store.releases = [mockRelease]
+    })
+
+    describe('when notifications are enabled', () => {
+      beforeEach(() => {
+        mockSettingStore.get.mockImplementation((key: string) => {
+          if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+          return null
+        })
+      })
+
+      it('should show toast for medium/high attention releases', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        // Need multiple releases for hasMediumOrHighAttention to work
+        const mediumRelease = {
+          ...mockRelease,
+          id: 2,
+          attention: 'medium' as const
+        }
+        store.releases = [mockRelease, mediumRelease]
+
+        expect(store.shouldShowToast).toBe(true)
+      })
+
+      it('should show red dot for new versions', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        expect(store.shouldShowRedDot).toBe(true)
+      })
+
+      it('should show popup for latest version', async () => {
+        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(0)
+
+        expect(store.shouldShowPopup).toBe(true)
+      })
+
+      it('should fetch releases during initialization', async () => {
+        mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+
+        await store.initialize()
+
+        expect(mockReleaseService.getReleases).toHaveBeenCalledWith({
+          project: 'comfyui',
+          current_version: '1.0.0',
+          form_factor: 'git-windows'
+        })
+      })
+    })
+
+    describe('when notifications are disabled', () => {
+      beforeEach(() => {
+        mockSettingStore.get.mockImplementation((key: string) => {
+          if (key === 'Comfy.Notification.ShowVersionUpdates') return false
+          return null
+        })
+      })
+
+      it('should not show toast even with new version available', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        expect(store.shouldShowToast).toBe(false)
+      })
+
+      it('should not show red dot even with new version available', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        expect(store.shouldShowRedDot).toBe(false)
+      })
+
+      it('should not show popup even for latest version', async () => {
+        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(0)
+
+        expect(store.shouldShowPopup).toBe(false)
+      })
+
+      it('should skip fetching releases during initialization', async () => {
+        await store.initialize()
+
+        expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      })
+
+      it('should not fetch releases when calling fetchReleases directly', async () => {
+        await store.fetchReleases()
+
+        expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+        expect(store.isLoading).toBe(false)
+      })
     })
   })
 
@@ -184,6 +291,17 @@ describe('useReleaseStore', () => {
 
       expect(mockSystemStatsStore.fetchSystemStats).toHaveBeenCalled()
     })
+
+    it('should not set loading state when notifications disabled', async () => {
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return false
+        return null
+      })
+
+      await store.initialize()
+
+      expect(store.isLoading).toBe(false)
+    })
   })
 
   describe('action handlers', () => {
@@ -248,6 +366,7 @@ describe('useReleaseStore', () => {
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.Release.Version') return null
         if (key === 'Comfy.Release.Status') return null
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
         return null
       })
 
@@ -267,7 +386,10 @@ describe('useReleaseStore', () => {
     it('should show red dot for new versions', async () => {
       const { compareVersions } = await import('@/utils/formatUtil')
       vi.mocked(compareVersions).mockReturnValue(1)
-      mockSettingStore.get.mockReturnValue(null)
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
 
       store.releases = [mockRelease]
 
@@ -276,7 +398,10 @@ describe('useReleaseStore', () => {
 
     it('should show popup for latest version', async () => {
       mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0' // Same as release
-      mockSettingStore.get.mockReturnValue(null)
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
 
       const { compareVersions } = await import('@/utils/formatUtil')
       vi.mocked(compareVersions).mockReturnValue(0) // versions are equal (latest version)
@@ -284,6 +409,39 @@ describe('useReleaseStore', () => {
       store.releases = [mockRelease]
 
       expect(store.shouldShowPopup).toBe(true)
+    })
+  })
+
+  describe('edge cases', () => {
+    it('should handle missing system stats gracefully', async () => {
+      mockSystemStatsStore.systemStats = null
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return false
+        return null
+      })
+
+      await store.initialize()
+
+      // Should not fetch system stats when notifications disabled
+      expect(mockSystemStatsStore.fetchSystemStats).not.toHaveBeenCalled()
+    })
+
+    it('should handle concurrent fetchReleases calls', async () => {
+      mockReleaseService.getReleases.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve([mockRelease]), 100)
+          )
+      )
+
+      // Start two concurrent calls
+      const promise1 = store.fetchReleases()
+      const promise2 = store.fetchReleases()
+
+      await Promise.all([promise1, promise2])
+
+      // Should only call API once due to loading check
+      expect(mockReleaseService.getReleases).toHaveBeenCalledTimes(1)
     })
   })
 })

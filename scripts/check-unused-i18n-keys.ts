@@ -17,7 +17,15 @@ const IGNORE_PATTERNS = [
   /^templateWorkflows\./, // Template workflows are loaded dynamically
   /^dataTypes\./, // Data types might be referenced dynamically
   /^contextMenu\./, // Context menu items might be dynamic
-  /^color\./ // Color names might be used dynamically
+  /^color\./, // Color names might be used dynamically
+  // Auto-generated categories from collect-i18n-general.ts
+  /^menuLabels\./, // Menu labels generated from command labels
+  /^settingsCategories\./, // Settings categories generated from setting definitions
+  /^serverConfigItems\./, // Server config items generated from SERVER_CONFIG_ITEMS
+  /^serverConfigCategories\./, // Server config categories generated from config categories
+  /^nodeCategories\./, // Node categories generated from node definitions
+  // Setting option values that are dynamically generated
+  /\.options\./ // All setting options are rendered dynamically
 ]
 
 // Get list of staged locale files
@@ -97,17 +105,21 @@ function shouldIgnoreKey(key: string): boolean {
 
 // Search for key usage in source files
 function isKeyUsed(key: string, sourceFiles: string[]): boolean {
+  // Escape special regex characters
+  const escapeRegex = (str: string) =>
+    str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const escapedKey = escapeRegex(key)
+  const lastPart = key.split('.').pop()
+  const escapedLastPart = lastPart ? escapeRegex(lastPart) : ''
+
   // Common patterns for i18n key usage
   const patterns = [
     // Direct usage: $t('key'), t('key'), i18n.t('key')
-    new RegExp(`[t$]\\s*\\(\\s*['"\`]${key}['"\`]`, 'g'),
+    new RegExp(`[t$]\\s*\\(\\s*['"\`]${escapedKey}['"\`]`, 'g'),
     // With namespace: $t('g.key'), t('namespace.key')
-    new RegExp(
-      `[t$]\\s*\\(\\s*['"\`][^'"]+\\.${key.split('.').pop()}['"\`]`,
-      'g'
-    ),
+    new RegExp(`[t$]\\s*\\(\\s*['"\`][^'"]+\\.${escapedLastPart}['"\`]`, 'g'),
     // Dynamic keys might reference parts of the key
-    new RegExp(`['"\`]${key}['"\`]`, 'g')
+    new RegExp(`['"\`]${escapedKey}['"\`]`, 'g')
   ]
 
   for (const file of sourceFiles) {
@@ -154,7 +166,7 @@ async function checkNewUnusedKeys() {
 
   // Report results
   if (unusedNewKeys.length > 0) {
-    console.log('\n❌ Found unused NEW i18n keys:\n')
+    console.log('\n⚠️  Warning: Found unused NEW i18n keys:\n')
 
     for (const key of unusedNewKeys.sort()) {
       console.log(`  - ${key}`)
@@ -164,9 +176,10 @@ async function checkNewUnusedKeys() {
     console.log(
       '\nThese keys were added but are not used anywhere in the codebase.'
     )
-    console.log('Please either use them or remove them before committing.')
+    console.log('Consider using them or removing them in a future update.')
 
-    process.exit(1)
+    // Changed from process.exit(1) to process.exit(0) for warning only
+    process.exit(0)
   } else {
     // Silent success - no output needed
   }

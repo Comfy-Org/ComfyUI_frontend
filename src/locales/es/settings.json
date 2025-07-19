@@ -259,6 +259,10 @@
     "name": "Destacar nodo de ajuste",
     "tooltip": "Al arrastrar un enlace sobre un nodo con ranura de entrada viable, resalta el nodo"
   },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "Mostrar actualizaciones de versión",
+    "tooltip": "Mostrar actualizaciones para nuevos modelos y funciones principales nuevas."
+  },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "Retraso de deriva del clic del puntero",
     "tooltip": "Después de presionar un botón del puntero, este es el tiempo máximo (en milisegundos) que se puede ignorar el movimiento del puntero.\n\nAyuda a prevenir que los objetos sean movidos involuntariamente si el puntero se mueve al hacer clic."
@@ -322,7 +326,8 @@
       "Bottom": "Abajo",
       "Disabled": "Deshabilitado",
       "Top": "Arriba"
-    }
+    },
+    "tooltip": "Posición de la barra de menú. En dispositivos móviles, el menú siempre se muestra en la parte superior."
   },
   "Comfy_Validation_NodeDefs": {
     "name": "Validar definiciones de nodos (lento)",

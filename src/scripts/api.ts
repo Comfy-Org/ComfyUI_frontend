@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
   DisplayComponentWsMessage,
   EmbeddingsResponse,
@@ -11,6 +12,7 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
+  FeatureFlagsWsMessage,
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
@@ -105,6 +107,7 @@ interface BackendApiCalls {
   b_preview: Blob
   progress_text: ProgressTextWsMessage
   display_component: DisplayComponentWsMessage
+  feature_flags: FeatureFlagsWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -233,6 +236,19 @@ export class ComfyApi extends EventTarget {
   socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
+
+  /**
+   * Get feature flags supported by this frontend client.
+   * Returns a copy to prevent external modification.
+   */
+  getClientFeatureFlags(): Record<string, unknown> {
+    return { ...defaultClientFeatureFlags }
+  }
+
+  /**
+   * Feature flags received from the backend server.
+   */
+  serverFeatureFlags: Record<string, unknown> = {}
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -375,6 +391,15 @@ export class ComfyApi extends EventTarget {
 
     this.socket.addEventListener('open', () => {
       opened = true
+
+      // Send feature flags as the first message
+      this.socket!.send(
+        JSON.stringify({
+          type: 'feature_flags',
+          data: this.getClientFeatureFlags()
+        })
+      )
+
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
       }
@@ -467,6 +492,14 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
               this.dispatchCustomEvent(msg.type, msg.data)
+              break
+            case 'feature_flags':
+              // Store server feature flags
+              this.serverFeatureFlags = msg.data
+              console.log(
+                'Server feature flags received:',
+                this.serverFeatureFlags
+              )
               break
             default:
               if (this.#registered.has(msg.type)) {
@@ -689,7 +722,8 @@ export class ComfyApi extends EventTarget {
         Running: data.queue_running.map((prompt: Record<number, any>) => ({
           taskType: 'Running',
           prompt,
-          remove: { name: 'Cancel', cb: () => api.interrupt() }
+          // prompt[1] is the prompt id
+          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
         })),
         Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
           taskType: 'Pending',
@@ -770,10 +804,15 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Interrupts the execution of the running prompt
+   * Interrupts the execution of the running prompt. If runningPromptId is provided,
+   * it is included in the payload as a helpful hint to the backend.
+   * @param {string | null} [runningPromptId] Optional Running Prompt ID to interrupt
    */
-  async interrupt() {
-    await this.#postItem('interrupt', null)
+  async interrupt(runningPromptId: string | null) {
+    await this.#postItem(
+      'interrupt',
+      runningPromptId ? { prompt_id: runningPromptId } : undefined
+    )
   }
 
   /**
@@ -955,6 +994,33 @@ export class ComfyApi extends EventTarget {
    */
   async getCustomNodesI18n(): Promise<Record<string, any>> {
     return (await axios.get(this.apiURL('/i18n'))).data
+  }
+
+  /**
+   * Checks if the server supports a specific feature.
+   * @param featureName The name of the feature to check
+   * @returns true if the feature is supported, false otherwise
+   */
+  serverSupportsFeature(featureName: string): boolean {
+    return this.serverFeatureFlags[featureName] === true
+  }
+
+  /**
+   * Gets a server feature flag value.
+   * @param featureName The name of the feature to get
+   * @param defaultValue The default value if the feature is not found
+   * @returns The feature value or default
+   */
+  getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
+  }
+
+  /**
+   * Gets all server feature flags.
+   * @returns Copy of all server feature flags
+   */
+  getServerFeatures(): Record<string, unknown> {
+    return { ...this.serverFeatureFlags }
   }
 }
 
