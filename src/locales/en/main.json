@@ -103,6 +103,7 @@
     "resultsCount": "Found {count} Results",
     "status": "Status",
     "description": "Description",
+    "warning": "Warning",
     "name": "Name",
     "category": "Category",
     "sort": "Sort",

@@ -144,6 +144,7 @@ import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
@@ -158,6 +159,7 @@ const { initialTab } = defineProps<{
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
+const registryService = useComfyRegistryService()
 const conflictDetectionStore = useConflictDetectionStore()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
@@ -486,11 +488,49 @@ whenever(selectedNodePack, async () => {
   if (hasMultipleSelections.value) return
   // Only fetch if we haven't already for this pack
   if (lastFetchedPackId.value === pack.id) return
-  const data = await getPackById.call(pack.id)
+
+  let data = null
+
+  // For installed nodes only, fetch version-specific information
+  if (comfyManagerStore.isPackInstalled(pack.id)) {
+    const installedPack = Object.values(comfyManagerStore.installedPacks).find(
+      (installed) => (installed.cnr_id || installed.aux_id) === pack.id
+    )
+    if (installedPack?.ver) {
+      // Fetch information for the installed version
+      data = await registryService.getPackByVersion(pack.id, installedPack.ver)
+    }
+  }
+
+  // For uninstalled nodes or if version-specific data fetch failed, use default API
+  if (!data) {
+    data = await getPackById.call(pack.id)
+  }
+
   // If selected node hasn't changed since request, merge registry & Algolia data
-  if (data?.id === pack.id) {
+  const isNodeData = data && 'id' in data && data.id === pack.id
+  const isVersionData = data && 'node_id' in data && data.node_id === pack.id
+
+  if (isNodeData || isVersionData) {
     lastFetchedPackId.value = pack.id
-    const mergedPack = merge({}, pack, data)
+
+    // Merge API data first, then pack data (API data takes priority)
+    const mergedPack = merge({}, data, pack)
+
+    // Ensure compatibility fields from API data take priority
+    if (data?.supported_os !== undefined) {
+      mergedPack.supported_os = data.supported_os
+    }
+    if (data?.supported_accelerators !== undefined) {
+      mergedPack.supported_accelerators = data.supported_accelerators
+    }
+    if (data?.supported_comfyui_version !== undefined) {
+      mergedPack.supported_comfyui_version = data.supported_comfyui_version
+    }
+    if (data?.supported_comfyui_frontend_version !== undefined) {
+      mergedPack.supported_comfyui_frontend_version =
+        data.supported_comfyui_frontend_version
+    }
     // Update the pack in current selection without changing selection state
     const packIndex = selectedNodePacks.value.findIndex(
       (p) => p.id === mergedPack.id
