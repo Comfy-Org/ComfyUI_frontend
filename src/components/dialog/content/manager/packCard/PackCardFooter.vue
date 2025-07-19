@@ -139,13 +139,6 @@ const packageConflicts = computed(() => {
 
   // For installed packages, check conflicts from store
   if (isInstalled.value) {
-    console.log('PackCardFooter - Checking conflicts for installed package:', {
-      nodePackId: nodePack.id,
-      nodePackName: nodePack.name,
-      isInstalled: isInstalled.value,
-      conflictedPackages: conflictStore.conflictedPackages
-    })
-
     let conflicts = conflictStore.getConflictsForPackage(nodePack.id)
 
     // Try exact match by package_id
@@ -188,7 +181,6 @@ const packageConflicts = computed(() => {
         ) || undefined
     }
 
-    console.log('PackCardFooter - Found conflicts:', conflicts)
     return conflicts
   }
 

@@ -24,6 +24,7 @@
 import { debounce } from 'lodash'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useDialogService } from '@/services/dialogService'
@@ -39,6 +40,7 @@ const { nodePack, hasConflict } = defineProps<{
   hasConflict?: boolean
 }>()
 
+const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack } = useComfyManagerStore()
 const conflictStore = useConflictDetectionStore()
 const { showNodeConflictDialog } = useDialogService()
@@ -93,12 +95,9 @@ const handleToggle = async (enable: boolean, skipConflictCheck = false) => {
       )
 
       if (hasUnacknowledgedConflicts) {
-        console.log(
-          'PackEnableToggle - calling showNodeConflictDialog with buttonText: Enable Anyway'
-        )
         showNodeConflictDialog({
           conflictedPackages: [conflicts],
-          buttonText: 'Enable Anyway',
+          buttonText: t('manager.conflicts.enableAnyway'),
           onButtonClick: async () => {
             // User chose "Enable Anyway" - acknowledge all conflicts and proceed
             for (const conflict of conflicts.conflicts) {
@@ -142,22 +141,22 @@ const onToggle = debounce(
 
 // Show conflict modal when warning icon is clicked
 const showConflictModal = () => {
-  if (isEnabled.value) {
-    return
-  }
-
   const conflicts = conflictStore.getConflictsForPackage(nodePack.id || '')
   if (conflicts) {
     showNodeConflictDialog({
       conflictedPackages: [conflicts],
-      buttonText: 'Enable Anyway',
+      buttonText: isEnabled.value
+        ? t('manager.conflicts.understood')
+        : t('manager.conflicts.enableAnyway'),
       onButtonClick: async () => {
-        // User chose "Enable Anyway" - acknowledge all conflicts and proceed
+        // User chose button action - acknowledge all conflicts
         for (const conflict of conflicts.conflicts) {
           acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
         }
-        // Proceed with enabling using debounced function
-        onToggle(true)
+        // Only enable if currently disabled
+        if (!isEnabled.value) {
+          onToggle(true)
+        }
       }
     })
   }

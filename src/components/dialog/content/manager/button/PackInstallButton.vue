@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
 import { inject, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
@@ -42,6 +43,7 @@ const { nodePacks, variant, label, hasConflict, skipConflictCheck } =
     skipConflictCheck?: boolean
   }>()
 
+const { t } = useI18n()
 const isInstalling = inject(IsInstallingKey, ref(false))
 const managerStore = useComfyManagerStore()
 const systemStatsStore = useSystemStatsStore()
@@ -182,7 +184,7 @@ const installAllPacks = async () => {
     if (packsWithConflicts.length > 0) {
       showNodeConflictDialog({
         conflictedPackages: packsWithConflicts,
-        buttonText: 'Install Anyway',
+        buttonText: t('manager.conflicts.installAnyway'),
         onButtonClick: async () => {
           // User chose "Install Anyway" - acknowledge all conflicts and proceed
           for (const conflictedPack of packsWithConflicts) {

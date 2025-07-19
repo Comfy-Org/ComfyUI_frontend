@@ -211,6 +211,7 @@
       "conflictInfoTitle": "Why is this happening?",
       "installAnyway": "Install Anyway",
       "enableAnyway": "Enable Anyway",
+      "understood": "Understood",
       "warningBanner": {
         "title": "Some extensions are disabled due to incompatibility with your current setup",
         "message": "These extensions require versions of system packages  that differ from your current setup. Installing them may override core dependencies and affect other extensions or workflows.",
