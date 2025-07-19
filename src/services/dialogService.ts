@@ -455,7 +455,7 @@ export const useDialogService = () => {
           pcCloseButton: {
             root: {
               class:
-                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 !bg-black text-white'
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-gray-500 dark-theme:bg-neutral-700 text-white'
             }
           }
         },
