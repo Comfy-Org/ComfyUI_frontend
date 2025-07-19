@@ -813,6 +813,23 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.15.12'
   },
   {
+    id: 'Comfy.Minimap.Visible',
+    name: 'Display minimap on canvas',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.24.1'
+  },
+  {
+    id: 'Comfy.Minimap.RefreshDelay',
+    category: ['LiteGraph', 'Canvas', 'MinimapRefreshDelay'],
+    name: 'Minimap refresh delay (ms)',
+    defaultValue: 256,
+    type: 'number',
+    tooltip:
+      'The smaller the value, the smoother it will be, but it will consume more performance. After modification, you need to refresh the page for it to take effect.',
+    versionAdded: '1.24.1'
+  },
+  {
     id: 'Comfy.Workflow.AutoSaveDelay',
     name: 'Auto Save Delay (ms)',
     defaultValue: 1000,

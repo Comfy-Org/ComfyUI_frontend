@@ -163,6 +163,10 @@
     "name": "Utiliser le nouvel éditeur de masque",
     "tooltip": "Passer à la nouvelle interface de l'éditeur de masque"
   },
+  "Comfy_Minimap_RefreshDelay": {
+    "name": "Délai de rafraîchissement du minimap (ms)",
+    "tooltip": "Plus la valeur est faible, plus ce sera fluide, mais cela consommera plus de performances. Après modification, vous devez actualiser la page pour que cela prenne effet."
+  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Charger automatiquement tous les dossiers de modèles",
     "tooltip": "Si vrai, tous les dossiers seront chargés dès que vous ouvrez la bibliothèque de modèles (cela peut causer des retards pendant le chargement). Si faux, les dossiers de modèles de niveau racine ne seront chargés que lorsque vous cliquerez dessus."

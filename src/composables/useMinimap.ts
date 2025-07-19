@@ -1,0 +1,631 @@
+import { useRafFn, useThrottleFn } from '@vueuse/core'
+import { computed, nextTick, ref, watch } from 'vue'
+
+import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import { api } from '@/scripts/api'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
+
+const globalState = {
+  visible: ref(true),
+  minimapRef: ref<any>(null),
+  initialized: false
+}
+
+export function useMinimap() {
+  const settingStore = useSettingStore()
+  const canvasStore = useCanvasStore()
+
+  const containerRef = ref<HTMLDivElement>()
+  const canvasRef = ref<HTMLCanvasElement>()
+
+  const visible = globalState.visible
+
+  const initialized = ref(false)
+  const bounds = ref({
+    minX: 0,
+    minY: 0,
+    maxX: 0,
+    maxY: 0,
+    width: 0,
+    height: 0
+  })
+  const scale = ref(1)
+  const isDragging = ref(false)
+  const viewportTransform = ref({ x: 0, y: 0, width: 0, height: 0 })
+
+  const needsFullRedraw = ref(true)
+  const needsBoundsUpdate = ref(true)
+  const lastNodeCount = ref(0)
+  const nodeStatesCache = new Map<NodeId, string>()
+  const linksCache = ref<string>('')
+
+  const updateFlags = ref({
+    bounds: false,
+    nodes: false,
+    connections: false,
+    viewport: false
+  })
+
+  const width = 250
+  const height = 200
+  const nodeColor = '#666'
+  const viewportColor = '#FFF'
+  const backgroundColor = '#1e1e1e'
+  const borderColor = '#444'
+
+  const containerRect = ref({
+    left: 0,
+    top: 0,
+    width: width,
+    height: height
+  })
+
+  const canvasDimensions = ref({
+    width: 0,
+    height: 0
+  })
+
+  const updateContainerRect = () => {
+    if (!containerRef.value) return
+
+    const rect = containerRef.value.getBoundingClientRect()
+    containerRect.value = {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height
+    }
+  }
+
+  const updateCanvasDimensions = () => {
+    const c = canvas.value
+    if (!c) return
+
+    const canvasEl = c.canvas
+    const dpr = window.devicePixelRatio || 1
+
+    canvasDimensions.value = {
+      width: canvasEl.clientWidth || canvasEl.width / dpr,
+      height: canvasEl.clientHeight || canvasEl.height / dpr
+    }
+  }
+
+  const canvas = computed(() => canvasStore.canvas)
+  const graph = computed(() => canvas.value?.graph)
+
+  const containerStyles = computed(() => ({
+    width: `${width}px`,
+    height: `${height}px`,
+    backgroundColor: backgroundColor,
+    border: `1px solid ${borderColor}`
+  }))
+
+  const viewportStyles = computed(() => ({
+    transform: `translate(${viewportTransform.value.x}px, ${viewportTransform.value.y}px)`,
+    width: `${viewportTransform.value.width}px`,
+    height: `${viewportTransform.value.height}px`,
+    border: `2px solid ${viewportColor}`,
+    backgroundColor: `${viewportColor}33`,
+    willChange: 'transform',
+    backfaceVisibility: 'hidden' as const,
+    perspective: '1000px',
+    pointerEvents: 'none' as const
+  }))
+
+  const calculateGraphBounds = () => {
+    const g = graph.value
+    if (!g?._nodes || g._nodes.length === 0) {
+      return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }
+    }
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const node of g._nodes) {
+      minX = Math.min(minX, node.pos[0])
+      minY = Math.min(minY, node.pos[1])
+      maxX = Math.max(maxX, node.pos[0] + node.size[0])
+      maxY = Math.max(maxY, node.pos[1] + node.size[1])
+    }
+
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: maxX - minX,
+      height: maxY - minY
+    }
+  }
+
+  const calculateScale = () => {
+    if (bounds.value.width === 0 || bounds.value.height === 0) {
+      return 1
+    }
+
+    const scaleX = width / bounds.value.width
+    const scaleY = height / bounds.value.height
+
+    return Math.min(scaleX, scaleY) * 0.9
+  }
+
+  const renderNodes = (
+    ctx: CanvasRenderingContext2D,
+    offsetX: number,
+    offsetY: number
+  ) => {
+    const g = graph.value
+    if (!g || !g._nodes || g._nodes.length === 0) return
+
+    for (const node of g._nodes) {
+      const x = (node.pos[0] - bounds.value.minX) * scale.value + offsetX
+      const y = (node.pos[1] - bounds.value.minY) * scale.value + offsetY
+      const w = node.size[0] * scale.value
+      const h = node.size[1] * scale.value
+
+      ctx.fillStyle = node.color || node.constructor.color || nodeColor
+      ctx.fillRect(x, y, w, h)
+
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+      ctx.lineWidth = 0.5
+      ctx.strokeRect(x, y, w, h)
+    }
+  }
+
+  const renderConnections = (
+    ctx: CanvasRenderingContext2D,
+    offsetX: number,
+    offsetY: number
+  ) => {
+    const g = graph.value
+    if (!g) return
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'
+    ctx.lineWidth = 2
+
+    for (const node of g._nodes) {
+      if (!node.outputs) continue
+
+      const x1 = (node.pos[0] - bounds.value.minX) * scale.value + offsetX
+      const y1 = (node.pos[1] - bounds.value.minY) * scale.value + offsetY
+
+      for (const output of node.outputs) {
+        if (!output.links) continue
+
+        for (const linkId of output.links) {
+          const link = g.links[linkId]
+          if (!link) continue
+
+          const targetNode = g.getNodeById(link.target_id)
+          if (!targetNode) continue
+
+          const x2 =
+            (targetNode.pos[0] - bounds.value.minX) * scale.value + offsetX
+          const y2 =
+            (targetNode.pos[1] - bounds.value.minY) * scale.value + offsetY
+
+          ctx.beginPath()
+          ctx.moveTo(
+            x1 + node.size[0] * scale.value,
+            y1 + node.size[1] * scale.value * 0.2
+          )
+          ctx.lineTo(x2, y2 + targetNode.size[1] * scale.value * 0.2)
+          ctx.stroke()
+        }
+      }
+    }
+  }
+
+  const renderMinimap = () => {
+    if (!canvasRef.value || !graph.value) return
+
+    const ctx = canvasRef.value.getContext('2d')
+    if (!ctx) return
+
+    const needsRedraw =
+      needsFullRedraw.value ||
+      updateFlags.value.nodes ||
+      updateFlags.value.connections
+
+    if (needsRedraw) {
+      ctx.clearRect(0, 0, width, height)
+
+      const offsetX = (width - bounds.value.width * scale.value) / 2
+      const offsetY = (height - bounds.value.height * scale.value) / 2
+
+      renderConnections(ctx, offsetX, offsetY)
+      renderNodes(ctx, offsetX, offsetY)
+
+      needsFullRedraw.value = false
+      updateFlags.value.nodes = false
+      updateFlags.value.connections = false
+    }
+  }
+
+  const updateViewport = () => {
+    const c = canvas.value
+    if (!c) return
+
+    if (
+      canvasDimensions.value.width === 0 ||
+      canvasDimensions.value.height === 0
+    ) {
+      updateCanvasDimensions()
+    }
+
+    const ds = c.ds
+
+    const viewportWidth = canvasDimensions.value.width / ds.scale
+    const viewportHeight = canvasDimensions.value.height / ds.scale
+
+    const worldX = -ds.offset[0]
+    const worldY = -ds.offset[1]
+
+    const centerOffsetX = (width - bounds.value.width * scale.value) / 2
+    const centerOffsetY = (height - bounds.value.height * scale.value) / 2
+
+    viewportTransform.value = {
+      x: (worldX - bounds.value.minX) * scale.value + centerOffsetX,
+      y: (worldY - bounds.value.minY) * scale.value + centerOffsetY,
+      width: viewportWidth * scale.value,
+      height: viewportHeight * scale.value
+    }
+
+    updateFlags.value.viewport = false
+  }
+
+  const updateMinimap = () => {
+    if (needsBoundsUpdate.value || updateFlags.value.bounds) {
+      bounds.value = calculateGraphBounds()
+      scale.value = calculateScale()
+      needsBoundsUpdate.value = false
+      updateFlags.value.bounds = false
+      needsFullRedraw.value = true
+    }
+
+    if (
+      needsFullRedraw.value ||
+      updateFlags.value.nodes ||
+      updateFlags.value.connections
+    ) {
+      renderMinimap()
+    }
+  }
+
+  const checkForChanges = useThrottleFn(() => {
+    const g = graph.value
+    if (!g) return
+
+    let structureChanged = false
+    let positionChanged = false
+    let connectionChanged = false
+
+    if (g._nodes.length !== lastNodeCount.value) {
+      structureChanged = true
+      lastNodeCount.value = g._nodes.length
+    }
+
+    for (const node of g._nodes) {
+      const key = node.id
+      const currentState = `${node.pos[0]},${node.pos[1]},${node.size[0]},${node.size[1]}`
+
+      if (nodeStatesCache.get(key) !== currentState) {
+        positionChanged = true
+        nodeStatesCache.set(key, currentState)
+      }
+    }
+
+    const currentLinks = JSON.stringify(g.links || {})
+    if (currentLinks !== linksCache.value) {
+      connectionChanged = true
+      linksCache.value = currentLinks
+    }
+
+    const currentNodeIds = new Set(g._nodes.map((n) => n.id))
+    for (const [nodeId] of nodeStatesCache) {
+      if (!currentNodeIds.has(nodeId)) {
+        nodeStatesCache.delete(nodeId)
+        structureChanged = true
+      }
+    }
+
+    if (structureChanged || positionChanged) {
+      updateFlags.value.bounds = true
+      updateFlags.value.nodes = true
+    }
+
+    if (connectionChanged) {
+      updateFlags.value.connections = true
+    }
+
+    if (structureChanged || positionChanged || connectionChanged) {
+      updateMinimap()
+    }
+  }, settingStore.get('Comfy.Minimap.RefreshDelay'))
+
+  const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
+    useRafFn(
+      async () => {
+        if (visible.value) {
+          await checkForChanges()
+        }
+      },
+      { immediate: false }
+    )
+
+  const { pause: pauseViewportUpdate, resume: resumeViewportUpdate } = useRafFn(
+    () => {
+      updateViewport()
+    },
+    { immediate: false, fpsLimit: 60 }
+  )
+
+  const handleMouseDown = (e: MouseEvent) => {
+    isDragging.value = true
+    updateContainerRect()
+    handleMouseMove(e)
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging.value || !canvasRef.value || !canvas.value) return
+
+    const x = e.clientX - containerRect.value.left
+    const y = e.clientY - containerRect.value.top
+
+    const offsetX = (width - bounds.value.width * scale.value) / 2
+    const offsetY = (height - bounds.value.height * scale.value) / 2
+
+    const worldX = (x - offsetX) / scale.value + bounds.value.minX
+    const worldY = (y - offsetY) / scale.value + bounds.value.minY
+
+    centerViewOn(worldX, worldY)
+  }
+
+  const handleMouseUp = () => {
+    isDragging.value = false
+  }
+
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault()
+
+    const c = canvas.value
+    if (!c) return
+
+    if (
+      containerRect.value.left === 0 &&
+      containerRect.value.top === 0 &&
+      containerRef.value
+    ) {
+      updateContainerRect()
+    }
+
+    const ds = c.ds
+    const delta = e.deltaY > 0 ? 0.9 : 1.1
+
+    const newScale = ds.scale * delta
+
+    const MIN_SCALE = 0.1
+    const MAX_SCALE = 10
+
+    if (newScale < MIN_SCALE || newScale > MAX_SCALE) return
+
+    const x = e.clientX - containerRect.value.left
+    const y = e.clientY - containerRect.value.top
+
+    const offsetX = (width - bounds.value.width * scale.value) / 2
+    const offsetY = (height - bounds.value.height * scale.value) / 2
+
+    const worldX = (x - offsetX) / scale.value + bounds.value.minX
+    const worldY = (y - offsetY) / scale.value + bounds.value.minY
+
+    ds.scale = newScale
+
+    centerViewOn(worldX, worldY)
+  }
+
+  const centerViewOn = (worldX: number, worldY: number) => {
+    const c = canvas.value
+    if (!c) return
+
+    if (
+      canvasDimensions.value.width === 0 ||
+      canvasDimensions.value.height === 0
+    ) {
+      updateCanvasDimensions()
+    }
+
+    const ds = c.ds
+
+    const viewportWidth = canvasDimensions.value.width / ds.scale
+    const viewportHeight = canvasDimensions.value.height / ds.scale
+
+    ds.offset[0] = -(worldX - viewportWidth / 2)
+    ds.offset[1] = -(worldY - viewportHeight / 2)
+
+    updateFlags.value.viewport = true
+
+    c.setDirty(true, true)
+  }
+
+  let originalCallbacks: any = {}
+
+  const handleGraphChanged = useThrottleFn(() => {
+    needsFullRedraw.value = true
+    updateFlags.value.bounds = true
+    updateFlags.value.nodes = true
+    updateFlags.value.connections = true
+    updateMinimap()
+  }, settingStore.get('Comfy.Minimap.RefreshDelay'))
+
+  const setupEventListeners = () => {
+    const g = graph.value
+    if (!g) return
+
+    originalCallbacks = {
+      onNodeAdded: g.onNodeAdded,
+      onNodeRemoved: g.onNodeRemoved,
+      onConnectionChange: g.onConnectionChange
+    }
+
+    g.onNodeAdded = function (node) {
+      originalCallbacks.onNodeAdded?.call(this, node)
+
+      void handleGraphChanged()
+    }
+
+    g.onNodeRemoved = function (node) {
+      originalCallbacks.onNodeRemoved?.call(this, node)
+      nodeStatesCache.delete(node.id)
+      void handleGraphChanged()
+    }
+
+    g.onConnectionChange = function (node) {
+      originalCallbacks.onConnectionChange?.call(this, node)
+
+      void handleGraphChanged()
+    }
+  }
+
+  const cleanupEventListeners = () => {
+    const g = graph.value
+    if (!g) return
+
+    if (originalCallbacks.onNodeAdded !== undefined) {
+      g.onNodeAdded = originalCallbacks.onNodeAdded
+    }
+    if (originalCallbacks.onNodeRemoved !== undefined) {
+      g.onNodeRemoved = originalCallbacks.onNodeRemoved
+    }
+    if (originalCallbacks.onConnectionChange !== undefined) {
+      g.onConnectionChange = originalCallbacks.onConnectionChange
+    }
+  }
+
+  const init = async () => {
+    if (initialized.value) return
+
+    visible.value = settingStore.get('Comfy.Minimap.Visible')
+
+    if (canvas.value && graph.value) {
+      setupEventListeners()
+
+      api.addEventListener('graphChanged', handleGraphChanged)
+
+      if (containerRef.value) {
+        updateContainerRect()
+      }
+      updateCanvasDimensions()
+
+      window.addEventListener('resize', updateContainerRect)
+      window.addEventListener('scroll', updateContainerRect)
+      window.addEventListener('resize', updateCanvasDimensions)
+
+      needsFullRedraw.value = true
+      updateFlags.value.bounds = true
+      updateFlags.value.nodes = true
+      updateFlags.value.connections = true
+      updateFlags.value.viewport = true
+
+      updateMinimap()
+      updateViewport()
+
+      if (visible.value) {
+        resumeChangeDetection()
+        resumeViewportUpdate()
+      }
+      initialized.value = true
+    }
+  }
+
+  const destroy = () => {
+    pauseChangeDetection()
+    pauseViewportUpdate()
+    cleanupEventListeners()
+
+    api.removeEventListener('graphChanged', handleGraphChanged)
+
+    window.removeEventListener('resize', updateContainerRect)
+    window.removeEventListener('scroll', updateContainerRect)
+    window.removeEventListener('resize', updateCanvasDimensions)
+
+    nodeStatesCache.clear()
+    initialized.value = false
+  }
+
+  watch(
+    canvas,
+    async (newCanvas, oldCanvas) => {
+      if (oldCanvas) {
+        cleanupEventListeners()
+        pauseChangeDetection()
+        pauseViewportUpdate()
+        api.removeEventListener('graphChanged', handleGraphChanged)
+        window.removeEventListener('resize', updateContainerRect)
+        window.removeEventListener('scroll', updateContainerRect)
+        window.removeEventListener('resize', updateCanvasDimensions)
+      }
+      if (newCanvas && !initialized.value) {
+        await init()
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(visible, async (isVisible) => {
+    if (isVisible) {
+      if (containerRef.value) {
+        updateContainerRect()
+      }
+      updateCanvasDimensions()
+
+      needsFullRedraw.value = true
+      updateFlags.value.bounds = true
+      updateFlags.value.nodes = true
+      updateFlags.value.connections = true
+      updateFlags.value.viewport = true
+
+      await nextTick()
+
+      updateMinimap()
+      updateViewport()
+      resumeChangeDetection()
+      resumeViewportUpdate()
+    } else {
+      pauseChangeDetection()
+      pauseViewportUpdate()
+    }
+  })
+
+  const toggle = async () => {
+    visible.value = !visible.value
+    await settingStore.set('Comfy.Minimap.Visible', visible.value)
+  }
+
+  const setMinimapRef = (ref: any) => {
+    globalState.minimapRef.value = ref
+  }
+
+  return {
+    visible: computed(() => visible.value),
+    initialized: computed(() => initialized.value),
+
+    containerRef,
+    canvasRef,
+    containerStyles,
+    viewportStyles,
+    width,
+    height,
+
+    init,
+    destroy,
+    toggle,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleWheel,
+    setMinimapRef
+  }
+}

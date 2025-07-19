@@ -392,6 +392,7 @@
     "resetView": "Restablecer vista",
     "selectMode": "Modo de selección",
     "toggleLinkVisibility": "Alternar visibilidad de enlace",
+    "toggleMinimap": "Alternar minimapa",
     "zoomIn": "Acercar",
     "zoomOut": "Alejar"
   },
@@ -721,6 +722,7 @@
     "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
     "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",
     "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
+    "Canvas Toggle Minimap": "Lienzo: Alternar minimapa",
     "Check for Updates": "Buscar actualizaciones",
     "Clear Pending Tasks": "Borrar tareas pendientes",
     "Clear Workflow": "Borrar flujo de trabajo",

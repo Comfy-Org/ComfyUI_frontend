@@ -392,6 +392,7 @@
     "resetView": "重設視圖",
     "selectMode": "選取模式",
     "toggleLinkVisibility": "切換連結顯示",
+    "toggleMinimap": "切換小地圖",
     "zoomIn": "放大",
     "zoomOut": "縮小"
   },
@@ -721,6 +722,7 @@
     "Bypass/Unbypass Selected Nodes": "繞過/取消繞過選取節點",
     "Canvas Toggle Link Visibility": "切換連結可見性",
     "Canvas Toggle Lock": "切換畫布鎖定",
+    "Canvas Toggle Minimap": "畫布切換小地圖",
     "Check for Updates": "檢查更新",
     "Clear Pending Tasks": "清除待處理任務",
     "Clear Workflow": "清除工作流程",

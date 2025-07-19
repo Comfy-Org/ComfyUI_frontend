@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Basculer le verrouillage du canevas"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Basculer la mini-carte du canevas"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Contourner/Ne pas contourner les nœuds sélectionnés"
   },
