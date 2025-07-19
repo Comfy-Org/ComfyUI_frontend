@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import NodeConflictDialogContent from '@/components/dialog/content/manager/NodeConflictDialogContent.vue'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
 // Mock dependencies
 vi.mock('vue-i18n', () => ({
@@ -249,25 +250,27 @@ describe('NodeConflictDialogContent', () => {
 
   describe('conflict message generation', () => {
     it('should generate appropriate conflict messages', () => {
-      const wrapper = createWrapper({
-        conflictedPackages: mockConflictResults
+      // Mock translation function for testing
+      const mockT = vi.fn((key: string, params?: Record<string, any>) => {
+        const translations: Record<string, string> = {
+          'manager.conflicts.conflictMessages.os': `OS conflict: ${params?.current} vs ${params?.required}`,
+          'manager.conflicts.conflictMessages.accelerator': `Accelerator conflict: ${params?.current} vs ${params?.required}`,
+          'manager.conflicts.conflictMessages.banned': 'This package is banned'
+        }
+        return translations[key] || key
       })
 
-      // Test the getConflictMessage method
+      // Test the getConflictMessage utility function
       const osConflict = mockConflictResults[0].conflicts[0]
       const acceleratorConflict = mockConflictResults[0].conflicts[1]
       const bannedConflict = mockConflictResults[1].conflicts[0]
 
-      const osMessage = (wrapper.vm as any).getConflictMessage(osConflict)
-      const acceleratorMessage = (wrapper.vm as any).getConflictMessage(
-        acceleratorConflict
-      )
-      const bannedMessage = (wrapper.vm as any).getConflictMessage(
-        bannedConflict
-      )
+      const osMessage = getConflictMessage(osConflict, mockT)
+      const acceleratorMessage = getConflictMessage(acceleratorConflict, mockT)
+      const bannedMessage = getConflictMessage(bannedConflict, mockT)
 
-      expect(osMessage).toContain('os')
-      expect(acceleratorMessage).toContain('accelerator')
+      expect(osMessage).toContain('OS conflict')
+      expect(acceleratorMessage).toContain('Accelerator conflict')
       expect(bannedMessage).toContain('banned')
     })
   })
