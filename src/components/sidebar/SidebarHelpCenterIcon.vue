@@ -128,20 +128,13 @@ const closeHelpCenter = () => {
  * Check if conflict modal should be shown after ComfyUI update
  */
 const handleWhatsNewDismissed = async () => {
-  console.log(
-    "[HelpCenter] What's New popup dismissed, checking for conflicts..."
-  )
-
   try {
     // Check if conflict modal should be shown after update
     const shouldShow =
       await conflictDetection.shouldShowConflictModalAfterUpdate()
 
     if (shouldShow) {
-      console.log('[HelpCenter] Conflict modal should be shown after update')
       showConflictModal()
-    } else {
-      console.log('[HelpCenter] No conflicts or already acknowledged')
     }
   } catch (error) {
     console.error('[HelpCenter] Error checking conflict modal:', error)
@@ -163,7 +156,6 @@ const showConflictModal = () => {
     dialogComponentProps: {
       onClose: () => {
         conflictDetection.dismissConflictModal()
-        console.log('[HelpCenter] Conflict modal dismissed by user')
       }
     }
   })

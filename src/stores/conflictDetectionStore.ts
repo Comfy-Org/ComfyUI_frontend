@@ -35,15 +35,7 @@ export const useConflictDetectionStore = defineStore(
 
     // Actions
     function setConflictedPackages(packages: ConflictDetectionResult[]) {
-      console.log(
-        '[ConflictDetectionStore] Setting conflicted packages:',
-        packages
-      )
       conflictedPackages.value = [...packages]
-      console.log(
-        '[ConflictDetectionStore] conflictedPackages.value after set:',
-        conflictedPackages.value
-      )
     }
 
     function clearConflicts() {
