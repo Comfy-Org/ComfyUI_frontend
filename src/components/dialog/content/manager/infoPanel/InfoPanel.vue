@@ -2,11 +2,14 @@
   <template v-if="nodePack">
     <div class="flex flex-col h-full z-40 overflow-hidden relative">
       <div class="top-0 z-10 px-6 pt-6 w-full">
-        <InfoPanelHeader :node-packs="[nodePack]" />
+        <InfoPanelHeader
+          :node-packs="[nodePack]"
+          :has-conflict="hasCompatibilityIssues"
+        />
       </div>
       <div
         ref="scrollContainer"
-        class="p-6 pt-2 overflow-y-auto flex-1 text-sm hidden-scrollbar"
+        class="p-6 pt-2 overflow-y-auto flex-1 text-sm scrollbar-hide"
       >
         <div class="mb-6">
           <MetadataRow
@@ -36,7 +39,11 @@
           </MetadataRow>
         </div>
         <div class="mb-6 overflow-hidden">
-          <InfoTabs :node-pack="nodePack" />
+          <InfoTabs
+            :node-pack="nodePack"
+            :has-compatibility-issues="hasCompatibilityIssues"
+            :conflict-result="conflictResult"
+          />
         </div>
       </div>
     </div>
@@ -59,9 +66,11 @@ import PackEnableToggle from '@/components/dialog/content/manager/button/PackEna
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 interface InfoItem {
   key: string
@@ -84,8 +93,40 @@ whenever(isInstalled, () => {
 })
 
 const { isPackInstalled } = useComfyManagerStore()
+const { checkVersionCompatibility } = useConflictDetection()
 
 const { t, d, n } = useI18n()
+
+// Check compatibility once and pass to children
+const conflictResult = computed((): ConflictDetectionResult | null => {
+  const compatibility = checkVersionCompatibility({
+    supported_os: nodePack.supported_os,
+    supported_accelerators: nodePack.supported_accelerators,
+    supported_comfyui_version: nodePack.supported_comfyui_version,
+    supported_comfyui_frontend_version:
+      nodePack.supported_comfyui_frontend_version
+    // TODO: Add when API provides these fields
+    // supported_python_version: nodePack.supported_python_version,
+    // is_banned: nodePack.is_banned,
+    // has_registry_data: nodePack.has_registry_data
+  })
+
+  if (compatibility.hasConflict && nodePack.id && nodePack.name) {
+    return {
+      package_id: nodePack.id,
+      package_name: nodePack.name,
+      has_conflict: true,
+      conflicts: compatibility.conflicts,
+      is_compatible: false
+    }
+  }
+
+  return null
+})
+
+const hasCompatibilityIssues = computed(
+  () => conflictResult.value?.has_conflict ?? false
+)
 
 const infoItems = computed<InfoItem[]>(() => [
   {
@@ -128,17 +169,3 @@ whenever(
   { immediate: true }
 )
 </script>
-<style scoped>
-.hidden-scrollbar {
-  /* Firefox */
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    width: 1px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-  }
-}
-</style>
