@@ -157,9 +157,6 @@
     "selectVersion": "Select Version",
     "downloads": "Downloads",
     "repository": "Repository",
-    "conflicts": {
-      "warningTooltip": "This package may have compatibility issues with your current environment"
-    },
     "installingDependencies": "Installing dependencies...",
     "uninstall": "Uninstall",
     "uninstalling": "Uninstalling",
@@ -214,6 +211,11 @@
       "conflictInfoTitle": "Why is this happening?",
       "installAnyway": "Install Anyway",
       "enableAnyway": "Enable Anyway",
+      "warningBanner": {
+        "title": "Some extensions are disabled due to incompatibility with your current setup",
+        "message": "These extensions require versions of system packages  that differ from your current setup. Installing them may override core dependencies and affect other extensions or workflows.",
+        "button": "Learn More..."
+      },
       "conflictMessages": {
         "comfyui_version": "ComfyUI version mismatch (current: {current}, required: {required})",
         "frontend_version": "Frontend version mismatch (current: {current}, required: {required})",
@@ -223,7 +225,8 @@
         "banned": "This package is banned for security reasons",
         "security_pending": "Security verification pending - compatibility cannot be verified",
         "python_dependency": "Missing Python dependency: {required}"
-      }
+      },
+      "warningTooltip": "This package may have compatibility issues with your current environment"
     }
   },
   "issueReport": {
@@ -516,6 +519,7 @@
     "docs": "Docs",
     "github": "Github",
     "helpFeedback": "Help & Feedback",
+    "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
     "clickToLearnMore": "Click to learn more →",
