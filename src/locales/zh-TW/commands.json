@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "重新啟動"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "開啟 3D 編輯器（Beta 版）以編輯所選節點"
+  },
   "Comfy_BrowseTemplates": {
     "label": "瀏覽範本"
   },
