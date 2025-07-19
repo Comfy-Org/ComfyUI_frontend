@@ -223,6 +223,7 @@
         "python_version": "Python version mismatch (current: {current}, required: {required})",
         "os": "Operating system not supported (current: {current}, required: {required})",
         "accelerator": "GPU/Accelerator not supported (available: {current}, required: {required})",
+        "generic": "Compatibility issue (current: {current}, required: {required})",
         "banned": "This package is banned for security reasons",
         "security_pending": "Security verification pending - compatibility cannot be verified",
         "python_dependency": "Missing Python dependency: {required}"

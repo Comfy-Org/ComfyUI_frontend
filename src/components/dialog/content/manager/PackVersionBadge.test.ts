@@ -10,6 +10,14 @@ import enMessages from '@/locales/en/main.json'
 import PackVersionBadge from './PackVersionBadge.vue'
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
+// Mock config to prevent __COMFYUI_FRONTEND_VERSION__ error
+vi.mock('@/config', () => ({
+  default: {
+    app_title: 'ComfyUI',
+    app_version: '1.0.0'
+  }
+}))
+
 const mockNodePack = {
   id: 'test-pack',
   name: 'Test Pack',

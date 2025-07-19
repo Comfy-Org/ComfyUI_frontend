@@ -1,5 +1,10 @@
 import * as semver from 'semver'
 
+import type {
+  ConflictDetail,
+  ConflictType
+} from '@/types/conflictDetectionTypes'
+
 /**
  * Cleans a version string by removing common prefixes and normalizing format
  * @param version Raw version string (e.g., "v1.2.3", "1.2.3-alpha")
@@ -50,4 +55,57 @@ export function getVersionDifference(
  */
 export function isValidVersion(version: string): boolean {
   return semver.valid(version) !== null
+}
+
+/**
+ * Checks version compatibility and returns conflict details.
+ * Supports all semver ranges including >=, <=, >, <, ~, ^ operators.
+ * @param type Conflict type (e.g., 'comfyui_version', 'frontend_version')
+ * @param currentVersion Current version string
+ * @param supportedVersion Required version range string
+ * @returns ConflictDetail object if incompatible, null if compatible
+ */
+export function checkVersionCompatibility(
+  type: ConflictType,
+  currentVersion: string,
+  supportedVersion: string
+): ConflictDetail | null {
+  // If current version is unknown, assume compatible (no conflict)
+  if (!currentVersion || currentVersion === 'unknown') {
+    return null
+  }
+
+  // If no version requirement specified, assume compatible (no conflict)
+  if (!supportedVersion || supportedVersion.trim() === '') {
+    return null
+  }
+
+  try {
+    // Clean the current version using semver utilities
+    const cleanCurrent = cleanVersion(currentVersion)
+
+    // Check version compatibility using semver library
+    const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
+
+    if (!isCompatible) {
+      return {
+        type,
+        current_value: currentVersion,
+        required_value: supportedVersion
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.warn(
+      `[VersionUtil] Failed to parse version requirement: ${supportedVersion}`,
+      error
+    )
+    // On error, assume incompatible to be safe
+    return {
+      type,
+      current_value: currentVersion,
+      required_value: supportedVersion
+    }
+  }
 }
