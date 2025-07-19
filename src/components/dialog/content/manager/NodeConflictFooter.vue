@@ -8,7 +8,7 @@
         size="small"
         icon="pi pi-info-circle"
         :pt="{
-          label: { class: 'text-sm text-neutral-300' }
+          label: { class: 'text-sm' }
         }"
         @click="handleConflictInfoClick"
       />
@@ -20,7 +20,6 @@
         @click="handleButtonClick"
       />
     </div>
-    <div></div>
   </div>
 </template>
 
@@ -41,10 +40,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const dialogStore = useDialogStore()
 
-console.log('NodeConflictFooter - received props:', props)
-
 const handleConflictInfoClick = () => {
-  console.log('faq')
+  window.open(
+    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    '_blank'
+  )
 }
 
 const handleButtonClick = () => {
