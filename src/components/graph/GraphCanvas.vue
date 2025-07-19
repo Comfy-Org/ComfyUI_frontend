@@ -19,6 +19,12 @@
         <SubgraphBreadcrumb />
       </div>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
+
+      <MiniMap
+        v-if="comfyAppReady"
+        ref="minimapRef"
+        class="pointer-events-auto"
+      />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
@@ -53,6 +59,7 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -67,6 +74,7 @@ import { useContextMenuTranslation } from '@/composables/useContextMenuTranslati
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
+import { useMinimap } from '@/composables/useMinimap'
 import { usePaste } from '@/composables/usePaste'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
@@ -113,6 +121,9 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(() =>
   settingStore.get('Comfy.Canvas.SelectionToolbox')
 )
+
+const minimapRef = ref<InstanceType<typeof MiniMap>>()
+const minimap = useMinimap()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -342,6 +353,13 @@ onMounted(async () => {
     async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
       await useWorkflowService().reloadCurrentWorkflow()
+    }
+  )
+
+  whenever(
+    () => minimapRef.value,
+    (ref) => {
+      minimap.setMinimapRef(ref)
     }
   )
 

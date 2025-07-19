@@ -245,5 +245,9 @@
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Toggle Workflows Sidebar",
     "tooltip": "Workflows"
+  },
+  "Workspace_ToggleMinimap": {
+    "label": "Toggle Minimap",
+    "tooltip": "Minimap"
   }
 }

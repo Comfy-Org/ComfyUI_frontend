@@ -457,6 +457,8 @@ const zSettings = z.object({
   'Comfy.TutorialCompleted': z.boolean(),
   'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
+  'Comfy.Minimap.Visible': z.boolean(),
+  'Comfy.Minimap.RefreshDelay': z.number(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),

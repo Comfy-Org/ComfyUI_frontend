@@ -862,7 +862,8 @@
     "fitView": "Fit View",
     "selectMode": "Select Mode",
     "panMode": "Pan Mode",
-    "toggleLinkVisibility": "Toggle Link Visibility"
+    "toggleLinkVisibility": "Toggle Link Visibility",
+    "toggleMinimap": "Toggle Minimap"
   },
   "groupNode": {
     "create": "Create group node",

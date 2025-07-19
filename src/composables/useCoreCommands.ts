@@ -7,6 +7,7 @@ import {
 import { Point } from '@comfyorg/litegraph'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useMinimap } from '@/composables/useMinimap'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -312,6 +313,15 @@ export function useCoreCommands(): ComfyCommand[] {
           }
         }
       })()
+    },
+    {
+      id: 'Comfy.Canvas.ToggleMinimap',
+      icon: 'pi pi-map',
+      label: 'Canvas Toggle Minimap',
+      versionAdded: '1.24.1',
+      function: async () => {
+        await useMinimap().toggle()
+      }
     },
     {
       id: 'Comfy.QueuePrompt',
