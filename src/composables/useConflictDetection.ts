@@ -20,7 +20,11 @@ import type {
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
 import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
-import { cleanVersion, satisfiesVersion } from '@/utils/versionUtil'
+import {
+  cleanVersion,
+  satisfiesVersion,
+  checkVersionCompatibility as utilCheckVersionCompatibility
+} from '@/utils/versionUtil'
 
 /**
  * Composable for conflict detection system.
@@ -377,22 +381,16 @@ export function useConflictDetection() {
       if (acceleratorConflict) conflicts.push(acceleratorConflict)
     }
 
-    // 5. Banned package check
-    if (packageReq.is_banned) {
-      conflicts.push({
-        type: 'banned',
-        current_value: 'installed',
-        required_value: 'not_banned'
-      })
+    // 5. Banned package check using shared logic
+    const bannedConflict = checkBannedStatus(packageReq.is_banned)
+    if (bannedConflict) {
+      conflicts.push(bannedConflict)
     }
 
-    // 6. Registry data availability check
-    if (!packageReq.has_registry_data) {
-      conflicts.push({
-        type: 'security_pending',
-        current_value: 'no_registry_data',
-        required_value: 'registry_data_available'
-      })
+    // 6. Registry data availability check using shared logic
+    const securityConflict = checkSecurityStatus(packageReq.has_registry_data)
+    if (securityConflict) {
+      conflicts.push(securityConflict)
     }
 
     // Generate result
@@ -782,6 +780,124 @@ export function useConflictDetection() {
     acknowledgment.acknowledgeConflict(packageId, conflictType, currentVersion)
   }
 
+  /**
+   * Check compatibility for a specific version of a package.
+   * Used by components like PackVersionSelectorPopover.
+   */
+  function checkVersionCompatibility(versionData: {
+    supported_os?: string[]
+    supported_accelerators?: string[]
+    supported_comfyui_version?: string
+    supported_comfyui_frontend_version?: string
+    supported_python_version?: string
+    is_banned?: boolean
+    has_registry_data?: boolean
+  }) {
+    const systemStatsStore = useSystemStatsStore()
+    const systemStats = systemStatsStore.systemStats
+    if (!systemStats) return { hasConflict: false, conflicts: [] }
+
+    const conflicts: ConflictDetail[] = []
+
+    // Check OS compatibility using centralized function
+    if (versionData.supported_os && versionData.supported_os.length > 0) {
+      const currentOS = systemStats.system?.os || 'unknown'
+      const osConflict = checkOSConflict(
+        versionData.supported_os as SupportedOS[],
+        currentOS as SupportedOS
+      )
+      if (osConflict) {
+        conflicts.push(osConflict)
+      }
+    }
+
+    // Check accelerator compatibility using centralized function
+    if (
+      versionData.supported_accelerators &&
+      versionData.supported_accelerators.length > 0
+    ) {
+      // Extract available accelerators from system stats
+      const acceleratorInfo = extractAcceleratorInfo(systemStats)
+      const availableAccelerators: SupportedAccelerator[] = []
+
+      acceleratorInfo.available.forEach((accel) => {
+        if (accel === 'CUDA') availableAccelerators.push('CUDA')
+        if (accel === 'Metal') availableAccelerators.push('Metal')
+        if (accel === 'CPU') availableAccelerators.push('CPU')
+      })
+
+      const acceleratorConflict = checkAcceleratorConflict(
+        versionData.supported_accelerators as SupportedAccelerator[],
+        availableAccelerators
+      )
+      if (acceleratorConflict) {
+        conflicts.push(acceleratorConflict)
+      }
+    }
+
+    // Check ComfyUI version compatibility
+    if (versionData.supported_comfyui_version) {
+      const currentComfyUIVersion = systemStats.system?.comfyui_version
+      if (currentComfyUIVersion && currentComfyUIVersion !== 'unknown') {
+        const versionConflict = utilCheckVersionCompatibility(
+          'comfyui_version',
+          currentComfyUIVersion,
+          versionData.supported_comfyui_version
+        )
+        if (versionConflict) {
+          conflicts.push(versionConflict)
+        }
+      }
+    }
+
+    // Check ComfyUI Frontend version compatibility
+    if (versionData.supported_comfyui_frontend_version) {
+      const currentFrontendVersion = config.app_version
+      if (currentFrontendVersion && currentFrontendVersion !== 'unknown') {
+        const versionConflict = utilCheckVersionCompatibility(
+          'frontend_version',
+          currentFrontendVersion,
+          versionData.supported_comfyui_frontend_version
+        )
+        if (versionConflict) {
+          conflicts.push(versionConflict)
+        }
+      }
+    }
+
+    // Check Python version compatibility
+    if (versionData.supported_python_version) {
+      const currentPythonVersion = systemStats.system?.python_version
+      if (currentPythonVersion && currentPythonVersion !== 'unknown') {
+        const versionConflict = utilCheckVersionCompatibility(
+          'python_version',
+          currentPythonVersion,
+          versionData.supported_python_version
+        )
+        if (versionConflict) {
+          conflicts.push(versionConflict)
+        }
+      }
+    }
+
+    // Check banned package status using shared logic
+    const bannedConflict = checkBannedStatus(versionData.is_banned)
+    if (bannedConflict) {
+      conflicts.push(bannedConflict)
+    }
+
+    // Check security/registry data status using shared logic
+    const securityConflict = checkSecurityStatus(versionData.has_registry_data)
+    if (securityConflict) {
+      conflicts.push(securityConflict)
+    }
+
+    return {
+      hasConflict: conflicts.length > 0,
+      conflicts
+    }
+  }
+
   return {
     // State
     isDetecting: readonly(isDetecting),
@@ -810,7 +926,10 @@ export function useConflictDetection() {
     shouldShowConflictModalAfterUpdate,
     dismissConflictModal,
     dismissRedDotNotification,
-    acknowledgePackageConflict
+    acknowledgePackageConflict,
+
+    // Helper functions for other components
+    checkVersionCompatibility
   }
 }
 
@@ -1254,6 +1373,34 @@ function checkAcceleratorConflict(
     current_value: availableAccelerators.join(', '),
     required_value: supportedAccelerators.join(', ')
   }
+}
+
+/**
+ * Checks for banned package status conflicts.
+ */
+function checkBannedStatus(isBanned?: boolean): ConflictDetail | null {
+  if (isBanned === true) {
+    return {
+      type: 'banned',
+      current_value: 'installed',
+      required_value: 'not_banned'
+    }
+  }
+  return null
+}
+
+/**
+ * Checks for security/registry data availability conflicts.
+ */
+function checkSecurityStatus(hasRegistryData?: boolean): ConflictDetail | null {
+  if (hasRegistryData === false) {
+    return {
+      type: 'security_pending',
+      current_value: 'no_registry_data',
+      required_value: 'registry_data_available'
+    }
+  }
+  return null
 }
 
 /**

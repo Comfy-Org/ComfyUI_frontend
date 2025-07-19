@@ -21,15 +21,12 @@ import { useI18n } from 'vue-i18n'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import type {
-  ConflictDetail,
-  ConflictDetectionResult
-} from '@/types/conflictDetectionTypes'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
@@ -46,8 +43,8 @@ const { nodePacks, variant, label, hasConflict, skipConflictCheck } =
 const { t } = useI18n()
 const isInstalling = inject(IsInstallingKey, ref(false))
 const managerStore = useComfyManagerStore()
-const systemStatsStore = useSystemStatsStore()
 const { showNodeConflictDialog } = useDialogService()
+const { checkVersionCompatibility } = useConflictDetection()
 const { acknowledgeConflict, isConflictAcknowledged } =
   useConflictAcknowledgment()
 
@@ -81,71 +78,23 @@ const createPayload = (
 const installPack = (item: NodePack) =>
   managerStore.installPack.call(createPayload(item))
 
-// Function to check compatibility for uninstalled packages
+// Function to check compatibility for uninstalled packages using centralized logic
 function checkUninstalledPackageCompatibility(
   pack: NodePack
 ): ConflictDetectionResult | null {
-  const systemStats = systemStatsStore.systemStats
-  if (!systemStats) return null
+  const compatibility = checkVersionCompatibility({
+    supported_os: pack.supported_os,
+    supported_accelerators: pack.supported_accelerators,
+    supported_comfyui_version: pack.supported_comfyui_version,
+    supported_comfyui_frontend_version: pack.supported_comfyui_frontend_version
+  })
 
-  const conflicts: ConflictDetail[] = []
-
-  // Check OS compatibility
-  if (pack.supported_os && pack.supported_os.length > 0) {
-    const currentOS = systemStats.system?.os || 'unknown'
-    const supportedOSList = pack.supported_os.map((os) => os.toLowerCase())
-
-    if (
-      !supportedOSList.some((supportedOS) => {
-        return (
-          currentOS.toLowerCase().includes(supportedOS) ||
-          supportedOS.includes(currentOS.toLowerCase())
-        )
-      })
-    ) {
-      conflicts.push({
-        type: 'os',
-        current_value: currentOS,
-        required_value: pack.supported_os.join(', ')
-      })
-    }
-  }
-
-  // Check accelerator compatibility
-  if (pack.supported_accelerators && pack.supported_accelerators.length > 0) {
-    // Extract available accelerators from system stats devices
-    const availableAccelerators: string[] = []
-    if (systemStats.devices) {
-      for (const device of systemStats.devices) {
-        if (device.type === 'cuda') availableAccelerators.push('CUDA')
-        if (device.type === 'mps') availableAccelerators.push('Metal')
-      }
-    }
-    // CPU is always available
-    availableAccelerators.push('CPU')
-
-    const hasCompatibleAccelerator = pack.supported_accelerators.some(
-      (reqAccel) =>
-        availableAccelerators.some(
-          (avail) => avail.toLowerCase() === reqAccel.toLowerCase()
-        )
-    )
-
-    if (!hasCompatibleAccelerator) {
-      conflicts.push({
-        type: 'accelerator',
-        current_value: availableAccelerators.join(', '),
-        required_value: pack.supported_accelerators.join(', ')
-      })
-    }
-  }
-
-  if (conflicts.length > 0) {
+  if (compatibility.hasConflict) {
     return {
       package_id: pack.id || 'unknown',
       package_name: pack.name || 'unknown',
       has_conflict: true,
-      conflicts,
+      conflicts: compatibility.conflicts,
       is_compatible: false
     }
   }

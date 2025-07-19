@@ -21,6 +21,14 @@ vi.mock('lodash', async (importOriginal) => {
   }
 })
 
+// Mock config to prevent __COMFYUI_FRONTEND_VERSION__ error
+vi.mock('@/config', () => ({
+  default: {
+    app_title: 'ComfyUI',
+    app_version: '1.0.0'
+  }
+}))
+
 const mockNodePack = {
   id: 'test-pack',
   name: 'Test Pack',

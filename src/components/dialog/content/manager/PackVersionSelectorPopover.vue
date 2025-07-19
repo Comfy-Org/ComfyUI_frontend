@@ -1,6 +1,6 @@
 <template>
   <div class="w-64 mt-2">
-    <span class="pl-3 text-muted text-md font-semibold opacity-70">
+    <span class="pl-3 text-muted text-md font-semibold text-neutral-500">
       {{ $t('manager.selectVersion') }}
     </span>
     <div
@@ -25,11 +25,23 @@
       option-value="value"
       :options="versionOptions"
       :highlight-on-select="false"
-      class="my-3 w-full max-h-[50vh] border-none shadow-none"
+      class="my-3 w-full max-h-[50vh] border-none shadow-none rounded-md"
     >
       <template #option="slotProps">
         <div class="flex justify-between items-center w-full p-1">
-          <span>{{ slotProps.option.label }}</span>
+          <div class="flex items-center gap-2">
+            <i
+              v-if="getVersionCompatibility(slotProps.option.value).hasConflict"
+              v-tooltip="{
+                value: getVersionCompatibility(slotProps.option.value)
+                  .conflictMessage,
+                showDelay: 300
+              }"
+              class="pi pi-exclamation-triangle text-yellow-500"
+            />
+            <VerifiedIcon v-else :size="16" />
+            <span>{{ slotProps.option.label }}</span>
+          </div>
           <i
             v-if="selectedVersion === slotProps.option.value"
             class="pi pi-check text-highlight"
@@ -67,10 +79,13 @@ import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
 import { isSemVer } from '@/utils/formatUtil'
 
 const { nodePack } = defineProps<{
@@ -85,6 +100,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const registryService = useComfyRegistryService()
 const managerStore = useComfyManagerStore()
+const { checkVersionCompatibility } = useConflictDetection()
 
 const isQueueing = ref(false)
 
@@ -123,6 +139,9 @@ const versionOptions = ref<
   }[]
 >([])
 
+// Store fetched versions with their full data
+const fetchedVersions = ref<components['schemas']['NodeVersion'][]>([])
+
 const isLoadingVersions = ref(false)
 
 const onNodePackChange = async () => {
@@ -130,6 +149,8 @@ const onNodePackChange = async () => {
 
   // Fetch versions from the registry
   const versions = await fetchVersions()
+  fetchedVersions.value = versions
+
   const availableVersionOptions = versions
     .map((version) => ({
       value: version.version ?? '',
@@ -184,5 +205,71 @@ const handleSubmit = async () => {
 
   isQueueing.value = false
   emit('submit')
+}
+
+// Function to get version data (either from nodePack or fetchedVersions)
+const getVersionData = (version: string) => {
+  if (version === 'latest' || version === 'nightly') {
+    // For default versions, use nodePack data
+    return {
+      supported_os: nodePack.supported_os,
+      supported_accelerators: nodePack.supported_accelerators,
+      supported_comfyui_version: nodePack.supported_comfyui_version,
+      supported_comfyui_frontend_version:
+        nodePack.supported_comfyui_frontend_version,
+      supported_python_version: (nodePack as any).supported_python_version,
+      is_banned: (nodePack as any).is_banned,
+      has_registry_data: (nodePack as any).has_registry_data
+    }
+  }
+
+  // For specific versions, find in fetched versions
+  const versionData = fetchedVersions.value.find((v) => v.version === version)
+  if (versionData) {
+    return {
+      supported_os: versionData.supported_os,
+      supported_accelerators: versionData.supported_accelerators,
+      supported_comfyui_version: versionData.supported_comfyui_version,
+      supported_comfyui_frontend_version:
+        versionData.supported_comfyui_frontend_version,
+      supported_python_version: (versionData as any).supported_python_version,
+      is_banned: (versionData as any).is_banned,
+      has_registry_data: (versionData as any).has_registry_data
+    }
+  }
+
+  // Fallback to nodePack data
+  return {
+    supported_os: nodePack.supported_os,
+    supported_accelerators: nodePack.supported_accelerators,
+    supported_comfyui_version: nodePack.supported_comfyui_version,
+    supported_comfyui_frontend_version:
+      nodePack.supported_comfyui_frontend_version,
+    supported_python_version: (nodePack as any).supported_python_version,
+    is_banned: (nodePack as any).is_banned,
+    has_registry_data: (nodePack as any).has_registry_data
+  }
+}
+
+// Function to check version compatibility using centralized logic
+const checkVersionCompatibilityLocal = (
+  versionData: ReturnType<typeof getVersionData>
+) => {
+  return checkVersionCompatibility(versionData)
+}
+
+// Main function to get version compatibility info
+const getVersionCompatibility = (version: string) => {
+  const versionData = getVersionData(version)
+  const compatibility = checkVersionCompatibilityLocal(versionData)
+
+  const conflictMessage = compatibility.hasConflict
+    ? getJoinedConflictMessages(compatibility.conflicts, t)
+    : ''
+
+  return {
+    hasConflict: compatibility.hasConflict,
+    conflictMessage
+  }
 }
 </script>

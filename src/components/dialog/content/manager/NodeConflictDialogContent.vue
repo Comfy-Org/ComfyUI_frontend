@@ -47,7 +47,7 @@
             class="flex items-center justify-between h-6 px-4 flex-shrink-0 conflict-list-item"
           >
             <span class="text-xs text-neutral-300">{{
-              getConflictMessage(conflict)
+              getConflictMessage(conflict, t)
             }}</span>
             <span class="pi pi-info-circle text-sm"></span>
           </div>
@@ -111,6 +111,7 @@ import type {
   ConflictDetail,
   ConflictDetectionResult
 } from '@/types/conflictDetectionTypes'
+import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
 interface Props {
   conflicts?: ConflictDetectionResult[]
@@ -156,42 +157,6 @@ const toggleConflictsPanel = () => {
 const toggleExtensionsPanel = () => {
   extensionsExpanded.value = !extensionsExpanded.value
   conflictsExpanded.value = false
-}
-
-/**
- * Get appropriate conflict message based on conflict type
- */
-function getConflictMessage(conflict: ConflictDetail): string {
-  const messageKey = `manager.conflicts.conflictMessages.${conflict.type}`
-
-  // For version and compatibility conflicts, use interpolated message
-  if (
-    conflict.type === 'comfyui_version' ||
-    conflict.type === 'frontend_version' ||
-    conflict.type === 'python_version' ||
-    conflict.type === 'os' ||
-    conflict.type === 'accelerator'
-  ) {
-    return t(messageKey, {
-      current: conflict.current_value,
-      required: conflict.required_value
-    })
-  }
-
-  // For dependency conflicts, show the missing dependency
-  if (conflict.type === 'python_dependency') {
-    return t(messageKey, {
-      required: conflict.required_value
-    })
-  }
-
-  // For banned and security_pending, use simple message
-  if (conflict.type === 'banned' || conflict.type === 'security_pending') {
-    return t(messageKey)
-  }
-
-  // Fallback to showing raw values
-  return `${conflict.type}: ${conflict.current_value} → ${conflict.required_value}`
 }
 </script>
 <style scoped>
