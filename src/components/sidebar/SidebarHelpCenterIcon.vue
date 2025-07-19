@@ -42,6 +42,7 @@
           'sidebar-right': sidebarLocation === 'right',
           'small-sidebar': sidebarSize === 'small'
         }"
+        @whats-new-dismissed="handleWhatsNewDismissed"
       />
     </Teleport>
 
@@ -57,12 +58,15 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+import { useStorage } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useDialogService } from '@/services/dialogService'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -70,8 +74,40 @@ import SidebarIcon from './SidebarIcon.vue'
 
 const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
-const { shouldShowRedDot } = storeToRefs(releaseStore)
+const conflictDetection = useConflictDetection()
+const conflictDetectionStore = useConflictDetectionStore()
+const dialogService = useDialogService()
 const isHelpCenterVisible = ref(false)
+
+// Reactive state for conflict seen status using useStorage for automatic sync
+const hasSeenConflicts = useStorage('comfy_help_center_conflict_seen', false)
+
+// Force check localStorage changes periodically as backup
+const forceCheckStorage = () => {
+  const currentValue =
+    localStorage.getItem('comfy_help_center_conflict_seen') === 'true'
+  if (hasSeenConflicts.value !== currentValue) {
+    hasSeenConflicts.value = currentValue
+  }
+}
+
+// Check every 500ms for localStorage changes
+setInterval(forceCheckStorage, 500)
+
+// Check if should show red dot for conflicts
+const shouldShowConflictRedDot = computed(() => {
+  // Check if there are conflicts
+  if (!conflictDetectionStore.hasConflicts) return false
+
+  // Check if user has already seen the conflicts
+  return !hasSeenConflicts.value
+})
+
+// Use either release red dot or conflict red dot
+const shouldShowRedDot = computed(() => {
+  const releaseRedDot = releaseStore.shouldShowRedDot
+  return releaseRedDot || shouldShowConflictRedDot.value
+})
 
 const sidebarLocation = computed(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -85,6 +121,44 @@ const toggleHelpCenter = () => {
 
 const closeHelpCenter = () => {
   isHelpCenterVisible.value = false
+}
+
+/**
+ * Handle What's New popup dismissal
+ * Check if conflict modal should be shown after ComfyUI update
+ */
+const handleWhatsNewDismissed = async () => {
+  try {
+    // Check if conflict modal should be shown after update
+    const shouldShow =
+      await conflictDetection.shouldShowConflictModalAfterUpdate()
+
+    if (shouldShow) {
+      showConflictModal()
+    }
+  } catch (error) {
+    console.error('[HelpCenter] Error checking conflict modal:', error)
+  }
+}
+
+/**
+ * Show the node conflict dialog with current conflict data
+ */
+const showConflictModal = () => {
+  // Pass conflict data to the dialog, including onClose callback
+  const conflictData = {
+    conflictedPackages: conflictDetection.conflictedPackages.value
+  }
+
+  // Show dialog with onClose callback in dialogComponentProps
+  dialogService.showNodeConflictDialog({
+    ...conflictData,
+    dialogComponentProps: {
+      onClose: () => {
+        conflictDetection.dismissConflictModal()
+      }
+    }
+  })
 }
 
 // Initialize release store on mount

@@ -1,5 +1,10 @@
 import * as semver from 'semver'
 
+import type {
+  ConflictDetail,
+  ConflictType
+} from '@/types/conflictDetectionTypes'
+
 /**
  * Cleans a version string by removing common prefixes and normalizing format
  * @param version Raw version string (e.g., "v1.2.3", "1.2.3-alpha")
@@ -53,28 +58,54 @@ export function isValidVersion(version: string): boolean {
 }
 
 /**
- * Gets a human-readable description of a version range
- * @param range Version range string
- * @returns Description of what the range means
+ * Checks version compatibility and returns conflict details.
+ * Supports all semver ranges including >=, <=, >, <, ~, ^ operators.
+ * @param type Conflict type (e.g., 'comfyui_version', 'frontend_version')
+ * @param currentVersion Current version string
+ * @param supportedVersion Required version range string
+ * @returns ConflictDetail object if incompatible, null if compatible
  */
-export function describeVersionRange(range: string): string {
-  if (range.startsWith('>=')) {
-    return `version ${range.substring(2)} or higher`
-  } else if (range.startsWith('>')) {
-    return `version higher than ${range.substring(1)}`
-  } else if (range.startsWith('<=')) {
-    return `version ${range.substring(2)} or lower`
-  } else if (range.startsWith('<')) {
-    return `version lower than ${range.substring(1)}`
-  } else if (range.startsWith('^')) {
-    return `compatible with version ${range.substring(1)}`
-  } else if (range.startsWith('~')) {
-    return `approximately version ${range.substring(1)}`
-  } else if (range.includes(' - ')) {
-    const [min, max] = range.split(' - ')
-    return `version between ${min} and ${max}`
-  } else if (range.includes('||')) {
-    return `one of multiple version ranges: ${range}`
+export function checkVersionCompatibility(
+  type: ConflictType,
+  currentVersion: string,
+  supportedVersion: string
+): ConflictDetail | null {
+  // If current version is unknown, assume compatible (no conflict)
+  if (!currentVersion || currentVersion === 'unknown') {
+    return null
   }
-  return `version ${range}`
+
+  // If no version requirement specified, assume compatible (no conflict)
+  if (!supportedVersion || supportedVersion.trim() === '') {
+    return null
+  }
+
+  try {
+    // Clean the current version using semver utilities
+    const cleanCurrent = cleanVersion(currentVersion)
+
+    // Check version compatibility using semver library
+    const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
+
+    if (!isCompatible) {
+      return {
+        type,
+        current_value: currentVersion,
+        required_value: supportedVersion
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.warn(
+      `[VersionUtil] Failed to parse version requirement: ${supportedVersion}`,
+      error
+    )
+    // On error, assume incompatible to be safe
+    return {
+      type,
+      current_value: currentVersion,
+      required_value: supportedVersion
+    }
+  }
 }

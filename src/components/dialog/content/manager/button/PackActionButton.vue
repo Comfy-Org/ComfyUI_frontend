@@ -12,7 +12,11 @@
     v-bind="$attrs"
     @click="onClick"
   >
-    <span class="py-2 px-3 whitespace-nowrap">
+    <span class="py-2 px-3 whitespace-nowrap text-xs flex items-center gap-2">
+      <i
+        v-if="hasWarning && !loading"
+        class="pi pi-exclamation-triangle text-yellow-500"
+      ></i>
       <template v-if="loading">
         {{ loadingMessage ?? $t('g.loading') }}
       </template>
@@ -31,13 +35,15 @@ const {
   loading = false,
   loadingMessage,
   fullWidth = false,
-  variant = 'default'
+  variant = 'default',
+  hasWarning = false
 } = defineProps<{
   label: string
   loading?: boolean
   loadingMessage?: string
   fullWidth?: boolean
   variant?: 'default' | 'black'
+  hasWarning?: boolean
 }>()
 
 const emit = defineEmits<{

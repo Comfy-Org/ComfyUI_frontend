@@ -103,6 +103,7 @@
     "resultsCount": "Found {count} Results",
     "status": "Status",
     "description": "Description",
+    "warning": "Warning",
     "name": "Name",
     "category": "Category",
     "sort": "Sort",
@@ -201,6 +202,34 @@
       "nodePack": "Node Pack",
       "enabled": "Enabled",
       "disabled": "Disabled"
+    },
+    "conflicts": {
+      "title": "Conflicts Detected!",
+      "description": "We’ve detected conflicts between some of your extensions and the new version of ComfyUI. By updating you risk breaking workflows that rely on those extensions.",
+      "info": "If you continue with the update, the conflicting extensions will be disabled automatically. You can review and manage them anytime in the ComfyUI Manager.",
+      "extensionAtRisk": "Extension at Risk",
+      "conflicts": "Conflicts",
+      "conflictInfoTitle": "Why is this happening?",
+      "installAnyway": "Install Anyway",
+      "enableAnyway": "Enable Anyway",
+      "understood": "Understood",
+      "warningBanner": {
+        "title": "Some extensions are disabled due to incompatibility with your current setup",
+        "message": "These extensions require versions of system packages  that differ from your current setup. Installing them may override core dependencies and affect other extensions or workflows.",
+        "button": "Learn More..."
+      },
+      "conflictMessages": {
+        "comfyui_version": "ComfyUI version mismatch (current: {current}, required: {required})",
+        "frontend_version": "Frontend version mismatch (current: {current}, required: {required})",
+        "python_version": "Python version mismatch (current: {current}, required: {required})",
+        "os": "Operating system not supported (current: {current}, required: {required})",
+        "accelerator": "GPU/Accelerator not supported (available: {current}, required: {required})",
+        "generic": "Compatibility issue (current: {current}, required: {required})",
+        "banned": "This package is banned for security reasons",
+        "security_pending": "Security verification pending - compatibility cannot be verified",
+        "python_dependency": "Missing Python dependency: {required}"
+      },
+      "warningTooltip": "This package may have compatibility issues with your current environment"
     }
   },
   "issueReport": {
@@ -493,6 +522,7 @@
     "docs": "Docs",
     "github": "Github",
     "helpFeedback": "Help & Feedback",
+    "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
     "clickToLearnMore": "Click to learn more →",

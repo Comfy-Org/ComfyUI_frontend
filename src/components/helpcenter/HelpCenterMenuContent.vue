@@ -14,7 +14,17 @@
         @mouseenter="onMenuItemHover(menuItem.key, $event)"
         @mouseleave="onMenuItemLeave(menuItem.key)"
       >
-        <i :class="menuItem.icon" class="help-menu-icon" />
+        <div class="help-menu-icon-container">
+          <div class="help-menu-icon">
+            <component
+              :is="menuItem.icon"
+              v-if="typeof menuItem.icon === 'object'"
+              :size="16"
+            />
+            <i v-else :class="menuItem.icon" />
+          </div>
+          <div v-if="menuItem.showRedDot" class="menu-red-dot" />
+        </div>
         <span class="menu-label">{{ menuItem.label }}</span>
         <i v-if="menuItem.key === 'more'" class="pi pi-chevron-right" />
       </button>
@@ -119,12 +129,23 @@
 </template>
 
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import Button from 'primevue/button'
-import { type CSSProperties, computed, nextTick, onMounted, ref } from 'vue'
+import {
+  type CSSProperties,
+  type Component,
+  computed,
+  nextTick,
+  onMounted,
+  ref
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import { useDialogService } from '@/services/dialogService'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -133,12 +154,13 @@ import { formatVersionAnchor } from '@/utils/formatUtil'
 // Types
 interface MenuItem {
   key: string
-  icon?: string
+  icon?: string | Component
   label?: string
   action?: () => void
   visible?: boolean
   type?: 'item' | 'divider'
   items?: MenuItem[]
+  showRedDot?: boolean
 }
 
 // Constants
@@ -170,6 +192,8 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
+const dialogService = useDialogService()
+const conflictDetectionStore = useConflictDetectionStore()
 
 // Emits
 const emit = defineEmits<{
@@ -191,6 +215,18 @@ const showVersionUpdates = computed(() =>
 const moreMenuItem = computed(() =>
   menuItems.value.find((item) => item.key === 'more')
 )
+
+// Reactive state for conflict seen status using useStorage for automatic sync
+const hasSeenConflicts = useStorage('comfy_help_center_conflict_seen', false)
+
+// Check if should show red dot on Manager Extension
+const shouldShowManagerRedDot = computed(() => {
+  // Check if there are conflicts
+  if (!conflictDetectionStore.hasConflicts) return false
+
+  // Check if user has already seen the conflicts
+  return !hasSeenConflicts.value
+})
 
 const menuItems = computed<MenuItem[]>(() => {
   const moreItems: MenuItem[] = [
@@ -268,6 +304,17 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.helpFeedback'),
       action: () => {
         void commandStore.execute('Comfy.Feedback')
+        emit('close')
+      }
+    },
+    {
+      key: 'manager',
+      type: 'item',
+      icon: PuzzleIcon,
+      label: t('helpCenter.managerExtension'),
+      showRedDot: shouldShowManagerRedDot.value,
+      action: () => {
+        dialogService.showManagerDialog()
         emit('close')
       }
     },
@@ -505,14 +552,37 @@ onMounted(async () => {
   box-shadow: none;
 }
 
-.help-menu-icon {
+.help-menu-icon-container {
+  position: relative;
   margin-right: 0.75rem;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.help-menu-icon {
   font-size: 1rem;
   color: var(--p-text-muted-color);
   width: 16px;
   display: flex;
   justify-content: center;
+  align-items: center;
   flex-shrink: 0;
+}
+
+.help-menu-icon svg {
+  color: var(--p-text-muted-color);
+}
+
+.menu-red-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ff3b30;
+  border-radius: 50%;
+  border: 1.5px solid var(--p-content-background);
+  z-index: 1;
 }
 
 .menu-label {

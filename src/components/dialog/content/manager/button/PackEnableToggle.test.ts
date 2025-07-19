@@ -11,9 +11,22 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-// Mock debounce to execute immediately
-vi.mock('lodash', () => ({
-  debounce: <T extends (...args: any[]) => any>(fn: T) => fn
+// Mock lodash functions used throughout the app
+vi.mock('lodash', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('lodash')>()
+  return {
+    ...actual,
+    debounce: <T extends (...args: any[]) => any>(fn: T) => fn,
+    memoize: <T extends (...args: any[]) => any>(fn: T) => fn
+  }
+})
+
+// Mock config to prevent __COMFYUI_FRONTEND_VERSION__ error
+vi.mock('@/config', () => ({
+  default: {
+    app_title: 'ComfyUI',
+    app_version: '1.0.0'
+  }
 }))
 
 const mockNodePack = {

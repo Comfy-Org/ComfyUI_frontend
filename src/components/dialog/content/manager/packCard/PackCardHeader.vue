@@ -20,7 +20,10 @@
         {{ $n(nodePack.downloads) }}
       </div>
       <template v-if="isInstalled">
-        <PackEnableToggle :node-pack="nodePack" />
+        <PackEnableToggle
+          :node-pack="nodePack"
+          :has-conflict="!!packageConflicts"
+        />
       </template>
       <template v-else>
         <PackInstallButton :node-packs="[nodePack]" />
@@ -35,6 +38,7 @@ import { computed } from 'vue'
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 const { nodePack } = defineProps<{
@@ -42,5 +46,13 @@ const { nodePack } = defineProps<{
 }>()
 
 const { isPackInstalled } = useComfyManagerStore()
+const conflictStore = useConflictDetectionStore()
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+
+const packageConflicts = computed(() => {
+  if (!nodePack.id || !isInstalled.value) return null
+
+  // For installed packages, check conflicts from store
+  return conflictStore.getConflictsForPackage(nodePack.id)
+})
 </script>
