@@ -163,6 +163,10 @@
     "name": "Usar nuevo editor de máscara",
     "tooltip": "Cambiar a la nueva interfaz del editor de máscaras"
   },
+  "Comfy_Minimap_RefreshDelay": {
+    "name": "Retraso de actualización del minimapa (ms)",
+    "tooltip": "Cuanto menor sea el valor, más fluido será, pero consumirá más rendimiento. Después de modificarlo, necesitas refrescar la página para que surta efecto."
+  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Cargar automáticamente todas las carpetas de modelos",
     "tooltip": "Si es verdadero, todas las carpetas se cargarán tan pronto como abras la biblioteca de modelos (esto puede causar retrasos mientras se carga). Si es falso, las carpetas de modelos de nivel raíz solo se cargarán una vez que hagas clic en ellas."

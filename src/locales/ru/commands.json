@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Переключить блокировку холста"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Полотно: Показать/скрыть миникарту"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Обход/Необход выбранных нод"
   },
