@@ -82,7 +82,6 @@ const showBottomMenu = computed(
   () => !isMobile.value && useNewMenu.value === 'Bottom'
 )
 
-
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
