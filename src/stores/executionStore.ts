@@ -66,7 +66,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
     if (!nodeIdStr.includes(':')) {
       // It's a top-level node ID
-      return nodeIdStr as NodeLocatorId
+      return nodeIdStr
     }
 
     // It's an execution node ID
@@ -112,7 +112,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const result: Record<NodeLocatorId, NodeProgressState> = {}
 
     const states = nodeProgressStates.value // Apparently doing this inside `Object.entries` causes issues
-    for (const [_, state] of Object.entries(states)) {
+    for (const state of Object.values(states)) {
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')
