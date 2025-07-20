@@ -171,7 +171,6 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
-const systemStatsStore = useSystemStatsStore()
 
 // Emits
 const emit = defineEmits<{
@@ -201,11 +200,10 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
       action: () => {
+        // Access systemStats lazily only when action is triggered
+        const systemStats = useSystemStatsStore()
         openExternalLink(
-          getDesktopGuideUrl(
-            locale.value,
-            systemStatsStore.systemStats?.system?.os
-          )
+          getDesktopGuideUrl(locale.value, systemStats.systemStats?.system?.os)
         )
         emit('close')
       }
