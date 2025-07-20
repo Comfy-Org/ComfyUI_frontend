@@ -631,12 +631,14 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
    */
   const createCleanupFunction = (
     originalOnNodeAdded: ((node: LGraphNode) => void) | undefined,
-    originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined
+    originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined,
+    originalOnTrigger: ((action: string, param: unknown) => void) | undefined
   ) => {
     return () => {
       // Restore original callbacks
       graph.onNodeAdded = originalOnNodeAdded || undefined
       graph.onNodeRemoved = originalOnNodeRemoved || undefined
+      graph.onTrigger = originalOnTrigger || undefined
 
       // Clear pending updates
       if (batchTimeoutId !== null) {
@@ -665,6 +667,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     // Store original callbacks
     const originalOnNodeAdded = graph.onNodeAdded
     const originalOnNodeRemoved = graph.onNodeRemoved
+    const originalOnTrigger = graph.onTrigger
 
     // Set up graph event handlers
     graph.onNodeAdded = (node: LGraphNode) => {
@@ -675,13 +678,55 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       handleNodeRemoved(node, originalOnNodeRemoved)
     }
 
+    // Listen for property change events from instrumented nodes
+    graph.onTrigger = (action: string, param: unknown) => {
+      if (
+        action === 'node:property:changed' &&
+        param &&
+        typeof param === 'object'
+      ) {
+        const event = param as {
+          nodeId: string | number
+          property: string
+          oldValue: unknown
+          newValue: unknown
+        }
+
+        const nodeId = String(event.nodeId)
+        const currentData = vueNodeData.get(nodeId)
+
+        if (currentData) {
+          if (event.property === 'title') {
+            vueNodeData.set(nodeId, {
+              ...currentData,
+              title: String(event.newValue)
+            })
+          } else if (event.property === 'flags.collapsed') {
+            vueNodeData.set(nodeId, {
+              ...currentData,
+              flags: {
+                ...currentData.flags,
+                collapsed: Boolean(event.newValue)
+              }
+            })
+          }
+        }
+      }
+
+      // Call original trigger handler if it exists
+      if (originalOnTrigger) {
+        originalOnTrigger(action, param)
+      }
+    }
+
     // Initialize state
     syncWithGraph()
 
     // Return cleanup function
     return createCleanupFunction(
       originalOnNodeAdded || undefined,
-      originalOnNodeRemoved || undefined
+      originalOnNodeRemoved || undefined,
+      originalOnTrigger || undefined
     )
   }
 
