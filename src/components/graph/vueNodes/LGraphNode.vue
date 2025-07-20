@@ -15,7 +15,7 @@
       lodCssClass
     ]"
     :style="{
-      transform: `translate(${position?.x ?? 0}px, ${position?.y ?? 0}px)`,
+      transform: `translate(${position?.x ?? 0}px, ${(position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
       width: size ? `${size.width}px` : '200px',
       height: size ? `${size.height}px` : 'auto',
       backgroundColor: '#353535'
@@ -81,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import { LiteGraph } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
 
 // Import the VueNodeData type
