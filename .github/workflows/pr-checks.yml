@@ -76,10 +76,10 @@ jobs:
       - name: Check for screen recording
         id: check-recording
         if: steps.check-changes.outputs.should_run == 'true'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           # Check PR body for screen recording
-          PR_BODY="${{ github.event.pull_request.body }}"
-          
           # Check for GitHub user attachments or YouTube links
           if echo "$PR_BODY" | grep -qiE 'github\.com/user-attachments/assets/[a-f0-9-]+|youtube\.com/watch|youtu\.be/'; then
             echo "has_recording=true" >> "$GITHUB_OUTPUT"
