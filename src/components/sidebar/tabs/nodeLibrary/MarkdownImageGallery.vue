@@ -26,11 +26,7 @@
     @update:active-index="handleActiveIndexChange"
   >
     <template #item="{ item }">
-      <img
-        :src="item.url"
-        :alt="item.filename"
-        class="galleria-image"
-      />
+      <img :src="item.url" :alt="item.filename" class="galleria-image" />
     </template>
   </Galleria>
 </template>
@@ -145,4 +141,4 @@ img.galleria-image {
     z-index: 2;
   }
 }
-</style> 
+</style>
