@@ -24,11 +24,10 @@
           @click="triggerDownload"
         />
         <Button
-          v-if="status === null || status === 'error'"
+          v-if="(status === null || status === 'error') && !!props.url"
           :label="$t('g.copyURL')"
           size="small"
           outlined
-          :disabled="!!props.error"
           @click="copyURL"
         />
       </div>
