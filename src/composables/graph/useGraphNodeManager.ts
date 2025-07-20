@@ -277,7 +277,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     let updateInProgress = false
 
     return (value: unknown) => {
-      // Prevent circular callbacks - bulletproof recursion guard
       if (updateInProgress) return
       updateInProgress = true
 
