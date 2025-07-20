@@ -67,8 +67,8 @@ const updateDomClipping = () => {
     return
   }
 
-  // Use containerNode for promoted widgets, otherwise use widget.node
-  const positioningNode = widget.containerNode || widget.node
+  // Use parentSubgraphNode for promoted widgets, otherwise use widget.node
+  const positioningNode = widget.parentSubgraphNode || widget.node
   const isSelected = selectedNode === positioningNode
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset

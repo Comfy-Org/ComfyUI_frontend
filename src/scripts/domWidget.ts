@@ -28,6 +28,8 @@ export interface BaseDOMWidget<V extends object | string = object | string>
   isVisible(): boolean
   /** The margin of the widget. */
   margin: number
+  /** Reference to the subgraph container node when this widget is promoted from a subgraph. */
+  parentSubgraphNode?: LGraphNode
 }
 
 /**

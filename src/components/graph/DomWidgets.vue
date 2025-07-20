@@ -38,16 +38,16 @@ const updateWidgets = () => {
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
 
-    // Use containerNode for promoted widgets, otherwise use widget.node
-    const node = widget.containerNode || widget.node
+    // Use parentSubgraphNode for promoted widgets, otherwise use widget.node
+    const node = widget.parentSubgraphNode || widget.node
 
     let visible = false
     if (node) {
       // Determine which graph context this widget should be visible in
-      const isPromotedWidget = !!widget.containerNode
+      const isPromotedWidget = !!widget.parentSubgraphNode
       const isInParentGraph =
-        widget.containerNode &&
-        currentGraph?.nodes.includes(widget.containerNode)
+        widget.parentSubgraphNode &&
+        currentGraph?.nodes.includes(widget.parentSubgraphNode)
       const isInSubgraph = currentGraph?.nodes.includes(widget.node)
 
       // Promoted widgets: only visible when viewing parent graph

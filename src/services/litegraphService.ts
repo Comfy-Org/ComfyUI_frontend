@@ -88,41 +88,50 @@ export const useLitegraphService = () => {
       constructor() {
         super(app.graph, subgraph, instanceData)
 
-        // Set up callback for promoted widget registration
-        this.onPromotedWidgetAdded = (widget) => {
-          // Only handle DOM widgets
-          if (
-            !('id' in widget) ||
-            !('element' in widget || 'component' in widget)
-          )
-            return
+        // Set up event listener for promoted widget registration
+        ;(subgraph as any).events?.addEventListener(
+          'widget-promoted',
+          (event: any) => {
+            const { widget } = event.detail
+            // Only handle DOM widgets
+            if (
+              !('id' in widget) ||
+              !('element' in widget || 'component' in widget)
+            )
+              return
 
-          const domWidgetStore = useDomWidgetStore()
-          const domWidget = widget as any // Type assertion since we've verified the properties exist
-          if (!domWidgetStore.widgetStates.has(domWidget.id)) {
-            domWidgetStore.registerWidget(domWidget)
-            // Set initial visibility based on whether the containerNode is in the current graph
-            const widgetState = domWidgetStore.widgetStates.get(domWidget.id)
-            if (widgetState && widget.containerNode) {
-              const canvasStore = useCanvasStore()
-              const currentGraph = canvasStore.canvas?.graph
-              widgetState.visible =
-                currentGraph?.nodes.includes(widget.containerNode) ?? false
+            const domWidgetStore = useDomWidgetStore()
+            const domWidget = widget as any // Type assertion since we've verified the properties exist
+            if (!domWidgetStore.widgetStates.has(domWidget.id)) {
+              domWidgetStore.registerWidget(domWidget)
+              // Set initial visibility based on whether the parentSubgraphNode is in the current graph
+              const widgetState = domWidgetStore.widgetStates.get(domWidget.id)
+              if (widgetState && widget.parentSubgraphNode) {
+                const canvasStore = useCanvasStore()
+                const currentGraph = canvasStore.canvas?.graph
+                widgetState.visible =
+                  currentGraph?.nodes.includes(widget.parentSubgraphNode) ??
+                  false
+              }
             }
           }
-        }
+        )
 
-        // Set up callback for promoted widget removal
-        this.onPromotedWidgetRemoved = (widget) => {
-          // Only handle DOM widgets
-          if (!('id' in widget)) return
+        // Set up event listener for promoted widget removal
+        ;(subgraph as any).events?.addEventListener(
+          'widget-unpromoted',
+          (event: any) => {
+            const { widget } = event.detail
+            // Only handle DOM widgets
+            if (!('id' in widget)) return
 
-          const domWidgetStore = useDomWidgetStore()
-          const domWidget = widget as any // Type assertion since we've verified the property exists
-          if (domWidgetStore.widgetStates.has(domWidget.id)) {
-            domWidgetStore.unregisterWidget(domWidget.id)
+            const domWidgetStore = useDomWidgetStore()
+            const domWidget = widget as any // Type assertion since we've verified the property exists
+            if (domWidgetStore.widgetStates.has(domWidget.id)) {
+              domWidgetStore.unregisterWidget(domWidget.id)
+            }
           }
-        }
+        )
 
         this.#setupStrokeStyles()
         this.#addInputs(ComfyNode.nodeData.inputs)
