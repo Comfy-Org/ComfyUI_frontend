@@ -1,4 +1,4 @@
-import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, OptionalProps, Point, ReadOnlyPoint } from "@/interfaces"
+import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, ISubgraphInput, OptionalProps, Point, ReadOnlyPoint } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 
 import { LabelPosition, SlotShape, SlotType } from "@/draw"
@@ -52,7 +52,10 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   abstract get isWidgetInputSlot(): boolean
 
   constructor(slot: OptionalProps<INodeSlot, "boundingRect">, node: LGraphNode) {
-    const { boundingRect, name, type, ...rest } = slot
+    // Workaround: Ensure internal properties are not copied to the slot (_listenerController
+    // https://github.com/Comfy-Org/litegraph.js/issues/1138
+    const maybeSubgraphSlot: OptionalProps<ISubgraphInput, "link" | "boundingRect"> = slot
+    const { boundingRect, name, type, _listenerController, ...rest } = maybeSubgraphSlot
     const rectangle = boundingRect ? Rectangle.ensureRect(boundingRect) : new Rectangle()
 
     super(name, type, rectangle)
