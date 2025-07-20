@@ -9,7 +9,6 @@
       text: { class: 'flex-1' },
       icon: { class: 'flex items-start mt-1' }
     }"
-    @close="handleDismiss"
   >
     <div class="flex flex-col gap-3">
       <!-- Warning Message -->
