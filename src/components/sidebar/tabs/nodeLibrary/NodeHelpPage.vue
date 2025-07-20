@@ -84,9 +84,9 @@
   </div>
 
   <!-- Image Gallery for markdown images -->
-  <ResultGallery
+  <MarkdownImageGallery
     v-model:activeIndex="galleryActiveIndex"
-    :all-gallery-items="galleryItems"
+    :image-items="imageItems"
   />
 </template>
 
@@ -97,33 +97,13 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { ResultItemImpl } from '@/stores/queueStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
-import ResultGallery from '../queue/ResultGallery.vue'
+import MarkdownImageGallery from './MarkdownImageGallery.vue'
 
-// Custom class for external markdown images
-class MarkdownImageItem extends ResultItemImpl {
-  private _externalUrl: string
-
-  constructor(externalUrl: string, filename: string, index: number) {
-    super({
-      filename,
-      subfolder: '',
-      type: 'output',
-      nodeId: `markdown-${index}`,
-      mediaType: 'images'
-    })
-    this._externalUrl = externalUrl
-  }
-
-  override get url(): string {
-    return this._externalUrl
-  }
-
-  override get urlWithTimestamp(): string {
-    return this._externalUrl
-  }
+interface ImageItem {
+  url: string
+  filename: string
 }
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
@@ -137,7 +117,7 @@ defineEmits<{
 
 // Gallery state for image preview
 const markdownContainer = ref<HTMLElement | null>(null)
-const galleryItems = ref<MarkdownImageItem[]>([])
+const imageItems = ref<ImageItem[]>([])
 const galleryActiveIndex = ref(-1)
 
 const inputList = computed(() =>
@@ -168,13 +148,16 @@ function setupImagePreview() {
   // Only setup if there are images
   if (imgs.length === 0) return
 
-  // Update gallery items - create proper MarkdownImageItem instances
-  galleryItems.value = imgs.map((img, index) => {
+  // Update gallery items - create simple image items
+  imageItems.value = imgs.map((img, index) => {
     // Extract filename from URL
     const url = new URL(img.src, window.location.origin)
     const filename = url.pathname.split('/').pop() || `image-${index}.jpg`
 
-    return new MarkdownImageItem(img.src, filename, index)
+    return {
+      url: img.src,
+      filename
+    }
   })
 
   // Add click handlers to images
@@ -192,7 +175,7 @@ function setupImagePreview() {
 // Reset setup flag when content changes
 function resetImagePreviewSetup() {
   imagePreviewSetup.value = false
-  galleryItems.value = []
+  imageItems.value = []
   galleryActiveIndex.value = -1
 }
 
