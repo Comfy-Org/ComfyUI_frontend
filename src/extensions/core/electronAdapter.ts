@@ -5,7 +5,6 @@ import { getDesktopGuideUrl } from '@/constants/urls'
 import { i18n, t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
@@ -161,14 +160,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         label: 'Desktop User Guide',
         icon: 'pi pi-book',
         function() {
-          const systemStatsStore = useSystemStatsStore()
-          window.open(
-            getDesktopGuideUrl(
-              i18n.global.locale.value,
-              systemStatsStore.systemStats?.system?.os
-            ),
-            '_blank'
-          )
+          window.open(getDesktopGuideUrl(i18n.global.locale.value), '_blank')
         }
       },
       {

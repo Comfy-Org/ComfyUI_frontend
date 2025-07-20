@@ -102,35 +102,64 @@ describe('URL Constants', () => {
     })
 
     it('should generate platform and locale-aware desktop guide URLs', () => {
-      // Test default (no OS provided) - should default to Windows
-      const defaultUrl = getDesktopGuideUrl('en')
-      expect(defaultUrl).toBe(
-        'https://docs.comfy.org/installation/desktop/windows'
-      )
+      // Mock navigator for testing
+      const originalNavigator = global.navigator
 
-      // Test with systemStats OS parameter - macOS
-      const macUrl = getDesktopGuideUrl('en', 'Darwin 23.1.0')
-      expect(macUrl).toBe('https://docs.comfy.org/installation/desktop/macos')
+      // Test Windows platform
+      Object.defineProperty(global, 'navigator', {
+        value: { platform: 'Win32' },
+        writable: true
+      })
 
-      // Test with systemStats OS parameter - Windows
-      const winUrl = getDesktopGuideUrl('en', 'Windows 10')
+      const winUrl = getDesktopGuideUrl('en')
       expect(winUrl).toBe('https://docs.comfy.org/installation/desktop/windows')
 
-      // Test Chinese locale with systemStats
-      const zhMacUrl = getDesktopGuideUrl('zh', 'macOS 14.0')
+      // Test macOS platform
+      Object.defineProperty(global, 'navigator', {
+        value: { platform: 'MacIntel' },
+        writable: true
+      })
+
+      const macUrl = getDesktopGuideUrl('en')
+      expect(macUrl).toBe('https://docs.comfy.org/installation/desktop/macos')
+
+      // Test Chinese locale with macOS
+      const zhMacUrl = getDesktopGuideUrl('zh')
       expect(zhMacUrl).toBe(
         'https://docs.comfy.org/zh-CN/installation/desktop/macos'
       )
 
-      // Test Chinese locale defaults to Windows
-      const zhDefaultUrl = getDesktopGuideUrl('zh')
-      expect(zhDefaultUrl).toBe(
+      // Test Chinese locale with Windows
+      Object.defineProperty(global, 'navigator', {
+        value: { platform: 'Win32' },
+        writable: true
+      })
+
+      const zhWinUrl = getDesktopGuideUrl('zh')
+      expect(zhWinUrl).toBe(
         'https://docs.comfy.org/zh-CN/installation/desktop/windows'
       )
 
       // Test other locales default to English
-      const frUrl = getDesktopGuideUrl('fr', 'Windows 11')
+      const frUrl = getDesktopGuideUrl('fr')
       expect(frUrl).toBe('https://docs.comfy.org/installation/desktop/windows')
+
+      // Test environment without navigator
+      Object.defineProperty(global, 'navigator', {
+        value: undefined,
+        writable: true
+      })
+
+      const noNavUrl = getDesktopGuideUrl('en')
+      expect(noNavUrl).toBe(
+        'https://docs.comfy.org/installation/desktop/windows'
+      )
+
+      // Restore original navigator
+      Object.defineProperty(global, 'navigator', {
+        value: originalNavigator,
+        writable: true
+      })
     })
   })
 

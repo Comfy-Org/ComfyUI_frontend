@@ -128,7 +128,6 @@ import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
@@ -200,11 +199,7 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
       action: () => {
-        // Access systemStats lazily only when action is triggered
-        const systemStats = useSystemStatsStore()
-        openExternalLink(
-          getDesktopGuideUrl(locale.value, systemStats.systemStats?.system?.os)
-        )
+        openExternalLink(getDesktopGuideUrl(locale.value))
         emit('close')
       }
     },
@@ -462,7 +457,7 @@ const getChangelogUrl = (): string => {
 
 // Lifecycle
 onMounted(async () => {
-  if (!hasReleases.value) {
+  if (showVersionUpdates.value && !hasReleases.value) {
     await releaseStore.fetchReleases()
   }
 })
