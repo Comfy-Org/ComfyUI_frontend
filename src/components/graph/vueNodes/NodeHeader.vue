@@ -17,6 +17,7 @@
       v-show="!readonly"
       class="bg-transparent border-transparent flex items-center"
       @click.stop="handleCollapse"
+      @dblclick.stop
     >
       <i
         :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
