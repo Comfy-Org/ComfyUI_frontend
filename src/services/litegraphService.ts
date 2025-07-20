@@ -13,11 +13,8 @@ import {
 } from '@comfyorg/litegraph'
 import type {
   ExportedSubgraphInstance,
-  ISerialisableNodeInput,
-  ISerialisableNodeOutput,
   ISerialisedNode
 } from '@comfyorg/litegraph/dist/types/serialisation'
-import _ from 'lodash'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
@@ -249,51 +246,35 @@ export const useLitegraphService = () => {
        * and 'localized_name' information from the original node definition.
        */
       override configure(data: ISerialisedNode): void {
-        const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
-
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
-        const inputByName = new Map<string, ISerialisableNodeInput>(
-          data.inputs?.map((input) => [input.name, input]) ?? []
-        )
-        // Inputs defined by the node definition.
-        const definedInputNames = new Set(
-          this.inputs.map((input) => input.name)
-        )
-        const definedInputs = this.inputs.map((input) => {
-          const inputData = inputByName.get(input.name)
-          return inputData
-            ? {
-                ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
-              }
-            : input
-        })
-        // Extra inputs that potentially dynamically added by custom js logic.
-        const extraInputs = data.inputs?.filter(
-          (input) => !definedInputNames.has(input.name)
-        )
-        data.inputs = [...definedInputs, ...(extraInputs ?? [])]
+        const thisInputsByName = new Map(this.inputs?.map((x) => [x.name, x]))
+
+        for (const input of data.inputs ?? []) {
+          const currentInput = thisInputsByName.get(input.name)
+          if (!currentInput) continue
+
+          input.name = currentInput.name
+          input.type = currentInput.type
+          input.shape = currentInput.shape
+          input.localized_name = currentInput.localized_name
+
+          // Whether the input has associated widget follows the original node
+          // definition.
+          input.widget = currentInput.widget
+        }
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
-            // If there are extra outputs in the serialised node, use them directly.
-            // There are currently custom nodes that dynamically add outputs via
-            // js logic.
-            if (!output) return outputData as ISerialisableNodeOutput
+        for (const [index, output] of data.outputs?.entries() ?? []) {
+          const currentOutput = this.outputs.at(index)
+          if (!currentOutput) continue
 
-            return outputData
-              ? {
-                  ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
-                }
-              : output
-          }
-        )
+          output.name = currentOutput.name
+          output.type = currentOutput.type
+          output.shape = currentOutput.shape
+          output.localized_name = currentOutput.localized_name
+        }
 
         data.widgets_values = migrateWidgetsValues(
           ComfyNode.nodeData.inputs,
@@ -504,57 +485,35 @@ export const useLitegraphService = () => {
        * and 'localized_name' information from the original node definition.
        */
       override configure(data: ISerialisedNode): void {
-        const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
-
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
-        const inputByName = new Map<string, ISerialisableNodeInput>(
-          data.inputs?.map((input) => [input.name, input]) ?? []
-        )
-        // Inputs defined by the node definition.
-        const definedInputNames = new Set(
-          this.inputs.map((input) => input.name)
-        )
-        const definedInputs = this.inputs.map((input) => {
-          const inputData = inputByName.get(input.name)
-          return inputData
-            ? {
-                ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
-              }
-            : input
-        })
-        // Extra inputs that potentially dynamically added by custom js logic.
-        const extraInputs = data.inputs?.filter(
-          (input) => !definedInputNames.has(input.name)
-        )
-        data.inputs = [...definedInputs, ...(extraInputs ?? [])]
+        const thisInputsByName = new Map(this.inputs?.map((x) => [x.name, x]))
+
+        for (const input of data.inputs ?? []) {
+          const currentInput = thisInputsByName.get(input.name)
+          if (!currentInput) continue
+
+          input.name = currentInput.name
+          input.type = currentInput.type
+          input.shape = currentInput.shape
+          input.localized_name = currentInput.localized_name
+
+          // Whether the input has associated widget follows the original node
+          // definition.
+          input.widget = currentInput.widget
+        }
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
-            // If there are extra outputs in the serialised node, use them directly.
-            // There are currently custom nodes that dynamically add outputs via
-            // js logic.
-            if (!output) return outputData as ISerialisableNodeOutput
+        for (const [index, output] of data.outputs?.entries() ?? []) {
+          const currentOutput = this.outputs.at(index)
+          if (!currentOutput) continue
 
-            return outputData
-              ? {
-                  ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
-                }
-              : output
-          }
-        )
-
-        data.widgets_values = migrateWidgetsValues(
-          ComfyNode.nodeData.inputs,
-          this.widgets ?? [],
-          data.widgets_values ?? []
-        )
+          output.name = currentOutput.name
+          output.type = currentOutput.type
+          output.shape = currentOutput.shape
+          output.localized_name = currentOutput.localized_name
+        }
 
         super.configure(data)
       }
