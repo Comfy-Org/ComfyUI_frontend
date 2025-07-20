@@ -3,11 +3,11 @@
     v-if="versionStore.shouldShowWarning"
     severity="warn"
     icon="pi pi-exclamation-triangle"
-    class="my-2 mx-2"
-    :closable="true"
+    class="my-2 mx-2 version-warning-fix"
     :pt="{
       root: { class: 'flex-col' },
-      text: { class: 'flex-1' }
+      text: { class: 'flex-1' },
+      icon: { class: 'flex items-start mt-1' }
     }"
     @close="handleDismiss"
   >
@@ -77,3 +77,10 @@ const handleUpdate = () => {
   )
 }
 </script>
+
+<style scoped>
+.version-warning-fix :deep(.p-message-icon) {
+  align-self: flex-start;
+  margin-top: 0.125rem;
+}
+</style>

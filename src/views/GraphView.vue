@@ -217,9 +217,6 @@ onMounted(() => {
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
-
-  // Initialize version compatibility checking (fire-and-forget)
-  void versionCompatibilityStore.initialize()
 })
 
 onBeforeUnmount(() => {
@@ -257,6 +254,7 @@ const onGraphReady = () => {
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
       useNodeDefStore().nodeSearchService.searchNode('')
+      void versionCompatibilityStore.initialize()
     },
     { timeout: 1000 }
   )

@@ -13,7 +13,9 @@ export const useVersionCompatibilityStore = defineStore(
     const settingStore = useSettingStore()
 
     const isDismissed = ref(false)
-    const dismissedVersion = ref<string | null>(null)
+    const dismissedVersion = ref<string | null>(
+      settingStore.get('Comfy.VersionMismatch.DismissedVersion') ?? null
+    )
 
     const frontendVersion = computed(() => config.app_version)
     const backendVersion = computed(
