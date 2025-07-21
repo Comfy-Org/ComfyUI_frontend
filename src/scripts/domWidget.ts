@@ -158,6 +158,18 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   override onRemove(): void {
     useDomWidgetStore().unregisterWidget(this.id)
   }
+
+  override createCopyForNode(node: LGraphNode): this {
+    // @ts-expect-error
+    const cloned: this = new (this.constructor as typeof this)({
+      node: node,
+      name: this.name,
+      type: this.type,
+      options: this.options
+    })
+    cloned.value = this.value
+    return cloned
+  }
 }
 
 export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
@@ -175,6 +187,19 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }) {
     super(obj)
     this.element = obj.element
+  }
+
+  override createCopyForNode(node: LGraphNode): this {
+    // @ts-expect-error
+    const cloned: this = new (this.constructor as typeof this)({
+      node: node,
+      name: this.name,
+      type: this.type,
+      element: this.element, // Include the element!
+      options: this.options
+    })
+    cloned.value = this.value
+    return cloned
   }
 
   /** Extract DOM widget size info */
