@@ -67,9 +67,7 @@ const updateDomClipping = () => {
     return
   }
 
-  // Use parentSubgraphNode for promoted widgets, otherwise use widget.node
-  const positioningNode = widget.parentSubgraphNode || widget.node
-  const isSelected = selectedNode === positioningNode
+  const isSelected = selectedNode === widget.node
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
@@ -174,8 +172,10 @@ const mountElementIfVisible = () => {
 
 // Check on mount - but only after next tick to ensure visibility is calculated
 onMounted(() => {
-  void nextTick(() => {
+  nextTick(() => {
     mountElementIfVisible()
+  }).catch((error) => {
+    console.error('Error mounting DOM widget element:', error)
   })
 })
 

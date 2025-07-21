@@ -81,7 +81,7 @@ async function navigateIntoSubgraphWithRetry(
   }
 }
 
-test.describe('DOM Widget Promotion', () => {
+test.describe.skip('DOM Widget Promotion', () => {
   test('DOM widget visibility persists through subgraph navigation', async ({
     comfyPage
   }) => {

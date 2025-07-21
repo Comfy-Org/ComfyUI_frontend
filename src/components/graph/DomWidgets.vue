@@ -21,12 +21,7 @@ import { useCanvasStore } from '@/stores/graphStore'
 
 const domWidgetStore = useDomWidgetStore()
 
-const widgetStates = computed(() => {
-  return [
-    ...domWidgetStore.activeWidgetStates,
-    ...domWidgetStore.inactiveWidgetStates
-  ]
-})
+const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
@@ -44,12 +39,9 @@ const updateWidgets = () => {
       continue
     }
 
-    // For promoted widgets, check visibility in parent graph
-    // For regular widgets, check visibility in their own graph
-    const node = widget.parentSubgraphNode || widget.node
-    const isInCorrectGraph = widget.parentSubgraphNode
-      ? currentGraph?.nodes.includes(widget.parentSubgraphNode)
-      : currentGraph?.nodes.includes(widget.node)
+    // Check if the widget's node is in the current graph
+    const node = widget.node
+    const isInCorrectGraph = currentGraph?.nodes.includes(node)
 
     widgetState.visible =
       !!isInCorrectGraph &&

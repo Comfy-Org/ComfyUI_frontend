@@ -98,13 +98,12 @@ export const useLitegraphService = () => {
           const domWidgetStore = useDomWidgetStore()
           if (!domWidgetStore.widgetStates.has(widget.id)) {
             domWidgetStore.registerWidget(widget)
-            // Set initial visibility based on whether the parentSubgraphNode is in the current graph
+            // Set initial visibility based on whether the widget's node is in the current graph
             const widgetState = domWidgetStore.widgetStates.get(widget.id)
-            if (widgetState && widget.parentSubgraphNode) {
-              const canvasStore = useCanvasStore()
-              const currentGraph = canvasStore.canvas?.graph
+            if (widgetState) {
+              const currentGraph = canvasStore.getCanvas().graph
               widgetState.visible =
-                currentGraph?.nodes.includes(widget.parentSubgraphNode) ?? false
+                currentGraph?.nodes.includes(widget.node) ?? false
             }
           }
         })
