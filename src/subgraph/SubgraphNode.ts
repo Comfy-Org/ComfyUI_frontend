@@ -187,9 +187,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   #setWidget(subgraphInput: Readonly<SubgraphInput>, input: INodeInputSlot, widget: Readonly<IBaseWidget>) {
-    const concreteWidget = toConcreteWidget(widget, this)
-
-    const promotedWidget = concreteWidget.createCopyForNode(this)
+    // Use the first matching widget
+    const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(this)
 
     // Set parentSubgraphNode for all promoted widgets to track their origin
     promotedWidget.parentSubgraphNode = this
@@ -318,14 +317,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override removeWidgetByName(name: string): void {
     const widget = this.widgets.find(w => w.name === name)
     if (widget) {
-      this.subgraph.events.dispatch("widget-unpromoted", { widget, subgraphNode: this })
+      this.subgraph.events.dispatch("widget-demoted", { widget, subgraphNode: this })
     }
     super.removeWidgetByName(name)
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
     if (this.widgets.includes(widget)) {
-      this.subgraph.events.dispatch("widget-unpromoted", { widget, subgraphNode: this })
+      this.subgraph.events.dispatch("widget-demoted", { widget, subgraphNode: this })
     }
     super.ensureWidgetRemoved(widget)
   }
@@ -334,7 +333,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Clean up all promoted widgets
     for (const widget of this.widgets) {
       widget.parentSubgraphNode = undefined
-      this.subgraph.events.dispatch("widget-unpromoted", { widget, subgraphNode: this })
+      this.subgraph.events.dispatch("widget-demoted", { widget, subgraphNode: this })
     }
 
     for (const input of this.inputs) {

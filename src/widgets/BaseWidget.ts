@@ -304,12 +304,4 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
     cloned.value = this.value
     return cloned
   }
-
-  /**
-   * Type guard to check if this widget has a DOM element.
-   * @returns True if the widget has a DOM element attached
-   */
-  isDOMWidget(): this is this & { element: HTMLElement } {
-    return this.element instanceof HTMLElement
-  }
 }

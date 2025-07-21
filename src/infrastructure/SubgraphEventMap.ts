@@ -47,7 +47,7 @@ export interface SubgraphEventMap extends LGraphEventMap {
     widget: IBaseWidget
     subgraphNode: SubgraphNode
   }
-  "widget-unpromoted": {
+  "widget-demoted": {
     widget: IBaseWidget
     subgraphNode: SubgraphNode
   }

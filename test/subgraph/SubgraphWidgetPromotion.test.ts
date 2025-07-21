@@ -103,7 +103,7 @@ describe("SubgraphWidgetPromotion", () => {
 
       const eventCapture = createEventCapture(subgraph.events, [
         "widget-promoted",
-        "widget-unpromoted",
+        "widget-demoted",
       ])
 
       const { node } = createNodeWithWidget("Test Node")
@@ -119,7 +119,7 @@ describe("SubgraphWidgetPromotion", () => {
       eventCapture.cleanup()
     })
 
-    it("should fire widget-unpromoted event when removing promoted widget", () => {
+    it("should fire widget-demoted event when removing promoted widget", () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: "input", type: "number" }],
       })
@@ -128,16 +128,16 @@ describe("SubgraphWidgetPromotion", () => {
       const subgraphNode = setupPromotedWidget(subgraph, node)
       expect(subgraphNode.widgets).toHaveLength(1)
 
-      const eventCapture = createEventCapture(subgraph.events, ["widget-unpromoted"])
+      const eventCapture = createEventCapture(subgraph.events, ["widget-demoted"])
 
       // Remove the widget
       subgraphNode.removeWidgetByName("input")
 
       // Check event was fired
-      const unpromotedEvents = eventCapture.getEventsByType("widget-unpromoted")
-      expect(unpromotedEvents).toHaveLength(1)
-      expect(unpromotedEvents[0].detail.widget).toBeDefined()
-      expect(unpromotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
+      const demotedEvents = eventCapture.getEventsByType("widget-demoted")
+      expect(demotedEvents).toHaveLength(1)
+      expect(demotedEvents[0].detail.widget).toBeDefined()
+      expect(demotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
 
       // Widget should be removed
       expect(subgraphNode.widgets).toHaveLength(0)
@@ -210,7 +210,7 @@ describe("SubgraphWidgetPromotion", () => {
 
       expect(promotedWidget.parentSubgraphNode).toBe(subgraphNode)
 
-      const eventCapture = createEventCapture(subgraph.events, ["widget-unpromoted"])
+      const eventCapture = createEventCapture(subgraph.events, ["widget-demoted"])
 
       // Remove the subgraph node
       subgraphNode.onRemoved()
@@ -218,9 +218,9 @@ describe("SubgraphWidgetPromotion", () => {
       // parentSubgraphNode should be cleared
       expect(promotedWidget.parentSubgraphNode).toBeUndefined()
 
-      // Should fire unpromoted events for all widgets
-      const unpromotedEvents = eventCapture.getEventsByType("widget-unpromoted")
-      expect(unpromotedEvents).toHaveLength(1)
+      // Should fire demoted events for all widgets
+      const demotedEvents = eventCapture.getEventsByType("widget-demoted")
+      expect(demotedEvents).toHaveLength(1)
 
       eventCapture.cleanup()
     })
@@ -240,7 +240,6 @@ describe("SubgraphWidgetPromotion", () => {
       // DOM widget should be promoted with parentSubgraphNode
       expect(subgraphNode.widgets).toHaveLength(1)
       const promotedWidget = subgraphNode.widgets[0]
-      expect(promotedWidget.isDOMWidget()).toBe(true)
       expect(promotedWidget.parentSubgraphNode).toBe(subgraphNode)
       expect(promotedWidget.name).toBe("domInput")
     })
