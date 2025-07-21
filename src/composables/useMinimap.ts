@@ -344,7 +344,7 @@ export function useMinimap() {
     if (structureChanged || positionChanged || connectionChanged) {
       updateMinimap()
     }
-  }, settingStore.get('Comfy.Minimap.RefreshDelay'))
+  }, 500)
 
   const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
     useRafFn(
@@ -458,7 +458,7 @@ export function useMinimap() {
     updateFlags.value.nodes = true
     updateFlags.value.connections = true
     updateMinimap()
-  }, settingStore.get('Comfy.Minimap.RefreshDelay'))
+  }, 500)
 
   const setupEventListeners = () => {
     const g = graph.value
