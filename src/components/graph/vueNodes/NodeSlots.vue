@@ -3,9 +3,9 @@
     ⚠️ Node Slots Error
   </div>
   <div v-else class="lg-node-slots flex justify-between">
-    <div v-if="nodeInfo?.inputs?.length" class="flex flex-col">
+    <div v-if="filteredInputs.length" class="flex flex-col">
       <div
-        v-for="(input, index) in nodeInfo.inputs"
+        v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
         class="text-xs text-gray-300"
       >
@@ -13,9 +13,9 @@
       </div>
     </div>
 
-    <div v-if="nodeInfo?.outputs?.length" class="flex flex-col ml-auto">
+    <div v-if="filteredOutputs.length" class="flex flex-col ml-auto">
       <div
-        v-for="(output, index) in nodeInfo.outputs"
+        v-for="(output, index) in filteredOutputs"
         :key="`output-${index}`"
         class="text-xs text-gray-300 text-right"
       >
@@ -47,6 +47,23 @@ interface NodeSlotsProps {
 const props = defineProps<NodeSlotsProps>()
 
 const nodeInfo = computed(() => props.nodeData || props.node)
+
+// Filter out input slots that have corresponding widgets
+const filteredInputs = computed(() => {
+  if (!nodeInfo.value?.inputs) return []
+
+  return nodeInfo.value.inputs.filter((input) => {
+    // Check if this slot has a widget property (indicating it has a corresponding widget)
+    if (isSlotObject(input) && 'widget' in input && input.widget) {
+      // This slot has a widget, so we should not display it separately
+      return false
+    }
+    return true
+  })
+})
+
+// Outputs don't have widgets, so we don't need to filter them
+const filteredOutputs = computed(() => nodeInfo.value?.outputs || [])
 
 const getInputName = (input: unknown, index: number): string => {
   if (isSlotObject(input) && input.name) {
