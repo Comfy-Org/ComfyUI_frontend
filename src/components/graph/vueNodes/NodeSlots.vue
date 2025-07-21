@@ -11,7 +11,7 @@
         :key="`input-${index}`"
         class="text-xs text-gray-300"
       >
-        {{ getInputName(input, index) }} ({{ getInputType(input) }})
+        {{ getInputName(input, index) }}
       </div>
     </div>
 
@@ -22,7 +22,7 @@
         :key="`output-${index}`"
         class="text-xs text-gray-300"
       >
-        {{ getOutputName(output, index) }} ({{ getOutputType(output) }})
+        {{ getOutputName(output, index) }}
       </div>
     </div>
   </div>
@@ -58,12 +58,12 @@ const getInputName = (input: unknown, index: number): string => {
   return `Input ${index}`
 }
 
-const getInputType = (input: unknown): string => {
-  if (isSlotObject(input) && input.type) {
-    return input.type
-  }
-  return 'any'
-}
+// const getInputType = (input: unknown): string => {
+//   if (isSlotObject(input) && input.type) {
+//     return input.type
+//   }
+//   return 'any'
+// }
 
 const getOutputName = (output: unknown, index: number): string => {
   if (isSlotObject(output) && output.name) {
@@ -72,12 +72,12 @@ const getOutputName = (output: unknown, index: number): string => {
   return `Output ${index}`
 }
 
-const getOutputType = (output: unknown): string => {
-  if (isSlotObject(output) && output.type) {
-    return output.type
-  }
-  return 'any'
-}
+// const getOutputType = (output: unknown): string => {
+//   if (isSlotObject(output) && output.type) {
+//     return output.type
+//   }
+//   return 'any'
+// }
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
