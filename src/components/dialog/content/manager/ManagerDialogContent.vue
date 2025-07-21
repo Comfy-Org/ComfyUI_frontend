@@ -483,9 +483,7 @@ whenever(selectedNodePack, async () => {
 
   // For installed nodes only, fetch version-specific information
   if (comfyManagerStore.isPackInstalled(pack.id)) {
-    const installedPack = Object.values(comfyManagerStore.installedPacks).find(
-      (installed) => (installed.cnr_id || installed.aux_id) === pack.id
-    )
+    const installedPack = comfyManagerStore.getInstalledPackByCnrId(pack.id)
     if (installedPack?.ver) {
       // Fetch information for the installed version
       data = await registryService.getPackByVersion(pack.id, installedPack.ver)
