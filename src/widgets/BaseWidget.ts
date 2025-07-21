@@ -1,7 +1,6 @@
 import type { Point } from "@/interfaces"
 import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
 import type { CanvasPointerEvent } from "@/types/events"
-import type { NodeLike } from "@/types/NodeLike"
 import type { IBaseWidget } from "@/types/widgets"
 
 import { drawTextInArea } from "@/draw"
@@ -56,12 +55,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget> impl
   get node() {
     return this.#node
   }
-
-  /**
-   * Reference to the subgraph container node when this widget is promoted from a subgraph.
-   * This allows the widget to know which SubgraphNode it belongs to in the parent graph.
-   */
-  parentSubgraphNode?: NodeLike
 
   linkedWidgets?: IBaseWidget[]
   name: string

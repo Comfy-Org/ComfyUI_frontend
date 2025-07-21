@@ -190,9 +190,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Use the first matching widget
     const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(this)
 
-    // Set parentSubgraphNode for all promoted widgets to track their origin
-    promotedWidget.parentSubgraphNode = this
-
     Object.assign(promotedWidget, {
       get name() {
         return subgraphInput.name
@@ -332,7 +329,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onRemoved(): void {
     // Clean up all promoted widgets
     for (const widget of this.widgets) {
-      widget.parentSubgraphNode = undefined
       this.subgraph.events.dispatch("widget-demoted", { widget, subgraphNode: this })
     }
 

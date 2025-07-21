@@ -55,10 +55,9 @@ describe("SubgraphWidgetPromotion", () => {
       expect(subgraphNode.widgets[0].name).toBe("value") // Uses subgraph input name
       expect(subgraphNode.widgets[0].type).toBe("number")
       expect(subgraphNode.widgets[0].value).toBe(42)
-      expect(subgraphNode.widgets[0].parentSubgraphNode).toBe(subgraphNode)
     })
 
-    it("should set parentSubgraphNode for all promoted widget types", () => {
+    it("should promote all widget types", () => {
       const subgraph = createTestSubgraph({
         inputs: [
           { name: "numberInput", type: "number" },
@@ -83,12 +82,8 @@ describe("SubgraphWidgetPromotion", () => {
 
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      // All widgets should be promoted with parentSubgraphNode set
+      // All widgets should be promoted
       expect(subgraphNode.widgets).toHaveLength(3)
-
-      for (const widget of subgraphNode.widgets) {
-        expect(widget.parentSubgraphNode).toBe(subgraphNode)
-      }
 
       // Check specific widget values
       expect(subgraphNode.widgets[0].value).toBe(100)
@@ -113,7 +108,6 @@ describe("SubgraphWidgetPromotion", () => {
       const promotedEvents = eventCapture.getEventsByType("widget-promoted")
       expect(promotedEvents).toHaveLength(1)
       expect(promotedEvents[0].detail.widget).toBeDefined()
-      expect(promotedEvents[0].detail.widget.parentSubgraphNode).toBe(subgraphNode)
       expect(promotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
 
       eventCapture.cleanup()
@@ -192,56 +186,31 @@ describe("SubgraphWidgetPromotion", () => {
       expect(subgraphNode.widgets).toHaveLength(2)
       expect(subgraphNode.widgets[0].name).toBe("input1")
       expect(subgraphNode.widgets[0].value).toBe(10)
-      expect(subgraphNode.widgets[0].parentSubgraphNode).toBe(subgraphNode)
 
       expect(subgraphNode.widgets[1].name).toBe("input2")
       expect(subgraphNode.widgets[1].value).toBe("hello")
-      expect(subgraphNode.widgets[1].parentSubgraphNode).toBe(subgraphNode)
     })
 
-    it("should clean up parentSubgraphNode on node removal", () => {
+    it("should fire widget-demoted events when node is removed", () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: "input", type: "number" }],
       })
 
       const { node } = createNodeWithWidget("Test Node")
       const subgraphNode = setupPromotedWidget(subgraph, node)
-      const promotedWidget = subgraphNode.widgets[0]
 
-      expect(promotedWidget.parentSubgraphNode).toBe(subgraphNode)
+      expect(subgraphNode.widgets).toHaveLength(1)
 
       const eventCapture = createEventCapture(subgraph.events, ["widget-demoted"])
 
       // Remove the subgraph node
       subgraphNode.onRemoved()
 
-      // parentSubgraphNode should be cleared
-      expect(promotedWidget.parentSubgraphNode).toBeUndefined()
-
       // Should fire demoted events for all widgets
       const demotedEvents = eventCapture.getEventsByType("widget-demoted")
       expect(demotedEvents).toHaveLength(1)
 
       eventCapture.cleanup()
-    })
-
-    it("should handle DOM widgets with parentSubgraphNode", () => {
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: "domInput", type: "custom" }],
-      })
-
-      const { node, widget } = createNodeWithWidget("DOM Node", "custom", "custom value", "custom")
-
-      // Make it a DOM widget
-      widget.element = document.createElement("div")
-
-      const subgraphNode = setupPromotedWidget(subgraph, node)
-
-      // DOM widget should be promoted with parentSubgraphNode
-      expect(subgraphNode.widgets).toHaveLength(1)
-      const promotedWidget = subgraphNode.widgets[0]
-      expect(promotedWidget.parentSubgraphNode).toBe(subgraphNode)
-      expect(promotedWidget.name).toBe("domInput")
     })
 
     it("should not promote widget if input is not connected", () => {
