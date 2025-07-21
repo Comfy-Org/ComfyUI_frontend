@@ -129,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+// No need to import useStorage anymore - it's in the composable
 import Button from 'primevue/button'
 import {
   type CSSProperties,
@@ -142,10 +142,10 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
+import { useConflictBannerState } from '@/composables/useConflictBannerState'
 import { useDialogService } from '@/services/dialogService'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -193,7 +193,6 @@ const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
 const dialogService = useDialogService()
-const conflictDetectionStore = useConflictDetectionStore()
 
 // Emits
 const emit = defineEmits<{
@@ -216,17 +215,10 @@ const moreMenuItem = computed(() =>
   menuItems.value.find((item) => item.key === 'more')
 )
 
-// Reactive state for conflict seen status using useStorage for automatic sync
-const hasSeenConflicts = useStorage('comfy_help_center_conflict_seen', false)
-
-// Check if should show red dot on Manager Extension
-const shouldShowManagerRedDot = computed(() => {
-  // Check if there are conflicts
-  if (!conflictDetectionStore.hasConflicts) return false
-
-  // Check if user has already seen the conflicts
-  return !hasSeenConflicts.value
-})
+// Use conflict banner state from composable
+const conflictBannerState = useConflictBannerState()
+const { shouldShowConflictRedDot: shouldShowManagerRedDot } =
+  conflictBannerState
 
 const menuItems = computed<MenuItem[]>(() => {
   const moreItems: MenuItem[] = [

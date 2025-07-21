@@ -28,7 +28,7 @@
         <div class="px-6 flex flex-col h-full">
           <!-- Conflict Warning Banner -->
           <div
-            v-if="hasConflicts && !isConflictBannerDismissed"
+            v-if="shouldShowManagerBanner"
             class="bg-yellow-600 bg-opacity-20 border border-yellow-400 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6"
           >
             <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage, whenever } from '@vueuse/core'
+import { whenever } from '@vueuse/core'
 import { merge } from 'lodash'
 import Button from 'primevue/button'
 import {
@@ -143,11 +143,11 @@ import { useManagerStatePersistence } from '@/composables/manager/useManagerStat
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
+import { useConflictBannerState } from '@/composables/useConflictBannerState'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
@@ -160,7 +160,7 @@ const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
 const registryService = useComfyRegistryService()
-const conflictDetectionStore = useConflictDetectionStore()
+const conflictBannerState = useConflictBannerState()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
 
@@ -177,18 +177,9 @@ const {
   toggle: toggleSideNav
 } = useResponsiveCollapse()
 
-// Conflict banner state using useStorage for reactivity
-const CONFLICT_BANNER_DISMISSED_KEY = 'comfy_manager_conflict_banner_dismissed'
-const isConflictBannerDismissed = useStorage(
-  CONFLICT_BANNER_DISMISSED_KEY,
-  false
-)
-
-// Help center conflict seen state
-const hasSeenConflicts = useStorage('comfy_help_center_conflict_seen', false)
-
-// Computed properties for conflicts
-const hasConflicts = computed(() => conflictDetectionStore.hasConflicts)
+// Use conflict banner state from composable
+const { hasConflicts, shouldShowManagerBanner, markConflictsAsSeen } =
+  conflictBannerState
 
 const tabs = ref<TabItem[]>([
   { id: ManagerTab.All, label: t('g.all'), icon: 'pi-list' },
@@ -578,14 +569,7 @@ onBeforeUnmount(() => {
 
   // ALWAYS mark conflicts as seen when dialog closes (if there are any conflicts)
   // User has now seen the Manager Dialog with potential yellow banner
-  if (hasConflicts.value) {
-    hasSeenConflicts.value = true
-    isConflictBannerDismissed.value = true
-
-    // Also force localStorage directly as backup
-    localStorage.setItem('comfy_help_center_conflict_seen', 'true')
-    localStorage.setItem('comfy_manager_conflict_banner_dismissed', 'true')
-  }
+  markConflictsAsSeen()
 })
 
 onUnmounted(() => {

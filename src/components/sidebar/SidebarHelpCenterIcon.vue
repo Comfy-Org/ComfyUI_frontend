@@ -58,15 +58,14 @@
 </template>
 
 <script setup lang="ts">
-import { useInterval, useStorage } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
+import { useConflictBannerState } from '@/composables/useConflictBannerState'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useDialogService } from '@/services/dialogService'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -75,33 +74,12 @@ import SidebarIcon from './SidebarIcon.vue'
 const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
 const conflictDetection = useConflictDetection()
-const conflictDetectionStore = useConflictDetectionStore()
+const conflictBannerState = useConflictBannerState()
 const dialogService = useDialogService()
 const isHelpCenterVisible = ref(false)
 
-// Reactive state for conflict seen status using useStorage for automatic sync
-const hasSeenConflicts = useStorage('comfy_help_center_conflict_seen', false)
-
-// Force check localStorage changes periodically as backup
-const forceCheckStorage = () => {
-  const currentValue =
-    localStorage.getItem('comfy_help_center_conflict_seen') === 'true'
-  if (hasSeenConflicts.value !== currentValue) {
-    hasSeenConflicts.value = currentValue
-  }
-}
-
-// Check every 500ms for localStorage changes using VueUse
-useInterval(forceCheckStorage, 500)
-
-// Check if should show red dot for conflicts
-const shouldShowConflictRedDot = computed(() => {
-  // Check if there are conflicts
-  if (!conflictDetectionStore.hasConflicts) return false
-
-  // Check if user has already seen the conflicts
-  return !hasSeenConflicts.value
-})
+// Use conflict banner state from composable
+const { shouldShowConflictRedDot } = conflictBannerState
 
 // Use either release red dot or conflict red dot
 const shouldShowRedDot = computed(() => {
