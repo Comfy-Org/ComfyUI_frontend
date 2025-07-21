@@ -549,33 +549,7 @@ whenever(selectedNodePack, async () => {
 let gridContainer: HTMLElement | null = null
 onMounted(() => {
   gridContainer = document.getElementById('results-grid')
-
-  // Listen for when this component will be destroyed
-  window.addEventListener('beforeunload', handleDialogClose)
-
-  // Also try watching for when the dialog key changes
-  const interval = setInterval(() => {
-    const dialogOpen = document.querySelector('[data-pc-name="dialog"]')
-    if (!dialogOpen) {
-      handleDialogClose()
-      clearInterval(interval)
-    }
-  }, 1000)
-
-  // Store interval reference for cleanup
-  ;(window as any).__managerDialogInterval = interval
 })
-
-const handleDialogClose = () => {
-  if (hasConflicts.value) {
-    localStorage.setItem('comfy_help_center_conflict_seen', 'true')
-    localStorage.setItem('comfy_manager_conflict_banner_dismissed', 'true')
-
-    // Also try to update refs
-    hasSeenConflicts.value = true
-    isConflictBannerDismissed.value = true
-  }
-}
 watch([searchQuery, selectedTab], () => {
   gridContainer ??= document.getElementById('results-grid')
   if (gridContainer) {
@@ -606,16 +580,5 @@ onBeforeUnmount(() => {
 
 onUnmounted(() => {
   getPackById.cancel()
-
-  // Cleanup
-  window.removeEventListener('beforeunload', handleDialogClose)
-  const interval = (window as any).__managerDialogInterval
-  if (interval) {
-    clearInterval(interval)
-    delete (window as any).__managerDialogInterval
-  }
-
-  // Final attempt to set localStorage
-  handleDialogClose()
 })
 </script>
