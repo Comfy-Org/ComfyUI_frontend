@@ -499,12 +499,22 @@ whenever(selectedNodePack, async () => {
     if (installedPack?.ver) {
       // Fetch information for the installed version
       data = await registryService.getPackByVersion(pack.id, installedPack.ver)
+
+      // Race condition check: ensure selected pack hasn't changed during async operation
+      if (selectedNodePack.value?.id !== pack.id) {
+        return
+      }
     }
   }
 
   // For uninstalled nodes or if version-specific data fetch failed, use default API
   if (!data) {
     data = await getPackById.call(pack.id)
+  }
+
+  // Race condition check: ensure selected pack hasn't changed during async operations
+  if (selectedNodePack.value?.id !== pack.id) {
+    return
   }
 
   // If selected node hasn't changed since request, merge registry & Algolia data
