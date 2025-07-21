@@ -1,4 +1,5 @@
-import { computed, ref } from 'vue'
+import { useStorage } from '@vueuse/core'
+import { computed } from 'vue'
 
 /**
  * LocalStorage keys for conflict acknowledgment tracking
@@ -40,84 +41,35 @@ interface ConflictAcknowledgmentState {
  * - Detecting ComfyUI version changes to reset acknowledgment state
  */
 export function useConflictAcknowledgment() {
-  // Reactive state
-  const state = ref<ConflictAcknowledgmentState>(loadAcknowledgmentState())
+  // Reactive state using VueUse's useStorage for automatic persistence
+  const modalDismissed = useStorage(
+    STORAGE_KEYS.CONFLICT_MODAL_DISMISSED,
+    false
+  )
+  const redDotDismissed = useStorage(
+    STORAGE_KEYS.CONFLICT_RED_DOT_DISMISSED,
+    false
+  )
+  const acknowledgedConflicts = useStorage<AcknowledgedConflict[]>(
+    STORAGE_KEYS.ACKNOWLEDGED_CONFLICTS,
+    []
+  )
+  const lastComfyUIVersion = useStorage(STORAGE_KEYS.LAST_COMFYUI_VERSION, '')
 
-  /**
-   * Load acknowledgment state from localStorage
-   */
-  function loadAcknowledgmentState(): ConflictAcknowledgmentState {
-    try {
-      const modalDismissed =
-        localStorage.getItem(STORAGE_KEYS.CONFLICT_MODAL_DISMISSED) === 'true'
-      const redDotDismissed =
-        localStorage.getItem(STORAGE_KEYS.CONFLICT_RED_DOT_DISMISSED) === 'true'
-      const acknowledgedConflictsData = localStorage.getItem(
-        STORAGE_KEYS.ACKNOWLEDGED_CONFLICTS
-      )
-      const lastComfyUIVersion =
-        localStorage.getItem(STORAGE_KEYS.LAST_COMFYUI_VERSION) || ''
-
-      let acknowledgedConflicts: AcknowledgedConflict[] = []
-      if (acknowledgedConflictsData) {
-        acknowledgedConflicts = JSON.parse(acknowledgedConflictsData)
-      }
-
-      return {
-        modal_dismissed: modalDismissed,
-        red_dot_dismissed: redDotDismissed,
-        acknowledged_conflicts: acknowledgedConflicts,
-        last_comfyui_version: lastComfyUIVersion
-      }
-    } catch (error) {
-      console.warn(
-        '[ConflictAcknowledgment] Failed to load acknowledgment state from localStorage:',
-        error
-      )
-      return {
-        modal_dismissed: false,
-        red_dot_dismissed: false,
-        acknowledged_conflicts: [],
-        last_comfyui_version: ''
-      }
-    }
-  }
-
-  /**
-   * Save acknowledgment state to localStorage
-   */
-  function saveAcknowledgmentState(): void {
-    try {
-      localStorage.setItem(
-        STORAGE_KEYS.CONFLICT_MODAL_DISMISSED,
-        String(state.value.modal_dismissed)
-      )
-      localStorage.setItem(
-        STORAGE_KEYS.CONFLICT_RED_DOT_DISMISSED,
-        String(state.value.red_dot_dismissed)
-      )
-      localStorage.setItem(
-        STORAGE_KEYS.ACKNOWLEDGED_CONFLICTS,
-        JSON.stringify(state.value.acknowledged_conflicts)
-      )
-      localStorage.setItem(
-        STORAGE_KEYS.LAST_COMFYUI_VERSION,
-        state.value.last_comfyui_version
-      )
-    } catch (error) {
-      console.warn(
-        '[ConflictAcknowledgment] Failed to save acknowledgment state to localStorage:',
-        error
-      )
-    }
-  }
+  // Create computed state object for backward compatibility
+  const state = computed<ConflictAcknowledgmentState>(() => ({
+    modal_dismissed: modalDismissed.value,
+    red_dot_dismissed: redDotDismissed.value,
+    acknowledged_conflicts: acknowledgedConflicts.value,
+    last_comfyui_version: lastComfyUIVersion.value
+  }))
 
   /**
    * Check if ComfyUI version has changed since last run
    * If version changed, reset acknowledgment state
    */
   function checkComfyUIVersionChange(currentVersion: string): boolean {
-    const lastVersion = state.value.last_comfyui_version
+    const lastVersion = lastComfyUIVersion.value
     const versionChanged = lastVersion !== '' && lastVersion !== currentVersion
 
     if (versionChanged) {
@@ -128,8 +80,7 @@ export function useConflictAcknowledgment() {
     }
 
     // Update last known version
-    state.value.last_comfyui_version = currentVersion
-    saveAcknowledgmentState()
+    lastComfyUIVersion.value = currentVersion
 
     return versionChanged
   }
@@ -138,18 +89,16 @@ export function useConflictAcknowledgment() {
    * Reset all acknowledgment state (called when ComfyUI version changes)
    */
   function resetAcknowledgmentState(): void {
-    state.value.modal_dismissed = false
-    state.value.red_dot_dismissed = false
-    state.value.acknowledged_conflicts = []
-    saveAcknowledgmentState()
+    modalDismissed.value = false
+    redDotDismissed.value = false
+    acknowledgedConflicts.value = []
   }
 
   /**
    * Mark conflict modal as dismissed
    */
   function dismissConflictModal(): void {
-    state.value.modal_dismissed = true
-    saveAcknowledgmentState()
+    modalDismissed.value = true
     console.log('[ConflictAcknowledgment] Conflict modal dismissed')
   }
 
@@ -157,8 +106,7 @@ export function useConflictAcknowledgment() {
    * Mark red dot notification as dismissed
    */
   function dismissRedDotNotification(): void {
-    state.value.red_dot_dismissed = true
-    saveAcknowledgmentState()
+    redDotDismissed.value = true
     console.log('[ConflictAcknowledgment] Red dot notification dismissed')
   }
 
@@ -178,15 +126,13 @@ export function useConflictAcknowledgment() {
     }
 
     // Remove any existing acknowledgment for the same package and conflict type
-    state.value.acknowledged_conflicts =
-      state.value.acknowledged_conflicts.filter(
-        (ack) =>
-          !(ack.package_id === packageId && ack.conflict_type === conflictType)
-      )
+    acknowledgedConflicts.value = acknowledgedConflicts.value.filter(
+      (ack) =>
+        !(ack.package_id === packageId && ack.conflict_type === conflictType)
+    )
 
     // Add new acknowledgment
-    state.value.acknowledged_conflicts.push(acknowledgment)
-    saveAcknowledgmentState()
+    acknowledgedConflicts.value.push(acknowledgment)
 
     console.log(
       `[ConflictAcknowledgment] Acknowledged conflict for ${packageId}:${conflictType}`
@@ -200,7 +146,7 @@ export function useConflictAcknowledgment() {
     packageId: string,
     conflictType: string
   ): boolean {
-    return state.value.acknowledged_conflicts.some(
+    return acknowledgedConflicts.value.some(
       (ack) =>
         ack.package_id === packageId && ack.conflict_type === conflictType
     )
@@ -213,12 +159,10 @@ export function useConflictAcknowledgment() {
     packageId: string,
     conflictType: string
   ): void {
-    state.value.acknowledged_conflicts =
-      state.value.acknowledged_conflicts.filter(
-        (ack) =>
-          !(ack.package_id === packageId && ack.conflict_type === conflictType)
-      )
-    saveAcknowledgmentState()
+    acknowledgedConflicts.value = acknowledgedConflicts.value.filter(
+      (ack) =>
+        !(ack.package_id === packageId && ack.conflict_type === conflictType)
+    )
     console.log(
       `[ConflictAcknowledgment] Removed acknowledgment for ${packageId}:${conflictType}`
     )
@@ -233,15 +177,15 @@ export function useConflictAcknowledgment() {
   }
 
   // Computed properties
-  const shouldShowConflictModal = computed(() => !state.value.modal_dismissed)
-  const shouldShowRedDot = computed(() => !state.value.red_dot_dismissed)
+  const shouldShowConflictModal = computed(() => !modalDismissed.value)
+  const shouldShowRedDot = computed(() => !redDotDismissed.value)
 
   /**
    * Get all acknowledged package IDs
    */
   const acknowledgedPackageIds = computed(() => {
     return Array.from(
-      new Set(state.value.acknowledged_conflicts.map((ack) => ack.package_id))
+      new Set(acknowledgedConflicts.value.map((ack) => ack.package_id))
     )
   })
 
@@ -250,17 +194,17 @@ export function useConflictAcknowledgment() {
    */
   const acknowledgmentStats = computed(() => {
     return {
-      total_acknowledged: state.value.acknowledged_conflicts.length,
+      total_acknowledged: acknowledgedConflicts.value.length,
       unique_packages: acknowledgedPackageIds.value.length,
-      modal_dismissed: state.value.modal_dismissed,
-      red_dot_dismissed: state.value.red_dot_dismissed,
-      last_comfyui_version: state.value.last_comfyui_version
+      modal_dismissed: modalDismissed.value,
+      red_dot_dismissed: redDotDismissed.value,
+      last_comfyui_version: lastComfyUIVersion.value
     }
   })
 
   return {
     // State
-    acknowledgmentState: computed(() => state.value),
+    acknowledgmentState: state,
     shouldShowConflictModal,
     shouldShowRedDot,
     acknowledgedPackageIds,
