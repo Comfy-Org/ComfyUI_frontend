@@ -251,13 +251,21 @@ const getVersionData = (version: string) => {
         latestVersionData?.supported_comfyui_frontend_version ??
         nodePack.supported_comfyui_frontend_version,
       supported_python_version:
-        (latestVersionData as any)?.supported_python_version ??
-        (nodePack as any).supported_python_version,
+        (latestVersionData && 'supported_python_version' in latestVersionData
+          ? latestVersionData.supported_python_version
+          : undefined) ??
+        ('supported_python_version' in nodePack
+          ? nodePack.supported_python_version
+          : undefined),
       is_banned:
-        (latestVersionData as any)?.is_banned ?? (nodePack as any).is_banned,
+        (latestVersionData && 'is_banned' in latestVersionData
+          ? latestVersionData.is_banned
+          : false) ?? ('is_banned' in nodePack ? nodePack.is_banned : false),
       has_registry_data:
-        (latestVersionData as any)?.has_registry_data ??
-        (nodePack as any).has_registry_data
+        (latestVersionData && 'has_registry_data' in latestVersionData
+          ? latestVersionData.has_registry_data
+          : false) ??
+        ('has_registry_data' in nodePack ? nodePack.has_registry_data : false)
     }
   }
 
@@ -271,7 +279,10 @@ const getVersionData = (version: string) => {
       supported_comfyui_version: nodePack.supported_comfyui_version, // Use latest known requirement
       supported_comfyui_frontend_version:
         nodePack.supported_comfyui_frontend_version, // Use latest known requirement
-      supported_python_version: (nodePack as any).supported_python_version,
+      supported_python_version:
+        'supported_python_version' in nodePack
+          ? nodePack.supported_python_version
+          : undefined,
       is_banned: false, // Nightly versions from repositories are typically not banned
       has_registry_data: false // Nightly doesn't come from registry
     }
@@ -286,9 +297,15 @@ const getVersionData = (version: string) => {
       supported_comfyui_version: versionData.supported_comfyui_version,
       supported_comfyui_frontend_version:
         versionData.supported_comfyui_frontend_version,
-      supported_python_version: (versionData as any).supported_python_version,
-      is_banned: (versionData as any).is_banned,
-      has_registry_data: (versionData as any).has_registry_data
+      supported_python_version:
+        'supported_python_version' in versionData
+          ? versionData.supported_python_version
+          : undefined,
+      is_banned: 'is_banned' in versionData ? versionData.is_banned : false,
+      has_registry_data:
+        'has_registry_data' in versionData
+          ? versionData.has_registry_data
+          : false
     }
   }
 
@@ -299,9 +316,13 @@ const getVersionData = (version: string) => {
     supported_comfyui_version: nodePack.supported_comfyui_version,
     supported_comfyui_frontend_version:
       nodePack.supported_comfyui_frontend_version,
-    supported_python_version: (nodePack as any).supported_python_version,
-    is_banned: (nodePack as any).is_banned,
-    has_registry_data: (nodePack as any).has_registry_data
+    supported_python_version:
+      'supported_python_version' in nodePack
+        ? nodePack.supported_python_version
+        : undefined,
+    is_banned: 'is_banned' in nodePack ? nodePack.is_banned : false,
+    has_registry_data:
+      'has_registry_data' in nodePack ? nodePack.has_registry_data : false
   }
 }
 
