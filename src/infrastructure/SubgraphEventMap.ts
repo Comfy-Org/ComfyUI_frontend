@@ -1,6 +1,8 @@
 import type { LGraphEventMap } from "./LGraphEventMap"
 import type { SubgraphInput } from "@/subgraph/SubgraphInput"
+import type { SubgraphNode } from "@/subgraph/SubgraphNode"
 import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
+import type { IBaseWidget } from "@/types/widgets"
 
 export interface SubgraphEventMap extends LGraphEventMap {
   "adding-input": {
@@ -39,5 +41,14 @@ export interface SubgraphEventMap extends LGraphEventMap {
     index: number
     oldName: string
     newName: string
+  }
+
+  "widget-promoted": {
+    widget: IBaseWidget
+    subgraphNode: SubgraphNode
+  }
+  "widget-unpromoted": {
+    widget: IBaseWidget
+    subgraphNode: SubgraphNode
   }
 }

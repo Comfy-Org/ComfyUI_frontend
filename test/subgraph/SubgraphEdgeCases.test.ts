@@ -67,9 +67,9 @@ describe("SubgraphEdgeCases - Recursion Detection", () => {
   it("should respect MAX_NESTED_SUBGRAPHS constant", () => {
     // Verify the constant exists and is a reasonable positive number
     expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBeDefined()
-    expect(typeof Subgraph.MAX_NESTED_SUBGRAPHS).toBe('number')
+    expect(typeof Subgraph.MAX_NESTED_SUBGRAPHS).toBe("number")
     expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBeGreaterThan(0)
-    expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBeLessThanOrEqual(10000) // Reasonable upper bound
+    expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBeLessThanOrEqual(10_000) // Reasonable upper bound
 
     // Note: Currently not enforced in implementation
     // This test documents the intended behavior
@@ -313,7 +313,7 @@ describe("SubgraphEdgeCases - Performance and Scale", () => {
     const flattened = subgraphNode.getInnerNodes(executableNodes)
 
     expect(flattened).toHaveLength(50)
-    
+
     // Performance is acceptable for 50 nodes (typically < 1ms)
   })
 

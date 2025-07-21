@@ -201,6 +201,12 @@ export interface IBaseWidget<
 
   tooltip?: string
 
+  /**
+   * Reference to the subgraph container node when this widget is promoted from a subgraph.
+   * This allows the widget to know which SubgraphNode it belongs to in the parent graph.
+   */
+  parentSubgraphNode?: LGraphNode
+
   // TODO: Confirm this format
   callback?(
     value: any,
