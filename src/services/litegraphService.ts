@@ -90,7 +90,7 @@ export const useLitegraphService = () => {
         super(app.graph, subgraph, instanceData)
 
         // Set up event listener for promoted widget registration
-        subgraph.events?.addEventListener('widget-promoted', (event) => {
+        subgraph.events.addEventListener('widget-promoted', (event) => {
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
@@ -110,7 +110,7 @@ export const useLitegraphService = () => {
         })
 
         // Set up event listener for promoted widget removal
-        subgraph.events?.addEventListener('widget-unpromoted', (event) => {
+        subgraph.events.addEventListener('widget-unpromoted', (event) => {
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
