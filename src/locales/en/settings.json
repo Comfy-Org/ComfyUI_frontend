@@ -163,10 +163,6 @@
     "name": "Use new mask editor",
     "tooltip": "Switch to the new mask editor interface"
   },
-  "Comfy_Minimap_RefreshDelay": {
-    "name": "Minimap refresh delay (ms)",
-    "tooltip": "The smaller the value, the smoother it will be, but it will consume more performance. After modification, you need to refresh the page for it to take effect."
-  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Automatically load all model folders",
     "tooltip": "If true, all folders will load as soon as you open the model library (this may cause delays while it loads). If false, root level model folders will only load once you click on them."
