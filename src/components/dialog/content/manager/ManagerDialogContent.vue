@@ -178,8 +178,7 @@ const {
 } = useResponsiveCollapse()
 
 // Use conflict banner state from composable
-const { hasConflicts, shouldShowManagerBanner, markConflictsAsSeen } =
-  conflictBannerState
+const { shouldShowManagerBanner, markConflictsAsSeen } = conflictBannerState
 
 const tabs = ref<TabItem[]>([
   { id: ManagerTab.All, label: t('g.all'), icon: 'pi-list' },

@@ -1,4 +1,4 @@
-import { useInterval, useStorage } from '@vueuse/core'
+import { useIntervalFn, useStorage } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
@@ -73,7 +73,7 @@ export function useConflictBannerState() {
   }
 
   // Set up periodic storage checking (500ms interval)
-  useInterval(forceCheckStorage, 500)
+  useIntervalFn(forceCheckStorage, 500)
 
   return {
     // State

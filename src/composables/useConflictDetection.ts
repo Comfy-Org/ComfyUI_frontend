@@ -1,3 +1,4 @@
+import { uniqBy } from 'lodash'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
@@ -954,19 +955,13 @@ function mergeConflictsByPackageName(
       // Package already exists, merge conflicts
       const existing = mergedMap.get(packageName)!
 
-      // Combine all conflicts, avoiding duplicates
+      // Combine all conflicts, avoiding duplicates using lodash uniqBy for O(n) performance
       const allConflicts = [...existing.conflicts, ...conflict.conflicts]
-      const uniqueConflicts = allConflicts.filter((conflict, index, array) => {
-        // Check if this conflict type already exists
-        return (
-          array.findIndex(
-            (c) =>
-              c.type === conflict.type &&
-              c.current_value === conflict.current_value &&
-              c.required_value === conflict.required_value
-          ) === index
-        )
-      })
+      const uniqueConflicts = uniqBy(
+        allConflicts,
+        (conflict) =>
+          `${conflict.type}|${conflict.current_value}|${conflict.required_value}`
+      )
 
       // Update the existing entry
       mergedMap.set(packageName, {
