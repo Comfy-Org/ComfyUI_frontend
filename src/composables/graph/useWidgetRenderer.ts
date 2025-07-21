@@ -48,6 +48,7 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   galleria: WidgetType.GALLERIA,
   GALLERIA: WidgetType.GALLERIA,
   file: WidgetType.FILEUPLOAD,
+  fileupload: WidgetType.FILEUPLOAD,
   FILEUPLOAD: WidgetType.FILEUPLOAD,
 
   // Button widget
