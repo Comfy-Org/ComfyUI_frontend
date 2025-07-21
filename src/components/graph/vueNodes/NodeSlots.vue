@@ -2,10 +2,8 @@
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
     ⚠️ Node Slots Error
   </div>
-  <div v-else class="lg-node-slots">
-    <!-- For now, render slots info as text to see what's there -->
-    <div v-if="nodeInfo?.inputs?.length" class="mb-2">
-      <div class="text-xs text-gray-400 mb-1">Inputs:</div>
+  <div v-else class="lg-node-slots flex justify-between">
+    <div v-if="nodeInfo?.inputs?.length" class="flex flex-col">
       <div
         v-for="(input, index) in nodeInfo.inputs"
         :key="`input-${index}`"
@@ -15,12 +13,11 @@
       </div>
     </div>
 
-    <div v-if="nodeInfo?.outputs?.length">
-      <div class="text-xs text-gray-400 mb-1">Outputs:</div>
+    <div v-if="nodeInfo?.outputs?.length" class="flex flex-col ml-auto">
       <div
         v-for="(output, index) in nodeInfo.outputs"
         :key="`output-${index}`"
-        class="text-xs text-gray-300"
+        class="text-xs text-gray-300 text-right"
       >
         {{ getOutputName(output, index) }}
       </div>
