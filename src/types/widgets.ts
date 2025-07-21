@@ -1,6 +1,7 @@
 import type { CanvasColour, Point, RequiredProps, Size } from "../interfaces"
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from "../litegraph"
 import type { CanvasPointerEvent } from "./events"
+import type { NodeLike } from "./NodeLike"
 
 export interface IWidgetOptions<TValues = unknown[]> {
   on?: string
@@ -204,8 +205,10 @@ export interface IBaseWidget<
   /**
    * Reference to the subgraph container node when this widget is promoted from a subgraph.
    * This allows the widget to know which SubgraphNode it belongs to in the parent graph.
+   * @remarks This property is a runtime reference and should not be serialized.
+   * It will be undefined after deserialization and needs to be reconstructed.
    */
-  parentSubgraphNode?: LGraphNode
+  parentSubgraphNode?: NodeLike
 
   // TODO: Confirm this format
   callback?(
