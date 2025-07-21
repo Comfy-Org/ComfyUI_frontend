@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { useInterval, useStorage } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
@@ -91,8 +91,8 @@ const forceCheckStorage = () => {
   }
 }
 
-// Check every 500ms for localStorage changes
-setInterval(forceCheckStorage, 500)
+// Check every 500ms for localStorage changes using VueUse
+useInterval(forceCheckStorage, 500)
 
 // Check if should show red dot for conflicts
 const shouldShowConflictRedDot = computed(() => {
