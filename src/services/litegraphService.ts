@@ -109,7 +109,7 @@ export const useLitegraphService = () => {
         })
 
         // Set up event listener for promoted widget removal
-        subgraph.events.addEventListener('widget-unpromoted', (event) => {
+        subgraph.events.addEventListener('widget-demoted', (event) => {
           const { widget } = event.detail
           // Only handle DOM widgets
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
