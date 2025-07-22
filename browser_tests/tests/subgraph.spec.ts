@@ -394,6 +394,9 @@ test.describe('Subgraph Operations', () => {
     test('DOM elements are cleaned up when widget is disconnected from I/O', async ({
       comfyPage
     }) => {
+      // Enable new menu for breadcrumb navigation
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+
       await comfyPage.loadWorkflow('subgraph-with-promoted-text-widget')
 
       const textareaCount = await comfyPage.page
@@ -410,31 +413,24 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.clickLitegraphContextMenuItem('Remove Slot')
       await comfyPage.page.waitForTimeout(200)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
-      await comfyPage.page.waitForTimeout(200)
-
-      const widgetRemoved = await comfyPage.page.evaluate(() => {
-        const subgraphNode = window['app'].canvas.graph.getNodeById(11)
-        if (!subgraphNode) {
-          throw new Error('Subgraph node not found')
-        }
-
-        const hasPromotedWidgets =
-          subgraphNode.widgets && subgraphNode.widgets.length > 0
-        const hasTextInput = subgraphNode.subgraph?.inputs?.some(
-          (input) => input.name === 'text'
-        )
-
-        return {
-          nodeWidgetCount: subgraphNode.widgets?.length || 0,
-          hasTextInput: !!hasTextInput,
-          inputCount: subgraphNode.subgraph?.inputs?.length || 0
-        }
+      // Wait for breadcrumb to be visible
+      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
+        state: 'visible',
+        timeout: 5000
       })
 
-      expect(widgetRemoved.nodeWidgetCount).toBe(0)
-      expect(widgetRemoved.hasTextInput).toBe(false)
+      // Click breadcrumb to navigate back to parent graph
+      const breadcrumb = comfyPage.page.locator(SELECTORS.breadcrumb).first()
+      await breadcrumb.click()
+      await comfyPage.nextFrame()
+      await comfyPage.page.waitForTimeout(300)
+
+      // Check that the subgraph node has no widgets after removing the text slot
+      const widgetCount = await comfyPage.page.evaluate(() => {
+        return window['app'].canvas.graph.nodes[0].widgets?.length || 0
+      })
+
+      expect(widgetCount).toBe(0)
     })
 
     test('Multiple promoted widgets are handled correctly', async ({

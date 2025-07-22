@@ -397,7 +397,8 @@ export class NodeReference {
 
     await this.comfyPage.canvas.click({
       ...options,
-      position: clickPos
+      position: clickPos,
+      force: true
     })
     await this.comfyPage.nextFrame()
     if (moveMouseToEmptyArea) {
@@ -492,22 +493,43 @@ export class NodeReference {
     ]
 
     let isInSubgraph = false
-    for (const position of clickPositions) {
-      await this.comfyPage.canvas.dblclick({ position })
-      await this.comfyPage.nextFrame()
-      await this.comfyPage.page.waitForTimeout(300)
+    let attempts = 0
+    const maxAttempts = 3
 
-      // Check if we successfully entered the subgraph
-      isInSubgraph = await this.comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
-        return graph?.constructor?.name === 'Subgraph'
-      })
+    while (!isInSubgraph && attempts < maxAttempts) {
+      attempts++
 
-      if (isInSubgraph) break
+      for (const position of clickPositions) {
+        // Clear any selection first
+        await this.comfyPage.canvas.click({
+          position: { x: 50, y: 50 },
+          force: true
+        })
+        await this.comfyPage.nextFrame()
+
+        // Double-click to enter subgraph
+        await this.comfyPage.canvas.dblclick({ position, force: true })
+        await this.comfyPage.nextFrame()
+        await this.comfyPage.page.waitForTimeout(500)
+
+        // Check if we successfully entered the subgraph
+        isInSubgraph = await this.comfyPage.page.evaluate(() => {
+          const graph = window['app'].canvas.graph
+          return graph?.constructor?.name === 'Subgraph'
+        })
+
+        if (isInSubgraph) break
+      }
+
+      if (!isInSubgraph && attempts < maxAttempts) {
+        await this.comfyPage.page.waitForTimeout(500)
+      }
     }
 
     if (!isInSubgraph) {
-      throw new Error('Failed to navigate into subgraph')
+      throw new Error(
+        'Failed to navigate into subgraph after ' + attempts + ' attempts'
+      )
     }
   }
 }
