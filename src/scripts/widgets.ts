@@ -6,12 +6,22 @@ import type {
 } from '@comfyorg/litegraph/dist/types/widgets'
 
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
+import { useChartWidget } from '@/composables/widgets/useChartWidget'
+import { useColorWidget } from '@/composables/widgets/useColorWidget'
 import { useComboWidget } from '@/composables/widgets/useComboWidget'
+import { useFileUploadWidget } from '@/composables/widgets/useFileUploadWidget'
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
+import { useGalleriaWidget } from '@/composables/widgets/useGalleriaWidget'
+import { useImageCompareWidget } from '@/composables/widgets/useImageCompareWidget'
 import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
+import { useImageWidget } from '@/composables/widgets/useImageWidget'
 import { useIntWidget } from '@/composables/widgets/useIntWidget'
 import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
+import { useMultiSelectWidget } from '@/composables/widgets/useMultiSelectWidget'
+import { useSelectButtonWidget } from '@/composables/widgets/useSelectButtonWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
+import { useTextareaWidget } from '@/composables/widgets/useTextareaWidget'
+import { useTreeSelectWidget } from '@/composables/widgets/useTreeSelectWidget'
 import { t } from '@/i18n'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -289,5 +299,15 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
-  IMAGEUPLOAD: useImageUploadWidget()
+  IMAGEUPLOAD: useImageUploadWidget(),
+  FILEUPLOAD: transformWidgetConstructorV2ToV1(useFileUploadWidget()),
+  COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
+  IMAGE: transformWidgetConstructorV2ToV1(useImageWidget()),
+  IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
+  TREESELECT: transformWidgetConstructorV2ToV1(useTreeSelectWidget()),
+  MULTISELECT: transformWidgetConstructorV2ToV1(useMultiSelectWidget()),
+  CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
+  GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
+  SELECTBUTTON: transformWidgetConstructorV2ToV1(useSelectButtonWidget()),
+  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget())
 }
