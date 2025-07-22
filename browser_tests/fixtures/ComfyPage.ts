@@ -21,7 +21,7 @@ import {
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
-import { NodeReference } from './utils/litegraphUtils'
+import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
 import TaskHistory from './utils/taskHistory'
 
 dotenv.config()
@@ -776,9 +776,522 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * Clicks on a litegraph context menu item (uses .litemenu-entry selector).
+   * Use this for canvas/node context menus, not PrimeVue menus.
+   */
+  async clickLitegraphContextMenuItem(name: string): Promise<void> {
+    await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
+    await this.nextFrame()
+  }
+
+  /**
+   * Right-clicks on a subgraph input slot to open the context menu.
+   * Must be called when inside a subgraph.
+   *
+   * This method uses the actual slot positions from the subgraph.inputs array,
+   * which contain the correct coordinates for each input slot. These positions
+   * are different from the visual node positions and are specifically where
+   * the slots are rendered on the input node.
+   *
+   * @param inputName Optional name of the specific input slot to target (e.g., 'text').
+   *                  If not provided, tries all available input slots until one works.
+   * @returns Promise that resolves when the context menu appears
+   */
+  async rightClickSubgraphInputSlot(inputName?: string): Promise<void> {
+    const foundSlot = await this.page.evaluate(async (targetInputName) => {
+      const app = window['app']
+      const currentGraph = app.canvas.graph
+
+      // Check if we're in a subgraph
+      if (currentGraph.constructor.name !== 'Subgraph') {
+        throw new Error(
+          'Not in a subgraph - this method only works inside subgraphs'
+        )
+      }
+
+      // Get the input node
+      const inputNode = currentGraph.inputNode
+      if (!inputNode) {
+        throw new Error('No input node found in subgraph')
+      }
+
+      // Get available inputs
+      const inputs = currentGraph.inputs
+      if (!inputs || inputs.length === 0) {
+        throw new Error('No input slots found in subgraph')
+      }
+
+      // Filter to specific input if requested
+      const inputsToTry = targetInputName
+        ? inputs.filter((inp) => inp.name === targetInputName)
+        : inputs
+
+      if (inputsToTry.length === 0) {
+        throw new Error(
+          targetInputName
+            ? `Input slot '${targetInputName}' not found`
+            : 'No input slots available to try'
+        )
+      }
+
+      // Try right-clicking on each input slot position until one works
+      for (const input of inputsToTry) {
+        if (!input.pos) continue
+
+        const testX = input.pos[0]
+        const testY = input.pos[1]
+
+        // Create a right-click event at the input slot position
+        const rightClickEvent = {
+          canvasX: testX,
+          canvasY: testY,
+          button: 2, // Right mouse button
+          preventDefault: () => {},
+          stopPropagation: () => {}
+        }
+
+        // Trigger the input node's right-click handler
+        if (inputNode.onPointerDown) {
+          inputNode.onPointerDown(
+            rightClickEvent,
+            app.canvas.pointer,
+            app.canvas.linkConnector
+          )
+        }
+
+        // Wait briefly for menu to appear
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        // Check if litegraph context menu appeared
+        const menuExists = document.querySelector('.litemenu-entry')
+        if (menuExists) {
+          return { success: true, inputName: input.name, x: testX, y: testY }
+        }
+      }
+
+      return { success: false }
+    }, inputName)
+
+    if (!foundSlot.success) {
+      throw new Error(
+        inputName
+          ? `Could not open context menu for input slot '${inputName}'`
+          : 'Could not find any input slot position to right-click'
+      )
+    }
+
+    // Wait for the litegraph context menu to be visible
+    await this.page.waitForSelector('.litemenu-entry', {
+      state: 'visible',
+      timeout: 5000
+    })
+  }
+
+  /**
+   * Right-clicks on a subgraph output slot to open the context menu.
+   * Must be called when inside a subgraph.
+   *
+   * Similar to rightClickSubgraphInputSlot but for output slots.
+   *
+   * @param outputName Optional name of the specific output slot to target.
+   *                   If not provided, tries all available output slots until one works.
+   * @returns Promise that resolves when the context menu appears
+   */
+  async rightClickSubgraphOutputSlot(outputName?: string): Promise<void> {
+    const foundSlot = await this.page.evaluate(async (targetOutputName) => {
+      const app = window['app']
+      const currentGraph = app.canvas.graph
+
+      // Check if we're in a subgraph
+      if (currentGraph.constructor.name !== 'Subgraph') {
+        throw new Error(
+          'Not in a subgraph - this method only works inside subgraphs'
+        )
+      }
+
+      // Get the output node
+      const outputNode = currentGraph.outputNode
+      if (!outputNode) {
+        throw new Error('No output node found in subgraph')
+      }
+
+      // Get available outputs
+      const outputs = currentGraph.outputs
+      if (!outputs || outputs.length === 0) {
+        throw new Error('No output slots found in subgraph')
+      }
+
+      // Filter to specific output if requested
+      const outputsToTry = targetOutputName
+        ? outputs.filter((out) => out.name === targetOutputName)
+        : outputs
+
+      if (outputsToTry.length === 0) {
+        throw new Error(
+          targetOutputName
+            ? `Output slot '${targetOutputName}' not found`
+            : 'No output slots available to try'
+        )
+      }
+
+      // Try right-clicking on each output slot position until one works
+      for (const output of outputsToTry) {
+        if (!output.pos) continue
+
+        const testX = output.pos[0]
+        const testY = output.pos[1]
+
+        // Create a right-click event at the output slot position
+        const rightClickEvent = {
+          canvasX: testX,
+          canvasY: testY,
+          button: 2, // Right mouse button
+          preventDefault: () => {},
+          stopPropagation: () => {}
+        }
+
+        // Trigger the output node's right-click handler
+        if (outputNode.onPointerDown) {
+          outputNode.onPointerDown(
+            rightClickEvent,
+            app.canvas.pointer,
+            app.canvas.linkConnector
+          )
+        }
+
+        // Wait briefly for menu to appear
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        // Check if litegraph context menu appeared
+        const menuExists = document.querySelector('.litemenu-entry')
+        if (menuExists) {
+          return { success: true, outputName: output.name, x: testX, y: testY }
+        }
+      }
+
+      return { success: false }
+    }, outputName)
+
+    if (!foundSlot.success) {
+      throw new Error(
+        outputName
+          ? `Could not open context menu for output slot '${outputName}'`
+          : 'Could not find any output slot position to right-click'
+      )
+    }
+
+    // Wait for the litegraph context menu to be visible
+    await this.page.waitForSelector('.litemenu-entry', {
+      state: 'visible',
+      timeout: 5000
+    })
+  }
+
+  /**
+   * Get a reference to a subgraph input slot
+   */
+  async getSubgraphInputSlot(
+    slotName?: string
+  ): Promise<SubgraphSlotReference> {
+    return new SubgraphSlotReference('input', slotName || '', this)
+  }
+
+  /**
+   * Get a reference to a subgraph output slot
+   */
+  async getSubgraphOutputSlot(
+    slotName?: string
+  ): Promise<SubgraphSlotReference> {
+    return new SubgraphSlotReference('output', slotName || '', this)
+  }
+
+  /**
+   * Connect a regular node output to a subgraph input.
+   * This creates a new input slot on the subgraph if targetInputName is not provided.
+   */
+  async connectToSubgraphInput(
+    sourceNode: NodeReference,
+    sourceSlotIndex: number,
+    targetInputName?: string
+  ): Promise<void> {
+    const sourceSlot = await sourceNode.getOutput(sourceSlotIndex)
+    const targetSlot = await this.getSubgraphInputSlot(targetInputName)
+
+    const targetPosition = targetInputName
+      ? await targetSlot.getPosition() // Connect to existing slot
+      : await targetSlot.getOpenSlotPosition() // Create new slot
+
+    await this.dragAndDrop(await sourceSlot.getPosition(), targetPosition)
+    await this.nextFrame()
+  }
+
+  /**
+   * Connect a subgraph input to a regular node input.
+   * This creates a new input slot on the subgraph if sourceInputName is not provided.
+   */
+  async connectFromSubgraphInput(
+    targetNode: NodeReference,
+    targetSlotIndex: number,
+    sourceInputName?: string
+  ): Promise<void> {
+    const sourceSlot = await this.getSubgraphInputSlot(sourceInputName)
+    const targetSlot = await targetNode.getInput(targetSlotIndex)
+
+    const sourcePosition = sourceInputName
+      ? await sourceSlot.getPosition() // Connect from existing slot
+      : await sourceSlot.getOpenSlotPosition() // Create new slot
+
+    const targetPosition = await targetSlot.getPosition()
+
+    // Debug: Log the positions we're trying to use
+    console.log('Drag positions:', {
+      source: sourcePosition,
+      target: targetPosition
+    })
+
+    await this.dragAndDrop(sourcePosition, targetPosition)
+    await this.nextFrame()
+  }
+
+  /**
+   * Connect a regular node output to a subgraph output.
+   * This creates a new output slot on the subgraph if targetOutputName is not provided.
+   */
+  async connectToSubgraphOutput(
+    sourceNode: NodeReference,
+    sourceSlotIndex: number,
+    targetOutputName?: string
+  ): Promise<void> {
+    const sourceSlot = await sourceNode.getOutput(sourceSlotIndex)
+    const targetSlot = await this.getSubgraphOutputSlot(targetOutputName)
+
+    const targetPosition = targetOutputName
+      ? await targetSlot.getPosition() // Connect to existing slot
+      : await targetSlot.getOpenSlotPosition() // Create new slot
+
+    await this.dragAndDrop(await sourceSlot.getPosition(), targetPosition)
+    await this.nextFrame()
+  }
+
+  /**
+   * Connect a subgraph output to a regular node input.
+   * This creates a new output slot on the subgraph if sourceOutputName is not provided.
+   */
+  async connectFromSubgraphOutput(
+    targetNode: NodeReference,
+    targetSlotIndex: number,
+    sourceOutputName?: string
+  ): Promise<void> {
+    const sourceSlot = await this.getSubgraphOutputSlot(sourceOutputName)
+    const targetSlot = await targetNode.getInput(targetSlotIndex)
+
+    const sourcePosition = sourceOutputName
+      ? await sourceSlot.getPosition() // Connect from existing slot
+      : await sourceSlot.getOpenSlotPosition() // Create new slot
+
+    await this.dragAndDrop(sourcePosition, await targetSlot.getPosition())
+    await this.nextFrame()
+  }
+
+  /**
+   * Add a visual marker at a position for debugging
+   */
+  async debugAddMarker(
+    position: Position,
+    id: string = 'debug-marker'
+  ): Promise<void> {
+    await this.page.evaluate(
+      ([pos, markerId]) => {
+        // Remove existing marker if present
+        const existing = document.getElementById(markerId)
+        if (existing) existing.remove()
+
+        // Create marker
+        const marker = document.createElement('div')
+        marker.id = markerId
+        marker.style.position = 'fixed'
+        marker.style.left = `${pos.x - 10}px`
+        marker.style.top = `${pos.y - 10}px`
+        marker.style.width = '20px'
+        marker.style.height = '20px'
+        marker.style.border = '2px solid red'
+        marker.style.borderRadius = '50%'
+        marker.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'
+        marker.style.pointerEvents = 'none'
+        marker.style.zIndex = '10000'
+        document.body.appendChild(marker)
+      },
+      [position, id] as const
+    )
+  }
+
+  /**
+   * Remove debug markers
+   */
+  async debugRemoveMarkers(): Promise<void> {
+    await this.page.evaluate(() => {
+      document
+        .querySelectorAll('[id^="debug-marker"]')
+        .forEach((el) => el.remove())
+    })
+  }
+
+  /**
+   * Take a screenshot and attach it to the test report for debugging
+   * This is a convenience method that combines screenshot capture and test attachment
+   *
+   * @param testInfo The Playwright TestInfo object (from test parameters)
+   * @param name Name for the attachment
+   * @param options Optional screenshot options (defaults to page screenshot)
+   */
+  async debugAttachScreenshot(
+    testInfo: any,
+    name: string,
+    options?: {
+      fullPage?: boolean
+      element?: 'canvas' | 'page'
+      markers?: Array<{ position: Position; id?: string }>
+    }
+  ): Promise<void> {
+    // Add markers if requested
+    if (options?.markers) {
+      for (const marker of options.markers) {
+        await this.debugAddMarker(marker.position, marker.id)
+      }
+    }
+
+    // Take screenshot - default to page if not specified
+    let screenshot: Buffer
+    const targetElement = options?.element || 'page'
+
+    if (targetElement === 'canvas') {
+      screenshot = await this.canvas.screenshot()
+    } else if (options?.fullPage) {
+      screenshot = await this.page.screenshot({ fullPage: true })
+    } else {
+      screenshot = await this.page.screenshot()
+    }
+
+    // Attach to test report
+    await testInfo.attach(name, {
+      body: screenshot,
+      contentType: 'image/png'
+    })
+
+    // Clean up markers if we added any
+    if (options?.markers) {
+      await this.debugRemoveMarkers()
+    }
+  }
+
   async doubleClickCanvas() {
     await this.page.mouse.dblclick(10, 10, { delay: 5 })
     await this.nextFrame()
+  }
+
+  /**
+   * Capture the canvas as a PNG and save it for debugging
+   */
+  async debugSaveCanvasScreenshot(filename: string): Promise<void> {
+    await this.page.evaluate(async (filename) => {
+      const canvas = document.getElementById(
+        'graph-canvas'
+      ) as HTMLCanvasElement
+      if (!canvas) {
+        throw new Error('Canvas not found')
+      }
+
+      // Convert canvas to blob
+      return new Promise<void>((resolve) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            throw new Error('Failed to create blob from canvas')
+          }
+
+          // Create a download link and trigger it
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          resolve()
+        }, 'image/png')
+      })
+    }, filename)
+
+    // Wait a bit for the download to process
+    await this.page.waitForTimeout(500)
+  }
+
+  /**
+   * Capture canvas as base64 data URL for inspection
+   */
+  async debugGetCanvasDataURL(): Promise<string> {
+    return await this.page.evaluate(() => {
+      const canvas = document.getElementById(
+        'graph-canvas'
+      ) as HTMLCanvasElement
+      if (!canvas) {
+        throw new Error('Canvas not found')
+      }
+      return canvas.toDataURL('image/png')
+    })
+  }
+
+  /**
+   * Create an overlay div with the canvas image for easier Playwright screenshot
+   */
+  async debugShowCanvasOverlay(): Promise<void> {
+    await this.page.evaluate(() => {
+      const canvas = document.getElementById(
+        'graph-canvas'
+      ) as HTMLCanvasElement
+      if (!canvas) {
+        throw new Error('Canvas not found')
+      }
+
+      // Remove existing overlay if present
+      const existingOverlay = document.getElementById('debug-canvas-overlay')
+      if (existingOverlay) {
+        existingOverlay.remove()
+      }
+
+      // Create overlay div
+      const overlay = document.createElement('div')
+      overlay.id = 'debug-canvas-overlay'
+      overlay.style.position = 'fixed'
+      overlay.style.top = '0'
+      overlay.style.left = '0'
+      overlay.style.zIndex = '9999'
+      overlay.style.backgroundColor = 'white'
+      overlay.style.padding = '10px'
+      overlay.style.border = '2px solid red'
+
+      // Create image from canvas
+      const img = document.createElement('img')
+      img.src = canvas.toDataURL('image/png')
+      img.style.maxWidth = '800px'
+      img.style.maxHeight = '600px'
+      overlay.appendChild(img)
+
+      document.body.appendChild(overlay)
+    })
+  }
+
+  /**
+   * Remove the debug canvas overlay
+   */
+  async debugHideCanvasOverlay(): Promise<void> {
+    await this.page.evaluate(() => {
+      const overlay = document.getElementById('debug-canvas-overlay')
+      if (overlay) {
+        overlay.remove()
+      }
+    })
   }
 
   async clickEmptyLatentNode() {

@@ -15,6 +15,7 @@ import {
   isFloatInputSpec,
   isIntInputSpec
 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import { lcm } from './mathUtil'
 
@@ -137,4 +138,12 @@ export const mergeInputSpec = (
   }
 
   return mergeCommonInputSpec(spec1, spec2)
+}
+
+/**
+ * Checks if a node definition represents a subgraph node.
+ * Subgraph nodes are created with category='subgraph' and python_module='nodes'.
+ */
+export const isSubgraphNode = (nodeDef: ComfyNodeDefImpl): boolean => {
+  return nodeDef.category === 'subgraph' && nodeDef.python_module === 'nodes'
 }
