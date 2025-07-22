@@ -337,8 +337,7 @@ describe("SubgraphNode Execution", () => {
   })
 
   it("should prevent infinite recursion", () => {
-    // TODO: This test is currently skipped because cycle detection has a bug
-    // The fix is to pass 'visited' directly instead of 'new Set(visited)' in SubgraphNode.ts:299
+    // Cycle detection properly prevents infinite recursion when a subgraph contains itself
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph)
 
@@ -402,21 +401,6 @@ describe("SubgraphNode Execution", () => {
 })
 
 describe("SubgraphNode Edge Cases", () => {
-  it.todo("should detect circular references", () => {
-    // TODO: This test is currently skipped because cycle detection has a bug
-    // The fix is to pass 'visited' directly instead of 'new Set(visited)' in SubgraphNode.ts:299
-    const subgraph = createTestSubgraph({ nodeCount: 1 })
-    const subgraphNode = createTestSubgraphNode(subgraph)
-
-    // Add subgraph node to its own subgraph (circular reference)
-    subgraph.add(subgraphNode)
-
-    const executableNodes = new Map()
-    expect(() => {
-      subgraphNode.getInnerNodes(executableNodes)
-    }).toThrow(/while flattening subgraph/i)
-  })
-
   it("should handle deep nesting", () => {
     // Create a simpler deep nesting test that works with current implementation
     const subgraph = createTestSubgraph({
