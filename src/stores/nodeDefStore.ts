@@ -374,6 +374,21 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
         'Hides nodes marked as experimental unless explicitly enabled',
       predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
     })
+
+    // Subgraph nodes filter
+    // @todo Remove this filter when subgraph v2 is released
+    registerNodeDefFilter({
+      id: 'core.subgraph',
+      name: 'Hide Subgraph Nodes',
+      description:
+        'Temporarily hides subgraph nodes from node library and search',
+      predicate: (nodeDef) => {
+        // Hide subgraph nodes (identified by category='subgraph' and python_module='nodes')
+        return !(
+          nodeDef.category === 'subgraph' && nodeDef.python_module === 'nodes'
+        )
+      }
+    })
   }
 
   // Register core filters on store initialization
