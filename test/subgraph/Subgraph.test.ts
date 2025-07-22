@@ -189,16 +189,6 @@ describe("Subgraph Serialization", () => {
 })
 
 describe("Subgraph Known Issues", () => {
-  it.todo("should document createNode() bug returns null", () => {
-    // This test documents the known issue where LiteGraph.createNode(subgraph.id)
-    // returns null because UUID is not registered as a node type.
-    //
-    // Expected behavior: Should create a SubgraphNode instance
-    // Actual behavior: Returns null, causing convertToSubgraph() to fail
-    //
-    // This needs to be fixed in the LiteGraphGlobal registration system.
-  })
-
   it.todo("should enforce MAX_NESTED_SUBGRAPHS limit", () => {
     // This test documents that MAX_NESTED_SUBGRAPHS = 1000 is defined
     // but not actually enforced anywhere in the code.
