@@ -35,7 +35,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (No modifier)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
+    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU,
+    defaultsByInstallVersion: {
+      '1.24.1': LinkReleaseTriggerAction.SEARCH_BOX
+    }
   },
   {
     id: 'Comfy.LinkRelease.ActionShift',
@@ -43,7 +46,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (Shift)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.SEARCH_BOX
+    defaultValue: LinkReleaseTriggerAction.SEARCH_BOX,
+    defaultsByInstallVersion: {
+      '1.24.1': LinkReleaseTriggerAction.CONTEXT_MENU
+    }
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.NodePreview',
