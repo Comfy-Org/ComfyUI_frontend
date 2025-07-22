@@ -236,6 +236,45 @@ describe('useNodeDefStore', () => {
 
       expect(store.visibleNodeDefs).toHaveLength(2)
     })
+
+    it('should hide subgraph nodes by default', () => {
+      const normalNode = createMockNodeDef({
+        name: 'normal',
+        category: 'conditioning',
+        python_module: 'nodes'
+      })
+      const subgraphNode = createMockNodeDef({
+        name: 'MySubgraph',
+        category: 'subgraph',
+        python_module: 'nodes'
+      })
+
+      store.updateNodeDefs([normalNode, subgraphNode])
+
+      expect(store.visibleNodeDefs).toHaveLength(1)
+      expect(store.visibleNodeDefs[0].name).toBe('normal')
+    })
+
+    it('should show non-subgraph nodes with subgraph category', () => {
+      const normalNode = createMockNodeDef({
+        name: 'normal',
+        category: 'conditioning',
+        python_module: 'custom_extension'
+      })
+      const fakeSubgraphNode = createMockNodeDef({
+        name: 'FakeSubgraph',
+        category: 'subgraph',
+        python_module: 'custom_extension' // Different python_module
+      })
+
+      store.updateNodeDefs([normalNode, fakeSubgraphNode])
+
+      expect(store.visibleNodeDefs).toHaveLength(2)
+      expect(store.visibleNodeDefs.map((n) => n.name)).toEqual([
+        'normal',
+        'FakeSubgraph'
+      ])
+    })
   })
 
   describe('performance', () => {
