@@ -39,6 +39,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override widgets: IBaseWidget[] = []
 
+  /** Manages lifecycle of all subgraph event listeners */
+  #eventAbortController = new AbortController()
+
   constructor(
     /** The (sub)graph that contains this subgraph instance. */
     override readonly graph: GraphOrSubgraph,
@@ -50,29 +53,31 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
+    const { signal } = this.#eventAbortController
+
     subgraphEvents.addEventListener("input-added", (e) => {
       const subgraphInput = e.detail.input
       const { name, type } = subgraphInput
       const input = this.addInput(name, type)
 
       this.#addSubgraphInputListeners(subgraphInput, input)
-    })
+    }, { signal })
 
     subgraphEvents.addEventListener("removing-input", (e) => {
       const widget = e.detail.input._widget
       if (widget) this.ensureWidgetRemoved(widget)
 
       this.removeInput(e.detail.index)
-    })
+    }, { signal })
 
     subgraphEvents.addEventListener("output-added", (e) => {
       const { name, type } = e.detail.output
       this.addOutput(name, type)
-    })
+    }, { signal })
 
     subgraphEvents.addEventListener("removing-output", (e) => {
       this.removeOutput(e.detail.index)
-    })
+    }, { signal })
 
     subgraphEvents.addEventListener("renaming-input", (e) => {
       const { index, newName } = e.detail
@@ -80,7 +85,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!input) throw new Error("Subgraph input not found")
 
       input.label = newName
-    })
+    }, { signal })
 
     subgraphEvents.addEventListener("renaming-output", (e) => {
       const { index, newName } = e.detail
@@ -88,7 +93,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!output) throw new Error("Subgraph output not found")
 
       output.label = newName
-    })
+    }, { signal })
 
     this.type = subgraph.id
     this.configure(instanceData)
@@ -327,6 +332,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override onRemoved(): void {
+    // Clean up all subgraph event listeners
+    this.#eventAbortController.abort()
+
     // Clean up all promoted widgets
     for (const widget of this.widgets) {
       this.subgraph.events.dispatch("widget-demoted", { widget, subgraphNode: this })

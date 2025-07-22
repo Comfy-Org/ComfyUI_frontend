@@ -5,7 +5,7 @@
  * IO synchronization, and edge cases.
  */
 
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { LGraph, Subgraph } from "@/litegraph"
 
@@ -490,5 +490,89 @@ describe("Foundation Test Utilities", () => {
     expect(subgraphNode).toBeDefined()
     expect(parentGraph).toBeDefined()
     expect(parentGraph.nodes).toContain(subgraphNode)
+  })
+})
+
+describe("SubgraphNode Cleanup", () => {
+  it("should clean up event listeners when removed", () => {
+    const rootGraph = new LGraph()
+    const subgraph = createTestSubgraph()
+
+    // Create and add two nodes
+    const node1 = createTestSubgraphNode(subgraph)
+    const node2 = createTestSubgraphNode(subgraph)
+    rootGraph.add(node1)
+    rootGraph.add(node2)
+
+    // Verify both nodes start with no inputs
+    expect(node1.inputs.length).toBe(0)
+    expect(node2.inputs.length).toBe(0)
+
+    // Remove node2
+    rootGraph.remove(node2)
+
+    // Now trigger an event - only node1 should respond
+    subgraph.events.dispatch("input-added", {
+      input: { name: "test", type: "number", id: "test-id" } as any,
+    })
+
+    // Only node1 should have added an input
+    expect(node1.inputs.length).toBe(1) // node1 responds
+    expect(node2.inputs.length).toBe(0) // node2 should NOT respond (but currently does)
+  })
+
+  it("should not accumulate handlers over multiple add/remove cycles", () => {
+    const rootGraph = new LGraph()
+    const subgraph = createTestSubgraph()
+
+    // Add and remove nodes multiple times
+    const removedNodes: SubgraphNode[] = []
+    for (let i = 0; i < 3; i++) {
+      const node = createTestSubgraphNode(subgraph)
+      rootGraph.add(node)
+      rootGraph.remove(node)
+      removedNodes.push(node)
+    }
+
+    // All nodes should have 0 inputs
+    for (const node of removedNodes) {
+      expect(node.inputs.length).toBe(0)
+    }
+
+    // Trigger an event - no nodes should respond
+    subgraph.events.dispatch("input-added", {
+      input: { name: "test", type: "number", id: "test-id" } as any,
+    })
+
+    // Without cleanup: all 3 removed nodes would have added an input
+    // With cleanup: no nodes should have added an input
+    for (const node of removedNodes) {
+      expect(node.inputs.length).toBe(0) // Should stay 0 after cleanup
+    }
+  })
+
+  it("should clean up input listener controllers on removal", () => {
+    const rootGraph = new LGraph()
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: "in1", type: "number" }, { name: "in2", type: "string" }],
+    })
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    rootGraph.add(subgraphNode)
+
+    // Verify listener controllers exist
+    expect(subgraphNode.inputs[0]._listenerController).toBeDefined()
+    expect(subgraphNode.inputs[1]._listenerController).toBeDefined()
+
+    // Track abort calls
+    const abortSpy1 = vi.spyOn(subgraphNode.inputs[0]._listenerController!, "abort")
+    const abortSpy2 = vi.spyOn(subgraphNode.inputs[1]._listenerController!, "abort")
+
+    // Remove node
+    rootGraph.remove(subgraphNode)
+
+    // Verify abort was called on each controller
+    expect(abortSpy1).toHaveBeenCalledTimes(1)
+    expect(abortSpy2).toHaveBeenCalledTimes(1)
   })
 })
