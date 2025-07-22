@@ -45,9 +45,6 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
 }
 
 /**
- * A DOM widget that wraps a Vue component as a litegraph widget.
- */
-/**
  * Additional props that can be passed to component widgets.
  * These are in addition to the standard props that are always provided:
  * - modelValue: The widget's value (handled by v-model)
@@ -65,6 +62,9 @@ export type ComponentWidgetStandardProps =
   | 'widget'
   | 'onUpdate:modelValue'
 
+/**
+ * A DOM widget that wraps a Vue component as a litegraph widget.
+ */
 export interface ComponentWidget<
   V extends object | string,
   P extends ComponentWidgetCustomProps = ComponentWidgetCustomProps
