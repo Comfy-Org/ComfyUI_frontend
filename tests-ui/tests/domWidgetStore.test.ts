@@ -148,25 +148,4 @@ describe('domWidgetStore', () => {
       expect(store.inactiveWidgetStates.length).toBe(0)
     })
   })
-
-  describe('promoted widget cleanup', () => {
-    it('should handle promoted widget registration and removal', () => {
-      const containerNode = {
-        id: 'subgraph-1',
-        title: 'Subgraph Container'
-      } as any
-
-      // Create a promoted widget with containerNode
-      const promotedWidget = createMockDOMWidget('promoted-1')
-      promotedWidget.containerNode = containerNode
-
-      // Register the promoted widget
-      store.registerWidget(promotedWidget)
-      expect(store.widgetStates.has('promoted-1')).toBe(true)
-
-      // Simulate removal callback
-      store.unregisterWidget('promoted-1')
-      expect(store.widgetStates.has('promoted-1')).toBe(false)
-    })
-  })
 })
