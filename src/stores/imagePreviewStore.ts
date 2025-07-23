@@ -98,12 +98,23 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     filenames: string | string[] | ResultItem,
     {
       folder = 'input',
-      isAnimated = false
-    }: { folder?: ResultItemType; isAnimated?: boolean } = {}
+      isAnimated = false,
+      isInitialLoad = false
+    }: {
+      folder?: ResultItemType
+      isAnimated?: boolean
+      isInitialLoad?: boolean
+    } = {}
   ) {
     if (!filenames || !node) return
 
-    const nodeId = getMostRecentExecutionId(node)
+    const nodeId = isInitialLoad
+      ? executionStore.getNodeLocatorId(node)
+      : getMostRecentExecutionId(node)
+
+    if (isInitialLoad) {
+      executionStore.locatorIdToExecutionIdMap.set(nodeId, nodeId)
+    }
 
     if (typeof filenames === 'string') {
       app.nodeOutputs[nodeId] = createOutputs([filenames], folder, isAnimated)
