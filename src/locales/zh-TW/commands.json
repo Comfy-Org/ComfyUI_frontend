@@ -152,14 +152,32 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "載入預設工作流程"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "切換自訂節點管理器"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "自訂節點管理器"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "自訂節點（舊版）"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "管理選單（舊版）"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "安裝缺少的自訂節點"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "檢查自訂節點更新"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切換自訂節點管理器進度條"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "為選取的節點開啟 Mask 編輯器"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "卸載模型"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "卸載模型與執行快取"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "新增空白工作流程"
