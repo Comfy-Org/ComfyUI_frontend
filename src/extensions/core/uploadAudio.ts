@@ -9,6 +9,7 @@ import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
@@ -142,13 +143,26 @@ app.registerExtension({
     }
   },
   onNodeOutputsUpdated(nodeOutputs: Record<number, any>) {
-    for (const [nodeId, output] of Object.entries(nodeOutputs)) {
-      const node = app.graph.getNodeById(nodeId)
+    const workflowStore = useWorkflowStore()
+
+    for (const [executionId, output] of Object.entries(nodeOutputs)) {
+      // Convert execution ID to local node ID for current graph context
+      const localNodeId = workflowStore.executionIdToCurrentId(executionId)
+
+      // Skip if node is not in current graph context
+      if (!localNodeId) continue
+
+      const node = app.graph.getNodeById(localNodeId)
+      if (!node) continue
+
       if ('audio' in output) {
         // @ts-expect-error fixme ts strict error
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
+
+        if (!audioUIWidget) continue
+
         const audio = output.audio[0]
         audioUIWidget.element.src = api.apiURL(
           getResourceURL(audio.subfolder, audio.filename, audio.type)
