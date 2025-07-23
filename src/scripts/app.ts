@@ -637,10 +637,6 @@ export class ComfyApp {
 
     api.addEventListener('executing', () => {
       this.graph.setDirtyCanvas(true, false)
-      // @ts-expect-error fixme ts strict error
-      this.revokePreviews(this.runningNodeId)
-      // @ts-expect-error fixme ts strict error
-      delete this.nodePreviewImages[this.runningNodeId]
     })
 
     api.addEventListener('executed', ({ detail }) => {
