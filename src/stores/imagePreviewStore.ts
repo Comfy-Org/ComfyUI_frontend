@@ -8,6 +8,8 @@ import {
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
 
@@ -23,16 +25,17 @@ const createOutputs = (
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  const getNodeId = (node: LGraphNode): string => node.id.toString()
+  const { nodeIdToNodeLocatorId } = useWorkflowStore()
+  const { executionIdToNodeLocatorId } = useExecutionStore()
 
   function getNodeOutputs(
     node: LGraphNode
   ): ExecutedWsMessage['output'] | undefined {
-    return app.nodeOutputs[getNodeId(node)]
+    return app.nodeOutputs[nodeIdToNodeLocatorId(node.id)]
   }
 
   function getNodePreviews(node: LGraphNode): string[] | undefined {
-    return app.nodePreviewImages[getNodeId(node)]
+    return app.nodePreviewImages[nodeIdToNodeLocatorId(node.id)]
   }
 
   /**
@@ -96,7 +99,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!filenames || !node) return
 
-    const nodeId = getNodeId(node)
+    const nodeId = nodeIdToNodeLocatorId(node.id)
 
     if (typeof filenames === 'string') {
       app.nodeOutputs[nodeId] = createOutputs([filenames], folder, isAnimated)
@@ -109,11 +112,67 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
+  /**
+   * Set node outputs by execution ID (hierarchical ID from backend).
+   * Converts the execution ID to a NodeLocatorId before storing.
+   *
+   * @param executionId - The execution ID (e.g., "123:456:789" or "789")
+   * @param outputs - The outputs to store
+   * @param options - Options for setting outputs
+   * @param options.merge - If true, merge with existing outputs (arrays are concatenated)
+   */
+  function setNodeOutputsByExecutionId(
+    executionId: string,
+    outputs: ExecutedWsMessage['output'] | ResultItem,
+    options: { merge?: boolean } = {}
+  ) {
+    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+
+    if (!nodeLocatorId) return
+
+    if (options.merge) {
+      const existingOutput = app.nodeOutputs[nodeLocatorId]
+      if (existingOutput && outputs) {
+        // Merge outputs following the same logic as the original code
+        for (const k in outputs) {
+          const existingValue = existingOutput[k]
+          const newValue = (outputs as any)[k]
+
+          if (Array.isArray(existingValue) && Array.isArray(newValue)) {
+            existingOutput[k] = existingValue.concat(newValue)
+          } else {
+            existingOutput[k] = newValue
+          }
+        }
+        return
+      }
+    }
+
+    app.nodeOutputs[nodeLocatorId] = outputs
+  }
+
+  /**
+   * Set node outputs by node ID.
+   * Uses the current graph context to create the appropriate NodeLocatorId.
+   *
+   * @param nodeId - The node ID
+   * @param outputs - The outputs to store
+   */
+  function setNodeOutputsByNodeId(
+    nodeId: string | number,
+    outputs: ExecutedWsMessage['output'] | ResultItem
+  ) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
+    app.nodeOutputs[nodeLocatorId] = outputs
+  }
+
   return {
     getNodeOutputs,
     getNodeImageUrls,
     getNodePreviews,
     setNodeOutputs,
+    setNodeOutputsByExecutionId,
+    setNodeOutputsByNodeId,
     getPreviewParam
   }
 })

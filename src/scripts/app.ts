@@ -47,6 +47,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -640,19 +641,15 @@ export class ComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      const output = this.nodeOutputs[detail.display_node || detail.node]
-      if (detail.merge && output) {
-        for (const k in detail.output ?? {}) {
-          const v = output[k]
-          if (v instanceof Array) {
-            output[k] = v.concat(detail.output[k])
-          } else {
-            output[k] = detail.output[k]
-          }
-        }
-      } else {
-        this.nodeOutputs[detail.display_node || detail.node] = detail.output
-      }
+      const nodeOutputStore = useNodeOutputStore()
+      const executionId = String(detail.display_node || detail.node)
+
+      // Store the output using the new method
+      nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
+        merge: detail.merge
+      })
+
+      // Call onExecuted callback (unchanged)
       const node = this.graph.getNodeById(detail.display_node || detail.node)
       if (node) {
         if (node.onExecuted) node.onExecuted(detail.output)
