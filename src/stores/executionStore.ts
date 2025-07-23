@@ -222,6 +222,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function bindExecutionEvents() {
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
+    api.addEventListener('execution_interrupted', handleExecutionInterrupted)
     api.addEventListener('executed', handleExecuted)
     api.addEventListener('executing', handleExecuting)
     api.addEventListener('progress', handleProgress)
@@ -235,6 +236,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function unbindExecutionEvents() {
     api.removeEventListener('execution_start', handleExecutionStart)
     api.removeEventListener('execution_cached', handleExecutionCached)
+    api.removeEventListener('execution_interrupted', handleExecutionInterrupted)
     api.removeEventListener('executed', handleExecuted)
     api.removeEventListener('executing', handleExecuting)
     api.removeEventListener('progress', handleProgress)
@@ -255,6 +257,10 @@ export const useExecutionStore = defineStore('execution', () => {
     for (const n of e.detail.nodes) {
       activePrompt.value.nodes[n] = true
     }
+  }
+
+  function handleExecutionInterrupted() {
+    nodeProgressStates.value = {}
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
