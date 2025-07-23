@@ -13,19 +13,19 @@ import type { ChartData } from 'chart.js'
 import Chart from 'primevue/chart'
 import { computed } from 'vue'
 
+import type { ChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+type ChartWidgetOptions = NonNullable<ChartInputSpec['options']>
 
 const value = defineModel<ChartData>({ required: true })
 
 const props = defineProps<{
-  widget: SimplifiedWidget<ChartData>
+  widget: SimplifiedWidget<ChartData, ChartWidgetOptions>
   readonly?: boolean
 }>()
 
-const chartType = computed(() => {
-  const type = props.widget.options?.type
-  return type === 'line' ? 'line' : 'bar'
-})
+const chartType = computed(() => props.widget.options?.type ?? 'line')
 
 const chartData = computed(() => value.value || { labels: [], datasets: [] })
 
