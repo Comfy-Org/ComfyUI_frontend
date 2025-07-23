@@ -45,11 +45,29 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
 }
 
 /**
+ * Additional props that can be passed to component widgets.
+ * These are in addition to the standard props that are always provided:
+ * - modelValue: The widget's value (handled by v-model)
+ * - widget: Reference to the widget instance
+ * - onUpdate:modelValue: The update handler for v-model
+ */
+export type ComponentWidgetCustomProps = Record<string, unknown>
+
+/**
+ * Standard props that are handled separately by DomWidget.vue and should be
+ * omitted when defining custom props for component widgets
+ */
+export type ComponentWidgetStandardProps =
+  | 'modelValue'
+  | 'widget'
+  | 'onUpdate:modelValue'
+
+/**
  * A DOM widget that wraps a Vue component as a litegraph widget.
  */
 export interface ComponentWidget<
   V extends object | string,
-  P = Record<string, unknown>
+  P extends ComponentWidgetCustomProps = ComponentWidgetCustomProps
 > extends BaseDOMWidget<V> {
   readonly component: Component
   readonly inputSpec: InputSpec
@@ -247,7 +265,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 
 export class ComponentWidgetImpl<
     V extends object | string,
-    P = Record<string, unknown>
+    P extends ComponentWidgetCustomProps = ComponentWidgetCustomProps
   >
   extends BaseDOMWidgetImpl<V>
   implements ComponentWidget<V, P>
