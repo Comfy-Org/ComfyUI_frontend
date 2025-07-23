@@ -690,6 +690,7 @@ export class ComfyApp {
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
       const { blob, displayNodeId } = detail
+      // Ensure clean up if `executing` event is missed.
       this.revokePreviews(displayNodeId)
       const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is now handled in progress_state event to support multiple concurrent previews
