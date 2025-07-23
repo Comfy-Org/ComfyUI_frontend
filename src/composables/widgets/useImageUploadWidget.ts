@@ -100,7 +100,8 @@ export const useImageUploadWidget = () => {
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
-        isAnimated
+        isAnimated,
+        isInitialLoad: true
       })
       node.graph?.setDirtyCanvas(true)
     }
@@ -110,7 +111,8 @@ export const useImageUploadWidget = () => {
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
       nodeOutputStore.setNodeOutputs(node, fileComboWidget.value, {
-        isAnimated
+        isAnimated,
+        isInitialLoad: true
       })
       showPreview({ block: false })
     })
