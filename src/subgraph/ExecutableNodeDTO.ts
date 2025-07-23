@@ -85,6 +85,10 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     return this.node.widgets
   }
 
+  get subgraphId() {
+    return this.subgraphNode?.subgraph.id
+  }
+
   constructor(
     /** The actual node that this DTO wraps. */
     readonly node: LGraphNode | SubgraphNode,
