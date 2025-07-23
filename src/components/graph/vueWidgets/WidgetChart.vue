@@ -15,23 +15,19 @@ import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-interface ChartWidgetData extends ChartData {
-  type?: 'bar' | 'line'
-}
+const value = defineModel<ChartData>({ required: true })
 
-const value = defineModel<ChartWidgetData>({ required: true })
-
-defineProps<{
-  widget: SimplifiedWidget<ChartWidgetData>
+const props = defineProps<{
+  widget: SimplifiedWidget<ChartData>
   readonly?: boolean
 }>()
 
-const chartType = computed(() => value.value?.type || 'bar')
+const chartType = computed(() => {
+  const type = props.widget.options?.type
+  return type === 'line' ? 'line' : 'bar'
+})
 
-const chartData = computed(() => ({
-  labels: value.value?.labels || [],
-  datasets: value.value?.datasets || []
-}))
+const chartData = computed(() => value.value || { labels: [], datasets: [] })
 
 const chartOptions = computed(() => ({
   responsive: true,
