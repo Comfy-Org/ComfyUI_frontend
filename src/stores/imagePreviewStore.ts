@@ -25,6 +25,10 @@ const createOutputs = (
   }
 }
 
+interface SetOutputOptions {
+  merge?: boolean
+}
+
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId } = useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
@@ -88,10 +92,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       const imgUrlPart = new URLSearchParams(image)
       return api.apiURL(`/view?${imgUrlPart}${previewParam}${rand}`)
     })
-  }
-
-  interface SetOutputOptions {
-    merge?: boolean
   }
 
   /**
