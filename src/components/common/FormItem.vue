@@ -38,6 +38,7 @@ import { type Component, markRaw } from 'vue'
 
 import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
+import FormAudioUpload from '@/components/common/FormAudioUpload.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
@@ -99,6 +100,8 @@ function getFormComponent(item: FormItem): Component {
       return Select
     case 'image':
       return FormImageUpload
+    case 'audio':
+      return FormAudioUpload
     case 'color':
       return FormColorPicker
     case 'url':
