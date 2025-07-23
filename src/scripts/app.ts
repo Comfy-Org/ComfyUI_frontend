@@ -644,12 +644,9 @@ export class ComfyApp {
       const nodeOutputStore = useNodeOutputStore()
       const executionId = String(detail.display_node || detail.node)
 
-      // Store the output using the new method
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
         merge: detail.merge
       })
-
-      // Call onExecuted callback (unchanged)
       const node = this.graph.getNodeById(detail.display_node || detail.node)
       if (node) {
         if (node.onExecuted) node.onExecuted(detail.output)

@@ -10,6 +10,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
 
@@ -89,51 +90,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     })
   }
 
-  function setNodeOutputs(
-    node: LGraphNode,
-    filenames: string | string[] | ResultItem,
-    {
-      folder = 'input',
-      isAnimated = false
-    }: { folder?: ResultItemType; isAnimated?: boolean } = {}
-  ) {
-    if (!filenames || !node) return
-
-    const nodeId = nodeIdToNodeLocatorId(node.id)
-
-    if (typeof filenames === 'string') {
-      app.nodeOutputs[nodeId] = createOutputs([filenames], folder, isAnimated)
-    } else if (!Array.isArray(filenames)) {
-      app.nodeOutputs[nodeId] = filenames
-    } else {
-      const resultItems = createOutputs(filenames, folder, isAnimated)
-      if (!resultItems?.images?.length) return
-      app.nodeOutputs[nodeId] = resultItems
-    }
+  interface SetOutputOptions {
+    merge?: boolean
   }
 
   /**
-   * Set node outputs by execution ID (hierarchical ID from backend).
-   * Converts the execution ID to a NodeLocatorId before storing.
-   *
-   * @param executionId - The execution ID (e.g., "123:456:789" or "789")
-   * @param outputs - The outputs to store
-   * @param options - Options for setting outputs
-   * @param options.merge - If true, merge with existing outputs (arrays are concatenated)
+   * Internal function to set outputs by NodeLocatorId.
+   * Handles the merge logic when needed.
    */
-  function setNodeOutputsByExecutionId(
-    executionId: string,
+  function setOutputsByLocatorId(
+    nodeLocatorId: NodeLocatorId,
     outputs: ExecutedWsMessage['output'] | ResultItem,
-    options: { merge?: boolean } = {}
+    options: SetOutputOptions = {}
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
-
-    if (!nodeLocatorId) return
-
     if (options.merge) {
       const existingOutput = app.nodeOutputs[nodeLocatorId]
       if (existingOutput && outputs) {
-        // Merge outputs following the same logic as the original code
         for (const k in outputs) {
           const existingValue = existingOutput[k]
           const newValue = (outputs as any)[k]
@@ -151,19 +123,68 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     app.nodeOutputs[nodeLocatorId] = outputs
   }
 
+  function setNodeOutputs(
+    node: LGraphNode,
+    filenames: string | string[] | ResultItem,
+    {
+      folder = 'input',
+      isAnimated = false
+    }: { folder?: ResultItemType; isAnimated?: boolean } = {}
+  ) {
+    if (!filenames || !node) return
+
+    const nodeLocatorId = nodeIdToNodeLocatorId(node.id)
+
+    if (typeof filenames === 'string') {
+      setOutputsByLocatorId(
+        nodeLocatorId,
+        createOutputs([filenames], folder, isAnimated)
+      )
+    } else if (!Array.isArray(filenames)) {
+      setOutputsByLocatorId(nodeLocatorId, filenames)
+    } else {
+      const resultItems = createOutputs(filenames, folder, isAnimated)
+      if (!resultItems?.images?.length) return
+      setOutputsByLocatorId(nodeLocatorId, resultItems)
+    }
+  }
+
+  /**
+   * Set node outputs by execution ID (hierarchical ID from backend).
+   * Converts the execution ID to a NodeLocatorId before storing.
+   *
+   * @param executionId - The execution ID (e.g., "123:456:789" or "789")
+   * @param outputs - The outputs to store
+   * @param options - Options for setting outputs
+   * @param options.merge - If true, merge with existing outputs (arrays are concatenated)
+   */
+  function setNodeOutputsByExecutionId(
+    executionId: string,
+    outputs: ExecutedWsMessage['output'] | ResultItem,
+    options: SetOutputOptions = {}
+  ) {
+    const nodeLocatorId = executionIdToNodeLocatorId(executionId)
+    if (!nodeLocatorId) return
+
+    setOutputsByLocatorId(nodeLocatorId, outputs, options)
+  }
+
   /**
    * Set node outputs by node ID.
    * Uses the current graph context to create the appropriate NodeLocatorId.
    *
    * @param nodeId - The node ID
    * @param outputs - The outputs to store
+   * @param options - Options for setting outputs
+   * @param options.merge - If true, merge with existing outputs (arrays are concatenated)
    */
   function setNodeOutputsByNodeId(
     nodeId: string | number,
-    outputs: ExecutedWsMessage['output'] | ResultItem
+    outputs: ExecutedWsMessage['output'] | ResultItem,
+    options: SetOutputOptions = {}
   ) {
     const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
-    app.nodeOutputs[nodeLocatorId] = outputs
+    setOutputsByLocatorId(nodeLocatorId, outputs, options)
   }
 
   return {
