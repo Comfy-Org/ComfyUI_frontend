@@ -3,6 +3,14 @@ import { nextTick } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 
+// Mock canvas store
+let mockGetCanvas = vi.fn()
+vi.mock('@/stores/graphStore', () => ({
+  useCanvasStore: vi.fn(() => ({
+    getCanvas: mockGetCanvas
+  }))
+}))
+
 describe('useCanvasTransformSync', () => {
   let mockCanvas: { ds: { scale: number; offset: [number, number] } }
   let syncFn: ReturnType<typeof vi.fn>
@@ -15,11 +23,12 @@ describe('useCanvasTransformSync', () => {
       }
     }
     syncFn = vi.fn()
+    mockGetCanvas = vi.fn(() => mockCanvas)
     vi.clearAllMocks()
   })
 
   it('should not call syncFn when transform has not changed', async () => {
-    const { startSync } = useCanvasTransformSync(() => mockCanvas, syncFn)
+    const { startSync } = useCanvasTransformSync(syncFn, { autoStart: false })
 
     startSync()
     await nextTick()
@@ -35,7 +44,7 @@ describe('useCanvasTransformSync', () => {
   })
 
   it('should call syncFn when scale changes', async () => {
-    const { startSync } = useCanvasTransformSync(() => mockCanvas, syncFn)
+    const { startSync } = useCanvasTransformSync(syncFn, { autoStart: false })
 
     startSync()
     await nextTick()
@@ -52,7 +61,7 @@ describe('useCanvasTransformSync', () => {
   })
 
   it('should call syncFn when offset changes', async () => {
-    const { startSync } = useCanvasTransformSync(() => mockCanvas, syncFn)
+    const { startSync } = useCanvasTransformSync(syncFn, { autoStart: false })
 
     startSync()
     await nextTick()
@@ -69,10 +78,9 @@ describe('useCanvasTransformSync', () => {
   })
 
   it('should stop calling syncFn after stopSync is called', async () => {
-    const { startSync, stopSync } = useCanvasTransformSync(
-      () => mockCanvas,
-      syncFn
-    )
+    const { startSync, stopSync } = useCanvasTransformSync(syncFn, {
+      autoStart: false
+    })
 
     startSync()
     await nextTick()
@@ -92,7 +100,8 @@ describe('useCanvasTransformSync', () => {
   })
 
   it('should handle null canvas gracefully', async () => {
-    const { startSync } = useCanvasTransformSync(() => null, syncFn)
+    mockGetCanvas.mockReturnValue(null)
+    const { startSync } = useCanvasTransformSync(syncFn, { autoStart: false })
 
     startSync()
     await nextTick()
@@ -105,11 +114,11 @@ describe('useCanvasTransformSync', () => {
     const onStart = vi.fn()
     const onStop = vi.fn()
 
-    const { startSync, stopSync } = useCanvasTransformSync(
-      () => mockCanvas,
-      syncFn,
-      { onStart, onStop }
-    )
+    const { startSync, stopSync } = useCanvasTransformSync(syncFn, {
+      autoStart: false,
+      onStart,
+      onStop
+    })
 
     startSync()
     expect(onStart).toHaveBeenCalledTimes(1)

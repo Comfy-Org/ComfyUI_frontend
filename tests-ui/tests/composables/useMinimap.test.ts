@@ -95,7 +95,8 @@ const setupMocks = () => {
 setupMocks()
 
 const defaultCanvasStore = {
-  canvas: mockCanvas
+  canvas: mockCanvas,
+  getCanvas: () => defaultCanvasStore.canvas
 }
 
 const defaultSettingStore = {
