@@ -31,8 +31,9 @@
 
 <script setup lang="ts">
 import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, onUnmounted, ref } from 'vue'
 
+import { useEventForwarding } from '@/composables/graph/useEventForwarding'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LODLevel } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -103,19 +104,25 @@ const getActualInputIndex = (
   return actualIndex !== -1 ? actualIndex : filteredIndex
 }
 
+// Set up event forwarding for slot interactions
+const { handleSlotPointerDown, cleanup } = useEventForwarding()
+
 // Handle input slot click
-const handleInputSlotClick = (index: number, event: PointerEvent) => {
-  // TODO: Click handling will be implemented by passing events through to LiteGraph
-  // LiteGraph will have slots rendered in the same location and will handle the connection logic
-  console.log('Input slot clicked:', index, event)
+const handleInputSlotClick = (_index: number, event: PointerEvent) => {
+  // Forward the event to LiteGraph for native slot handling
+  handleSlotPointerDown(event)
 }
 
 // Handle output slot click
-const handleOutputSlotClick = (index: number, event: PointerEvent) => {
-  // TODO: Click handling will be implemented by passing events through to LiteGraph
-  // LiteGraph will have slots rendered in the same location and will handle the connection logic
-  console.log('Output slot clicked:', index, event)
+const handleOutputSlotClick = (_index: number, event: PointerEvent) => {
+  // Forward the event to LiteGraph for native slot handling
+  handleSlotPointerDown(event)
 }
+
+// Clean up event listeners on unmount
+onUnmounted(() => {
+  cleanup()
+})
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)

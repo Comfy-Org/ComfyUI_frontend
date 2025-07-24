@@ -19,6 +19,7 @@
           :index="index"
           :readonly="readonly"
           :dot-only="true"
+          @slot-click="handleWidgetSlotClick($event, widget)"
         />
       </div>
       <!-- Widget Component -->
@@ -36,11 +37,12 @@
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, onUnmounted, ref } from 'vue'
 
 // Import widget components directly
 import WidgetInputText from '@/components/graph/vueWidgets/WidgetInputText.vue'
 import { widgetTypeToComponent } from '@/components/graph/vueWidgets/widgetRegistry'
+import { useEventForwarding } from '@/composables/graph/useEventForwarding'
 import type {
   SafeWidgetData,
   VueNodeData
@@ -63,6 +65,9 @@ interface NodeWidgetsProps {
 }
 
 const props = defineProps<NodeWidgetsProps>()
+
+// Set up event forwarding for slot interactions
+const { handleSlotPointerDown, cleanup } = useEventForwarding()
 
 // Use widget renderer composable
 const { getWidgetComponent, shouldRenderAsVue } = useWidgetRenderer()
@@ -141,5 +146,19 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   }
 
   return result
+})
+
+// Handle widget slot click
+const handleWidgetSlotClick = (
+  event: PointerEvent,
+  _widget: ProcessedWidget
+) => {
+  // Forward the event to LiteGraph for native slot handling
+  handleSlotPointerDown(event)
+}
+
+// Clean up event listeners on unmount
+onUnmounted(() => {
+  cleanup()
 })
 </script>
