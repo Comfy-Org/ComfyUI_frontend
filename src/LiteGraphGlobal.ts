@@ -296,6 +296,13 @@ export class LiteGraphGlobal {
   macGesturesRequireMac: boolean = true
 
   /**
+   * "standard": change the dragging on left mouse button click to select, enable middle-click or spacebar+left-click dragging
+   * "legacy": Enable dragging on left-click (original behavior)
+   * @default "legacy"
+   */
+  canvasNavigationMode: "standard" | "legacy" = "legacy"
+
+  /**
    * If `true`, widget labels and values will both be truncated (proportionally to size),
    * until they fit within the widget.
    *

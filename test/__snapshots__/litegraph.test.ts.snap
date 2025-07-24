@@ -151,6 +151,7 @@ LiteGraphGlobal {
   "alwaysRepeatWarnings": false,
   "alwaysSnapToGrid": undefined,
   "auto_load_slot_types": false,
+  "canvasNavigationMode": "legacy",
   "catch_exceptions": true,
   "click_do_break_link_to": false,
   "context_menu_scaling": false,

@@ -2083,21 +2083,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const ctrlOrMeta = e.ctrlKey || e.metaKey
 
     // Multi-select drag rectangle
-    if (ctrlOrMeta && !e.altKey) {
-      const dragRect = new Float32Array(4)
-      dragRect[0] = x
-      dragRect[1] = y
-      dragRect[2] = 1
-      dragRect[3] = 1
+    if (ctrlOrMeta && !e.altKey && LiteGraph.canvasNavigationMode === "legacy") {
+      this.#setupNodeSelectionDrag(e, pointer, node)
 
-      pointer.onClick = (eUp) => {
-        // Click, not drag
-        const clickedItem = node ?? this.#getPositionableOnPos(eUp.canvasX, eUp.canvasY)
-        this.processSelect(clickedItem, eUp)
-      }
-      pointer.onDragStart = () => this.dragging_rectangle = dragRect
-      pointer.onDragEnd = upEvent => this.#handleMultiSelect(upEvent, dragRect)
-      pointer.finally = () => this.dragging_rectangle = null
       return
     }
 
@@ -2321,10 +2309,33 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      pointer.onClick = () => this.processSelect(null, e)
-      pointer.finally = () => this.dragging_canvas = false
-      this.dragging_canvas = true
+      // allow dragging canvas if canvas is not in standard, or read-only (pan mode in standard)
+      if (LiteGraph.canvasNavigationMode !== "standard" || this.read_only) {
+        pointer.onClick = () => this.processSelect(null, e)
+        pointer.finally = () => this.dragging_canvas = false
+        this.dragging_canvas = true
+      } else {
+        this.#setupNodeSelectionDrag(e, pointer)
+      }
     }
+  }
+
+  #setupNodeSelectionDrag(e: CanvasPointerEvent, pointer: CanvasPointer, node?: LGraphNode | undefined): void {
+    const dragRect = new Float32Array(4)
+
+    dragRect[0] = e.canvasX
+    dragRect[1] = e.canvasY
+    dragRect[2] = 1
+    dragRect[3] = 1
+
+    pointer.onClick = (eUp) => {
+      // Click, not drag
+      const clickedItem = node ?? this.#getPositionableOnPos(eUp.canvasX, eUp.canvasY)
+      this.processSelect(clickedItem, eUp)
+    }
+    pointer.onDragStart = () => this.dragging_rectangle = dragRect
+    pointer.onDragEnd = upEvent => this.#handleMultiSelect(upEvent, dragRect)
+    pointer.finally = () => this.dragging_rectangle = null
   }
 
   /**
@@ -3192,24 +3203,31 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let { scale } = this.ds
 
-    if (
-      LiteGraph.macTrackpadGestures &&
-      (!LiteGraph.macGesturesRequireMac || navigator.userAgent.includes("Mac"))
-    ) {
-      if (e.ctrlKey) {
-        scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
-        this.ds.changeScale(scale, [e.clientX, e.clientY], false)
-      } else {
-        this.ds.offset[0] -= e.deltaX * 1.18 * (1 / scale)
-        this.ds.offset[1] -= e.deltaY * 1.18 * (1 / scale)
-      }
-    } else {
+    if (LiteGraph.canvasNavigationMode === "legacy" || (LiteGraph.canvasNavigationMode === "standard" && e.ctrlKey)) {
       if (delta > 0) {
         scale *= this.zoom_speed
       } else if (delta < 0) {
         scale *= 1 / (this.zoom_speed)
       }
       this.ds.changeScale(scale, [e.clientX, e.clientY])
+    } else if (
+      LiteGraph.macTrackpadGestures &&
+      (!LiteGraph.macGesturesRequireMac || navigator.userAgent.includes("Mac"))
+    ) {
+      if (e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        if (e.deltaY > 0) {
+          scale *= 1 / this.zoom_speed
+        } else if (e.deltaY < 0) {
+          scale *= this.zoom_speed
+        }
+        this.ds.changeScale(scale, [e.clientX, e.clientY])
+      } else if (e.ctrlKey) {
+        scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
+        this.ds.changeScale(scale, [e.clientX, e.clientY], false)
+      } else {
+        this.ds.offset[0] -= e.deltaX * 1.18 * (1 / scale)
+        this.ds.offset[1] -= e.deltaY * 1.18 * (1 / scale)
+      }
     }
 
     this.graph.change()
