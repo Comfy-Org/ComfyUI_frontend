@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
+import Select from 'primevue/select'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -25,7 +26,8 @@ const mockNodePack = {
   id: 'test-pack',
   name: 'Test Pack',
   latest_version: { version: '1.0.0' },
-  repository: 'https://github.com/user/repo'
+  repository: 'https://github.com/user/repo',
+  has_registry_data: true
 }
 
 // Create mock functions
@@ -92,7 +94,8 @@ describe('PackVersionSelectorPopover', () => {
         plugins: [PrimeVue, createPinia(), i18n],
         components: {
           Listbox,
-          VerifiedIcon
+          VerifiedIcon,
+          Select
         }
       }
     })
@@ -451,9 +454,9 @@ describe('PackVersionSelectorPopover', () => {
         supported_accelerators: ['CPU'], // latest_version data takes precedence
         supported_comfyui_version: '>=0.1.0',
         supported_comfyui_frontend_version: '>=1.0.0',
-        supported_python_version: undefined,
-        is_banned: undefined,
-        has_registry_data: undefined
+        supported_python_version: '>=3.8',
+        is_banned: false,
+        has_registry_data: true
       })
     })
 
@@ -529,9 +532,9 @@ describe('PackVersionSelectorPopover', () => {
         supported_accelerators: ['CPU'],
         supported_comfyui_version: '>=0.1.0',
         supported_comfyui_frontend_version: '>=1.0.0',
-        supported_python_version: undefined,
-        is_banned: undefined,
-        has_registry_data: undefined
+        supported_python_version: '>=3.8',
+        is_banned: false,
+        has_registry_data: true
       })
 
       // Test nightly version
@@ -542,8 +545,8 @@ describe('PackVersionSelectorPopover', () => {
         supported_comfyui_version: '>=0.1.0',
         supported_comfyui_frontend_version: '>=1.0.0',
         supported_python_version: undefined,
-        is_banned: undefined,
-        has_registry_data: undefined
+        is_banned: false,
+        has_registry_data: false
       })
     })
 
@@ -620,7 +623,12 @@ describe('PackVersionSelectorPopover', () => {
       // Check that compatibility checking function was called
       expect(mockCheckVersionCompatibility).toHaveBeenCalled()
 
-      // The warning icon should be shown for banned packages
+      // Open the dropdown to see the options
+      const select = wrapper.findComponent({ name: 'Select' })
+      await select.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // The warning icon should be shown for banned packages in the dropdown options
       const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
       expect(warningIcons.length).toBeGreaterThan(0)
     })

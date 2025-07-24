@@ -193,7 +193,7 @@ describe('useConflictAcknowledgment', () => {
 
       expect(acknowledgmentState.value.modal_dismissed).toBe(true)
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'comfyui.conflict.modal.dismissed',
+        'comfy_manager_conflict_banner_dismissed',
         'true'
       )
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -215,7 +215,7 @@ describe('useConflictAcknowledgment', () => {
 
       expect(acknowledgmentState.value.red_dot_dismissed).toBe(true)
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'comfyui.conflict.red_dot.dismissed',
+        'comfy_help_center_conflict_seen',
         'true'
       )
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -249,7 +249,7 @@ describe('useConflictAcknowledgment', () => {
       })
 
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'comfyui.conflict.acknowledged',
+        'comfy_conflict_acknowledged',
         JSON.stringify([
           {
             package_id: 'TestPackage',

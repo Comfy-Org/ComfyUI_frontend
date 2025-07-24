@@ -5,9 +5,9 @@ import { computed } from 'vue'
  * LocalStorage keys for conflict acknowledgment tracking
  */
 const STORAGE_KEYS = {
-  CONFLICT_MODAL_DISMISSED: 'comfyui.conflict.modal.dismissed',
-  CONFLICT_RED_DOT_DISMISSED: 'comfyui.conflict.red_dot.dismissed',
-  ACKNOWLEDGED_CONFLICTS: 'comfyui.conflict.acknowledged',
+  CONFLICT_MODAL_DISMISSED: 'comfy_manager_conflict_banner_dismissed',
+  CONFLICT_RED_DOT_DISMISSED: 'comfy_help_center_conflict_seen',
+  ACKNOWLEDGED_CONFLICTS: 'comfy_conflict_acknowledged',
   LAST_COMFYUI_VERSION: 'comfyui.last_version'
 } as const
 

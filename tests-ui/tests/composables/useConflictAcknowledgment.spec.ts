@@ -123,8 +123,8 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
     // VueUse useStorage should automatically persist to localStorage
     // We can verify the keys exist (values will be stringified by VueUse)
     expect(
-      localStorage.getItem('comfyui.conflict.modal.dismissed')
+      localStorage.getItem('comfy_manager_conflict_banner_dismissed')
     ).not.toBeNull()
-    expect(localStorage.getItem('comfyui.conflict.acknowledged')).not.toBeNull()
+    expect(localStorage.getItem('comfy_conflict_acknowledged')).not.toBeNull()
   })
 })
