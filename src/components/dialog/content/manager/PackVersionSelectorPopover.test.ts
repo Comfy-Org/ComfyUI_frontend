@@ -17,7 +17,17 @@ import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
 // Default mock versions for reference
 const defaultMockVersions = [
-  { version: '1.0.0', createdAt: '2023-01-01' },
+  { 
+    version: '1.0.0', 
+    createdAt: '2023-01-01',
+    supported_os: ['windows', 'linux'],
+    supported_accelerators: ['CPU'],
+    supported_comfyui_version: '>=0.1.0',
+    supported_comfyui_frontend_version: '>=1.0.0',
+    supported_python_version: '>=3.8',
+    is_banned: false,
+    has_registry_data: true
+  },
   { version: '0.9.0', createdAt: '2022-12-01' },
   { version: '0.8.0', createdAt: '2022-11-01' }
 ]
@@ -25,7 +35,16 @@ const defaultMockVersions = [
 const mockNodePack = {
   id: 'test-pack',
   name: 'Test Pack',
-  latest_version: { version: '1.0.0' },
+  latest_version: { 
+    version: '1.0.0',
+    supported_os: ['windows', 'linux'],
+    supported_accelerators: ['CPU'],
+    supported_comfyui_version: '>=0.1.0',
+    supported_comfyui_frontend_version: '>=1.0.0',
+    supported_python_version: '>=3.8',
+    is_banned: false,
+    has_registry_data: true
+  },
   repository: 'https://github.com/user/repo',
   has_registry_data: true
 }
@@ -624,8 +643,16 @@ describe('PackVersionSelectorPopover', () => {
       expect(mockCheckVersionCompatibility).toHaveBeenCalled()
 
       // Open the dropdown to see the options
-      const select = wrapper.findComponent({ name: 'Select' })
-      await select.trigger('click')
+      const select = wrapper.find('.p-select')
+      if (!select.exists()) {
+        // Try alternative selector
+        const selectButton = wrapper.find('[aria-haspopup="listbox"]')
+        if (selectButton.exists()) {
+          await selectButton.trigger('click')
+        }
+      } else {
+        await select.trigger('click')
+      }
       await wrapper.vm.$nextTick()
 
       // The warning icon should be shown for banned packages in the dropdown options

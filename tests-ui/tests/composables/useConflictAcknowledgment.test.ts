@@ -49,11 +49,11 @@ describe('useConflictAcknowledgment', () => {
     it('should load existing state from localStorage', () => {
       mockLocalStorage.getItem.mockImplementation((key) => {
         switch (key) {
-          case 'comfyui.conflict.modal.dismissed':
+          case 'comfy_manager_conflict_banner_dismissed':
             return 'true'
-          case 'comfyui.conflict.red_dot.dismissed':
+          case 'comfy_help_center_conflict_seen':
             return 'true'
-          case 'comfyui.conflict.acknowledged':
+          case 'comfy_conflict_acknowledged':
             return JSON.stringify([
               {
                 package_id: 'TestPackage',
@@ -88,7 +88,7 @@ describe('useConflictAcknowledgment', () => {
 
     it('should handle corrupted localStorage data gracefully', () => {
       mockLocalStorage.getItem.mockImplementation((key) => {
-        if (key === 'comfyui.conflict.acknowledged') {
+        if (key === 'comfy_conflict_acknowledged') {
           return 'invalid-json'
         }
         return null
