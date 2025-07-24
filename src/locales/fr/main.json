@@ -338,6 +338,7 @@
     "noTasksFoundMessage": "Il n'y a pas de tâches dans la file d'attente.",
     "noWorkflowsFound": "Aucun flux de travail trouvé.",
     "nodes": "Nœuds",
+    "nodesRunning": "nœuds en cours d’exécution",
     "ok": "OK",
     "openNewIssue": "Ouvrir un nouveau problème",
     "overwrite": "Écraser",

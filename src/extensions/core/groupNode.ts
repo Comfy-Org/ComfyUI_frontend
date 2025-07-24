@@ -15,6 +15,7 @@ import {
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -1224,9 +1225,10 @@ export class GroupNodeHandler {
     node.onDrawForeground = function (ctx) {
       // @ts-expect-error fixme ts strict error
       onDrawForeground?.apply?.(this, arguments)
+      const progressState = useExecutionStore().nodeProgressStates[this.id]
       if (
-        // @ts-expect-error fixme ts strict error
-        +app.runningNodeId === this.id &&
+        progressState &&
+        progressState.state === 'running' &&
         this.runningInternalNodeId !== null
       ) {
         // @ts-expect-error fixme ts strict error
@@ -1340,6 +1342,7 @@ export class GroupNodeHandler {
     this.node.onRemoved = function () {
       // @ts-expect-error fixme ts strict error
       onRemoved?.apply(this, arguments)
+      // api.removeEventListener('progress_state', progress_state)
       api.removeEventListener('executing', executing)
       api.removeEventListener('executed', executed)
     }

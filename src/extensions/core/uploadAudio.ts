@@ -5,6 +5,7 @@ import type {
 } from '@comfyorg/litegraph/dist/types/widgets'
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
@@ -14,6 +15,8 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import { useToastStore } from '@/stores/toastStore'
+import { NodeLocatorId } from '@/types'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
@@ -142,14 +145,27 @@ app.registerExtension({
             audioUIWidget.element.classList.remove('empty-audio-widget')
           }
         }
+
+        audioUIWidget.onRemove = useChainCallback(
+          audioUIWidget.onRemove,
+          () => {
+            if (!audioUIWidget.element) return
+            audioUIWidget.element.pause()
+            audioUIWidget.element.src = ''
+            audioUIWidget.element.remove()
+          }
+        )
+
         return { widget: audioUIWidget }
       }
     }
   },
-  onNodeOutputsUpdated(nodeOutputs: Record<number, any>) {
-    for (const [nodeId, output] of Object.entries(nodeOutputs)) {
-      const node = app.graph.getNodeById(nodeId)
+  onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
+    for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
       if ('audio' in output) {
+        const node = getNodeByLocatorId(app.graph, nodeLocatorId)
+        if (!node) continue
+
         // @ts-expect-error fixme ts strict error
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'

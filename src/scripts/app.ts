@@ -47,6 +47,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -60,6 +61,10 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
+import {
+  getNodeByExecutionId,
+  triggerCallbackOnAllNodes
+} from '@/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
   fixLinkInputSlots,
@@ -75,6 +80,7 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import {
+  getAvifMetadata,
   getFlacMetadata,
   getLatentMetadata,
   getPngMetadata,
@@ -110,6 +116,8 @@ type Clipspace = {
   images?: any[] | null
   selectedIndex: number
   img_paste_mode: string
+  paintedIndex: number
+  combinedIndex: number
 }
 
 export class ComfyApp {
@@ -194,6 +202,8 @@ export class ComfyApp {
 
   /**
    * @deprecated Use useExecutionStore().executingNodeId instead
+   * TODO: Update to support multiple executing nodes. This getter returns only the first executing node.
+   * Consider updating consumers to handle multiple nodes or use executingNodeIds array.
    */
   get runningNodeId(): NodeId | null {
     return useExecutionStore().executingNodeId
@@ -349,13 +359,18 @@ export class ComfyApp {
       selectedIndex = node.imageIndex
     }
 
+    const paintedIndex = selectedIndex + 1
+    const combinedIndex = selectedIndex + 2
+
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
       images: node.images,
       selectedIndex: selectedIndex,
-      img_paste_mode: 'selected' // reset to default im_paste_mode state on copy action
+      img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
+      paintedIndex: paintedIndex,
+      combinedIndex: combinedIndex
     }
 
     ComfyApp.clipspace_return_node = null
@@ -368,6 +383,8 @@ export class ComfyApp {
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
+      const combinedImgSrc =
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex].src
       if (ComfyApp.clipspace.imgs && node.imgs) {
         if (node.images && ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
@@ -399,6 +416,28 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Paste the RGB canvas if paintedindex exists
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] &&
+        node.imgs
+      ) {
+        const paintedImg = new Image()
+        paintedImg.src =
+          ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src
+        node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
+      }
+
+      // Store only combined image inside the node if it exists
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
+        node.imgs &&
+        combinedImgSrc
+      ) {
+        const combinedImg = new Image()
+        combinedImg.src = combinedImgSrc
+        node.imgs = [combinedImg]
       }
 
       if (node.widgets) {
@@ -635,36 +674,24 @@ export class ComfyApp {
 
     api.addEventListener('executing', () => {
       this.graph.setDirtyCanvas(true, false)
-      // @ts-expect-error fixme ts strict error
-      this.revokePreviews(this.runningNodeId)
-      // @ts-expect-error fixme ts strict error
-      delete this.nodePreviewImages[this.runningNodeId]
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      const output = this.nodeOutputs[detail.display_node || detail.node]
-      if (detail.merge && output) {
-        for (const k in detail.output ?? {}) {
-          const v = output[k]
-          if (v instanceof Array) {
-            output[k] = v.concat(detail.output[k])
-          } else {
-            output[k] = detail.output[k]
-          }
-        }
-      } else {
-        this.nodeOutputs[detail.display_node || detail.node] = detail.output
-      }
-      const node = this.graph.getNodeById(detail.display_node || detail.node)
-      if (node) {
-        if (node.onExecuted) node.onExecuted(detail.output)
+      const nodeOutputStore = useNodeOutputStore()
+      const executionId = String(detail.display_node || detail.node)
+
+      nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
+        merge: detail.merge
+      })
+
+      const node = getNodeByExecutionId(this.graph, executionId)
+      if (node && node.onExecuted) {
+        node.onExecuted(detail.output)
       }
     })
 
     api.addEventListener('execution_start', () => {
-      this.graph.nodes.forEach((node) => {
-        if (node.onExecutionStart) node.onExecutionStart()
-      })
+      triggerCallbackOnAllNodes(this.graph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -689,15 +716,16 @@ export class ComfyApp {
       this.canvas.draw(true, true)
     })
 
-    api.addEventListener('b_preview', ({ detail }) => {
-      const id = this.runningNodeId
-      if (id == null) return
-
-      const blob = detail
-      const blobUrl = URL.createObjectURL(blob)
+    api.addEventListener('b_preview_with_metadata', ({ detail }) => {
+      // Enhanced preview with explicit node context
+      const { blob, displayNodeId } = detail
+      const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
+        useNodeOutputStore()
       // Ensure clean up if `executing` event is missed.
-      this.revokePreviews(id)
-      this.nodePreviewImages[id] = [blobUrl]
+      revokePreviewsByExecutionId(displayNodeId)
+      const blobUrl = URL.createObjectURL(blob)
+      // Preview cleanup is handled in progress_state event to support multiple concurrent previews
+      setNodePreviewsByExecutionId(displayNodeId, [blobUrl])
     })
 
     api.init()
@@ -1355,6 +1383,16 @@ export class ComfyApp {
       } else {
         this.showErrorOnFileLoad(file)
       }
+    } else if (file.type === 'image/avif') {
+      const { workflow, prompt } = await getAvifMetadata(file)
+
+      if (workflow) {
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
+      } else if (prompt) {
+        this.loadApiJson(JSON.parse(prompt), fileName)
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
     } else if (file.type === 'image/webp') {
       const pngInfo = await getWebpMetadata(file)
       // Support loading workflows from that webp custom node.
@@ -1677,24 +1715,12 @@ export class ComfyApp {
   }
 
   /**
-   * Frees memory allocated to image preview blobs for a specific node, by revoking the URLs associated with them.
-   * @param nodeId ID of the node to revoke all preview images of
-   */
-  revokePreviews(nodeId: NodeId) {
-    if (!this.nodePreviewImages[nodeId]?.[Symbol.iterator]) return
-    for (const url of this.nodePreviewImages[nodeId]) {
-      URL.revokeObjectURL(url)
-    }
-  }
-  /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
-    for (const id of Object.keys(this.nodePreviewImages)) {
-      this.revokePreviews(id)
-    }
-    this.nodePreviewImages = {}
+    const { revokeAllPreviews } = useNodeOutputStore()
+    revokeAllPreviews()
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null

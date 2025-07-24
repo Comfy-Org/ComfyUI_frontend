@@ -338,6 +338,7 @@
     "noTasksFoundMessage": "В очереди нет задач.",
     "noWorkflowsFound": "Рабочие процессы не найдены.",
     "nodes": "Узлы",
+    "nodesRunning": "запущено узлов",
     "ok": "ОК",
     "openNewIssue": "Открыть новую проблему",
     "overwrite": "Перезаписать",

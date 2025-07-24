@@ -137,7 +137,8 @@
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "micPermissionDenied": "Microphone permission denied",
-    "noAudioRecorded": "No audio recorded"
+    "noAudioRecorded": "No audio recorded",
+    "nodesRunning": "nodes running"
   },
   "manager": {
     "title": "Custom Nodes Manager",
