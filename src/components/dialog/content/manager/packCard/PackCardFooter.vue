@@ -10,14 +10,11 @@
       <template v-if="!isInstalled">
         <PackInstallButton
           :node-packs="[nodePack]"
-          :has-conflict="!!packageConflicts"
+          :has-conflict="hasConflict"
         />
       </template>
       <template v-else>
-        <PackEnableToggle
-          :node-pack="nodePack"
-          :has-conflict="!!packageConflicts"
-        />
+        <PackEnableToggle :node-pack="nodePack" :has-conflict="hasConflict" />
       </template>
     </div>
   </div>
@@ -33,7 +30,6 @@ import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -51,91 +47,38 @@ const formattedDownloads = computed(() =>
 const conflictStore = useConflictDetectionStore()
 const { checkVersionCompatibility } = useConflictDetection()
 
-// Function to check compatibility for uninstalled packages using centralized logic
-function checkUninstalledPackageCompatibility(
-  pack: components['schemas']['Node']
-): ConflictDetectionResult | null {
-  const compatibility = checkVersionCompatibility({
-    supported_os: pack.supported_os,
-    supported_accelerators: pack.supported_accelerators,
-    supported_comfyui_version: pack.supported_comfyui_version,
-    supported_comfyui_frontend_version: pack.supported_comfyui_frontend_version
-  })
-
-  if (compatibility.hasConflict) {
-    return {
-      package_id: pack.id || 'unknown',
-      package_name: pack.name || 'unknown',
-      has_conflict: true,
-      conflicts: compatibility.conflicts,
-      is_compatible: false
-    }
-  }
-
-  return null
-}
-
-const packageConflicts = computed(() => {
-  if (!nodePack.id) return null
+// TODO: Package version mismatch issue - Package IDs include version suffixes (@1_0_3)
+// but UI searches without version. This causes conflict detection failures.
+// Once getConflictsForPackage is improved to handle version matching properly,
+// all the complex fallback logic below can be removed.
+const hasConflict = computed(() => {
+  if (!nodePack.id) return false
 
   // For installed packages, check conflicts from store
   if (isInstalled.value) {
+    // Try exact match first
     let conflicts = conflictStore.getConflictsForPackage(nodePack.id)
+    if (conflicts) return true
 
-    // Try exact match by package_id
-    if (!conflicts && nodePack.id) {
-      conflicts =
-        conflictStore.conflictedPackages.find(
-          (p) => p.package_id.toLowerCase() === nodePack.id?.toLowerCase()
-        ) || undefined
-    }
-
-    // Try exact match by package_name
-    if (!conflicts && nodePack.name) {
-      conflicts =
-        conflictStore.conflictedPackages.find(
-          (p) => p.package_name === nodePack.name
-        ) || undefined
-    }
-
-    // Try partial matching - check if nodePack.id is contained in conflict package_id
-    if (!conflicts && nodePack.id) {
-      conflicts =
-        conflictStore.conflictedPackages.find(
-          (p) =>
-            p.package_id
-              .toLowerCase()
-              .includes(nodePack.id?.toLowerCase() || '') ||
-            nodePack.id?.toLowerCase().includes(p.package_id.toLowerCase())
-        ) || undefined
-    }
-
-    // Try partial matching with name
-    if (!conflicts && nodePack.name) {
-      conflicts =
-        conflictStore.conflictedPackages.find(
-          (p) =>
-            p.package_name
-              .toLowerCase()
-              .includes(nodePack.name?.toLowerCase() || '') ||
-            nodePack.name?.toLowerCase().includes(p.package_name.toLowerCase())
-        ) || undefined
-    }
-
-    return conflicts
+    return false
   }
 
-  // For not installed packages (All tab), check compatibility directly
-  // from the node pack's latest version info
+  // For uninstalled packages, check compatibility directly
   if (
     nodePack.supported_os ||
     nodePack.supported_accelerators ||
     nodePack.supported_comfyui_version
   ) {
-    // This will be checked in real-time
-    return checkUninstalledPackageCompatibility(nodePack)
+    const compatibility = checkVersionCompatibility({
+      supported_os: nodePack.supported_os,
+      supported_accelerators: nodePack.supported_accelerators,
+      supported_comfyui_version: nodePack.supported_comfyui_version,
+      supported_comfyui_frontend_version:
+        nodePack.supported_comfyui_frontend_version
+    })
+    return compatibility.hasConflict
   }
 
-  return null
+  return false
 })
 </script>
