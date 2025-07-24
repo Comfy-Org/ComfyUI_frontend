@@ -65,29 +65,23 @@ jobs:
         uses: anthropics/claude-code-base-action@beta
         with:
           prompt: |
-            IMPORTANT: You have full permission to use the Bash tool. When you see bash code blocks in the review instructions, you MUST execute them using the Bash tool.
-            
             You are in the root directory of the ComfyUI_frontend repository.
-            Read .claude/commands/comprehensive-pr-review.md and follow ALL instructions within it.
-            
-            CRITICAL EXECUTION FLOW:
-            1. When you see bash code blocks under Phase 0, 1, and 2 - COPY the bash code and execute it using the Bash tool
-            2. After running setup scripts, you'll have:
+            Read .claude/commands/comprehensive-pr-review.md and follow ALL instructions within it:
+            1. Execute the bash code blocks in Phases 0-2 to set up the environment
+            2. After Phase 2, you'll have:
                - changed_files.txt with list of modified files
                - pr_info.json with PR metadata
                - The PR branch checked out locally
-            3. For Phase 3-6 analysis:
-               - Read each file listed in changed_files.txt using the Read tool
-               - Analyze them according to all criteria in Phases 3-6
-               - When you find issues, use the post_review_comment bash function you defined in Phase 0
-            4. Execute Phase 7 bash code to post the summary
-            
+            3. Perform the deep analysis described in Phases 3-6 by:
+               - Reading each file listed in changed_files.txt using the Read tool
+               - Analyzing them according to all criteria in Phases 3-6
+               - For each issue found, call: post_review_comment "filepath" line_number "severity" "category" "issue" "context" "suggestion"
+            4. Finally execute Phase 7 to post the summary
             The PR_NUMBER is ${{ github.event.pull_request.number }} and already set as an environment variable.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           max_turns: 30
           timeout_minutes: 30
-          allowed_tools: "Bash(*),Read,Write,Edit,Glob,Grep,WebFetch"
-          auto_approve_bash: true
+          allowed_tools: "Bash(git:*),Bash(gh:*),Bash(jq:*),Bash(curl:*),Bash(echo:*),Bash(mkdir:*),Bash(mv:*),Bash(cp:*),Bash(find:*),Bash(cat:*),Bash(wc:*),Bash(awk:*),Bash(date:*),Bash(export:*),Read,Write,Edit,Glob,Grep,WebFetch"
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
