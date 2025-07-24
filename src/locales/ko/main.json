@@ -82,6 +82,12 @@
       "title": "계정 생성"
     }
   },
+  "breadcrumbsMenu": {
+    "clearWorkflow": "워크플로우 지우기",
+    "deleteWorkflow": "워크플로우 삭제",
+    "duplicate": "복제",
+    "enterNewName": "새 이름 입력"
+  },
   "chatHistory": {
     "cancelEdit": "취소",
     "cancelEditTooltip": "편집 취소",
@@ -698,13 +704,17 @@
     "batchCountTooltip": "워크플로 작업을 실행 대기열에 반복 추가할 횟수",
     "clear": "워크플로 비우기",
     "clipspace": "클립스페이스 열기",
+    "dark": "다크",
     "disabled": "비활성화됨",
     "disabledTooltip": "워크플로 작업을 자동으로 실행 대기열에 추가하지 않습니다.",
     "execute": "실행",
+    "help": "도움말",
     "hideMenu": "메뉴 숨기기",
     "instant": "즉시",
     "instantTooltip": "워크플로 실행이 완료되면 즉시 실행 대기열에 추가합니다.",
     "interrupt": "현재 실행 취소",
+    "light": "라이트",
+    "manageExtensions": "확장 프로그램 관리",
     "onChange": "변경 시",
     "onChangeTooltip": "변경이 있는 경우에만 워크플로를 실행 대기열에 추가합니다.",
     "refresh": "노드 정의 새로 고침",
@@ -712,7 +722,9 @@
     "run": "실행",
     "runWorkflow": "워크플로우 실행 (시프트 키와 함께 클릭시 가장 먼저 실행)",
     "runWorkflowFront": "워크플로우 실행 (가장 먼저 실행)",
+    "settings": "설정",
     "showMenu": "메뉴 표시",
+    "theme": "테마",
     "toggleBottomPanel": "하단 패널 전환"
   },
   "menuLabels": {
@@ -1159,7 +1171,6 @@
       },
       "showFlatList": "평면 목록 표시"
     },
-    "themeToggle": "테마 전환",
     "workflowTab": {
       "confirmDelete": "정말로 이 워크플로를 삭제하시겠습니까?",
       "confirmDeleteTitle": "워크플로 삭제",

@@ -82,6 +82,12 @@
       "title": "Crea una cuenta"
     }
   },
+  "breadcrumbsMenu": {
+    "clearWorkflow": "Limpiar flujo de trabajo",
+    "deleteWorkflow": "Eliminar flujo de trabajo",
+    "duplicate": "Duplicar",
+    "enterNewName": "Ingrese un nuevo nombre"
+  },
   "chatHistory": {
     "cancelEdit": "Cancelar",
     "cancelEditTooltip": "Cancelar edición",
@@ -698,13 +704,17 @@
     "batchCountTooltip": "El número de veces que la generación del flujo de trabajo debe ser encolada",
     "clear": "Limpiar flujo de trabajo",
     "clipspace": "Abrir Clipspace",
+    "dark": "Oscuro",
     "disabled": "Deshabilitado",
     "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
     "execute": "Ejecutar",
+    "help": "Ayuda",
     "hideMenu": "Ocultar menú",
     "instant": "Instantáneo",
     "instantTooltip": "El flujo de trabajo se encolará instantáneamente después de que finalice una generación",
     "interrupt": "Cancelar ejecución actual",
+    "light": "Claro",
+    "manageExtensions": "Gestionar extensiones",
     "onChange": "Al cambiar",
     "onChangeTooltip": "El flujo de trabajo se encolará una vez que se haga un cambio",
     "refresh": "Actualizar definiciones de nodos",
@@ -712,7 +722,9 @@
     "run": "Ejecutar",
     "runWorkflow": "Ejecutar flujo de trabajo (Shift para encolar al frente)",
     "runWorkflowFront": "Ejecutar flujo de trabajo (Encolar al frente)",
+    "settings": "Configuración",
     "showMenu": "Mostrar menú",
+    "theme": "Tema",
     "toggleBottomPanel": "Alternar panel inferior"
   },
   "menuLabels": {
@@ -1159,7 +1171,6 @@
       },
       "showFlatList": "Mostrar lista plana"
     },
-    "themeToggle": "Cambiar tema",
     "workflowTab": {
       "confirmDelete": "¿Estás seguro de que quieres eliminar este flujo de trabajo?",
       "confirmDeleteTitle": "¿Eliminar flujo de trabajo?",

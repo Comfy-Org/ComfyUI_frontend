@@ -420,7 +420,6 @@
     "restart": "Restart"
   },
   "sideToolbar": {
-    "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
     "queue": "Queue",
@@ -521,7 +520,13 @@
     "clipspace": "Open Clipspace",
     "resetView": "Reset canvas view",
     "clear": "Clear workflow",
-    "toggleBottomPanel": "Toggle Bottom Panel"
+    "toggleBottomPanel": "Toggle Bottom Panel",
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light",
+    "manageExtensions": "Manage Extensions",
+    "settings": "Settings",
+    "help": "Help"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -1595,5 +1600,11 @@
   "whatsNewPopup": {
     "learnMore": "Learn more",
     "noReleaseNotes": "No release notes available."
+  },
+  "breadcrumbsMenu": {
+    "duplicate": "Duplicate",
+    "clearWorkflow": "Clear Workflow",
+    "deleteWorkflow": "Delete Workflow",
+    "enterNewName": "Enter new name"
   }
 }

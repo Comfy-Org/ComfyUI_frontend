@@ -82,6 +82,12 @@
       "title": "建立帳戶"
     }
   },
+  "breadcrumbsMenu": {
+    "clearWorkflow": "清除工作流程",
+    "deleteWorkflow": "刪除工作流程",
+    "duplicate": "複製",
+    "enterNewName": "輸入新名稱"
+  },
   "chatHistory": {
     "cancelEdit": "取消",
     "cancelEditTooltip": "取消編輯",
@@ -698,13 +704,17 @@
     "batchCountTooltip": "工作流程產生應排入佇列的次數",
     "clear": "清除工作流程",
     "clipspace": "開啟 Clipspace",
+    "dark": "深色",
     "disabled": "已停用",
     "disabledTooltip": "工作流程將不會自動排入佇列",
     "execute": "執行",
+    "help": "說明",
     "hideMenu": "隱藏選單",
     "instant": "立即",
     "instantTooltip": "每次產生完成後，工作流程會立即排入佇列",
     "interrupt": "取消目前執行",
+    "light": "淺色",
+    "manageExtensions": "管理擴充功能",
     "onChange": "變更時",
     "onChangeTooltip": "每當有變更時，工作流程會排入佇列",
     "refresh": "重新整理節點定義",
@@ -712,7 +722,9 @@
     "run": "執行",
     "runWorkflow": "執行工作流程（Shift 於前方排隊）",
     "runWorkflowFront": "執行工作流程（前方排隊）",
+    "settings": "設定",
     "showMenu": "顯示選單",
+    "theme": "主題",
     "toggleBottomPanel": "切換下方面板"
   },
   "menuLabels": {
@@ -1159,7 +1171,6 @@
       },
       "showFlatList": "顯示平面清單"
     },
-    "themeToggle": "切換主題",
     "workflowTab": {
       "confirmDelete": "您確定要刪除這個工作流程嗎？",
       "confirmDeleteTitle": "刪除工作流程？",
