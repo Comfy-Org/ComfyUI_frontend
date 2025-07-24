@@ -133,7 +133,7 @@ const handleToggleClick = (enable: boolean) => {
 
 const onToggle = debounce(
   (enable: boolean) => {
-    void handleToggle(enable, true) // Skip conflict check when called from onDismiss
+    void performToggle(enable) // Direct call to avoid circular reference
   },
   TOGGLE_DEBOUNCE_MS,
   { trailing: true }
