@@ -563,6 +563,7 @@ export class ComfyPage {
         if (fileName.endsWith('.webm')) return 'video/webm'
         if (fileName.endsWith('.json')) return 'application/json'
         if (fileName.endsWith('.glb')) return 'model/gltf-binary'
+        if (fileName.endsWith('.avif')) return 'image/avif'
         return 'application/octet-stream'
       }
 
