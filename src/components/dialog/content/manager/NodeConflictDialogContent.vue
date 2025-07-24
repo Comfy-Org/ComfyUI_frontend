@@ -116,10 +116,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
-import type {
-  ConflictDetail,
-  ConflictDetectionResult
-} from '@/types/conflictDetectionTypes'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
 interface Props {
@@ -148,15 +145,9 @@ const conflictData = computed(() =>
     : props.conflicts
 )
 
-const allConflictDetails = computed(() => {
-  const details: ConflictDetail[] = []
-  conflictData.value.forEach((conflictResult) => {
-    conflictResult.conflicts.forEach((conflict) => {
-      details.push(conflict)
-    })
-  })
-  return details
-})
+const allConflictDetails = computed(() =>
+  conflictData.value.flatMap((result) => result.conflicts)
+)
 
 const toggleConflictsPanel = () => {
   conflictsExpanded.value = !conflictsExpanded.value
