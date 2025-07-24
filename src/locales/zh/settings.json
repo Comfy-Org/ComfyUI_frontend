@@ -328,10 +328,6 @@
       "Top": "顶部"
     }
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "校验节点定义（慢）",
-    "tooltip": "推荐给节点开发者。开启后会在 ComfyUI 启动时校验全部节点定义。"
-  },
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
   },

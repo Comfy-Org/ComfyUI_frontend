@@ -328,10 +328,6 @@
       "Top": "上"
     }
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "ノード定義を検証（遅い）",
-    "tooltip": "ノード開発者に推奨されます。これにより、起動時にすべてのノード定義が検証されます。"
-  },
   "Comfy_Validation_Workflows": {
     "name": "ワークフローを検証"
   },
