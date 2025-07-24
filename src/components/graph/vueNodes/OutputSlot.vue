@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph'
-import { COMFY_WIDGET_DIMENSIONS } from '@comfyorg/litegraph'
+import { COMFY_VUE_NODE_DIMENSIONS } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -72,7 +72,7 @@ onErrorCaptured((error) => {
 const slotColor = computed(() => getSlotColor(props.slotData.type))
 
 // Get slot height from litegraph constants
-const slotHeight = COMFY_WIDGET_DIMENSIONS.components.SLOT_HEIGHT
+const slotHeight = COMFY_VUE_NODE_DIMENSIONS.components.SLOT_HEIGHT
 
 // Handle click events
 const handleClick = (event: PointerEvent) => {

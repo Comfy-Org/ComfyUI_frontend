@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { COMFY_WIDGET_DIMENSIONS } from '@comfyorg/litegraph'
+import { COMFY_VUE_NODE_DIMENSIONS } from '@comfyorg/litegraph'
 import Select from 'primevue/select'
 import { computed } from 'vue'
 
@@ -52,7 +52,7 @@ const { localValue, onChange } = useWidgetValue({
 })
 
 // Get widget height from litegraph constants
-const widgetHeight = COMFY_WIDGET_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
+const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
