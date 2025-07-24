@@ -785,6 +785,11 @@ test.describe('Viewport settings', () => {
     // Go back to Workflow A
     await tabA.click()
     await comfyPage.nextFrame()
+
+    // not display minimap
+    await comfyPage.page.keyboard.press('Alt+KeyM')
+    await comfyPage.nextFrame()
+
     await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-a.png')
 
     // And back to Workflow B
