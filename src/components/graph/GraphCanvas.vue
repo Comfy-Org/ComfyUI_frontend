@@ -135,6 +135,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
 import { usePaste } from '@/composables/usePaste'
+import { useVueNodeSync } from '@/composables/useVueNodeSync'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
@@ -649,6 +650,7 @@ onMounted(async () => {
   useCopy()
   usePaste()
   useWorkflowAutoSave()
+  useVueNodeSync()
 
   comfyApp.vueAppReady = true
 
