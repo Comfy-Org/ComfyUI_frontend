@@ -24,6 +24,7 @@ import type {
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
@@ -229,9 +230,9 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
+    api.addEventListener('progress_text', handleProgressText)
+    api.addEventListener('display_component', handleDisplayComponent)
   }
-  api.addEventListener('progress_text', handleProgressText)
-  api.addEventListener('display_component', handleDisplayComponent)
 
   function unbindExecutionEvents() {
     api.removeEventListener('execution_start', handleExecutionStart)
@@ -244,6 +245,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
+    api.removeEventListener('display_component', handleDisplayComponent)
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -294,8 +296,8 @@ export const useExecutionStore = defineStore('execution', () => {
         // Note that we're doing the *actual* node id instead of the display node id
         // here intentionally. That way, we don't clear the preview every time a new node
         // within an expanded graph starts executing.
-        app.revokePreviews(nodeId)
-        delete app.nodePreviewImages[nodeId]
+        const { revokePreviewsByExecutionId } = useNodeOutputStore()
+        revokePreviewsByExecutionId(nodeId)
       }
     }
 
