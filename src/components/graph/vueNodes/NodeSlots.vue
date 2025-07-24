@@ -7,7 +7,6 @@
       <InputSlot
         v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
-        :node="actualNode"
         :slot-data="input"
         :index="getActualInputIndex(input, index)"
         :readonly="readonly"
@@ -21,7 +20,6 @@
       <OutputSlot
         v-for="(output, index) in filteredOutputs"
         :key="`output-${index}`"
-        :node="actualNode"
         :slot-data="output"
         :index="index"
         :readonly="readonly"
@@ -53,11 +51,6 @@ interface NodeSlotsProps {
 const props = defineProps<NodeSlotsProps>()
 
 const nodeInfo = computed(() => props.nodeData || props.node)
-
-// Get the actual LGraphNode instance for methods
-const actualNode = computed(() => {
-  return props.node as LGraphNode
-})
 
 // Filter out input slots that have corresponding widgets
 const filteredInputs = computed(() => {

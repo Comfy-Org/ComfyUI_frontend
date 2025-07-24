@@ -3,15 +3,34 @@
     ⚠️ Node Widgets Error
   </div>
   <div v-else class="lg-node-widgets flex flex-col gap-2">
-    <component
-      :is="widget.vueComponent"
+    <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      :widget="widget.simplified"
-      :model-value="widget.value"
-      :readonly="readonly"
-      @update:model-value="widget.updateHandler"
-    />
+      class="lg-widget-container relative flex items-center"
+    >
+      <!-- Widget Input Slot Dot -->
+      <div>
+        <InputSlot
+          :slot-data="{
+            name: widget.name,
+            type: widget.type,
+            boundingRect: [0, 0, 0, 0]
+          }"
+          :index="index"
+          :readonly="readonly"
+          :dot-only="true"
+        />
+      </div>
+      <!-- Widget Component -->
+      <component
+        :is="widget.vueComponent"
+        :widget="widget.simplified"
+        :model-value="widget.value"
+        :readonly="readonly"
+        class="flex-1"
+        @update:model-value="widget.updateHandler"
+      />
+    </div>
   </div>
 </template>
 
@@ -33,6 +52,8 @@ import {
 } from '@/composables/graph/useWidgetRenderer'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+
+import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   node?: LGraphNode
@@ -61,6 +82,7 @@ const nodeInfo = computed(() => props.nodeData || props.node)
 
 interface ProcessedWidget {
   name: string
+  type: string
   vueComponent: any
   simplified: SimplifiedWidget
   value: WidgetValue
@@ -110,6 +132,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     result.push({
       name: widget.name,
+      type: widget.type,
       vueComponent,
       simplified,
       value: widget.value,

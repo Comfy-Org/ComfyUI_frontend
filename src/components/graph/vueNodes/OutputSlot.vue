@@ -2,27 +2,31 @@
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
   <div
     v-else
-    class="lg-slot lg-slot--output flex items-center gap-2 py-1 pr-2 pl-4 cursor-crosshair hover:bg-black/5 justify-end"
+    class="lg-slot lg-slot--output flex items-center gap-2 cursor-crosshair justify-end group"
     :class="{
       'opacity-70': readonly,
       'lg-slot--connected': connected,
-      'lg-slot--compatible': compatible
+      'lg-slot--compatible': compatible,
+      'lg-slot--dot-only': dotOnly,
+      'py-1 pr-2 pl-4 hover:bg-black/5': !dotOnly,
+      'w-5 h-5 justify-center': dotOnly
     }"
     @pointerdown="handleClick"
   >
     <!-- Slot Name -->
-    <span class="text-xs text-surface-700 whitespace-nowrap">
+    <span v-if="!dotOnly" class="text-xs text-surface-700 whitespace-nowrap">
       {{ slotData.name || `Output ${index}` }}
     </span>
 
     <!-- Connection Dot -->
-    <div
-      class="lg-slot__dot w-3 h-3 rounded-full border-2"
-      :style="{
-        backgroundColor: connected ? slotColor : 'transparent',
-        borderColor: slotColor
-      }"
-    />
+    <div class="w-2.5 h-2.5 flex items-center justify-center">
+      <div
+        class="w-2 h-2 rounded-full bg-white transition-all duration-150 group-hover:w-2.5 group-hover:h-2.5 group-hover:border-2 group-hover:border-white"
+        :style="{
+          backgroundColor: slotColor
+        }"
+      />
+    </div>
   </div>
 </template>
 
@@ -34,12 +38,13 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 
 interface OutputSlotProps {
-  node: LGraphNode
+  node?: LGraphNode
   slotData: INodeSlot
   index: number
   connected?: boolean
   compatible?: boolean
   readonly?: boolean
+  dotOnly?: boolean
 }
 
 const props = defineProps<OutputSlotProps>()
