@@ -3,11 +3,8 @@ import type { LGraph, LGraphNode, Subgraph } from '@comfyorg/litegraph'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 
-// Pure utility functions with no dependencies on graph objects
-
 /**
  * Parses an execution ID into its component parts.
- * Pure function with no side effects.
  *
  * @param executionId - The execution ID (e.g., "123:456:789" or "789")
  * @returns Array of node IDs in the path, or null if invalid
@@ -19,7 +16,6 @@ export function parseExecutionId(executionId: string): string[] | null {
 
 /**
  * Extracts the local node ID from an execution ID.
- * Pure function with no side effects.
  *
  * @param executionId - The execution ID (e.g., "123:456:789" or "789")
  * @returns The local node ID or null if invalid
@@ -33,7 +29,6 @@ export function getLocalNodeIdFromExecutionId(
 
 /**
  * Extracts the subgraph path from an execution ID.
- * Pure function with no side effects.
  *
  * @param executionId - The execution ID (e.g., "123:456:789" or "789")
  * @returns Array of subgraph node IDs (excluding the final node ID), or empty array
@@ -43,11 +38,8 @@ export function getSubgraphPathFromExecutionId(executionId: string): string[] {
   return parts ? parts.slice(0, -1) : []
 }
 
-// Graph traversal helper functions
-
 /**
  * Visits each node in a graph (non-recursive, single level).
- * Pure function that doesn't modify the graph.
  *
  * @param graph - The graph to visit nodes from
  * @param visitor - Function called for each node
@@ -63,7 +55,6 @@ export function visitGraphNodes(
 
 /**
  * Traverses a path of subgraphs to reach a target graph.
- * Pure function that only reads graph properties.
  *
  * @param startGraph - The graph to start from
  * @param path - Array of subgraph node IDs to traverse
@@ -83,8 +74,6 @@ export function traverseSubgraphPath(
 
   return currentGraph
 }
-
-// Main exported functions refactored to use pure utilities
 
 /**
  * Traverses all nodes in a graph hierarchy (including subgraphs) and invokes
