@@ -1,8 +1,11 @@
+import { uniqBy } from 'lodash'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -13,7 +16,6 @@ import type {
   ConflictDetectionSummary,
   ConflictType,
   NodePackRequirements,
-  RecommendedAction,
   SupportedAccelerator,
   SupportedOS,
   SystemEnvironment
@@ -21,8 +23,8 @@ import type {
 import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import {
   cleanVersion,
-  describeVersionRange,
-  satisfiesVersion
+  satisfiesVersion,
+  checkVersionCompatibility as utilCheckVersionCompatibility
 } from '@/utils/versionUtil'
 
 /**
@@ -40,36 +42,28 @@ export function useConflictDetection() {
 
   // Conflict detection results
   const detectionResults = ref<ConflictDetectionResult[]>([])
+  // Store merged conflicts separately for testing
+  const storedMergedConflicts = ref<ConflictDetectionResult[]>([])
   const detectionSummary = ref<ConflictDetectionSummary | null>(null)
 
   // Registry API request cancellation
   const abortController = ref<AbortController | null>(null)
 
-  // Computed properties
-  const hasConflicts = computed(() =>
-    detectionResults.value.some((result) => result.has_conflict)
-  )
+  // Acknowledgment management
+  const acknowledgment = useConflictAcknowledgment()
 
-  const conflictedPackages = computed(() =>
-    detectionResults.value.filter((result) => result.has_conflict)
-  )
+  // Store management
+  const conflictStore = useConflictDetectionStore()
 
-  const bannedPackages = computed(() =>
-    detectionResults.value.filter((result) =>
-      result.conflicts.some((conflict) => conflict.type === 'banned')
-    )
-  )
+  // Computed properties - use store instead of local state
+  const hasConflicts = computed(() => conflictStore.hasConflicts)
+  const conflictedPackages = computed(() => {
+    return conflictStore.conflictedPackages
+  })
 
-  const securityPendingPackages = computed(() =>
-    detectionResults.value.filter((result) =>
-      result.conflicts.some((conflict) => conflict.type === 'security_pending')
-    )
-  )
-
-  const criticalConflicts = computed(() =>
-    detectionResults.value.flatMap((result) =>
-      result.conflicts.filter((conflict) => conflict.severity === 'error')
-    )
+  const bannedPackages = computed(() => conflictStore.bannedPackages)
+  const securityPendingPackages = computed(
+    () => conflictStore.securityPendingPackages
   )
 
   /**
@@ -388,50 +382,165 @@ export function useConflictDetection() {
       if (acceleratorConflict) conflicts.push(acceleratorConflict)
     }
 
-    // 5. Banned package check
-    if (packageReq.is_banned) {
-      conflicts.push({
-        type: 'banned',
-        severity: 'error',
-        description: `Package is banned: ${packageReq.ban_reason || 'Unknown reason'}`,
-        current_value: 'installed',
-        required_value: 'not_banned',
-        resolution_steps: ['Remove package', 'Find alternative package']
-      })
+    // 5. Banned package check using shared logic
+    const bannedConflict = checkBannedStatus(packageReq.is_banned)
+    if (bannedConflict) {
+      conflicts.push(bannedConflict)
     }
 
-    // 6. Registry data availability check
-    if (!packageReq.has_registry_data) {
-      conflicts.push({
-        type: 'security_pending',
-        severity: 'warning',
-        description:
-          'Registry data not available - compatibility cannot be verified',
-        current_value: 'no_registry_data',
-        required_value: 'registry_data_available',
-        resolution_steps: [
-          'Check if package exists in Registry',
-          'Verify package name is correct',
-          'Try again later if Registry is temporarily unavailable'
-        ]
-      })
+    // 6. Registry data availability check using shared logic
+    const securityConflict = checkSecurityStatus(packageReq.has_registry_data)
+    if (securityConflict) {
+      conflicts.push(securityConflict)
     }
 
     // Generate result
     const hasConflict = conflicts.length > 0
-    const canAutoResolve = conflicts.every(
-      (c) => c.resolution_steps && c.resolution_steps.length > 0
-    )
 
     return {
       package_id: packageReq.package_id,
       package_name: packageReq.package_name,
       has_conflict: hasConflict,
       conflicts,
-      is_compatible: !hasConflict,
-      can_auto_resolve: canAutoResolve,
-      recommended_action: determineRecommendedAction(conflicts)
+      is_compatible: !hasConflict
     }
+  }
+
+  /**
+   * Fetches Python import failure information from ComfyUI Manager.
+   * Gets installed packages and checks each one for import failures.
+   * @returns Promise that resolves to import failure data
+   */
+  async function fetchImportFailInfo(): Promise<Record<string, any>> {
+    try {
+      const comfyManagerService = useComfyManagerService()
+
+      // Get installed packages first
+      const installedPacks = await comfyManagerService.listInstalledPacks(
+        abortController.value?.signal
+      )
+
+      if (!installedPacks) {
+        console.warn('[ConflictDetection] No installed packages found')
+        return {}
+      }
+
+      const importFailures: Record<string, any> = {}
+
+      // Check each installed package for import failures
+      // Process in smaller batches to avoid overwhelming the API
+      const packageNames = Object.keys(installedPacks)
+      const batchSize = 10
+
+      for (let i = 0; i < packageNames.length; i += batchSize) {
+        const batch = packageNames.slice(i, i + batchSize)
+
+        const batchResults = await Promise.allSettled(
+          batch.map(async (packageName) => {
+            try {
+              // Try to get import failure info for this package
+              const failInfo = await comfyManagerService.getImportFailInfo(
+                { cnr_id: packageName },
+                abortController.value?.signal
+              )
+
+              if (failInfo) {
+                console.log(
+                  `[ConflictDetection] Import failure found for ${packageName}:`,
+                  failInfo
+                )
+                return { packageName, failInfo }
+              }
+            } catch (error) {
+              // If API returns 400, it means no import failure info available
+              // This is normal for packages that imported successfully
+              if (error && typeof error === 'object' && 'response' in error) {
+                const axiosError = error as any
+                if (axiosError.response?.status === 400) {
+                  return null // No failure info available (normal case)
+                }
+              }
+
+              console.warn(
+                `[ConflictDetection] Failed to check import failure for ${packageName}:`,
+                error
+              )
+            }
+            return null
+          })
+        )
+
+        // Process batch results
+        batchResults.forEach((result) => {
+          if (result.status === 'fulfilled' && result.value) {
+            const { packageName, failInfo } = result.value
+            importFailures[packageName] = failInfo
+          }
+        })
+      }
+
+      return importFailures
+    } catch (error) {
+      console.warn(
+        '[ConflictDetection] Failed to fetch import failure information:',
+        error
+      )
+      return {}
+    }
+  }
+
+  /**
+   * Detects runtime conflicts from Python import failures.
+   * @param importFailInfo Import failure data from Manager API
+   * @returns Array of conflict detection results for failed imports
+   */
+  function detectPythonImportConflicts(
+    importFailInfo: Record<string, any>
+  ): ConflictDetectionResult[] {
+    const results: ConflictDetectionResult[] = []
+
+    if (!importFailInfo || typeof importFailInfo !== 'object') {
+      return results
+    }
+
+    // Process import failures
+    for (const [packageName, failureInfo] of Object.entries(importFailInfo)) {
+      if (failureInfo && typeof failureInfo === 'object') {
+        // Extract error information from Manager API response
+        const errorMsg = failureInfo.msg || 'Unknown import error'
+        const modulePath = failureInfo.path || ''
+
+        // Parse error message to extract missing dependency
+        const missingDependency = extractMissingDependency(errorMsg)
+
+        const conflicts: ConflictDetail[] = [
+          {
+            type: 'python_dependency',
+            current_value: 'missing',
+            required_value: missingDependency
+          }
+        ]
+
+        results.push({
+          package_id: packageName,
+          package_name: packageName,
+          has_conflict: true,
+          conflicts,
+          is_compatible: false
+        })
+
+        console.warn(
+          `[ConflictDetection] Python import failure detected for ${packageName}:`,
+          {
+            path: modulePath,
+            error: errorMsg,
+            missingDependency
+          }
+        )
+      }
+    }
+
+    return results
   }
 
   /**
@@ -477,24 +586,83 @@ export function useConflictDetection() {
       )
 
       const conflictResults = await Promise.allSettled(conflictDetectionTasks)
-      const results: ConflictDetectionResult[] = conflictResults
+      const packageResults: ConflictDetectionResult[] = conflictResults
         .map((result) => (result.status === 'fulfilled' ? result.value : null))
         .filter((result): result is ConflictDetectionResult => result !== null)
 
-      // 4. Generate summary information
-      const summary = generateSummary(results, Date.now() - startTime)
+      // 4. Detect Python import failures
+      const importFailInfo = await fetchImportFailInfo()
+      const importFailResults = detectPythonImportConflicts(importFailInfo)
+      console.log(
+        '[ConflictDetection] Python import failures detected:',
+        importFailResults
+      )
 
-      // 5. Update state
-      detectionResults.value = results
+      // 5. Combine all results
+      const allResults = [...packageResults, ...importFailResults]
+
+      // 6. Generate summary information
+      const summary = generateSummary(allResults, Date.now() - startTime)
+
+      // 7. Update state
+      detectionResults.value = allResults
       detectionSummary.value = summary
       lastDetectionTime.value = new Date().toISOString()
 
       console.log('[ConflictDetection] Conflict detection completed:', summary)
 
+      // Store conflict results for later UI display
+      // Dialog will be shown based on specific events, not on app mount
+      if (allResults.some((result) => result.has_conflict)) {
+        const conflictedResults = allResults.filter(
+          (result) => result.has_conflict
+        )
+
+        // Merge conflicts for packages with the same name
+        const mergedConflicts = mergeConflictsByPackageName(conflictedResults)
+
+        console.log(
+          '[ConflictDetection] Conflicts detected (stored for UI):',
+          mergedConflicts
+        )
+
+        // Store merged conflicts in Pinia store for UI usage
+        conflictStore.setConflictedPackages(mergedConflicts)
+
+        // Also update local state for backward compatibility
+        detectionResults.value.splice(
+          0,
+          detectionResults.value.length,
+          ...mergedConflicts
+        )
+        storedMergedConflicts.value = [...mergedConflicts]
+
+        // Check for ComfyUI version change to reset acknowledgments
+        if (sysEnv.comfyui_version !== 'unknown') {
+          acknowledgment.checkComfyUIVersionChange(sysEnv.comfyui_version)
+        }
+
+        // TODO: Show red dot on Help Center based on acknowledgment.shouldShowRedDot
+        // TODO: Store conflict state for event-based dialog triggers
+
+        // Use merged conflicts in response as well
+        const response: ConflictDetectionResponse = {
+          success: true,
+          summary,
+          results: mergedConflicts,
+          detected_system_environment: sysEnv
+        }
+        return response
+      } else {
+        // No conflicts detected, clear the results
+        conflictStore.clearConflicts()
+        detectionResults.value = []
+      }
+
       const response: ConflictDetectionResponse = {
         success: true,
         summary,
-        results,
+        results: allResults,
         detected_system_environment: sysEnv
       }
 
@@ -557,6 +725,180 @@ export function useConflictDetection() {
 
   // Helper functions (implementations at the bottom of the file)
 
+  /**
+   * Check if conflicts should trigger modal display after "What's New" dismissal
+   */
+  async function shouldShowConflictModalAfterUpdate(): Promise<boolean> {
+    console.log(
+      '[ConflictDetection] Checking if conflict modal should show after update...'
+    )
+
+    // Ensure conflict detection has run
+    if (detectionResults.value.length === 0) {
+      console.log(
+        '[ConflictDetection] No detection results, running conflict detection...'
+      )
+      await performConflictDetection()
+    }
+
+    // Check if this is a version update scenario
+    // In a real scenario, this would check actual version change
+    // For now, we'll assume it's an update if we have conflicts and modal hasn't been dismissed
+    const hasActualConflicts = hasConflicts.value
+    const canShowModal = acknowledgment.shouldShowConflictModal.value
+
+    console.log('[ConflictDetection] Modal check:', {
+      hasConflicts: hasActualConflicts,
+      canShowModal: canShowModal,
+      conflictedPackagesCount: conflictedPackages.value.length
+    })
+
+    return hasActualConflicts && canShowModal
+  }
+
+  /**
+   * Mark conflict modal as dismissed
+   */
+  function dismissConflictModal(): void {
+    acknowledgment.dismissConflictModal()
+  }
+
+  /**
+   * Mark red dot notification as dismissed
+   */
+  function dismissRedDotNotification(): void {
+    acknowledgment.dismissRedDotNotification()
+  }
+
+  /**
+   * Acknowledge a specific conflict
+   */
+  function acknowledgePackageConflict(
+    packageId: string,
+    conflictType: string
+  ): void {
+    const currentVersion = systemEnvironment.value?.comfyui_version || 'unknown'
+    acknowledgment.acknowledgeConflict(packageId, conflictType, currentVersion)
+  }
+
+  /**
+   * Check compatibility for a specific version of a package.
+   * Used by components like PackVersionSelectorPopover.
+   */
+  function checkVersionCompatibility(versionData: {
+    supported_os?: string[]
+    supported_accelerators?: string[]
+    supported_comfyui_version?: string
+    supported_comfyui_frontend_version?: string
+    supported_python_version?: string
+    is_banned?: boolean
+    has_registry_data?: boolean
+  }) {
+    const systemStatsStore = useSystemStatsStore()
+    const systemStats = systemStatsStore.systemStats
+    if (!systemStats) return { hasConflict: false, conflicts: [] }
+
+    const conflicts: ConflictDetail[] = []
+
+    // Check OS compatibility using centralized function
+    if (versionData.supported_os && versionData.supported_os.length > 0) {
+      const currentOS = systemStats.system?.os || 'unknown'
+      const osConflict = checkOSConflict(
+        versionData.supported_os as SupportedOS[],
+        currentOS as SupportedOS
+      )
+      if (osConflict) {
+        conflicts.push(osConflict)
+      }
+    }
+
+    // Check accelerator compatibility using centralized function
+    if (
+      versionData.supported_accelerators &&
+      versionData.supported_accelerators.length > 0
+    ) {
+      // Extract available accelerators from system stats
+      const acceleratorInfo = extractAcceleratorInfo(systemStats)
+      const availableAccelerators: SupportedAccelerator[] = []
+
+      acceleratorInfo.available.forEach((accel) => {
+        if (accel === 'CUDA') availableAccelerators.push('CUDA')
+        if (accel === 'Metal') availableAccelerators.push('Metal')
+        if (accel === 'CPU') availableAccelerators.push('CPU')
+      })
+
+      const acceleratorConflict = checkAcceleratorConflict(
+        versionData.supported_accelerators as SupportedAccelerator[],
+        availableAccelerators
+      )
+      if (acceleratorConflict) {
+        conflicts.push(acceleratorConflict)
+      }
+    }
+
+    // Check ComfyUI version compatibility
+    if (versionData.supported_comfyui_version) {
+      const currentComfyUIVersion = systemStats.system?.comfyui_version
+      if (currentComfyUIVersion && currentComfyUIVersion !== 'unknown') {
+        const versionConflict = utilCheckVersionCompatibility(
+          'comfyui_version',
+          currentComfyUIVersion,
+          versionData.supported_comfyui_version
+        )
+        if (versionConflict) {
+          conflicts.push(versionConflict)
+        }
+      }
+    }
+
+    // Check ComfyUI Frontend version compatibility
+    if (versionData.supported_comfyui_frontend_version) {
+      const currentFrontendVersion = config.app_version
+      if (currentFrontendVersion && currentFrontendVersion !== 'unknown') {
+        const versionConflict = utilCheckVersionCompatibility(
+          'frontend_version',
+          currentFrontendVersion,
+          versionData.supported_comfyui_frontend_version
+        )
+        if (versionConflict) {
+          conflicts.push(versionConflict)
+        }
+      }
+    }
+
+    // Check Python version compatibility
+    if (versionData.supported_python_version) {
+      const currentPythonVersion = systemStats.system?.python_version
+      if (currentPythonVersion && currentPythonVersion !== 'unknown') {
+        const versionConflict = utilCheckVersionCompatibility(
+          'python_version',
+          currentPythonVersion,
+          versionData.supported_python_version
+        )
+        if (versionConflict) {
+          conflicts.push(versionConflict)
+        }
+      }
+    }
+
+    // Check banned package status using shared logic
+    const bannedConflict = checkBannedStatus(versionData.is_banned)
+    if (bannedConflict) {
+      conflicts.push(bannedConflict)
+    }
+
+    // Check security/registry data status using shared logic
+    const securityConflict = checkSecurityStatus(versionData.has_registry_data)
+    if (securityConflict) {
+      conflicts.push(securityConflict)
+    }
+
+    return {
+      hasConflict: conflicts.length > 0,
+      conflicts
+    }
+  }
+
   return {
     // State
     isDetecting: readonly(isDetecting),
@@ -571,17 +913,109 @@ export function useConflictDetection() {
     conflictedPackages,
     bannedPackages,
     securityPendingPackages,
-    criticalConflicts,
+
+    // Acknowledgment state
+    shouldShowConflictModal: acknowledgment.shouldShowConflictModal,
+    shouldShowRedDot: acknowledgment.shouldShowRedDot,
+    acknowledgedPackageIds: acknowledgment.acknowledgedPackageIds,
 
     // Methods
     performConflictDetection,
     detectSystemEnvironment,
     initializeConflictDetection,
-    cancelRequests
+    cancelRequests,
+    shouldShowConflictModalAfterUpdate,
+    dismissConflictModal,
+    dismissRedDotNotification,
+    acknowledgePackageConflict,
+
+    // Helper functions for other components
+    checkVersionCompatibility
   }
 }
 
 // Helper Functions Implementation
+
+/**
+ * Merges conflict results for packages with the same name.
+ * Combines all conflicts from different detection sources (registry, python, extension)
+ * into a single result per package name.
+ * @param conflicts Array of conflict detection results
+ * @returns Array of merged conflict detection results
+ */
+function mergeConflictsByPackageName(
+  conflicts: ConflictDetectionResult[]
+): ConflictDetectionResult[] {
+  const mergedMap = new Map<string, ConflictDetectionResult>()
+
+  conflicts.forEach((conflict) => {
+    const packageName = conflict.package_name
+
+    if (mergedMap.has(packageName)) {
+      // Package already exists, merge conflicts
+      const existing = mergedMap.get(packageName)!
+
+      // Combine all conflicts, avoiding duplicates using lodash uniqBy for O(n) performance
+      const allConflicts = [...existing.conflicts, ...conflict.conflicts]
+      const uniqueConflicts = uniqBy(
+        allConflicts,
+        (conflict) =>
+          `${conflict.type}|${conflict.current_value}|${conflict.required_value}`
+      )
+
+      // Update the existing entry
+      mergedMap.set(packageName, {
+        ...existing,
+        conflicts: uniqueConflicts,
+        has_conflict: uniqueConflicts.length > 0,
+        is_compatible: uniqueConflicts.length === 0
+      })
+    } else {
+      // New package, add as-is
+      mergedMap.set(packageName, conflict)
+    }
+  })
+
+  return Array.from(mergedMap.values())
+}
+
+/**
+ * Extracts missing dependency name from Python error message.
+ * @param errorMsg Error message from Python import failure
+ * @returns Name of missing dependency
+ */
+function extractMissingDependency(errorMsg: string): string {
+  // Try to extract module name from common error patterns
+
+  // Pattern 1: "ModuleNotFoundError: No module named 'module_name'"
+  const moduleNotFoundMatch = errorMsg.match(/No module named '([^']+)'/)
+  if (moduleNotFoundMatch) {
+    return moduleNotFoundMatch[1]
+  }
+
+  // Pattern 2: "ImportError: cannot import name 'something' from 'module_name'"
+  const importErrorMatch = errorMsg.match(
+    /cannot import name '[^']+' from '([^']+)'/
+  )
+  if (importErrorMatch) {
+    return importErrorMatch[1]
+  }
+
+  // Pattern 3: "from module_name import something" in the traceback
+  const fromImportMatch = errorMsg.match(/from ([a-zA-Z_][a-zA-Z0-9_]*) import/)
+  if (fromImportMatch) {
+    return fromImportMatch[1]
+  }
+
+  // Pattern 4: "import module_name" in the traceback
+  const importMatch = errorMsg.match(/import ([a-zA-Z_][a-zA-Z0-9_]*)/)
+  if (importMatch) {
+    return importMatch[1]
+  }
+
+  // Fallback: return generic message
+  return 'unknown dependency'
+}
 
 /**
  * Fetches frontend version from config.
@@ -876,51 +1310,10 @@ function checkVersionConflict(
     const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
 
     if (!isCompatible) {
-      // Generate user-friendly description using shared utility
-      const rangeDescription = describeVersionRange(supportedVersion)
-      const description = `${type} version incompatible: requires ${rangeDescription}`
-
-      // Generate resolution steps based on version range type
-      let resolutionSteps: string[] = []
-
-      if (supportedVersion.startsWith('>=')) {
-        const minVersion = supportedVersion.substring(2).trim()
-        resolutionSteps = [
-          `Update ${type} to version ${minVersion} or higher`,
-          'Check release notes for compatibility changes'
-        ]
-      } else if (supportedVersion.includes(' - ')) {
-        resolutionSteps = [
-          'Verify your version is within the supported range',
-          `Supported range: ${supportedVersion}`
-        ]
-      } else if (supportedVersion.includes('||')) {
-        resolutionSteps = [
-          'Check which version ranges are supported',
-          `Supported: ${supportedVersion}`
-        ]
-      } else if (
-        supportedVersion.startsWith('^') ||
-        supportedVersion.startsWith('~')
-      ) {
-        resolutionSteps = [
-          `Compatible versions: ${supportedVersion}`,
-          'Consider updating or downgrading as needed'
-        ]
-      } else {
-        resolutionSteps = [
-          `Required version: ${supportedVersion}`,
-          'Check if your version is compatible'
-        ]
-      }
-
       return {
         type,
-        severity: 'warning',
-        description,
         current_value: currentVersion,
-        required_value: supportedVersion,
-        resolution_steps: resolutionSteps
+        required_value: supportedVersion
       }
     }
 
@@ -932,14 +1325,8 @@ function checkVersionConflict(
     )
     return {
       type,
-      severity: 'info',
-      description: `Unable to parse version requirement: ${supportedVersion}`,
       current_value: currentVersion,
-      required_value: supportedVersion,
-      resolution_steps: [
-        'Check version format in Registry',
-        'Manually verify compatibility'
-      ]
+      required_value: supportedVersion
     }
   }
 }
@@ -957,11 +1344,8 @@ function checkOSConflict(
 
   return {
     type: 'os',
-    severity: 'error',
-    description: `Unsupported operating system`,
     current_value: currentOS,
-    required_value: supportedOS.join(', '),
-    resolution_steps: ['Switch to supported OS', 'Find alternative package']
+    required_value: supportedOS.join(', ')
   }
 }
 
@@ -981,39 +1365,37 @@ function checkAcceleratorConflict(
 
   return {
     type: 'accelerator',
-    severity: 'error',
-    description: `Required GPU/accelerator not available`,
     current_value: availableAccelerators.join(', '),
-    required_value: supportedAccelerators.join(', '),
-    resolution_steps: ['Install GPU drivers', 'Install CUDA/ROCm']
+    required_value: supportedAccelerators.join(', ')
   }
 }
 
 /**
- * Determines recommended action based on detected conflicts.
+ * Checks for banned package status conflicts.
  */
-function determineRecommendedAction(
-  conflicts: ConflictDetail[]
-): RecommendedAction {
-  if (conflicts.length === 0) {
+function checkBannedStatus(isBanned?: boolean): ConflictDetail | null {
+  if (isBanned === true) {
     return {
-      action_type: 'ignore',
-      reason: 'No conflicts detected',
-      steps: [],
-      estimated_difficulty: 'easy'
+      type: 'banned',
+      current_value: 'installed',
+      required_value: 'not_banned'
     }
   }
+  return null
+}
 
-  const hasError = conflicts.some((c) => c.severity === 'error')
-
-  return {
-    action_type: hasError ? 'disable' : 'manual_review',
-    reason: hasError
-      ? 'Critical compatibility issues found'
-      : 'Warning items need review',
-    steps: conflicts.flatMap((c) => c.resolution_steps || []),
-    estimated_difficulty: hasError ? 'hard' : 'medium'
+/**
+ * Checks for security/registry data availability conflicts.
+ */
+function checkSecurityStatus(hasRegistryData?: boolean): ConflictDetail | null {
+  if (hasRegistryData === false) {
+    return {
+      type: 'security_pending',
+      current_value: 'no_registry_data',
+      required_value: 'registry_data_available'
+    }
   }
+  return null
 }
 
 /**
@@ -1030,7 +1412,8 @@ function generateSummary(
     os: 0,
     accelerator: 0,
     banned: 0,
-    security_pending: 0
+    security_pending: 0,
+    python_dependency: 0
   }
 
   const conflictsByTypeDetails: Record<ConflictType, string[]> = {
@@ -1040,7 +1423,8 @@ function generateSummary(
     os: [],
     accelerator: [],
     banned: [],
-    security_pending: []
+    security_pending: [],
+    python_dependency: []
   }
 
   let bannedCount = 0
@@ -1088,7 +1472,8 @@ function getEmptySummary(): ConflictDetectionSummary {
       os: [],
       accelerator: [],
       banned: [],
-      security_pending: []
+      security_pending: [],
+      python_dependency: []
     },
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: 0

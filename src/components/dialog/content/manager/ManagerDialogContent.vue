@@ -26,6 +26,27 @@
         }"
       >
         <div class="px-6 flex flex-col h-full">
+          <!-- Conflict Warning Banner -->
+          <div
+            v-if="shouldShowManagerBanner"
+            class="bg-yellow-600 bg-opacity-20 border border-yellow-400 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6"
+          >
+            <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
+            <div class="flex flex-col gap-2">
+              <p class="text-sm font-bold m-0">
+                {{ $t('manager.conflicts.warningBanner.title') }}
+              </p>
+              <p class="text-xs m-0">
+                {{ $t('manager.conflicts.warningBanner.message') }}
+              </p>
+              <p
+                class="text-sm font-bold m-0 cursor-pointer"
+                @click="onClickWarningLink"
+              >
+                {{ $t('manager.conflicts.warningBanner.button') }}
+              </p>
+            </div>
+          </div>
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
@@ -70,7 +91,9 @@
                     :is-selected="
                       selectedNodePacks.some((pack) => pack.id === item.id)
                     "
-                    @click.stop="(event) => selectNodePack(item, event)"
+                    @click.stop="
+                      (event: MouseEvent) => selectNodePack(item, event)
+                    "
                   />
                 </template>
               </VirtualGrid>
@@ -102,7 +125,8 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -120,7 +144,9 @@ import { useManagerStatePersistence } from '@/composables/manager/useManagerStat
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
+import { useConflictBannerState } from '@/composables/useConflictBannerState'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
@@ -134,6 +160,8 @@ const { initialTab } = defineProps<{
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
+const registryService = useComfyRegistryService()
+const conflictBannerState = useConflictBannerState()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
 
@@ -149,6 +177,9 @@ const {
   isOpen: isSideNavOpen,
   toggle: toggleSideNav
 } = useResponsiveCollapse()
+
+// Use conflict banner state from composable
+const { shouldShowManagerBanner, markConflictsAsSeen } = conflictBannerState
 
 const tabs = ref<TabItem[]>([
   { id: ManagerTab.All, label: t('g.all'), icon: 'pi-list' },
@@ -313,6 +344,13 @@ watch([isAllTab, searchResults], () => {
   displayPacks.value = searchResults.value
 })
 
+const onClickWarningLink = () => {
+  window.open(
+    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    '_blank'
+  )
+}
+
 const onResultsChange = () => {
   switch (selectedTab.value?.id) {
     case ManagerTab.Installed:
@@ -441,11 +479,57 @@ whenever(selectedNodePack, async () => {
   if (hasMultipleSelections.value) return
   // Only fetch if we haven't already for this pack
   if (lastFetchedPackId.value === pack.id) return
-  const data = await getPackById.call(pack.id)
+
+  let data = null
+
+  // For installed nodes only, fetch version-specific information
+  if (comfyManagerStore.isPackInstalled(pack.id)) {
+    const installedPack = comfyManagerStore.getInstalledPackByCnrId(pack.id)
+    if (installedPack?.ver) {
+      // Fetch information for the installed version
+      data = await registryService.getPackByVersion(pack.id, installedPack.ver)
+
+      // Race condition check: ensure selected pack hasn't changed during async operation
+      if (selectedNodePack.value?.id !== pack.id) {
+        return
+      }
+    }
+  }
+
+  // For uninstalled nodes or if version-specific data fetch failed, use default API
+  if (!data) {
+    data = await getPackById.call(pack.id)
+  }
+
+  // Race condition check: ensure selected pack hasn't changed during async operations
+  if (selectedNodePack.value?.id !== pack.id) {
+    return
+  }
+
   // If selected node hasn't changed since request, merge registry & Algolia data
-  if (data?.id === pack.id) {
+  const isNodeData = data && 'id' in data && data.id === pack.id
+  const isVersionData = data && 'node_id' in data && data.node_id === pack.id
+
+  if (isNodeData || isVersionData) {
     lastFetchedPackId.value = pack.id
-    const mergedPack = merge({}, pack, data)
+
+    // Merge API data first, then pack data (API data takes priority)
+    const mergedPack = merge({}, data, pack)
+
+    // Ensure compatibility fields from API data take priority
+    if (data?.supported_os !== undefined) {
+      mergedPack.supported_os = data.supported_os
+    }
+    if (data?.supported_accelerators !== undefined) {
+      mergedPack.supported_accelerators = data.supported_accelerators
+    }
+    if (data?.supported_comfyui_version !== undefined) {
+      mergedPack.supported_comfyui_version = data.supported_comfyui_version
+    }
+    if (data?.supported_comfyui_frontend_version !== undefined) {
+      mergedPack.supported_comfyui_frontend_version =
+        data.supported_comfyui_frontend_version
+    }
     // Update the pack in current selection without changing selection state
     const packIndex = selectedNodePacks.value.findIndex(
       (p) => p.id === mergedPack.id
@@ -470,6 +554,14 @@ watch([searchQuery, selectedTab], () => {
   if (gridContainer) {
     pageNumber.value = 0
     gridContainer.scrollTop = 0
+  }
+})
+
+// Automatically mark conflicts as seen when banner is displayed
+// This ensures red dots disappear and banner is dismissed once user sees it
+watchEffect(() => {
+  if (shouldShowManagerBanner.value) {
+    markConflictsAsSeen()
   }
 })
 

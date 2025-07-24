@@ -1,8 +1,8 @@
 <template>
   <div>
     <div
-      class="inline-flex items-center gap-1 rounded-2xl text-xs cursor-pointer px-2 py-1"
-      :class="{ 'bg-gray-100 dark-theme:bg-neutral-700': fill }"
+      class="inline-flex items-center gap-1 rounded-2xl text-xs cursor-pointer py-1"
+      :class="{ 'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill }"
       aria-haspopup="true"
       role="button"
       tabindex="0"
@@ -12,8 +12,7 @@
     >
       <i
         v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-blue-600"
-        style="font-size: 8px"
+        class="pi pi-arrow-circle-up text-blue-600 text-xs"
       />
       <span>{{ installedVersion }}</span>
       <i class="pi pi-chevron-right" style="font-size: 8px" />
