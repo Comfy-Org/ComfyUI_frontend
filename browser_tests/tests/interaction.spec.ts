@@ -9,6 +9,10 @@ import {
 import { type NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.describe('Item Interaction', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Minimap.Visible', false)
+  })
+
   test('Can select/delete all items', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('mixed_graph_items')
     await comfyPage.canvas.press('Control+a')
@@ -785,11 +789,6 @@ test.describe('Viewport settings', () => {
     // Go back to Workflow A
     await tabA.click()
     await comfyPage.nextFrame()
-
-    // not display minimap
-    await comfyPage.page.keyboard.press('Alt+KeyM')
-    await comfyPage.nextFrame()
-
     await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-a.png')
 
     // And back to Workflow B
