@@ -278,8 +278,8 @@ export class ComfyApi extends EventTarget {
    * Feature flags received from the backend server.
    */
   serverFeatureFlags: Record<string, unknown> = {}
-  
-  /** 
+
+  /**
    * Map of notification toasts by ID
    */
   #notificationToasts = new Map<string, any>()
@@ -921,6 +921,7 @@ export class ComfyApi extends EventTarget {
           taskType: 'Running',
           prompt,
           // prompt[1] is the prompt id
+          // @ts-expect-error - prompt[1] is the prompt id
           remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
         })),
         Pending: data.queue_pending.map((prompt: TaskPrompt) => ({
