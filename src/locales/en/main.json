@@ -972,6 +972,8 @@
     "Load Default Workflow": "Load Default Workflow",
     "Toggle the Custom Nodes Manager": "Toggle the Custom Nodes Manager",
     "Toggle the Custom Nodes Manager Progress Bar": "Toggle the Custom Nodes Manager Progress Bar",
+    "Decrease Brush Size in MaskEditor": "Decrease Brush Size in MaskEditor",
+    "Increase Brush Size in MaskEditor": "Increase Brush Size in MaskEditor",
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
     "New": "New",
     "Clipspace": "Clipspace",
