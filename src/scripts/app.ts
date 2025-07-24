@@ -62,6 +62,10 @@ import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import {
+  getNodeByExecutionId,
+  triggerCallbackOnAllNodes
+} from '@/utils/graphTraversalUtil'
+import {
   executeWidgetsCallback,
   fixLinkInputSlots,
   isImageNode
@@ -647,16 +651,15 @@ export class ComfyApp {
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
         merge: detail.merge
       })
-      const node = this.graph.getNodeById(detail.display_node || detail.node)
-      if (node) {
-        if (node.onExecuted) node.onExecuted(detail.output)
+
+      const node = getNodeByExecutionId(this.graph, executionId)
+      if (node && node.onExecuted) {
+        node.onExecuted(detail.output)
       }
     })
 
     api.addEventListener('execution_start', () => {
-      this.graph.nodes.forEach((node) => {
-        if (node.onExecutionStart) node.onExecutionStart()
-      })
+      triggerCallbackOnAllNodes(this.graph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -684,11 +687,13 @@ export class ComfyApp {
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
       const { blob, displayNodeId } = detail
+      const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
+        useNodeOutputStore()
       // Ensure clean up if `executing` event is missed.
-      this.revokePreviews(displayNodeId)
+      revokePreviewsByExecutionId(displayNodeId)
       const blobUrl = URL.createObjectURL(blob)
-      // Preview cleanup is now handled in progress_state event to support multiple concurrent previews
-      this.nodePreviewImages[displayNodeId] = [blobUrl]
+      // Preview cleanup is handled in progress_state event to support multiple concurrent previews
+      setNodePreviewsByExecutionId(displayNodeId, [blobUrl])
     })
 
     api.init()
@@ -1668,24 +1673,12 @@ export class ComfyApp {
   }
 
   /**
-   * Frees memory allocated to image preview blobs for a specific node, by revoking the URLs associated with them.
-   * @param nodeId ID of the node to revoke all preview images of
-   */
-  revokePreviews(nodeId: NodeId) {
-    if (!this.nodePreviewImages[nodeId]?.[Symbol.iterator]) return
-    for (const url of this.nodePreviewImages[nodeId]) {
-      URL.revokeObjectURL(url)
-    }
-  }
-  /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
-    for (const id of Object.keys(this.nodePreviewImages)) {
-      this.revokePreviews(id)
-    }
-    this.nodePreviewImages = {}
+    const { revokeAllPreviews } = useNodeOutputStore()
+    revokeAllPreviews()
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
