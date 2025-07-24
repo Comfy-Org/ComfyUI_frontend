@@ -122,16 +122,16 @@ import { getConflictMessage } from '@/utils/conflictMessageUtil'
 interface Props {
   conflicts?: ConflictDetectionResult[]
   conflictedPackages?: ConflictDetectionResult[]
-  onDismiss?: () => void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   conflicts: () => [],
-  conflictedPackages: () => [],
-  onDismiss: undefined
+  conflictedPackages: () => []
 })
 
-console.log('NodeConflictDialogContent - all props:', props)
+const emit = defineEmits<{
+  dismiss: []
+}>()
 
 const { t } = useI18n()
 

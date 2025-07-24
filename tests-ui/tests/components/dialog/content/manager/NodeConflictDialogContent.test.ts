@@ -344,16 +344,13 @@ describe('NodeConflictDialogContent', () => {
   })
 
   describe('props handling', () => {
-    it('should handle onDismiss callback prop', () => {
-      const onDismissMock = vi.fn()
-
+    it('should emit dismiss event when needed', () => {
       const wrapper = createWrapper({
-        conflictedPackages: mockConflictResults,
-        onDismiss: onDismissMock
+        conflictedPackages: mockConflictResults
       })
 
-      // onDismiss should be available in props
-      expect(wrapper.props('onDismiss')).toBe(onDismissMock)
+      // Component now uses emit pattern instead of callback props
+      expect(wrapper.emitted('dismiss')).toBeUndefined()
     })
   })
 })
