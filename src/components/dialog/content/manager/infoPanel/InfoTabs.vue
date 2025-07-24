@@ -69,5 +69,5 @@ watchEffect(() => {
     // If currently on warning tab but no issues, switch to description
     activeTab.value = 'description'
   }
-})
+}, { flush: 'post' })
 </script>
