@@ -329,10 +329,6 @@
     },
     "tooltip": "選單列位置。在行動裝置上，選單永遠顯示在頂部。"
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "驗證節點定義（較慢）",
-    "tooltip": "建議節點開發者使用。這會在啟動時驗證所有節點定義。"
-  },
   "Comfy_Validation_Workflows": {
     "name": "驗證工作流程"
   },
