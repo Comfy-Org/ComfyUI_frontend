@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-4">
+  <div class="flex items-center gap-4" :style="{ height: widgetHeight + 'px' }">
     <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
       widget.name
     }}</label>
@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { COMFY_WIDGET_DIMENSIONS } from '@comfyorg/litegraph'
 import InputText from 'primevue/inputtext'
 import Slider from 'primevue/slider'
 import { computed, ref, watch } from 'vue'
@@ -55,6 +56,9 @@ const { localValue, onChange } = useNumberWidgetValue(
   props.modelValue,
   emit
 )
+
+// Get widget height from litegraph constants
+const widgetHeight = COMFY_WIDGET_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)

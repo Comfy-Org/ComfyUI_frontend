@@ -8,8 +8,11 @@
       'lg-slot--connected': connected,
       'lg-slot--compatible': compatible,
       'lg-slot--dot-only': dotOnly,
-      'py-1 pr-2 pl-4 hover:bg-black/5': !dotOnly,
-      'w-5 h-5 justify-center': dotOnly
+      'pr-2 pl-4 hover:bg-black/5': !dotOnly,
+      'justify-center': dotOnly
+    }"
+    :style="{
+      height: slotHeight + 'px'
     }"
     @pointerdown="handleClick"
   >
@@ -32,6 +35,7 @@
 
 <script setup lang="ts">
 import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph'
+import { COMFY_WIDGET_DIMENSIONS } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -66,6 +70,9 @@ onErrorCaptured((error) => {
 
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
+
+// Get slot height from litegraph constants
+const slotHeight = COMFY_WIDGET_DIMENSIONS.components.SLOT_HEIGHT
 
 // Handle click events
 const handleClick = (event: PointerEvent) => {
