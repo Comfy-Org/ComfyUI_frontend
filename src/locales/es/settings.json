@@ -329,10 +329,6 @@
     },
     "tooltip": "Posición de la barra de menú. En dispositivos móviles, el menú siempre se muestra en la parte superior."
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "Validar definiciones de nodos (lento)",
-    "tooltip": "Recomendado para desarrolladores de nodos. Esto validará todas las definiciones de nodos al iniciar."
-  },
   "Comfy_Validation_Workflows": {
     "name": "Validar flujos de trabajo"
   },
