@@ -158,6 +158,12 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切换进度对话框"
   },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "減小 MaskEditor 中的筆刷大小"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "增加 MaskEditor 畫筆大小"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
   },

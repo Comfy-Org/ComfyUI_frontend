@@ -158,6 +158,12 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Basculer la boîte de dialogue de progression"
   },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Réduire la taille du pinceau dans MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Augmenter la taille du pinceau dans MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
   },

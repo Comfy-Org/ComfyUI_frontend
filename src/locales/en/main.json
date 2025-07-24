@@ -134,6 +134,10 @@
     "releaseTitle": "{package} {version} Release",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "micPermissionDenied": "Microphone permission denied",
+    "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running"
   },
   "manager": {
@@ -973,6 +977,8 @@
     "Load Default Workflow": "Load Default Workflow",
     "Toggle the Custom Nodes Manager": "Toggle the Custom Nodes Manager",
     "Toggle the Custom Nodes Manager Progress Bar": "Toggle the Custom Nodes Manager Progress Bar",
+    "Decrease Brush Size in MaskEditor": "Decrease Brush Size in MaskEditor",
+    "Increase Brush Size in MaskEditor": "Increase Brush Size in MaskEditor",
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
     "New": "New",
     "Clipspace": "Clipspace",

@@ -158,6 +158,12 @@
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle the Custom Nodes Manager Progress Bar"
   },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Decrease Brush Size in MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Increase Brush Size in MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
   },
