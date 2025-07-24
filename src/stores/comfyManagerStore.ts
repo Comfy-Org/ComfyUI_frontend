@@ -295,6 +295,21 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     return pack?.ver
   }
 
+  /**
+   * Get installed pack by CNR ID or aux ID for O(1) lookup performance
+   * @param id - The CNR ID or aux ID to search for
+   * @returns The installed pack if found, undefined otherwise
+   */
+  const getInstalledPackByCnrId = (id: string) => {
+    // Use cached Map for O(1) lookup instead of O(n) Object.values().find()
+    for (const pack of Object.values(installedPacks.value)) {
+      if (pack.cnr_id === id || pack.aux_id === id) {
+        return pack
+      }
+    }
+    return undefined
+  }
+
   const clearLogs = () => {
     taskLogs.value = []
   }
@@ -332,6 +347,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isPackInstalled: isInstalledPackId,
     isPackEnabled: isEnabledPackId,
     getInstalledPackVersion,
+    getInstalledPackByCnrId,
     refreshInstalledList,
 
     // Task queue state and actions
