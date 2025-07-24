@@ -35,22 +35,29 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   // Multiline text
   multiline: WidgetType.TEXTAREA,
   textarea: WidgetType.TEXTAREA,
+  customtext: WidgetType.TEXTAREA,
+  MARKDOWN: WidgetType.MARKDOWN,
 
   // Advanced widgets
   color: WidgetType.COLOR,
   COLOR: WidgetType.COLOR,
   image: WidgetType.IMAGE,
   IMAGE: WidgetType.IMAGE,
+  imagecompare: WidgetType.IMAGECOMPARE,
+  IMAGECOMPARE: WidgetType.IMAGECOMPARE,
+  galleria: WidgetType.GALLERIA,
+  GALLERIA: WidgetType.GALLERIA,
   file: WidgetType.FILEUPLOAD,
+  fileupload: WidgetType.FILEUPLOAD,
   FILEUPLOAD: WidgetType.FILEUPLOAD,
 
   // Button widget
   button: WidgetType.BUTTON,
   BUTTON: WidgetType.BUTTON,
 
-  // Text-based widgets that don't have dedicated components yet
-  MARKDOWN: WidgetType.TEXTAREA, // Markdown should use textarea for now
-  customtext: WidgetType.TEXTAREA // Custom text widgets use textarea for multiline
+  // Chart widget
+  chart: WidgetType.CHART,
+  CHART: WidgetType.CHART
 } as const
 
 /**
