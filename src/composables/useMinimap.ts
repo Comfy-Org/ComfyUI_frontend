@@ -358,10 +358,7 @@ export function useMinimap() {
     )
 
   const { startSync: startViewportSync, stopSync: stopViewportSync } =
-    useCanvasTransformSync(
-      () => canvas.value,
-      () => updateViewport()
-    )
+    useCanvasTransformSync(updateViewport, { autoStart: false })
 
   const handleMouseDown = (e: MouseEvent) => {
     isDragging.value = true

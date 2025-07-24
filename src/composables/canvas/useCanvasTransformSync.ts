@@ -1,7 +1,21 @@
+import { LGraphCanvas } from '@comfyorg/litegraph'
 import { onUnmounted, ref } from 'vue'
 
-export interface TransformSyncOptions {
+import { useCanvasStore } from '@/stores/graphStore'
+
+interface CanvasTransformSyncOptions {
+  /**
+   * Whether to automatically start syncing when canvas is available
+   * @default true
+   */
+  autoStart?: boolean
+  /**
+   * Called when sync starts
+   */
   onStart?: () => void
+  /**
+   * Called when sync stops
+   */
   onStop?: () => void
 }
 
@@ -12,17 +26,33 @@ interface CanvasTransform {
 }
 
 /**
- * Composable for syncing canvas transform changes with RAF
- * Only calls the sync function when the canvas state transform actually changes
+ * Manages requestAnimationFrame-based synchronization with LiteGraph canvas transforms.
+ *
+ * This composable provides a clean way to sync Vue transform state with LiteGraph canvas
+ * on every frame. It handles RAF lifecycle management, and ensures proper cleanup.
+ *
+ * The sync function typically reads canvas.ds (draw state) properties like offset and scale
+ * to keep Vue components aligned with the canvas coordinate system.
+ *
+ * @example
+ * ```ts
+ * const { isActive, startSync, stopSync } = useCanvasTransformSync(
+ *   canvas,
+ *   (canvas) => syncWithCanvas(canvas),
+ *   {
+ *     onStart: () => emit('rafStatusChange', true),
+ *     onUpdate: (time) => emit('transformUpdate', time),
+ *     onStop: () => emit('rafStatusChange', false)
+ *   }
+ * )
+ * ```
  */
-export function useCanvasTransformSync<
-  T extends { ds: { scale: number; offset: [number, number] } }
->(
-  getCanvas: () => T | null,
-  syncFn: (canvas: T) => void,
-  options: TransformSyncOptions = {}
+export function useCanvasTransformSync(
+  syncFn: (canvas: LGraphCanvas) => void,
+  options: CanvasTransformSyncOptions = {}
 ) {
-  const { onStart, onStop } = options
+  const { onStart, onStop, autoStart = true } = options
+  const { getCanvas } = useCanvasStore()
 
   const isActive = ref(false)
   let rafId: number | null = null
@@ -32,7 +62,7 @@ export function useCanvasTransformSync<
     offsetY: 0
   }
 
-  const hasTransformChanged = (canvas: T): boolean => {
+  const hasTransformChanged = (canvas: LGraphCanvas): boolean => {
     const ds = canvas.ds
     return (
       ds.scale !== lastTransform.scale ||
@@ -45,10 +75,7 @@ export function useCanvasTransformSync<
     if (!isActive.value) return
 
     const canvas = getCanvas()
-    if (!canvas) {
-      rafId = requestAnimationFrame(sync)
-      return
-    }
+    if (!canvas) return
 
     try {
       // Only run sync if transform actually changed
@@ -92,6 +119,10 @@ export function useCanvasTransformSync<
   }
 
   onUnmounted(stopSync)
+
+  if (autoStart) {
+    startSync()
+  }
 
   return {
     isActive,
