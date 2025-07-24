@@ -1,10 +1,21 @@
 <template>
-  <div class="flex items-center">
+  <div class="flex items-center gap-2">
+    <div
+      v-if="hasConflict"
+      v-tooltip="{
+        value: $t('manager.conflicts.warningTooltip'),
+        showDelay: 300
+      }"
+      class="flex items-center justify-center w-6 h-6 cursor-pointer"
+      @click="showConflictModal"
+    >
+      <i class="pi pi-exclamation-triangle text-yellow-500 text-xl"></i>
+    </div>
     <ToggleSwitch
       :model-value="isEnabled"
       :disabled="isLoading"
       aria-label="Enable or disable pack"
-      @update:model-value="onToggle"
+      @update:model-value="handleToggleClick"
     />
   </div>
 </template>
@@ -13,18 +24,28 @@
 import { debounce } from 'lodash'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
+import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 
-const { nodePack } = defineProps<{
+const { nodePack, hasConflict } = defineProps<{
   nodePack: components['schemas']['Node']
+  hasConflict?: boolean
 }>()
 
+const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack } = useComfyManagerStore()
+const conflictStore = useConflictDetectionStore()
+const { showNodeConflictDialog } = useDialogService()
+const { acknowledgeConflict, isConflictAcknowledged } =
+  useConflictAcknowledgment()
 
 const isLoading = ref(false)
 
@@ -61,9 +82,41 @@ const handleDisable = () => {
   })
 }
 
-const handleToggle = async (enable: boolean) => {
+const handleToggle = async (enable: boolean, skipConflictCheck = false) => {
   if (isLoading.value) return
 
+  // Check for conflicts when enabling
+  if (enable && hasConflict && !skipConflictCheck) {
+    const conflicts = conflictStore.getConflictsForPackage(nodePack.id || '')
+    if (conflicts) {
+      // Check if conflicts have been acknowledged
+      const hasUnacknowledgedConflicts = conflicts.conflicts.some(
+        (conflict) => !isConflictAcknowledged(nodePack.id || '', conflict.type)
+      )
+
+      if (hasUnacknowledgedConflicts) {
+        showNodeConflictDialog({
+          conflictedPackages: [conflicts],
+          buttonText: t('manager.conflicts.enableAnyway'),
+          onButtonClick: async () => {
+            // User chose "Enable Anyway" - acknowledge all conflicts and proceed
+            for (const conflict of conflicts.conflicts) {
+              acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
+            }
+            // Proceed with enabling using debounced function
+            onToggle(enable)
+          }
+        })
+        return
+      }
+    }
+  }
+
+  // No conflicts or conflicts acknowledged - proceed with toggle
+  await performToggle(enable)
+}
+
+const performToggle = async (enable: boolean) => {
   isLoading.value = true
   if (enable) {
     await handleEnable()
@@ -73,11 +126,39 @@ const handleToggle = async (enable: boolean) => {
   isLoading.value = false
 }
 
+// Handle initial toggle click - check for conflicts first
+const handleToggleClick = (enable: boolean) => {
+  void handleToggle(enable)
+}
+
 const onToggle = debounce(
   (enable: boolean) => {
-    void handleToggle(enable)
+    void performToggle(enable) // Direct call to avoid circular reference
   },
   TOGGLE_DEBOUNCE_MS,
   { trailing: true }
 )
+
+// Show conflict modal when warning icon is clicked
+const showConflictModal = () => {
+  const conflicts = conflictStore.getConflictsForPackage(nodePack.id || '')
+  if (conflicts) {
+    showNodeConflictDialog({
+      conflictedPackages: [conflicts],
+      buttonText: isEnabled.value
+        ? t('manager.conflicts.understood')
+        : t('manager.conflicts.enableAnyway'),
+      onButtonClick: async () => {
+        // User chose button action - acknowledge all conflicts
+        for (const conflict of conflicts.conflicts) {
+          acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
+        }
+        // Only enable if currently disabled
+        if (!isEnabled.value) {
+          onToggle(true)
+        }
+      }
+    })
+  }
+}
 </script>
