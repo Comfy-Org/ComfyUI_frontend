@@ -1,4 +1,4 @@
-import { useIntervalFn, useStorage } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
@@ -47,33 +47,13 @@ export function useConflictBannerState() {
     if (hasConflicts.value) {
       hasSeenConflicts.value = true
       isConflictBannerDismissed.value = true
-
-      // Also set localStorage directly as backup
+      
+      // Force localStorage update as backup due to useStorage sync timing issue
+      // useStorage updates localStorage asynchronously, but we need immediate persistence
       localStorage.setItem(HELP_CENTER_CONFLICT_SEEN_KEY, 'true')
       localStorage.setItem(MANAGER_CONFLICT_BANNER_DISMISSED_KEY, 'true')
     }
   }
-
-  /**
-   * Force check localStorage changes periodically as backup
-   * This handles cases where localStorage is modified externally
-   */
-  const forceCheckStorage = () => {
-    const currentSeenValue =
-      localStorage.getItem(HELP_CENTER_CONFLICT_SEEN_KEY) === 'true'
-    if (hasSeenConflicts.value !== currentSeenValue) {
-      hasSeenConflicts.value = currentSeenValue
-    }
-
-    const currentDismissedValue =
-      localStorage.getItem(MANAGER_CONFLICT_BANNER_DISMISSED_KEY) === 'true'
-    if (isConflictBannerDismissed.value !== currentDismissedValue) {
-      isConflictBannerDismissed.value = currentDismissedValue
-    }
-  }
-
-  // Set up periodic storage checking (500ms interval)
-  useIntervalFn(forceCheckStorage, 500)
 
   return {
     // State
@@ -86,7 +66,6 @@ export function useConflictBannerState() {
     shouldShowManagerBanner,
 
     // Actions
-    markConflictsAsSeen,
-    forceCheckStorage
+    markConflictsAsSeen
   }
 }
