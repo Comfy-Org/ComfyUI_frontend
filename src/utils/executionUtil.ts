@@ -14,7 +14,6 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
-import { useExecutionStore } from '@/stores/executionStore'
 
 import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'
@@ -59,8 +58,6 @@ export const graphToPrompt = async (
   options: { sortNodes?: boolean; queueNodeIds?: NodeId[] } = {}
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
   const { sortNodes = false, queueNodeIds } = options
-  const executionStore = useExecutionStore()
-  executionStore.locatorIdToExecutionIdMap.clear()
 
   for (const node of graph.computeExecutionOrder(false)) {
     const innerNodes = node.getInnerNodes
@@ -161,13 +158,6 @@ export const graphToPrompt = async (
         parseInt(resolvedInput.origin_slot)
       ]
     }
-
-    // Temporary workaround for Subgraph phase 1. Overwrites the ID, but keeps the image.
-    const baseNodeId = node.id.split(':').at(-1)
-    executionStore.locatorIdToExecutionIdMap.set(
-      `${node.subgraphId}:${baseNodeId}`,
-      node.id
-    )
 
     output[String(node.id)] = {
       inputs,

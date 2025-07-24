@@ -8,11 +8,8 @@ import {
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { NodeExecutionId } from '@/types'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
-
-import { useExecutionStore } from './executionStore'
 
 const createOutputs = (
   filenames: string[],
@@ -26,20 +23,16 @@ const createOutputs = (
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  const executionStore = useExecutionStore()
-  const getMostRecentExecutionId = (node: LGraphNode): NodeExecutionId =>
-    executionStore.locatorIdToExecutionIdMap.get(
-      executionStore.getNodeLocatorId(node)
-    ) ?? node.id.toString()
+  const getNodeId = (node: LGraphNode): string => node.id.toString()
 
   function getNodeOutputs(
     node: LGraphNode
   ): ExecutedWsMessage['output'] | undefined {
-    return app.nodeOutputs[getMostRecentExecutionId(node)]
+    return app.nodeOutputs[getNodeId(node)]
   }
 
   function getNodePreviews(node: LGraphNode): string[] | undefined {
-    return app.nodePreviewImages[getMostRecentExecutionId(node)]
+    return app.nodePreviewImages[getNodeId(node)]
   }
 
   /**
@@ -103,7 +96,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!filenames || !node) return
 
-    const nodeId = getMostRecentExecutionId(node)
+    const nodeId = getNodeId(node)
 
     if (typeof filenames === 'string') {
       app.nodeOutputs[nodeId] = createOutputs([filenames], folder, isAnimated)
