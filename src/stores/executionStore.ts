@@ -1,4 +1,4 @@
-import type { LGraph, LGraphNode, Subgraph } from '@comfyorg/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -24,7 +24,7 @@ import type {
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { useCanvasStore } from './graphStore'
@@ -53,22 +53,6 @@ export const useExecutionStore = defineStore('execution', () => {
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
-
-  /**
-   * @deprecated Workaround for Subgraph phase 1 - execution IDs may share locator IDs.
-   * The most recently executed execution ID for each node locator ID.
-   */
-  const locatorIdToExecutionIdMap = new Map<NodeLocatorId, NodeExecutionId>()
-
-  /**
-   * Get the NodeLocatorId for a node.
-   * @param node The node
-   * @returns The NodeLocatorId
-   */
-  const getNodeLocatorId = (node: LGraphNode): NodeLocatorId =>
-    node.graph?.isRootGraph
-      ? node.id.toString()
-      : [node.graph?.id, node.id].join(':')
 
   /**
    * Convert execution context node IDs to NodeLocatorIds
@@ -484,8 +468,6 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
     executionIdToNodeLocatorId,
-    nodeLocatorIdToExecutionId,
-    locatorIdToExecutionIdMap,
-    getNodeLocatorId
+    nodeLocatorIdToExecutionId
   }
 })
