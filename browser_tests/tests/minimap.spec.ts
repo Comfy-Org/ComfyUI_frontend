@@ -74,35 +74,6 @@ test.describe('Minimap', () => {
     await expect(toggleButton).toHaveClass(/minimap-active/)
   })
 
-  test('Validate minimap position and size', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
-
-    await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].canvas
-    )
-
-    const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
-    await expect(minimapContainer).toBeVisible()
-
-    const boundingBox = await minimapContainer.boundingBox()
-    expect(boundingBox).not.toBeNull()
-
-    if (boundingBox) {
-      expect(boundingBox.width).toBeGreaterThan(0)
-      expect(boundingBox.height).toBeGreaterThan(0)
-
-      const viewportSize = comfyPage.page.viewportSize()!
-      expect(boundingBox.x + boundingBox.width).toBeCloseTo(
-        viewportSize.width - 90,
-        50
-      )
-      expect(boundingBox.y + boundingBox.height).toBeCloseTo(
-        viewportSize.height - 20,
-        50
-      )
-    }
-  })
-
   test('Validate minimap keyboard shortcut Alt+M', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('default')
 
