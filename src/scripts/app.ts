@@ -116,6 +116,8 @@ type Clipspace = {
   images?: any[] | null
   selectedIndex: number
   img_paste_mode: string
+  paintedIndex: number
+  combinedIndex: number
 }
 
 export class ComfyApp {
@@ -357,13 +359,18 @@ export class ComfyApp {
       selectedIndex = node.imageIndex
     }
 
+    const paintedIndex = selectedIndex + 1
+    const combinedIndex = selectedIndex + 2
+
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
       images: node.images,
       selectedIndex: selectedIndex,
-      img_paste_mode: 'selected' // reset to default im_paste_mode state on copy action
+      img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
+      paintedIndex: paintedIndex,
+      combinedIndex: combinedIndex
     }
 
     ComfyApp.clipspace_return_node = null
@@ -376,6 +383,8 @@ export class ComfyApp {
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
+      const combinedImgSrc =
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex].src
       if (ComfyApp.clipspace.imgs && node.imgs) {
         if (node.images && ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
@@ -407,6 +416,28 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Paste the RGB canvas if paintedindex exists
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] &&
+        node.imgs
+      ) {
+        const paintedImg = new Image()
+        paintedImg.src =
+          ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src
+        node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
+      }
+
+      // Store only combined image inside the node if it exists
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
+        node.imgs &&
+        combinedImgSrc
+      ) {
+        const combinedImg = new Image()
+        combinedImg.src = combinedImgSrc
+        node.imgs = [combinedImg]
       }
 
       if (node.widgets) {

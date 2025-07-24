@@ -787,7 +787,7 @@ export const useLitegraphService = () => {
 
         if (isImageNode(this)) {
           options.push({
-            content: 'Open in MaskEditor',
+            content: 'Open in MaskEditor | Image Canvas',
             callback: () => {
               ComfyApp.copyToClipspace(this)
               // @ts-expect-error fixme ts strict error
