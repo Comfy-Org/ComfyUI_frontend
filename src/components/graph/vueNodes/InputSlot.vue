@@ -2,14 +2,13 @@
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
   <div
     v-else
-    class="lg-slot lg-slot--input flex items-center gap-2 cursor-crosshair group"
+    class="lg-slot lg-slot--input flex items-center cursor-crosshair group"
     :class="{
       'opacity-70': readonly,
       'lg-slot--connected': connected,
       'lg-slot--compatible': compatible,
       'lg-slot--dot-only': dotOnly,
-      'pl-2 pr-4 hover:bg-black/5': !dotOnly,
-      'px-2': dotOnly
+      'pr-2 hover:bg-black/5': !dotOnly
     }"
     :style="{
       height: slotHeight + 'px'
@@ -17,7 +16,7 @@
     @pointerdown="handleClick"
   >
     <!-- Connection Dot -->
-    <div class="w-2.5 h-2.5 flex items-center justify-center">
+    <div class="w-5 h-5 flex items-center justify-center">
       <div
         class="w-2 h-2 rounded-full bg-white transition-all duration-150 group-hover:w-2.5 group-hover:h-2.5 group-hover:border-2 group-hover:border-white"
         :style="{
