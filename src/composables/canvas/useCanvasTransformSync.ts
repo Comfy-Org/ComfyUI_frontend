@@ -31,17 +31,21 @@ interface CanvasTransform {
  * This composable provides a clean way to sync Vue transform state with LiteGraph canvas
  * on every frame. It handles RAF lifecycle management, and ensures proper cleanup.
  *
- * The sync function typically reads canvas.ds (draw state) properties like offset and scale
- * to keep Vue components aligned with the canvas coordinate system.
+ * The sync function typically reads canvas.ds properties like offset and scale to keep
+ * Vue components aligned with the canvas coordinate system.
  *
  * @example
  * ```ts
+ * const syncWithCanvas = (canvas: LGraphCanvas) => {
+ *   canvas.ds.scale
+ *   canvas.ds.offset
+ * }
+ *
  * const { isActive, startSync, stopSync } = useCanvasTransformSync(
- *   canvas,
- *   (canvas) => syncWithCanvas(canvas),
+ *   syncWithCanvas,
  *   {
+ *     autoStart: false,
  *     onStart: () => emit('rafStatusChange', true),
- *     onUpdate: (time) => emit('transformUpdate', time),
  *     onStop: () => emit('rafStatusChange', false)
  *   }
  * )
