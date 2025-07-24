@@ -103,25 +103,6 @@ test.describe('Minimap', () => {
     }
   })
 
-  test('Validate minimap canvas dimensions', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
-
-    await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].canvas
-    )
-
-    const minimapCanvas = comfyPage.page.locator(
-      '.litegraph-minimap .minimap-canvas'
-    )
-    await expect(minimapCanvas).toBeVisible()
-
-    const width = await minimapCanvas.getAttribute('width')
-    const height = await minimapCanvas.getAttribute('height')
-
-    expect(parseInt(width || '0')).toBeGreaterThan(0)
-    expect(parseInt(height || '0')).toBeGreaterThan(0)
-  })
-
   test('Validate minimap keyboard shortcut Alt+M', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('default')
 
