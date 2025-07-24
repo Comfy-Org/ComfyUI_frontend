@@ -129,9 +129,6 @@ const props = withDefaults(defineProps<Props>(), {
   conflictedPackages: () => []
 })
 
-const emit = defineEmits<{
-  dismiss: []
-}>()
 
 const { t } = useI18n()
 

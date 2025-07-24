@@ -260,11 +260,11 @@ const getVersionData = (version: string) => {
       is_banned:
         (latestVersionData && 'is_banned' in latestVersionData
           ? latestVersionData.is_banned as boolean | undefined
-          : false) ?? ('is_banned' in nodePack ? nodePack.is_banned as boolean | undefined : false),
+          : undefined) ?? ('is_banned' in nodePack ? nodePack.is_banned as boolean | undefined : false),
       has_registry_data:
         (latestVersionData && 'has_registry_data' in latestVersionData
           ? latestVersionData.has_registry_data as boolean | undefined
-          : false) ??
+          : undefined) ??
         ('has_registry_data' in nodePack ? nodePack.has_registry_data as boolean | undefined : false)
     }
   }

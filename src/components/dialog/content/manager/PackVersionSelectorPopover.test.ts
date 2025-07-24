@@ -4,6 +4,7 @@ import Button from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
+import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -115,6 +116,9 @@ describe('PackVersionSelectorPopover', () => {
           Listbox,
           VerifiedIcon,
           Select
+        },
+        directives: {
+          tooltip: Tooltip
         }
       }
     })
@@ -453,7 +457,10 @@ describe('PackVersionSelectorPopover', () => {
           supported_os: ['windows', 'linux'],
           supported_accelerators: ['CPU'], // latest_version data takes precedence
           supported_comfyui_version: '>=0.1.0',
-          supported_comfyui_frontend_version: '>=1.0.0'
+          supported_comfyui_frontend_version: '>=1.0.0',
+          supported_python_version: '>=3.8',
+          is_banned: false,
+          has_registry_data: true
         }
       }
 
@@ -534,7 +541,15 @@ describe('PackVersionSelectorPopover', () => {
         supported_os: ['windows'],
         supported_accelerators: ['CPU'],
         supported_comfyui_version: '>=0.1.0',
-        supported_comfyui_frontend_version: '>=1.0.0'
+        supported_comfyui_frontend_version: '>=1.0.0',
+        latest_version: {
+          ...mockNodePack.latest_version,
+          supported_os: ['windows'], // Match nodePack data for test consistency
+          supported_accelerators: ['CPU'], // Match nodePack data for test consistency
+          supported_python_version: '>=3.8',
+          is_banned: false,
+          has_registry_data: true
+        }
       }
 
       const wrapper = mountComponent({
@@ -631,7 +646,11 @@ describe('PackVersionSelectorPopover', () => {
 
       const bannedNodePack = {
         ...mockNodePack,
-        is_banned: true
+        is_banned: true,
+        latest_version: {
+          ...mockNodePack.latest_version,
+          is_banned: true
+        }
       }
 
       const wrapper = mountComponent({
@@ -683,7 +702,11 @@ describe('PackVersionSelectorPopover', () => {
 
       const securityPendingNodePack = {
         ...mockNodePack,
-        has_registry_data: false
+        has_registry_data: false,
+        latest_version: {
+          ...mockNodePack.latest_version,
+          has_registry_data: false
+        }
       }
 
       const wrapper = mountComponent({

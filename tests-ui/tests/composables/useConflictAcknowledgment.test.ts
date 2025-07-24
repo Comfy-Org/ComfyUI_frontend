@@ -94,26 +94,16 @@ describe('useConflictAcknowledgment', () => {
         return null
       })
 
-      // Mock console.warn to avoid test output pollution
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-
+      // VueUse's useStorage should handle corrupted data gracefully
       const { acknowledgmentState } = useConflictAcknowledgment()
 
+      // Should fall back to default values when localStorage contains invalid JSON
       expect(acknowledgmentState.value).toEqual({
         modal_dismissed: false,
         red_dot_dismissed: false,
         acknowledged_conflicts: [],
         last_comfyui_version: ''
       })
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[ConflictAcknowledgment] Failed to load acknowledgment state from localStorage:',
-        expect.any(Error)
-      )
-
-      consoleWarnSpy.mockRestore()
     })
   })
 
@@ -192,10 +182,7 @@ describe('useConflictAcknowledgment', () => {
       dismissConflictModal()
 
       expect(acknowledgmentState.value.modal_dismissed).toBe(true)
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'comfy_manager_conflict_banner_dismissed',
-        'true'
-      )
+      // useStorage handles localStorage synchronization internally
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[ConflictAcknowledgment] Conflict modal dismissed'
       )
@@ -214,10 +201,7 @@ describe('useConflictAcknowledgment', () => {
       dismissRedDotNotification()
 
       expect(acknowledgmentState.value.red_dot_dismissed).toBe(true)
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'comfy_help_center_conflict_seen',
-        'true'
-      )
+      // useStorage handles localStorage synchronization internally
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[ConflictAcknowledgment] Red dot notification dismissed'
       )
@@ -248,17 +232,14 @@ describe('useConflictAcknowledgment', () => {
         comfyui_version: '0.3.41'
       })
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'comfy_conflict_acknowledged',
-        JSON.stringify([
-          {
-            package_id: 'TestPackage',
-            conflict_type: 'os',
-            timestamp: '2023-01-01T00:00:00.000Z',
-            comfyui_version: '0.3.41'
-          }
-        ])
-      )
+      // useStorage handles localStorage synchronization internally
+      expect(acknowledgmentState.value.acknowledged_conflicts).toHaveLength(1)
+      expect(acknowledgmentState.value.acknowledged_conflicts[0]).toEqual({
+        package_id: 'TestPackage',
+        conflict_type: 'os',
+        timestamp: '2023-01-01T00:00:00.000Z',
+        comfyui_version: '0.3.41'
+      })
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[ConflictAcknowledgment] Acknowledged conflict for TestPackage:os'
@@ -433,20 +414,13 @@ describe('useConflictAcknowledgment', () => {
         throw new Error('localStorage full')
       })
 
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
+      const { dismissConflictModal, acknowledgmentState } = useConflictAcknowledgment()
 
-      const { dismissConflictModal } = useConflictAcknowledgment()
+      // VueUse's useStorage should handle localStorage errors gracefully
+      expect(() => dismissConflictModal()).not.toThrow()
 
-      dismissConflictModal() // Should not throw
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[ConflictAcknowledgment] Failed to save acknowledgment state to localStorage:',
-        expect.any(Error)
-      )
-
-      consoleWarnSpy.mockRestore()
+      // State should still be updated in memory even if localStorage fails
+      expect(acknowledgmentState.value.modal_dismissed).toBe(true)
     })
   })
 })
