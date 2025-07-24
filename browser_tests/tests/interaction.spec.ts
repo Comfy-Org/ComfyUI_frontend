@@ -9,10 +9,6 @@ import {
 import { type NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.describe('Item Interaction', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.Minimap.Visible', false)
-  })
-
   test('Can select/delete all items', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('mixed_graph_items')
     await comfyPage.canvas.press('Control+a')
@@ -772,6 +768,11 @@ test.describe('Viewport settings', () => {
     comfyMouse
   }) => {
     // Screenshot the canvas element
+    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
+    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
+
+    await toggleButton.click()
+
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
     await comfyPage.nextFrame()
     const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')
