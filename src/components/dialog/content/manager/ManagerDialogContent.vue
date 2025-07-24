@@ -125,7 +125,8 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -556,6 +557,14 @@ watch([searchQuery, selectedTab], () => {
   }
 })
 
+// Automatically mark conflicts as seen when banner is displayed
+// This ensures red dots disappear and banner is dismissed once user sees it
+watchEffect(() => {
+  if (shouldShowManagerBanner.value) {
+    markConflictsAsSeen()
+  }
+})
+
 onBeforeUnmount(() => {
   persistedState.persistState({
     selectedTabId: selectedTab.value?.id,
@@ -563,10 +572,6 @@ onBeforeUnmount(() => {
     searchMode: searchMode.value,
     sortField: sortField.value
   })
-
-  // ALWAYS mark conflicts as seen when dialog closes (if there are any conflicts)
-  // User has now seen the Manager Dialog with potential yellow banner
-  markConflictsAsSeen()
 })
 
 onUnmounted(() => {
