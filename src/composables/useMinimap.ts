@@ -1,6 +1,7 @@
 import { useRafFn, useThrottleFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -356,12 +357,8 @@ export function useMinimap() {
       { immediate: false }
     )
 
-  const { pause: pauseViewportUpdate, resume: resumeViewportUpdate } = useRafFn(
-    () => {
-      updateViewport()
-    },
-    { immediate: false, fpsLimit: 60 }
-  )
+  const { startSync: startViewportSync, stopSync: stopViewportSync } =
+    useCanvasTransformSync(updateViewport, { autoStart: false })
 
   const handleMouseDown = (e: MouseEvent) => {
     isDragging.value = true
@@ -534,7 +531,7 @@ export function useMinimap() {
 
       if (visible.value) {
         resumeChangeDetection()
-        resumeViewportUpdate()
+        startViewportSync()
       }
       initialized.value = true
     }
@@ -542,7 +539,7 @@ export function useMinimap() {
 
   const destroy = () => {
     pauseChangeDetection()
-    pauseViewportUpdate()
+    stopViewportSync()
     cleanupEventListeners()
 
     api.removeEventListener('graphChanged', handleGraphChanged)
@@ -561,7 +558,7 @@ export function useMinimap() {
       if (oldCanvas) {
         cleanupEventListeners()
         pauseChangeDetection()
-        pauseViewportUpdate()
+        stopViewportSync()
         api.removeEventListener('graphChanged', handleGraphChanged)
         window.removeEventListener('resize', updateContainerRect)
         window.removeEventListener('scroll', updateContainerRect)
@@ -592,10 +589,10 @@ export function useMinimap() {
       updateMinimap()
       updateViewport()
       resumeChangeDetection()
-      resumeViewportUpdate()
+      startViewportSync()
     } else {
       pauseChangeDetection()
-      pauseViewportUpdate()
+      stopViewportSync()
     }
   })
 
