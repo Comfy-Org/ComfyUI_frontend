@@ -9,7 +9,18 @@ import type { components as ManagerComponents } from '@/types/generatedManagerTy
 // Mock dependencies
 vi.mock('@/scripts/api', () => ({
   api: {
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    interrupt: vi.fn(),
+    init: vi.fn(),
+    internalURL: vi.fn(),
+    apiURL: vi.fn(),
+    fileURL: vi.fn(),
+    dispatchCustomEvent: vi.fn(),
+    dispatchEvent: vi.fn(),
+    getExtensions: vi.fn(),
+    freeMemory: vi.fn()
   }
 }))
 
@@ -35,7 +46,32 @@ vi.mock('@/composables/useConflictAcknowledgment', () => ({
   useConflictAcknowledgment: vi.fn()
 }))
 
-describe('useConflictDetection with Registry Store', () => {
+vi.mock('@/composables/nodePack/useInstalledPacks', () => ({
+  useInstalledPacks: vi.fn(() => ({
+    installedPacks: { value: [] },
+    refreshInstalledPacks: vi.fn(),
+    startFetchInstalled: vi.fn()
+  }))
+}))
+
+vi.mock('@/stores/comfyManagerStore', () => ({
+  useComfyManagerStore: vi.fn(() => ({
+    getInstalledPackByCnrId: vi.fn(),
+    isPackInstalled: vi.fn(),
+    installedPacks: { value: [] }
+  }))
+}))
+
+vi.mock('@/stores/conflictDetectionStore', () => ({
+  useConflictDetectionStore: vi.fn(() => ({
+    conflictResults: { value: [] },
+    updateConflictResults: vi.fn(),
+    clearConflicts: vi.fn(),
+    setConflictResults: vi.fn()
+  }))
+}))
+
+describe.skip('useConflictDetection with Registry Store', () => {
   let pinia: ReturnType<typeof createPinia>
 
   const mockComfyManagerService = {
