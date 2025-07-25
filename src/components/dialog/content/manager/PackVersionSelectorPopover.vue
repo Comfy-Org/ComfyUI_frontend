@@ -47,7 +47,7 @@
                 }"
                 class="pi pi-exclamation-triangle text-yellow-500"
               />
-              <VerifiedIcon v-else :size="16" />
+              <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             </template>
             <span>{{ slotProps.option.label }}</span>
           </div>
@@ -249,28 +249,7 @@ const getVersionData = (version: string) => {
         nodePack.supported_comfyui_version,
       supported_comfyui_frontend_version:
         latestVersionData?.supported_comfyui_frontend_version ??
-        nodePack.supported_comfyui_frontend_version,
-      supported_python_version:
-        (latestVersionData && 'supported_python_version' in latestVersionData
-          ? (latestVersionData.supported_python_version as string | undefined)
-          : undefined) ??
-        ('supported_python_version' in nodePack
-          ? (nodePack.supported_python_version as string | undefined)
-          : undefined),
-      is_banned:
-        (latestVersionData && 'is_banned' in latestVersionData
-          ? (latestVersionData.is_banned as boolean | undefined)
-          : undefined) ??
-        ('is_banned' in nodePack
-          ? (nodePack.is_banned as boolean | undefined)
-          : false),
-      has_registry_data:
-        (latestVersionData && 'has_registry_data' in latestVersionData
-          ? (latestVersionData.has_registry_data as boolean | undefined)
-          : undefined) ??
-        ('has_registry_data' in nodePack
-          ? (nodePack.has_registry_data as boolean | undefined)
-          : false)
+        nodePack.supported_comfyui_frontend_version
     }
   }
 
@@ -283,13 +262,7 @@ const getVersionData = (version: string) => {
       supported_accelerators: nodePack.supported_accelerators || [], // If no accelerator restrictions, assume all supported
       supported_comfyui_version: nodePack.supported_comfyui_version, // Use latest known requirement
       supported_comfyui_frontend_version:
-        nodePack.supported_comfyui_frontend_version, // Use latest known requirement
-      supported_python_version:
-        'supported_python_version' in nodePack
-          ? (nodePack.supported_python_version as string | undefined)
-          : undefined,
-      is_banned: false, // Nightly versions from repositories are typically not banned
-      has_registry_data: false // Nightly doesn't come from registry
+        nodePack.supported_comfyui_frontend_version // Use latest known requirement
     }
   }
 
@@ -301,19 +274,7 @@ const getVersionData = (version: string) => {
       supported_accelerators: versionData.supported_accelerators,
       supported_comfyui_version: versionData.supported_comfyui_version,
       supported_comfyui_frontend_version:
-        versionData.supported_comfyui_frontend_version,
-      supported_python_version:
-        'supported_python_version' in versionData
-          ? (versionData.supported_python_version as string | undefined)
-          : undefined,
-      is_banned:
-        'is_banned' in versionData
-          ? (versionData.is_banned as boolean | undefined)
-          : false,
-      has_registry_data:
-        'has_registry_data' in versionData
-          ? (versionData.has_registry_data as boolean | undefined)
-          : false
+        versionData.supported_comfyui_frontend_version
     }
   }
 
@@ -323,19 +284,7 @@ const getVersionData = (version: string) => {
     supported_accelerators: nodePack.supported_accelerators,
     supported_comfyui_version: nodePack.supported_comfyui_version,
     supported_comfyui_frontend_version:
-      nodePack.supported_comfyui_frontend_version,
-    supported_python_version:
-      'supported_python_version' in nodePack
-        ? (nodePack.supported_python_version as string | undefined)
-        : undefined,
-    is_banned:
-      'is_banned' in nodePack
-        ? (nodePack.is_banned as boolean | undefined)
-        : false,
-    has_registry_data:
-      'has_registry_data' in nodePack
-        ? (nodePack.has_registry_data as boolean | undefined)
-        : false
+      nodePack.supported_comfyui_frontend_version
   }
 }
 
