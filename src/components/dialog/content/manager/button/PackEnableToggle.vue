@@ -15,6 +15,19 @@
       :model-value="isEnabled"
       :disabled="isLoading"
       aria-label="Enable or disable pack"
+      :class="{
+        'opacity-50 cursor-not-allowed': isLoading
+      }"
+      :pt="{
+        handle: {
+          class: 'bg-white'
+        },
+        slider: {
+          class: isEnabled
+            ? 'bg-primary-900'
+            : 'bg-neutral-200 dark-theme:bg-neutral-400'
+        }
+      }"
       @update:model-value="handleToggleClick"
     />
   </div>
@@ -48,8 +61,15 @@ const { acknowledgeConflict, isConflictAcknowledged } =
   useConflictAcknowledgment()
 
 const isLoading = ref(false)
+const pendingToggleState = ref<boolean | null>(null)
 
-const isEnabled = computed(() => isPackEnabled(nodePack.id))
+const isEnabled = computed(() => {
+  // Show pending state while waiting for user decision
+  if (pendingToggleState.value !== null) {
+    return pendingToggleState.value
+  }
+  return isPackEnabled(nodePack.id)
+})
 
 const handleEnable = () => {
   if (!nodePack.id) {
@@ -105,6 +125,12 @@ const handleToggle = async (enable: boolean, skipConflictCheck = false) => {
             }
             // Proceed with enabling using debounced function
             onToggle(enable)
+          },
+          dialogComponentProps: {
+            onClose: () => {
+              // User closed modal without clicking button - reset pending state
+              pendingToggleState.value = null
+            }
           }
         })
         return
@@ -118,16 +144,23 @@ const handleToggle = async (enable: boolean, skipConflictCheck = false) => {
 
 const performToggle = async (enable: boolean) => {
   isLoading.value = true
-  if (enable) {
-    await handleEnable()
-  } else {
-    await handleDisable()
+  try {
+    if (enable) {
+      await handleEnable()
+    } else {
+      await handleDisable()
+    }
+    // Clear pending state after successful operation
+    pendingToggleState.value = null
+  } finally {
+    isLoading.value = false
   }
-  isLoading.value = false
 }
 
 // Handle initial toggle click - check for conflicts first
 const handleToggleClick = (enable: boolean) => {
+  // Set pending state immediately for better UX
+  pendingToggleState.value = enable
   void handleToggle(enable)
 }
 
@@ -145,7 +178,7 @@ const showConflictModal = () => {
   if (conflicts) {
     showNodeConflictDialog({
       conflictedPackages: [conflicts],
-      buttonText: isEnabled.value
+      buttonText: isPackEnabled(nodePack.id)
         ? t('manager.conflicts.understood')
         : t('manager.conflicts.enableAnyway'),
       onButtonClick: async () => {
@@ -154,8 +187,14 @@ const showConflictModal = () => {
           acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
         }
         // Only enable if currently disabled
-        if (!isEnabled.value) {
+        if (!isPackEnabled(nodePack.id)) {
           onToggle(true)
+        }
+      },
+      dialogComponentProps: {
+        onClose: () => {
+          // User closed modal without clicking button - reset pending state
+          pendingToggleState.value = null
         }
       }
     })
