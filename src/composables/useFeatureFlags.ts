@@ -2,7 +2,8 @@
  * Feature flags composable for Vue node system
  * Provides safe toggles for experimental features
  */
-import { computed } from 'vue'
+import { LiteGraph } from '@comfyorg/litegraph'
+import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -59,10 +60,22 @@ export const useFeatureFlags = () => {
       true
   )
 
+  /**
+   * Sync the Vue nodes feature flag with LiteGraph global settings
+   */
+  const syncVueNodesFlag = () => {
+    LiteGraph.vueNodesMode = isVueNodesEnabled.value
+    console.log('Vue nodes mode:', LiteGraph.vueNodesMode)
+  }
+
+  // Watch for changes and update LiteGraph
+  watch(isVueNodesEnabled, syncVueNodesFlag, { immediate: true })
+
   return {
     isVueNodesEnabled,
     isVueWidgetsEnabled,
     isDevModeEnabled,
-    shouldRenderVueNodes
+    shouldRenderVueNodes,
+    syncVueNodesFlag
   }
 }
