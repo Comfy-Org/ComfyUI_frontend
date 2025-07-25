@@ -18,7 +18,7 @@ export const useConflictDetectionStore = defineStore(
 
     const getConflictsForPackage = computed(
       () => (packageId: string) =>
-        conflictedPackages.value.find((pkg) => pkg.package_id === packageId)
+        conflictedPackages.value.find((pkg) => pkg.package_name === packageId)
     )
 
     const bannedPackages = computed(() =>

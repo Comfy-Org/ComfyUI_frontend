@@ -213,17 +213,21 @@ export function useConflictDetection() {
         const fetchTasks = chunk.map(async ([packageName, nodeInfo]) => {
           const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
             nodeInfo
+
+          // Use cnr_id or aux_id for Registry API lookup instead of versioned packageName
+          const registryId =
+            typedNodeInfo.cnr_id || typedNodeInfo.aux_id || packageName
           const version = typedNodeInfo.ver || 'latest'
 
           try {
             const versionData = await registryService.getPackByVersion(
-              packageName,
+              registryId,
               version,
               abortController.value?.signal
             )
 
             if (versionData) {
-              versionDataMap.set(packageName, versionData)
+              versionDataMap.set(registryId, versionData)
             }
           } catch (error) {
             console.warn(
@@ -242,7 +246,11 @@ export function useConflictDetection() {
       for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
         const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
           nodeInfo
-        const versionData = versionDataMap.get(packageName)
+
+        // Use cnr_id or aux_id for Registry API lookup instead of versioned packageName
+        const registryId =
+          typedNodeInfo.cnr_id || typedNodeInfo.aux_id || packageName
+        const versionData = versionDataMap.get(registryId)
 
         if (versionData) {
           // Combine local installation data with version-specific Registry data
@@ -949,11 +957,14 @@ function mergeConflictsByPackageName(
   const mergedMap = new Map<string, ConflictDetectionResult>()
 
   conflicts.forEach((conflict) => {
-    const packageName = conflict.package_name
+    // Normalize package name by removing version suffix (@1_0_3) for consistent merging
+    const normalizedPackageName = conflict.package_name.includes('@')
+      ? conflict.package_name.substring(0, conflict.package_name.indexOf('@'))
+      : conflict.package_name
 
-    if (mergedMap.has(packageName)) {
+    if (mergedMap.has(normalizedPackageName)) {
       // Package already exists, merge conflicts
-      const existing = mergedMap.get(packageName)!
+      const existing = mergedMap.get(normalizedPackageName)!
 
       // Combine all conflicts, avoiding duplicates using lodash uniqBy for O(n) performance
       const allConflicts = [...existing.conflicts, ...conflict.conflicts]
@@ -963,16 +974,20 @@ function mergeConflictsByPackageName(
           `${conflict.type}|${conflict.current_value}|${conflict.required_value}`
       )
 
-      // Update the existing entry
-      mergedMap.set(packageName, {
+      // Update the existing entry with normalized package name
+      mergedMap.set(normalizedPackageName, {
         ...existing,
+        package_name: normalizedPackageName,
         conflicts: uniqueConflicts,
         has_conflict: uniqueConflicts.length > 0,
         is_compatible: uniqueConflicts.length === 0
       })
     } else {
-      // New package, add as-is
-      mergedMap.set(packageName, conflict)
+      // New package, add with normalized package name
+      mergedMap.set(normalizedPackageName, {
+        ...conflict,
+        package_name: normalizedPackageName
+      })
     }
   })
 
