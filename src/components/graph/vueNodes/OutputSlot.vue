@@ -22,9 +22,9 @@
     </span>
 
     <!-- Connection Dot -->
-    <div class="w-5 h-5 flex items-center justify-center">
+    <div class="w-5 h-5 flex items-center justify-center group/slot">
       <div
-        class="w-2 h-2 rounded-full bg-white transition-all duration-150 group-hover:w-2.5 group-hover:h-2.5 group-hover:border-2 group-hover:border-white"
+        class="w-2 h-2 rounded-full bg-white transition-all duration-150 group-hover/slot:w-2.5 group-hover/slot:h-2.5 group-hover/slot:border-2 group-hover/slot:border-white"
         :style="{
           backgroundColor: slotColor
         }"

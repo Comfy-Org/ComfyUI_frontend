@@ -6,10 +6,12 @@
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      class="lg-widget-container relative flex items-center"
+      class="lg-widget-container relative flex items-center group"
     >
       <!-- Widget Input Slot Dot -->
-      <div>
+      <div
+        class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+      >
         <InputSlot
           :slot-data="{
             name: widget.name,
