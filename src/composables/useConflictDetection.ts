@@ -190,7 +190,6 @@ export function useConflictDetection() {
   async function fetchPackageRequirements(): Promise<NodePackRequirements[]> {
     try {
       // Step 1: Use installed packs composable instead of direct API calls
-      // This follows Christian's architecture suggestion to use computed properties
       await startFetchInstalled() // Ensure data is loaded
 
       if (
