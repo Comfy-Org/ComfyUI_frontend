@@ -22,8 +22,8 @@ export const useVueNodeSync = () => {
 
   // Sync the feature flag with LiteGraph on changes
   const syncFeatureFlag = () => {
-    LiteGraph.useVueNodePositions = isVueNodesEnabled.value
-    console.log('Vue node positions synced:', LiteGraph.useVueNodePositions)
+    LiteGraph.vueNodesMode = isVueNodesEnabled.value
+    console.log('Vue nodes mode:', LiteGraph.vueNodesMode)
   }
 
   // Watch for changes and update LiteGraph
