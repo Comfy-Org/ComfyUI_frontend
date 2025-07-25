@@ -46,13 +46,13 @@ const { nodePack } = defineProps<{
 }>()
 
 const { isPackInstalled } = useComfyManagerStore()
-const conflictStore = useConflictDetectionStore()
+const { getConflictsForPackageByID } = useConflictDetectionStore()
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 
 const packageConflicts = computed(() => {
   if (!nodePack.id || !isInstalled.value) return null
 
   // For installed packages, check conflicts from store
-  return conflictStore.getConflictsForPackage(nodePack.id)
+  return getConflictsForPackageByID(nodePack.id)
 })
 </script>

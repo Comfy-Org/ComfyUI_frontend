@@ -83,12 +83,12 @@ describe('useConflictDetectionStore', () => {
     })
   })
 
-  describe('getConflictsForPackage', () => {
+  describe('getConflictsForPackageByID', () => {
     it('should find package by exact ID match', () => {
       const store = useConflictDetectionStore()
       store.setConflictedPackages(mockConflictedPackages)
 
-      const result = store.getConflictsForPackage('ComfyUI-Manager')
+      const result = store.getConflictsForPackageByID('ComfyUI-Manager')
 
       expect(result).toBeDefined()
       expect(result?.package_id).toBe('ComfyUI-Manager')
@@ -99,7 +99,7 @@ describe('useConflictDetectionStore', () => {
       const store = useConflictDetectionStore()
       store.setConflictedPackages(mockConflictedPackages)
 
-      const result = store.getConflictsForPackage('non-existent-package')
+      const result = store.getConflictsForPackageByID('non-existent-package')
 
       expect(result).toBeUndefined()
     })
