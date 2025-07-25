@@ -347,7 +347,7 @@ describe("SubgraphNode Execution", () => {
     const executableNodes = new Map()
     expect(() => {
       subgraphNode.getInnerNodes(executableNodes)
-    }).toThrow(/while flattening subgraph/i)
+    }).toThrow(/Circular reference detected.*infinite loop in the subgraph hierarchy/i)
   })
 
   it("should handle nested subgraph execution", () => {

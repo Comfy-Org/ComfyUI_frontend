@@ -131,7 +131,14 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    */
   resolveInput(slot: number, visited = new Set<string>()): ResolvedInput | undefined {
     const uniqueId = `${this.subgraphNode?.subgraph.id}:${this.node.id}[I]${slot}`
-    if (visited.has(uniqueId)) throw new RecursionError(`While resolving subgraph input [${uniqueId}]`)
+    if (visited.has(uniqueId)) {
+      const nodeInfo = `${this.node.id}${this.node.title ? ` (${this.node.title})` : ""}`
+      const pathInfo = this.subgraphNodePath.length > 0 ? ` at path ${this.subgraphNodePath.join(":")}` : ""
+      throw new RecursionError(
+        `Circular reference detected while resolving input ${slot} of node ${nodeInfo}${pathInfo}. ` +
+        `This creates an infinite loop in link resolution. UniqueID: [${uniqueId}]`,
+      )
+    }
     visited.add(uniqueId)
 
     const input = this.inputs.at(slot)
@@ -195,7 +202,14 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    */
   resolveOutput(slot: number, type: ISlotType, visited: Set<string>): ResolvedInput | undefined {
     const uniqueId = `${this.subgraphNode?.subgraph.id}:${this.node.id}[O]${slot}`
-    if (visited.has(uniqueId)) throw new RecursionError(`While resolving subgraph output [${uniqueId}]`)
+    if (visited.has(uniqueId)) {
+      const nodeInfo = `${this.node.id}${this.node.title ? ` (${this.node.title})` : ""}`
+      const pathInfo = this.subgraphNodePath.length > 0 ? ` at path ${this.subgraphNodePath.join(":")}` : ""
+      throw new RecursionError(
+        `Circular reference detected while resolving output ${slot} of node ${nodeInfo}${pathInfo}. ` +
+        `This creates an infinite loop in link resolution. UniqueID: [${uniqueId}]`,
+      )
+    }
     visited.add(uniqueId)
 
     // Upstreamed: Bypass nodes are bypassed using the first input with matching type

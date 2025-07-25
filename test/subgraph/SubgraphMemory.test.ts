@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from "vitest"
 
 import { LGraph } from "@/litegraph"
-import { SubgraphNode } from "@/subgraph/SubgraphNode"
 
 import { subgraphTest } from "./fixtures/subgraphFixtures"
 import {
-  createEventCapture,
   createTestSubgraph,
   createTestSubgraphNode,
 } from "./fixtures/subgraphHelpers"

@@ -293,7 +293,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     /** Internal recursion param. The set of visited nodes. */
     visited = new Set<SubgraphNode>(),
   ): ExecutableLGraphNode[] {
-    if (visited.has(this)) throw new RecursionError("while flattening subgraph")
+    if (visited.has(this)) {
+      const nodeInfo = `${this.id}${this.title ? ` (${this.title})` : ""}`
+      const subgraphInfo = `'${this.subgraph.name || "Unnamed Subgraph"}'`
+      const depth = subgraphNodePath.length
+      throw new RecursionError(
+        `Circular reference detected at depth ${depth} in node ${nodeInfo} of subgraph ${subgraphInfo}. ` +
+        `This creates an infinite loop in the subgraph hierarchy.`,
+      )
+    }
     visited.add(this)
 
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
