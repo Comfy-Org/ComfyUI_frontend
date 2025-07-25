@@ -280,14 +280,7 @@ export function useConflictDetection() {
             // Status information
             registry_status: undefined, // Node status - not critical for conflict detection
             version_status: versionData.status,
-            is_banned:
-              versionData.status === 'NodeVersionStatusBanned' || !isEnabled,
-            ban_reason:
-              versionData.status === 'NodeVersionStatusBanned'
-                ? 'Version is banned in Registry'
-                : !isEnabled
-                  ? 'Package is disabled locally'
-                  : undefined,
+            is_banned: versionData.status === 'NodeVersionStatusBanned',
 
             // Metadata
             registry_fetch_time: new Date().toISOString(),
@@ -306,8 +299,7 @@ export function useConflictDetection() {
             package_name: pack.name || packageId,
             installed_version: pack.latest_version?.version || 'unknown',
             is_enabled: isEnabled,
-            is_banned: !isEnabled,
-            ban_reason: !isEnabled ? 'Package is disabled locally' : undefined,
+            is_banned: false,
             registry_fetch_time: new Date().toISOString(),
             has_registry_data: false
           }
