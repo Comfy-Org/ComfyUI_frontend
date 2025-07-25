@@ -89,8 +89,6 @@ export interface NodePackRequirements {
     | 'NodeVersionStatusFlagged'
   /** @description Whether package is banned (derived from status) */
   is_banned: boolean
-  /** @description Reason for ban if applicable */
-  ban_reason?: string
 
   // Metadata
   /** @description Registry data fetch timestamp */
