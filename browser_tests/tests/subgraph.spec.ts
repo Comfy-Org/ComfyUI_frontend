@@ -397,7 +397,8 @@ test.describe('Subgraph Operations', () => {
       // Enable new menu for breadcrumb navigation
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
 
-      await comfyPage.loadWorkflow('subgraph-with-promoted-text-widget')
+      const workflowName = 'subgraph-with-promoted-text-widget'
+      await comfyPage.loadWorkflow(workflowName)
 
       const textareaCount = await comfyPage.page
         .locator(SELECTORS.domWidget)
@@ -420,8 +421,13 @@ test.describe('Subgraph Operations', () => {
       })
 
       // Click breadcrumb to navigate back to parent graph
-      const breadcrumb = comfyPage.page.locator(SELECTORS.breadcrumb).first()
-      await breadcrumb.click()
+      const homeBreadcrumb = comfyPage.page.getByRole('link', {
+        // In the subgraph navigation breadcrumbs, the home/top level
+        // breadcrumb is just the workflow name
+        name: workflowName
+      })
+      await homeBreadcrumb.waitFor({ state: 'visible' })
+      await homeBreadcrumb.click()
       await comfyPage.nextFrame()
       await comfyPage.page.waitForTimeout(300)
 
