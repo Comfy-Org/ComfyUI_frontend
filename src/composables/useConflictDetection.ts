@@ -1,10 +1,12 @@
 import { uniqBy } from 'lodash'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
+import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
@@ -20,7 +22,6 @@ import type {
   SupportedOS,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
-import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import {
   cleanVersion,
   satisfiesVersion,
@@ -32,6 +33,16 @@ import {
  * Error-resilient and asynchronous to avoid affecting other components.
  */
 export function useConflictDetection() {
+  // Store references
+  const managerStore = useComfyManagerStore()
+
+  // Use installed packs composable instead of direct API calls
+  const {
+    startFetchInstalled,
+    installedPacks,
+    isReady: installedPacksReady
+  } = useInstalledPacks()
+
   // State management
   const isDetecting = ref(false)
   const lastDetectionTime = ref<string | null>(null)
@@ -178,15 +189,17 @@ export function useConflictDetection() {
    */
   async function fetchPackageRequirements(): Promise<NodePackRequirements[]> {
     try {
-      // Step 1: Get locally installed packages
-      const comfyManagerService = useComfyManagerService()
-      const installedNodes:
-        | ManagerComponents['schemas']['InstalledPacksResponse']
-        | null = await comfyManagerService.listInstalledPacks()
+      // Step 1: Use installed packs composable instead of direct API calls
+      // This follows Christian's architecture suggestion to use computed properties
+      await startFetchInstalled() // Ensure data is loaded
 
-      if (!installedNodes) {
+      if (
+        !installedPacksReady.value ||
+        !installedPacks.value ||
+        installedPacks.value.length === 0
+      ) {
         console.warn(
-          '[ConflictDetection] Unable to fetch installed package information'
+          '[ConflictDetection] No installed packages available from useInstalledPacks'
         )
         return []
       }
@@ -200,38 +213,34 @@ export function useConflictDetection() {
       // Step 4: Fetch version-specific data in chunks to avoid overwhelming the Registry API
       //         - Each chunk processes up to 30 packages concurrently
       //         - Results are stored in versionDataMap for later use
-      const entries = Object.entries(installedNodes)
-      const chunkSize = 30 // 청크 크기
+      //         - Use installedPacks from useInstalledPacks composable
+      const chunkSize = 30
       const versionDataMap = new Map<
         string,
         components['schemas']['NodeVersion']
       >()
 
-      for (let i = 0; i < entries.length; i += chunkSize) {
-        const chunk = entries.slice(i, i + chunkSize)
+      for (let i = 0; i < installedPacks.value.length; i += chunkSize) {
+        const chunk = installedPacks.value.slice(i, i + chunkSize)
 
-        const fetchTasks = chunk.map(async ([packageName, nodeInfo]) => {
-          const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
-            nodeInfo
-
-          // Use cnr_id or aux_id for Registry API lookup instead of versioned packageName
-          const registryId =
-            typedNodeInfo.cnr_id || typedNodeInfo.aux_id || packageName
-          const version = typedNodeInfo.ver || 'latest'
+        const fetchTasks = chunk.map(async (pack) => {
+          // Use pack.id which should be the normalized ID from Registry
+          const packageId = pack.id || ''
+          const version = pack.latest_version?.version || 'latest'
 
           try {
             const versionData = await registryService.getPackByVersion(
-              registryId,
+              packageId,
               version,
               abortController.value?.signal
             )
 
             if (versionData) {
-              versionDataMap.set(registryId, versionData)
+              versionDataMap.set(packageId, versionData)
             }
           } catch (error) {
             console.warn(
-              `[ConflictDetection] Failed to fetch version data for ${packageName}@${version}:`,
+              `[ConflictDetection] Failed to fetch version data for ${packageId}@${version}:`,
               error
             )
           }
@@ -241,25 +250,24 @@ export function useConflictDetection() {
       }
 
       // Step 5: Combine local installation data with Registry version data
+      // Use installedPacks from useInstalledPacks composable
       const requirements: NodePackRequirements[] = []
 
-      for (const [packageName, nodeInfo] of Object.entries(installedNodes)) {
-        const typedNodeInfo: ManagerComponents['schemas']['ManagerPackInstalled'] =
-          nodeInfo
+      for (const pack of installedPacks.value) {
+        const packageId = pack.id || ''
+        const versionData = versionDataMap.get(packageId)
 
-        // Use cnr_id or aux_id for Registry API lookup instead of versioned packageName
-        const registryId =
-          typedNodeInfo.cnr_id || typedNodeInfo.aux_id || packageName
-        const versionData = versionDataMap.get(registryId)
+        // Check if package is enabled using store method
+        const isEnabled = managerStore.isPackEnabled(packageId)
 
         if (versionData) {
           // Combine local installation data with version-specific Registry data
           const requirement: NodePackRequirements = {
             // Basic package info
-            package_id: packageName,
-            package_name: packageName, // We don't need to fetch node info separately
-            installed_version: typedNodeInfo.ver || 'unknown',
-            is_enabled: typedNodeInfo.enabled,
+            package_id: packageId,
+            package_name: pack.name || packageId,
+            installed_version: pack.latest_version?.version || 'unknown',
+            is_enabled: isEnabled,
 
             // Version-specific compatibility data
             supported_comfyui_version: versionData.supported_comfyui_version,
@@ -274,12 +282,11 @@ export function useConflictDetection() {
             registry_status: undefined, // Node status - not critical for conflict detection
             version_status: versionData.status,
             is_banned:
-              versionData.status === 'NodeVersionStatusBanned' ||
-              !typedNodeInfo.enabled,
+              versionData.status === 'NodeVersionStatusBanned' || !isEnabled,
             ban_reason:
               versionData.status === 'NodeVersionStatusBanned'
                 ? 'Version is banned in Registry'
-                : !typedNodeInfo.enabled
+                : !isEnabled
                   ? 'Package is disabled locally'
                   : undefined,
 
@@ -291,19 +298,17 @@ export function useConflictDetection() {
           requirements.push(requirement)
         } else {
           console.warn(
-            `[ConflictDetection] No Registry data found for ${packageName}, using fallback`
+            `[ConflictDetection] No Registry data found for ${packageId}, using fallback`
           )
 
           // Create fallback requirement without Registry data
           const fallbackRequirement: NodePackRequirements = {
-            package_id: packageName,
-            package_name: packageName,
-            installed_version: typedNodeInfo.ver || 'unknown',
-            is_enabled: typedNodeInfo.enabled,
-            is_banned: !typedNodeInfo.enabled,
-            ban_reason: !typedNodeInfo.enabled
-              ? 'Package is disabled locally'
-              : undefined,
+            package_id: packageId,
+            package_name: pack.name || packageId,
+            installed_version: pack.latest_version?.version || 'unknown',
+            is_enabled: isEnabled,
+            is_banned: !isEnabled,
+            ban_reason: !isEnabled ? 'Package is disabled locally' : undefined,
             registry_fetch_time: new Date().toISOString(),
             has_registry_data: false
           }
@@ -423,13 +428,15 @@ export function useConflictDetection() {
     try {
       const comfyManagerService = useComfyManagerService()
 
-      // Get installed packages first
-      const installedPacks = await comfyManagerService.listInstalledPacks(
-        abortController.value?.signal
-      )
-
-      if (!installedPacks) {
-        console.warn('[ConflictDetection] No installed packages found')
+      // Use installed packs from useInstalledPacks composable
+      if (
+        !installedPacksReady.value ||
+        !installedPacks.value ||
+        installedPacks.value.length === 0
+      ) {
+        console.warn(
+          '[ConflictDetection] No installed packages available from useInstalledPacks'
+        )
         return {}
       }
 
@@ -437,27 +444,27 @@ export function useConflictDetection() {
 
       // Check each installed package for import failures
       // Process in smaller batches to avoid overwhelming the API
-      const packageNames = Object.keys(installedPacks)
+      const packageIds = installedPacks.value.map((pack) => pack.id)
       const batchSize = 10
 
-      for (let i = 0; i < packageNames.length; i += batchSize) {
-        const batch = packageNames.slice(i, i + batchSize)
+      for (let i = 0; i < packageIds.length; i += batchSize) {
+        const batch = packageIds.slice(i, i + batchSize)
 
         const batchResults = await Promise.allSettled(
-          batch.map(async (packageName) => {
+          batch.map(async (packageId) => {
             try {
-              // Try to get import failure info for this package
+              // Try to get import failure info for this package using normalized ID
               const failInfo = await comfyManagerService.getImportFailInfo(
-                { cnr_id: packageName },
+                { cnr_id: packageId },
                 abortController.value?.signal
               )
 
               if (failInfo) {
                 console.log(
-                  `[ConflictDetection] Import failure found for ${packageName}:`,
+                  `[ConflictDetection] Import failure found for ${packageId}:`,
                   failInfo
                 )
-                return { packageName, failInfo }
+                return { packageId, failInfo }
               }
             } catch (error) {
               // If API returns 400, it means no import failure info available
@@ -470,7 +477,7 @@ export function useConflictDetection() {
               }
 
               console.warn(
-                `[ConflictDetection] Failed to check import failure for ${packageName}:`,
+                `[ConflictDetection] Failed to check import failure for ${packageId}:`,
                 error
               )
             }
@@ -481,8 +488,8 @@ export function useConflictDetection() {
         // Process batch results
         batchResults.forEach((result) => {
           if (result.status === 'fulfilled' && result.value) {
-            const { packageName, failInfo } = result.value
-            importFailures[packageName] = failInfo
+            const { packageId, failInfo } = result.value
+            importFailures[packageId || ''] = failInfo
           }
         })
       }
@@ -512,7 +519,7 @@ export function useConflictDetection() {
     }
 
     // Process import failures
-    for (const [packageName, failureInfo] of Object.entries(importFailInfo)) {
+    for (const [packageId, failureInfo] of Object.entries(importFailInfo)) {
       if (failureInfo && typeof failureInfo === 'object') {
         // Extract error information from Manager API response
         const errorMsg = failureInfo.msg || 'Unknown import error'
@@ -530,15 +537,15 @@ export function useConflictDetection() {
         ]
 
         results.push({
-          package_id: packageName,
-          package_name: packageName,
+          package_id: packageId,
+          package_name: packageId,
           has_conflict: true,
           conflicts,
           is_compatible: false
         })
 
         console.warn(
-          `[ConflictDetection] Python import failure detected for ${packageName}:`,
+          `[ConflictDetection] Python import failure detected for ${packageId}:`,
           {
             path: modulePath,
             error: errorMsg,

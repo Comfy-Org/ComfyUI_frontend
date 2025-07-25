@@ -62,12 +62,15 @@ const nodeNames = computed(() => {
 const activeTab = ref('description')
 
 // Watch for compatibility issues and automatically switch to warning tab
-watchEffect(() => {
-  if (hasCompatibilityIssues) {
-    activeTab.value = 'warning'
-  } else if (activeTab.value === 'warning') {
-    // If currently on warning tab but no issues, switch to description
-    activeTab.value = 'description'
-  }
-}, { flush: 'post' })
+watchEffect(
+  () => {
+    if (hasCompatibilityIssues) {
+      activeTab.value = 'warning'
+    } else if (activeTab.value === 'warning') {
+      // If currently on warning tab but no issues, switch to description
+      activeTab.value = 'description'
+    }
+  },
+  { flush: 'post' }
+)
 </script>

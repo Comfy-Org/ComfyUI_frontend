@@ -44,20 +44,16 @@ const formattedDownloads = computed(() =>
   nodePack.downloads ? n(nodePack.downloads) : ''
 )
 
-const conflictStore = useConflictDetectionStore()
+const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { checkVersionCompatibility } = useConflictDetection()
 
-// TODO: Package version mismatch issue - Package IDs include version suffixes (@1_0_3)
-// but UI searches without version. This causes conflict detection failures.
-// Once getConflictsForPackage is improved to handle version matching properly,
-// all the complex fallback logic below can be removed.
 const hasConflict = computed(() => {
   if (!nodePack.id) return false
 
   // For installed packages, check conflicts from store
   if (isInstalled.value) {
     // Try exact match first
-    let conflicts = conflictStore.getConflictsForPackage(nodePack.id)
+    let conflicts = getConflictsForPackageByID(nodePack.id)
     if (conflicts) return true
 
     return false
