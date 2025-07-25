@@ -928,6 +928,10 @@ test.describe('Canvas Navigation', () => {
     })
 
     test('Space + left-click drag should pan canvas', async ({ comfyPage }) => {
+      // Click canvas to focus it
+      await comfyPage.page.click('canvas')
+      await comfyPage.nextFrame()
+
       await comfyPage.page.keyboard.down('Space')
       await comfyPage.dragAndDrop({ x: 50, y: 50 }, { x: 150, y: 150 })
       await comfyPage.page.keyboard.up('Space')
