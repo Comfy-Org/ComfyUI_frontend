@@ -15,13 +15,6 @@ import type { SettingParams } from '@/types/settingTypes'
  */
 export const CORE_SETTINGS: SettingParams[] = [
   {
-    id: 'Comfy.Memory.AllowManualUnload',
-    name: 'Allow manual unload of models and execution cache via user command',
-    type: 'hidden',
-    defaultValue: true,
-    versionAdded: '1.18.0'
-  },
-  {
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',

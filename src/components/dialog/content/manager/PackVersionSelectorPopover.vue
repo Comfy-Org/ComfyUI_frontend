@@ -252,20 +252,25 @@ const getVersionData = (version: string) => {
         nodePack.supported_comfyui_frontend_version,
       supported_python_version:
         (latestVersionData && 'supported_python_version' in latestVersionData
-          ? latestVersionData.supported_python_version as string | undefined
+          ? (latestVersionData.supported_python_version as string | undefined)
           : undefined) ??
         ('supported_python_version' in nodePack
-          ? nodePack.supported_python_version as string | undefined
+          ? (nodePack.supported_python_version as string | undefined)
           : undefined),
       is_banned:
         (latestVersionData && 'is_banned' in latestVersionData
-          ? latestVersionData.is_banned as boolean | undefined
-          : undefined) ?? ('is_banned' in nodePack ? nodePack.is_banned as boolean | undefined : false),
+          ? (latestVersionData.is_banned as boolean | undefined)
+          : undefined) ??
+        ('is_banned' in nodePack
+          ? (nodePack.is_banned as boolean | undefined)
+          : false),
       has_registry_data:
         (latestVersionData && 'has_registry_data' in latestVersionData
-          ? latestVersionData.has_registry_data as boolean | undefined
+          ? (latestVersionData.has_registry_data as boolean | undefined)
           : undefined) ??
-        ('has_registry_data' in nodePack ? nodePack.has_registry_data as boolean | undefined : false)
+        ('has_registry_data' in nodePack
+          ? (nodePack.has_registry_data as boolean | undefined)
+          : false)
     }
   }
 
@@ -281,7 +286,7 @@ const getVersionData = (version: string) => {
         nodePack.supported_comfyui_frontend_version, // Use latest known requirement
       supported_python_version:
         'supported_python_version' in nodePack
-          ? nodePack.supported_python_version as string | undefined
+          ? (nodePack.supported_python_version as string | undefined)
           : undefined,
       is_banned: false, // Nightly versions from repositories are typically not banned
       has_registry_data: false // Nightly doesn't come from registry
@@ -299,12 +304,15 @@ const getVersionData = (version: string) => {
         versionData.supported_comfyui_frontend_version,
       supported_python_version:
         'supported_python_version' in versionData
-          ? versionData.supported_python_version as string | undefined
+          ? (versionData.supported_python_version as string | undefined)
           : undefined,
-      is_banned: 'is_banned' in versionData ? versionData.is_banned as boolean | undefined : false,
+      is_banned:
+        'is_banned' in versionData
+          ? (versionData.is_banned as boolean | undefined)
+          : false,
       has_registry_data:
         'has_registry_data' in versionData
-          ? versionData.has_registry_data as boolean | undefined
+          ? (versionData.has_registry_data as boolean | undefined)
           : false
     }
   }
@@ -318,11 +326,16 @@ const getVersionData = (version: string) => {
       nodePack.supported_comfyui_frontend_version,
     supported_python_version:
       'supported_python_version' in nodePack
-        ? nodePack.supported_python_version as string | undefined
+        ? (nodePack.supported_python_version as string | undefined)
         : undefined,
-    is_banned: 'is_banned' in nodePack ? nodePack.is_banned as boolean | undefined : false,
+    is_banned:
+      'is_banned' in nodePack
+        ? (nodePack.is_banned as boolean | undefined)
+        : false,
     has_registry_data:
-      'has_registry_data' in nodePack ? nodePack.has_registry_data as boolean | undefined : false
+      'has_registry_data' in nodePack
+        ? (nodePack.has_registry_data as boolean | undefined)
+        : false
   }
 }
 

@@ -42,7 +42,7 @@ const { nodePack, hasConflict } = defineProps<{
 
 const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack } = useComfyManagerStore()
-const conflictStore = useConflictDetectionStore()
+const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { showNodeConflictDialog } = useDialogService()
 const { acknowledgeConflict, isConflictAcknowledged } =
   useConflictAcknowledgment()
@@ -87,7 +87,7 @@ const handleToggle = async (enable: boolean, skipConflictCheck = false) => {
 
   // Check for conflicts when enabling
   if (enable && hasConflict && !skipConflictCheck) {
-    const conflicts = conflictStore.getConflictsForPackage(nodePack.id || '')
+    const conflicts = getConflictsForPackageByID(nodePack.id || '')
     if (conflicts) {
       // Check if conflicts have been acknowledged
       const hasUnacknowledgedConflicts = conflicts.conflicts.some(
@@ -141,7 +141,7 @@ const onToggle = debounce(
 
 // Show conflict modal when warning icon is clicked
 const showConflictModal = () => {
-  const conflicts = conflictStore.getConflictsForPackage(nodePack.id || '')
+  const conflicts = getConflictsForPackageByID(nodePack.id || '')
   if (conflicts) {
     showNodeConflictDialog({
       conflictedPackages: [conflicts],
