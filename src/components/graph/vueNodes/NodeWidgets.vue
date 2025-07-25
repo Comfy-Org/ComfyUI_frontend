@@ -2,7 +2,7 @@
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
     ⚠️ Node Widgets Error
   </div>
-  <div v-else class="lg-node-widgets flex flex-col gap-2">
+  <div v-else class="lg-node-widgets flex flex-col gap-2 pr-1.5">
     <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
