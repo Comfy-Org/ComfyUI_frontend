@@ -40,6 +40,7 @@ export function useConflictDetection() {
   const {
     startFetchInstalled,
     installedPacks,
+    installedPacksWithVersions,
     isReady: installedPacksReady
   } = useInstalledPacks()
 
@@ -203,58 +204,77 @@ export function useConflictDetection() {
         return []
       }
 
-      // Step 2: Get Registry service for individual API calls
+      // Step 2: Get Registry service for bulk API calls
       const registryService = useComfyRegistryService()
 
       // Step 3: Setup abort controller for request cancellation
       abortController.value = new AbortController()
 
-      // Step 4: Fetch version-specific data in chunks to avoid overwhelming the Registry API
-      //         - Each chunk processes up to 30 packages concurrently
-      //         - Results are stored in versionDataMap for later use
-      //         - Use installedPacks from useInstalledPacks composable
-      const chunkSize = 30
+      // Step 4: Use bulk API to fetch version data efficiently
+      const chunkSize = 30 // Process in chunks to avoid overwhelming the API
       const versionDataMap = new Map<
         string,
         components['schemas']['NodeVersion']
       >()
 
-      for (let i = 0; i < installedPacks.value.length; i += chunkSize) {
-        const chunk = installedPacks.value.slice(i, i + chunkSize)
+      // Use installedPacksWithVersions which has the actual installed versions from Manager API
+      for (
+        let i = 0;
+        i < installedPacksWithVersions.value.length;
+        i += chunkSize
+      ) {
+        const chunk = installedPacksWithVersions.value.slice(i, i + chunkSize)
 
-        const fetchTasks = chunk.map(async (pack) => {
-          // Use pack.id which should be the normalized ID from Registry
-          const packageId = pack.id || ''
-          const version = pack.latest_version?.version || 'latest'
+        // Prepare bulk request with actual versions
+        const nodeVersions = chunk.map((pack) => ({
+          node_id: pack.id,
+          version: pack.version
+        }))
 
-          try {
-            const versionData = await registryService.getPackByVersion(
-              packageId,
-              version,
-              abortController.value?.signal
-            )
+        try {
+          const bulkResponse = await registryService.getBulkNodeVersions(
+            nodeVersions,
+            abortController.value?.signal
+          )
 
-            if (versionData) {
-              versionDataMap.set(packageId, versionData)
-            }
-          } catch (error) {
-            console.warn(
-              `[ConflictDetection] Failed to fetch version data for ${packageId}@${version}:`,
-              error
-            )
+          if (bulkResponse && bulkResponse.node_versions) {
+            // Process bulk response
+            bulkResponse.node_versions.forEach((result) => {
+              if (result.status === 'success' && result.node_version) {
+                versionDataMap.set(
+                  result.identifier.node_id,
+                  result.node_version
+                )
+              } else if (result.status === 'error') {
+                console.warn(
+                  `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
+                  result.error_message
+                )
+              }
+            })
           }
-        })
-
-        await Promise.allSettled(fetchTasks)
+        } catch (error) {
+          console.warn(
+            '[ConflictDetection] Failed to fetch bulk version data:',
+            error
+          )
+          // If bulk API fails, you might want to fall back to individual requests
+          // but for now we'll just log the error
+        }
       }
 
       // Step 5: Combine local installation data with Registry version data
-      // Use installedPacks from useInstalledPacks composable
       const requirements: NodePackRequirements[] = []
+
+      // Create a map for quick access to version info
+      const versionInfoMap = new Map(
+        installedPacksWithVersions.value.map((pack) => [pack.id, pack.version])
+      )
 
       for (const pack of installedPacks.value) {
         const packageId = pack.id || ''
         const versionData = versionDataMap.get(packageId)
+        const installedVersion = versionInfoMap.get(packageId) || 'unknown'
 
         // Check if package is enabled using store method
         const isEnabled = managerStore.isPackEnabled(packageId)
@@ -265,7 +285,7 @@ export function useConflictDetection() {
             // Basic package info
             package_id: packageId,
             package_name: pack.name || packageId,
-            installed_version: pack.latest_version?.version || 'unknown',
+            installed_version: installedVersion,
             is_enabled: isEnabled,
 
             // Version-specific compatibility data
@@ -297,7 +317,7 @@ export function useConflictDetection() {
           const fallbackRequirement: NodePackRequirements = {
             package_id: packageId,
             package_name: pack.name || packageId,
-            installed_version: pack.latest_version?.version || 'unknown',
+            installed_version: installedVersion,
             is_enabled: isEnabled,
             is_banned: false,
             registry_fetch_time: new Date().toISOString(),
