@@ -18,7 +18,12 @@
           v-bind="$attrs"
           :node-packs="nodePacks"
         />
-        <PackInstallButton v-else v-bind="$attrs" :node-packs="nodePacks" />
+        <PackInstallButton
+          v-else
+          v-bind="$attrs"
+          :node-packs="nodePacks"
+          :has-conflict="hasConflict"
+        />
       </slot>
     </div>
   </div>
@@ -40,8 +45,9 @@ import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
 
-const { nodePacks } = defineProps<{
+const { nodePacks, hasConflict } = defineProps<{
   nodePacks: components['schemas']['Node'][]
+  hasConflict?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()

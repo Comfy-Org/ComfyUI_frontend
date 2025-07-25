@@ -610,12 +610,14 @@
     "title": "Maintenance"
   },
   "manager": {
+    "applyChanges": "Appliquer les modifications",
     "changingVersion": "Changement de version de {from} à {to}",
     "createdBy": "Créé par",
     "dependencies": "Dépendances",
     "discoverCommunityContent": "Découvrez les packs de nœuds, extensions et plus encore créés par la communauté...",
     "downloads": "Téléchargements",
     "errorConnecting": "Erreur de connexion au registre de nœuds Comfy.",
+    "extensionsSuccessfullyInstalled": "Extension(s) installée(s) avec succès et prêtes à l'emploi !",
     "failed": "Échoué ({count})",
     "filter": {
       "disabled": "Désactivé",
@@ -627,6 +629,7 @@
     "installAllMissingNodes": "Installer tous les nœuds manquants",
     "installSelected": "Installer sélectionné",
     "installationQueue": "File d'attente d'installation",
+    "installingDependencies": "Installation des dépendances...",
     "lastUpdated": "Dernière mise à jour",
     "latestVersion": "Dernière",
     "legacyManagerUI": "Utiliser l'interface utilisateur héritée",
@@ -643,6 +646,7 @@
     "packsSelected": "Packs sélectionnés",
     "repository": "Référentiel",
     "restartToApplyChanges": "Pour appliquer les modifications, veuillez redémarrer ComfyUI",
+    "restartingBackend": "Redémarrage du backend pour appliquer les modifications...",
     "searchPlaceholder": "Recherche",
     "selectVersion": "Sélectionner la version",
     "sort": {
@@ -667,6 +671,8 @@
     "uninstallSelected": "Désinstaller sélectionné",
     "uninstalling": "Désinstallation",
     "update": "Mettre à jour",
+    "updateAll": "Tout mettre à jour",
+    "updateSelected": "Mettre à jour la sélection",
     "updatingAllPacks": "Mise à jour de tous les paquets",
     "version": "Version"
   },
@@ -740,7 +746,6 @@
     "Convert Selection to Subgraph": "Convertir la sélection en sous-graphe",
     "Convert selected nodes to group node": "Convertir les nœuds sélectionnés en nœud de groupe",
     "Custom Nodes (Legacy)": "Nœuds personnalisés (héritage)",
-    "Custom Nodes Manager": "Gestionnaire de Nœuds Personnalisés",
     "Delete Selected Items": "Supprimer les éléments sélectionnés",
     "Desktop User Guide": "Guide de l'utilisateur de bureau",
     "Duplicate Current Workflow": "Dupliquer le flux de travail actuel",
@@ -791,6 +796,7 @@
     "Save": "Enregistrer",
     "Save As": "Enregistrer sous",
     "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
+    "Show the Custom Nodes Manager": "Afficher le gestionnaire de nœuds personnalisés",
     "Sign Out": "Se déconnecter",
     "Toggle Bottom Panel": "Basculer le panneau inférieur",
     "Toggle Focus Mode": "Basculer le mode focus",

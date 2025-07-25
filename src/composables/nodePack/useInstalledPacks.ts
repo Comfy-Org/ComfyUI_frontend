@@ -20,7 +20,10 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
     packs.filter((pack) => comfyManagerStore.isPackInstalled(pack.id))
 
   const startFetchInstalled = async () => {
-    await comfyManagerStore.refreshInstalledList()
+    // Only refresh if store doesn't have data yet
+    if (comfyManagerStore.installedPacksIds.size === 0) {
+      await comfyManagerStore.refreshInstalledList()
+    }
     await startFetch()
   }
 

@@ -610,12 +610,14 @@
     "title": "Обслуживание"
   },
   "manager": {
+    "applyChanges": "Применить изменения",
     "changingVersion": "Изменение версии с {from} на {to}",
     "createdBy": "Создано",
     "dependencies": "Зависимости",
     "discoverCommunityContent": "Откройте для себя пакеты узлов, расширения и многое другое, созданные сообществом...",
     "downloads": "Загрузки",
     "errorConnecting": "Ошибка подключения к реестру Comfy Node.",
+    "extensionsSuccessfullyInstalled": "Расширение(я) успешно установлены и готовы к использованию!",
     "failed": "Не удалось ({count})",
     "filter": {
       "disabled": "Отключено",
@@ -627,6 +629,7 @@
     "installAllMissingNodes": "Установить все отсутствующие узлы",
     "installSelected": "Установить выбранное",
     "installationQueue": "Очередь установки",
+    "installingDependencies": "Установка зависимостей...",
     "lastUpdated": "Последнее обновление",
     "latestVersion": "Последняя",
     "legacyManagerUI": "Использовать устаревший UI",
@@ -643,6 +646,7 @@
     "packsSelected": "Выбрано пакетов",
     "repository": "Репозиторий",
     "restartToApplyChanges": "Чтобы применить изменения, пожалуйста, перезапустите ComfyUI",
+    "restartingBackend": "Перезапуск бэкенда для применения изменений...",
     "searchPlaceholder": "Поиск",
     "selectVersion": "Выберите версию",
     "sort": {
@@ -667,6 +671,8 @@
     "uninstallSelected": "Удалить выбранное",
     "uninstalling": "Удаление",
     "update": "Обновить",
+    "updateAll": "Обновить все",
+    "updateSelected": "Обновить выбранное",
     "updatingAllPacks": "Обновление всех пакетов",
     "version": "Версия"
   },
@@ -740,7 +746,6 @@
     "Convert Selection to Subgraph": "Преобразовать выделенное в подграф",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Custom Nodes (Legacy)": "Пользовательские узлы (устаревшие)",
-    "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Delete Selected Items": "Удалить выбранные элементы",
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
@@ -791,6 +796,7 @@
     "Save": "Сохранить",
     "Save As": "Сохранить как",
     "Show Settings Dialog": "Показать диалог настроек",
+    "Show the Custom Nodes Manager": "Показать менеджер пользовательских узлов",
     "Sign Out": "Выйти",
     "Toggle Bottom Panel": "Переключить нижнюю панель",
     "Toggle Focus Mode": "Переключить режим фокуса",

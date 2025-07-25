@@ -43,7 +43,7 @@
             </span>
             <p
               v-if="nodePack.description"
-              class="flex-1 text-muted text-xs font-medium break-words overflow-hidden min-h-12 line-clamp-3 my-0 leading-4 mb-1 overflow-hidden"
+              class="flex-1 text-muted text-xs font-medium break-words overflow-hidden max-h-12 line-clamp-3 my-0 leading-4 mb-2 overflow-hidden"
             >
               {{ nodePack.description }}
             </p>
@@ -119,12 +119,20 @@ provide(IsInstallingKey, isInstalling)
 
 const { isPackInstalled, isPackEnabled } = useComfyManagerStore()
 
-const isInstalled = computed(() => isPackInstalled(nodePack?.id))
-const isDisabled = computed(
-  () => isInstalled.value && !isPackEnabled(nodePack?.id)
-)
+const isDisabled = ref(false)
+const managerStore = useComfyManagerStore()
 
-whenever(isInstalled, () => (isInstalling.value = false))
+// Watch the installedPacks object directly (which gets updated from WebSocket)
+whenever(
+  () => managerStore.installedPacksIds,
+  () => {
+    const isInstalled = isPackInstalled(nodePack?.id)
+    isDisabled.value = isInstalled && !isPackEnabled(nodePack?.id)
+
+    // Update isInstalling state after installation is complete
+    if (isInstalling.value && isInstalled) isInstalling.value = false
+  }
+)
 
 const nodesCount = computed(() =>
   isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined

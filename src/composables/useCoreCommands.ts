@@ -19,8 +19,7 @@ import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
-import type { ComfyCommand } from '@/stores/commandStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { type ComfyCommand, useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
@@ -664,8 +663,8 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
-      icon: 'pi pi-objects-column',
-      label: 'Custom Nodes Manager',
+      icon: 'pi pi-puzzle',
+      label: 'Show the Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
         const { is_legacy_manager_ui } =
@@ -677,24 +676,23 @@ export function useCoreCommands(): ComfyCommand[] {
               'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
             )
           } catch (error) {
-            console.error('error', error)
             useToastStore().add({
               severity: 'error',
               summary: t('g.error'),
               detail: t('manager.legacyMenuNotAvailable'),
               life: 3000
             })
-            dialogService.showManagerDialog()
+            dialogService.toggleManagerDialog()
           }
         } else {
-          dialogService.showManagerDialog()
+          dialogService.toggleManagerDialog()
         }
       }
     },
     {
       id: 'Comfy.Manager.ShowUpdateAvailablePacks',
       icon: 'pi pi-sync',
-      label: 'Check for Custom Node Updates',
+      label: 'Check for Updates',
       versionAdded: '1.17.0',
       function: () => {
         dialogService.showManagerDialog({
@@ -705,7 +703,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.ShowMissingPacks',
       icon: 'pi pi-exclamation-circle',
-      label: 'Install Missing Custom Nodes',
+      label: 'Install Missing',
       versionAdded: '1.17.0',
       function: () => {
         dialogService.showManagerDialog({
@@ -799,6 +797,7 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
+
         const { node } = res
         canvas.select(node)
       }
