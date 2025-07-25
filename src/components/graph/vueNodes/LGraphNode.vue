@@ -34,7 +34,7 @@
     />
 
     <!-- Node Body - rendered based on LOD level and collapsed state -->
-    <div v-if="!isMinimalLOD && !isCollapsed" class="flex flex-col gap-2 p-2">
+    <div v-if="!isMinimalLOD && !isCollapsed" class="flex flex-col gap-2">
       <!-- Slots only rendered at full detail -->
       <NodeSlots
         v-if="shouldRenderSlots"
@@ -61,14 +61,6 @@
         :readonly="readonly"
         :lod-level="lodLevel"
       />
-
-      <!-- Placeholder if no widgets and in reduced+ mode -->
-      <div
-        v-if="!nodeData.widgets?.length && !hasCustomContent && !isMinimalLOD"
-        class="text-gray-500 text-sm text-center py-4"
-      >
-        No widgets
-      </div>
     </div>
 
     <!-- Progress bar for executing state -->

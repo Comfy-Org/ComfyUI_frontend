@@ -649,6 +649,7 @@ onMounted(async () => {
   useCopy()
   usePaste()
   useWorkflowAutoSave()
+  useFeatureFlags() // This will automatically sync Vue nodes flag with LiteGraph
 
   comfyApp.vueAppReady = true
 

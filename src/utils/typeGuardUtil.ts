@@ -1,4 +1,4 @@
-import { LGraph, LGraphNode } from '@comfyorg/litegraph'
+import { type INodeSlot, LGraph, LGraphNode } from '@comfyorg/litegraph'
 import { Subgraph } from '@comfyorg/litegraph'
 
 import type { PrimitiveNode } from '@/extensions/core/widgetInputs'
@@ -31,10 +31,14 @@ export const isNonNullish = <T>(item: T | undefined | null): item is T =>
 /**
  * Type guard for slot objects (inputs/outputs)
  */
-export const isSlotObject = (
-  obj: unknown
-): obj is { name?: string; type?: string } => {
-  return obj !== null && typeof obj === 'object'
+export const isSlotObject = (obj: unknown): obj is INodeSlot => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'name' in obj &&
+    'type' in obj &&
+    'boundingRect' in obj
+  )
 }
 
 /**
