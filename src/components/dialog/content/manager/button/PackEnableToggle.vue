@@ -16,15 +16,16 @@
       :disabled="isLoading"
       aria-label="Enable or disable pack"
       :class="{
-        'opacity-50 cursor-not-allowed': isLoading,
-        'opacity-50': !isEnabled
+        'opacity-50 cursor-not-allowed': isLoading
       }"
       :pt="{
         handle: {
           class: 'bg-white'
         },
         slider: {
-          class: 'bg-neutral-800 dark-theme:bg-neutral-600'
+          class: isEnabled
+            ? 'bg-primary-900'
+            : 'bg-neutral-200 dark-theme:bg-neutral-400'
         }
       }"
       @update:model-value="handleToggleClick"
