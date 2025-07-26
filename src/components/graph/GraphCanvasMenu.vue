@@ -57,7 +57,7 @@
       @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
     />
     <Button
-      v-tooltip.left="t('graphCanvasMenu.toggleMinimap') + ' [Atl + M]'"
+      v-tooltip.left="t('graphCanvasMenu.toggleMinimap') + ' (Alt + m)'"
       severity="secondary"
       :icon="'pi pi-map'"
       :aria-label="$t('graphCanvasMenu.toggleMinimap')"

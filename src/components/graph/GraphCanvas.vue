@@ -20,7 +20,7 @@
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
 
       <MiniMap
-        v-if="comfyAppReady"
+        v-if="comfyAppReady && minimapEnabled"
         ref="minimapRef"
         class="pointer-events-auto"
       />
@@ -120,6 +120,7 @@ const selectionToolboxEnabled = computed(() =>
 )
 
 const minimapRef = ref<InstanceType<typeof MiniMap>>()
+const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 const minimap = useMinimap()
 
 watchEffect(() => {
