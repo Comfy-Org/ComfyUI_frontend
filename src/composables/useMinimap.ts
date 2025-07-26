@@ -141,8 +141,8 @@ export function useMinimap() {
     let currentHeight = maxY - minY
 
     // Enforce minimum viewport dimensions for better visualization
-    const minViewportWidth = 300
-    const minViewportHeight = 200
+    const minViewportWidth = 2500
+    const minViewportHeight = 2000
 
     if (currentWidth < minViewportWidth) {
       const padding = (minViewportWidth - currentWidth) / 2
@@ -276,6 +276,12 @@ export function useMinimap() {
 
     const ctx = canvasRef.value.getContext('2d')
     if (!ctx) return
+
+    // Fast path for 0 nodes - just show background
+    if (!graph.value._nodes || graph.value._nodes.length === 0) {
+      ctx.clearRect(0, 0, width, height)
+      return
+    }
 
     const needsRedraw =
       needsFullRedraw.value ||
