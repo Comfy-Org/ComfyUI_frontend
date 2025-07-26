@@ -1,3 +1,4 @@
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { useRafFn, useThrottleFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
@@ -6,6 +7,12 @@ import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+
+interface GraphCallbacks {
+  onNodeAdded?: (node: LGraphNode) => void
+  onNodeRemoved?: (node: LGraphNode) => void
+  onConnectionChange?: (node: LGraphNode) => void
+}
 
 export function useMinimap() {
   const settingStore = useSettingStore()
@@ -442,7 +449,7 @@ export function useMinimap() {
     c.setDirty(true, true)
   }
 
-  let originalCallbacks: any = {}
+  let originalCallbacks: GraphCallbacks = {}
 
   const handleGraphChanged = useThrottleFn(() => {
     needsFullRedraw.value = true
