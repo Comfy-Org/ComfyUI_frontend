@@ -1,21 +1,17 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import config from '@/config'
-import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
+
+const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+const DISMISSAL_KEY_PREFIX = 'comfy.versionMismatch.dismissed.'
 
 export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
   () => {
     const systemStatsStore = useSystemStatsStore()
-    const settingStore = useSettingStore()
-
-    const isDismissed = ref(false)
-    const dismissedVersion = ref<string | null>(
-      settingStore.get('Comfy.VersionMismatch.DismissedVersion') ?? null
-    )
 
     const frontendVersion = computed(() => config.app_version)
     const backendVersion = computed(
@@ -61,16 +57,38 @@ export const useVersionCompatibilityStore = defineStore(
       return isFrontendOutdated.value || isFrontendNewer.value
     })
 
-    const currentVersionKey = computed(
-      () =>
-        `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
-    )
+    const versionKey = computed(() => {
+      if (
+        !frontendVersion.value ||
+        !backendVersion.value ||
+        !requiredFrontendVersion.value
+      ) {
+        return null
+      }
+      return `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+    })
+
+    const dismissalKey = computed(() => {
+      if (!versionKey.value) return null
+      return DISMISSAL_KEY_PREFIX + versionKey.value
+    })
+
+    const isDismissed = computed(() => {
+      if (!dismissalKey.value) return false
+
+      const dismissedUntil = localStorage.getItem(dismissalKey.value)
+
+      if (!dismissedUntil) return false
+
+      const dismissedUntilTime = parseInt(dismissedUntil, 10)
+      if (isNaN(dismissedUntilTime)) return false
+
+      // Check if dismissal has expired
+      return Date.now() < dismissedUntilTime
+    })
 
     const shouldShowWarning = computed(() => {
-      if (!hasVersionMismatch.value || isDismissed.value) {
-        return false
-      }
-      return dismissedVersion.value !== currentVersionKey.value
+      return hasVersionMismatch.value && !isDismissed.value
     })
 
     const warningMessage = computed(() => {
@@ -96,29 +114,15 @@ export const useVersionCompatibilityStore = defineStore(
       }
     }
 
-    async function dismissWarning() {
-      isDismissed.value = true
-      dismissedVersion.value = currentVersionKey.value
+    function dismissWarning() {
+      if (!dismissalKey.value) return
 
-      await settingStore.set(
-        'Comfy.VersionMismatch.DismissedVersion',
-        currentVersionKey.value
-      )
-    }
-
-    function restoreDismissalState() {
-      const dismissed = settingStore.get(
-        'Comfy.VersionMismatch.DismissedVersion'
-      )
-      if (dismissed) {
-        dismissedVersion.value = dismissed
-        isDismissed.value = dismissed === currentVersionKey.value
-      }
+      const dismissUntil = Date.now() + DISMISSAL_DURATION_MS
+      localStorage.setItem(dismissalKey.value, dismissUntil.toString())
     }
 
     async function initialize() {
       await checkVersionCompatibility()
-      restoreDismissalState()
     }
 
     return {

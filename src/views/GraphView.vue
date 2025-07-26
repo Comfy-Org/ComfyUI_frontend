@@ -9,7 +9,6 @@
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
     <div id="graph-canvas-container" class="graph-canvas-container">
-      <VersionMismatchWarning />
       <GraphCanvas @ready="onGraphReady" />
     </div>
   </div>
@@ -29,7 +28,6 @@ import { useI18n } from 'vue-i18n'
 
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
-import VersionMismatchWarning from '@/components/dialog/content/VersionMismatchWarning.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -37,6 +35,7 @@ import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVersionMismatchWarning'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
@@ -229,6 +228,11 @@ onBeforeUnmount(() => {
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 
 const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
+
+// Initialize version mismatch warning in setup context
+// It will be triggered automatically when the store is ready
+useFrontendVersionMismatchWarning({ immediate: true })
+
 const onGraphReady = () => {
   requestIdleCallback(
     () => {
@@ -254,6 +258,8 @@ const onGraphReady = () => {
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
       useNodeDefStore().nodeSearchService.searchNode('')
+
+      // Initialize version compatibility store
       void versionCompatibilityStore.initialize()
     },
     { timeout: 1000 }

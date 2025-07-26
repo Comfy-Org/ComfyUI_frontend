@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 
@@ -12,30 +11,44 @@ vi.mock('@/config', () => ({
 }))
 
 vi.mock('@/stores/systemStatsStore')
-vi.mock('@/stores/settingStore')
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn()
+}
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  writable: true
+})
 
 describe('useVersionCompatibilityStore', () => {
   let store: ReturnType<typeof useVersionCompatibilityStore>
   let mockSystemStatsStore: any
-  let mockSettingStore: any
 
   beforeEach(() => {
     setActivePinia(createPinia())
+
+    // Clear localStorage mock
+    localStorageMock.getItem.mockReset()
+    localStorageMock.setItem.mockReset()
+    localStorageMock.removeItem.mockReset()
+    localStorageMock.clear.mockReset()
 
     mockSystemStatsStore = {
       systemStats: null,
       fetchSystemStats: vi.fn()
     }
 
-    mockSettingStore = {
-      get: vi.fn(),
-      set: vi.fn()
-    }
-
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
 
     store = useVersionCompatibilityStore()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   describe('version compatibility detection', () => {
@@ -116,11 +129,8 @@ describe('useVersionCompatibilityStore', () => {
   })
 
   describe('warning display logic', () => {
-    beforeEach(() => {
-      mockSettingStore.get.mockReturnValue('')
-    })
-
     it('should show warning when there is a version mismatch and not dismissed', async () => {
+      localStorageMock.getItem.mockReturnValue(null) // Not dismissed
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.25.0',
@@ -134,6 +144,9 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should not show warning when dismissed', async () => {
+      const futureTime = Date.now() + 1000000
+      localStorageMock.getItem.mockReturnValue(String(futureTime))
+
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.25.0',
@@ -142,7 +155,6 @@ describe('useVersionCompatibilityStore', () => {
       }
 
       await store.checkVersionCompatibility()
-      void store.dismissWarning()
 
       expect(store.shouldShowWarning).toBe(false)
     })
@@ -211,7 +223,10 @@ describe('useVersionCompatibilityStore', () => {
   })
 
   describe('dismissal persistence', () => {
-    it('should save dismissal to settings', async () => {
+    it('should save dismissal to localStorage with expiration', async () => {
+      const mockNow = 1000000
+      vi.spyOn(Date, 'now').mockReturnValue(mockNow)
+
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.25.0',
@@ -220,16 +235,18 @@ describe('useVersionCompatibilityStore', () => {
       }
 
       await store.checkVersionCompatibility()
-      await store.dismissWarning()
+      store.dismissWarning()
 
-      expect(mockSettingStore.set).toHaveBeenCalledWith(
-        'Comfy.VersionMismatch.DismissedVersion',
-        '1.24.0-1.25.0-1.25.0'
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'comfy.versionMismatch.dismissed.1.24.0-1.25.0-1.25.0',
+        String(mockNow + 7 * 24 * 60 * 60 * 1000) // 7 days later
       )
     })
 
-    it('should restore dismissal state from settings', async () => {
-      mockSettingStore.get.mockReturnValue('1.24.0-1.25.0-1.25.0')
+    it('should check dismissal state from localStorage', async () => {
+      const futureTime = Date.now() + 1000000 // Still valid
+      localStorageMock.getItem.mockReturnValue(String(futureTime))
+
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.25.0',
@@ -242,8 +259,29 @@ describe('useVersionCompatibilityStore', () => {
       expect(store.shouldShowWarning).toBe(false)
     })
 
+    it('should show warning if dismissal has expired', async () => {
+      const pastTime = Date.now() - 1000 // Expired
+      localStorageMock.getItem.mockReturnValue(String(pastTime))
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.25.0',
+          required_frontend_version: '1.25.0'
+        }
+      }
+
+      await store.initialize()
+
+      expect(store.shouldShowWarning).toBe(true)
+    })
+
     it('should show warning for different version combinations even if previous was dismissed', async () => {
-      mockSettingStore.get.mockReturnValue('1.24.0-1.25.0-1.25.0')
+      const futureTime = Date.now() + 1000000
+      // Dismissed for different version combination
+      localStorageMock.getItem
+        .mockReturnValueOnce(null) // Current version key not found
+        .mockReturnValueOnce(String(futureTime)) // Different version was dismissed
+
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.26.0',
