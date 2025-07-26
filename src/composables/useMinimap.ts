@@ -137,13 +137,34 @@ export function useMinimap() {
       maxY = Math.max(maxY, node.pos[1] + node.size[1])
     }
 
+    let currentWidth = maxX - minX
+    let currentHeight = maxY - minY
+
+    // Enforce minimum viewport dimensions for better visualization
+    const minViewportWidth = 300
+    const minViewportHeight = 200
+
+    if (currentWidth < minViewportWidth) {
+      const padding = (minViewportWidth - currentWidth) / 2
+      minX -= padding
+      maxX += padding
+      currentWidth = minViewportWidth
+    }
+
+    if (currentHeight < minViewportHeight) {
+      const padding = (minViewportHeight - currentHeight) / 2
+      minY -= padding
+      maxY += padding
+      currentHeight = minViewportHeight
+    }
+
     return {
       minX,
       minY,
       maxX,
       maxY,
-      width: maxX - minX,
-      height: maxY - minY
+      width: currentWidth,
+      height: currentHeight
     }
   }
 
