@@ -66,7 +66,7 @@ jobs:
         with:
           label_trigger: "claude-review"
           direct_prompt: |
-            Read and execute the instructions in .claude/commands/comprehensive-pr-review.md
+            Use the Read tool to read the file .claude/commands/comprehensive-pr-review.md and then execute all the instructions contained within it. The file contains comprehensive PR review instructions with bash code blocks that need to be executed.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           max_turns: 256
           timeout_minutes: 30
