@@ -152,6 +152,7 @@ export function useMinimap() {
     const scaleX = width / bounds.value.width
     const scaleY = height / bounds.value.height
 
+    // Apply 0.9 factor to provide padding/gap between nodes and minimap borders
     return Math.min(scaleX, scaleY) * 0.9
   }
 
