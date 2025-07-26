@@ -2285,9 +2285,23 @@ class BrushTool {
       totalLength += Math.sqrt(dx * dx + dy * dy)
     }
 
-    const distanceBetweenPoints =
-      (this.brushSettings.size / this.brushSettings.smoothingPrecision) * 6
-    const stepNr = Math.ceil(totalLength / distanceBetweenPoints)
+    const maxSteps = 30
+    const minSteps = 2
+
+    // Convert 1-100 range to 0-1 range
+    const smoothing = Math.min(
+      Math.max(this.brushSettings.smoothingPrecision, 1),
+      100
+    ) // clamp 1-100
+    const normalizedSmoothing = (smoothing - 1) / 99 // Convert to 0-1 range
+
+    // Optionality to use exponential curve
+    const stepNr = Math.round(
+      minSteps + (maxSteps - minSteps) * Math.pow(normalizedSmoothing, 1)
+    )
+
+    // Calculate step distance capped by brush size
+    const distanceBetweenPoints = totalLength / stepNr
 
     let interpolatedPoints = points
 
@@ -2435,69 +2449,105 @@ class BrushTool {
     const hardness = brushSettings.hardness
     const x = point.x
     const y = point.y
-    // Extend the gradient radius beyond the brush size
-    const extendedSize = size * (2 - hardness)
+
+    // Keep brush size constant - only the gradient changes with hardness
+    const brushRadius = size
 
     const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
     const currentTool = await this.messageBroker.pull('currentTool')
 
-    // handle paint pen
+    // Helper function to draw soft square brush
+    const drawSoftSquare = (
+      ctx: CanvasRenderingContext2D,
+      color: string,
+      centerOpacity: number
+    ) => {
+      const steps = 10
+      const hardRadius = brushRadius * hardness
+
+      for (let i = 0; i < steps; i++) {
+        const progress = i / (steps - 1)
+        const currentRadius = hardRadius + (brushRadius - hardRadius) * progress
+        const currentOpacity = centerOpacity * (1 - progress)
+
+        ctx.fillStyle = color.replace(/[\d.]+\)$/, `${currentOpacity})`)
+        ctx.beginPath()
+        ctx.rect(
+          x - currentRadius,
+          y - currentRadius,
+          currentRadius * 2,
+          currentRadius * 2
+        )
+        ctx.fill()
+      }
+    }
+
+    // RGB brush logic
     if (
       this.activeLayer === 'rgb' &&
       (currentTool === Tools.Eraser || currentTool === Tools.PaintPen)
     ) {
       const rgbaColor = this.formatRgba(this.rgbColor, opacity)
-      let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+
+      if (brushType === BrushShape.Rect && hardness < 1) {
+        drawSoftSquare(rgbCtx, rgbaColor, opacity)
+        return
+      }
+
+      // Original logic for circles and hard squares
+      let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
+
       if (hardness === 1) {
         gradient.addColorStop(0, rgbaColor)
-        gradient.addColorStop(
-          1,
-          this.formatRgba(this.rgbColor, brushSettingsSliderOpacity)
-        )
+        gradient.addColorStop(1, rgbaColor)
       } else {
         gradient.addColorStop(0, rgbaColor)
-        gradient.addColorStop(hardness, rgbaColor)
+        gradient.addColorStop(
+          hardness,
+          this.formatRgba(this.rgbColor, opacity * 0.5)
+        )
         gradient.addColorStop(1, this.formatRgba(this.rgbColor, 0))
       }
+
       rgbCtx.fillStyle = gradient
       rgbCtx.beginPath()
       if (brushType === BrushShape.Rect) {
         rgbCtx.rect(
-          x - extendedSize,
-          y - extendedSize,
-          extendedSize * 2,
-          extendedSize * 2
+          x - brushRadius,
+          y - brushRadius,
+          brushRadius * 2,
+          brushRadius * 2
         )
       } else {
-        rgbCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+        rgbCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
       }
       rgbCtx.fill()
       return
     }
 
-    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
-    if (hardness === 1) {
-      gradient.addColorStop(
-        0,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      )
-      gradient.addColorStop(
-        1,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      )
-    } else {
-      let softness = 1 - hardness
-      let innerStop = Math.max(0, hardness - softness)
-      let outerStop = size / extendedSize
+    // Mask brush logic
+    if (brushType === BrushShape.Rect && hardness < 1) {
+      const baseColor = isErasing
+        ? `rgba(255, 255, 255, ${opacity})`
+        : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
 
+      drawSoftSquare(maskCtx, baseColor, opacity)
+      return
+    }
+
+    // Original logic for circles and hard squares
+    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
+
+    if (hardness === 1) {
+      const solidColor = isErasing
+        ? `rgba(255, 255, 255, ${opacity})`
+        : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+      gradient.addColorStop(0, solidColor)
+      gradient.addColorStop(1, solidColor)
+    } else {
       if (isErasing) {
         gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
+        gradient.addColorStop(hardness, `rgba(255, 255, 255, ${opacity * 0.5})`)
         gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
       } else {
         gradient.addColorStop(
@@ -2505,12 +2555,8 @@ class BrushTool {
           `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
         )
         gradient.addColorStop(
-          innerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          outerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`
+          hardness,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity * 0.5})`
         )
         gradient.addColorStop(
           1,
@@ -2523,13 +2569,13 @@ class BrushTool {
     maskCtx.beginPath()
     if (brushType === BrushShape.Rect) {
       maskCtx.rect(
-        x - extendedSize,
-        y - extendedSize,
-        extendedSize * 2,
-        extendedSize * 2
+        x - brushRadius,
+        y - brushRadius,
+        brushRadius * 2,
+        brushRadius * 2
       )
     } else {
-      maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+      maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
     }
     maskCtx.fill()
   }
@@ -4179,30 +4225,35 @@ class UIManager {
     const centerY = cursorPoint.y + pan_offset.y
     const brush = this.brush
     const hardness = brushSettings.hardness
-    const extendedSize = brushSettings.size * (2 - hardness) * 2 * zoom_ratio
+
+    // Now that brush size is constant, preview is simple
+    const brushRadius = brushSettings.size * zoom_ratio
+    const previewSize = brushRadius * 2
 
     this.brushSizeSlider.value = String(brushSettings.size)
     this.brushHardnessSlider.value = String(hardness)
 
-    brush.style.width = extendedSize + 'px'
-    brush.style.height = extendedSize + 'px'
-    brush.style.left = centerX - extendedSize / 2 + 'px'
-    brush.style.top = centerY - extendedSize / 2 + 'px'
+    brush.style.width = previewSize + 'px'
+    brush.style.height = previewSize + 'px'
+    brush.style.left = centerX - brushRadius + 'px'
+    brush.style.top = centerY - brushRadius + 'px'
 
     if (hardness === 1) {
       this.brushPreviewGradient.style.background = 'rgba(255, 0, 0, 0.5)'
       return
     }
 
-    const opacityStop = hardness / 4 + 0.25
+    // Simplified gradient - hardness controls where the fade starts
+    const midStop = hardness * 100
+    const outerStop = 100
 
     this.brushPreviewGradient.style.background = `
-        radial-gradient(
-            circle,
-            rgba(255, 0, 0, 0.5) 0%,
-            rgba(255, 0, 0, ${opacityStop}) ${hardness * 100}%,
-            rgba(255, 0, 0, 0) 100%
-        )
+      radial-gradient(
+        circle,
+        rgba(255, 0, 0, 0.5) 0%,
+        rgba(255, 0, 0, 0.25) ${midStop}%,
+        rgba(255, 0, 0, 0) ${outerStop}%
+      )
     `
   }
 
