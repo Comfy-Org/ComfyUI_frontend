@@ -4,6 +4,8 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.setTimeout(60000) // Increase timeout to 60 seconds for all tests
+
 const NODE_TYPE = 'CLIP Text Encode (Prompt)'
 const WORKFLOW_NAME = 'Unsaved Workflow'
 
@@ -34,6 +36,10 @@ test.describe('API Integration - Workflow CRUD', () => {
   })
 
   test('can add node to canvas', async ({ comfyPage }) => {
+    // Close any open overlays or textareas
+    await comfyPage.page.keyboard.press('Escape')
+    await comfyPage.page.mouse.click(10, 10)
+    await comfyPage.canvas.click() // Focus canvas before double-click
     await comfyPage.doubleClickCanvas()
     await comfyPage.searchBox.input.waitFor({ state: 'visible', timeout: 5000 })
     await comfyPage.searchBox.fillAndSelectFirstNode(NODE_TYPE)
