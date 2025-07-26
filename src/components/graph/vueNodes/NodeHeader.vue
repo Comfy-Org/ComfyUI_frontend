@@ -5,6 +5,7 @@
   <div
     v-else
     class="lg-node-header flex items-center justify-between p-2 rounded-t-lg cursor-move"
+    :data-testid="`node-header-${nodeInfo?.id || ''}`"
     :style="{
       backgroundColor: headerColor,
       color: textColor
@@ -15,6 +16,7 @@
     <button
       v-show="!readonly"
       class="bg-transparent border-transparent flex items-center"
+      data-testid="node-collapse-button"
       @click.stop="handleCollapse"
       @dblclick.stop
     >
@@ -25,11 +27,13 @@
     </button>
 
     <!-- Node Title -->
-    <div class="text-sm font-medium truncate flex-1">
+    <div class="text-sm font-medium truncate flex-1" data-testid="node-title">
       <EditableText
         :model-value="displayTitle"
         :is-editing="isEditing"
+        :input-attrs="{ 'data-testid': 'node-title-input' }"
         @edit="handleTitleEdit"
+        @cancel="handleTitleCancel"
       />
     </div>
   </div>
@@ -133,5 +137,11 @@ const handleTitleEdit = (newTitle: string) => {
     // Emit for litegraph sync
     emit('update:title', trimmedTitle)
   }
+}
+
+const handleTitleCancel = () => {
+  isEditing.value = false
+  // Reset displayTitle to the current node title
+  displayTitle.value = nodeInfo.value?.title || 'Untitled'
 }
 </script>
