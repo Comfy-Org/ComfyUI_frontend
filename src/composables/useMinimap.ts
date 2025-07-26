@@ -1,3 +1,4 @@
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { useRafFn, useThrottleFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
@@ -7,10 +8,10 @@ import { api } from '@/scripts/api'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
-const globalState = {
-  visible: ref(true),
-  minimapRef: ref<any>(null),
-  initialized: false
+interface GraphCallbacks {
+  onNodeAdded?: (node: LGraphNode) => void
+  onNodeRemoved?: (node: LGraphNode) => void
+  onConnectionChange?: (node: LGraphNode) => void
 }
 
 export function useMinimap() {
@@ -19,8 +20,9 @@ export function useMinimap() {
 
   const containerRef = ref<HTMLDivElement>()
   const canvasRef = ref<HTMLCanvasElement>()
+  const minimapRef = ref<any>(null)
 
-  const visible = globalState.visible
+  const visible = ref(true)
 
   const initialized = ref(false)
   const bounds = ref({
@@ -50,10 +52,12 @@ export function useMinimap() {
 
   const width = 250
   const height = 200
-  const nodeColor = '#666'
+  const nodeColor = '#0B8CE999'
+  const linkColor = '#F99614'
+  const slotColor = '#F99614'
   const viewportColor = '#FFF'
-  const backgroundColor = '#1e1e1e'
-  const borderColor = '#444'
+  const backgroundColor = '#15161C'
+  const borderColor = '#333'
 
   const containerRect = ref({
     left: 0,
@@ -99,7 +103,8 @@ export function useMinimap() {
     width: `${width}px`,
     height: `${height}px`,
     backgroundColor: backgroundColor,
-    border: `1px solid ${borderColor}`
+    border: `1px solid ${borderColor}`,
+    borderRadius: '8px'
   }))
 
   const viewportStyles = computed(() => ({
@@ -132,13 +137,34 @@ export function useMinimap() {
       maxY = Math.max(maxY, node.pos[1] + node.size[1])
     }
 
+    let currentWidth = maxX - minX
+    let currentHeight = maxY - minY
+
+    // Enforce minimum viewport dimensions for better visualization
+    const minViewportWidth = 2500
+    const minViewportHeight = 2000
+
+    if (currentWidth < minViewportWidth) {
+      const padding = (minViewportWidth - currentWidth) / 2
+      minX -= padding
+      maxX += padding
+      currentWidth = minViewportWidth
+    }
+
+    if (currentHeight < minViewportHeight) {
+      const padding = (minViewportHeight - currentHeight) / 2
+      minY -= padding
+      maxY += padding
+      currentHeight = minViewportHeight
+    }
+
     return {
       minX,
       minY,
       maxX,
       maxY,
-      width: maxX - minX,
-      height: maxY - minY
+      width: currentWidth,
+      height: currentHeight
     }
   }
 
@@ -150,6 +176,7 @@ export function useMinimap() {
     const scaleX = width / bounds.value.width
     const scaleY = height / bounds.value.height
 
+    // Apply 0.9 factor to provide padding/gap between nodes and minimap borders
     return Math.min(scaleX, scaleY) * 0.9
   }
 
@@ -167,12 +194,9 @@ export function useMinimap() {
       const w = node.size[0] * scale.value
       const h = node.size[1] * scale.value
 
-      ctx.fillStyle = node.color || node.constructor.color || nodeColor
+      // Render solid node blocks
+      ctx.fillStyle = nodeColor
       ctx.fillRect(x, y, w, h)
-
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)'
-      ctx.lineWidth = 0.5
-      ctx.strokeRect(x, y, w, h)
     }
   }
 
@@ -184,8 +208,16 @@ export function useMinimap() {
     const g = graph.value
     if (!g) return
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)'
-    ctx.lineWidth = 2
+    ctx.strokeStyle = linkColor
+    ctx.lineWidth = 1.4
+
+    const slotRadius = 3.7 * Math.max(scale.value, 0.5) // Larger slots that scale
+    const connections: Array<{
+      x1: number
+      y1: number
+      x2: number
+      y2: number
+    }> = []
 
     for (const node of g._nodes) {
       if (!node.outputs) continue
@@ -208,15 +240,34 @@ export function useMinimap() {
           const y2 =
             (targetNode.pos[1] - bounds.value.minY) * scale.value + offsetY
 
+          const outputX = x1 + node.size[0] * scale.value
+          const outputY = y1 + node.size[1] * scale.value * 0.2
+          const inputX = x2
+          const inputY = y2 + targetNode.size[1] * scale.value * 0.2
+
+          // Draw connection line
           ctx.beginPath()
-          ctx.moveTo(
-            x1 + node.size[0] * scale.value,
-            y1 + node.size[1] * scale.value * 0.2
-          )
-          ctx.lineTo(x2, y2 + targetNode.size[1] * scale.value * 0.2)
+          ctx.moveTo(outputX, outputY)
+          ctx.lineTo(inputX, inputY)
           ctx.stroke()
+
+          connections.push({ x1: outputX, y1: outputY, x2: inputX, y2: inputY })
         }
       }
+    }
+
+    // Render connection slots on top
+    ctx.fillStyle = slotColor
+    for (const conn of connections) {
+      // Output slot
+      ctx.beginPath()
+      ctx.arc(conn.x1, conn.y1, slotRadius, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Input slot
+      ctx.beginPath()
+      ctx.arc(conn.x2, conn.y2, slotRadius, 0, Math.PI * 2)
+      ctx.fill()
     }
   }
 
@@ -225,6 +276,12 @@ export function useMinimap() {
 
     const ctx = canvasRef.value.getContext('2d')
     if (!ctx) return
+
+    // Fast path for 0 nodes - just show background
+    if (!graph.value._nodes || graph.value._nodes.length === 0) {
+      ctx.clearRect(0, 0, width, height)
+      return
+    }
 
     const needsRedraw =
       needsFullRedraw.value ||
@@ -237,8 +294,8 @@ export function useMinimap() {
       const offsetX = (width - bounds.value.width * scale.value) / 2
       const offsetY = (height - bounds.value.height * scale.value) / 2
 
-      renderConnections(ctx, offsetX, offsetY)
       renderNodes(ctx, offsetX, offsetY)
+      renderConnections(ctx, offsetX, offsetY)
 
       needsFullRedraw.value = false
       updateFlags.value.nodes = false
@@ -447,7 +504,7 @@ export function useMinimap() {
     c.setDirty(true, true)
   }
 
-  let originalCallbacks: any = {}
+  let originalCallbacks: GraphCallbacks = {}
 
   const handleGraphChanged = useThrottleFn(() => {
     needsFullRedraw.value = true
@@ -602,7 +659,7 @@ export function useMinimap() {
   }
 
   const setMinimapRef = (ref: any) => {
-    globalState.minimapRef.value = ref
+    minimapRef.value = ref
   }
 
   return {

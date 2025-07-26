@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="visible"
+    v-if="visible && initialized"
     ref="containerRef"
     class="litegraph-minimap absolute bottom-[20px] right-[90px] z-[1000]"
     :style="containerStyles"
