@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Canvas Toggle Lock"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Canvas Toggle Minimap"
+  },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Pin/Unpin Selected Items"
   },
