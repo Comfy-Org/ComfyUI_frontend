@@ -52,10 +52,12 @@ export function useMinimap() {
 
   const width = 250
   const height = 200
-  const nodeColor = '#666'
+  const nodeColor = '#0B8CE999'
+  const linkColor = '#F99614'
+  const slotColor = '#F99614'
   const viewportColor = '#FFF'
-  const backgroundColor = '#1e1e1e'
-  const borderColor = '#444'
+  const backgroundColor = '#15161C'
+  const borderColor = '#333'
 
   const containerRect = ref({
     left: 0,
@@ -101,7 +103,8 @@ export function useMinimap() {
     width: `${width}px`,
     height: `${height}px`,
     backgroundColor: backgroundColor,
-    border: `1px solid ${borderColor}`
+    border: `1px solid ${borderColor}`,
+    borderRadius: '8px'
   }))
 
   const viewportStyles = computed(() => ({
@@ -170,12 +173,9 @@ export function useMinimap() {
       const w = node.size[0] * scale.value
       const h = node.size[1] * scale.value
 
-      ctx.fillStyle = node.color || node.constructor.color || nodeColor
+      // Render solid node blocks
+      ctx.fillStyle = nodeColor
       ctx.fillRect(x, y, w, h)
-
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)'
-      ctx.lineWidth = 0.5
-      ctx.strokeRect(x, y, w, h)
     }
   }
 
@@ -187,8 +187,16 @@ export function useMinimap() {
     const g = graph.value
     if (!g) return
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)'
-    ctx.lineWidth = 2
+    ctx.strokeStyle = linkColor
+    ctx.lineWidth = 1.4
+
+    const slotRadius = 3.7 * Math.max(scale.value, 0.5) // Larger slots that scale
+    const connections: Array<{
+      x1: number
+      y1: number
+      x2: number
+      y2: number
+    }> = []
 
     for (const node of g._nodes) {
       if (!node.outputs) continue
@@ -211,15 +219,34 @@ export function useMinimap() {
           const y2 =
             (targetNode.pos[1] - bounds.value.minY) * scale.value + offsetY
 
+          const outputX = x1 + node.size[0] * scale.value
+          const outputY = y1 + node.size[1] * scale.value * 0.2
+          const inputX = x2
+          const inputY = y2 + targetNode.size[1] * scale.value * 0.2
+
+          // Draw connection line
           ctx.beginPath()
-          ctx.moveTo(
-            x1 + node.size[0] * scale.value,
-            y1 + node.size[1] * scale.value * 0.2
-          )
-          ctx.lineTo(x2, y2 + targetNode.size[1] * scale.value * 0.2)
+          ctx.moveTo(outputX, outputY)
+          ctx.lineTo(inputX, inputY)
           ctx.stroke()
+
+          connections.push({ x1: outputX, y1: outputY, x2: inputX, y2: inputY })
         }
       }
+    }
+
+    // Render connection slots on top
+    ctx.fillStyle = slotColor
+    for (const conn of connections) {
+      // Output slot
+      ctx.beginPath()
+      ctx.arc(conn.x1, conn.y1, slotRadius, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Input slot
+      ctx.beginPath()
+      ctx.arc(conn.x2, conn.y2, slotRadius, 0, Math.PI * 2)
+      ctx.fill()
     }
   }
 
@@ -240,8 +267,8 @@ export function useMinimap() {
       const offsetX = (width - bounds.value.width * scale.value) / 2
       const offsetY = (height - bounds.value.height * scale.value) / 2
 
-      renderConnections(ctx, offsetX, offsetY)
       renderNodes(ctx, offsetX, offsetY)
+      renderConnections(ctx, offsetX, offsetY)
 
       needsFullRedraw.value = false
       updateFlags.value.nodes = false
