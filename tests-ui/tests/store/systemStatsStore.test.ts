@@ -41,6 +41,7 @@ describe('useSystemStatsStore', () => {
           embedded_python: false,
           comfyui_version: '1.0.0',
           pytorch_version: '2.0.0',
+          required_frontend_version: '1.24.0',
           argv: [],
           ram_total: 16000000000,
           ram_free: 8000000000
@@ -91,6 +92,32 @@ describe('useSystemStatsStore', () => {
       await fetchPromise
 
       expect(store.isLoading).toBe(false)
+    })
+
+    it('should handle system stats updates', async () => {
+      const updatedStats = {
+        system: {
+          os: 'Windows',
+          python_version: '3.11.0',
+          embedded_python: false,
+          comfyui_version: '1.1.0',
+          pytorch_version: '2.1.0',
+          required_frontend_version: '1.25.0',
+          argv: [],
+          ram_total: 16000000000,
+          ram_free: 7000000000
+        },
+        devices: []
+      }
+
+      vi.mocked(api.getSystemStats).mockResolvedValue(updatedStats)
+
+      await store.fetchSystemStats()
+
+      expect(store.systemStats).toEqual(updatedStats)
+      expect(store.isLoading).toBe(false)
+      expect(store.error).toBeNull()
+      expect(api.getSystemStats).toHaveBeenCalled()
     })
   })
 

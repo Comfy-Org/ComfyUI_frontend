@@ -135,6 +135,7 @@ The following table lists ALL stores in the system as of 2025-01-30:
 | toastStore.ts | Manages toast notifications | UI |
 | userFileStore.ts | Manages user file operations | Files |
 | userStore.ts | Manages user data and preferences | User |
+| versionCompatibilityStore.ts | Manages frontend/backend version compatibility warnings | Core |
 | widgetStore.ts | Manages widget configurations | Widgets |
 | workflowStore.ts | Handles workflow data and operations | Workflows |
 | workflowTemplatesStore.ts | Manages workflow templates | Workflows |

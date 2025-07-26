@@ -9,6 +9,7 @@
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
     <div id="graph-canvas-container" class="graph-canvas-container">
+      <VersionMismatchWarning />
       <GraphCanvas @ready="onGraphReady" />
     </div>
   </div>
@@ -28,6 +29,7 @@ import { useI18n } from 'vue-i18n'
 
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
+import VersionMismatchWarning from '@/components/dialog/content/VersionMismatchWarning.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -54,6 +56,7 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -70,6 +73,8 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const versionCompatibilityStore = useVersionCompatibilityStore()
+
 const breakpoints = useBreakpoints({ md: 961 })
 const isMobile = breakpoints.smaller('md')
 const showTopMenu = computed(() => isMobile.value || useNewMenu.value === 'Top')
@@ -249,6 +254,7 @@ const onGraphReady = () => {
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
       useNodeDefStore().nodeSearchService.searchNode('')
+      void versionCompatibilityStore.initialize()
     },
     { timeout: 1000 }
   )
