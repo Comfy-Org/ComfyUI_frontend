@@ -7,20 +7,15 @@ import { api } from '@/scripts/api'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
-const globalState = {
-  visible: ref(true),
-  minimapRef: ref<any>(null),
-  initialized: false
-}
-
 export function useMinimap() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
 
   const containerRef = ref<HTMLDivElement>()
   const canvasRef = ref<HTMLCanvasElement>()
+  const minimapRef = ref<any>(null)
 
-  const visible = globalState.visible
+  const visible = ref(true)
 
   const initialized = ref(false)
   const bounds = ref({
@@ -602,7 +597,7 @@ export function useMinimap() {
   }
 
   const setMinimapRef = (ref: any) => {
-    globalState.minimapRef.value = ref
+    minimapRef.value = ref
   }
 
   return {
