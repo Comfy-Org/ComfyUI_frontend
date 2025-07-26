@@ -210,27 +210,19 @@ export function useConflictDetection() {
       // Step 3: Setup abort controller for request cancellation
       abortController.value = new AbortController()
 
-      // Step 4: Use bulk API to fetch version data efficiently
-      const chunkSize = 30 // Process in chunks to avoid overwhelming the API
+      // Step 4: Use bulk API to fetch all version data in a single request
       const versionDataMap = new Map<
         string,
         components['schemas']['NodeVersion']
       >()
 
-      // Use installedPacksWithVersions which has the actual installed versions from Manager API
-      for (
-        let i = 0;
-        i < installedPacksWithVersions.value.length;
-        i += chunkSize
-      ) {
-        const chunk = installedPacksWithVersions.value.slice(i, i + chunkSize)
+      // Prepare bulk request with actual installed versions from Manager API
+      const nodeVersions = installedPacksWithVersions.value.map((pack) => ({
+        node_id: pack.id,
+        version: pack.version
+      }))
 
-        // Prepare bulk request with actual versions
-        const nodeVersions = chunk.map((pack) => ({
-          node_id: pack.id,
-          version: pack.version
-        }))
-
+      if (nodeVersions.length > 0) {
         try {
           const bulkResponse = await registryService.getBulkNodeVersions(
             nodeVersions,
@@ -258,8 +250,6 @@ export function useConflictDetection() {
             '[ConflictDetection] Failed to fetch bulk version data:',
             error
           )
-          // If bulk API fails, you might want to fall back to individual requests
-          // but for now we'll just log the error
         }
       }
 
