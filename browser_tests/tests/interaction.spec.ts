@@ -986,6 +986,38 @@ test.describe('Canvas Navigation', () => {
     })
   })
 
+  test('Shift + mouse wheel should pan canvas horizontally', async ({
+    comfyPage
+  }) => {
+    await expect(comfyPage.canvas).toHaveScreenshot('standard-initial.png')
+
+    await comfyPage.page.mouse.move(400, 300)
+
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.page.mouse.wheel(0, 120)
+    await comfyPage.page.keyboard.up('Shift')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'standard-shift-wheel-pan-right.png'
+    )
+
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.page.mouse.wheel(0, -240)
+    await comfyPage.page.keyboard.up('Shift')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'standard-shift-wheel-pan-left.png'
+    )
+
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.page.mouse.wheel(0, 120)
+    await comfyPage.page.keyboard.up('Shift')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'standard-shift-wheel-pan-center.png'
+    )
+  })
+
   test.describe('Edge Cases', () => {
     test('Multiple modifier keys work correctly in legacy mode', async ({
       comfyPage
