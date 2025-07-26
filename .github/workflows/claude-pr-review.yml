@@ -66,7 +66,15 @@ jobs:
         with:
           label_trigger: "claude-review"
           direct_prompt: |
-            Use the Read tool to read the file .claude/commands/comprehensive-pr-review.md and then execute all the instructions contained within it. The file contains comprehensive PR review instructions with bash code blocks that need to be executed.
+            CRITICAL: You must execute the bash code blocks in .claude/commands/comprehensive-pr-review.md as actual commands using the Bash tool.
+            
+            1. Use the Read tool to read the file .claude/commands/comprehensive-pr-review.md 
+            2. Execute EVERY bash code block in sequence using the Bash tool
+            3. Do NOT just read and interpret - you must actually RUN the bash commands
+            4. The file contains Phase 0 through Phase 8 with bash code blocks that must be executed
+            5. Each ```bash code block must be executed as a separate Bash tool call
+            6. Follow the phases in order: Phase 0, Phase 1, Phase 2, etc.
+            7. The add_inline_comment function defined in Phase 0 must be used to post actual GitHub API comments
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           max_turns: 256
           timeout_minutes: 30
