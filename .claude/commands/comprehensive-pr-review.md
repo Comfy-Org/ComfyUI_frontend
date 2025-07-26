@@ -61,9 +61,18 @@ post_review_comment() {
     "quality") ((QUALITY_ISSUES++)) ;;
   esac
   
-  # Post inline comment via GitHub CLI
-  local comment="${issue}\n${context}\n${suggestion}"
-  gh pr review $PR_NUMBER --comment --body "$comment" -F - <<< "$comment"
+  # Post inline comment using GitHub API (corrected syntax)
+  local comment_body="${issue}
+${context}
+${suggestion}"
+  
+  # Use GitHub API to post inline review comment
+  gh api -X POST /repos/$REPOSITORY/pulls/$PR_NUMBER/comments \
+    -f path="$file_path" \
+    -F line=$line_number \
+    -f body="$comment_body" \
+    -f commit_id="$COMMIT_SHA" \
+    -f side='RIGHT' || echo "Failed to post comment at $file_path:$line_number"
 }
 ```
 
@@ -448,7 +457,7 @@ $example
 
   gh api -X POST /repos/$REPOSITORY/pulls/$PR_NUMBER/comments \
     -f path="$file_path" \
-    -f line=$line_number \
+    -F line=$line_number \
     -f body="$body" \
     -f commit_id="$COMMIT_SHA" \
     -f side='RIGHT' || echo "Failed to post comment at $file_path:$line_number"
