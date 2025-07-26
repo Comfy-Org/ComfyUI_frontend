@@ -33,8 +33,8 @@ describe('useUserFileStore', () => {
   describe('syncFiles', () => {
     it('should add new files', async () => {
       const mockFiles = [
-        { path: 'file1.txt', modified: 123, size: 100 },
-        { path: 'file2.txt', modified: 456, size: 200 }
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 },
+        { path: 'file2.txt', modified: 456, size: 200, created: 456 }
       ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(mockFiles)
 
@@ -46,11 +46,21 @@ describe('useUserFileStore', () => {
     })
 
     it('should update existing files', async () => {
-      const initialFile = { path: 'file1.txt', modified: 123, size: 100 }
+      const initialFile = {
+        path: 'file1.txt',
+        modified: 123,
+        size: 100,
+        created: 123
+      }
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue([initialFile])
       await store.syncFiles('dir')
 
-      const updatedFile = { path: 'file1.txt', modified: 456, size: 200 }
+      const updatedFile = {
+        path: 'file1.txt',
+        modified: 456,
+        size: 200,
+        created: 123
+      }
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue([updatedFile])
       await store.syncFiles('dir')
 
@@ -61,13 +71,15 @@ describe('useUserFileStore', () => {
 
     it('should remove non-existent files', async () => {
       const initialFiles = [
-        { path: 'file1.txt', modified: 123, size: 100 },
-        { path: 'file2.txt', modified: 456, size: 200 }
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 },
+        { path: 'file2.txt', modified: 456, size: 200, created: 456 }
       ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(initialFiles)
       await store.syncFiles('dir')
 
-      const updatedFiles = [{ path: 'file1.txt', modified: 123, size: 100 }]
+      const updatedFiles = [
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 }
+      ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(updatedFiles)
       await store.syncFiles('dir')
 
@@ -76,7 +88,9 @@ describe('useUserFileStore', () => {
     })
 
     it('should sync root directory when no directory is specified', async () => {
-      const mockFiles = [{ path: 'file1.txt', modified: 123, size: 100 }]
+      const mockFiles = [
+        { path: 'file1.txt', modified: 123, size: 100, created: 123 }
+      ]
       vi.mocked(api.listUserDataFullInfo).mockResolvedValue(mockFiles)
 
       await store.syncFiles()
@@ -90,7 +104,7 @@ describe('useUserFileStore', () => {
   describe('UserFile', () => {
     describe('load', () => {
       it('should load file content', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.getUserData).mockResolvedValue({
           status: 200,
           text: () => Promise.resolve('file content')
@@ -105,7 +119,7 @@ describe('useUserFileStore', () => {
       })
 
       it('should throw error on failed load', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.getUserData).mockResolvedValue({
           status: 404,
           statusText: 'Not Found'
@@ -119,7 +133,7 @@ describe('useUserFileStore', () => {
 
     describe('save', () => {
       it('should save modified file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         file.content = 'modified content'
         file.originalContent = 'original content'
         vi.mocked(api.storeUserData).mockResolvedValue({
@@ -139,7 +153,7 @@ describe('useUserFileStore', () => {
       })
 
       it('should not save unmodified file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         file.content = 'content'
         file.originalContent = 'content'
 
@@ -151,7 +165,7 @@ describe('useUserFileStore', () => {
 
     describe('delete', () => {
       it('should delete file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.deleteUserData).mockResolvedValue({
           status: 204
         } as Response)
@@ -164,7 +178,7 @@ describe('useUserFileStore', () => {
 
     describe('rename', () => {
       it('should rename file', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         vi.mocked(api.moveUserData).mockResolvedValue({
           status: 200,
           json: () => Promise.resolve({ modified: 456, size: 200 })
@@ -184,7 +198,7 @@ describe('useUserFileStore', () => {
 
     describe('saveAs', () => {
       it('should save file with new path', async () => {
-        const file = new UserFile('file1.txt', 123, 100)
+        const file = new UserFile('file1.txt', 123, 100, 123)
         file.content = 'file content'
         vi.mocked(api.storeUserData).mockResolvedValue({
           status: 200,
