@@ -69,8 +69,9 @@ export const useVersionCompatibilityStore = defineStore(
     })
 
     // Use reactive storage for dismissals - creates a reactive ref that syncs with localStorage
+    // All version mismatch dismissals are stored in a single object for clean localStorage organization
     const dismissalStorage = useStorage(
-      'comfy.versionMismatch.dismissed',
+      'comfy.versionMismatch.dismissals',
       {} as Record<string, number>,
       localStorage,
       {
