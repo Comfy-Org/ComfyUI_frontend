@@ -783,6 +783,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.9.1'
   },
   {
+    id: 'Comfy.Canvas.NavigationMode',
+    category: ['LiteGraph', 'Canvas', 'CanvasNavigationMode'],
+    name: 'Canvas Navigation Mode',
+    defaultValue: 'legacy',
+    type: 'combo',
+    options: [
+      { value: 'standard', text: 'Standard (New)' },
+      { value: 'legacy', text: 'Left-Click Pan (Legacy)' }
+    ],
+    versionAdded: '1.25.0',
+    defaultsByInstallVersion: {
+      '1.25.0': 'standard'
+    }
+  },
+  {
     id: 'Comfy.Canvas.SelectionToolbox',
     category: ['LiteGraph', 'Canvas', 'SelectionToolbox'],
     name: 'Show selection toolbox',
@@ -858,17 +873,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: '',
     versionAdded: '1.20.4',
     versionModified: '1.20.5'
-  },
-  {
-    id: 'LiteGraph.Pointer.TrackpadGestures',
-    category: ['LiteGraph', 'Pointer', 'Trackpad Gestures'],
-    experimental: true,
-    name: 'Enable trackpad gestures',
-    tooltip:
-      'This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers.',
-    type: 'boolean',
-    defaultValue: false,
-    versionAdded: '1.19.1'
   },
   // Release data stored in settings
   {
