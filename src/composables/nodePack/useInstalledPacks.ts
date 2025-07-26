@@ -36,11 +36,29 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
     cleanup()
   })
 
+  // Create a computed property that provides installed pack info with versions
+  const installedPacksWithVersions = computed(() => {
+    const result: Array<{ id: string; version: string }> = []
+
+    for (const pack of Object.values(comfyManagerStore.installedPacks)) {
+      const id = pack.cnr_id || pack.aux_id
+      if (id) {
+        result.push({
+          id,
+          version: pack.ver
+        })
+      }
+    }
+
+    return result
+  })
+
   return {
     error,
     isLoading,
     isReady,
     installedPacks: nodePacks,
+    installedPacksWithVersions,
     startFetchInstalled,
     filterInstalledPack
   }
