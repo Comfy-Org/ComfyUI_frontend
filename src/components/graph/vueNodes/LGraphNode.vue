@@ -34,7 +34,11 @@
     />
 
     <!-- Node Body - rendered based on LOD level and collapsed state -->
-    <div v-if="!isMinimalLOD && !isCollapsed" class="flex flex-col gap-2">
+    <div
+      v-if="!isMinimalLOD && !isCollapsed"
+      class="flex flex-col gap-2"
+      :data-testid="`node-body-${nodeData.id}`"
+    >
       <!-- Slots only rendered at full detail -->
       <NodeSlots
         v-if="shouldRenderSlots"

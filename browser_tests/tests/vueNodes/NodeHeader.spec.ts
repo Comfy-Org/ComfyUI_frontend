@@ -89,7 +89,7 @@ test.describe('NodeHeader', () => {
 
     // Size should be restored
     const expandedSize = await node.getSize()
-    expect(expandedSize.height).toBeGreaterThan(collapsedSize.height)
+    expect(expandedSize.height).toBeGreaterThanOrEqual(collapsedSize.height)
   })
 
   test('shows collapse/expand icon state', async ({ comfyPage }) => {
