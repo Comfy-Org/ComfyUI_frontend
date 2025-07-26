@@ -9,6 +9,27 @@ export interface UseFrontendVersionMismatchWarningOptions {
   immediate?: boolean
 }
 
+/**
+ * Composable for handling frontend version mismatch warnings.
+ *
+ * Displays toast notifications when the frontend version is incompatible with the backend,
+ * either because the frontend is outdated or newer than the backend expects.
+ * Automatically dismisses warnings when shown and persists dismissal state for 7 days.
+ *
+ * @param options - Configuration options
+ * @param options.immediate - If true, automatically shows warning when version mismatch is detected
+ * @returns Object with methods and computed properties for managing version warnings
+ *
+ * @example
+ * ```ts
+ * // Show warning immediately when mismatch detected
+ * const { showWarning, shouldShowWarning } = useFrontendVersionMismatchWarning({ immediate: true })
+ *
+ * // Manual control
+ * const { showWarning } = useFrontendVersionMismatchWarning()
+ * showWarning() // Call when needed
+ * ```
+ */
 export function useFrontendVersionMismatchWarning(
   options: UseFrontendVersionMismatchWarningOptions = {}
 ) {
@@ -55,10 +76,8 @@ export function useFrontendVersionMismatchWarning(
     if (immediate) {
       whenever(
         () => versionCompatibilityStore.shouldShowWarning,
-        (shouldShow) => {
-          if (shouldShow) {
-            showWarning()
-          }
+        () => {
+          showWarning()
         },
         {
           immediate: true,

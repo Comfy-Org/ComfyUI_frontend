@@ -1,3 +1,4 @@
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -6,7 +7,6 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
-const DISMISSAL_KEY_PREFIX = 'comfy.versionMismatch.dismissed.'
 
 export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
@@ -68,23 +68,33 @@ export const useVersionCompatibilityStore = defineStore(
       return `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
     })
 
-    const dismissalKey = computed(() => {
-      if (!versionKey.value) return null
-      return DISMISSAL_KEY_PREFIX + versionKey.value
-    })
+    // Use reactive storage for dismissals - creates a reactive ref that syncs with localStorage
+    const dismissalStorage = useStorage(
+      'comfy.versionMismatch.dismissed',
+      {} as Record<string, number>,
+      localStorage,
+      {
+        serializer: {
+          read: (value: string) => {
+            try {
+              return JSON.parse(value)
+            } catch {
+              return {}
+            }
+          },
+          write: (value: Record<string, number>) => JSON.stringify(value)
+        }
+      }
+    )
 
     const isDismissed = computed(() => {
-      if (!dismissalKey.value) return false
+      if (!versionKey.value) return false
 
-      const dismissedUntil = localStorage.getItem(dismissalKey.value)
-
+      const dismissedUntil = dismissalStorage.value[versionKey.value]
       if (!dismissedUntil) return false
 
-      const dismissedUntilTime = parseInt(dismissedUntil, 10)
-      if (isNaN(dismissedUntilTime)) return false
-
       // Check if dismissal has expired
-      return Date.now() < dismissedUntilTime
+      return Date.now() < dismissedUntil
     })
 
     const shouldShowWarning = computed(() => {
@@ -115,10 +125,13 @@ export const useVersionCompatibilityStore = defineStore(
     }
 
     function dismissWarning() {
-      if (!dismissalKey.value) return
+      if (!versionKey.value) return
 
       const dismissUntil = Date.now() + DISMISSAL_DURATION_MS
-      localStorage.setItem(dismissalKey.value, dismissUntil.toString())
+      dismissalStorage.value = {
+        ...dismissalStorage.value,
+        [versionKey.value]: dismissUntil
+      }
     }
 
     async function initialize() {

@@ -130,7 +130,7 @@ describe('useVersionCompatibilityStore', () => {
 
   describe('warning display logic', () => {
     it('should show warning when there is a version mismatch and not dismissed', async () => {
-      localStorageMock.getItem.mockReturnValue(null) // Not dismissed
+      localStorageMock.getItem.mockReturnValue('{}') // Empty dismissal storage
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.25.0',
@@ -145,7 +145,11 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should not show warning when dismissed', async () => {
       const futureTime = Date.now() + 1000000
-      localStorageMock.getItem.mockReturnValue(String(futureTime))
+      localStorageMock.getItem.mockReturnValue(
+        JSON.stringify({
+          '1.24.0-1.25.0-1.25.0': futureTime
+        })
+      )
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -238,14 +242,20 @@ describe('useVersionCompatibilityStore', () => {
       store.dismissWarning()
 
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'comfy.versionMismatch.dismissed.1.24.0-1.25.0-1.25.0',
-        String(mockNow + 7 * 24 * 60 * 60 * 1000) // 7 days later
+        'comfy.versionMismatch.dismissed',
+        JSON.stringify({
+          '1.24.0-1.25.0-1.25.0': mockNow + 7 * 24 * 60 * 60 * 1000
+        })
       )
     })
 
     it('should check dismissal state from localStorage', async () => {
       const futureTime = Date.now() + 1000000 // Still valid
-      localStorageMock.getItem.mockReturnValue(String(futureTime))
+      localStorageMock.getItem.mockReturnValue(
+        JSON.stringify({
+          '1.24.0-1.25.0-1.25.0': futureTime
+        })
+      )
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -261,7 +271,11 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should show warning if dismissal has expired', async () => {
       const pastTime = Date.now() - 1000 // Expired
-      localStorageMock.getItem.mockReturnValue(String(pastTime))
+      localStorageMock.getItem.mockReturnValue(
+        JSON.stringify({
+          '1.24.0-1.25.0-1.25.0': pastTime
+        })
+      )
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -277,10 +291,12 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should show warning for different version combinations even if previous was dismissed', async () => {
       const futureTime = Date.now() + 1000000
-      // Dismissed for different version combination
-      localStorageMock.getItem
-        .mockReturnValueOnce(null) // Current version key not found
-        .mockReturnValueOnce(String(futureTime)) // Different version was dismissed
+      // Dismissed for different version combination (1.25.0) but current is 1.26.0
+      localStorageMock.getItem.mockReturnValue(
+        JSON.stringify({
+          '1.24.0-1.25.0-1.25.0': futureTime // Different version was dismissed
+        })
+      )
 
       mockSystemStatsStore.systemStats = {
         system: {
