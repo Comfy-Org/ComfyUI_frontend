@@ -64,7 +64,9 @@ jobs:
       - name: Run Claude PR Review
         uses: anthropics/claude-code-action@main
         with:
-          prompt_file: .claude/commands/comprehensive-pr-review.md
+          label_trigger: "claude-review"
+          direct_prompt: |
+            Read and execute the instructions in .claude/commands/comprehensive-pr-review.md
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           max_turns: 256
           timeout_minutes: 30
