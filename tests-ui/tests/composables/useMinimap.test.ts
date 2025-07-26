@@ -153,6 +153,8 @@ describe('useMinimap', () => {
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 0
@@ -740,8 +742,9 @@ describe('useMinimap', () => {
 
       expect(styles.width).toBe('250px')
       expect(styles.height).toBe('200px')
-      expect(styles.backgroundColor).toBe('#1e1e1e')
-      expect(styles.border).toBe('1px solid #444')
+      expect(styles.backgroundColor).toBe('#15161C')
+      expect(styles.border).toBe('1px solid #333')
+      expect(styles.borderRadius).toBe('8px')
     })
   })
 
