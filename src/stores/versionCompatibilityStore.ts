@@ -1,10 +1,10 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import * as semver from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
@@ -26,31 +26,69 @@ export const useVersionCompatibilityStore = defineStore(
       if (
         !frontendVersion.value ||
         !requiredFrontendVersion.value ||
-        !isSemVer(frontendVersion.value) ||
-        !isSemVer(requiredFrontendVersion.value)
+        !semver.valid(frontendVersion.value) ||
+        !semver.valid(requiredFrontendVersion.value)
       ) {
         return false
       }
-      return (
-        compareVersions(requiredFrontendVersion.value, frontendVersion.value) >
-        0
-      )
+      // Returns true if required version is greater than frontend version
+      return semver.gt(requiredFrontendVersion.value, frontendVersion.value)
     })
 
     const isFrontendNewer = computed(() => {
+      // Only check if all versions are valid semver
       if (
         !frontendVersion.value ||
         !backendVersion.value ||
-        !isSemVer(frontendVersion.value) ||
-        !isSemVer(backendVersion.value)
+        !semver.valid(frontendVersion.value) ||
+        !semver.valid(backendVersion.value)
       ) {
         return false
       }
-      const versionDiff = compareVersions(
-        frontendVersion.value,
-        backendVersion.value
-      )
-      return versionDiff > 0
+
+      // Check if frontend is newer than backend
+      if (!semver.gt(frontendVersion.value, backendVersion.value)) {
+        return false
+      }
+
+      // If there's a required version specified by the backend
+      if (
+        requiredFrontendVersion.value &&
+        semver.valid(requiredFrontendVersion.value)
+      ) {
+        // If frontend version satisfies the required version, no warning needed
+        // Using satisfies allows for more flexible version matching (e.g., ^1.2.0, ~1.2.0)
+        // For exact version matching, we check if versions are within acceptable range
+
+        // If frontend equals required version exactly, no warning
+        if (semver.eq(frontendVersion.value, requiredFrontendVersion.value)) {
+          return false
+        }
+
+        // If frontend is behind required version, let isFrontendOutdated handle it
+        if (semver.lt(frontendVersion.value, requiredFrontendVersion.value)) {
+          return false
+        }
+
+        // Frontend is ahead of required version - check if it's significantly ahead
+        const frontendMajor = semver.major(frontendVersion.value)
+        const frontendMinor = semver.minor(frontendVersion.value)
+        const requiredMajor = semver.major(requiredFrontendVersion.value)
+        const requiredMinor = semver.minor(requiredFrontendVersion.value)
+
+        // If major versions differ, warn
+        if (frontendMajor !== requiredMajor) return true
+
+        // If same major but more than 2 minor versions ahead, warn
+        if (frontendMinor - requiredMinor > 2) return true
+
+        // Otherwise, frontend is reasonably close to required version, no warning
+        return false
+      }
+
+      // No required version specified but frontend is newer than backend
+      // This is likely problematic, so warn
+      return true
     })
 
     const hasVersionMismatch = computed(() => {

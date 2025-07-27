@@ -59,7 +59,9 @@ describe('useVersionCompatibilityStore', () => {
       expect(store.hasVersionMismatch).toBe(true)
     })
 
-    it('should detect frontend is newer when frontend version is higher than backend', async () => {
+    it('should not warn when frontend is newer but meets required version', async () => {
+      // Frontend: 1.24.0, Backend: 1.23.0, Required: 1.23.0
+      // Frontend is newer than backend but meets required version (only 1 minor version ahead)
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.23.0',
@@ -70,8 +72,8 @@ describe('useVersionCompatibilityStore', () => {
       await store.checkVersionCompatibility()
 
       expect(store.isFrontendOutdated).toBe(false)
-      expect(store.isFrontendNewer).toBe(true)
-      expect(store.hasVersionMismatch).toBe(true)
+      expect(store.isFrontendNewer).toBe(false) // Should NOT warn
+      expect(store.hasVersionMismatch).toBe(false)
     })
 
     it('should not detect mismatch when versions are compatible', async () => {
@@ -108,7 +110,7 @@ describe('useVersionCompatibilityStore', () => {
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '080e6d4af809a46852d1c4b7ed85f06e8a3a72be', // git hash
-          required_frontend_version: '1.29.2.45' // invalid semver
+          required_frontend_version: 'not-a-version' // invalid semver format
         }
       }
 
@@ -117,6 +119,70 @@ describe('useVersionCompatibilityStore', () => {
       expect(store.isFrontendOutdated).toBe(false)
       expect(store.isFrontendNewer).toBe(false)
       expect(store.hasVersionMismatch).toBe(false)
+    })
+
+    it('should not warn when frontend is ahead of required version within acceptable range', async () => {
+      // Frontend: 1.24.0 (from mock config)
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.22.0', // Backend is older
+          required_frontend_version: '1.23.0' // Required is 1.23.0, frontend 1.24.0 meets this
+        }
+      }
+
+      await store.checkVersionCompatibility()
+
+      expect(store.isFrontendOutdated).toBe(false) // Frontend 1.24.0 >= Required 1.23.0
+      expect(store.isFrontendNewer).toBe(false) // Should NOT warn - frontend meets requirements
+      expect(store.hasVersionMismatch).toBe(false)
+    })
+
+    it('should warn when frontend is significantly ahead of required version', async () => {
+      // Frontend: 1.24.0 (from mock config)
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.20.0', // Backend is much older
+          required_frontend_version: '1.20.0' // Required is 1.20.0, frontend 1.24.0 is 4 minor versions ahead
+        }
+      }
+
+      await store.checkVersionCompatibility()
+
+      expect(store.isFrontendOutdated).toBe(false)
+      expect(store.isFrontendNewer).toBe(true) // Should warn - frontend is too far ahead
+      expect(store.hasVersionMismatch).toBe(true)
+    })
+
+    it('should warn when frontend major version differs from required', async () => {
+      // Frontend: 1.24.0 (from mock config)
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '0.9.0', // Backend is on different major version
+          required_frontend_version: '0.9.0' // Required is 0.9.0, frontend 1.24.0 is different major
+        }
+      }
+
+      await store.checkVersionCompatibility()
+
+      expect(store.isFrontendOutdated).toBe(false)
+      expect(store.isFrontendNewer).toBe(true) // Should warn - major version mismatch
+      expect(store.hasVersionMismatch).toBe(true)
+    })
+
+    it('should warn when frontend is newer and no required version specified', async () => {
+      // Frontend: 1.24.0 (from mock config)
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.20.0', // Backend is older
+          required_frontend_version: '' // No required version specified
+        }
+      }
+
+      await store.checkVersionCompatibility()
+
+      expect(store.isFrontendOutdated).toBe(false)
+      expect(store.isFrontendNewer).toBe(true) // Should warn - no required version to check against
+      expect(store.hasVersionMismatch).toBe(true)
     })
   })
 
@@ -187,11 +253,13 @@ describe('useVersionCompatibilityStore', () => {
       })
     })
 
-    it('should generate newer message when frontend is newer', async () => {
+    it('should generate newer message when frontend is significantly newer', async () => {
+      // Frontend: 1.24.0, Backend: 1.20.0, Required: 1.20.0
+      // Frontend is 4 minor versions ahead - should warn
       mockSystemStatsStore.systemStats = {
         system: {
-          comfyui_version: '1.23.0',
-          required_frontend_version: '1.23.0'
+          comfyui_version: '1.20.0',
+          required_frontend_version: '1.20.0'
         }
       }
 
@@ -200,7 +268,7 @@ describe('useVersionCompatibilityStore', () => {
       expect(store.warningMessage).toEqual({
         type: 'newer',
         frontendVersion: '1.24.0',
-        backendVersion: '1.23.0'
+        backendVersion: '1.20.0'
       })
     })
 

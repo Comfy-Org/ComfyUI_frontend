@@ -23,7 +23,14 @@
 import { useBreakpoints, useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  watch,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -233,6 +240,17 @@ const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
 // It will be triggered automatically when the store is ready
 useFrontendVersionMismatchWarning({ immediate: true })
 
+// Initialize version compatibility check completely independently of app setup
+// This runs asynchronously after component setup and won't block the main application
+void nextTick(() => {
+  // Use setTimeout to ensure this happens after all other immediate tasks
+  setTimeout(() => {
+    versionCompatibilityStore.initialize().catch((error) => {
+      console.warn('Version compatibility check failed:', error)
+    })
+  }, 100) // Small delay to ensure app is fully loaded
+})
+
 const onGraphReady = () => {
   requestIdleCallback(
     () => {
@@ -258,9 +276,6 @@ const onGraphReady = () => {
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
       useNodeDefStore().nodeSearchService.searchNode('')
-
-      // Initialize version compatibility store
-      void versionCompatibilityStore.initialize()
     },
     { timeout: 1000 }
   )
