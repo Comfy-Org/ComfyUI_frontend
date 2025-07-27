@@ -403,6 +403,7 @@
     "resetView": "Сбросить вид",
     "selectMode": "Выбрать режим",
     "toggleLinkVisibility": "Переключить видимость ссылок",
+    "toggleMinimap": "Показать/скрыть миникарту",
     "zoomIn": "Увеличить",
     "zoomOut": "Уменьшить"
   },
@@ -738,6 +739,7 @@
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
     "Canvas Toggle Lock": "Переключение блокировки холста",
+    "Canvas Toggle Minimap": "Показать/скрыть миникарту на холсте",
     "Check for Updates": "Проверить наличие обновлений",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
     "Clear Workflow": "Очистить рабочий процесс",

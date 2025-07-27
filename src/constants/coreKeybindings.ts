@@ -181,5 +181,12 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       shift: true
     },
     commandId: 'Comfy.Graph.ConvertToSubgraph'
+  },
+  {
+    combo: {
+      key: 'm',
+      alt: true
+    },
+    commandId: 'Comfy.Canvas.ToggleMinimap'
   }
 ]

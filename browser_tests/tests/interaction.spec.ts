@@ -768,6 +768,11 @@ test.describe('Viewport settings', () => {
     comfyMouse
   }) => {
     // Screenshot the canvas element
+    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
+    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
+
+    await toggleButton.click()
+
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
     await comfyPage.nextFrame()
     const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')

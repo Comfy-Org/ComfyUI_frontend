@@ -825,6 +825,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.15.12'
   },
   {
+    id: 'Comfy.Minimap.Visible',
+    name: 'Display minimap on canvas',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.25.0'
+  },
+  {
     id: 'Comfy.Workflow.AutoSaveDelay',
     name: 'Auto Save Delay (ms)',
     defaultValue: 1000,
