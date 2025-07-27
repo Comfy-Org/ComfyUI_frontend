@@ -14,18 +14,9 @@ To post inline comments, you will use the GitHub API via the `gh` command. Here'
    - Run: `gh repo view --json owner,name` to get the repository owner and name
    - Run: `gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'` to get the latest commit SHA
 
-2. For each issue you find, post an inline comment using this exact command structure:
+2. For each issue you find, post an inline comment using this exact command structure (as a single line):
    ```
-   gh api \
-     --method POST \
-     -H "Accept: application/vnd.github+json" \
-     -H "X-GitHub-Api-Version: 2022-11-28" \
-     /repos/OWNER/REPO/pulls/$PR_NUMBER/comments \
-     -f body="YOUR_COMMENT_BODY" \
-     -f commit_id="COMMIT_SHA" \
-     -f path="FILE_PATH" \
-     -F line=LINE_NUMBER \
-     -f side="RIGHT"
+   gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/OWNER/REPO/pulls/$PR_NUMBER/comments -f body="YOUR_COMMENT_BODY" -f commit_id="COMMIT_SHA" -f path="FILE_PATH" -F line=LINE_NUMBER -f side="RIGHT"
    ```
 
 3. Format your comment body like this:
@@ -143,10 +134,12 @@ Each inline comment should stand alone and be actionable. The developer should b
 
 ### Execution Requirements
 
-You MUST use the Bash tool to execute the gh api commands. For example:
+You MUST use the Bash tool to execute the gh api commands AS SINGLE LINE COMMANDS. Do not use backslashes or multi-line format. For example:
 ```
 Bash: gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments -f body="..." -f commit_id="..." -f path="..." -F line=42 -f side="RIGHT"
 ```
+
+IMPORTANT: The entire gh api command must be on a single line without backslashes.
 
 The GitHub Actions environment provides GITHUB_TOKEN with pull-requests:write permission, which allows you to post inline review comments.
 
@@ -168,22 +161,9 @@ Here's an example of how to review a file with a security issue:
 
 3. Find an issue (e.g., SQL injection on line 42 of src/db/queries.js)
 
-4. Post the inline comment:
+4. Post the inline comment (as a single line command):
    ```bash
-   gh api \
-     --method POST \
-     -H "Accept: application/vnd.github+json" \
-     -H "X-GitHub-Api-Version: 2022-11-28" \
-     /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments \
-     -f body="**[security] critical Priority**
-   
-   **Issue**: SQL injection vulnerability - user input directly concatenated into query
-   **Context**: Allows attackers to execute arbitrary SQL commands  
-   **Suggestion**: Use parameterized queries or prepared statements" \
-     -f commit_id="abc123def456" \
-     -f path="src/db/queries.js" \
-     -F line=42 \
-     -f side="RIGHT"
+   gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments -f body="**[security] critical Priority**\n\n**Issue**: SQL injection vulnerability - user input directly concatenated into query\n**Context**: Allows attackers to execute arbitrary SQL commands\n**Suggestion**: Use parameterized queries or prepared statements" -f commit_id="abc123def456" -f path="src/db/queries.js" -F line=42 -f side="RIGHT"
    ```
 
 Repeat this process for every issue you find in the PR.
