@@ -1,4 +1,10 @@
 {
+  "Comfy_SoundNotification_AfterAllPrompts": {
+    "name": "Après avoir exécuté toutes les invites"
+  },
+  "Comfy_SoundNotification_AfterOnePrompt": {
+    "name": "Après avoir exécuté une invite"
+  },
   "Comfy-Desktop_AutoUpdate": {
     "name": "Vérifier automatiquement les mises à jour"
   },
