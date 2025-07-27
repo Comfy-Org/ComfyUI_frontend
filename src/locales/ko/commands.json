@@ -99,13 +99,13 @@
     "label": "보류 중인 작업 지우기"
   },
   "Comfy_ClearWorkflow": {
-    "label": "워크플로 지우기"
+    "label": "워크플로 내용 지우기"
   },
   "Comfy_ContactSupport": {
     "label": "지원팀에 문의하기"
   },
   "Comfy_DuplicateWorkflow": {
-    "label": "현재 워크플로우 복제"
+    "label": "현재 워크플로 복제"
   },
   "Comfy_ExportWorkflow": {
     "label": "워크플로 내보내기"
@@ -162,10 +162,10 @@
     "label": "진행 상황 대화 상자 전환"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "MaskEditor에서 브러시 크기 줄이기"
+    "label": "마스크 편집기에서 브러시 크기 줄이기"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "MaskEditor에서 브러시 크기 늘리기"
+    "label": "마스크 편집기에서 브러시 크기 늘리기"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "선택한 노드 마스크 편집기 열기"
@@ -216,7 +216,7 @@
     "label": "로그아웃"
   },
   "Workspace_CloseWorkflow": {
-    "label": "현재 워크플로우 닫기"
+    "label": "현재 워크플로 닫기"
   },
   "Workspace_NextOpenedWorkflow": {
     "label": "다음 열린 워크플로"
