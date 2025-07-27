@@ -21,11 +21,6 @@
       :pt="{
         handle: {
           class: 'bg-white'
-        },
-        slider: {
-          class: isEnabled
-            ? 'bg-primary-900'
-            : 'bg-neutral-200 dark-theme:bg-neutral-400'
         }
       }"
       @update:model-value="handleToggleClick"
@@ -61,15 +56,8 @@ const { acknowledgeConflict, isConflictAcknowledged } =
   useConflictAcknowledgment()
 
 const isLoading = ref(false)
-const pendingToggleState = ref<boolean | null>(null)
 
-const isEnabled = computed(() => {
-  // Show pending state while waiting for user decision
-  if (pendingToggleState.value !== null) {
-    return pendingToggleState.value
-  }
-  return isPackEnabled(nodePack.id)
-})
+const isEnabled = computed(() => isPackEnabled(nodePack.id))
 
 const handleEnable = () => {
   if (!nodePack.id) {
@@ -102,14 +90,34 @@ const handleDisable = () => {
   })
 }
 
-const handleToggle = async (enable: boolean, skipConflictCheck = false) => {
+const performToggle = async (enable: boolean) => {
+  if (isLoading.value) return
+  isLoading.value = true
+  try {
+    if (enable) {
+      await handleEnable()
+    } else {
+      await handleDisable()
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const onToggle = debounce(
+  (enable: boolean) => {
+    void performToggle(enable)
+  },
+  TOGGLE_DEBOUNCE_MS,
+  { trailing: true }
+)
+
+const handleToggleClick = async (enable: boolean) => {
   if (isLoading.value) return
 
-  // Check for conflicts when enabling
-  if (enable && hasConflict && !skipConflictCheck) {
+  if (enable && hasConflict) {
     const conflicts = getConflictsForPackageByID(nodePack.id || '')
     if (conflicts) {
-      // Check if conflicts have been acknowledged
       const hasUnacknowledgedConflicts = conflicts.conflicts.some(
         (conflict) => !isConflictAcknowledged(nodePack.id || '', conflict.type)
       )
@@ -119,82 +127,33 @@ const handleToggle = async (enable: boolean, skipConflictCheck = false) => {
           conflictedPackages: [conflicts],
           buttonText: t('manager.conflicts.enableAnyway'),
           onButtonClick: async () => {
-            // User chose "Enable Anyway" - acknowledge all conflicts and proceed
             for (const conflict of conflicts.conflicts) {
               acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
             }
-            // Proceed with enabling using debounced function
-            onToggle(enable)
-          },
-          dialogComponentProps: {
-            onClose: () => {
-              // User closed modal without clicking button - reset pending state
-              pendingToggleState.value = null
-            }
+            await performToggle(true)
           }
         })
         return
       }
     }
   }
-
-  // No conflicts or conflicts acknowledged - proceed with toggle
   await performToggle(enable)
 }
 
-const performToggle = async (enable: boolean) => {
-  isLoading.value = true
-  try {
-    if (enable) {
-      await handleEnable()
-    } else {
-      await handleDisable()
-    }
-    // Clear pending state after successful operation
-    pendingToggleState.value = null
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Handle initial toggle click - check for conflicts first
-const handleToggleClick = (enable: boolean) => {
-  // Set pending state immediately for better UX
-  pendingToggleState.value = enable
-  void handleToggle(enable)
-}
-
-const onToggle = debounce(
-  (enable: boolean) => {
-    void performToggle(enable) // Direct call to avoid circular reference
-  },
-  TOGGLE_DEBOUNCE_MS,
-  { trailing: true }
-)
-
-// Show conflict modal when warning icon is clicked
 const showConflictModal = () => {
   const conflicts = getConflictsForPackageByID(nodePack.id || '')
   if (conflicts) {
     showNodeConflictDialog({
       conflictedPackages: [conflicts],
-      buttonText: isPackEnabled(nodePack.id)
+      buttonText: isEnabled.value
         ? t('manager.conflicts.understood')
         : t('manager.conflicts.enableAnyway'),
       onButtonClick: async () => {
-        // User chose button action - acknowledge all conflicts
         for (const conflict of conflicts.conflicts) {
           acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
         }
-        // Only enable if currently disabled
-        if (!isPackEnabled(nodePack.id)) {
+        if (!isEnabled.value) {
           onToggle(true)
-        }
-      },
-      dialogComponentProps: {
-        onClose: () => {
-          // User closed modal without clicking button - reset pending state
-          pendingToggleState.value = null
         }
       }
     })
