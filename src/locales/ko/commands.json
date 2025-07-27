@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "캔버스 잠금 토글"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "캔버스 미니맵 전환"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "선택한 노드 우회/우회 해제"
   },

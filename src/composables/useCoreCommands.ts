@@ -314,6 +314,19 @@ export function useCoreCommands(): ComfyCommand[] {
       })()
     },
     {
+      id: 'Comfy.Canvas.ToggleMinimap',
+      icon: 'pi pi-map',
+      label: 'Canvas Toggle Minimap',
+      versionAdded: '1.24.1',
+      function: async () => {
+        const settingStore = useSettingStore()
+        await settingStore.set(
+          'Comfy.Minimap.Visible',
+          !settingStore.get('Comfy.Minimap.Visible')
+        )
+      }
+    },
+    {
       id: 'Comfy.QueuePrompt',
       icon: 'pi pi-play',
       label: 'Queue Prompt',
