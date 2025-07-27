@@ -7,6 +7,7 @@ import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { app } from '@/scripts/app'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 // Mock Vue's onMounted to execute immediately for testing
 vi.mock('vue', async () => {
@@ -41,8 +42,6 @@ vi.mock('@/scripts/app', () => ({
 vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: vi.fn()
 }))
-
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 const mockUseWorkflowPacks = vi.mocked(useWorkflowPacks)
 const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
@@ -303,7 +302,11 @@ describe('useMissingNodes', () => {
       )
 
       // Mock collectAllNodes to return these nodes
-      mockCollectAllNodes.mockReturnValue([coreNode1, coreNode2, registeredNode])
+      mockCollectAllNodes.mockReturnValue([
+        coreNode1,
+        coreNode2,
+        registeredNode
+      ])
 
       mockUseNodeDefStore.mockReturnValue({
         nodeDefsByName: {
@@ -417,13 +420,26 @@ describe('useMissingNodes', () => {
 
     it('detects missing core nodes from subgraphs via collectAllNodes', () => {
       const mainNode = createMockNode('MainNode', 'comfy-core', '1.0.0')
-      const subgraphNode1 = createMockNode('SubgraphNode1', 'comfy-core', '1.0.0')
-      const subgraphNode2 = createMockNode('SubgraphNode2', 'comfy-core', '1.1.0')
+      const subgraphNode1 = createMockNode(
+        'SubgraphNode1',
+        'comfy-core',
+        '1.0.0'
+      )
+      const subgraphNode2 = createMockNode(
+        'SubgraphNode2',
+        'comfy-core',
+        '1.1.0'
+      )
 
       // Mock collectAllNodes to return all nodes including subgraph nodes
-      mockCollectAllNodes.mockReturnValue([mainNode, subgraphNode1, subgraphNode2])
+      mockCollectAllNodes.mockReturnValue([
+        mainNode,
+        subgraphNode1,
+        subgraphNode2
+      ])
 
       // Mock none of the nodes as registered
+      // @ts-expect-error - Mocking partial NodeDefStore for testing.
       mockUseNodeDefStore.mockReturnValue({
         nodeDefsByName: {}
       })
@@ -443,7 +459,7 @@ describe('useMissingNodes', () => {
 
       const { missingCoreNodes } = useMissingNodes()
       // Access the computed to trigger the function
-      const _ = missingCoreNodes.value
+      void missingCoreNodes.value
 
       expect(mockCollectAllNodes).toHaveBeenCalledWith(mockGraph)
     })
