@@ -36,63 +36,13 @@ export const useVersionCompatibilityStore = defineStore(
     })
 
     const isFrontendNewer = computed(() => {
-      // Only check if all versions are valid semver
-      if (
-        !frontendVersion.value ||
-        !backendVersion.value ||
-        !semver.valid(frontendVersion.value) ||
-        !semver.valid(backendVersion.value)
-      ) {
-        return false
-      }
-
-      // Check if frontend is newer than backend
-      if (!semver.gt(frontendVersion.value, backendVersion.value)) {
-        return false
-      }
-
-      // If there's a required version specified by the backend
-      if (
-        requiredFrontendVersion.value &&
-        semver.valid(requiredFrontendVersion.value)
-      ) {
-        // If frontend version satisfies the required version, no warning needed
-        // Using satisfies allows for more flexible version matching (e.g., ^1.2.0, ~1.2.0)
-        // For exact version matching, we check if versions are within acceptable range
-
-        // If frontend equals required version exactly, no warning
-        if (semver.eq(frontendVersion.value, requiredFrontendVersion.value)) {
-          return false
-        }
-
-        // If frontend is behind required version, let isFrontendOutdated handle it
-        if (semver.lt(frontendVersion.value, requiredFrontendVersion.value)) {
-          return false
-        }
-
-        // Frontend is ahead of required version - check if it's significantly ahead
-        const frontendMajor = semver.major(frontendVersion.value)
-        const frontendMinor = semver.minor(frontendVersion.value)
-        const requiredMajor = semver.major(requiredFrontendVersion.value)
-        const requiredMinor = semver.minor(requiredFrontendVersion.value)
-
-        // If major versions differ, warn
-        if (frontendMajor !== requiredMajor) return true
-
-        // If same major but more than 2 minor versions ahead, warn
-        if (frontendMinor - requiredMinor > 2) return true
-
-        // Otherwise, frontend is reasonably close to required version, no warning
-        return false
-      }
-
-      // No required version specified but frontend is newer than backend
-      // This is likely problematic, so warn
-      return true
+      // We don't warn about frontend being newer than backend
+      // Only warn when frontend is outdated (behind required version)
+      return false
     })
 
     const hasVersionMismatch = computed(() => {
-      return isFrontendOutdated.value || isFrontendNewer.value
+      return isFrontendOutdated.value
     })
 
     const versionKey = computed(() => {
@@ -146,12 +96,6 @@ export const useVersionCompatibilityStore = defineStore(
           type: 'outdated' as const,
           frontendVersion: frontendVersion.value,
           requiredVersion: requiredFrontendVersion.value
-        }
-      } else if (isFrontendNewer.value) {
-        return {
-          type: 'newer' as const,
-          frontendVersion: frontendVersion.value,
-          backendVersion: backendVersion.value
         }
       }
       return null

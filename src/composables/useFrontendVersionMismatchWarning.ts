@@ -48,16 +48,10 @@ export function useFrontendVersionMismatchWarning(
     const message = versionCompatibilityStore.warningMessage
     if (!message) return
 
-    const detailMessage =
-      message.type === 'outdated'
-        ? t('g.frontendOutdated', {
-            frontendVersion: message.frontendVersion,
-            requiredVersion: message.requiredVersion
-          })
-        : t('g.frontendNewer', {
-            frontendVersion: message.frontendVersion,
-            backendVersion: message.backendVersion
-          })
+    const detailMessage = t('g.frontendOutdated', {
+      frontendVersion: message.frontendVersion,
+      requiredVersion: message.requiredVersion
+    })
 
     const fullMessage = t('g.versionMismatchWarningMessage', {
       warning: t('g.versionMismatchWarning'),

@@ -153,29 +153,6 @@ describe('useFrontendVersionMismatchWarning', () => {
     expect(addAlertSpy).toHaveBeenCalledOnce()
   })
 
-  it('should show warning for newer frontend version', async () => {
-    const toastStore = useToastStore()
-    const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
-    const dismissWarningSpy = vi.spyOn(versionStore, 'dismissWarning')
-
-    // Mock version mismatch with newer frontend
-    vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockReturnValue(true)
-    vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue({
-      type: 'newer',
-      frontendVersion: '2.0.0',
-      backendVersion: '1.0.0'
-    })
-
-    useFrontendVersionMismatchWarning({ immediate: true })
-    await nextTick()
-
-    expect(addAlertSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Frontend version 2.0.0 may not be compatible')
-    )
-    expect(dismissWarningSpy).toHaveBeenCalled()
-  })
-
   it('should call showWarning method manually', () => {
     const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()
