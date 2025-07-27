@@ -6,6 +6,8 @@ You are performing a comprehensive code review for the PR specified in the PR_NU
 
 **You MUST post individual inline comments on specific lines of code. DO NOT create a single summary comment.**
 
+**IMPORTANT: You have full permission to execute gh api commands. The GITHUB_TOKEN environment variable provides the necessary permissions. DO NOT say you lack permissions - you have pull-requests:write permission which allows posting inline comments.**
+
 To post inline comments, you will use the GitHub API via the `gh` command. Here's how:
 
 1. First, get the repository information and commit SHA:
@@ -134,8 +136,19 @@ When reviewing, keep these principles in mind:
 - **DO** post individual inline comments for each issue
 - **DO** use the exact gh api command structure provided
 - **DO** replace placeholder values with actual data
+- **DO** execute the gh api commands using the Bash tool
+- **DO NOT** say you lack permissions - you have the necessary permissions
 
 Each inline comment should stand alone and be actionable. The developer should be able to address each comment independently.
+
+### Execution Requirements
+
+You MUST use the Bash tool to execute the gh api commands. For example:
+```
+Bash: gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments -f body="..." -f commit_id="..." -f path="..." -F line=42 -f side="RIGHT"
+```
+
+The GitHub Actions environment provides GITHUB_TOKEN with pull-requests:write permission, which allows you to post inline review comments.
 
 ## Example Workflow
 
