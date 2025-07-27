@@ -68,6 +68,7 @@ import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
@@ -84,21 +85,27 @@ const { nodePack } = defineProps<{
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
-const managerStore = useComfyManagerStore()
-const isInstalled = computed(() => managerStore.isPackInstalled(nodePack.id))
+const { isPackInstalled } = useComfyManagerStore()
+const isInstalled = computed(() => isPackInstalled(nodePack.id))
 const isInstalling = ref(false)
 provide(IsInstallingKey, isInstalling)
 whenever(isInstalled, () => {
   isInstalling.value = false
 })
 
-const { isPackInstalled } = useComfyManagerStore()
 const { checkVersionCompatibility } = useConflictDetection()
+const { getConflictsForPackageByID } = useConflictDetectionStore()
 
 const { t, d, n } = useI18n()
 
 // Check compatibility once and pass to children
 const conflictResult = computed((): ConflictDetectionResult | null => {
+  // For installed packages, use stored conflict data
+  if (isInstalled.value && nodePack.id) {
+    return getConflictsForPackageByID(nodePack.id) || null
+  }
+
+  // For non-installed packages, perform compatibility check
   const compatibility = checkVersionCompatibility({
     supported_os: nodePack.supported_os,
     supported_accelerators: nodePack.supported_accelerators,
