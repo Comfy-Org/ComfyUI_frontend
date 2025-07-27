@@ -5,15 +5,15 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 test.describe('Minimap', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
-  test('Validate minimap is visible by default', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Minimap.Visible', true)
+    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.loadWorkflow('default')
-
     await comfyPage.page.waitForFunction(
       () => window['app'] && window['app'].canvas
     )
+  })
 
+  test('Validate minimap is visible by default', async ({ comfyPage }) => {
     const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
 
     await expect(minimapContainer).toBeVisible()
@@ -29,14 +29,6 @@ test.describe('Minimap', () => {
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
-
-    await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].canvas
-    )
-
-    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
-
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
 
     await expect(toggleButton).toBeVisible()
@@ -48,14 +40,7 @@ test.describe('Minimap', () => {
   })
 
   test('Validate minimap can be toggled off and on', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
-
-    await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].canvas
-    )
-
     const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
-    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
 
     await expect(minimapContainer).toBeVisible()
@@ -75,12 +60,6 @@ test.describe('Minimap', () => {
   })
 
   test('Validate minimap keyboard shortcut Alt+M', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
-
-    await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].canvas
-    )
-
     const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
 
     await expect(minimapContainer).toBeVisible()
