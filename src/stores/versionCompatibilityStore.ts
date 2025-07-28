@@ -1,21 +1,17 @@
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import * as semver from 'semver'
+import { computed } from 'vue'
 
 import config from '@/config'
-import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { compareVersions, isSemVer } from '@/utils/formatUtil'
+
+const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
   () => {
     const systemStatsStore = useSystemStatsStore()
-    const settingStore = useSettingStore()
-
-    const isDismissed = ref(false)
-    const dismissedVersion = ref<string | null>(
-      settingStore.get('Comfy.VersionMismatch.DismissedVersion') ?? null
-    )
 
     const frontendVersion = computed(() => config.app_version)
     const backendVersion = computed(
@@ -30,47 +26,68 @@ export const useVersionCompatibilityStore = defineStore(
       if (
         !frontendVersion.value ||
         !requiredFrontendVersion.value ||
-        !isSemVer(frontendVersion.value) ||
-        !isSemVer(requiredFrontendVersion.value)
+        !semver.valid(frontendVersion.value) ||
+        !semver.valid(requiredFrontendVersion.value)
       ) {
         return false
       }
-      return (
-        compareVersions(requiredFrontendVersion.value, frontendVersion.value) >
-        0
-      )
+      // Returns true if required version is greater than frontend version
+      return semver.gt(requiredFrontendVersion.value, frontendVersion.value)
     })
 
     const isFrontendNewer = computed(() => {
-      if (
-        !frontendVersion.value ||
-        !backendVersion.value ||
-        !isSemVer(frontendVersion.value) ||
-        !isSemVer(backendVersion.value)
-      ) {
-        return false
-      }
-      const versionDiff = compareVersions(
-        frontendVersion.value,
-        backendVersion.value
-      )
-      return versionDiff > 0
+      // We don't warn about frontend being newer than backend
+      // Only warn when frontend is outdated (behind required version)
+      return false
     })
 
     const hasVersionMismatch = computed(() => {
-      return isFrontendOutdated.value || isFrontendNewer.value
+      return isFrontendOutdated.value
     })
 
-    const currentVersionKey = computed(
-      () =>
-        `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+    const versionKey = computed(() => {
+      if (
+        !frontendVersion.value ||
+        !backendVersion.value ||
+        !requiredFrontendVersion.value
+      ) {
+        return null
+      }
+      return `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
+    })
+
+    // Use reactive storage for dismissals - creates a reactive ref that syncs with localStorage
+    // All version mismatch dismissals are stored in a single object for clean localStorage organization
+    const dismissalStorage = useStorage(
+      'comfy.versionMismatch.dismissals',
+      {} as Record<string, number>,
+      localStorage,
+      {
+        serializer: {
+          read: (value: string) => {
+            try {
+              return JSON.parse(value)
+            } catch {
+              return {}
+            }
+          },
+          write: (value: Record<string, number>) => JSON.stringify(value)
+        }
+      }
     )
 
+    const isDismissed = computed(() => {
+      if (!versionKey.value) return false
+
+      const dismissedUntil = dismissalStorage.value[versionKey.value]
+      if (!dismissedUntil) return false
+
+      // Check if dismissal has expired
+      return Date.now() < dismissedUntil
+    })
+
     const shouldShowWarning = computed(() => {
-      if (!hasVersionMismatch.value || isDismissed.value) {
-        return false
-      }
-      return dismissedVersion.value !== currentVersionKey.value
+      return hasVersionMismatch.value && !isDismissed.value
     })
 
     const warningMessage = computed(() => {
@@ -79,12 +96,6 @@ export const useVersionCompatibilityStore = defineStore(
           type: 'outdated' as const,
           frontendVersion: frontendVersion.value,
           requiredVersion: requiredFrontendVersion.value
-        }
-      } else if (isFrontendNewer.value) {
-        return {
-          type: 'newer' as const,
-          frontendVersion: frontendVersion.value,
-          backendVersion: backendVersion.value
         }
       }
       return null
@@ -96,29 +107,18 @@ export const useVersionCompatibilityStore = defineStore(
       }
     }
 
-    async function dismissWarning() {
-      isDismissed.value = true
-      dismissedVersion.value = currentVersionKey.value
+    function dismissWarning() {
+      if (!versionKey.value) return
 
-      await settingStore.set(
-        'Comfy.VersionMismatch.DismissedVersion',
-        currentVersionKey.value
-      )
-    }
-
-    function restoreDismissalState() {
-      const dismissed = settingStore.get(
-        'Comfy.VersionMismatch.DismissedVersion'
-      )
-      if (dismissed) {
-        dismissedVersion.value = dismissed
-        isDismissed.value = dismissed === currentVersionKey.value
+      const dismissUntil = Date.now() + DISMISSAL_DURATION_MS
+      dismissalStorage.value = {
+        ...dismissalStorage.value,
+        [versionKey.value]: dismissUntil
       }
     }
 
     async function initialize() {
       await checkVersionCompatibility()
-      restoreDismissalState()
     }
 
     return {
