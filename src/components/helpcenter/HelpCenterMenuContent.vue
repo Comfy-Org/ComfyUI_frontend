@@ -146,7 +146,6 @@ const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
   UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
@@ -199,7 +198,7 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
       action: () => {
-        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
+        openExternalLink(getDesktopGuideUrl())
         emit('close')
       }
     },
@@ -453,6 +452,19 @@ const getChangelogUrl = (): string => {
   return isChineseLocale
     ? 'https://docs.comfy.org/zh-CN/changelog'
     : 'https://docs.comfy.org/changelog'
+}
+
+// Generate platform and language-aware desktop guide URL
+const getDesktopGuideUrl = (): string => {
+  const isChineseLocale = locale.value === 'zh'
+  const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+
+  const platform = isMacOS ? 'macos' : 'windows'
+  const baseUrl = isChineseLocale
+    ? 'https://docs.comfy.org/zh-CN/installation/desktop'
+    : 'https://docs.comfy.org/installation/desktop'
+
+  return `${baseUrl}/${platform}`
 }
 
 // Lifecycle
