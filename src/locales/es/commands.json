@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Reiniciar"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "Abrir editor 3D (Beta) para el nodo seleccionado"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Explorar plantillas"
   },

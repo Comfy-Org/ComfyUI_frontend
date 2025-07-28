@@ -13,6 +13,7 @@
     <BypassButton />
     <PinButton />
     <EditModelButton />
+    <Load3DViewerButton />
     <MaskEditorButton />
     <ConvertToSubgraphButton />
     <DeleteButton />
@@ -38,6 +39,7 @@ import EditModelButton from '@/components/graph/selectionToolbox/EditModelButton
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
 import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
+import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'

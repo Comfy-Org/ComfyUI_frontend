@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "重启"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "为选中节点打开3D编辑器（测试版）"
+  },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
   },

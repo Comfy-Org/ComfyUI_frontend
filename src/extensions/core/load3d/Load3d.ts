@@ -9,11 +9,11 @@ import { EventManager } from './EventManager'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
-import { ModelManager } from './ModelManager'
 import { NodeStorage } from './NodeStorage'
 import { PreviewManager } from './PreviewManager'
 import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
+import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
 import {
   CameraState,
@@ -29,20 +29,21 @@ class Load3d {
   protected animationFrameId: number | null = null
   node: LGraphNode
 
-  protected eventManager: EventManager
-  protected nodeStorage: NodeStorage
-  protected sceneManager: SceneManager
-  protected cameraManager: CameraManager
-  protected controlsManager: ControlsManager
-  protected lightingManager: LightingManager
-  protected viewHelperManager: ViewHelperManager
-  protected previewManager: PreviewManager
-  protected loaderManager: LoaderManager
-  protected modelManager: ModelManager
-  protected recordingManager: RecordingManager
+  eventManager: EventManager
+  nodeStorage: NodeStorage
+  sceneManager: SceneManager
+  cameraManager: CameraManager
+  controlsManager: ControlsManager
+  lightingManager: LightingManager
+  viewHelperManager: ViewHelperManager
+  previewManager: PreviewManager
+  loaderManager: LoaderManager
+  modelManager: SceneModelManager
+  recordingManager: RecordingManager
 
   STATUS_MOUSE_ON_NODE: boolean
   STATUS_MOUSE_ON_SCENE: boolean
+  STATUS_MOUSE_ON_VIEWER: boolean
   INITIAL_RENDER_DONE: boolean = false
 
   constructor(
@@ -109,7 +110,7 @@ class Load3d {
       this.sceneManager.backgroundCamera
     )
 
-    this.modelManager = new ModelManager(
+    this.modelManager = new SceneModelManager(
       this.sceneManager.scene,
       this.renderer,
       this.eventManager,
@@ -142,6 +143,7 @@ class Load3d {
 
     this.STATUS_MOUSE_ON_NODE = false
     this.STATUS_MOUSE_ON_SCENE = false
+    this.STATUS_MOUSE_ON_VIEWER = false
 
     this.handleResize()
     this.startAnimation()
@@ -149,6 +151,41 @@ class Load3d {
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  getEventManager(): EventManager {
+    return this.eventManager
+  }
+
+  getNodeStorage(): NodeStorage {
+    return this.nodeStorage
+  }
+  getSceneManager(): SceneManager {
+    return this.sceneManager
+  }
+  getCameraManager(): CameraManager {
+    return this.cameraManager
+  }
+  getControlsManager(): ControlsManager {
+    return this.controlsManager
+  }
+  getLightingManager(): LightingManager {
+    return this.lightingManager
+  }
+  getViewHelperManager(): ViewHelperManager {
+    return this.viewHelperManager
+  }
+  getPreviewManager(): PreviewManager {
+    return this.previewManager
+  }
+  getLoaderManager(): LoaderManager {
+    return this.loaderManager
+  }
+  getModelManager(): SceneModelManager {
+    return this.modelManager
+  }
+  getRecordingManager(): RecordingManager {
+    return this.recordingManager
   }
 
   forceRender(): void {
@@ -243,10 +280,15 @@ class Load3d {
     this.STATUS_MOUSE_ON_SCENE = onScene
   }
 
+  updateStatusMouseOnViewer(onViewer: boolean): void {
+    this.STATUS_MOUSE_ON_VIEWER = onViewer
+  }
+
   isActive(): boolean {
     return (
       this.STATUS_MOUSE_ON_NODE ||
       this.STATUS_MOUSE_ON_SCENE ||
+      this.STATUS_MOUSE_ON_VIEWER ||
       this.isRecording() ||
       !this.INITIAL_RENDER_DONE
     )
@@ -338,6 +380,10 @@ class Load3d {
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
     return this.cameraManager.getCurrentCameraType()
+  }
+
+  getCurrentModel(): THREE.Object3D | null {
+    return this.modelManager.currentModel
   }
 
   setCameraState(state: CameraState): void {

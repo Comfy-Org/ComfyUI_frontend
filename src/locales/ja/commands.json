@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "再起動"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "選択したノードの3Dエディタ（ベータ）を開く"
+  },
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
   },

@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Перезагрузить"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "Открыть 3D-редактор (бета) для выбранного узла"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
   },

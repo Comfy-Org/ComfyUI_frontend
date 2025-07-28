@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Redémarrer"
   },
+  "Comfy_3DEditor_Open3DEditor": {
+    "label": "Ouvrir l’éditeur 3D (bêta) pour le nœud sélectionné"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },

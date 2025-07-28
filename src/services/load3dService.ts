@@ -126,6 +126,82 @@ export class Load3dService {
     }
     this.pendingCallbacks.clear()
   }
+
+  async copyLoad3dState(source: Load3d, target: Load3d | Load3dAnimation) {
+    const sourceModel = source.modelManager.currentModel
+
+    if (sourceModel) {
+      const modelClone = sourceModel.clone()
+
+      target.getModelManager().currentModel = modelClone
+      target.getSceneManager().scene.add(modelClone)
+
+      target.getModelManager().materialMode =
+        source.getModelManager().materialMode
+
+      target.getModelManager().currentUpDirection =
+        source.getModelManager().currentUpDirection
+
+      target.setMaterialMode(source.getModelManager().materialMode)
+      target.setUpDirection(source.getModelManager().currentUpDirection)
+
+      if (source.getModelManager().appliedTexture) {
+        target.getModelManager().appliedTexture =
+          source.getModelManager().appliedTexture
+      }
+    }
+
+    const sourceCameraType = source.getCurrentCameraType()
+    const sourceCameraState = source.getCameraState()
+
+    target.toggleCamera(sourceCameraType)
+    target.setCameraState(sourceCameraState)
+
+    target.setBackgroundColor(source.getSceneManager().currentBackgroundColor)
+
+    target.toggleGrid(source.getSceneManager().gridHelper.visible)
+
+    const sourceBackgroundInfo = source
+      .getSceneManager()
+      .getCurrentBackgroundInfo()
+    if (sourceBackgroundInfo.type === 'image') {
+      const sourceNode = this.getNodeByLoad3d(source)
+      const backgroundPath = sourceNode?.properties?.[
+        'Background Image'
+      ] as string
+      if (backgroundPath) {
+        await target.setBackgroundImage(backgroundPath)
+      }
+    }
+
+    target.setLightIntensity(
+      source.getLightingManager().lights[1]?.intensity || 1
+    )
+
+    if (sourceCameraType === 'perspective') {
+      target.setFOV(source.getCameraManager().perspectiveCamera.fov)
+    }
+
+    const sourceNode = this.getNodeByLoad3d(source)
+    if (sourceNode?.properties?.['Edge Threshold']) {
+      target.setEdgeThreshold(sourceNode.properties['Edge Threshold'] as number)
+    }
+  }
+
+  handleViewportRefresh(load3d: Load3d | null) {
+    if (!load3d) return
+
+    load3d.handleResize()
+
+    const currentType = load3d.getCurrentCameraType()
+
+    load3d.toggleCamera(
+      currentType === 'perspective' ? 'orthographic' : 'perspective'
+    )
+    load3d.toggleCamera(currentType)
+
+    load3d.getControlsManager().controls.update()
+  }
 }
 
 export const useLoad3dService = () => {

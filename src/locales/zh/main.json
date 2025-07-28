@@ -569,8 +569,23 @@
     "applyingTexture": "应用纹理中...",
     "backgroundColor": "背景颜色",
     "camera": "摄影机",
+    "cameraType": {
+      "orthographic": "正交",
+      "perspective": "透视"
+    },
     "clearRecording": "清除录制",
     "edgeThreshold": "边缘阈值",
+    "editor": {
+      "apply": "应用",
+      "cameraSettings": "相机设置",
+      "cameraType": "相机类型",
+      "cancel": "取消",
+      "exportSettings": "匯出設定",
+      "lightSettings": "灯光设置",
+      "modelSettings": "模型設定",
+      "sceneSettings": "场景设置",
+      "title": "3D编辑器（测试版）"
+    },
     "export": "导出",
     "exportModel": "导出模型",
     "exportRecording": "导出录制",
@@ -599,6 +614,9 @@
     "switchCamera": "切换摄影机类型",
     "switchingMaterialMode": "切换材质模式中...",
     "upDirection": "上方向",
+    "upDirections": {
+      "original": "原始"
+    },
     "uploadBackgroundImage": "上传背景图片",
     "uploadTexture": "上传纹理"
   },
@@ -784,6 +802,7 @@
     "New": "新建",
     "Next Opened Workflow": "下一个打开的工作流",
     "Open": "打开",
+    "Open 3D Editor (Beta) for Selected Node": "为选中节点打开3D编辑器（测试版）",
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",

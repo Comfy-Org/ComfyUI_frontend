@@ -569,8 +569,23 @@
     "applyingTexture": "テクスチャを適用中...",
     "backgroundColor": "背景色",
     "camera": "カメラ",
+    "cameraType": {
+      "orthographic": "オルソグラフィック",
+      "perspective": "パースペクティブ"
+    },
     "clearRecording": "録画をクリア",
     "edgeThreshold": "エッジ閾値",
+    "editor": {
+      "apply": "適用",
+      "cameraSettings": "カメラ設定",
+      "cameraType": "カメラタイプ",
+      "cancel": "キャンセル",
+      "exportSettings": "エクスポート設定",
+      "lightSettings": "ライト設定",
+      "modelSettings": "モデル設定",
+      "sceneSettings": "シーン設定",
+      "title": "3Dエディター（ベータ）"
+    },
     "export": "エクスポート",
     "exportModel": "モデルをエクスポート",
     "exportRecording": "録画をエクスポート",
@@ -599,6 +614,9 @@
     "switchCamera": "カメラを切り替える",
     "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "upDirection": "上方向",
+    "upDirections": {
+      "original": "オリジナル"
+    },
     "uploadBackgroundImage": "背景画像をアップロード",
     "uploadTexture": "テクスチャをアップロード"
   },
@@ -784,6 +802,7 @@
     "New": "新規",
     "Next Opened Workflow": "次に開いたワークフロー",
     "Open": "開く",
+    "Open 3D Editor (Beta) for Selected Node": "選択したノードの3Dエディター（ベータ）を開く",
     "Open Custom Nodes Folder": "カスタムノードフォルダを開く",
     "Open DevTools": "DevToolsを開く",
     "Open Inputs Folder": "入力フォルダを開く",

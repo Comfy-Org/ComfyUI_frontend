@@ -239,3 +239,11 @@ function compressSubgraphWidgetInputSlots(
     compressSubgraphWidgetInputSlots(subgraph.definitions?.subgraphs, visited)
   }
 }
+
+export function isLoad3dNode(node: LGraphNode) {
+  return (
+    node &&
+    node.type &&
+    (node.type === 'Load3D' || node.type === 'Load3DAnimation')
+  )
+}

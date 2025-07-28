@@ -569,8 +569,23 @@
     "applyingTexture": "Application de la texture...",
     "backgroundColor": "Couleur de fond",
     "camera": "Caméra",
+    "cameraType": {
+      "orthographic": "Orthographique",
+      "perspective": "Perspective"
+    },
     "clearRecording": "Effacer l'enregistrement",
     "edgeThreshold": "Seuil de Bordure",
+    "editor": {
+      "apply": "Appliquer",
+      "cameraSettings": "Paramètres de la caméra",
+      "cameraType": "Type de caméra",
+      "cancel": "Annuler",
+      "exportSettings": "Paramètres d’exportation",
+      "lightSettings": "Paramètres de l’éclairage",
+      "modelSettings": "Paramètres du modèle",
+      "sceneSettings": "Paramètres de la scène",
+      "title": "Éditeur 3D (Bêta)"
+    },
     "export": "Exportation",
     "exportModel": "Exportation du modèle",
     "exportRecording": "Exporter l'enregistrement",
@@ -599,6 +614,9 @@
     "switchCamera": "Changer de caméra",
     "switchingMaterialMode": "Changement de mode de matériau...",
     "upDirection": "Direction Haut",
+    "upDirections": {
+      "original": "Original"
+    },
     "uploadBackgroundImage": "Télécharger l'image de fond",
     "uploadTexture": "Télécharger Texture"
   },
@@ -784,6 +802,7 @@
     "New": "Nouveau",
     "Next Opened Workflow": "Prochain flux de travail ouvert",
     "Open": "Ouvrir",
+    "Open 3D Editor (Beta) for Selected Node": "Ouvrir l’éditeur 3D (bêta) pour le nœud sélectionné",
     "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
     "Open DevTools": "Ouvrir DevTools",
     "Open Inputs Folder": "Ouvrir le dossier des entrées",

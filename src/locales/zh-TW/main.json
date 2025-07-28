@@ -569,8 +569,23 @@
     "applyingTexture": "正在套用材質貼圖...",
     "backgroundColor": "背景顏色",
     "camera": "相機",
+    "cameraType": {
+      "orthographic": "正交",
+      "perspective": "透視"
+    },
     "clearRecording": "清除錄影",
     "edgeThreshold": "邊緣閾值",
+    "editor": {
+      "apply": "套用",
+      "cameraSettings": "相機設定",
+      "cameraType": "相機類型",
+      "cancel": "取消",
+      "exportSettings": "匯出設定",
+      "lightSettings": "燈光設定",
+      "modelSettings": "模型設定",
+      "sceneSettings": "場景設定",
+      "title": "3D 編輯器（測試版）"
+    },
     "export": "匯出",
     "exportModel": "匯出模型",
     "exportRecording": "匯出錄影",
@@ -599,6 +614,9 @@
     "switchCamera": "切換相機",
     "switchingMaterialMode": "正在切換材質模式...",
     "upDirection": "上方方向",
+    "upDirections": {
+      "original": "原始"
+    },
     "uploadBackgroundImage": "上傳背景圖片",
     "uploadTexture": "上傳材質貼圖"
   },
@@ -784,6 +802,7 @@
     "New": "新增",
     "Next Opened Workflow": "下一個已開啟的工作流程",
     "Open": "開啟",
+    "Open 3D Editor (Beta) for Selected Node": "為選取的節點開啟 3D 編輯器（Beta）",
     "Open Custom Nodes Folder": "開啟自訂節點資料夾",
     "Open DevTools": "開啟開發者工具",
     "Open Inputs Folder": "開啟輸入資料夾",
