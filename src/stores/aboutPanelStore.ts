@@ -11,8 +11,12 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const frontendVersion = __COMFYUI_FRONTEND_VERSION__
   const extensionStore = useExtensionStore()
   const systemStatsStore = useSystemStatsStore()
-  const coreVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+
+  const system = computed(() => systemStatsStore?.systemStats?.system)
+
+  const coreVersion = computed(() => system.value?.comfyui_version ?? '')
+  const workflowsTemplatesVersion = computed(
+    () => system.value?.workflows_templates_version ?? ''
   )
 
   const coreBadges = computed<AboutPageBadge[]>(() => [
@@ -37,7 +41,12 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
       url: 'https://www.comfy.org/discord',
       icon: 'pi pi-discord'
     },
-    { label: 'ComfyOrg', url: 'https://www.comfy.org/', icon: 'pi pi-globe' }
+    { label: 'ComfyOrg', url: 'https://www.comfy.org/', icon: 'pi pi-globe' },
+    {
+      label: `Workflows_Templates v${workflowsTemplatesVersion.value}`,
+      url: 'https://github.com/Comfy-Org/workflow_templates',
+      icon: 'pi pi-globe'
+    }
   ])
 
   const allBadges = computed<AboutPageBadge[]>(() => [
