@@ -27,6 +27,7 @@ enum ManagerRoute {
   LIST_INSTALLED = 'v2/customnode/installed',
   GET_NODES = 'v2/customnode/getmappings',
   IMPORT_FAIL_INFO = 'v2/customnode/import_fail_info',
+  IMPORT_FAIL_INFO_BULK = 'v2/customnode/import_fail_info_bulk',
   REBOOT = 'v2/manager/reboot',
   IS_LEGACY_MANAGER_UI = 'v2/manager/is_legacy_manager_ui',
   TASK_HISTORY = 'v2/manager/queue/history',
@@ -144,6 +145,21 @@ export const useComfyManagerService = () => {
     return executeRequest<any>(
       () =>
         managerApiClient.post(ManagerRoute.IMPORT_FAIL_INFO, params, {
+          signal
+        }),
+      { errorContext }
+    )
+  }
+
+  const getImportFailInfoBulk = async (
+    params: { cnr_ids?: string[]; urls?: string[] } = {},
+    signal?: AbortSignal
+  ) => {
+    const errorContext = 'Fetching bulk import failure information'
+
+    return executeRequest<Record<string, any>>(
+      () =>
+        managerApiClient.post(ManagerRoute.IMPORT_FAIL_INFO_BULK, params, {
           signal
         }),
       { errorContext }
@@ -289,6 +305,7 @@ export const useComfyManagerService = () => {
     // Pack management
     listInstalledPacks,
     getImportFailInfo,
+    getImportFailInfoBulk,
     installPack,
     uninstallPack,
     enablePack: installPack, // enable is done via install
