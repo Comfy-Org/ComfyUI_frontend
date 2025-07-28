@@ -110,15 +110,27 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     FluxProUltraImageNode: {
       displayPrice: '$0.06/Run'
     },
+    FluxProKontextProNode: {
+      displayPrice: '$0.04/Run'
+    },
+    FluxProKontextMaxNode: {
+      displayPrice: '$0.08/Run'
+    },
     IdeogramV1: {
       displayPrice: (node: LGraphNode): string => {
         const numImagesWidget = node.widgets?.find(
           (w) => w.name === 'num_images'
         ) as IComboWidget
-        if (!numImagesWidget) return '$0.06 x num_images/Run'
+        const turboWidget = node.widgets?.find(
+          (w) => w.name === 'turbo'
+        ) as IComboWidget
+
+        if (!numImagesWidget) return '$0.02-0.06 x num_images/Run'
 
         const numImages = Number(numImagesWidget.value) || 1
-        const cost = (0.06 * numImages).toFixed(2)
+        const turbo = String(turboWidget?.value).toLowerCase() === 'true'
+        const basePrice = turbo ? 0.02 : 0.06
+        const cost = (basePrice * numImages).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -127,10 +139,16 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const numImagesWidget = node.widgets?.find(
           (w) => w.name === 'num_images'
         ) as IComboWidget
-        if (!numImagesWidget) return '$0.08 x num_images/Run'
+        const turboWidget = node.widgets?.find(
+          (w) => w.name === 'turbo'
+        ) as IComboWidget
+
+        if (!numImagesWidget) return '$0.05-0.08 x num_images/Run'
 
         const numImages = Number(numImagesWidget.value) || 1
-        const cost = (0.08 * numImages).toFixed(2)
+        const turbo = String(turboWidget?.value).toLowerCase() === 'true'
+        const basePrice = turbo ? 0.05 : 0.08
+        const cost = (basePrice * numImages).toFixed(2)
         return `$${cost}/Run`
       }
     },
@@ -651,10 +669,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         if (duration.includes('5')) {
           if (resolution.includes('720p')) return '$0.3/Run'
-          if (resolution.includes('1080p')) return '~$0.3/Run'
+          if (resolution.includes('1080p')) return '$0.5/Run'
         } else if (duration.includes('10')) {
-          if (resolution.includes('720p')) return '$0.25/Run'
-          if (resolution.includes('1080p')) return '$1.0/Run'
+          if (resolution.includes('720p')) return '$0.4/Run'
+          if (resolution.includes('1080p')) return '$1.5/Run'
         }
 
         return '$0.3/Run'
@@ -678,9 +696,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         if (duration.includes('5')) {
           if (resolution.includes('720p')) return '$0.2/Run'
-          if (resolution.includes('1080p')) return '~$0.45/Run'
+          if (resolution.includes('1080p')) return '$0.3/Run'
         } else if (duration.includes('10')) {
-          if (resolution.includes('720p')) return '$0.6/Run'
+          if (resolution.includes('720p')) return '$0.25/Run'
           if (resolution.includes('1080p')) return '$1.0/Run'
         }
 
@@ -896,18 +914,11 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         }
 
         const model = String(modelWidget.value)
-        const aspectRatio = String(aspectRatioWidget.value)
 
         if (model.includes('photon-flash-1')) {
-          if (aspectRatio.includes('1:1')) return '$0.0045/Run'
-          if (aspectRatio.includes('16:9')) return '$0.0045/Run'
-          if (aspectRatio.includes('4:3')) return '$0.0046/Run'
-          if (aspectRatio.includes('21:9')) return '$0.0047/Run'
+          return '$0.0019/Run'
         } else if (model.includes('photon-1')) {
-          if (aspectRatio.includes('1:1')) return '$0.0172/Run'
-          if (aspectRatio.includes('16:9')) return '$0.0172/Run'
-          if (aspectRatio.includes('4:3')) return '$0.0176/Run'
-          if (aspectRatio.includes('21:9')) return '$0.0182/Run'
+          return '$0.0073/Run'
         }
 
         return '$0.0172/Run'
@@ -918,31 +929,17 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modelWidget = node.widgets?.find(
           (w) => w.name === 'model'
         ) as IComboWidget
-        const aspectRatioWidget = node.widgets?.find(
-          (w) => w.name === 'aspect_ratio'
-        ) as IComboWidget
 
         if (!modelWidget) {
-          return '$0.0045-0.0182/Run (varies with model & aspect ratio)'
+          return '$0.0019-0.0073/Run (varies with model)'
         }
 
         const model = String(modelWidget.value)
-        const aspectRatio = aspectRatioWidget
-          ? String(aspectRatioWidget.value)
-          : null
 
         if (model.includes('photon-flash-1')) {
-          if (!aspectRatio) return '$0.0045/Run'
-          if (aspectRatio.includes('1:1')) return '~$0.0045/Run'
-          if (aspectRatio.includes('16:9')) return '~$0.0045/Run'
-          if (aspectRatio.includes('4:3')) return '~$0.0046/Run'
-          if (aspectRatio.includes('21:9')) return '~$0.0047/Run'
+          return '$0.0019/Run'
         } else if (model.includes('photon-1')) {
-          if (!aspectRatio) return '$0.0172/Run'
-          if (aspectRatio.includes('1:1')) return '~$0.0172/Run'
-          if (aspectRatio.includes('16:9')) return '~$0.0172/Run'
-          if (aspectRatio.includes('4:3')) return '~$0.0176/Run'
-          if (aspectRatio.includes('21:9')) return '~$0.0182/Run'
+          return '$0.0073/Run'
         }
 
         return '$0.0172/Run'
@@ -1053,10 +1050,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       displayPrice: '$0.4/Run'
     },
     Rodin3D_Detail: {
-      displayPrice: '$1.2/Run'
+      displayPrice: '$0.4/Run'
     },
     Rodin3D_Smooth: {
-      displayPrice: '$1.2/Run'
+      displayPrice: '$0.4/Run'
     },
     Rodin3D_Sketch: {
       displayPrice: '$0.4/Run'
@@ -1151,9 +1148,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         if (model.includes('veo-2.0')) {
           return '$0.5/second'
         } else if (model.includes('gemini-2.5-pro-preview-05-06')) {
-          return '$0.0035/$0.0008 per 1K tokens'
+          return '$0.00016/$0.0006 per 1K tokens'
         } else if (model.includes('gemini-2.5-flash-preview-04-17')) {
-          return '$0.0015/$0.0004 per 1K tokens'
+          return '$0.00125/$0.01 per 1K tokens'
         }
         // For other Gemini models, show token-based pricing info
         return 'Token-based'
@@ -1233,9 +1230,11 @@ export const useNodePricing = () => {
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
       OpenAIGPTImage1: ['quality', 'n'],
-      IdeogramV1: ['num_images'],
-      IdeogramV2: ['num_images'],
+      IdeogramV1: ['num_images', 'turbo'],
+      IdeogramV2: ['num_images', 'turbo'],
       IdeogramV3: ['rendering_speed', 'num_images'],
+      FluxProKontextProNode: [],
+      FluxProKontextMaxNode: [],
       VeoVideoGenerationNode: ['duration_seconds'],
       LumaVideoNode: ['model', 'resolution', 'duration'],
       LumaImageToVideoNode: ['model', 'resolution', 'duration'],
@@ -1269,8 +1268,8 @@ export const useNodePricing = () => {
       RunwayImageToVideoNodeGen4: ['duration'],
       RunwayFirstLastFrameNode: ['duration'],
       // Tripo nodes
-      TripoTextToModelNode: ['model', 'model_version', 'texture_quality'],
-      TripoImageToModelNode: ['model', 'model_version', 'texture_quality'],
+      TripoTextToModelNode: ['quad', 'style', 'texture', 'texture_quality'],
+      TripoImageToModelNode: ['quad', 'style', 'texture', 'texture_quality'],
       TripoTextureNode: ['texture_quality'],
       // Google/Gemini nodes
       GeminiNode: ['model'],
