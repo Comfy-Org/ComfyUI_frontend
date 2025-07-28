@@ -575,17 +575,6 @@
     },
     "clearRecording": "Effacer l'enregistrement",
     "edgeThreshold": "Seuil de Bordure",
-    "editor": {
-      "apply": "Appliquer",
-      "cameraSettings": "Paramètres de la caméra",
-      "cameraType": "Type de caméra",
-      "cancel": "Annuler",
-      "exportSettings": "Paramètres d’exportation",
-      "lightSettings": "Paramètres de l’éclairage",
-      "modelSettings": "Paramètres du modèle",
-      "sceneSettings": "Paramètres de la scène",
-      "title": "Éditeur 3D (Bêta)"
-    },
     "export": "Exportation",
     "exportModel": "Exportation du modèle",
     "exportRecording": "Exporter l'enregistrement",
@@ -604,6 +593,7 @@
       "wireframe": "Fil de fer"
     },
     "model": "Modèle",
+    "openIn3DViewer": "Ouvrir dans la visionneuse 3D",
     "previewOutput": "Aperçu de la sortie",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "resizeNodeMatchOutput": "Redimensionner le nœud pour correspondre à la sortie",
@@ -618,7 +608,18 @@
       "original": "Original"
     },
     "uploadBackgroundImage": "Télécharger l'image de fond",
-    "uploadTexture": "Télécharger Texture"
+    "uploadTexture": "Télécharger Texture",
+    "viewer": {
+      "apply": "Appliquer",
+      "cameraSettings": "Paramètres de la caméra",
+      "cameraType": "Type de caméra",
+      "cancel": "Annuler",
+      "exportSettings": "Paramètres d’exportation",
+      "lightSettings": "Paramètres de l’éclairage",
+      "modelSettings": "Paramètres du modèle",
+      "sceneSettings": "Paramètres de la scène",
+      "title": "Visionneuse 3D (Bêta)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nécessite ComfyUI {version} :",
@@ -802,7 +803,7 @@
     "New": "Nouveau",
     "Next Opened Workflow": "Prochain flux de travail ouvert",
     "Open": "Ouvrir",
-    "Open 3D Editor (Beta) for Selected Node": "Ouvrir l’éditeur 3D (bêta) pour le nœud sélectionné",
+    "Open 3D Viewer (Beta) for Selected Node": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné",
     "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
     "Open DevTools": "Ouvrir DevTools",
     "Open Inputs Folder": "Ouvrir le dossier des entrées",
@@ -1592,6 +1593,7 @@
     "failedToExportModel": "Échec de l'exportation du modèle en {format}",
     "failedToFetchBalance": "Échec de la récupération du solde : {error}",
     "failedToFetchLogs": "Échec de la récupération des journaux du serveur",
+    "failedToInitializeLoad3dViewer": "Échec de l'initialisation du visualiseur 3D",
     "failedToInitiateCreditPurchase": "Échec de l'initiation de l'achat de crédits : {error}",
     "failedToPurchaseCredits": "Échec de l'achat de crédits : {error}",
     "fileLoadError": "Impossible de trouver le flux de travail dans {fileName}",

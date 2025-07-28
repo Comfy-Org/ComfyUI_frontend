@@ -575,17 +575,6 @@
     },
     "clearRecording": "録画をクリア",
     "edgeThreshold": "エッジ閾値",
-    "editor": {
-      "apply": "適用",
-      "cameraSettings": "カメラ設定",
-      "cameraType": "カメラタイプ",
-      "cancel": "キャンセル",
-      "exportSettings": "エクスポート設定",
-      "lightSettings": "ライト設定",
-      "modelSettings": "モデル設定",
-      "sceneSettings": "シーン設定",
-      "title": "3Dエディター（ベータ）"
-    },
     "export": "エクスポート",
     "exportModel": "モデルをエクスポート",
     "exportRecording": "録画をエクスポート",
@@ -604,6 +593,7 @@
       "wireframe": "ワイヤーフレーム"
     },
     "model": "モデル",
+    "openIn3DViewer": "3Dビューアで開く",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
@@ -618,7 +608,18 @@
       "original": "オリジナル"
     },
     "uploadBackgroundImage": "背景画像をアップロード",
-    "uploadTexture": "テクスチャをアップロード"
+    "uploadTexture": "テクスチャをアップロード",
+    "viewer": {
+      "apply": "適用",
+      "cameraSettings": "カメラ設定",
+      "cameraType": "カメラタイプ",
+      "cancel": "キャンセル",
+      "exportSettings": "エクスポート設定",
+      "lightSettings": "ライト設定",
+      "modelSettings": "モデル設定",
+      "sceneSettings": "シーン設定",
+      "title": "3Dビューア（ベータ）"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} が必要です：",
@@ -802,7 +803,7 @@
     "New": "新規",
     "Next Opened Workflow": "次に開いたワークフロー",
     "Open": "開く",
-    "Open 3D Editor (Beta) for Selected Node": "選択したノードの3Dエディター（ベータ）を開く",
+    "Open 3D Viewer (Beta) for Selected Node": "選択したノードの3Dビューアー（ベータ）を開く",
     "Open Custom Nodes Folder": "カスタムノードフォルダを開く",
     "Open DevTools": "DevToolsを開く",
     "Open Inputs Folder": "入力フォルダを開く",
@@ -1592,6 +1593,7 @@
     "failedToExportModel": "{format}としてモデルのエクスポートに失敗しました",
     "failedToFetchBalance": "残高の取得に失敗しました: {error}",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
+    "failedToInitializeLoad3dViewer": "3Dビューアの初期化に失敗しました",
     "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
     "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "fileLoadError": "{fileName}でワークフローが見つかりません",

@@ -575,17 +575,6 @@
     },
     "clearRecording": "녹화 지우기",
     "edgeThreshold": "엣지 임계값",
-    "editor": {
-      "apply": "적용",
-      "cameraSettings": "카메라 설정",
-      "cameraType": "카메라 유형",
-      "cancel": "취소",
-      "exportSettings": "내보내기 설정",
-      "lightSettings": "조명 설정",
-      "modelSettings": "모델 설정",
-      "sceneSettings": "씬 설정",
-      "title": "3D 에디터 (베타)"
-    },
     "export": "내보내기",
     "exportModel": "모델 내보내기",
     "exportRecording": "녹화 내보내기",
@@ -604,6 +593,7 @@
       "wireframe": "와이어프레임"
     },
     "model": "모델",
+    "openIn3DViewer": "3D 뷰어에서 열기",
     "previewOutput": "출력 미리보기",
     "removeBackgroundImage": "배경 이미지 제거",
     "resizeNodeMatchOutput": "노드 크기를 출력에 맞추기",
@@ -618,7 +608,18 @@
       "original": "원본"
     },
     "uploadBackgroundImage": "배경 이미지 업로드",
-    "uploadTexture": "텍스처 업로드"
+    "uploadTexture": "텍스처 업로드",
+    "viewer": {
+      "apply": "적용",
+      "cameraSettings": "카메라 설정",
+      "cameraType": "카메라 유형",
+      "cancel": "취소",
+      "exportSettings": "내보내기 설정",
+      "lightSettings": "조명 설정",
+      "modelSettings": "모델 설정",
+      "sceneSettings": "씬 설정",
+      "title": "3D 뷰어 (베타)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} 이상 필요:",
@@ -802,7 +803,7 @@
     "New": "새로 만들기",
     "Next Opened Workflow": "다음 열린 워크플로",
     "Open": "열기",
-    "Open 3D Editor (Beta) for Selected Node": "선택한 노드에 대해 3D 에디터(베타) 열기",
+    "Open 3D Viewer (Beta) for Selected Node": "선택한 노드에 대해 3D 뷰어(베타) 열기",
     "Open Custom Nodes Folder": "사용자 정의 노드 폴더 열기",
     "Open DevTools": "개발자 도구 열기",
     "Open Inputs Folder": "입력 폴더 열기",
@@ -1592,6 +1593,7 @@
     "failedToExportModel": "{format} 형식으로 모델 내보내기에 실패했습니다",
     "failedToFetchBalance": "잔액을 가져오지 못했습니다: {error}",
     "failedToFetchLogs": "서버 로그를 가져오는 데 실패했습니다",
+    "failedToInitializeLoad3dViewer": "3D 뷰어 초기화에 실패했습니다",
     "failedToInitiateCreditPurchase": "크레딧 구매를 시작하지 못했습니다: {error}",
     "failedToPurchaseCredits": "크레딧 구매에 실패했습니다: {error}",
     "fileLoadError": "{fileName}에서 워크플로를 찾을 수 없습니다",

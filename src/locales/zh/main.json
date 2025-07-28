@@ -575,17 +575,6 @@
     },
     "clearRecording": "清除录制",
     "edgeThreshold": "边缘阈值",
-    "editor": {
-      "apply": "应用",
-      "cameraSettings": "相机设置",
-      "cameraType": "相机类型",
-      "cancel": "取消",
-      "exportSettings": "匯出設定",
-      "lightSettings": "灯光设置",
-      "modelSettings": "模型設定",
-      "sceneSettings": "场景设置",
-      "title": "3D编辑器（测试版）"
-    },
     "export": "导出",
     "exportModel": "导出模型",
     "exportRecording": "导出录制",
@@ -604,6 +593,7 @@
       "wireframe": "线框"
     },
     "model": "模型",
+    "openIn3DViewer": "在 3D 檢視器中開啟",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
     "resizeNodeMatchOutput": "调整节点以匹配输出",
@@ -618,7 +608,18 @@
       "original": "原始"
     },
     "uploadBackgroundImage": "上传背景图片",
-    "uploadTexture": "上传纹理"
+    "uploadTexture": "上传纹理",
+    "viewer": {
+      "apply": "套用",
+      "cameraSettings": "相機設定",
+      "cameraType": "相機類型",
+      "cancel": "取消",
+      "exportSettings": "匯出設定",
+      "lightSettings": "燈光設定",
+      "modelSettings": "模型設定",
+      "sceneSettings": "場景設定",
+      "title": "3D 檢視器（測試版）"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "需要 ComfyUI {version}：",
@@ -802,7 +803,7 @@
     "New": "新建",
     "Next Opened Workflow": "下一个打开的工作流",
     "Open": "打开",
-    "Open 3D Editor (Beta) for Selected Node": "为选中节点打开3D编辑器（测试版）",
+    "Open 3D Viewer (Beta) for Selected Node": "為所選節點開啟 3D 檢視器（Beta 版）",
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",
@@ -1592,6 +1593,7 @@
     "failedToExportModel": "无法将模型导出为 {format}",
     "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
+    "failedToInitializeLoad3dViewer": "初始化 3D 檢視器失敗",
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
     "failedToPurchaseCredits": "购买积分失败：{error}",
     "fileLoadError": "无法在 {fileName} 中找到工作流",

@@ -575,17 +575,6 @@
     },
     "clearRecording": "Borrar grabación",
     "edgeThreshold": "Umbral de borde",
-    "editor": {
-      "apply": "Aplicar",
-      "cameraSettings": "Configuración de la cámara",
-      "cameraType": "Tipo de cámara",
-      "cancel": "Cancelar",
-      "exportSettings": "Configuración de exportación",
-      "lightSettings": "Configuración de la iluminación",
-      "modelSettings": "Configuración del modelo",
-      "sceneSettings": "Configuración de la escena",
-      "title": "Editor 3D (Beta)"
-    },
     "export": "Exportar",
     "exportModel": "Exportar modelo",
     "exportRecording": "Exportar grabación",
@@ -604,6 +593,7 @@
       "wireframe": "Malla"
     },
     "model": "Modelo",
+    "openIn3DViewer": "Abrir en el visor 3D",
     "previewOutput": "Vista previa de salida",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
@@ -618,7 +608,18 @@
       "original": "Original"
     },
     "uploadBackgroundImage": "Subir imagen de fondo",
-    "uploadTexture": "Subir textura"
+    "uploadTexture": "Subir textura",
+    "viewer": {
+      "apply": "Aplicar",
+      "cameraSettings": "Configuración de la cámara",
+      "cameraType": "Tipo de cámara",
+      "cancel": "Cancelar",
+      "exportSettings": "Configuración de exportación",
+      "lightSettings": "Configuración de la luz",
+      "modelSettings": "Configuración del modelo",
+      "sceneSettings": "Configuración de la escena",
+      "title": "Visor 3D (Beta)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Requiere ComfyUI {version}:",
@@ -802,7 +803,7 @@
     "New": "Nuevo",
     "Next Opened Workflow": "Siguiente flujo de trabajo abierto",
     "Open": "Abrir",
-    "Open 3D Editor (Beta) for Selected Node": "Abrir el Editor 3D (Beta) para el nodo seleccionado",
+    "Open 3D Viewer (Beta) for Selected Node": "Abrir visor 3D (Beta) para el nodo seleccionado",
     "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
     "Open DevTools": "Abrir DevTools",
     "Open Inputs Folder": "Abrir carpeta de entradas",
@@ -1592,6 +1593,7 @@
     "failedToExportModel": "Error al exportar modelo como {format}",
     "failedToFetchBalance": "No se pudo obtener el saldo: {error}",
     "failedToFetchLogs": "Error al obtener los registros del servidor",
+    "failedToInitializeLoad3dViewer": "No se pudo inicializar el visor 3D",
     "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",
     "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "fileLoadError": "No se puede encontrar el flujo de trabajo en {fileName}",
