@@ -4,7 +4,7 @@ You are performing a comprehensive code review for the PR specified in the PR_NU
 
 ## CRITICAL INSTRUCTIONS
 
-**You MUST post individual inline comments on specific lines of code. DO NOT create a single summary comment.**
+**You MUST post individual inline comments on specific lines of code. DO NOT create a single summary comment until the very end.**
 
 **IMPORTANT: You have full permission to execute gh api commands. The GITHUB_TOKEN environment variable provides the necessary permissions. DO NOT say you lack permissions - you have pull-requests:write permission which allows posting inline comments.**
 
@@ -30,122 +30,195 @@ To post inline comments, you will use the GitHub API via the `gh` command. Here'
    
    Then use: `-f body="$COMMENT_BODY"`
 
-## Review Process
+## Phase 1: Environment Setup and PR Context
 
-### Step 1: Environment Setup
+### Step 1.1: Initialize Review Tracking
 
-1. Check that the PR_NUMBER environment variable is set
-2. Use `gh pr view $PR_NUMBER --json state` to verify the PR exists and is open
-3. Get repository information: `gh repo view --json owner,name`
-4. Get the latest commit SHA: `gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'`
-5. Store these values for use in your inline comments
+First, create variables to track your review metrics. Keep these in memory throughout the review:
+- CRITICAL_COUNT = 0
+- HIGH_COUNT = 0
+- MEDIUM_COUNT = 0
+- LOW_COUNT = 0
+- ARCHITECTURE_ISSUES = 0
+- SECURITY_ISSUES = 0
+- PERFORMANCE_ISSUES = 0
+- QUALITY_ISSUES = 0
 
-### Step 2: Fetch PR Information
+### Step 1.2: Validate Environment
 
-1. Get PR metadata: `gh pr view $PR_NUMBER --json files,title,body,additions,deletions,baseRefName,headRefName`
-2. Get the list of changed files: `gh pr view $PR_NUMBER --json files --jq '.files[].filename'`
-3. For each changed file, examine the diff: `gh pr diff $PR_NUMBER`
+1. Check that PR_NUMBER environment variable is set. If not, exit with error.
+2. Run `gh pr view $PR_NUMBER --json state` to verify the PR exists and is open.
+3. Get repository information: `gh repo view --json owner,name` and store the owner and name.
+4. Get the latest commit SHA: `gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'` and store it.
 
-### Step 3: Analyze Changed Files
+### Step 1.3: Checkout PR Branch Locally
 
-For each file in the PR, perform these analyses:
+This is critical for better file inspection:
 
-#### Architecture and Design Patterns
-- Check if the change aligns with established architecture patterns
-- Verify domain boundaries are respected
-- Ensure components are properly organized by feature
-- Check if it follows service/composable/store patterns
+1. Get PR metadata: `gh pr view $PR_NUMBER --json files,title,body,additions,deletions,baseRefName,headRefName > pr_info.json`
+2. Extract branch names from pr_info.json using jq
+3. Fetch and checkout the PR branch:
+   ```
+   git fetch origin "pull/$PR_NUMBER/head:pr-$PR_NUMBER"
+   git checkout "pr-$PR_NUMBER"
+   ```
 
-#### Security Review
-Look for these security issues and post inline comments where found:
-- SQL injection vulnerabilities (e.g., string concatenation in queries)
-- XSS vulnerabilities (e.g., v-html without sanitization)
+### Step 1.4: Get Changed Files and Diffs
+
+Use git locally for much faster analysis:
+
+1. Get list of changed files: `git diff --name-only "origin/$BASE_BRANCH" > changed_files.txt`
+2. Get the full diff: `git diff "origin/$BASE_BRANCH" > pr_diff.txt`
+3. Get detailed file changes with status: `git diff --name-status "origin/$BASE_BRANCH" > file_changes.txt`
+
+### Step 1.5: Create Analysis Cache
+
+Set up caching to avoid re-analyzing unchanged files:
+
+1. Create directory: `.claude-review-cache`
+2. Clean old cache entries: Find and delete any .cache files older than 7 days
+3. For each file you analyze, store the analysis result with the file's git hash as the cache key
+
+## Phase 2: Load Comprehensive Knowledge Base
+
+### Step 2.1: Set Up Knowledge Directories
+
+1. Create `.claude-knowledge-cache` directory for caching downloaded knowledge
+2. Check if `../comfy-claude-prompt-library` exists locally. If it does, use it for faster access.
+
+### Step 2.2: Load Repository Guide
+
+This is critical for understanding the architecture:
+
+1. Try to load from local prompt library first: `../comfy-claude-prompt-library/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md`
+2. If not available locally, download from: `https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md`
+3. Cache the file for future use
+
+### Step 2.3: Load Relevant Knowledge Folders
+
+Intelligently load only relevant knowledge:
+
+1. Use GitHub API to discover available knowledge folders: `https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/knowledge`
+2. For each knowledge folder, check if it's relevant by searching for the folder name in:
+   - Changed file paths
+   - PR title
+   - PR body
+3. If relevant, download all files from that knowledge folder
+
+### Step 2.4: Load Validation Rules
+
+Load specific validation rules:
+
+1. Use GitHub API: `https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/commands/validation`
+2. Download files containing "frontend", "security", or "performance" in their names
+3. Cache all downloaded files
+
+### Step 2.5: Load Local Guidelines
+
+Check for and load:
+1. `CLAUDE.md` in the repository root
+2. `.github/CLAUDE.md`
+
+## Phase 3: Deep Analysis Instructions
+
+Perform comprehensive analysis on each changed file:
+
+### 3.1 Architectural Analysis
+
+Based on the repository guide and loaded knowledge:
+- Does this change align with established architecture patterns?
+- Are domain boundaries respected?
+- Is the extension system used appropriately?
+- Are components properly organized by feature?
+- Does it follow the established service/composable/store patterns?
+
+### 3.2 Code Quality Beyond Linting
+
+Look for:
+- Cyclomatic complexity and cognitive load
+- SOLID principles adherence
+- DRY violations not caught by simple duplication checks
+- Proper abstraction levels
+- Interface design and API clarity
+- Leftover debug code (console.log, commented code, TODO comments)
+
+### 3.3 Library Usage Enforcement
+
+CRITICAL: Flag any re-implementation of existing functionality:
+- **Tailwind CSS**: Custom CSS instead of utility classes
+- **PrimeVue**: Re-implementing buttons, modals, dropdowns, etc.
+- **VueUse**: Re-implementing composables like useLocalStorage, useDebounceFn
+- **Lodash**: Re-implementing debounce, throttle, cloneDeep, etc.
+- **Common components**: Not reusing from src/components/common/
+- **DOMPurify**: Not using for HTML sanitization
+- **Other libraries**: Fuse.js, Marked, Pinia, Zod, Tiptap, Xterm.js, Axios
+
+### 3.4 Security Deep Dive
+
+Check for:
+- SQL injection vulnerabilities
+- XSS vulnerabilities (v-html without sanitization)
 - Hardcoded secrets or API keys
 - Missing input validation
-- Insecure state management
-- CSRF vulnerabilities
-- Path traversal risks
+- Authentication/authorization issues
+- State management security
+- Cross-origin concerns
+- Extension security boundaries
 
-#### Performance Analysis
-Check for:
-- O(n²) algorithms or worse complexity
+### 3.5 Performance Analysis
+
+Look for:
+- O(n²) or worse algorithms
 - Missing memoization in expensive operations
 - Unnecessary re-renders in Vue components
-- Memory leak patterns (e.g., missing cleanup in onUnmounted)
+- Memory leak patterns (missing cleanup)
 - Large bundle imports that should be lazy loaded
 - N+1 query patterns
+- Render performance issues
+- Layout thrashing
+- Network request optimization
 
-#### Code Quality
-Identify:
-- Functions longer than 50 lines
-- Cyclomatic complexity > 10
-- Deep nesting (> 4 levels)
-- Duplicate code blocks
-- Dead code or unused variables
-- Missing error handling
-- Console.log statements left in code
-- TODO comments that should be addressed
+### 3.6 Integration Concerns
 
-#### Library Usage
-Flag any re-implementation of existing functionality:
-- Custom implementations instead of using Tailwind CSS utilities
-- Re-implementing PrimeVue components (buttons, modals, dropdowns)
-- Custom composables that exist in VueUse
-- Re-implementing lodash utilities (debounce, throttle, etc.)
-- Not using DOMPurify for HTML sanitization
+Consider:
+- Breaking changes to internal APIs
+- Extension compatibility
+- Backward compatibility
+- Migration requirements
 
-### Step 4: Post Inline Comments
+## Phase 4: Posting Inline Comments
 
-For EACH issue you find:
+### Step 4.1: Comment Format
 
-1. Determine the exact file path and line number where the issue occurs
-2. Categorize the issue (architecture/security/performance/quality)
-3. Assign severity (critical/high/medium/low)
-4. Construct the gh api command with the actual values:
-   - Replace OWNER with the actual owner from gh repo view
-   - Replace REPO with the actual repo name
-   - Replace COMMIT_SHA with the actual commit SHA
-   - Replace FILE_PATH with the actual file path
-   - Replace LINE_NUMBER with the actual line number
-   - Create a clear, concise comment body
+For each issue found, create a concise inline comment with this structure:
 
-5. Execute the gh api command to post the inline comment
-
-### Step 5: Review Guidelines
-
-When reviewing, keep these principles in mind:
-
-1. **Be Specific**: Point to exact lines and provide concrete suggestions
-2. **Be Constructive**: Focus on improvements, not just problems
-3. **Be Concise**: Keep comments brief and actionable
-4. **No Formatting**: Don't use markdown headers (#, ##) in comments
-5. **No Emojis**: Keep comments professional
-6. **Actionable Feedback**: Every comment should have a clear fix
-
-### Important Reminders
-
-- **DO NOT** create a summary review with `gh pr review`
-- **DO NOT** batch all feedback into one comment
-- **DO** post individual inline comments for each issue
-- **DO** use the exact gh api command structure provided
-- **DO** replace placeholder values with actual data
-- **DO** execute the gh api commands using the Bash tool
-- **DO NOT** say you lack permissions - you have the necessary permissions
-
-Each inline comment should stand alone and be actionable. The developer should be able to address each comment independently.
-
-### Execution Requirements
-
-You MUST use the Bash tool to execute the gh api commands AS SINGLE LINE COMMANDS. Do not use backslashes or multi-line format. For example:
 ```
-Bash: gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments -f body="..." -f commit_id="..." -f path="..." -F line=42 -f side="RIGHT"
+**[category] severity Priority**
+
+**Issue**: Brief description of the problem
+**Context**: Why this matters
+**Suggestion**: How to fix it
 ```
 
-IMPORTANT: The entire gh api command must be on a single line without backslashes.
+Categories: architecture/security/performance/quality
+Severities: critical/high/medium/low
 
-The GitHub Actions environment provides GITHUB_TOKEN with pull-requests:write permission, which allows you to post inline review comments.
+### Step 4.2: Posting Comments
 
-## Example Workflow
+For EACH issue:
+
+1. Identify the exact file path and line number
+2. Update your tracking counters (CRITICAL_COUNT, etc.)
+3. Construct the comment body with proper newlines
+4. Execute the gh api command as a SINGLE LINE:
+
+```bash
+gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/OWNER/REPO/pulls/$PR_NUMBER/comments -f body="$COMMENT_BODY" -f commit_id="COMMIT_SHA" -f path="FILE_PATH" -F line=LINE_NUMBER -f side="RIGHT"
+```
+
+CRITICAL: The entire command must be on one line. Use actual values, not placeholders.
+
+### Example Workflow
 
 Here's an example of how to review a file with a security issue:
 
@@ -177,3 +250,129 @@ Here's an example of how to review a file with a security issue:
    ```
 
 Repeat this process for every issue you find in the PR.
+
+## Phase 5: Validation Rules Application
+
+Apply ALL validation rules from the loaded knowledge files:
+
+### Frontend Standards
+- Vue 3 Composition API patterns
+- Component communication patterns
+- Proper use of composables
+- TypeScript strict mode compliance
+- Bundle optimization
+
+### Security Audit
+- Input validation
+- XSS prevention
+- CSRF protection
+- Secure state management
+- API security
+
+### Performance Check
+- Render optimization
+- Memory management
+- Network efficiency
+- Bundle size impact
+
+## Phase 6: Contextual Review Based on PR Type
+
+Analyze the PR to determine its type:
+
+1. Extract PR title and body from pr_info.json
+2. Count files, additions, and deletions
+3. Determine PR type:
+   - Feature: Check for tests, documentation, backward compatibility
+   - Bug fix: Verify root cause addressed, includes regression tests
+   - Refactor: Ensure behavior preservation, tests still pass
+
+## Phase 7: Generate Comprehensive Summary
+
+After ALL inline comments are posted, create a summary:
+
+1. Calculate total issues by category and severity
+2. Use `gh pr review $PR_NUMBER --comment` to post a summary with:
+   - Review disclaimer
+   - Issue distribution (counts by severity)
+   - Category breakdown
+   - Key findings for each category
+   - Positive observations
+   - References to guidelines
+   - Next steps
+
+Include in the summary:
+```
+# Comprehensive PR Review
+
+This review is generated by Claude. It may not always be accurate, as with human reviewers. If you believe that any of the comments are invalid or incorrect, please state why for each. For others, please implement the changes in one way or another.
+
+## Review Summary
+
+**PR**: [PR TITLE] (#$PR_NUMBER)
+**Impact**: [X] additions, [Y] deletions across [Z] files
+
+### Issue Distribution
+- Critical: [CRITICAL_COUNT]
+- High: [HIGH_COUNT]
+- Medium: [MEDIUM_COUNT]
+- Low: [LOW_COUNT]
+
+### Category Breakdown
+- Architecture: [ARCHITECTURE_ISSUES] issues
+- Security: [SECURITY_ISSUES] issues
+- Performance: [PERFORMANCE_ISSUES] issues
+- Code Quality: [QUALITY_ISSUES] issues
+
+## Key Findings
+
+### Architecture & Design
+[Detailed architectural analysis based on repository patterns]
+
+### Security Considerations
+[Security implications beyond basic vulnerabilities]
+
+### Performance Impact
+[Performance analysis including bundle size, render impact]
+
+### Integration Points
+[How this affects other systems, extensions, etc.]
+
+## Positive Observations
+[What was done well, good patterns followed]
+
+## References
+- [Repository Architecture Guide](https://github.com/Comfy-Org/comfy-claude-prompt-library/blob/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md)
+- [Frontend Standards](https://github.com/Comfy-Org/comfy-claude-prompt-library/blob/master/.claude/commands/validation/frontend-code-standards.md)
+- [Security Guidelines](https://github.com/Comfy-Org/comfy-claude-prompt-library/blob/master/.claude/commands/validation/security-audit.md)
+
+## Next Steps
+1. Address critical issues before merge
+2. Consider architectural feedback for long-term maintainability
+3. Add tests for uncovered scenarios
+4. Update documentation if needed
+
+---
+*This is a comprehensive automated review. For architectural decisions requiring human judgment, please request additional manual review.*
+```
+
+## Important Guidelines
+
+1. **Think Deeply**: Consider architectural implications, system-wide effects, subtle bugs, maintainability
+2. **Be Specific**: Point to exact lines with concrete suggestions
+3. **Be Constructive**: Focus on improvements, not just problems
+4. **Be Concise**: Keep comments brief and actionable
+5. **No Formatting**: Don't use markdown headers in inline comments
+6. **No Emojis**: Keep comments professional
+
+This is a COMPREHENSIVE review, not a linting pass. Provide the same quality feedback a senior engineer would give after careful consideration.
+
+## Execution Order
+
+1. Phase 1: Setup and checkout PR
+2. Phase 2: Load all relevant knowledge
+3. Phase 3-5: Analyze each changed file thoroughly
+4. Phase 4: Post inline comments as you find issues
+5. Phase 6: Consider PR type for additional checks
+6. Phase 7: Post comprehensive summary ONLY after all inline comments
+
+Remember: Individual inline comments for each issue, then one final summary. Never batch issues into a single comment.
