@@ -21,7 +21,10 @@ const createOutputs = (
 ): ExecutedWsMessage['output'] => {
   return {
     images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map((image) => isAnimated && image.endsWith('.webp'))
+    animated: filenames.map(
+      (image) =>
+        isAnimated && (image.endsWith('.webp') || image.endsWith('.png'))
+    )
   }
 }
 
