@@ -1189,20 +1189,32 @@ describe('useNodePricing', () => {
         expect(getNodeDisplayPrice(detailedNode)).toBe('$0.2/Run')
       })
 
-      it('should handle various Tripo model version formats', () => {
+      it('should handle various Tripo parameter combinations', () => {
         const { getNodeDisplayPrice } = useNodePricing()
 
-        // Test different model version formats
+        // Test different parameter combinations
         const testCases = [
-          { model: 'v2.0-20240919', expected: '$0.2/Run' },
-          { model: 'v2.5-20250123', expected: '$0.2/Run' },
-          { model: 'v1.4', expected: '$0.2/Run' },
-          { model: 'unknown-model', expected: '$0.2/Run' }
+          { quad: false, style: 'none', texture: false, expected: '$0.10/Run' },
+          {
+            quad: false,
+            style: 'any style',
+            texture: false,
+            expected: '$0.15/Run'
+          },
+          { quad: true, style: 'none', texture: false, expected: '$0.20/Run' },
+          {
+            quad: true,
+            style: 'any style',
+            texture: false,
+            expected: '$0.25/Run'
+          }
         ]
 
-        testCases.forEach(({ model, expected }) => {
+        testCases.forEach(({ quad, style, texture, expected }) => {
           const node = createMockNode('TripoTextToModelNode', [
-            { name: 'model_version', value: model },
+            { name: 'quad', value: quad },
+            { name: 'style', value: style },
+            { name: 'texture', value: texture },
             { name: 'texture_quality', value: 'standard' }
           ])
           expect(getNodeDisplayPrice(node)).toBe(expected)

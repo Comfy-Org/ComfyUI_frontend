@@ -1061,60 +1061,113 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     // Tripo nodes - using actual node names from ComfyUI
     TripoTextToModelNode: {
       displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model' || w.name === 'model_version'
+        const quadWidget = node.widgets?.find(
+          (w) => w.name === 'quad'
+        ) as IComboWidget
+        const styleWidget = node.widgets?.find(
+          (w) => w.name === 'style'
+        ) as IComboWidget
+        const textureWidget = node.widgets?.find(
+          (w) => w.name === 'texture'
         ) as IComboWidget
         const textureQualityWidget = node.widgets?.find(
           (w) => w.name === 'texture_quality'
         ) as IComboWidget
 
-        if (!modelWidget)
-          return '$0.2-0.3/Run (varies with model & texture quality)'
+        if (!quadWidget || !styleWidget || !textureWidget)
+          return '$0.1-0.4/Run (varies with quad, style, texture & quality)'
 
-        const model = String(modelWidget.value)
-        const textureQuality = String(textureQualityWidget?.value || 'standard')
+        const quad = String(quadWidget.value).toLowerCase() === 'true'
+        const style = String(styleWidget.value).toLowerCase()
+        const texture = String(textureWidget.value).toLowerCase() === 'true'
+        const textureQuality = String(
+          textureQualityWidget?.value || 'standard'
+        ).toLowerCase()
 
-        // V2.5 pricing
-        if (model.includes('v2.5') || model.includes('2.5')) {
-          return textureQuality.includes('detailed') ? '$0.3/Run' : '$0.2/Run'
-        }
-        // V2.0 pricing
-        else if (model.includes('v2.0') || model.includes('2.0')) {
-          return textureQuality.includes('detailed') ? '$0.3/Run' : '$0.2/Run'
-        }
-        // V1.4 or legacy pricing
-        else {
-          return '$0.2/Run'
+        // Pricing logic based on CSV data
+        if (style.includes('none')) {
+          if (!quad) {
+            if (!texture) return '$0.10/Run'
+            else return '$0.15/Run'
+          } else {
+            if (textureQuality.includes('detailed')) {
+              if (!texture) return '$0.30/Run'
+              else return '$0.35/Run'
+            } else {
+              if (!texture) return '$0.20/Run'
+              else return '$0.25/Run'
+            }
+          }
+        } else {
+          // any style
+          if (!quad) {
+            if (!texture) return '$0.15/Run'
+            else return '$0.20/Run'
+          } else {
+            if (textureQuality.includes('detailed')) {
+              if (!texture) return '$0.35/Run'
+              else return '$0.40/Run'
+            } else {
+              if (!texture) return '$0.25/Run'
+              else return '$0.30/Run'
+            }
+          }
         }
       }
     },
     TripoImageToModelNode: {
       displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model' || w.name === 'model_version'
+        const quadWidget = node.widgets?.find(
+          (w) => w.name === 'quad'
+        ) as IComboWidget
+        const styleWidget = node.widgets?.find(
+          (w) => w.name === 'style'
+        ) as IComboWidget
+        const textureWidget = node.widgets?.find(
+          (w) => w.name === 'texture'
         ) as IComboWidget
         const textureQualityWidget = node.widgets?.find(
           (w) => w.name === 'texture_quality'
         ) as IComboWidget
 
-        if (!modelWidget)
-          return '$0.3-0.4/Run (varies with model & texture quality)'
+        if (!quadWidget || !styleWidget || !textureWidget)
+          return '$0.2-0.5/Run (varies with quad, style, texture & quality)'
 
-        const model = String(modelWidget.value)
-        const textureQuality = String(textureQualityWidget?.value || 'standard')
+        const quad = String(quadWidget.value).toLowerCase() === 'true'
+        const style = String(styleWidget.value).toLowerCase()
+        const texture = String(textureWidget.value).toLowerCase() === 'true'
+        const textureQuality = String(
+          textureQualityWidget?.value || 'standard'
+        ).toLowerCase()
 
-        // V2.5 and V2.0 have same pricing structure
-        if (
-          model.includes('v2.5') ||
-          model.includes('2.5') ||
-          model.includes('v2.0') ||
-          model.includes('2.0')
-        ) {
-          return textureQuality.includes('detailed') ? '$0.4/Run' : '$0.3/Run'
-        }
-        // V1.4 or legacy pricing (image_to_model is always $0.3)
-        else {
-          return '$0.3/Run'
+        // Pricing logic based on CSV data for Image to Model
+        if (style.includes('none')) {
+          if (!quad) {
+            if (!texture) return '$0.20/Run'
+            else return '$0.25/Run'
+          } else {
+            if (textureQuality.includes('detailed')) {
+              if (!texture) return '$0.40/Run'
+              else return '$0.45/Run'
+            } else {
+              if (!texture) return '$0.30/Run'
+              else return '$0.35/Run'
+            }
+          }
+        } else {
+          // any style
+          if (!quad) {
+            if (!texture) return '$0.25/Run'
+            else return '$0.30/Run'
+          } else {
+            if (textureQuality.includes('detailed')) {
+              if (!texture) return '$0.45/Run'
+              else return '$0.50/Run'
+            } else {
+              if (!texture) return '$0.35/Run'
+              else return '$0.40/Run'
+            }
+          }
         }
       }
     },
