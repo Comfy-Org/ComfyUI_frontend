@@ -57,8 +57,7 @@ export const useMissingNodes = () => {
   }
 
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
-    const allNodes = collectAllNodes(app.graph)
-    const missingNodes = allNodes.filter(isMissingCoreNode)
+    const missingNodes = collectAllNodes(app.graph, isMissingCoreNode)
     return groupBy(missingNodes, (node) => String(node.properties?.ver || ''))
   })
 
