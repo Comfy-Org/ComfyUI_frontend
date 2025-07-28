@@ -422,7 +422,7 @@ export function useConflictDetection() {
 
   /**
    * Fetches Python import failure information from ComfyUI Manager.
-   * Gets installed packages and checks each one for import failures.
+   * Gets installed packages and checks each one for import failures using bulk API.
    * @returns Promise that resolves to import failure data
    */
   async function fetchImportFailInfo(): Promise<Record<string, any>> {
@@ -441,61 +441,32 @@ export function useConflictDetection() {
         return {}
       }
 
-      const importFailures: Record<string, any> = {}
+      const packageIds = installedPacks.value.map((pack) => pack.id || '')
 
-      // Check each installed package for import failures
-      // Process in smaller batches to avoid overwhelming the API
-      const packageIds = installedPacks.value.map((pack) => pack.id)
-      const batchSize = 10
+      // Use bulk API to get import failure info for all packages at once
+      const bulkResult = await comfyManagerService.getImportFailInfoBulk(
+        { cnr_ids: packageIds },
+        abortController.value?.signal
+      )
 
-      for (let i = 0; i < packageIds.length; i += batchSize) {
-        const batch = packageIds.slice(i, i + batchSize)
+      if (bulkResult) {
+        // Filter out null values (packages without import failures)
+        const importFailures: Record<string, any> = {}
 
-        const batchResults = await Promise.allSettled(
-          batch.map(async (packageId) => {
-            try {
-              // Try to get import failure info for this package using normalized ID
-              const failInfo = await comfyManagerService.getImportFailInfo(
-                { cnr_id: packageId },
-                abortController.value?.signal
-              )
-
-              if (failInfo) {
-                console.log(
-                  `[ConflictDetection] Import failure found for ${packageId}:`,
-                  failInfo
-                )
-                return { packageId, failInfo }
-              }
-            } catch (error) {
-              // If API returns 400, it means no import failure info available
-              // This is normal for packages that imported successfully
-              if (error && typeof error === 'object' && 'response' in error) {
-                const axiosError = error as any
-                if (axiosError.response?.status === 400) {
-                  return null // No failure info available (normal case)
-                }
-              }
-
-              console.warn(
-                `[ConflictDetection] Failed to check import failure for ${packageId}:`,
-                error
-              )
-            }
-            return null
-          })
-        )
-
-        // Process batch results
-        batchResults.forEach((result) => {
-          if (result.status === 'fulfilled' && result.value) {
-            const { packageId, failInfo } = result.value
-            importFailures[packageId || ''] = failInfo
+        Object.entries(bulkResult).forEach(([packageId, failInfo]) => {
+          if (failInfo !== null) {
+            importFailures[packageId] = failInfo
+            console.log(
+              `[ConflictDetection] Import failure found for ${packageId}:`,
+              failInfo
+            )
           }
         })
+
+        return importFailures
       }
 
-      return importFailures
+      return {}
     } catch (error) {
       console.warn(
         '[ConflictDetection] Failed to fetch import failure information:',
