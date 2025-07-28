@@ -3,7 +3,8 @@
     <span
       v-tooltip.bottom="{
         value: workflowOption.workflow.key,
-        class: 'workflow-tab-tooltip'
+        class: 'workflow-tab-tooltip',
+        showDelay: 512
       }"
       class="workflow-label text-sm max-w-[150px] min-w-[30px] truncate inline-block"
     >
