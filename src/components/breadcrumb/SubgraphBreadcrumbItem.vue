@@ -1,7 +1,10 @@
 <template>
   <a
     ref="wrapperRef"
-    v-tooltip.bottom="item.label"
+    v-tooltip.bottom="{
+      value: item.label,
+      showDelay: 512
+    }"
     href="#"
     class="cursor-pointer p-breadcrumb-item-link"
     :class="{
