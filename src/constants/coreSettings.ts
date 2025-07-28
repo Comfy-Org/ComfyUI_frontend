@@ -884,11 +884,5 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Release seen timestamp',
     type: 'hidden',
     defaultValue: 0
-  },
-  {
-    id: 'Comfy.VersionMismatch.DismissedVersion',
-    name: 'Dismissed version mismatch warning',
-    type: 'hidden',
-    defaultValue: ''
   }
 ]

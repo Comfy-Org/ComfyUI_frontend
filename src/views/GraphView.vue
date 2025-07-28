@@ -240,15 +240,10 @@ const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
 // It will be triggered automatically when the store is ready
 useFrontendVersionMismatchWarning({ immediate: true })
 
-// Initialize version compatibility check completely independently of app setup
-// This runs asynchronously after component setup and won't block the main application
 void nextTick(() => {
-  // Use setTimeout to ensure this happens after all other immediate tasks
-  setTimeout(() => {
-    versionCompatibilityStore.initialize().catch((error) => {
-      console.warn('Version compatibility check failed:', error)
-    })
-  }, 100) // Small delay to ensure app is fully loaded
+  versionCompatibilityStore.initialize().catch((error) => {
+    console.warn('Version compatibility check failed:', error)
+  })
 })
 
 const onGraphReady = () => {

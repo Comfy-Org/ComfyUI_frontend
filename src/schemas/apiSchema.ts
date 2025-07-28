@@ -486,8 +486,6 @@ const zSettings = z.object({
     "what's new seen"
   ]),
   'Comfy.Release.Timestamp': z.number(),
-  /** Version compatibility settings */
-  'Comfy.VersionMismatch.DismissedVersion': z.string(),
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),
