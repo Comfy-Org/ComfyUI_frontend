@@ -1,8 +1,10 @@
 <template>
-  <div class="w-64 mt-2">
-    <span class="pl-3 text-muted text-md font-semibold text-neutral-500">
-      {{ $t('manager.selectVersion') }}
-    </span>
+  <div class="w-64 pt-1">
+    <div class="py-2">
+      <span class="pl-3 text-md font-semibold text-neutral-500">
+        {{ $t('manager.selectVersion') }}
+      </span>
+    </div>
     <div
       v-if="isLoadingVersions || isQueueing"
       class="text-center text-muted py-4 flex flex-col items-center"
@@ -25,7 +27,10 @@
       option-value="value"
       :options="versionOptions"
       :highlight-on-select="false"
-      class="my-3 w-full max-h-[50vh] border-none shadow-none rounded-md"
+      class="w-full max-h-[50vh] border-none shadow-none rounded-md"
+      :pt="{
+        listContainer: { class: 'scrollbar-hide' }
+      }"
     >
       <template #option="slotProps">
         <div class="flex justify-between items-center w-full p-1">
@@ -59,9 +64,10 @@
       </template>
     </Listbox>
     <ContentDivider class="my-2" />
-    <div class="flex justify-end gap-2 p-1 px-3">
+    <div class="flex justify-end gap-2 py-1 px-3">
       <Button
         text
+        class="text-sm"
         severity="secondary"
         :label="$t('g.cancel')"
         :disabled="isQueueing"
@@ -70,7 +76,7 @@
       <Button
         severity="secondary"
         :label="$t('g.install')"
-        class="py-3 px-4 dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
+        class="py-2.5 px-4 text-sm dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
         :disabled="isQueueing"
         @click="handleSubmit"
       />

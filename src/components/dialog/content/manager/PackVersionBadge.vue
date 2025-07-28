@@ -21,7 +21,7 @@
     <Popover
       ref="popoverRef"
       :pt="{
-        content: { class: 'px-0' }
+        content: { class: 'p-0 shadow-lg' }
       }"
     >
       <PackVersionSelectorPopover
