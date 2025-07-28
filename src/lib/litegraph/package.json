@@ -1,0 +1,72 @@
+{
+  "name": "@comfyorg/litegraph",
+  "version": "0.16.3",
+  "type": "module",
+  "description": "A graph node editor similar to PD or UDK Blueprints. It works in an HTML5 Canvas and allows to export graphs to be included in applications.",
+  "main": "./dist/litegraph.umd.js",
+  "module": "./dist/litegraph.es.js",
+  "types": "./dist/litegraph.d.ts",
+  "style": "./dist/css/litegraph.css",
+  "exports": {
+    ".": {
+      "types": "./dist/litegraph.d.ts",
+      "import": "./dist/litegraph.es.js",
+      "require": "./dist/litegraph.umd.js"
+    },
+    "./style.css": "./dist/css/litegraph.css",
+    "./dist/*": "./dist/*.d.ts"
+  },
+  "directories": {
+    "doc": "doc"
+  },
+  "private": false,
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "watch": "vite build --watch",
+    "test": "vitest",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "lint:ci": "eslint src",
+    "format": "prettier --check './src/*.{js,ts,tsx,vue,mts}'",
+    "format:fix": "prettier --write './src/*.{js,ts,tsx,vue,mts}'",
+    "typecheck": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Comfy-Org/litegraph.js.git"
+  },
+  "author": "comfyorg",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "bugs": {
+    "url": "https://github.com/Comfy-Org/litegraph.js/issues"
+  },
+  "homepage": "https://github.com/Comfy-Org/litegraph.js",
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@stylistic/eslint-plugin": "^2.13.0",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^22.13.9",
+    "eslint": "^9.21.0",
+    "eslint-plugin-antfu": "^3.1.0",
+    "eslint-plugin-jsdoc": "^50.6.3",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unicorn": "^57.0.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "globals": "^15.12.0",
+    "husky": "^9.1.7",
+    "jsdom": "^25.0.1",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.26.0",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.1.3"
+  }
+}
