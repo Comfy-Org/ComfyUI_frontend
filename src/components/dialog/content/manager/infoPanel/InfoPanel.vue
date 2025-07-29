@@ -32,6 +32,7 @@
               :status-type="
                 nodePack.status as components['schemas']['NodeVersionStatus']
               "
+              :has-compatibility-issues="hasCompatibilityIssues"
             />
           </MetadataRow>
           <MetadataRow :label="t('manager.version')">
@@ -131,9 +132,9 @@ const conflictResult = computed((): ConflictDetectionResult | null => {
   return null
 })
 
-const hasCompatibilityIssues = computed(
-  () => conflictResult.value?.has_conflict ?? false
-)
+const hasCompatibilityIssues = computed(() => {
+  return isInstalled.value && conflictResult.value?.has_conflict ? true : false
+})
 
 const infoItems = computed<InfoItem[]>(() => [
   {
