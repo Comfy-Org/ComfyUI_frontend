@@ -855,26 +855,33 @@ export class ComfyApp {
   private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
     // Frontend only nodes registered by custom nodes.
     // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
-    const rawDefs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
-      Object.entries(LiteGraph.registered_node_types).map(([name, node]) => [
+
+    // Only create frontend_only definitions for nodes that don't have backend definitions
+    const frontendOnlyDefs: Record<string, ComfyNodeDefV1> = {}
+    for (const [name, node] of Object.entries(
+      LiteGraph.registered_node_types
+    )) {
+      // Skip if we already have a backend definition or system definition
+      if (name in defs || name in SYSTEM_NODE_DEFS) {
+        continue
+      }
+
+      frontendOnlyDefs[name] = {
         name,
-        {
-          name,
-          display_name: name,
-          category: node.category || '__frontend_only__',
-          input: { required: {}, optional: {} },
-          output: [],
-          output_name: [],
-          output_is_list: [],
-          output_node: false,
-          python_module: 'custom_nodes.frontend_only',
-          description: `Frontend only node for ${name}`
-        } as ComfyNodeDefV1
-      ])
-    )
+        display_name: name,
+        category: node.category || '__frontend_only__',
+        input: { required: {}, optional: {} },
+        output: [],
+        output_name: [],
+        output_is_list: [],
+        output_node: false,
+        python_module: 'custom_nodes.frontend_only',
+        description: `Frontend only node for ${name}`
+      } as ComfyNodeDefV1
+    }
 
     const allNodeDefs = {
-      ...rawDefs,
+      ...frontendOnlyDefs,
       ...defs,
       ...SYSTEM_NODE_DEFS
     }
