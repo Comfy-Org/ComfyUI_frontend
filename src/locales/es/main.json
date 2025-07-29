@@ -296,6 +296,7 @@
     "devices": "Dispositivos",
     "disableAll": "Deshabilitar todo",
     "disabling": "Deshabilitando",
+    "dismiss": "Descartar",
     "download": "Descargar",
     "edit": "Editar",
     "empty": "Vacío",
@@ -310,6 +311,8 @@
     "filter": "Filtrar",
     "findIssues": "Encontrar problemas",
     "firstTimeUIMessage": "Esta es la primera vez que usas la nueva interfaz. Elige \"Menú > Usar nuevo menú > Desactivado\" para restaurar la antigua interfaz.",
+    "frontendNewer": "La versión del frontend {frontendVersion} puede no ser compatible con la versión del backend {backendVersion}.",
+    "frontendOutdated": "La versión del frontend {frontendVersion} está desactualizada. El backend requiere la versión {requiredVersion} o superior.",
     "goToNode": "Ir al nodo",
     "help": "Ayuda",
     "icon": "Icono",
@@ -389,11 +392,14 @@
     "unknownError": "Error desconocido",
     "update": "Actualizar",
     "updateAvailable": "Actualización Disponible",
+    "updateFrontend": "Actualizar frontend",
     "updated": "Actualizado",
     "updating": "Actualizando",
     "upload": "Subir",
     "usageHint": "Sugerencia de uso",
     "user": "Usuario",
+    "versionMismatchWarning": "Advertencia de compatibilidad de versión",
+    "versionMismatchWarningMessage": "{warning}: {detail} Visita https://docs.comfy.org/installation/update_comfyui#common-update-issues para obtener instrucciones de actualización.",
     "videoFailedToLoad": "Falló la carga del video",
     "workflow": "Flujo de trabajo"
   },
@@ -1601,6 +1607,13 @@
     "personalDataConsentRequired": "Debes aceptar el procesamiento de tus datos personales.",
     "prefix": "Debe comenzar con {prefix}",
     "required": "Requerido"
+  },
+  "versionMismatchWarning": {
+    "dismiss": "Descartar",
+    "frontendNewer": "La versión del frontend {frontendVersion} puede no ser compatible con la versión del backend {backendVersion}.",
+    "frontendOutdated": "La versión del frontend {frontendVersion} está desactualizada. El backend requiere la versión {requiredVersion} o superior.",
+    "title": "Advertencia de compatibilidad de versión",
+    "updateFrontend": "Actualizar frontend"
   },
   "welcome": {
     "getStarted": "Empezar",
