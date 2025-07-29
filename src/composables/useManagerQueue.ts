@@ -1,5 +1,5 @@
 import { useEventListener, whenever } from '@vueuse/core'
-import { pickBy } from 'lodash'
+import { mapKeys, pickBy } from 'lodash'
 import { Ref, computed, ref } from 'vue'
 
 import { app } from '@/scripts/app'
@@ -90,7 +90,15 @@ export const useManagerQueue = (
     taskHistory.value = filterHistoryByClientId(state.history)
 
     if (state.installed_packs) {
-      installedPacks.value = state.installed_packs
+      // The keys are 'cleaned' by stripping the version suffix.
+      // The pack object itself (the value) still contains the version info.
+      const packsWithCleanedKeys = mapKeys(
+        state.installed_packs,
+        (_value, key) => {
+          return key.split('@')[0]
+        }
+      )
+      installedPacks.value = packsWithCleanedKeys
     }
     updateProcessingState()
   }
