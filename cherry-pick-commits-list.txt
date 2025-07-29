@@ -1,0 +1,46 @@
+# Or one by one (IN ORDER):
+git cherry-pick eb63b5c53610943051f89bfb221ba9a62994a49b  # 1.  Add Traditional Chinese language 
+git cherry-pick 43f73f88560884d6e989b0963396e2d68d664770  # 2. Correct the translation for 'Credits' in
+git cherry-pick 5c119fcbda7f3e195b480c79619b7afc2e5f442f  # 3. Improve execution logic / Fix group node
+git cherry-pick ef9b6252080ee7d663425570b01480f4ab099735  # 4. Fix DTO return type to allow clean test/
+git cherry-pick 19eaf6ecdc078679eed96ea0f38b51ccbe3e3c43  # 5. Fix SubgraphNode widget values ignored (
+git cherry-pick 01c735d94316eb34b031e5436aaae2bb09805edf  # 6. Fix cannot check widget value if undefin
+git cherry-pick a70d69cbd26be18ef0626e75b9b32870a50f1902  # 7.  Sync subgraph node title changes w
+git cherry-pick 1200c07fcd6e14a4c3a8734468bd6cf694c23205  # 8. Add support for Feature Flags (#4439)
+git cherry-pick 11eff4981febe5ed790ec21269b8ec9217c77b30  # 9. Fix Help Center changelog toast overflow
+git cherry-pick ed1d944e0e4f851cfd1d90c8b2c68bda0fd9cdbb  # 10. [3d] remove unnecessary uploadTexture (#
+git cherry-pick a39f6e676364fa419b65a4e541b70be6643710c0  # 11.  DOM widget promotion for subgraph
+git cherry-pick 61611fb0cba3fa14e57081a0c502df232465c1c8  # 12.  Add pricing for new API nodes (#4
+git cherry-pick 7b32a2fb6e9da5194f7877694fe56762373092e5  # 13.  Add browser tests for subgraph f
+git cherry-pick 280131d33dddfe672de03b7a2e4478894faa9d44  # 14.  Node Definition Filter Registry S
+git cherry-pick ff68c421628b3aafe9bad09ed7f8a97aa45f623a  # 15.  Hide subgraph nodes from node lib
+git cherry-pick 7eb3eb24737cc0634c0b85025010927d5e597b7d  # 16. Update the frontend to support async nod
+git cherry-pick b0968509f9b33a647107b710189bb137628a0436  # 17. Fix progress stuck after execution inter
+git cherry-pick c06bc63c6fcc5043a59a7198db33f04f28662391  # 18.  Update node output system to use 
+git cherry-pick 4d0ba197a83edf2dc6c66d84c94ed5f7fc0ab974  # 19. [Cleanup] Remove deprecated: node def va
+git cherry-pick 271643aa936c0f400811c0903237e31a32404717  # 20.  Fix failing test case that uses o
+git cherry-pick 344afa21a7b6b6694608540b291595ed065d187a  # 21. minimap (#4520)
+git cherry-pick b1436a068b663ce8d070407d2fee99b052cf9a3c  # 22.  sync subgraph node titles with br
+git cherry-pick 7fe4c07a9c8964a7dee25ecc6bfdc06f2d850fd3  # 23.  Preserve subgraph structure when c
+git cherry-pick 680c09a5847bf0f98f06f9be3881b59abf23d295  # 24.  Detect missing nodes in subgraphs 
+git cherry-pick b1fc8846a3e532cd272e8d23caa82367a7934d74  # 25.  Update API node pricing for multip
+git cherry-pick 98d694f7e3c3c2ad6eeb8bae28b768f6e33dd732  # 26.  Prevent incorrect 'frontend_only' 
+git cherry-pick dd14144f47a4dd1b1ce20fe5ac44eadd071f0a28  # 27.  Update Search & Replace to support
+git cherry-pick 4b75528c39351abd1e14bcce9d7708b45acbb352  # 28.  Fix graph configuration callbacks 
+git cherry-pick cf072b84209550cc3771012ff60872869e1725d3  # 29.  Fix link input slots not being upd
+git cherry-pick 5c71854a96714bb112b045ab58644e2488752212  # 30.  Enable CI tests for all feature bra
+git cherry-pick 516eb26d3e6f3278f9774f8879d23c7e67a0efb0  # 31.  Add custom icon system with workf
+git cherry-pick b370b6387dd44d872821f3a3bef88c21139da38d  # 32.  DOM widgets lose correct positioni
+git cherry-pick f987cf9dbdc8eabf4c5e7eed65473d48c316783d  # 33.  Improve SubgraphNode badge with s
+git cherry-pick 2c84ecbf6ef01a18e54da18be7c3ad1568e11ed2  # 34.  Make minimap reactive to subgraph 
+git cherry-pick b2b50ac0125db8e4f12fa80794b89f0dddb1ef82  # 35. [Style] Update "convert to subgraph" ico
+git cherry-pick aabea4b78dcd258086f5c9c1fb008cf0683808f1  # 36.  Viewport persistence for subgraph
+git cherry-pick b125e0aa3a3fbf2235e241f3fb9992ba495a7109  # 37.  Move partial execution to the bac
+git cherry-pick baea47c49355fca241233e3c157fea6adebeae9c  # 38. Extract selection filtering logic to use
+git cherry-pick eae4b954d0e576866fe1bf6e24525a7fcea3f21f  # 39.  Preserve per-workflow subgraph nav
+git cherry-pick 47e18088611f905588deb6912524ea233daab491  # 40.  Toggle bypass/mute of subgraph nod
+git cherry-pick 61c9341450f56f892cc7673b33de8a1fb799df3e  # 41.  Add type guard for SubgraphDefinit
+git cherry-pick dc395f5d6d3fbd2c457dce566b299a21ac02a4aa  # 42.  Fix viewport sync in minimap and s
+git cherry-pick 4c6e7f106bbfcde18c3aa63150f5841506901f60  # 43.  Detect missing nodes in subgraphs 
+git cherry-pick f1aba23ee1c9716d5e8a89a9e666fd7c825ddac4  # 44.  Update litegraph to 0.17.0 (#465
+
