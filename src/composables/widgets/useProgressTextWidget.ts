@@ -1,10 +1,11 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { ref } from 'vue'
 
 import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
 
 const PADDING = 16
 

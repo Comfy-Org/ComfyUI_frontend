@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {

@@ -1,6 +1,3 @@
-import { LiteGraph } from '@comfyorg/litegraph'
-import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
-
 import { t } from '@/i18n'
 import {
   ComfyLink,
@@ -15,6 +12,8 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
+import { LiteGraph } from '../../lib/litegraph/src/litegraph'
+import { LGraphNode, type NodeId } from '../../lib/litegraph/src/litegraph'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ManageGroupDialog } from './groupNodeManage'

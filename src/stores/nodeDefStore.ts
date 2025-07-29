@@ -1,4 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import axios from 'axios'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
@@ -24,6 +23,8 @@ import {
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
+
+import type { LGraphNode } from '../lib/litegraph/src/litegraph'
 
 export class ComfyNodeDefImpl
   implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable

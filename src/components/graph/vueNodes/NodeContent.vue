@@ -12,12 +12,13 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LODLevel } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+
+import type { LGraphNode } from '../../../lib/litegraph/src/litegraph'
 
 interface NodeContentProps {
   node?: LGraphNode // For backwards compatibility

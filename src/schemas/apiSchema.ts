@@ -1,4 +1,3 @@
-import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
@@ -7,6 +6,8 @@ import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflowSchema'
 import { zKeybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+
+import { LinkMarkerShape } from '../lib/litegraph/src/litegraph'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()

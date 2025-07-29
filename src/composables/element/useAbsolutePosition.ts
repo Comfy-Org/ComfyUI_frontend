@@ -1,8 +1,9 @@
-import type { Size, Vector2 } from '@comfyorg/litegraph'
 import { CSSProperties, ref } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useCanvasStore } from '@/stores/graphStore'
+
+import type { Size, Vector2 } from '../../lib/litegraph/src/litegraph'
 
 export interface PositionConfig {
   /* The position of the element on litegraph canvas */

@@ -97,17 +97,18 @@ describe('useWidgetValue', () => {
       expect(mockEmit).toHaveBeenCalledWith('update:modelValue', 'new value')
     })
 
-    it('should call widget callback if it exists', () => {
-      const { onChange } = useWidgetValue({
-        widget: mockWidget,
-        modelValue: 'initial',
-        defaultValue: '',
-        emit: mockEmit
-      })
+    // useGraphNodeMaanger's createWrappedWidgetCallback makes the callback right now instead of useWidgetValue
+    // it('should call widget callback if it exists', () => {
+    //   const { onChange } = useWidgetValue({
+    //     widget: mockWidget,
+    //     modelValue: 'initial',
+    //     defaultValue: '',
+    //     emit: mockEmit
+    //   })
 
-      onChange('new value')
-      expect(mockWidget.callback).toHaveBeenCalledWith('new value')
-    })
+    //   onChange('new value')
+    //   expect(mockWidget.callback).toHaveBeenCalledWith('new value')
+    // })
 
     it('should not error if widget callback is undefined', () => {
       const widgetWithoutCallback = { ...mockWidget, callback: undefined }

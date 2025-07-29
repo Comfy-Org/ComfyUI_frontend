@@ -1,0 +1,8 @@
+{
+  "singleQuote": false,
+  "semi": false,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "overrides": [{ "files": "*.ts", "options": { "requirePragma": true } }],
+  "arrowParens": "avoid"
+}

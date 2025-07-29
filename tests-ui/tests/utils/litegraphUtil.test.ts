@@ -1,5 +1,3 @@
-import { ISerialisedGraph } from '@comfyorg/litegraph/dist/types/serialisation'
-import type { IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { describe, expect, it } from 'vitest'
 
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -7,6 +5,9 @@ import {
   compressWidgetInputSlots,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
+
+import { ISerialisedGraph } from '../../../src/lib/litegraph/src/types/serialisation'
+import type { IWidget } from '../../../src/lib/litegraph/src/types/widgets'
 
 describe('migrateWidgetsValues', () => {
   it('should remove widget values for forceInput inputs', () => {

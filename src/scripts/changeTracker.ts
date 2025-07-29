@@ -1,4 +1,3 @@
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import * as jsondiffpatch from 'jsondiffpatch'
 import _ from 'lodash'
 import log from 'loglevel'
@@ -9,6 +8,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
+import { LGraphCanvas, LiteGraph } from '../lib/litegraph/src/litegraph'
 import { api } from './api'
 import type { ComfyApp } from './app'
 import { app } from './app'

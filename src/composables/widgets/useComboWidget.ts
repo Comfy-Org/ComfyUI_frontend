@@ -1,5 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { ref } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
@@ -19,6 +17,8 @@ import {
   addValueControlWidgets
 } from '@/scripts/widgets'
 
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { IComboWidget } from '../../lib/litegraph/src/types/widgets'
 import { useRemoteWidget } from './useRemoteWidget'
 
 const getDefaultValue = (inputSpec: ComboInputSpec) => {

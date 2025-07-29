@@ -1,10 +1,10 @@
-import type { Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 import { computed, shallowReactive, shallowRef, watch } from 'vue'
 
 import { app } from '@/scripts/app'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
+import type { Subgraph } from '../lib/litegraph/src/litegraph'
 import { useWorkflowStore } from './workflowStore'
 
 /**

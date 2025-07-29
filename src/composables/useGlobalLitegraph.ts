@@ -8,7 +8,7 @@ import {
   LGraphNode,
   LLink,
   LiteGraph
-} from '@comfyorg/litegraph'
+} from '../lib/litegraph/src/litegraph'
 
 /**
  * Assign all properties of LiteGraph to window to make it backward compatible.

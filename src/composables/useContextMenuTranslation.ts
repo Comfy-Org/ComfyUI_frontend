@@ -1,13 +1,13 @@
+import { st, te } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+
 import type {
   IContextMenuOptions,
   IContextMenuValue,
   INodeInputSlot,
   IWidget
-} from '@comfyorg/litegraph'
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-
-import { st, te } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+} from '../lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '../lib/litegraph/src/litegraph'
 
 /**
  * Add translation for litegraph context menu.

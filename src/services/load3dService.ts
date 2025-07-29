@@ -1,9 +1,10 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+
+import type { LGraphNode } from '../lib/litegraph/src/litegraph'
 
 type Load3dReadyCallback = (load3d: Load3d | Load3dAnimation) => void
 

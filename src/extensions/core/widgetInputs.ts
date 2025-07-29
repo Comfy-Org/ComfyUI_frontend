@@ -1,14 +1,3 @@
-import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  ISlotType,
-  LLink,
-  Vector2
-} from '@comfyorg/litegraph'
-import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import {
   type CallbackParams,
   useChainCallback
@@ -20,6 +9,17 @@ import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'
+
+import { LGraphNode, LiteGraph } from '../../lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISlotType,
+  LLink,
+  Vector2
+} from '../../lib/litegraph/src/litegraph'
+import type { CanvasMouseEvent } from '../../lib/litegraph/src/types/events'
+import type { IBaseWidget } from '../../lib/litegraph/src/types/widgets'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {

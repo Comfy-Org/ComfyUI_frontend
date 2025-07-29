@@ -1,15 +1,14 @@
-import type { LGraph, NodeId } from '@comfyorg/litegraph'
-import {
-  ExecutableNodeDTO,
-  LGraphEventMode,
-  SubgraphNode
-} from '@comfyorg/litegraph'
-
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
 
+import type { LGraph, NodeId } from '../lib/litegraph/src/litegraph'
+import {
+  ExecutableNodeDTO,
+  LGraphEventMode,
+  SubgraphNode
+} from '../lib/litegraph/src/litegraph'
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**

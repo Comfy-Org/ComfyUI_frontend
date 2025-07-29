@@ -1,5 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 
 import {
@@ -8,6 +6,9 @@ import {
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { INumericWidget } from '../../lib/litegraph/src/types/widgets'
 
 function onFloatValueChange(this: INumericWidget, v: number) {
   this.value = this.options.round

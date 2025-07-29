@@ -1,7 +1,8 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
+
+import { LGraphNode } from '../../../src/lib/litegraph/src/litegraph'
 
 vi.mock('@/composables/widgets/useChatHistoryWidget', () => ({
   useChatHistoryWidget: () => {

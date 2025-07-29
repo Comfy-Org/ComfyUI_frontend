@@ -1,5 +1,4 @@
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-
+import { LGraphCanvas, LiteGraph } from '../../lib/litegraph/src/litegraph'
 import { app } from '../../scripts/app'
 
 let touchZooming = false

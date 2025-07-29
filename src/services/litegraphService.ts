@@ -1,22 +1,3 @@
-import {
-  type IContextMenuValue,
-  LGraphBadge,
-  LGraphCanvas,
-  LGraphEventMode,
-  LGraphNode,
-  LiteGraph,
-  RenderShape,
-  type Subgraph,
-  SubgraphNode,
-  type Vector2,
-  createBounds
-} from '@comfyorg/litegraph'
-import type {
-  ExportedSubgraphInstance,
-  ISerialisableNodeInput,
-  ISerialisableNodeOutput,
-  ISerialisedNode
-} from '@comfyorg/litegraph/dist/types/serialisation'
 import _ from 'lodash'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -47,6 +28,25 @@ import {
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
 
+import {
+  type IContextMenuValue,
+  LGraphBadge,
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph,
+  RenderShape,
+  type Subgraph,
+  SubgraphNode,
+  type Vector2,
+  createBounds
+} from '../lib/litegraph/src/litegraph'
+import type {
+  ExportedSubgraphInstance,
+  ISerialisableNodeInput,
+  ISerialisableNodeOutput,
+  ISerialisedNode
+} from '../lib/litegraph/src/types/serialisation'
 import { useExtensionService } from './extensionService'
 
 export const CONFIG = Symbol()

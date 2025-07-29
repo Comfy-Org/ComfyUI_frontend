@@ -12,6 +12,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "resolveJsonModule": true,
+    "noEmit": true,
 
     /* Linting */
     "strict": true,
@@ -38,5 +39,11 @@
     "tests-ui/**/*",
     "global.d.ts",
     "vite.config.mts"
+  ],
+  "exclude": [
+    "src/lib/litegraph/**/*"
+  ],
+  "references": [
+    { "path": "./src/lib/litegraph" }
   ]
 }

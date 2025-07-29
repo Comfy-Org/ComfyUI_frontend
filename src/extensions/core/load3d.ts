@@ -1,7 +1,3 @@
-import type {
-  IComboWidget,
-  IStringWidget
-} from '@comfyorg/litegraph/dist/types/widgets'
 import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
@@ -16,6 +12,11 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import { useToastStore } from '@/stores/toastStore'
+
+import type {
+  IComboWidget,
+  IStringWidget
+} from '../../lib/litegraph/src/types/widgets'
 
 useExtensionService().registerExtension({
   name: 'Comfy.Load3D',

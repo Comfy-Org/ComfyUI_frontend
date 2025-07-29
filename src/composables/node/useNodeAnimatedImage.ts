@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import { ANIM_PREVIEW_WIDGET } from '@/scripts/app'
 import { createImageHost } from '@/scripts/ui/imagePreview'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { IWidget } from '../../lib/litegraph/src/types/widgets'
 
 /**
  * Composable for handling animated image previews in nodes

@@ -1,4 +1,3 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onUnmounted, ref } from 'vue'
 
 import { useNodePacks } from '@/composables/nodePack/useNodePacks'
@@ -9,6 +8,8 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { SelectedVersion, UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+
+import { LGraphNode } from '../../lib/litegraph/src/litegraph'
 
 type WorkflowPack = {
   id:

@@ -1,10 +1,10 @@
-import { LinkMarkerShape, LiteGraph } from '@comfyorg/litegraph'
-
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
+
+import { LinkMarkerShape, LiteGraph } from '../lib/litegraph/src/litegraph'
 
 /**
  * Core settings are essential configuration parameters required for ComfyUI's basic functionality.

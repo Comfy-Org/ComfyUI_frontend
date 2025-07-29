@@ -2,12 +2,12 @@
  * Vue node lifecycle management for LiteGraph integration
  * Provides event-driven reactivity with performance optimizations
  */
-import type { LGraph, LGraphNode } from '@comfyorg/litegraph'
 import { nextTick, reactive, readonly } from 'vue'
 
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
+import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
 import { type Bounds, QuadTree } from '../../utils/spatial/QuadTree'
 
 export interface NodeState {

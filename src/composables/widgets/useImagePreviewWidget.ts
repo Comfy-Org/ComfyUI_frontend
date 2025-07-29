@@ -1,14 +1,3 @@
-import {
-  BaseWidget,
-  type CanvasPointer,
-  type LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@comfyorg/litegraph/dist/types/widgets'
-
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
@@ -16,6 +5,17 @@ import { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
+
+import {
+  BaseWidget,
+  type CanvasPointer,
+  type LGraphNode,
+  LiteGraph
+} from '../../lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '../../lib/litegraph/src/types/widgets'
 
 const renderPreview = (
   ctx: CanvasRenderingContext2D,

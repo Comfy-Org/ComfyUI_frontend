@@ -1,11 +1,11 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
 
 const PASTED_IMAGE_EXPIRY_MS = 2000
 

@@ -1,6 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
@@ -12,6 +9,9 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/formatUtil'
 import { addToComboValues } from '@/utils/litegraphUtil'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import { IComboWidget } from '../../lib/litegraph/src/types/widgets'
 
 const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
 const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'

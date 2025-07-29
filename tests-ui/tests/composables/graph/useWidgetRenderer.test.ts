@@ -37,7 +37,7 @@ describe('useWidgetRenderer', () => {
       it('should map multiline text types to TEXTAREA widget', () => {
         expect(getWidgetComponent('multiline')).toBe(WidgetType.TEXTAREA)
         expect(getWidgetComponent('textarea')).toBe(WidgetType.TEXTAREA)
-        expect(getWidgetComponent('MARKDOWN')).toBe(WidgetType.TEXTAREA)
+        expect(getWidgetComponent('MARKDOWN')).toBe(WidgetType.MARKDOWN)
         expect(getWidgetComponent('customtext')).toBe(WidgetType.TEXTAREA)
       })
     })

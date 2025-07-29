@@ -1,7 +1,8 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { describe, expect, it } from 'vitest'
 
 import { applyTextReplacements } from '@/utils/searchAndReplace'
+
+import type { LGraphNode } from '../../../src/lib/litegraph/src/litegraph'
 
 describe('applyTextReplacements', () => {
   // Test specifically the filename sanitization part

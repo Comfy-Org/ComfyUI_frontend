@@ -1,5 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
 import {
   type InputSpec,
   isStringInputSpec
@@ -7,6 +5,8 @@ import {
 import { app } from '@/scripts/app'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
 
 function addMultilineWidget(
   node: LGraphNode,

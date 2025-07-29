@@ -1,8 +1,3 @@
-import { LGraphNode, LegacyWidget, LiteGraph } from '@comfyorg/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import { type Component, toRaw } from 'vue'
 
@@ -10,6 +5,16 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
+
+import {
+  LGraphNode,
+  LegacyWidget,
+  LiteGraph
+} from '../lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '../lib/litegraph/src/types/widgets'
 
 export interface BaseDOMWidget<V extends object | string = object | string>
   extends IBaseWidget<V, string, DOMWidgetOptions<V>> {

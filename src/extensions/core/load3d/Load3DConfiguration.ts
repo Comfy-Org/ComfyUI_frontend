@@ -1,9 +1,9 @@
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { api } from '@/scripts/api'
 import { useSettingStore } from '@/stores/settingStore'
+
+import type { IBaseWidget } from '../../../lib/litegraph/src/types/widgets'
 
 class Load3DConfiguration {
   constructor(private load3d: Load3d) {}

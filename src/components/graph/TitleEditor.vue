@@ -13,8 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import { LGraphGroup, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
-import type { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 import { type CSSProperties, computed, ref, watch } from 'vue'
 
@@ -23,6 +21,13 @@ import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { app } from '@/scripts/app'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '../../lib/litegraph/src/litegraph'
+import type { LiteGraphCanvasEvent } from '../../lib/litegraph/src/litegraph'
 
 const settingStore = useSettingStore()
 

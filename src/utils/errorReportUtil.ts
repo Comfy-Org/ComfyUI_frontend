@@ -1,7 +1,7 @@
-import type { ISerialisedGraph } from '@comfyorg/litegraph'
-
 import type { SystemStats } from '@/schemas/apiSchema'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+
+import type { ISerialisedGraph } from '../lib/litegraph/src/litegraph'
 
 export interface ErrorReportData {
   exceptionType: string

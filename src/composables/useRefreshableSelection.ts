@@ -1,9 +1,10 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { computed, ref, watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/stores/graphStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+
+import type { LGraphNode } from '../lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '../lib/litegraph/src/types/widgets'
 
 interface RefreshableItem {
   refresh: () => Promise<void> | void

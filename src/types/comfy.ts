@@ -1,6 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { Positionable } from '@comfyorg/litegraph/dist/interfaces'
-
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -9,6 +6,9 @@ import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import type { SettingParams } from '@/types/settingTypes'
+
+import { Positionable } from '../lib/litegraph/src/interfaces'
+import type { LGraphNode } from '../lib/litegraph/src/litegraph'
 
 export type Widgets = Record<string, ComfyWidgetConstructor>
 

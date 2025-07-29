@@ -1,10 +1,10 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
 import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
 import { useStringWidget } from '@/composables/widgets/useStringWidget'
+
+import { LGraphNode } from '../lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '../lib/litegraph/src/types/widgets'
 
 const StringWidget = useStringWidget()
 const FloatWidget = useFloatWidget()

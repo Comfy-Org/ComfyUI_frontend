@@ -68,4 +68,73 @@ describe('EditableText', () => {
     // @ts-expect-error fixme ts strict error
     expect(wrapper.emitted('edit')[0]).toEqual(['Test Text'])
   })
+
+  it('cancels editing on escape key', async () => {
+    const wrapper = mountComponent({
+      modelValue: 'Original Text',
+      isEditing: true
+    })
+
+    // Change the input value
+    await wrapper.findComponent(InputText).setValue('Modified Text')
+
+    // Press escape
+    await wrapper.findComponent(InputText).trigger('keyup.escape')
+
+    // Should emit cancel event
+    expect(wrapper.emitted('cancel')).toBeTruthy()
+
+    // Should NOT emit edit event
+    expect(wrapper.emitted('edit')).toBeFalsy()
+
+    // Input value should be reset to original
+    expect(wrapper.findComponent(InputText).props()['modelValue']).toBe(
+      'Original Text'
+    )
+  })
+
+  it('does not save changes when escape is pressed and blur occurs', async () => {
+    const wrapper = mountComponent({
+      modelValue: 'Original Text',
+      isEditing: true
+    })
+
+    // Change the input value
+    await wrapper.findComponent(InputText).setValue('Modified Text')
+
+    // Press escape (which triggers blur internally)
+    await wrapper.findComponent(InputText).trigger('keyup.escape')
+
+    // Manually trigger blur to simulate the blur that happens after escape
+    await wrapper.findComponent(InputText).trigger('blur')
+
+    // Should emit cancel but not edit
+    expect(wrapper.emitted('cancel')).toBeTruthy()
+    expect(wrapper.emitted('edit')).toBeFalsy()
+  })
+
+  it('saves changes on enter but not on escape', async () => {
+    // Test Enter key saves changes
+    const enterWrapper = mountComponent({
+      modelValue: 'Original Text',
+      isEditing: true
+    })
+    await enterWrapper.findComponent(InputText).setValue('Saved Text')
+    await enterWrapper.findComponent(InputText).trigger('keyup.enter')
+    // Trigger blur that happens after enter
+    await enterWrapper.findComponent(InputText).trigger('blur')
+    expect(enterWrapper.emitted('edit')).toBeTruthy()
+    // @ts-expect-error fixme ts strict error
+    expect(enterWrapper.emitted('edit')[0]).toEqual(['Saved Text'])
+
+    // Test Escape key cancels changes with a fresh wrapper
+    const escapeWrapper = mountComponent({
+      modelValue: 'Original Text',
+      isEditing: true
+    })
+    await escapeWrapper.findComponent(InputText).setValue('Cancelled Text')
+    await escapeWrapper.findComponent(InputText).trigger('keyup.escape')
+    expect(escapeWrapper.emitted('cancel')).toBeTruthy()
+    expect(escapeWrapper.emitted('edit')).toBeFalsy()
+  })
 })

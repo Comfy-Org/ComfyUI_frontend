@@ -1,4 +1,3 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -22,6 +21,7 @@ import type {
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 
+import type { LGraph, Subgraph } from '../lib/litegraph/src/litegraph'
 import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 

@@ -1,8 +1,13 @@
-import { CanvasPointer, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+
+import {
+  CanvasPointer,
+  LGraphNode,
+  LiteGraph
+} from '../lib/litegraph/src/litegraph'
 
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.
