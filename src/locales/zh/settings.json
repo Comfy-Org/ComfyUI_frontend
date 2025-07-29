@@ -29,6 +29,13 @@
     "name": "画布背景图像",
     "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
   },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "畫布導航模式",
+    "options": {
+      "Left-Click Pan (Legacy)": "左鍵拖曳（舊版）",
+      "Standard (New)": "標準（新）"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "显示选择工具箱"
   },
@@ -394,10 +401,6 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "工具提示延迟"
-  },
-  "LiteGraph_Pointer_TrackpadGestures": {
-    "name": "启用触控板手势",
-    "tooltip": "此设置为画布启用触控板模式，允许使用双指捏合缩放和拖动。"
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "重新路由样条偏移",

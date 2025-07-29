@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "锁定视图"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "畫布切換小地圖"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
   },

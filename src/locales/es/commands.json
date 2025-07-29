@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Alternar bloqueo en lienzo"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Lienzo Alternar Minimapa"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Omitir/No omitir nodos seleccionados"
   },

@@ -603,7 +603,7 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.25/Run')
+      expect(price).toBe('$0.4/Run')
     })
 
     it('should return range when widgets are missing', () => {
@@ -771,14 +771,14 @@ describe('useNodePricing', () => {
           const { getRelevantWidgetNames } = useNodePricing()
 
           const widgetNames = getRelevantWidgetNames('IdeogramV1')
-          expect(widgetNames).toEqual(['num_images'])
+          expect(widgetNames).toEqual(['num_images', 'turbo'])
         })
 
         it('should return correct widget names for IdeogramV2', () => {
           const { getRelevantWidgetNames } = useNodePricing()
 
           const widgetNames = getRelevantWidgetNames('IdeogramV2')
-          expect(widgetNames).toEqual(['num_images'])
+          expect(widgetNames).toEqual(['num_images', 'turbo'])
         })
 
         it('should return correct widget names for IdeogramV3', () => {
@@ -832,7 +832,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('IdeogramV1', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.06 x num_images/Run')
+        expect(price).toBe('$0.02-0.06 x num_images/Run')
       })
 
       it('should fall back to static display when num_images widget is missing for IdeogramV2', () => {
@@ -840,7 +840,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('IdeogramV2', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.08 x num_images/Run')
+        expect(price).toBe('$0.05-0.08 x num_images/Run')
       })
 
       it('should handle edge case when num_images value is 1 for IdeogramV1', () => {
@@ -850,7 +850,7 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.06/Run') // 0.06 * 1
+        expect(price).toBe('$0.06/Run') // 0.06 * 1 (turbo=false by default)
       })
     })
 
@@ -1036,13 +1036,15 @@ describe('useNodePricing', () => {
         'duration'
       ])
       expect(getRelevantWidgetNames('TripoTextToModelNode')).toEqual([
-        'model',
-        'model_version',
+        'quad',
+        'style',
+        'texture',
         'texture_quality'
       ])
       expect(getRelevantWidgetNames('TripoImageToModelNode')).toEqual([
-        'model',
-        'model_version',
+        'quad',
+        'style',
+        'texture',
         'texture_quality'
       ])
     })
@@ -1075,6 +1077,26 @@ describe('useNodePricing', () => {
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('$0.05/second')
       })
+
+      it('should handle zero duration for RunwayImageToVideoNodeGen3a', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RunwayImageToVideoNodeGen3a', [
+          { name: 'duration', value: 0 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.00/Run') // 0.05 * 0 = 0
+      })
+
+      it('should handle NaN duration for RunwayImageToVideoNodeGen3a', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RunwayImageToVideoNodeGen3a', [
+          { name: 'duration', value: 'invalid' }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.25/Run') // Falls back to 5 seconds: 0.05 * 5
+      })
     })
 
     describe('Rodin nodes', () => {
@@ -1091,7 +1113,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('Rodin3D_Detail')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$1.2/Run')
+        expect(price).toBe('$0.4/Run')
       })
 
       it('should return addon price for Rodin3D_Smooth', () => {
@@ -1099,7 +1121,7 @@ describe('useNodePricing', () => {
         const node = createMockNode('Rodin3D_Smooth')
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$1.2/Run')
+        expect(price).toBe('$0.4/Run')
       })
     })
 
@@ -1107,44 +1129,53 @@ describe('useNodePricing', () => {
       it('should return v2.5 standard pricing for TripoTextToModelNode', () => {
         const { getNodeDisplayPrice } = useNodePricing()
         const node = createMockNode('TripoTextToModelNode', [
-          { name: 'model_version', value: 'v2.5-20250123' },
+          { name: 'quad', value: false },
+          { name: 'style', value: 'any style' },
+          { name: 'texture', value: false },
           { name: 'texture_quality', value: 'standard' }
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.2/Run')
+        expect(price).toBe('$0.15/Run') // any style, no quad, no texture
       })
 
       it('should return v2.5 detailed pricing for TripoTextToModelNode', () => {
         const { getNodeDisplayPrice } = useNodePricing()
         const node = createMockNode('TripoTextToModelNode', [
-          { name: 'model_version', value: 'v2.5-20250123' },
+          { name: 'quad', value: true },
+          { name: 'style', value: 'any style' },
+          { name: 'texture', value: false },
           { name: 'texture_quality', value: 'detailed' }
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.3/Run')
+        expect(price).toBe('$0.35/Run') // any style, quad, no texture, detailed
       })
 
       it('should return v2.0 detailed pricing for TripoImageToModelNode', () => {
         const { getNodeDisplayPrice } = useNodePricing()
         const node = createMockNode('TripoImageToModelNode', [
-          { name: 'model_version', value: 'v2.0-20240919' },
+          { name: 'quad', value: true },
+          { name: 'style', value: 'any style' },
+          { name: 'texture', value: false },
           { name: 'texture_quality', value: 'detailed' }
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.4/Run')
+        expect(price).toBe('$0.45/Run') // any style, quad, no texture, detailed
       })
 
       it('should return legacy pricing for TripoTextToModelNode', () => {
         const { getNodeDisplayPrice } = useNodePricing()
         const node = createMockNode('TripoTextToModelNode', [
-          { name: 'model_version', value: 'v1.4-legacy' }
+          { name: 'quad', value: false },
+          { name: 'style', value: 'none' },
+          { name: 'texture', value: false },
+          { name: 'texture_quality', value: 'standard' }
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.2/Run')
+        expect(price).toBe('$0.10/Run') // none style, no quad, no texture
       })
 
       it('should return static price for TripoRefineNode', () => {
@@ -1160,7 +1191,9 @@ describe('useNodePricing', () => {
         const node = createMockNode('TripoTextToModelNode', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.2-0.3/Run (varies with model & texture quality)')
+        expect(price).toBe(
+          '$0.1-0.4/Run (varies with quad, style, texture & quality)'
+        )
       })
 
       it('should return texture-based pricing for TripoTextureNode', () => {
@@ -1176,24 +1209,84 @@ describe('useNodePricing', () => {
         expect(getNodeDisplayPrice(detailedNode)).toBe('$0.2/Run')
       })
 
-      it('should handle various Tripo model version formats', () => {
+      it('should handle various Tripo parameter combinations', () => {
         const { getNodeDisplayPrice } = useNodePricing()
 
-        // Test different model version formats
+        // Test different parameter combinations
         const testCases = [
-          { model: 'v2.0-20240919', expected: '$0.2/Run' },
-          { model: 'v2.5-20250123', expected: '$0.2/Run' },
-          { model: 'v1.4', expected: '$0.2/Run' },
-          { model: 'unknown-model', expected: '$0.2/Run' }
+          { quad: false, style: 'none', texture: false, expected: '$0.10/Run' },
+          {
+            quad: false,
+            style: 'any style',
+            texture: false,
+            expected: '$0.15/Run'
+          },
+          { quad: true, style: 'none', texture: false, expected: '$0.20/Run' },
+          {
+            quad: true,
+            style: 'any style',
+            texture: false,
+            expected: '$0.25/Run'
+          }
         ]
 
-        testCases.forEach(({ model, expected }) => {
+        testCases.forEach(({ quad, style, texture, expected }) => {
           const node = createMockNode('TripoTextToModelNode', [
-            { name: 'model_version', value: model },
+            { name: 'quad', value: quad },
+            { name: 'style', value: style },
+            { name: 'texture', value: texture },
             { name: 'texture_quality', value: 'standard' }
           ])
           expect(getNodeDisplayPrice(node)).toBe(expected)
         })
+      })
+
+      it('should return static price for TripoConvertModelNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoConvertModelNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.10/Run')
+      })
+
+      it('should return static price for TripoRetargetRiggedModelNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoRetargetRiggedModelNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.10/Run')
+      })
+
+      it('should return dynamic pricing for TripoMultiviewToModelNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+
+        // Test basic case - no style, no quad, no texture
+        const basicNode = createMockNode('TripoMultiviewToModelNode', [
+          { name: 'quad', value: false },
+          { name: 'style', value: 'none' },
+          { name: 'texture', value: false },
+          { name: 'texture_quality', value: 'standard' }
+        ])
+        expect(getNodeDisplayPrice(basicNode)).toBe('$0.20/Run')
+
+        // Test high-end case - any style, quad, texture, detailed
+        const highEndNode = createMockNode('TripoMultiviewToModelNode', [
+          { name: 'quad', value: true },
+          { name: 'style', value: 'stylized' },
+          { name: 'texture', value: true },
+          { name: 'texture_quality', value: 'detailed' }
+        ])
+        expect(getNodeDisplayPrice(highEndNode)).toBe('$0.50/Run')
+      })
+
+      it('should return fallback for TripoMultiviewToModelNode without widgets', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoMultiviewToModelNode', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe(
+          '$0.2-0.5/Run (varies with quad, style, texture & quality)'
+        )
       })
     })
 
@@ -1204,11 +1297,11 @@ describe('useNodePricing', () => {
         const testCases = [
           {
             model: 'gemini-2.5-pro-preview-05-06',
-            expected: '$0.0035/$0.0008 per 1K tokens'
+            expected: '$0.00016/$0.0006 per 1K tokens'
           },
           {
             model: 'gemini-2.5-flash-preview-04-17',
-            expected: '$0.0015/$0.0004 per 1K tokens'
+            expected: '$0.00125/$0.01 per 1K tokens'
           },
           { model: 'unknown-gemini-model', expected: 'Token-based' }
         ]
@@ -1315,7 +1408,7 @@ describe('useNodePricing', () => {
 
         // Test edge cases
         const testCases = [
-          { duration: 0, expected: '$0.25/Run' }, // Falls back to 5 seconds (0 || 5)
+          { duration: 0, expected: '$0.00/Run' }, // Now correctly handles 0 duration
           { duration: 1, expected: '$0.05/Run' },
           { duration: 30, expected: '$1.50/Run' }
         ]
@@ -1359,8 +1452,8 @@ describe('useNodePricing', () => {
         const testCases = [
           { nodeType: 'Rodin3D_Regular', expected: '$0.4/Run' },
           { nodeType: 'Rodin3D_Sketch', expected: '$0.4/Run' },
-          { nodeType: 'Rodin3D_Detail', expected: '$1.2/Run' },
-          { nodeType: 'Rodin3D_Smooth', expected: '$1.2/Run' }
+          { nodeType: 'Rodin3D_Detail', expected: '$0.4/Run' },
+          { nodeType: 'Rodin3D_Smooth', expected: '$0.4/Run' }
         ]
 
         testCases.forEach(({ nodeType, expected }) => {
@@ -1371,24 +1464,42 @@ describe('useNodePricing', () => {
     })
 
     describe('Comprehensive Tripo edge case testing', () => {
-      it('should handle TripoImageToModelNode with various model versions', () => {
+      it('should handle TripoImageToModelNode with various parameter combinations', () => {
         const { getNodeDisplayPrice } = useNodePricing()
 
         const testCases = [
-          { model: 'v1.4-legacy', texture: 'standard', expected: '$0.3/Run' },
-          { model: 'v2.0-20240919', texture: 'standard', expected: '$0.3/Run' },
-          { model: 'v2.0-20240919', texture: 'detailed', expected: '$0.4/Run' },
-          { model: 'v2.5-20250123', texture: 'standard', expected: '$0.3/Run' },
-          { model: 'v2.5-20250123', texture: 'detailed', expected: '$0.4/Run' }
+          { quad: false, style: 'none', texture: false, expected: '$0.20/Run' },
+          { quad: false, style: 'none', texture: true, expected: '$0.25/Run' },
+          {
+            quad: true,
+            style: 'any style',
+            texture: true,
+            textureQuality: 'detailed',
+            expected: '$0.50/Run'
+          },
+          {
+            quad: true,
+            style: 'any style',
+            texture: false,
+            textureQuality: 'standard',
+            expected: '$0.35/Run'
+          }
         ]
 
-        testCases.forEach(({ model, texture, expected }) => {
-          const node = createMockNode('TripoImageToModelNode', [
-            { name: 'model_version', value: model },
-            { name: 'texture_quality', value: texture }
-          ])
-          expect(getNodeDisplayPrice(node)).toBe(expected)
-        })
+        testCases.forEach(
+          ({ quad, style, texture, textureQuality, expected }) => {
+            const widgets = [
+              { name: 'quad', value: quad },
+              { name: 'style', value: style },
+              { name: 'texture', value: texture }
+            ]
+            if (textureQuality) {
+              widgets.push({ name: 'texture_quality', value: textureQuality })
+            }
+            const node = createMockNode('TripoImageToModelNode', widgets)
+            expect(getNodeDisplayPrice(node)).toBe(expected)
+          }
+        )
       })
 
       it('should return correct fallback for TripoImageToModelNode', () => {
@@ -1396,17 +1507,19 @@ describe('useNodePricing', () => {
         const node = createMockNode('TripoImageToModelNode', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.3-0.4/Run (varies with model & texture quality)')
+        expect(price).toBe(
+          '$0.2-0.5/Run (varies with quad, style, texture & quality)'
+        )
       })
 
       it('should handle missing texture quality widget', () => {
         const { getNodeDisplayPrice } = useNodePricing()
-        const node = createMockNode('TripoTextToModelNode', [
-          { name: 'model_version', value: 'v2.0-20240919' }
-        ])
+        const node = createMockNode('TripoTextToModelNode', [])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.2/Run') // Default to standard texture pricing
+        expect(price).toBe(
+          '$0.1-0.4/Run (varies with quad, style, texture & quality)'
+        )
       })
 
       it('should handle missing model version widget', () => {
@@ -1416,7 +1529,9 @@ describe('useNodePricing', () => {
         ])
 
         const price = getNodeDisplayPrice(node)
-        expect(price).toBe('$0.2-0.3/Run (varies with model & texture quality)')
+        expect(price).toBe(
+          '$0.1-0.4/Run (varies with quad, style, texture & quality)'
+        )
       })
     })
   })

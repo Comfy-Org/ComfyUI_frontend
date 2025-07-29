@@ -1,6 +1,7 @@
 <template>
   <ButtonGroup
     class="p-buttongroup-vertical absolute bottom-[10px] right-[10px] z-[1000]"
+    @wheel="canvasInteractions.handleWheel"
   >
     <Button
       v-tooltip.left="t('graphCanvasMenu.zoomIn')"
@@ -56,6 +57,15 @@
       data-testid="toggle-link-visibility-button"
       @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
     />
+    <Button
+      v-tooltip.left="t('graphCanvasMenu.toggleMinimap') + ' (Alt + m)'"
+      severity="secondary"
+      :icon="'pi pi-map'"
+      :aria-label="$t('graphCanvasMenu.toggleMinimap')"
+      :class="{ 'minimap-active': minimapVisible }"
+      data-testid="toggle-minimap-button"
+      @click="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
+    />
   </ButtonGroup>
 </template>
 
@@ -66,6 +76,7 @@ import ButtonGroup from 'primevue/buttongroup'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -74,7 +85,9 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
+const canvasInteractions = useCanvasInteractions()
 
+const minimapVisible = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 const linkHidden = computed(
   () => settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK
 )
@@ -106,5 +119,16 @@ const stopRepeat = () => {
 .p-buttongroup-vertical .p-button {
   margin: 0;
   border-radius: 0;
+}
+
+.p-button.minimap-active {
+  background-color: var(--p-button-primary-background);
+  border-color: var(--p-button-primary-border-color);
+  color: var(--p-button-primary-color);
+}
+
+.p-button.minimap-active:hover {
+  background-color: var(--p-button-primary-hover-background);
+  border-color: var(--p-button-primary-hover-border-color);
 }
 </style>

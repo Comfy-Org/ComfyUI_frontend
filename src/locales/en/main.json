@@ -98,6 +98,12 @@
     "nodes": "Nodes",
     "community": "Community",
     "all": "All",
+    "versionMismatchWarning": "Version Compatibility Warning",
+    "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
+    "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
+    "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "updateFrontend": "Update Frontend",
+    "dismiss": "Dismiss",
     "update": "Update",
     "updated": "Updated",
     "resultsCount": "Found {count} Results",
@@ -872,7 +878,8 @@
     "fitView": "Fit View",
     "selectMode": "Select Mode",
     "panMode": "Pan Mode",
-    "toggleLinkVisibility": "Toggle Link Visibility"
+    "toggleLinkVisibility": "Toggle Link Visibility",
+    "toggleMinimap": "Toggle Minimap"
   },
   "groupNode": {
     "create": "Create group node",
@@ -948,6 +955,7 @@
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Canvas Toggle Link Visibility": "Canvas Toggle Link Visibility",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
+    "Canvas Toggle Minimap": "Canvas Toggle Minimap",
     "Pin/Unpin Selected Items": "Pin/Unpin Selected Items",
     "Bypass/Unbypass Selected Nodes": "Bypass/Unbypass Selected Nodes",
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
@@ -1348,6 +1356,13 @@
     "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
     "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Requires ComfyUI {version}:"
+  },
+  "versionMismatchWarning": {
+    "title": "Version Compatibility Warning",
+    "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires version {requiredVersion} or higher.",
+    "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "updateFrontend": "Update Frontend",
+    "dismiss": "Dismiss"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",

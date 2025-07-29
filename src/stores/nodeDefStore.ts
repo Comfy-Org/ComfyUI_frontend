@@ -334,8 +334,10 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
-    // @ts-expect-error Optional chaining used in index
-    return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
+    const nodeTypeName = node.constructor?.nodeData?.name
+    if (!nodeTypeName) return null
+    const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
+    return nodeDef
   }
 
   /**

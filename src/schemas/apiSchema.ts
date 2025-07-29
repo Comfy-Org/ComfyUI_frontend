@@ -338,6 +338,7 @@ export const zSystemStats = z.object({
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
     pytorch_version: z.string(),
+    required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
     ram_total: z.number(),
     ram_free: z.number()
@@ -475,6 +476,8 @@ const zSettings = z.object({
   'Comfy.TutorialCompleted': z.boolean(),
   'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
+  'Comfy.Minimap.Visible': z.boolean(),
+  'Comfy.Canvas.NavigationMode': z.string(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),

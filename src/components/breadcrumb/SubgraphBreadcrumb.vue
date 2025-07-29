@@ -42,6 +42,7 @@ import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
 
 const MIN_WIDTH = 28
 const ITEM_GAP = 8
@@ -71,6 +72,14 @@ const items = computed(() => {
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
       canvas.setGraph(subgraph)
+    },
+    updateTitle: (title: string) => {
+      const rootGraph = useCanvasStore().getCanvas().graph?.rootGraph
+      if (!rootGraph) return
+
+      forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
+        node.title = title
+      })
     }
   }))
 

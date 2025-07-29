@@ -5,10 +5,16 @@ import {
   collectAllNodes,
   findNodeInHierarchy,
   findSubgraphByUuid,
+  forEachNode,
+  forEachSubgraphNode,
+  getAllNonIoNodesInSubgraph,
   getLocalNodeIdFromExecutionId,
   getNodeByExecutionId,
   getNodeByLocatorId,
+  getRootGraph,
   getSubgraphPathFromExecutionId,
+  mapAllNodes,
+  mapSubgraphNodes,
   parseExecutionId,
   traverseSubgraphPath,
   triggerCallbackOnAllNodes,
@@ -283,6 +289,141 @@ describe('graphTraversalUtil', () => {
       })
     })
 
+    describe('mapAllNodes', () => {
+      it('should map over all nodes in a flat graph', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        const results = mapAllNodes(graph, (node) => node.id)
+
+        expect(results).toEqual([1, 2, 3])
+      })
+
+      it('should map over nodes in subgraphs', () => {
+        const subNode = createMockNode(100)
+        const subgraph = createMockSubgraph('sub-uuid', [subNode])
+
+        const nodes = [
+          createMockNode(1),
+          createMockNode(2, { isSubgraph: true, subgraph })
+        ]
+
+        const graph = createMockGraph(nodes)
+        const results = mapAllNodes(graph, (node) => node.id)
+
+        expect(results).toHaveLength(3)
+        expect(results).toContain(100)
+      })
+
+      it('should exclude undefined results', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        const results = mapAllNodes(graph, (node) => {
+          return Number(node.id) > 1 ? node.id : undefined
+        })
+
+        expect(results).toEqual([2, 3])
+      })
+
+      it('should handle deeply nested structures', () => {
+        const deepNode = createMockNode(300)
+        const deepSubgraph = createMockSubgraph('deep-uuid', [deepNode])
+
+        const midNode = createMockNode(200)
+        const midSubgraphNode = createMockNode(201, {
+          isSubgraph: true,
+          subgraph: deepSubgraph
+        })
+        const midSubgraph = createMockSubgraph('mid-uuid', [
+          midNode,
+          midSubgraphNode
+        ])
+
+        const nodes = [
+          createMockNode(1),
+          createMockNode(2, { isSubgraph: true, subgraph: midSubgraph })
+        ]
+
+        const graph = createMockGraph(nodes)
+        const results = mapAllNodes(graph, (node) => `node-${node.id}`)
+
+        expect(results).toHaveLength(5)
+        expect(results).toContain('node-300')
+      })
+    })
+
+    describe('forEachNode', () => {
+      it('should execute function on all nodes in a flat graph', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(node.id as number)
+        })
+
+        expect(visited).toHaveLength(3)
+        expect(visited).toContain(1)
+        expect(visited).toContain(2)
+        expect(visited).toContain(3)
+      })
+
+      it('should execute function on nodes in subgraphs', () => {
+        const subNode = createMockNode(100)
+        const subgraph = createMockSubgraph('sub-uuid', [subNode])
+
+        const nodes = [
+          createMockNode(1),
+          createMockNode(2, { isSubgraph: true, subgraph })
+        ]
+
+        const graph = createMockGraph(nodes)
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(node.id as number)
+        })
+
+        expect(visited).toHaveLength(3)
+        expect(visited).toContain(100)
+      })
+
+      it('should allow node mutations', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        // Add a title property to each node
+        forEachNode(graph, (node) => {
+          ;(node as any).title = `Node ${node.id}`
+        })
+
+        expect(nodes[0]).toHaveProperty('title', 'Node 1')
+        expect(nodes[1]).toHaveProperty('title', 'Node 2')
+        expect(nodes[2]).toHaveProperty('title', 'Node 3')
+      })
+
+      it('should handle node type matching for subgraph references', () => {
+        const subgraphId = 'my-subgraph-123'
+        const nodes = [
+          createMockNode(1),
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3),
+          { ...createMockNode(4), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const matchingNodes: number[] = []
+        forEachNode(graph, (node) => {
+          if (node.type === subgraphId) {
+            matchingNodes.push(node.id as number)
+          }
+        })
+
+        expect(matchingNodes).toEqual([2, 4])
+      })
+    })
+
     describe('findNodeInHierarchy', () => {
       it('should find node in root graph', () => {
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
@@ -480,6 +621,190 @@ describe('graphTraversalUtil', () => {
         const locatorId = 'non-existent-uuid:789'
         const found = getNodeByLocatorId(graph, locatorId)
         expect(found).toBeNull()
+      })
+    })
+
+    describe('getRootGraph', () => {
+      it('should return the same graph if it is already root', () => {
+        const graph = createMockGraph([])
+        expect(getRootGraph(graph)).toBe(graph)
+      })
+
+      it('should return root graph from subgraph', () => {
+        const rootGraph = createMockGraph([])
+        const subgraph = createMockSubgraph('sub-uuid', [])
+        ;(subgraph as any).rootGraph = rootGraph
+
+        expect(getRootGraph(subgraph)).toBe(rootGraph)
+      })
+
+      it('should return root graph from deeply nested subgraph', () => {
+        const rootGraph = createMockGraph([])
+        const midSubgraph = createMockSubgraph('mid-uuid', [])
+        const deepSubgraph = createMockSubgraph('deep-uuid', [])
+
+        ;(midSubgraph as any).rootGraph = rootGraph
+        ;(deepSubgraph as any).rootGraph = midSubgraph
+
+        expect(getRootGraph(deepSubgraph)).toBe(rootGraph)
+      })
+    })
+
+    describe('forEachSubgraphNode', () => {
+      it('should apply function to all nodes matching subgraph type', () => {
+        const subgraphId = 'my-subgraph-123'
+        const nodes = [
+          createMockNode(1),
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3),
+          { ...createMockNode(4), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const matchingIds: number[] = []
+        forEachSubgraphNode(graph, subgraphId, (node) => {
+          matchingIds.push(node.id as number)
+        })
+
+        expect(matchingIds).toEqual([2, 4])
+      })
+
+      it('should work with root graph directly', () => {
+        const subgraphId = 'target-subgraph'
+        const rootNodes = [
+          { ...createMockNode(1), type: subgraphId } as LGraphNode,
+          createMockNode(2),
+          { ...createMockNode(3), type: subgraphId } as LGraphNode
+        ]
+        const rootGraph = createMockGraph(rootNodes)
+
+        const matchingIds: number[] = []
+        forEachSubgraphNode(rootGraph, subgraphId, (node) => {
+          matchingIds.push(node.id as number)
+        })
+
+        expect(matchingIds).toEqual([1, 3])
+      })
+
+      it('should handle null inputs gracefully', () => {
+        const fn = vi.fn()
+
+        forEachSubgraphNode(null, 'id', fn)
+        forEachSubgraphNode(createMockGraph([]), null, fn)
+        forEachSubgraphNode(null, null, fn)
+
+        expect(fn).not.toHaveBeenCalled()
+      })
+
+      it('should allow node mutations like title updates', () => {
+        const subgraphId = 'my-subgraph'
+        const nodes = [
+          { ...createMockNode(1), type: subgraphId } as LGraphNode,
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3)
+        ]
+        const graph = createMockGraph(nodes)
+
+        forEachSubgraphNode(graph, subgraphId, (node) => {
+          ;(node as any).title = 'Updated Title'
+        })
+
+        expect(nodes[0]).toHaveProperty('title', 'Updated Title')
+        expect(nodes[1]).toHaveProperty('title', 'Updated Title')
+        expect(nodes[2]).not.toHaveProperty('title', 'Updated Title')
+      })
+    })
+
+    describe('mapSubgraphNodes', () => {
+      it('should map over nodes matching subgraph type', () => {
+        const subgraphId = 'my-subgraph-123'
+        const nodes = [
+          createMockNode(1),
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3),
+          { ...createMockNode(4), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const results = mapSubgraphNodes(graph, subgraphId, (node) => node.id)
+
+        expect(results).toEqual([2, 4])
+      })
+
+      it('should return empty array for null inputs', () => {
+        expect(mapSubgraphNodes(null, 'id', (n) => n.id)).toEqual([])
+        expect(
+          mapSubgraphNodes(createMockGraph([]), null, (n) => n.id)
+        ).toEqual([])
+      })
+
+      it('should work with complex transformations', () => {
+        const subgraphId = 'target'
+        const nodes = [
+          { ...createMockNode(1), type: subgraphId } as LGraphNode,
+          { ...createMockNode(2), type: 'other' } as LGraphNode,
+          { ...createMockNode(3), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const results = mapSubgraphNodes(graph, subgraphId, (node) => ({
+          id: node.id,
+          isTarget: true
+        }))
+
+        expect(results).toEqual([
+          { id: 1, isTarget: true },
+          { id: 3, isTarget: true }
+        ])
+      })
+    })
+
+    describe('getAllNonIoNodesInSubgraph', () => {
+      it('should filter out SubgraphInputNode and SubgraphOutputNode', () => {
+        const nodes = [
+          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } },
+          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(2)
+        expect(nonIoNodes.map((n) => n.id)).toEqual(['user1', 'user2'])
+      })
+
+      it('should handle subgraph with only IO nodes', () => {
+        const nodes = [
+          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(0)
+      })
+
+      it('should handle subgraph with only user nodes', () => {
+        const nodes = [
+          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(2)
+        expect(nonIoNodes).toEqual(nodes)
+      })
+
+      it('should handle empty subgraph', () => {
+        const subgraph = createMockSubgraph('sub-uuid', [])
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(0)
       })
     })
   })
