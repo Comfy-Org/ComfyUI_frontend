@@ -296,6 +296,7 @@
     "devices": "Appareils",
     "disableAll": "Désactiver tout",
     "disabling": "Désactivation",
+    "dismiss": "Ignorer",
     "download": "Télécharger",
     "edit": "Modifier",
     "empty": "Vide",
@@ -310,6 +311,8 @@
     "filter": "Filtrer",
     "findIssues": "Trouver des problèmes",
     "firstTimeUIMessage": "C'est la première fois que vous utilisez la nouvelle interface utilisateur. Choisissez \"Menu > Utiliser le nouveau menu > Désactivé\" pour restaurer l'ancienne interface utilisateur.",
+    "frontendNewer": "La version du frontend {frontendVersion} peut ne pas être compatible avec la version du backend {backendVersion}.",
+    "frontendOutdated": "La version du frontend {frontendVersion} est obsolète. Le backend requiert la version {requiredVersion} ou supérieure.",
     "goToNode": "Aller au nœud",
     "help": "Aide",
     "icon": "Icône",
@@ -389,11 +392,14 @@
     "unknownError": "Erreur inconnue",
     "update": "Mettre à jour",
     "updateAvailable": "Mise à jour disponible",
+    "updateFrontend": "Mettre à jour le frontend",
     "updated": "Mis à jour",
     "updating": "Mise à jour",
     "upload": "Téléverser",
     "usageHint": "Conseil d'utilisation",
     "user": "Utilisateur",
+    "versionMismatchWarning": "Avertissement de compatibilité de version",
+    "versionMismatchWarningMessage": "{warning} : {detail} Consultez https://docs.comfy.org/installation/update_comfyui#common-update-issues pour les instructions de mise à jour.",
     "videoFailedToLoad": "Échec du chargement de la vidéo",
     "workflow": "Flux de travail"
   },
@@ -1601,6 +1607,13 @@
     "personalDataConsentRequired": "Vous devez accepter le traitement de vos données personnelles.",
     "prefix": "Doit commencer par {prefix}",
     "required": "Requis"
+  },
+  "versionMismatchWarning": {
+    "dismiss": "Ignorer",
+    "frontendNewer": "La version du frontend {frontendVersion} peut ne pas être compatible avec la version du backend {backendVersion}.",
+    "frontendOutdated": "La version du frontend {frontendVersion} est obsolète. Le backend nécessite la version {requiredVersion} ou supérieure.",
+    "title": "Avertissement de compatibilité de version",
+    "updateFrontend": "Mettre à jour le frontend"
   },
   "welcome": {
     "getStarted": "Commencer",
