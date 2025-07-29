@@ -172,7 +172,16 @@ export function useCoreCommands(): ComfyCommand[] {
         ) {
           app.clean()
           if (app.canvas.subgraph) {
-            app.canvas.subgraph.clear()
+            // `clear` is not implemented on subgraphs and the parent class's
+            // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
+            // just clear the nodes but preserve input/output nodes and structure
+            const subgraph = app.canvas.subgraph
+            const nodesToRemove = subgraph.nodes.filter(
+              (node) =>
+                node.constructor.comfyClass !== 'SubgraphInputNode' &&
+                node.constructor.comfyClass !== 'SubgraphOutputNode'
+            )
+            nodesToRemove.forEach((node) => subgraph.remove(node))
           } else {
             app.graph.clear()
           }
