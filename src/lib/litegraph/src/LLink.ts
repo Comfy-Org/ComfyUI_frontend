@@ -11,7 +11,7 @@ import type { LGraphNode, NodeId } from "./LGraphNode"
 import type { Reroute, RerouteId } from "./Reroute"
 import type { Serialisable, SerialisableLLink, SubgraphIO } from "./types/serialisation"
 
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from './constants'
 
 export type LinkId = number
 

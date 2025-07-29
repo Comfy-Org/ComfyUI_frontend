@@ -1,4 +1,4 @@
-import type { LGraphNode } from "@/LGraphNode"
+import type { LGraphNode } from '../LGraphNode'
 import type {
   IBaseWidget,
   IBooleanWidget,
@@ -22,9 +22,9 @@ import type {
   ITreeSelectWidget,
   IWidget,
   TWidgetType,
-} from "@/types/widgets"
+} from '../types/widgets'
 
-import { toClass } from "@/utils/type"
+import { toClass } from '../utils/type'
 
 import { BaseWidget } from "./BaseWidget"
 import { BooleanWidget } from "./BooleanWidget"

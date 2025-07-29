@@ -22,7 +22,6 @@
 </template>
 
 <script setup lang="ts">
-import { COMFY_VUE_NODE_DIMENSIONS } from '@comfyorg/litegraph'
 import Select from 'primevue/select'
 import { computed } from 'vue'
 
@@ -32,6 +31,8 @@ import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+
+import { COMFY_VUE_NODE_DIMENSIONS } from '../../../lib/litegraph/src/litegraph'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>

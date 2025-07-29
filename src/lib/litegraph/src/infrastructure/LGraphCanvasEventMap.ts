@@ -1,9 +1,9 @@
-import type { ConnectingLink } from "@/interfaces"
-import type { LGraph } from "@/LGraph"
-import type { LGraphGroup } from "@/LGraphGroup"
-import type { LGraphNode } from "@/LGraphNode"
-import type { Subgraph } from "@/subgraph/Subgraph"
-import type { CanvasPointerEvent } from "@/types/events"
+import type { ConnectingLink } from '../interfaces'
+import type { LGraph } from '../LGraph'
+import type { LGraphGroup } from '../LGraphGroup'
+import type { LGraphNode } from '../LGraphNode'
+import type { Subgraph } from '../subgraph/Subgraph'
+import type { CanvasPointerEvent } from '../types/events'
 
 export interface LGraphCanvasEventMap {
   /** The active graph has changed. */

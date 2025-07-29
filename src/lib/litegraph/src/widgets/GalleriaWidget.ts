@@ -1,4 +1,4 @@
-import type { IGalleriaWidget } from "@/types/widgets"
+import type { IGalleriaWidget } from '../types/widgets'
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 

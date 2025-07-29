@@ -1,5 +1,3 @@
-import { LGraphCanvas } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
@@ -14,6 +12,9 @@ import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+
+import { LGraphCanvas } from '../lib/litegraph/src/litegraph'
+import { LiteGraph } from '../lib/litegraph/src/litegraph'
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()

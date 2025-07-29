@@ -1,4 +1,4 @@
-import { LiteGraph } from "@/litegraph"
+import { LiteGraph } from '../litegraph'
 
 /** Guard against unbound allocation. */
 const UNIQUE_MESSAGE_LIMIT = 10_000

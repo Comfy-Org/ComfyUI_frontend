@@ -1,6 +1,6 @@
 import type { LGraphEventMap } from "./LGraphEventMap"
-import type { SubgraphInput } from "@/subgraph/SubgraphInput"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
+import type { SubgraphInput } from '../subgraph/SubgraphInput'
+import type { SubgraphOutput } from '../subgraph/SubgraphOutput'
 
 export interface SubgraphEventMap extends LGraphEventMap {
   "adding-input": {

@@ -1,12 +1,12 @@
-import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
-import type { LinkNetwork, Point } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { INodeInputSlot, INodeOutputSlot, LLink, Reroute } from "@/litegraph"
-import type { SubgraphInput } from "@/subgraph/SubgraphInput"
-import type { SubgraphIONodeBase } from "@/subgraph/SubgraphIONodeBase"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
-import type { LinkDirection } from "@/types/globalEnums"
+import type { CustomEventTarget } from '../infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '../infrastructure/LinkConnectorEventMap'
+import type { LinkNetwork, Point } from '../interfaces'
+import type { LGraphNode } from '../LGraphNode'
+import type { INodeInputSlot, INodeOutputSlot, LLink, Reroute } from '../litegraph'
+import type { SubgraphInput } from '../subgraph/SubgraphInput'
+import type { SubgraphIONodeBase } from '../subgraph/SubgraphIONodeBase'
+import type { SubgraphOutput } from '../subgraph/SubgraphOutput'
+import type { LinkDirection } from '../types/globalEnums'
 
 export interface RenderLink {
   /** The type of link being connected. */

@@ -1,4 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Message from 'primevue/message'
@@ -7,6 +6,8 @@ import { nextTick } from 'vue'
 
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+
+import type { LGraphNode } from '../../../../../src/lib/litegraph/src/litegraph'
 
 // Mock the stores
 vi.mock('@/stores/systemStatsStore', () => ({

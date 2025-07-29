@@ -1,13 +1,13 @@
 import type { SubgraphNode } from "./SubgraphNode"
-import type { CallbackParams, CallbackReturn, ISlotType } from "@/interfaces"
-import type { LGraph } from "@/LGraph"
-import type { LGraphNode, NodeId } from "@/LGraphNode"
+import type { CallbackParams, CallbackReturn, ISlotType } from '../interfaces'
+import type { LGraph } from '../LGraph'
+import type { LGraphNode, NodeId } from '../LGraphNode'
 
-import { InvalidLinkError } from "@/infrastructure/InvalidLinkError"
-import { NullGraphError } from "@/infrastructure/NullGraphError"
-import { RecursionError } from "@/infrastructure/RecursionError"
-import { SlotIndexError } from "@/infrastructure/SlotIndexError"
-import { LGraphEventMode } from "@/litegraph"
+import { InvalidLinkError } from '../infrastructure/InvalidLinkError'
+import { NullGraphError } from '../infrastructure/NullGraphError'
+import { RecursionError } from '../infrastructure/RecursionError'
+import { SlotIndexError } from '../infrastructure/SlotIndexError'
+import { LGraphEventMode } from '../litegraph'
 
 import { Subgraph } from "./Subgraph"
 

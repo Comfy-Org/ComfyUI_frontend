@@ -1,5 +1,3 @@
-import { LiteGraph } from '@comfyorg/litegraph'
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
@@ -7,6 +5,9 @@ import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+
+import { LiteGraph } from '../lib/litegraph/src/litegraph'
+import type { LGraphNode } from '../lib/litegraph/src/litegraph'
 
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data

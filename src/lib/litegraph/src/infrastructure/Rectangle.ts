@@ -1,6 +1,6 @@
-import type { CompassCorners, Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, ReadOnlyTypedArray, Size } from "@/interfaces"
+import type { CompassCorners, Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, ReadOnlyTypedArray, Size } from '../interfaces'
 
-import { isInRectangle } from "@/measure"
+import { isInRectangle } from '../measure'
 
 /**
  * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].

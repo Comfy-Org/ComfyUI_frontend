@@ -1,8 +1,8 @@
 import type { ConnectingLink, ISlotType, Positionable } from "../interfaces"
-import type { LinkId } from "@/LLink"
+import type { LinkId } from '../LLink'
 
-import { LGraphNode } from "@/LGraphNode"
-import { parseSlotTypes } from "@/strings"
+import { LGraphNode } from '../LGraphNode'
+import { parseSlotTypes } from '../strings'
 
 /**
  * Creates a flat set of all positionable items by recursively iterating through all child items.

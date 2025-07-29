@@ -6,8 +6,8 @@ import type { SubgraphInput } from "./subgraph/SubgraphInput"
 import type { SubgraphInputNode } from "./subgraph/SubgraphInputNode"
 import type { SubgraphOutputNode } from "./subgraph/SubgraphOutputNode"
 import type { LinkDirection, RenderShape } from "./types/globalEnums"
-import type { Rectangle } from "@/infrastructure/Rectangle"
-import type { CanvasPointerEvent } from "@/types/events"
+import type { Rectangle } from './infrastructure/Rectangle'
+import type { CanvasPointerEvent } from './types/events'
 
 export type Dictionary<T> = { [key: string]: T }
 

@@ -1,4 +1,4 @@
-import type { IImageCompareWidget } from "@/types/widgets"
+import type { IImageCompareWidget } from '../types/widgets'
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 

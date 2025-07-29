@@ -1,7 +1,7 @@
 import type { WidgetEventOptions } from "./BaseWidget"
-import type { INumericWidget } from "@/types/widgets"
+import type { INumericWidget } from '../types/widgets'
 
-import { getWidgetStep } from "@/utils/widget"
+import { getWidgetStep } from '../utils/widget'
 
 import { BaseSteppedWidget } from "./BaseSteppedWidget"
 

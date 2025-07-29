@@ -1,6 +1,6 @@
-import type { LGraphCanvas } from '@comfyorg/litegraph'
-
 import { useCanvasStore } from '@/stores/graphStore'
+
+import type { LGraphCanvas } from '../../lib/litegraph/src/litegraph'
 
 export function useEventForwarding() {
   const canvasStore = useCanvasStore()

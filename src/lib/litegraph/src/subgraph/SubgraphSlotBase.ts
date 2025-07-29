@@ -1,19 +1,19 @@
 import type { SubgraphInputNode } from "./SubgraphInputNode"
 import type { SubgraphOutputNode } from "./SubgraphOutputNode"
-import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, ReadOnlyRect, ReadOnlySize } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { LinkId, LLink } from "@/LLink"
-import type { RerouteId } from "@/Reroute"
-import type { CanvasPointerEvent } from "@/types/events"
-import type { Serialisable, SubgraphIO } from "@/types/serialisation"
+import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, ReadOnlyRect, ReadOnlySize } from '../interfaces'
+import type { LGraphNode } from '../LGraphNode'
+import type { LinkId, LLink } from '../LLink'
+import type { RerouteId } from '../Reroute'
+import type { CanvasPointerEvent } from '../types/events'
+import type { Serialisable, SubgraphIO } from '../types/serialisation'
 
-import { SlotShape } from "@/draw"
-import { ConstrainedSize } from "@/infrastructure/ConstrainedSize"
-import { Rectangle } from "@/infrastructure/Rectangle"
-import { LGraphCanvas } from "@/LGraphCanvas"
-import { LiteGraph } from "@/litegraph"
-import { SlotBase } from "@/node/SlotBase"
-import { createUuidv4, type UUID } from "@/utils/uuid"
+import { SlotShape } from '../draw'
+import { ConstrainedSize } from '../infrastructure/ConstrainedSize'
+import { Rectangle } from '../infrastructure/Rectangle'
+import { LGraphCanvas } from '../LGraphCanvas'
+import { LiteGraph } from '../litegraph'
+import { SlotBase } from '../node/SlotBase'
+import { createUuidv4, type UUID } from '../utils/uuid'
 
 export interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D

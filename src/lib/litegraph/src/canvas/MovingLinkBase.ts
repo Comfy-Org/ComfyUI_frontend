@@ -1,14 +1,14 @@
 import type { RenderLink } from "./RenderLink"
-import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
-import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
-import type { LGraphNode, NodeId } from "@/LGraphNode"
-import type { LLink } from "@/LLink"
-import type { Reroute } from "@/Reroute"
-import type { SubgraphInput } from "@/subgraph/SubgraphInput"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
+import type { CustomEventTarget } from '../infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '../infrastructure/LinkConnectorEventMap'
+import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from '../interfaces'
+import type { LGraphNode, NodeId } from '../LGraphNode'
+import type { LLink } from '../LLink'
+import type { Reroute } from '../Reroute'
+import type { SubgraphInput } from '../subgraph/SubgraphInput'
+import type { SubgraphOutput } from '../subgraph/SubgraphOutput'
 
-import { LinkDirection } from "@/types/globalEnums"
+import { LinkDirection } from '../types/globalEnums'
 
 /**
  * Represents an existing link that is currently being dragged by the user from one slot to another.

@@ -1,14 +1,14 @@
-import type { INodeOutputSlot, Positionable } from "@/interfaces"
-import type { LGraph } from "@/LGraph"
-import type { ISerialisedNode, SerialisableLLink, SubgraphIO } from "@/types/serialisation"
+import type { INodeOutputSlot, Positionable } from '../interfaces'
+import type { LGraph } from '../LGraph'
+import type { ISerialisedNode, SerialisableLLink, SubgraphIO } from '../types/serialisation'
 
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
-import { LGraphGroup } from "@/LGraphGroup"
-import { LGraphNode } from "@/LGraphNode"
-import { createUuidv4, LiteGraph } from "@/litegraph"
-import { LLink, type ResolvedConnection } from "@/LLink"
-import { Reroute } from "@/Reroute"
-import { nextUniqueName } from "@/strings"
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '../constants'
+import { LGraphGroup } from '../LGraphGroup'
+import { LGraphNode } from '../LGraphNode'
+import { createUuidv4, LiteGraph } from '../litegraph'
+import { LLink, type ResolvedConnection } from '../LLink'
+import { Reroute } from '../Reroute'
+import { nextUniqueName } from '../strings'
 
 import { SubgraphInputNode } from "./SubgraphInputNode"
 import { SubgraphOutputNode } from "./SubgraphOutputNode"

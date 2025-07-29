@@ -1,5 +1,4 @@
-import { LiteGraph } from '@comfyorg/litegraph'
-
+import { LiteGraph } from '../../lib/litegraph/src/litegraph'
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'
 

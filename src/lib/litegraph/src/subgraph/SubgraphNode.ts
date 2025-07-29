@@ -1,15 +1,15 @@
-import type { ISubgraphInput } from "@/interfaces"
-import type { BaseLGraph, LGraph } from "@/LGraph"
-import type { INodeInputSlot, ISlotType, NodeId } from "@/litegraph"
-import type { GraphOrSubgraph, Subgraph } from "@/subgraph/Subgraph"
-import type { ExportedSubgraphInstance } from "@/types/serialisation"
-import type { UUID } from "@/utils/uuid"
+import type { ISubgraphInput } from '../interfaces'
+import type { BaseLGraph, LGraph } from '../LGraph'
+import type { INodeInputSlot, ISlotType, NodeId } from '../litegraph'
+import type { GraphOrSubgraph, Subgraph } from './Subgraph'
+import type { ExportedSubgraphInstance } from '../types/serialisation'
+import type { UUID } from '../utils/uuid'
 
-import { RecursionError } from "@/infrastructure/RecursionError"
-import { LGraphNode } from "@/LGraphNode"
-import { LLink, type ResolvedConnection } from "@/LLink"
-import { NodeInputSlot } from "@/node/NodeInputSlot"
-import { NodeOutputSlot } from "@/node/NodeOutputSlot"
+import { RecursionError } from '../infrastructure/RecursionError'
+import { LGraphNode } from '../LGraphNode'
+import { LLink, type ResolvedConnection } from '../LLink'
+import { NodeInputSlot } from '../node/NodeInputSlot'
+import { NodeOutputSlot } from '../node/NodeOutputSlot'
 
 import { type ExecutableLGraphNode, ExecutableNodeDTO } from "./ExecutableNodeDTO"
 

@@ -28,7 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import { COMFY_VUE_NODE_DIMENSIONS } from '@comfyorg/litegraph'
 import InputText from 'primevue/inputtext'
 import Slider from 'primevue/slider'
 import { computed, ref, watch } from 'vue'
@@ -39,6 +38,8 @@ import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+
+import { COMFY_VUE_NODE_DIMENSIONS } from '../../../lib/litegraph/src/litegraph'
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>

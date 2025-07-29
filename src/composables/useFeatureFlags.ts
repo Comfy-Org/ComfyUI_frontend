@@ -2,10 +2,11 @@
  * Feature flags composable for Vue node system
  * Provides safe toggles for experimental features
  */
-import { LiteGraph } from '@comfyorg/litegraph'
 import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
+
+import { LiteGraph } from '../lib/litegraph/src/litegraph'
 
 export const useFeatureFlags = () => {
   const settingStore = useSettingStore()

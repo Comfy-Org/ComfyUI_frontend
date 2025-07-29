@@ -1,11 +1,11 @@
-import type { SubgraphEventMap } from "@/infrastructure/SubgraphEventMap"
-import type { DefaultConnectionColors } from "@/interfaces"
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { ExportedSubgraph, ExposedWidget, ISerialisedGraph, Serialisable, SerialisableGraph } from "@/types/serialisation"
+import type { SubgraphEventMap } from '../infrastructure/SubgraphEventMap'
+import type { DefaultConnectionColors } from '../interfaces'
+import type { LGraphCanvas } from '../LGraphCanvas'
+import type { ExportedSubgraph, ExposedWidget, ISerialisedGraph, Serialisable, SerialisableGraph } from '../types/serialisation'
 
-import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import { type BaseLGraph, LGraph } from "@/LGraph"
-import { createUuidv4 } from "@/litegraph"
+import { CustomEventTarget } from '../infrastructure/CustomEventTarget'
+import { type BaseLGraph, LGraph } from '../LGraph'
+import { createUuidv4 } from '../litegraph'
 
 import { SubgraphInput } from "./SubgraphInput"
 import { SubgraphInputNode } from "./SubgraphInputNode"

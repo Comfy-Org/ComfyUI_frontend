@@ -38,7 +38,7 @@ import type { NeverNever } from "./types/utility"
 import type { PickNevers } from "./types/utility"
 import type { IBaseWidget } from "./types/widgets"
 
-import { LinkConnector } from "@/canvas/LinkConnector"
+import { LinkConnector } from './canvas/LinkConnector'
 
 import { isOverNodeInput, isOverNodeOutput } from "./canvas/measureSlots"
 import { CanvasPointer } from "./CanvasPointer"
@@ -63,7 +63,7 @@ import {
 import { NodeInputSlot } from "./node/NodeInputSlot"
 import { Reroute, type RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
-import { Subgraph } from "./subgraph/Subgraph"
+import { Subgraph } from "./litegraph"
 import { SubgraphInputNode } from "./subgraph/SubgraphInputNode"
 import { SubgraphIONodeBase } from "./subgraph/SubgraphIONodeBase"
 import { SubgraphOutputNode } from "./subgraph/SubgraphOutputNode"

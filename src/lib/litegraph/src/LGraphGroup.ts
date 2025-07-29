@@ -10,7 +10,7 @@ import type {
 import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 
-import { NullGraphError } from "@/infrastructure/NullGraphError"
+import { NullGraphError } from './infrastructure/NullGraphError'
 
 import { strokeShape } from "./draw"
 import { LGraphCanvas } from "./LGraphCanvas"

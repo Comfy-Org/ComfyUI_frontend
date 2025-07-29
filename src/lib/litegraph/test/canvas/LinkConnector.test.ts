@@ -1,9 +1,9 @@
-import type { INodeInputSlot, LGraphNode } from "@/litegraph"
+import type { INodeInputSlot, LGraphNode } from '../../src/litegraph'
 
 import { beforeEach, describe, expect, test, vi } from "vitest"
 
 // We don't strictly need RenderLink interface import for the mock
-import { LinkConnector } from "@/litegraph"
+import { LinkConnector } from '../../src/litegraph'
 
 // Mocks
 const mockSetConnectingLinks = vi.fn()

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest"
 
-import { Rectangle } from "@/infrastructure/Rectangle"
+import { Rectangle } from '../../src/infrastructure/Rectangle'
 
 describe("Rectangle resize functionality", () => {
   let rect: Rectangle

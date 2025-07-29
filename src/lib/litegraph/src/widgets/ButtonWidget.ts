@@ -1,5 +1,5 @@
-import type { LGraphNode } from "@/LGraphNode"
-import type { IButtonWidget } from "@/types/widgets"
+import type { LGraphNode } from '../LGraphNode'
+import type { IButtonWidget } from '../types/widgets'
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 

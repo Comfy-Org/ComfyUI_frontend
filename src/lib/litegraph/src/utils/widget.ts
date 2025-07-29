@@ -1,4 +1,4 @@
-import type { IWidgetOptions } from "@/types/widgets"
+import type { IWidgetOptions } from '../types/widgets'
 
 /**
  * The step value for numeric widgets.

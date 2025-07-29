@@ -3,15 +3,15 @@ import type { EmptySubgraphOutput } from "./EmptySubgraphOutput"
 import type { Subgraph } from "./Subgraph"
 import type { SubgraphInput } from "./SubgraphInput"
 import type { SubgraphOutput } from "./SubgraphOutput"
-import type { LinkConnector } from "@/canvas/LinkConnector"
-import type { DefaultConnectionColors, Hoverable, Point, Positionable } from "@/interfaces"
-import type { NodeId } from "@/LGraphNode"
-import type { ExportedSubgraphIONode, Serialisable } from "@/types/serialisation"
+import type { LinkConnector } from '../canvas/LinkConnector'
+import type { DefaultConnectionColors, Hoverable, Point, Positionable } from '../interfaces'
+import type { NodeId } from '../LGraphNode'
+import type { ExportedSubgraphIONode, Serialisable } from '../types/serialisation'
 
-import { Rectangle } from "@/infrastructure/Rectangle"
-import { type CanvasColour, type CanvasPointer, type CanvasPointerEvent, type IContextMenuValue, LiteGraph } from "@/litegraph"
-import { snapPoint } from "@/measure"
-import { CanvasItem } from "@/types/globalEnums"
+import { Rectangle } from '../infrastructure/Rectangle'
+import { type CanvasColour, type CanvasPointer, type CanvasPointerEvent, type IContextMenuValue, LiteGraph } from '../litegraph'
+import { snapPoint } from '../measure'
+import { CanvasItem } from '../types/globalEnums'
 
 export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphOutput> implements Positionable, Hoverable, Serialisable<ExportedSubgraphIONode> {
   static margin = 10

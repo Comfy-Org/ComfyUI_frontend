@@ -1,7 +1,11 @@
-import { type INodeSlot, LGraph, LGraphNode } from '@comfyorg/litegraph'
-import { Subgraph } from '@comfyorg/litegraph'
-
 import type { PrimitiveNode } from '@/extensions/core/widgetInputs'
+
+import {
+  type INodeSlot,
+  LGraph,
+  LGraphNode
+} from '../lib/litegraph/src/litegraph'
+import { Subgraph } from '../lib/litegraph/src/litegraph'
 
 export function isPrimitiveNode(
   node: LGraphNode

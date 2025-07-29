@@ -1,11 +1,10 @@
+import { useToastStore } from '@/stores/toastStore'
+
 import {
   type LGraphNode,
   type LGraphNodeConstructor,
   LiteGraph
-} from '@comfyorg/litegraph'
-
-import { useToastStore } from '@/stores/toastStore'
-
+} from '../../lib/litegraph/src/litegraph'
 import { type ComfyApp, app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import { ComfyDialog } from '../../scripts/ui/dialog'

@@ -1,4 +1,4 @@
-import type { NeverNever, PickNevers } from "@/types/utility"
+import type { NeverNever, PickNevers } from '../types/utility'
 
 type EventListeners<T> = {
   readonly [K in keyof T]: ((this: EventTarget, ev: CustomEvent<T[K]>) => any) | EventListenerObject | null

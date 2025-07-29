@@ -1,6 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IStringWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
@@ -10,6 +7,8 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useToastStore } from '@/stores/toastStore'
 
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { IStringWidget } from '../../lib/litegraph/src/types/widgets'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 

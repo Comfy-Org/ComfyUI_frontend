@@ -1,8 +1,8 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
+import { LGraphNode } from '../../../lib/litegraph/src/litegraph'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'

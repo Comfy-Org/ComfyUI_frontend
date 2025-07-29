@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest"
 
-import { LLink } from "@/litegraph"
+import { LLink } from '../src/litegraph'
 
 import { test } from "./testExtensions"
 

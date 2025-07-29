@@ -1,10 +1,10 @@
 import type { SubgraphInputNode } from "./SubgraphInputNode"
-import type { INodeInputSlot, Point, ReadOnlyRect } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { RerouteId } from "@/Reroute"
+import type { INodeInputSlot, Point, ReadOnlyRect } from '../interfaces'
+import type { LGraphNode } from '../LGraphNode'
+import type { RerouteId } from '../Reroute'
 
-import { LLink } from "@/LLink"
-import { NodeSlotType } from "@/types/globalEnums"
+import { LLink } from '../LLink'
+import { NodeSlotType } from '../types/globalEnums'
 
 import { SubgraphSlot } from "./SubgraphSlotBase"
 

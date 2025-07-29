@@ -1,21 +1,21 @@
 import type { RenderLink } from "./RenderLink"
-import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
-import type { ConnectingLink, ItemLocator, LinkNetwork, LinkSegment } from "@/interfaces"
-import type { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { Reroute } from "@/Reroute"
-import type { SubgraphInput } from "@/subgraph/SubgraphInput"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
-import type { CanvasPointerEvent } from "@/types/events"
-import type { IBaseWidget } from "@/types/widgets"
+import type { LinkConnectorEventMap } from '../infrastructure/LinkConnectorEventMap'
+import type { ConnectingLink, ItemLocator, LinkNetwork, LinkSegment } from '../interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from '../interfaces'
+import type { LGraphNode } from '../LGraphNode'
+import type { Reroute } from '../Reroute'
+import type { SubgraphInput } from '../subgraph/SubgraphInput'
+import type { SubgraphOutput } from '../subgraph/SubgraphOutput'
+import type { CanvasPointerEvent } from '../types/events'
+import type { IBaseWidget } from '../types/widgets'
 
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
-import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import { LLink } from "@/LLink"
-import { Subgraph } from "@/subgraph/Subgraph"
-import { SubgraphInputNode } from "@/subgraph/SubgraphInputNode"
-import { SubgraphOutputNode } from "@/subgraph/SubgraphOutputNode"
-import { LinkDirection } from "@/types/globalEnums"
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '../constants'
+import { CustomEventTarget } from '../infrastructure/CustomEventTarget'
+import { LLink } from '../LLink'
+import { Subgraph } from '../litegraph'
+import { SubgraphInputNode } from '../subgraph/SubgraphInputNode'
+import { SubgraphOutputNode } from '../subgraph/SubgraphOutputNode'
+import { LinkDirection } from '../types/globalEnums'
 
 import { FloatingRenderLink } from "./FloatingRenderLink"
 import { MovingInputLink } from "./MovingInputLink"

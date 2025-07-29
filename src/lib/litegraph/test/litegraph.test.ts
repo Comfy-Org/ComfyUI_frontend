@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, vi } from "vitest"
 
-import { clamp, LGraphCanvas, LiteGraph } from "@/litegraph"
-import { LiteGraphGlobal } from "@/LiteGraphGlobal"
+import { clamp, LGraphCanvas, LiteGraph } from '../src/litegraph'
+import { LiteGraphGlobal } from '../src/LiteGraphGlobal'
 
 import { test } from "./testExtensions"
 

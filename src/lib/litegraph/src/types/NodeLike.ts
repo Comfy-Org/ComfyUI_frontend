@@ -1,6 +1,6 @@
-import type { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import type { NodeId } from "@/LGraphNode"
-import type { SubgraphIO } from "@/types/serialisation"
+import type { INodeInputSlot, INodeOutputSlot } from '../interfaces'
+import type { NodeId } from '../LGraphNode'
+import type { SubgraphIO } from './serialisation'
 
 export interface NodeLike {
   id: NodeId

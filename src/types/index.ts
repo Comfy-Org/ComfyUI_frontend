@@ -1,5 +1,3 @@
-import type { LGraph } from '@comfyorg/litegraph'
-
 import type {
   DeviceStats,
   EmbeddingsResponse,
@@ -17,6 +15,7 @@ import type {
 } from '@/schemas/apiSchema'
 import { ComfyApp } from '@/scripts/app'
 
+import type { LGraph } from '../lib/litegraph/src/litegraph'
 import type {
   BottomPanelExtension,
   CommandManager,

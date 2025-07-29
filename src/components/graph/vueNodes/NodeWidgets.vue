@@ -38,7 +38,6 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, onUnmounted, ref } from 'vue'
 
 // Import widget components directly
@@ -57,6 +56,7 @@ import {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
+import type { LGraphNode } from '../../../lib/litegraph/src/litegraph'
 import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {

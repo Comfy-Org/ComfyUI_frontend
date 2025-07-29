@@ -1,10 +1,10 @@
-import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, OptionalProps, Point, ReadOnlyPoint } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
+import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, OptionalProps, Point, ReadOnlyPoint } from '../interfaces'
+import type { LGraphNode } from '../LGraphNode'
 
-import { LabelPosition, SlotShape, SlotType } from "@/draw"
-import { LiteGraph, Rectangle } from "@/litegraph"
-import { getCentre } from "@/measure"
-import { LinkDirection, RenderShape } from "@/types/globalEnums"
+import { LabelPosition, SlotShape, SlotType } from '../draw'
+import { LiteGraph, Rectangle } from '../litegraph'
+import { getCentre } from '../measure'
+import { LinkDirection, RenderShape } from '../types/globalEnums'
 
 import { NodeInputSlot } from "./NodeInputSlot"
 import { SlotBase } from "./SlotBase"

@@ -1,4 +1,4 @@
-import type { ISerialisedGraph, SerialisableGraph } from "@/litegraph"
+import type { ISerialisedGraph, SerialisableGraph } from '../../src/litegraph'
 
 export const oldSchemaGraph: ISerialisedGraph = {
   id: "b4e984f1-b421-4d24-b8b4-ff895793af13",

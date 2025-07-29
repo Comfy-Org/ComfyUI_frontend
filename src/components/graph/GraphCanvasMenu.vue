@@ -60,7 +60,6 @@
 </template>
 
 <script setup lang="ts">
-import { LiteGraph } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import { computed } from 'vue'
@@ -69,6 +68,8 @@ import { useI18n } from 'vue-i18n'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+
+import { LiteGraph } from '../../lib/litegraph/src/litegraph'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()

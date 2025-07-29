@@ -1,8 +1,8 @@
-import type { ISerialisedGraph } from "@/types/serialisation"
+import type { ISerialisedGraph } from '../src/types/serialisation'
 
 import { describe } from "vitest"
 
-import { LGraph, LGraphGroup, LGraphNode } from "@/litegraph"
+import { LGraph, LGraphGroup, LGraphNode } from '../src/litegraph'
 
 import { test } from "./testExtensions"
 

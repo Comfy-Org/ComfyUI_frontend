@@ -1,18 +1,18 @@
 import type { SubgraphOutput } from "./SubgraphOutput"
-import type { LinkConnector } from "@/canvas/LinkConnector"
-import type { CanvasPointer } from "@/CanvasPointer"
-import type { DefaultConnectionColors, ISlotType, Positionable } from "@/interfaces"
-import type { INodeOutputSlot } from "@/interfaces"
-import type { LGraphNode, NodeId } from "@/LGraphNode"
-import type { LLink } from "@/LLink"
-import type { RerouteId } from "@/Reroute"
-import type { CanvasPointerEvent } from "@/types/events"
-import type { NodeLike } from "@/types/NodeLike"
-import type { SubgraphIO } from "@/types/serialisation"
+import type { LinkConnector } from '../canvas/LinkConnector'
+import type { CanvasPointer } from '../CanvasPointer'
+import type { DefaultConnectionColors, ISlotType, Positionable } from '../interfaces'
+import type { INodeOutputSlot } from '../interfaces'
+import type { LGraphNode, NodeId } from '../LGraphNode'
+import type { LLink } from '../LLink'
+import type { RerouteId } from '../Reroute'
+import type { CanvasPointerEvent } from '../types/events'
+import type { NodeLike } from '../types/NodeLike'
+import type { SubgraphIO } from '../types/serialisation'
 
-import { SUBGRAPH_OUTPUT_ID } from "@/constants"
-import { Rectangle } from "@/infrastructure/Rectangle"
-import { findFreeSlotOfType } from "@/utils/collections"
+import { SUBGRAPH_OUTPUT_ID } from '../constants'
+import { Rectangle } from '../infrastructure/Rectangle'
+import { findFreeSlotOfType } from '../utils/collections'
 
 import { EmptySubgraphOutput } from "./EmptySubgraphOutput"
 import { SubgraphIONodeBase } from "./SubgraphIONodeBase"

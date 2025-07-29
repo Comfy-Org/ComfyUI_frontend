@@ -40,13 +40,14 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LODLevel } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+
+import type { LGraphNode } from '../../../lib/litegraph/src/litegraph'
 
 interface NodeHeaderProps {
   node?: LGraphNode // For backwards compatibility

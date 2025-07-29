@@ -1,6 +1,6 @@
-import type { ISliderWidget } from "@/types/widgets"
+import type { ISliderWidget } from '../types/widgets'
 
-import { clamp } from "@/litegraph"
+import { clamp } from '../litegraph'
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 

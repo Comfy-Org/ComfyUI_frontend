@@ -40,8 +40,6 @@
 </template>
 
 <script setup lang="ts">
-import type { ColorOption as CanvasColorOption } from '@comfyorg/litegraph'
-import { LGraphCanvas, LiteGraph, isColorable } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
@@ -52,6 +50,13 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
+
+import type { ColorOption as CanvasColorOption } from '../../../lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  isColorable
+} from '../../../lib/litegraph/src/litegraph'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()

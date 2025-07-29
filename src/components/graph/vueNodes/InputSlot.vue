@@ -33,12 +33,16 @@
 </template>
 
 <script setup lang="ts">
-import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph'
-import { COMFY_VUE_NODE_DIMENSIONS } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
+
+import type {
+  INodeSlot,
+  LGraphNode
+} from '../../../lib/litegraph/src/litegraph'
+import { COMFY_VUE_NODE_DIMENSIONS } from '../../../lib/litegraph/src/litegraph'
 
 interface InputSlotProps {
   node?: LGraphNode

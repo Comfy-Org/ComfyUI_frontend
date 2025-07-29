@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect } from "vitest"
 
-import { LGraphNode, LiteGraph } from "@/litegraph"
+import { LGraphNode, LiteGraph } from '../src/litegraph'
 
 import { test } from "./testExtensions"
 

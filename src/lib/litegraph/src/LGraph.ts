@@ -18,10 +18,10 @@ import type {
   SerialisableGraph,
   SerialisableReroute,
 } from "./types/serialisation"
-import type { UUID } from "@/utils/uuid"
+import type { UUID } from './utils/uuid'
 
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
-import { createUuidv4, zeroUuid } from "@/utils/uuid"
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from './constants'
+import { createUuidv4, zeroUuid } from './utils/uuid'
 
 import { CustomEventTarget } from "./infrastructure/CustomEventTarget"
 import { LGraphCanvas } from "./LGraphCanvas"
@@ -33,7 +33,7 @@ import { MapProxyHandler } from "./MapProxyHandler"
 import { alignOutsideContainer, alignToContainer, createBounds } from "./measure"
 import { Reroute, type RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
-import { type GraphOrSubgraph, Subgraph } from "./subgraph/Subgraph"
+import { type GraphOrSubgraph, Subgraph } from './litegraph'
 import { SubgraphInput } from "./subgraph/SubgraphInput"
 import { SubgraphOutput } from "./subgraph/SubgraphOutput"
 import { getBoundaryLinks, groupResolvedByOutput, mapSubgraphInputsAndLinks, mapSubgraphOutputsAndLinks, multiClone, splitPositionables } from "./subgraph/subgraphUtils"

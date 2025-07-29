@@ -1,4 +1,4 @@
-import type { IBooleanWidget } from "@/types/widgets"
+import type { IBooleanWidget } from '../types/widgets'
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 

@@ -1,10 +1,10 @@
-import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { LinkId } from "@/LLink"
+import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from '../interfaces'
+import type { LGraphNode } from '../LGraphNode'
+import type { LinkId } from '../LLink'
 
-import { LabelPosition } from "@/draw"
-import { LiteGraph } from "@/litegraph"
-import { type IDrawOptions, NodeSlot } from "@/node/NodeSlot"
+import { LabelPosition } from '../draw'
+import { LiteGraph } from '../litegraph'
+import { type IDrawOptions, NodeSlot } from './NodeSlot'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null

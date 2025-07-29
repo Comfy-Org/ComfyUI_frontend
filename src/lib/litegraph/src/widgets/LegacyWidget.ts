@@ -1,7 +1,7 @@
-import type { LGraphNode } from "@/LGraphNode"
-import type { IBaseWidget } from "@/types/widgets"
+import type { LGraphNode } from '../LGraphNode'
+import type { IBaseWidget } from '../types/widgets'
 
-import { LiteGraph } from "@/litegraph"
+import { LiteGraph } from '../litegraph'
 
 import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
 

@@ -30,7 +30,6 @@
 </template>
 
 <script setup lang="ts">
-import type { INodeSlot, LGraphNode } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, onUnmounted, ref } from 'vue'
 
 import { useEventForwarding } from '@/composables/graph/useEventForwarding'
@@ -39,6 +38,10 @@ import type { LODLevel } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { isSlotObject } from '@/utils/typeGuardUtil'
 
+import type {
+  INodeSlot,
+  LGraphNode
+} from '../../../lib/litegraph/src/litegraph'
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 

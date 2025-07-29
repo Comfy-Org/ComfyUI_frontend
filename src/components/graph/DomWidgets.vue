@@ -11,7 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
@@ -19,6 +18,8 @@ import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
+
+import { type LGraphNode, LiteGraph } from '../../lib/litegraph/src/litegraph'
 
 const domWidgetStore = useDomWidgetStore()
 const widgetStates = computed(() => domWidgetStore.activeWidgetStates)

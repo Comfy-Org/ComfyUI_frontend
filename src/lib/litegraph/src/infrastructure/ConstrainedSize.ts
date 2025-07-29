@@ -1,6 +1,6 @@
-import type { ReadOnlyRect, ReadOnlySize, Size } from "@/interfaces"
+import type { ReadOnlyRect, ReadOnlySize, Size } from '../interfaces'
 
-import { clamp } from "@/litegraph"
+import { clamp } from '../litegraph'
 
 /**
  * Basic width and height, with min/max constraints.

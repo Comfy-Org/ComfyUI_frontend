@@ -77,7 +77,6 @@
 </template>
 
 <script setup lang="ts">
-import { LiteGraph } from '@comfyorg/litegraph'
 import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
 
 // Import the VueNodeData type
@@ -85,6 +84,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { LODLevel, useLOD } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 
+import { LiteGraph } from '../../../lib/litegraph/src/litegraph'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'

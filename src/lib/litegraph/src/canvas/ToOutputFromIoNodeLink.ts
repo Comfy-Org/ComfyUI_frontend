@@ -1,15 +1,15 @@
 import type { RenderLink } from "./RenderLink"
-import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
-import type { INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { Reroute } from "@/Reroute"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
-import type { SubgraphOutputNode } from "@/subgraph/SubgraphOutputNode"
-import type { NodeLike } from "@/types/NodeLike"
-import type { SubgraphIO } from "@/types/serialisation"
+import type { CustomEventTarget } from '../infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '../infrastructure/LinkConnectorEventMap'
+import type { INodeOutputSlot, LinkNetwork, Point } from '../interfaces'
+import type { LGraphNode } from '../LGraphNode'
+import type { Reroute } from '../Reroute'
+import type { SubgraphOutput } from '../subgraph/SubgraphOutput'
+import type { SubgraphOutputNode } from '../subgraph/SubgraphOutputNode'
+import type { NodeLike } from '../types/NodeLike'
+import type { SubgraphIO } from '../types/serialisation'
 
-import { LinkDirection } from "@/types/globalEnums"
+import { LinkDirection } from '../types/globalEnums'
 
 /** Connecting TO an output slot. */
 

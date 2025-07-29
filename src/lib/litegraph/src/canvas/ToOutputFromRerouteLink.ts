@@ -1,7 +1,7 @@
 import type { LinkConnector } from "./LinkConnector"
-import type { LGraphNode } from "@/LGraphNode"
-import type { INodeInputSlot, INodeOutputSlot, LinkNetwork } from "@/litegraph"
-import type { Reroute } from "@/Reroute"
+import type { LGraphNode } from '../LGraphNode'
+import type { INodeInputSlot, INodeOutputSlot, LinkNetwork } from '../litegraph'
+import type { Reroute } from '../Reroute'
 
 import { ToInputRenderLink } from "./ToInputRenderLink"
 import { ToOutputRenderLink } from "./ToOutputRenderLink"

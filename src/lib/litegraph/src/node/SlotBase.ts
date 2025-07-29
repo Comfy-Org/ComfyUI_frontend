@@ -1,9 +1,9 @@
-import type { CanvasColour, DefaultConnectionColors, INodeSlot, ISlotType, IWidgetLocator, Point } from "@/interfaces"
-import type { LLink } from "@/LLink"
-import type { RenderShape } from "@/types/globalEnums"
-import type { LinkDirection } from "@/types/globalEnums"
+import type { CanvasColour, DefaultConnectionColors, INodeSlot, ISlotType, IWidgetLocator, Point } from '../interfaces'
+import type { LLink } from '../LLink'
+import type { RenderShape } from '../types/globalEnums'
+import type { LinkDirection } from '../types/globalEnums'
 
-import { Rectangle } from "@/infrastructure/Rectangle"
+import { Rectangle } from '../infrastructure/Rectangle'
 
 /** Base class for all input & output slots. */
 

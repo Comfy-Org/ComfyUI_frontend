@@ -1,4 +1,4 @@
-import type { IBaseWidget } from "@/types/widgets"
+import type { IBaseWidget } from '../types/widgets'
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 
