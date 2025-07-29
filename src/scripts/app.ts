@@ -720,16 +720,12 @@ export class ComfyApp {
       fixLinkInputSlots(this)
 
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      for (const node of graph.nodes) {
-        node.onGraphConfigured?.()
-      }
+      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
       const r = onConfigure?.apply(this, args)
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      for (const node of graph.nodes) {
-        node.onAfterGraphConfigured?.()
-      }
+      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
       return r
     }
