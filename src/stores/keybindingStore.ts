@@ -28,14 +28,15 @@ export class KeybindingImpl implements Keybinding {
 }
 
 export class KeyComboImpl implements KeyCombo {
-  key: string
-  // ctrl or meta(cmd on mac)
+  key: string // Displayed character (locale-dependent)
+  code: string // Physical key (layout-independent)
   ctrl: boolean
   alt: boolean
   shift: boolean
 
-  constructor(obj: KeyCombo) {
+  constructor(obj: KeyCombo & { code?: string }) {
     this.key = obj.key
+    this.code = obj.code ?? ''
     this.ctrl = obj.ctrl ?? false
     this.alt = obj.alt ?? false
     this.shift = obj.shift ?? false
@@ -44,6 +45,7 @@ export class KeyComboImpl implements KeyCombo {
   static fromEvent(event: KeyboardEvent) {
     return new KeyComboImpl({
       key: event.key,
+      code: event.code,
       ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
       shift: event.shiftKey
@@ -52,9 +54,8 @@ export class KeyComboImpl implements KeyCombo {
 
   equals(other: unknown): boolean {
     const raw = toRaw(other)
-
     return raw instanceof KeyComboImpl
-      ? this.key.toUpperCase() === raw.key.toUpperCase() &&
+      ? this.code === raw.code &&
           this.ctrl === raw.ctrl &&
           this.alt === raw.alt &&
           this.shift === raw.shift
@@ -62,7 +63,8 @@ export class KeyComboImpl implements KeyCombo {
   }
 
   serialize(): string {
-    return `${this.key.toUpperCase()}:${this.ctrl}:${this.alt}:${this.shift}`
+    // Use code for serialization (layout-independent)
+    return `${this.code}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
   toString(): string {
@@ -105,6 +107,7 @@ export class KeyComboImpl implements KeyCombo {
     if (this.shift) {
       sequences.push('Shift')
     }
+    // Show key for display, but use code for matching
     sequences.push(this.key)
     return sequences
   }
