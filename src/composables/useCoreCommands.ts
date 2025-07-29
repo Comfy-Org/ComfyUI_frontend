@@ -29,6 +29,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { getAllNonIoNodesInSubgraph } from '@/utils/graphTraversalUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -171,7 +172,16 @@ export function useCoreCommands(): ComfyCommand[] {
           confirm('Clear workflow?')
         ) {
           app.clean()
-          app.graph.clear()
+          if (app.canvas.subgraph) {
+            // `clear` is not implemented on subgraphs and the parent class's
+            // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
+            // just clear the nodes but preserve input/output nodes and structure
+            const subgraph = app.canvas.subgraph
+            const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+            nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            app.graph.clear()
+          }
           api.dispatchCustomEvent('graphCleared')
         }
       }

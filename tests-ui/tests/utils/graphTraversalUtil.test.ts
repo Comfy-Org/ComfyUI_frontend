@@ -7,6 +7,7 @@ import {
   findSubgraphByUuid,
   forEachNode,
   forEachSubgraphNode,
+  getAllNonIoNodesInSubgraph,
   getLocalNodeIdFromExecutionId,
   getNodeByExecutionId,
   getNodeByLocatorId,
@@ -755,6 +756,55 @@ describe('graphTraversalUtil', () => {
           { id: 1, isTarget: true },
           { id: 3, isTarget: true }
         ])
+      })
+    })
+
+    describe('getAllNonIoNodesInSubgraph', () => {
+      it('should filter out SubgraphInputNode and SubgraphOutputNode', () => {
+        const nodes = [
+          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } },
+          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(2)
+        expect(nonIoNodes.map((n) => n.id)).toEqual(['user1', 'user2'])
+      })
+
+      it('should handle subgraph with only IO nodes', () => {
+        const nodes = [
+          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(0)
+      })
+
+      it('should handle subgraph with only user nodes', () => {
+        const nodes = [
+          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(2)
+        expect(nonIoNodes).toEqual(nodes)
+      })
+
+      it('should handle empty subgraph', () => {
+        const subgraph = createMockSubgraph('sub-uuid', [])
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(0)
       })
     })
   })
