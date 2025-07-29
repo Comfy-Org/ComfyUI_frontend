@@ -1,18 +1,20 @@
 <template>
   <Button
     outlined
-    class="!m-0 p-0 rounded-lg text-gray-900 dark-theme:text-gray-50"
+    class="!m-0 p-0 max-w-[120px] rounded-lg text-gray-900 dark-theme:text-gray-50"
     :class="[
       variant === 'black'
         ? 'bg-neutral-900 text-white border-neutral-900'
-        : 'border-neutral-700',
+        : variant === 'red'
+          ? 'border-red-500'
+          : 'border-neutral-700',
       fullWidth ? 'w-full' : 'w-min-content'
     ]"
     :disabled="loading"
     v-bind="$attrs"
     @click="onClick"
   >
-    <span class="py-2 px-3 whitespace-nowrap text-xs flex items-center gap-2">
+    <span class="py-1.5 px-3 whitespace-nowrap text-xs flex items-center gap-2">
       <i
         v-if="hasWarning && !loading"
         class="pi pi-exclamation-triangle text-yellow-500"
@@ -42,7 +44,7 @@ const {
   loading?: boolean
   loadingMessage?: string
   fullWidth?: boolean
-  variant?: 'default' | 'black'
+  variant?: 'default' | 'black' | 'red'
   hasWarning?: boolean
 }>()
 

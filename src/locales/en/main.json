@@ -194,7 +194,7 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All Missing Nodes",
-    "packsSelected": "Packs Selected",
+    "packsSelected": "packs selected",
     "status": {
       "active": "Active",
       "pending": "Pending",

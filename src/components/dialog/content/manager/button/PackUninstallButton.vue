@@ -6,7 +6,7 @@
         ? $t('manager.uninstallSelected')
         : $t('manager.uninstall')
     "
-    severity="danger"
+    variant="red"
     :loading-message="$t('manager.uninstalling')"
     @action="uninstallItems"
   />
