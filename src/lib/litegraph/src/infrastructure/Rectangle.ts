@@ -49,7 +49,7 @@ export class Rectangle extends Float64Array {
       : new Rectangle(rect[0], rect[1], rect[2], rect[3])
   }
 
-  override subarray(begin: number = 0, end?: number): Float64Array<ArrayBuffer> {
+  override subarray(begin: number = 0, end?: number): Float64Array {
     const byteOffset = begin << 3
     const length = end === undefined ? end : end - begin
     return new Float64Array(this.buffer, byteOffset, length)
@@ -61,7 +61,7 @@ export class Rectangle extends Float64Array {
    * Updating the values of the returned object will update this rectangle.
    */
   get pos(): Point {
-    this.#pos ??= this.subarray(0, 2)
+    this.#pos ??= this.subarray(0, 2) as unknown as Point
     return this.#pos
   }
 
@@ -76,7 +76,7 @@ export class Rectangle extends Float64Array {
    * Updating the values of the returned object will update this rectangle.
    */
   get size(): Size {
-    this.#size ??= this.subarray(2, 4)
+    this.#size ??= this.subarray(2, 4) as unknown as Size
     return this.#size
   }
 
