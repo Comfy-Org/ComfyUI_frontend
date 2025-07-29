@@ -201,7 +201,8 @@
       "flagged": "Flagged",
       "deleted": "Deleted",
       "banned": "Banned",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "conflicting": "Conflicting"
     },
     "sort": {
       "downloads": "Most Popular",
