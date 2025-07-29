@@ -53,6 +53,11 @@ export function useSettingSearch() {
     const queryLower = query.toLocaleLowerCase()
     const allSettings = Object.values(settingStore.settingsById)
     const filteredSettings = allSettings.filter((setting) => {
+      // Filter out hidden and deprecated settings, just like in normal settings tree
+      if (setting.type === 'hidden' || setting.deprecated) {
+        return false
+      }
+
       const idLower = setting.id.toLowerCase()
       const nameLower = setting.name.toLowerCase()
       const translatedName = st(

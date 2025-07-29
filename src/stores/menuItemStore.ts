@@ -23,6 +23,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
         // Create a new node if it doesn't exist
         found = {
           label: segment,
+          key: segment,
           items: []
         }
         currentLevel.push(found)

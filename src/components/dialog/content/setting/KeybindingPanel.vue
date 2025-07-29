@@ -98,7 +98,7 @@
           @keydown.stop.prevent="captureKeybinding"
         />
         <Message v-if="existingKeybindingOnCombo" severity="warn">
-          Keybinding already exists on
+          {{ $t('g.keybindingAlreadyExists') }}
           <Tag
             severity="secondary"
             :value="existingKeybindingOnCombo.commandId"

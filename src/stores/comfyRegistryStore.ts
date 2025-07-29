@@ -105,12 +105,24 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   >(registryService.search, { maxSize: PACK_LIST_CACHE_SIZE })
 
   /**
+   * Get the node pack that contains a specific ComfyUI node by its name.
+   * Results are cached to avoid redundant API calls.
+   *
+   * @see {@link useComfyRegistryService.inferPackFromNodeName} for details on the ranking algorithm
+   */
+  const inferPackFromNodeName = useCachedRequest<
+    operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName'],
+    NodePack
+  >(registryService.inferPackFromNodeName, { maxSize: PACK_BY_ID_CACHE_SIZE })
+
+  /**
    * Clear all cached data
    */
   const clearCache = () => {
     getNodeDefs.clear()
     listAllPacks.clear()
     getPackById.clear()
+    inferPackFromNodeName.clear()
   }
 
   /**
@@ -120,6 +132,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     getNodeDefs.cancel()
     listAllPacks.cancel()
     getPackById.cancel()
+    inferPackFromNodeName.cancel()
     getPacksByIdController?.abort()
   }
 
@@ -132,6 +145,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     },
     getNodeDefs,
     search,
+    inferPackFromNodeName,
 
     clearCache,
     cancelRequests,

@@ -251,11 +251,41 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
   } as ComfyNodeDefV1)
 }
 
+/**
+ * Defines a filter for node definitions in the node library.
+ * Filters are applied in a single pass to determine node visibility.
+ */
+export interface NodeDefFilter {
+  /**
+   * Unique identifier for the filter.
+   * Convention: Use dot notation like 'core.deprecated' or 'extension.myfilter'
+   */
+  id: string
+
+  /**
+   * Display name for the filter (used in UI/debugging).
+   */
+  name: string
+
+  /**
+   * Optional description explaining what the filter does.
+   */
+  description?: string
+
+  /**
+   * The filter function that returns true if the node should be visible.
+   * @param nodeDef - The node definition to evaluate
+   * @returns true if the node should be visible, false to hide it
+   */
+  predicate: (nodeDef: ComfyNodeDefImpl) => boolean
+}
+
 export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
+  const nodeDefFilters = ref<NodeDefFilter[]>([])
 
   const nodeDefs = computed(() => Object.values(nodeDefsByName.value))
   const nodeDataTypes = computed(() => {
@@ -270,13 +300,11 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
     return types
   })
-  const visibleNodeDefs = computed(() =>
-    nodeDefs.value.filter(
-      (nodeDef: ComfyNodeDefImpl) =>
-        (showDeprecated.value || !nodeDef.deprecated) &&
-        (showExperimental.value || !nodeDef.experimental)
+  const visibleNodeDefs = computed(() => {
+    return nodeDefs.value.filter((nodeDef) =>
+      nodeDefFilters.value.every((filter) => filter.predicate(nodeDef))
     )
-  )
+  })
   const nodeSearchService = computed(
     () => new NodeSearchService(visibleNodeDefs.value)
   )
@@ -306,16 +334,74 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore Optional chaining used in index
-    return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
+    const nodeTypeName = node.constructor?.nodeData?.name
+    if (!nodeTypeName) return null
+    const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
+    return nodeDef
   }
+
+  /**
+   * Registers a node definition filter.
+   * @param filter - The filter to register
+   */
+  function registerNodeDefFilter(filter: NodeDefFilter) {
+    nodeDefFilters.value = [...nodeDefFilters.value, filter]
+  }
+
+  /**
+   * Unregisters a node definition filter by ID.
+   * @param id - The ID of the filter to remove
+   */
+  function unregisterNodeDefFilter(id: string) {
+    nodeDefFilters.value = nodeDefFilters.value.filter((f) => f.id !== id)
+  }
+
+  /**
+   * Register the core node definition filters.
+   */
+  function registerCoreNodeDefFilters() {
+    // Deprecated nodes filter
+    registerNodeDefFilter({
+      id: 'core.deprecated',
+      name: 'Hide Deprecated Nodes',
+      description: 'Hides nodes marked as deprecated unless explicitly enabled',
+      predicate: (nodeDef) => showDeprecated.value || !nodeDef.deprecated
+    })
+
+    // Experimental nodes filter
+    registerNodeDefFilter({
+      id: 'core.experimental',
+      name: 'Hide Experimental Nodes',
+      description:
+        'Hides nodes marked as experimental unless explicitly enabled',
+      predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
+    })
+
+    // Subgraph nodes filter
+    // @todo Remove this filter when subgraph v2 is released
+    registerNodeDefFilter({
+      id: 'core.subgraph',
+      name: 'Hide Subgraph Nodes',
+      description:
+        'Temporarily hides subgraph nodes from node library and search',
+      predicate: (nodeDef) => {
+        // Hide subgraph nodes (identified by category='subgraph' and python_module='nodes')
+        return !(
+          nodeDef.category === 'subgraph' && nodeDef.python_module === 'nodes'
+        )
+      }
+    })
+  }
+
+  // Register core filters on store initialization
+  registerCoreNodeDefFilters()
 
   return {
     nodeDefsByName,
     nodeDefsByDisplayName,
     showDeprecated,
     showExperimental,
+    nodeDefFilters,
 
     nodeDefs,
     nodeDataTypes,
@@ -325,7 +411,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
-    fromLGraphNode
+    fromLGraphNode,
+    registerNodeDefFilter,
+    unregisterNodeDefFilter
   }
 })
 

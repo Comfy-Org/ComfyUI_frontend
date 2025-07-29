@@ -1,0 +1,84 @@
+name: Claude PR Review
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+  statuses: write
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  wait-for-ci:
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'claude-review'
+    outputs:
+      should-proceed: ${{ steps.check-status.outputs.proceed }}
+    steps:
+      - name: Wait for other CI checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-regexp: '^(eslint|prettier|test|playwright-tests)'
+          wait-interval: 30
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Check if we should proceed
+        id: check-status
+        run: |
+          # Get all check runs for this commit
+          CHECK_RUNS=$(gh api repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs --jq '.check_runs[] | select(.name | test("eslint|prettier|test|playwright-tests")) | {name, conclusion}')
+          
+          # Check if any required checks failed
+          if echo "$CHECK_RUNS" | grep -q '"conclusion": "failure"'; then
+            echo "Some CI checks failed - skipping Claude review"
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          else
+            echo "All CI checks passed - proceeding with Claude review"
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  claude-review:
+    needs: wait-for-ci
+    if: needs.wait-for-ci.outputs.should-proceed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies for analysis tools
+        run: |
+          npm install -g typescript @vue/compiler-sfc
+
+      - name: Run Claude PR Review
+        uses: anthropics/claude-code-action@main
+        with:
+          label_trigger: "claude-review"
+          direct_prompt: |
+            Read the file .claude/commands/comprehensive-pr-review.md and follow ALL the instructions exactly. 
+            
+            CRITICAL: You must post individual inline comments using the gh api commands shown in the file. 
+            DO NOT create a summary comment. 
+            Each issue must be posted as a separate inline comment on the specific line of code.
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: 256
+          timeout_minutes: 30
+          allowed_tools: "Bash(git:*),Bash(gh api:*),Bash(gh pr:*),Bash(gh repo:*),Bash(jq:*),Bash(echo:*),Read,Write,Edit,Glob,Grep,WebFetch"
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REPOSITORY: ${{ github.repository }}

@@ -63,7 +63,7 @@ test.describe('Menu', () => {
     test('@mobile Items fully visible on mobile screen width', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.openSubmenuMobile()
+      await comfyPage.menu.topbar.openTopbarMenu()
       const topLevelMenuItem = comfyPage.page
         .locator('a.p-menubar-item-link')
         .first()
@@ -74,8 +74,9 @@ test.describe('Menu', () => {
     })
 
     test('Displays keybinding next to item', async ({ comfyPage }) => {
+      await comfyPage.menu.topbar.openTopbarMenu()
       const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('Workflow')
-      await workflowMenuItem.click()
+      await workflowMenuItem.hover()
       const exportTag = comfyPage.page.locator('.keybinding-tag', {
         hasText: 'Ctrl + s'
       })

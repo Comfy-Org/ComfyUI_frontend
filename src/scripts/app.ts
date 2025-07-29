@@ -39,12 +39,15 @@ import { getSvgMetadata } from '@/scripts/metadata/svg'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useSubgraphService } from '@/services/subgraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -59,6 +62,10 @@ import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import {
+  getNodeByExecutionId,
+  triggerCallbackOnAllNodes
+} from '@/utils/graphTraversalUtil'
+import {
   executeWidgetsCallback,
   fixLinkInputSlots,
   isImageNode
@@ -72,8 +79,8 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
-import { pruneWidgets } from './domWidget'
 import {
+  getAvifMetadata,
   getFlacMetadata,
   getLatentMetadata,
   getPngMetadata,
@@ -109,6 +116,8 @@ type Clipspace = {
   images?: any[] | null
   selectedIndex: number
   img_paste_mode: string
+  paintedIndex: number
+  combinedIndex: number
 }
 
 export class ComfyApp {
@@ -193,6 +202,8 @@ export class ComfyApp {
 
   /**
    * @deprecated Use useExecutionStore().executingNodeId instead
+   * TODO: Update to support multiple executing nodes. This getter returns only the first executing node.
+   * Consider updating consumers to handle multiple nodes or use executingNodeIds array.
    */
   get runningNodeId(): NodeId | null {
     return useExecutionStore().executingNodeId
@@ -348,13 +359,18 @@ export class ComfyApp {
       selectedIndex = node.imageIndex
     }
 
+    const paintedIndex = selectedIndex + 1
+    const combinedIndex = selectedIndex + 2
+
     ComfyApp.clipspace = {
       widgets: widgets,
       imgs: imgs,
       original_imgs: orig_imgs,
       images: node.images,
       selectedIndex: selectedIndex,
-      img_paste_mode: 'selected' // reset to default im_paste_mode state on copy action
+      img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
+      paintedIndex: paintedIndex,
+      combinedIndex: combinedIndex
     }
 
     ComfyApp.clipspace_return_node = null
@@ -367,6 +383,8 @@ export class ComfyApp {
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
+      const combinedImgSrc =
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex].src
       if (ComfyApp.clipspace.imgs && node.imgs) {
         if (node.images && ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
@@ -398,6 +416,28 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Paste the RGB canvas if paintedindex exists
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.paintedIndex] &&
+        node.imgs
+      ) {
+        const paintedImg = new Image()
+        paintedImg.src =
+          ComfyApp.clipspace.imgs[ComfyApp.clipspace.paintedIndex].src
+        node.imgs.push(paintedImg) // Add the RGB canvas to the node's images
+      }
+
+      // Store only combined image inside the node if it exists
+      if (
+        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
+        node.imgs &&
+        combinedImgSrc
+      ) {
+        const combinedImg = new Image()
+        combinedImg.src = combinedImgSrc
+        node.imgs = [combinedImg]
       }
 
       if (node.widgets) {
@@ -634,36 +674,24 @@ export class ComfyApp {
 
     api.addEventListener('executing', () => {
       this.graph.setDirtyCanvas(true, false)
-      // @ts-expect-error fixme ts strict error
-      this.revokePreviews(this.runningNodeId)
-      // @ts-expect-error fixme ts strict error
-      delete this.nodePreviewImages[this.runningNodeId]
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      const output = this.nodeOutputs[detail.display_node || detail.node]
-      if (detail.merge && output) {
-        for (const k in detail.output ?? {}) {
-          const v = output[k]
-          if (v instanceof Array) {
-            output[k] = v.concat(detail.output[k])
-          } else {
-            output[k] = detail.output[k]
-          }
-        }
-      } else {
-        this.nodeOutputs[detail.display_node || detail.node] = detail.output
-      }
-      const node = this.graph.getNodeById(detail.display_node || detail.node)
-      if (node) {
-        if (node.onExecuted) node.onExecuted(detail.output)
+      const nodeOutputStore = useNodeOutputStore()
+      const executionId = String(detail.display_node || detail.node)
+
+      nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
+        merge: detail.merge
+      })
+
+      const node = getNodeByExecutionId(this.graph, executionId)
+      if (node && node.onExecuted) {
+        node.onExecuted(detail.output)
       }
     })
 
     api.addEventListener('execution_start', () => {
-      this.graph.nodes.forEach((node) => {
-        if (node.onExecutionStart) node.onExecutionStart()
-      })
+      triggerCallbackOnAllNodes(this.graph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -688,15 +716,16 @@ export class ComfyApp {
       this.canvas.draw(true, true)
     })
 
-    api.addEventListener('b_preview', ({ detail }) => {
-      const id = this.runningNodeId
-      if (id == null) return
-
-      const blob = detail
-      const blobUrl = URL.createObjectURL(blob)
+    api.addEventListener('b_preview_with_metadata', ({ detail }) => {
+      // Enhanced preview with explicit node context
+      const { blob, displayNodeId } = detail
+      const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
+        useNodeOutputStore()
       // Ensure clean up if `executing` event is missed.
-      this.revokePreviews(id)
-      this.nodePreviewImages[id] = [blobUrl]
+      revokePreviewsByExecutionId(displayNodeId)
+      const blobUrl = URL.createObjectURL(blob)
+      // Preview cleanup is handled in progress_state event to support multiple concurrent previews
+      setNodePreviewsByExecutionId(displayNodeId, [blobUrl])
     })
 
     api.init()
@@ -717,24 +746,18 @@ export class ComfyApp {
   }
 
   #addAfterConfigureHandler() {
-    const app = this
-    const onConfigure = app.graph.onConfigure
-    app.graph.onConfigure = function (this: LGraph, ...args) {
+    const { graph } = this
+    const { onConfigure } = graph
+    graph.onConfigure = function (...args) {
       fixLinkInputSlots(this)
 
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      for (const node of app.graph.nodes) {
-        node.onGraphConfigured?.()
-      }
+      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
       const r = onConfigure?.apply(this, args)
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      for (const node of app.graph.nodes) {
-        node.onAfterGraphConfigured?.()
-      }
-
-      pruneWidgets(this.nodes)
+      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
       return r
     }
@@ -767,6 +790,21 @@ export class ComfyApp {
 
     this.#graph = new LGraph()
 
+    // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
+    this.graph.events.addEventListener('subgraph-created', (e) => {
+      try {
+        const { subgraph, data } = e.detail
+        useSubgraphService().registerNewSubgraph(subgraph, data)
+      } catch (err) {
+        console.error('Failed to register subgraph', err)
+        useToastStore().add({
+          severity: 'error',
+          summary: 'Failed to register subgraph',
+          detail: err instanceof Error ? err.message : String(err)
+        })
+      }
+    })
+
     this.#addAfterConfigureHandler()
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph)
@@ -778,6 +816,30 @@ export class ComfyApp {
 
     LiteGraph.alt_drag_do_clone_nodes = true
     LiteGraph.macGesturesRequireMac = false
+
+    this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+      'litegraph:set-graph',
+      (e) => {
+        // Assertion: Not yet defined in litegraph.
+        const { newGraph } = e.detail
+
+        const nodeSet = new Set(newGraph.nodes)
+        const widgetStore = useDomWidgetStore()
+
+        // Assertions: UnwrapRef
+        for (const { widget } of widgetStore.activeWidgetStates) {
+          if (!nodeSet.has(widget.node)) {
+            widgetStore.deactivateWidget(widget.id)
+          }
+        }
+
+        for (const { widget } of widgetStore.inactiveWidgetStates) {
+          if (nodeSet.has(widget.node)) {
+            widgetStore.activateWidget(widget.id)
+          }
+        }
+      }
+    )
 
     this.graph.start()
 
@@ -821,26 +883,33 @@ export class ComfyApp {
   private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
     // Frontend only nodes registered by custom nodes.
     // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
-    const rawDefs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
-      Object.entries(LiteGraph.registered_node_types).map(([name, node]) => [
+
+    // Only create frontend_only definitions for nodes that don't have backend definitions
+    const frontendOnlyDefs: Record<string, ComfyNodeDefV1> = {}
+    for (const [name, node] of Object.entries(
+      LiteGraph.registered_node_types
+    )) {
+      // Skip if we already have a backend definition or system definition
+      if (name in defs || name in SYSTEM_NODE_DEFS) {
+        continue
+      }
+
+      frontendOnlyDefs[name] = {
         name,
-        {
-          name,
-          display_name: name,
-          category: node.category || '__frontend_only__',
-          input: { required: {}, optional: {} },
-          output: [],
-          output_name: [],
-          output_is_list: [],
-          output_node: false,
-          python_module: 'custom_nodes.frontend_only',
-          description: `Frontend only node for ${name}`
-        } as ComfyNodeDefV1
-      ])
-    )
+        display_name: name,
+        category: node.category || '__frontend_only__',
+        input: { required: {}, optional: {} },
+        output: [],
+        output_name: [],
+        output_is_list: [],
+        output_node: false,
+        python_module: 'custom_nodes.frontend_only',
+        description: `Frontend only node for ${name}`
+      } as ComfyNodeDefV1
+    }
 
     const allNodeDefs = {
-      ...rawDefs,
+      ...frontendOnlyDefs,
       ...defs,
       ...SYSTEM_NODE_DEFS
     }
@@ -871,12 +940,7 @@ export class ComfyApp {
         .join('/')
     })
 
-    return _.mapValues(
-      await api.getNodeDefs({
-        validate: useSettingStore().get('Comfy.Validation.NodeDefs')
-      }),
-      (def) => translateNodeDef(def)
-    )
+    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
   }
 
   /**
@@ -1015,6 +1079,7 @@ export class ComfyApp {
       })
     }
     useWorkflowService().beforeLoadNewGraph()
+    useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels: ModelFile[] = []
@@ -1212,6 +1277,9 @@ export class ComfyApp {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
+          for (const subgraph of this.graph.subgraphs.values()) {
+            executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
+          }
 
           const p = await this.graphToPrompt(this.graph, { queueNodeIds })
           try {
@@ -1254,9 +1322,13 @@ export class ComfyApp {
           executeWidgetsCallback(
             p.workflow.nodes
               .map((n) => this.graph.getNodeById(n.id))
-              .filter((n) => !!n) as LGraphNode[],
+              .filter((n) => !!n),
             'afterQueued'
           )
+          for (const subgraph of this.graph.subgraphs.values()) {
+            executeWidgetsCallback(subgraph.nodes, 'afterQueued')
+          }
+
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
@@ -1306,6 +1378,16 @@ export class ComfyApp {
           fileName,
           this.graph.serialize() as unknown as ComfyWorkflowJSON
         )
+      } else {
+        this.showErrorOnFileLoad(file)
+      }
+    } else if (file.type === 'image/avif') {
+      const { workflow, prompt } = await getAvifMetadata(file)
+
+      if (workflow) {
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
+      } else if (prompt) {
+        this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -1631,27 +1713,17 @@ export class ComfyApp {
   }
 
   /**
-   * Frees memory allocated to image preview blobs for a specific node, by revoking the URLs associated with them.
-   * @param nodeId ID of the node to revoke all preview images of
-   */
-  revokePreviews(nodeId: NodeId) {
-    if (!this.nodePreviewImages[nodeId]?.[Symbol.iterator]) return
-    for (const url of this.nodePreviewImages[nodeId]) {
-      URL.revokeObjectURL(url)
-    }
-  }
-  /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
-    for (const id of Object.keys(this.nodePreviewImages)) {
-      this.revokePreviews(id)
-    }
-    this.nodePreviewImages = {}
+    const { revokeAllPreviews } = useNodeOutputStore()
+    revokeAllPreviews()
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
     executionStore.lastExecutionError = null
+
+    useDomWidgetStore().clear()
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {

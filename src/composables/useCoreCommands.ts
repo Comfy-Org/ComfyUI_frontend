@@ -19,7 +19,8 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useTitleEditorStore } from '@/stores/graphStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -28,6 +29,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { getAllNonIoNodesInSubgraph } from '@/utils/graphTraversalUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -38,6 +40,8 @@ export function useCoreCommands(): ComfyCommand[] {
   const colorPaletteStore = useColorPaletteStore()
   const firebaseAuthActions = useFirebaseAuthActions()
   const toastStore = useToastStore()
+  const canvasStore = useCanvasStore()
+  const executionStore = useExecutionStore()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -168,7 +172,16 @@ export function useCoreCommands(): ComfyCommand[] {
           confirm('Clear workflow?')
         ) {
           app.clean()
-          app.graph.clear()
+          if (app.canvas.subgraph) {
+            // `clear` is not implemented on subgraphs and the parent class's
+            // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
+            // just clear the nodes but preserve input/output nodes and structure
+            const subgraph = app.canvas.subgraph
+            const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+            nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            app.graph.clear()
+          }
           api.dispatchCustomEvent('graphCleared')
         }
       }
@@ -202,7 +215,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-stop',
       label: 'Interrupt',
       function: async () => {
-        await api.interrupt()
+        await api.interrupt(executionStore.activePromptId)
         toastStore.add({
           severity: 'info',
           summary: t('g.interrupted'),
@@ -309,6 +322,19 @@ export function useCoreCommands(): ComfyCommand[] {
           }
         }
       })()
+    },
+    {
+      id: 'Comfy.Canvas.ToggleMinimap',
+      icon: 'pi pi-map',
+      label: 'Canvas Toggle Minimap',
+      versionAdded: '1.24.1',
+      function: async () => {
+        const settingStore = useSettingStore()
+        await settingStore.set(
+          'Comfy.Minimap.Visible',
+          !settingStore.get('Comfy.Minimap.Visible')
+        )
+      }
     },
     {
       id: 'Comfy.QueuePrompt',
@@ -729,6 +755,30 @@ export function useCoreCommands(): ComfyCommand[] {
         const node = app.canvas.selectedItems.values().next().value
         if (!(node instanceof LGraphNode)) return
         await addFluxKontextGroupNode(node)
+      }
+    },
+    {
+      id: 'Comfy.Graph.ConvertToSubgraph',
+      icon: 'pi pi-sitemap',
+      label: 'Convert Selection to Subgraph',
+      versionAdded: '1.20.1',
+      function: () => {
+        const canvas = canvasStore.getCanvas()
+        const graph = canvas.subgraph ?? canvas.graph
+        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
+
+        const res = graph.convertToSubgraph(canvas.selectedItems)
+        if (!res) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('toastMessages.cannotCreateSubgraph'),
+            detail: t('toastMessages.failedToConvertToSubgraph'),
+            life: 3000
+          })
+          return
+        }
+        const { node } = res
+        canvas.select(node)
       }
     }
   ]
