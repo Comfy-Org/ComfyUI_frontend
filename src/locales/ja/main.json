@@ -1610,7 +1610,7 @@
   },
   "versionMismatchWarning": {
     "dismiss": "閉じる",
-    "frontendNewer": "フロントエンドのバージョン {frontendVersion} はバックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
+    "frontendNewer": "フロントエンドのバージョン {frontendVersion} は、バックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
     "frontendOutdated": "フロントエンドのバージョン {frontendVersion} は古くなっています。バックエンドはバージョン {requiredVersion} 以上が必要です。",
     "title": "バージョン互換性の警告",
     "updateFrontend": "フロントエンドを更新"
