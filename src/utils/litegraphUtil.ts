@@ -154,6 +154,7 @@ export function migrateWidgetsValues<TWidgetValue>(
  */
 export function fixLinkInputSlots(graph: LGraph) {
   for (const node of graph.nodes) {
+    // Fix links for the current node
     for (const [inputIndex, input] of node.inputs.entries()) {
       const linkId = input.link
       if (!linkId) continue
@@ -162,6 +163,11 @@ export function fixLinkInputSlots(graph: LGraph) {
       if (!link) continue
 
       link.target_slot = inputIndex
+    }
+
+    // Recursively fix links in subgraphs
+    if (node.isSubgraphNode?.() && node.subgraph) {
+      fixLinkInputSlots(node.subgraph)
     }
   }
 }
