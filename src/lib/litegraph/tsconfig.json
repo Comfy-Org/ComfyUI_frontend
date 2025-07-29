@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
-    "noEmit": true,
-
+    "composite": true,
     "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",

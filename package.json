@@ -13,7 +13,7 @@
     "build": "npm run typecheck && vite build",
     "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
     "zipdist": "node scripts/zipdist.js",
-    "typecheck": "vue-tsc --noEmit",
+    "typecheck": "vue-tsc --build",
     "format": "prettier --write './**/*.{js,ts,tsx,vue,mts}'",
     "format:check": "prettier --check './**/*.{js,ts,tsx,vue,mts}'",
     "test:browser": "npx playwright test",
