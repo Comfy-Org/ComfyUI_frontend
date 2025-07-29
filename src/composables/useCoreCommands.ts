@@ -29,6 +29,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { getAllNonIoNodesInSubgraph } from '@/utils/graphTraversalUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -176,12 +177,8 @@ export function useCoreCommands(): ComfyCommand[] {
             // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
             // just clear the nodes but preserve input/output nodes and structure
             const subgraph = app.canvas.subgraph
-            const nodesToRemove = subgraph.nodes.filter(
-              (node) =>
-                node.constructor.comfyClass !== 'SubgraphInputNode' &&
-                node.constructor.comfyClass !== 'SubgraphOutputNode'
-            )
-            nodesToRemove.forEach((node) => subgraph.remove(node))
+            const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+            nonIoNodes.forEach((node) => subgraph.remove(node))
           } else {
             app.graph.clear()
           }

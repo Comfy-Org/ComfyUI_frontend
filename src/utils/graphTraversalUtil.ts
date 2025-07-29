@@ -3,6 +3,8 @@ import type { LGraph, LGraphNode, Subgraph } from '@comfyorg/litegraph'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 
+import { isSubgraphIoNode } from './typeGuardUtil'
+
 /**
  * Parses an execution ID into its component parts.
  *
@@ -337,4 +339,15 @@ export function mapSubgraphNodes<T>(
     }
     return undefined
   })
+}
+
+/**
+ * Gets all non-IO nodes from a subgraph (excludes SubgraphInputNode and SubgraphOutputNode).
+ * These are the user-created nodes that can be safely removed when clearing a subgraph.
+ *
+ * @param subgraph - The subgraph to get non-IO nodes from
+ * @returns Array of non-IO nodes (user-created nodes)
+ */
+export function getAllNonIoNodesInSubgraph(subgraph: Subgraph): LGraphNode[] {
+  return subgraph.nodes.filter((node) => !isSubgraphIoNode(node))
 }
