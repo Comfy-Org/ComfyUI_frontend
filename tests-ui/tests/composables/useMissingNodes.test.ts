@@ -295,11 +295,6 @@ describe('useMissingNodes', () => {
     it('identifies missing core nodes not in nodeDefStore', () => {
       const coreNode1 = createMockNode('CoreNode1', 'comfy-core', '1.2.0')
       const coreNode2 = createMockNode('CoreNode2', 'comfy-core', '1.2.0')
-      const registeredNode = createMockNode(
-        'RegisteredNode',
-        'comfy-core',
-        '1.0.0'
-      )
 
       // Mock collectAllNodes to return only the filtered nodes (missing core nodes)
       mockCollectAllNodes.mockReturnValue([coreNode1, coreNode2])
@@ -343,8 +338,6 @@ describe('useMissingNodes', () => {
 
     it('ignores non-core nodes', () => {
       const coreNode = createMockNode('CoreNode', 'comfy-core', '1.2.0')
-      const customNode = createMockNode('CustomNode', 'custom-pack', '1.0.0')
-      const noPackNode = createMockNode('NoPackNode')
 
       // Mock collectAllNodes to return only the filtered nodes (core nodes only)
       mockCollectAllNodes.mockReturnValue([coreNode])
@@ -362,17 +355,6 @@ describe('useMissingNodes', () => {
     })
 
     it('returns empty object when no core nodes are missing', () => {
-      const registeredNode1 = createMockNode(
-        'RegisteredNode1',
-        'comfy-core',
-        '1.0.0'
-      )
-      const registeredNode2 = createMockNode(
-        'RegisteredNode2',
-        'comfy-core',
-        '1.1.0'
-      )
-
       // Mock collectAllNodes to return empty array (no missing nodes after filtering)
       mockCollectAllNodes.mockReturnValue([])
 
