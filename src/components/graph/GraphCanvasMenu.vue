@@ -1,6 +1,7 @@
 <template>
   <ButtonGroup
     class="p-buttongroup-vertical absolute bottom-[10px] right-[10px] z-[1000]"
+    @wheel="canvasInteractions.handleWheel"
   >
     <Button
       v-tooltip.left="t('graphCanvasMenu.zoomIn')"
@@ -75,6 +76,7 @@ import ButtonGroup from 'primevue/buttongroup'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -83,6 +85,7 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
+const canvasInteractions = useCanvasInteractions()
 
 const minimapVisible = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 const linkHidden = computed(
