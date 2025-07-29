@@ -283,6 +283,8 @@ export class LinkConnector {
     this.renderLinks.push(renderLink)
 
     this.state.connectingTo = "input"
+
+    this.#setLegacyLinks(false)
   }
 
   dragNewFromSubgraphOutput(network: LinkNetwork, outputNode: SubgraphOutputNode, output: SubgraphOutput, fromReroute?: Reroute): void {
@@ -292,6 +294,8 @@ export class LinkConnector {
     this.renderLinks.push(renderLink)
 
     this.state.connectingTo = "output"
+
+    this.#setLegacyLinks(true)
   }
 
   /**
@@ -425,18 +429,14 @@ export class LinkConnector {
   }
 
   /**
-   * Connects the links being droppe
+   * Connects the links being dropped
    * @param event Contains the drop location, in canvas space
    */
   dropLinks(locator: ItemLocator, event: CanvasPointerEvent): void {
     if (!this.isConnecting) {
-      console.warn("Attempted to drop links when not connecting to anything.")
-      return
+      const mayContinue = this.events.dispatch("before-drop-links", { renderLinks: this.renderLinks, event })
+      if (mayContinue === false) return
     }
-
-    const { renderLinks } = this
-    const mayContinue = this.events.dispatch("before-drop-links", { renderLinks, event })
-    if (mayContinue === false) return
 
     try {
       const { canvasX, canvasY } = event
@@ -461,11 +461,11 @@ export class LinkConnector {
         }
       }
     } finally {
-      this.events.dispatch("after-drop-links", { renderLinks, event })
+      this.events.dispatch("after-drop-links", { renderLinks: this.renderLinks, event })
     }
   }
 
-  dropOnIoNode(ioNode: SubgraphInputNode | SubgraphOutputNode, event: CanvasPointerEvent) {
+  dropOnIoNode(ioNode: SubgraphInputNode | SubgraphOutputNode, event: CanvasPointerEvent): void {
     const { renderLinks, state } = this
     const { connectingTo } = state
     const { canvasX, canvasY } = event

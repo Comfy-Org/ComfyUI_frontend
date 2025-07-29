@@ -349,3 +349,38 @@ describe("SubgraphIO - Advanced Scenarios", () => {
     expect(instance3.outputs.length).toBe(2)
   })
 })
+
+describe("SubgraphIO - Empty Slot Connection", () => {
+  subgraphTest("creates new input and connects when dragging from empty slot inside subgraph", ({ subgraphWithNode }) => {
+    const { subgraph, subgraphNode } = subgraphWithNode
+
+    // Create a node inside the subgraph that will receive the connection
+    const internalNode = new LGraphNode("Internal Node")
+    internalNode.addInput("in", "string")
+    subgraph.add(internalNode)
+
+    // Simulate the connection process from the empty slot to an internal node
+    // The -1 indicates a connection from the "empty" slot
+    subgraph.inputNode.connectByType(-1, internalNode, "string")
+
+    // 1. A new input should have been created on the subgraph
+    expect(subgraph.inputs.length).toBe(2) // Fixture adds one input already
+    const newInput = subgraph.inputs[1]
+    expect(newInput.name).toBe("in")
+    expect(newInput.type).toBe("string")
+
+    // 2. The subgraph node should now have a corresponding real input slot
+    expect(subgraphNode.inputs.length).toBe(2)
+    const subgraphInputSlot = subgraphNode.inputs[1]
+    expect(subgraphInputSlot.name).toBe("in")
+
+    // 3. A link should be established inside the subgraph
+    expect(internalNode.inputs[0].link).not.toBe(null)
+    const link = subgraph.links.get(internalNode.inputs[0].link!)
+    expect(link).toBeDefined()
+    expect(link.target_id).toBe(internalNode.id)
+    expect(link.target_slot).toBe(0)
+    expect(link.origin_id).toBe(subgraph.inputNode.id)
+    expect(link.origin_slot).toBe(1) // Should be the second slot
+  })
+})

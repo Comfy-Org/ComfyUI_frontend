@@ -6026,7 +6026,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       const { name } = slotX
       iSlotConn = nodeX.slots.findIndex(s => s.name === name)
-      slotX = nodeX.slots[iSlotConn]
+      // If it's not found in the main slots, it might be the empty slot from a Subgraph node.
+      // In that case, the original `slotX` object is the correct one, so don't overwrite it.
+      if (iSlotConn !== -1) {
+        slotX = nodeX.slots[iSlotConn]
+      }
       if (!slotX) {
         console.warn("Cant get slot information", slotX)
         return
