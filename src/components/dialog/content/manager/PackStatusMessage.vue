@@ -32,8 +32,9 @@ type StatusProps = {
   severity: MessageSeverity
 }
 
-const { statusType } = defineProps<{
+const { statusType, hasCompatibilityIssues } = defineProps<{
   statusType: Status
+  hasCompatibilityIssues?: boolean
 }>()
 
 const statusPropsMap: Record<Status, StatusProps> = {
@@ -71,10 +72,14 @@ const statusPropsMap: Record<Status, StatusProps> = {
   }
 }
 
-const statusLabel = computed(
-  () => statusPropsMap[statusType]?.label || 'unknown'
+const statusLabel = computed(() =>
+  hasCompatibilityIssues
+    ? 'conflicting'
+    : statusPropsMap[statusType]?.label || 'unknown'
 )
-const statusSeverity = computed(
-  () => statusPropsMap[statusType]?.severity || 'secondary'
+const statusSeverity = computed(() =>
+  hasCompatibilityIssues
+    ? 'error'
+    : statusPropsMap[statusType]?.severity || 'secondary'
 )
 </script>
