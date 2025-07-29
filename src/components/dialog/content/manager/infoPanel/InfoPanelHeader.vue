@@ -1,14 +1,14 @@
 <template>
-  <div v-if="nodePacks?.length" class="flex flex-col items-center mb-6">
+  <div v-if="nodePacks?.length" class="flex flex-col items-center">
     <slot name="thumbnail">
-      <PackIcon :node-pack="nodePacks[0]" width="24" height="24" />
+      <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
     </slot>
     <h2
       class="text-2xl font-bold text-center mt-4 mb-2"
       style="word-break: break-all"
     >
       <slot name="title">
-        {{ nodePacks[0].name }}
+        <span class="inline-block text-base">{{ nodePacks[0].name }}</span>
       </slot>
     </h2>
     <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
@@ -27,7 +27,7 @@
       </slot>
     </div>
   </div>
-  <div v-else class="flex flex-col items-center mb-6">
+  <div v-else class="flex flex-col items-center">
     <NoResultsPlaceholder
       :message="$t('manager.status.unknown')"
       :title="$t('manager.tryAgainLater')"
