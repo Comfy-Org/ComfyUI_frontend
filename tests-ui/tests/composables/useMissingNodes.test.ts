@@ -467,7 +467,7 @@ describe('useMissingNodes', () => {
 
       let capturedFilterFunction: ((node: LGraphNode) => boolean) | undefined
 
-      mockCollectAllNodes.mockImplementation((graph, filter) => {
+      mockCollectAllNodes.mockImplementation((_graph, filter) => {
         capturedFilterFunction = filter
         return []
       })
