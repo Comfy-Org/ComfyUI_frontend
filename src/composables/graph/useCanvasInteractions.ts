@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -9,8 +11,9 @@ import { useSettingStore } from '@/stores/settingStore'
 export function useCanvasInteractions() {
   const settingStore = useSettingStore()
 
-  const isStandardNavMode = () =>
-    settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
+  const isStandardNavMode = computed(
+    () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
+  )
 
   /**
    * Handles wheel events from UI components that should be forwarded to canvas
@@ -18,14 +21,14 @@ export function useCanvasInteractions() {
    */
   const handleWheel = (event: WheelEvent) => {
     // In standard mode, Ctrl+wheel should go to canvas for zoom
-    if (isStandardNavMode() && (event.ctrlKey || event.metaKey)) {
+    if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
       event.preventDefault() // Prevent browser zoom
       forwardEventToCanvas(event)
       return
     }
 
     // In legacy mode, all wheel events go to canvas for zoom
-    if (!isStandardNavMode()) {
+    if (!isStandardNavMode.value) {
       event.preventDefault()
       forwardEventToCanvas(event)
       return
