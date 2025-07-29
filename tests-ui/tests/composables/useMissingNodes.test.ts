@@ -301,12 +301,8 @@ describe('useMissingNodes', () => {
         '1.0.0'
       )
 
-      // Mock collectAllNodes to return these nodes
-      mockCollectAllNodes.mockReturnValue([
-        coreNode1,
-        coreNode2,
-        registeredNode
-      ])
+      // Mock collectAllNodes to return only the filtered nodes (missing core nodes)
+      mockCollectAllNodes.mockReturnValue([coreNode1, coreNode2])
 
       mockUseNodeDefStore.mockReturnValue({
         nodeDefsByName: {
@@ -350,8 +346,8 @@ describe('useMissingNodes', () => {
       const customNode = createMockNode('CustomNode', 'custom-pack', '1.0.0')
       const noPackNode = createMockNode('NoPackNode')
 
-      // Mock collectAllNodes to return these nodes
-      mockCollectAllNodes.mockReturnValue([coreNode, customNode, noPackNode])
+      // Mock collectAllNodes to return only the filtered nodes (core nodes only)
+      mockCollectAllNodes.mockReturnValue([coreNode])
 
       // @ts-expect-error - Mocking partial NodeDefStore for testing.
       mockUseNodeDefStore.mockReturnValue({
@@ -377,8 +373,8 @@ describe('useMissingNodes', () => {
         '1.1.0'
       )
 
-      // Mock collectAllNodes to return these nodes
-      mockCollectAllNodes.mockReturnValue([registeredNode1, registeredNode2])
+      // Mock collectAllNodes to return empty array (no missing nodes after filtering)
+      mockCollectAllNodes.mockReturnValue([])
 
       mockUseNodeDefStore.mockReturnValue({
         nodeDefsByName: {
@@ -452,7 +448,7 @@ describe('useMissingNodes', () => {
       expect(missingCoreNodes.value['1.1.0']).toHaveLength(1) // SubgraphNode2
     })
 
-    it('calls collectAllNodes with the app graph', () => {
+    it('calls collectAllNodes with the app graph and filter function', () => {
       const mockGraph = { nodes: [], subgraphs: new Map() }
       // @ts-expect-error - Mocking app.graph for testing
       app.graph = mockGraph
@@ -461,7 +457,10 @@ describe('useMissingNodes', () => {
       // Access the computed to trigger the function
       void missingCoreNodes.value
 
-      expect(mockCollectAllNodes).toHaveBeenCalledWith(mockGraph)
+      expect(mockCollectAllNodes).toHaveBeenCalledWith(
+        mockGraph,
+        expect.any(Function)
+      )
     })
 
     it('handles collectAllNodes returning empty array', () => {
@@ -470,6 +469,122 @@ describe('useMissingNodes', () => {
       const { missingCoreNodes } = useMissingNodes()
 
       expect(Object.keys(missingCoreNodes.value)).toHaveLength(0)
+    })
+
+    it('filter function correctly identifies missing core nodes', () => {
+      const mockGraph = { nodes: [], subgraphs: new Map() }
+      // @ts-expect-error - Mocking app.graph for testing
+      app.graph = mockGraph
+
+      mockUseNodeDefStore.mockReturnValue({
+        nodeDefsByName: {
+          // @ts-expect-error - Creating minimal mock of ComfyNodeDefImpl for testing.
+          RegisteredCore: { name: 'RegisteredCore' }
+        }
+      })
+
+      let capturedFilterFunction: ((node: LGraphNode) => boolean) | undefined
+
+      mockCollectAllNodes.mockImplementation((graph, filter) => {
+        capturedFilterFunction = filter
+        return []
+      })
+
+      const { missingCoreNodes } = useMissingNodes()
+      void missingCoreNodes.value
+
+      expect(capturedFilterFunction).toBeDefined()
+
+      if (capturedFilterFunction) {
+        const missingCoreNode = createMockNode(
+          'MissingCore',
+          'comfy-core',
+          '1.0.0'
+        )
+        const registeredCoreNode = createMockNode(
+          'RegisteredCore',
+          'comfy-core',
+          '1.0.0'
+        )
+        const customNode = createMockNode('CustomNode', 'custom-pack', '1.0.0')
+        const nodeWithoutPack = createMockNode('NodeWithoutPack')
+
+        expect(capturedFilterFunction(missingCoreNode)).toBe(true)
+        expect(capturedFilterFunction(registeredCoreNode)).toBe(false)
+        expect(capturedFilterFunction(customNode)).toBe(false)
+        expect(capturedFilterFunction(nodeWithoutPack)).toBe(false)
+      }
+    })
+
+    it('integrates with collectAllNodes to find nodes from subgraphs', () => {
+      mockCollectAllNodes.mockImplementation((graph, filter) => {
+        const allNodes: LGraphNode[] = []
+
+        for (const node of graph.nodes) {
+          if (node.isSubgraphNode?.() && node.subgraph) {
+            for (const subNode of node.subgraph.nodes) {
+              if (!filter || filter(subNode)) {
+                allNodes.push(subNode)
+              }
+            }
+          }
+
+          if (!filter || filter(node)) {
+            allNodes.push(node)
+          }
+        }
+
+        return allNodes
+      })
+
+      const mainMissingNode = createMockNode(
+        'MainMissing',
+        'comfy-core',
+        '1.0.0'
+      )
+      const subgraphMissingNode = createMockNode(
+        'SubgraphMissing',
+        'comfy-core',
+        '1.1.0'
+      )
+      const subgraphRegisteredNode = createMockNode(
+        'SubgraphRegistered',
+        'comfy-core',
+        '1.0.0'
+      )
+
+      const mockSubgraph = {
+        nodes: [subgraphMissingNode, subgraphRegisteredNode]
+      }
+
+      const mockSubgraphNode = {
+        isSubgraphNode: () => true,
+        subgraph: mockSubgraph,
+        type: 'SubgraphContainer',
+        properties: { cnr_id: 'custom-pack' }
+      }
+
+      const mockMainGraph = {
+        nodes: [mainMissingNode, mockSubgraphNode]
+      }
+
+      // @ts-expect-error - Mocking app.graph for testing
+      app.graph = mockMainGraph
+
+      mockUseNodeDefStore.mockReturnValue({
+        nodeDefsByName: {
+          // @ts-expect-error - Creating minimal mock of ComfyNodeDefImpl for testing.
+          SubgraphRegistered: { name: 'SubgraphRegistered' }
+        }
+      })
+
+      const { missingCoreNodes } = useMissingNodes()
+
+      expect(Object.keys(missingCoreNodes.value)).toHaveLength(2)
+      expect(missingCoreNodes.value['1.0.0']).toHaveLength(1)
+      expect(missingCoreNodes.value['1.1.0']).toHaveLength(1)
+      expect(missingCoreNodes.value['1.0.0'][0].type).toBe('MainMissing')
+      expect(missingCoreNodes.value['1.1.0'][0].type).toBe('SubgraphMissing')
     })
   })
 })
