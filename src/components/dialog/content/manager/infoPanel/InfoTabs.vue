@@ -16,7 +16,11 @@
         </Tab>
       </TabList>
       <TabPanels class="overflow-auto py-4 px-2">
-        <TabPanel v-if="hasCompatibilityIssues" value="warning">
+        <TabPanel
+          v-if="hasCompatibilityIssues"
+          value="warning"
+          class="bg-transparent"
+        >
           <WarningTabPanel
             :node-pack="nodePack"
             :conflict-result="conflictResult"
