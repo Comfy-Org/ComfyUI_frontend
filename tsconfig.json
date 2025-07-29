@@ -26,8 +26,7 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@comfyorg/litegraph": ["src/lib/litegraph/src/litegraph.ts"]
+      "@/*": ["src/*"]
     },
     "typeRoots": ["src/types", "node_modules/@types"],
     "outDir": "./dist",
