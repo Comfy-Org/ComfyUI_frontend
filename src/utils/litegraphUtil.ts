@@ -153,6 +153,8 @@ export function migrateWidgetsValues<TWidgetValue>(
  * @param graph - The graph to fix links for.
  */
 export function fixLinkInputSlots(graph: LGraph) {
+  // Note: We can't use forEachNode here because we need access to the graph's
+  // links map at each level. Links are stored in their respective graph/subgraph.
   for (const node of graph.nodes) {
     // Fix links for the current node
     for (const [inputIndex, input] of node.inputs.entries()) {
