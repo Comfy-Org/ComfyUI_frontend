@@ -30,6 +30,25 @@ function safePricingExecution(
   }
 }
 
+/**
+ * Helper function to calculate Runway duration-based pricing
+ * @param node - The LiteGraph node
+ * @returns Formatted price string
+ */
+const calculateRunwayDurationPrice = (node: LGraphNode): string => {
+  const durationWidget = node.widgets?.find(
+    (w) => w.name === 'duration'
+  ) as IComboWidget
+
+  if (!durationWidget) return '$0.05/second'
+
+  const duration = Number(durationWidget.value)
+  // If duration is 0 or NaN, don't fall back to 5 seconds - just use 0
+  const validDuration = isNaN(duration) ? 5 : duration
+  const cost = (0.05 * validDuration).toFixed(2)
+  return `$${cost}/Run`
+}
+
 const pixversePricingCalculator = (node: LGraphNode): string => {
   const durationWidget = node.widgets?.find(
     (w) => w.name === 'duration_seconds'
@@ -1007,43 +1026,13 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
       displayPrice: '$0.08/Run'
     },
     RunwayImageToVideoNodeGen3a: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-
-        if (!durationWidget) return '$0.05/second'
-
-        const duration = Number(durationWidget.value) || 5
-        const cost = (0.05 * duration).toFixed(2)
-        return `$${cost}/Run`
-      }
+      displayPrice: calculateRunwayDurationPrice
     },
     RunwayImageToVideoNodeGen4: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-
-        if (!durationWidget) return '$0.05/second'
-
-        const duration = Number(durationWidget.value) || 5
-        const cost = (0.05 * duration).toFixed(2)
-        return `$${cost}/Run`
-      }
+      displayPrice: calculateRunwayDurationPrice
     },
     RunwayFirstLastFrameNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-
-        if (!durationWidget) return '$0.05/second'
-
-        const duration = Number(durationWidget.value) || 5
-        const cost = (0.05 * duration).toFixed(2)
-        return `$${cost}/Run`
-      }
+      displayPrice: calculateRunwayDurationPrice
     },
     // Rodin nodes - all have the same pricing structure
     Rodin3D_Regular: {
@@ -1184,6 +1173,68 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         const textureQuality = String(textureQualityWidget.value)
         return textureQuality.includes('detailed') ? '$0.2/Run' : '$0.1/Run'
+      }
+    },
+    TripoConvertModelNode: {
+      displayPrice: '$0.10/Run'
+    },
+    TripoRetargetRiggedModelNode: {
+      displayPrice: '$0.10/Run'
+    },
+    TripoMultiviewToModelNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const quadWidget = node.widgets?.find(
+          (w) => w.name === 'quad'
+        ) as IComboWidget
+        const styleWidget = node.widgets?.find(
+          (w) => w.name === 'style'
+        ) as IComboWidget
+        const textureWidget = node.widgets?.find(
+          (w) => w.name === 'texture'
+        ) as IComboWidget
+        const textureQualityWidget = node.widgets?.find(
+          (w) => w.name === 'texture_quality'
+        ) as IComboWidget
+
+        if (!quadWidget || !styleWidget || !textureWidget)
+          return '$0.2-0.5/Run (varies with quad, style, texture & quality)'
+
+        const quad = String(quadWidget.value).toLowerCase() === 'true'
+        const style = String(styleWidget.value).toLowerCase()
+        const texture = String(textureWidget.value).toLowerCase() === 'true'
+        const textureQuality = String(
+          textureQualityWidget?.value || 'standard'
+        ).toLowerCase()
+
+        // Pricing logic based on CSV data for Multiview to Model (same as Image to Model)
+        if (style.includes('none')) {
+          if (!quad) {
+            if (!texture) return '$0.20/Run'
+            else return '$0.25/Run'
+          } else {
+            if (textureQuality.includes('detailed')) {
+              if (!texture) return '$0.40/Run'
+              else return '$0.45/Run'
+            } else {
+              if (!texture) return '$0.30/Run'
+              else return '$0.35/Run'
+            }
+          }
+        } else {
+          // any style
+          if (!quad) {
+            if (!texture) return '$0.25/Run'
+            else return '$0.30/Run'
+          } else {
+            if (textureQuality.includes('detailed')) {
+              if (!texture) return '$0.45/Run'
+              else return '$0.50/Run'
+            } else {
+              if (!texture) return '$0.35/Run'
+              else return '$0.40/Run'
+            }
+          }
+        }
       }
     },
     // Google/Gemini nodes

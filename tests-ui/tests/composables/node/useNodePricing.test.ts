@@ -1077,6 +1077,26 @@ describe('useNodePricing', () => {
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('$0.05/second')
       })
+
+      it('should handle zero duration for RunwayImageToVideoNodeGen3a', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RunwayImageToVideoNodeGen3a', [
+          { name: 'duration', value: 0 }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.00/Run') // 0.05 * 0 = 0
+      })
+
+      it('should handle NaN duration for RunwayImageToVideoNodeGen3a', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('RunwayImageToVideoNodeGen3a', [
+          { name: 'duration', value: 'invalid' }
+        ])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.25/Run') // Falls back to 5 seconds: 0.05 * 5
+      })
     })
 
     describe('Rodin nodes', () => {
@@ -1220,6 +1240,54 @@ describe('useNodePricing', () => {
           expect(getNodeDisplayPrice(node)).toBe(expected)
         })
       })
+
+      it('should return static price for TripoConvertModelNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoConvertModelNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.10/Run')
+      })
+
+      it('should return static price for TripoRetargetRiggedModelNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoRetargetRiggedModelNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.10/Run')
+      })
+
+      it('should return dynamic pricing for TripoMultiviewToModelNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+
+        // Test basic case - no style, no quad, no texture
+        const basicNode = createMockNode('TripoMultiviewToModelNode', [
+          { name: 'quad', value: false },
+          { name: 'style', value: 'none' },
+          { name: 'texture', value: false },
+          { name: 'texture_quality', value: 'standard' }
+        ])
+        expect(getNodeDisplayPrice(basicNode)).toBe('$0.20/Run')
+
+        // Test high-end case - any style, quad, texture, detailed
+        const highEndNode = createMockNode('TripoMultiviewToModelNode', [
+          { name: 'quad', value: true },
+          { name: 'style', value: 'stylized' },
+          { name: 'texture', value: true },
+          { name: 'texture_quality', value: 'detailed' }
+        ])
+        expect(getNodeDisplayPrice(highEndNode)).toBe('$0.50/Run')
+      })
+
+      it('should return fallback for TripoMultiviewToModelNode without widgets', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('TripoMultiviewToModelNode', [])
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe(
+          '$0.2-0.5/Run (varies with quad, style, texture & quality)'
+        )
+      })
     })
 
     describe('Gemini and OpenAI Chat nodes', () => {
@@ -1340,7 +1408,7 @@ describe('useNodePricing', () => {
 
         // Test edge cases
         const testCases = [
-          { duration: 0, expected: '$0.25/Run' }, // Falls back to 5 seconds (0 || 5)
+          { duration: 0, expected: '$0.00/Run' }, // Now correctly handles 0 duration
           { duration: 1, expected: '$0.05/Run' },
           { duration: 30, expected: '$1.50/Run' }
         ]
