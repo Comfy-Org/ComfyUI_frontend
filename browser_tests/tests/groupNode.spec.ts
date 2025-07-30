@@ -268,6 +268,9 @@ test.describe('Group Node', () => {
         'Edit',
         'Clear Workflow'
       ])
+      // Handle the dialog
+      comfyPage.page.on('dialog', (dialog) => dialog.accept())
+
       await comfyPage.ctrlV()
       await verifyNodeLoaded(comfyPage, 1)
     })
