@@ -137,7 +137,7 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
     if (!this.displayName) return
 
     const [x, y] = this.labelPos
-    ctx.fillStyle = this.isPointerOver ? "white" : "#AAA"
+    ctx.fillStyle = this.isPointerOver ? "white" : (LiteGraph.NODE_TEXT_COLOR || "#AAA")
 
     ctx.fillText(this.displayName, x, y)
   }
