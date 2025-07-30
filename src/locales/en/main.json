@@ -140,7 +140,7 @@
     "releaseTitle": "{package} {version} Release",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
-    "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information."
+    "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "micPermissionDenied": "Microphone permission denied",
