@@ -1,24 +1,31 @@
-import { uniqBy } from 'lodash';
-import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue';
+import { uniqBy } from 'lodash'
+import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
-
-
-import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks';
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment';
-import config from '@/config';
-import { useComfyManagerService } from '@/services/comfyManagerService';
-import { useComfyRegistryService } from '@/services/comfyRegistryService';
-import { useComfyManagerStore } from '@/stores/comfyManagerStore';
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore';
-import { useSystemStatsStore } from '@/stores/systemStatsStore';
-import type { SystemStats } from '@/types';
-import type { components } from '@/types/comfyRegistryTypes';
-import type { ConflictDetail, ConflictDetectionResponse, ConflictDetectionResult, ConflictDetectionSummary, ConflictType, Node, NodePackRequirements, SystemEnvironment } from '@/types/conflictDetectionTypes';
-import { cleanVersion, satisfiesVersion, utilCheckVersionCompatibility } from '@/utils/versionUtil';
-
-
-
-
+import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
+import config from '@/config'
+import { useComfyManagerService } from '@/services/comfyManagerService'
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { SystemStats } from '@/types'
+import type { components } from '@/types/comfyRegistryTypes'
+import type {
+  ConflictDetail,
+  ConflictDetectionResponse,
+  ConflictDetectionResult,
+  ConflictDetectionSummary,
+  ConflictType,
+  Node,
+  NodePackRequirements,
+  SystemEnvironment
+} from '@/types/conflictDetectionTypes'
+import {
+  cleanVersion,
+  satisfiesVersion,
+  utilCheckVersionCompatibility
+} from '@/utils/versionUtil'
 
 /**
  * Composable for conflict detection system.
