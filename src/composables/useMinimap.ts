@@ -8,8 +8,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 interface GraphCallbacks {
   onNodeAdded?: (node: LGraphNode) => void
