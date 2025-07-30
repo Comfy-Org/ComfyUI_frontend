@@ -30,11 +30,11 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
   })
 
   it('should dismiss modal state correctly', () => {
-    const { dismissConflictModal, shouldShowConflictModal } =
+    const { markConflictsAsSeen, shouldShowConflictModal } =
       useConflictAcknowledgment()
 
     expect(shouldShowConflictModal.value).toBe(true)
-    dismissConflictModal()
+    markConflictsAsSeen()
     expect(shouldShowConflictModal.value).toBe(false)
   })
 
@@ -53,7 +53,7 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
 
     // Initially should not show banner (no conflicts)
     expect(shouldShowManagerBanner.value).toBe(false)
-    
+
     // Test dismissWarningBanner function exists and works
     dismissWarningBanner()
     expect(shouldShowManagerBanner.value).toBe(false)
@@ -72,14 +72,14 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
 
     // All UI elements should be dismissed
     expect(shouldShowConflictModal.value).toBe(false)
-    expect(shouldShowRedDot.value).toBe(false) 
+    expect(shouldShowRedDot.value).toBe(false)
     expect(shouldShowManagerBanner.value).toBe(false)
   })
 
   it('should manage acknowledgment state correctly', () => {
     const {
       acknowledgmentState,
-      dismissConflictModal,
+      markConflictsAsSeen,
       dismissRedDotNotification,
       dismissWarningBanner
     } = useConflictAcknowledgment()
@@ -90,7 +90,7 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
     expect(acknowledgmentState.value.warning_banner_dismissed).toBe(false)
 
     // Update states
-    dismissConflictModal()
+    markConflictsAsSeen()
     dismissRedDotNotification()
     dismissWarningBanner()
 
@@ -103,17 +103,17 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
   it('should use VueUse useStorage for persistence', () => {
     // This test verifies that useStorage is being used by checking
     // that values are automatically synced to localStorage
-    const { dismissConflictModal, dismissWarningBanner } =
+    const { markConflictsAsSeen, dismissWarningBanner } =
       useConflictAcknowledgment()
 
-    dismissConflictModal()
+    markConflictsAsSeen()
     dismissWarningBanner()
 
     // VueUse useStorage should automatically persist to localStorage
     // We can verify the keys exist (values will be stringified by VueUse)
+    expect(localStorage.getItem('Comfy.ConflictModalDismissed')).not.toBeNull()
     expect(
-      localStorage.getItem('Comfy.ConflictModalDismissed')
+      localStorage.getItem('Comfy.ConflictWarningBannerDismissed')
     ).not.toBeNull()
-    expect(localStorage.getItem('Comfy.ConflictWarningBannerDismissed')).not.toBeNull()
   })
 })

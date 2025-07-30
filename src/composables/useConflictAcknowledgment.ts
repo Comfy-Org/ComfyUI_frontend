@@ -55,13 +55,6 @@ export function useConflictAcknowledgment() {
   }))
 
   /**
-   * Mark conflict modal as dismissed
-   */
-  function dismissConflictModal(): void {
-    modalDismissed.value = true
-  }
-
-  /**
    * Mark red dot notification as dismissed
    */
   function dismissRedDotNotification(): void {
@@ -73,6 +66,7 @@ export function useConflictAcknowledgment() {
    */
   function dismissWarningBanner(): void {
     warningBannerDismissed.value = true
+    redDotDismissed.value = true
   }
 
   /**
@@ -102,7 +96,6 @@ export function useConflictAcknowledgment() {
     shouldShowManagerBanner,
 
     // Methods
-    dismissConflictModal,
     dismissRedDotNotification,
     dismissWarningBanner,
     markConflictsAsSeen
