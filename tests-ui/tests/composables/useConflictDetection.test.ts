@@ -98,7 +98,6 @@ describe.skip('useConflictDetection with Registry Store', () => {
     systemStats: {
       system: {
         comfyui_version: '0.3.41',
-        python_version: '3.12.11',
         os: 'Darwin'
       },
       devices: [
@@ -120,7 +119,6 @@ describe.skip('useConflictDetection with Registry Store', () => {
     mockSystemStatsStore.systemStats = {
       system: {
         comfyui_version: '0.3.41',
-        python_version: '3.12.11',
         os: 'Darwin'
       },
       devices: [
@@ -178,7 +176,6 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
       expect(environment.comfyui_version).toBe('0.3.41')
       expect(environment.frontend_version).toBe('1.24.0-1')
-      expect(environment.python_version).toBe('3.12.11')
       expect(environment.available_accelerators).toContain('Metal')
       expect(environment.available_accelerators).toContain('CPU')
       expect(environment.primary_accelerator).toBe('Metal')
@@ -196,7 +193,6 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
       expect(environment.comfyui_version).toBe('unknown')
       expect(environment.frontend_version).toBe('1.24.0-1')
-      expect(environment.python_version).toBe('unknown')
       expect(environment.available_accelerators).toEqual(['CPU'])
     })
   })
@@ -1001,7 +997,6 @@ describe.skip('useConflictDetection with Registry Store', () => {
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '0.3.41',
-          python_version: '3.12.11',
           os: 'Darwin'
         },
         devices: []
