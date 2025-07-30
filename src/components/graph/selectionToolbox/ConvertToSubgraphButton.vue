@@ -10,7 +10,7 @@
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
     <template #icon>
-      <i-comfy:workflow />
+      <i-lucide:shrink />
     </template>
   </Button>
 </template>
