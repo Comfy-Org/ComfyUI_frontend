@@ -45,11 +45,11 @@ describe('useConflictAcknowledgment', () => {
   })
 
   describe('dismissal functions', () => {
-    it('should dismiss conflict modal', () => {
-      const { dismissConflictModal, acknowledgmentState } =
+    it('should mark conflicts as seen with unified function', () => {
+      const { markConflictsAsSeen, acknowledgmentState } =
         useConflictAcknowledgment()
 
-      dismissConflictModal()
+      markConflictsAsSeen()
 
       expect(acknowledgmentState.value.modal_dismissed).toBe(true)
     })
@@ -86,12 +86,12 @@ describe('useConflictAcknowledgment', () => {
 
   describe('computed properties', () => {
     it('should calculate shouldShowConflictModal correctly', () => {
-      const { shouldShowConflictModal, dismissConflictModal } =
+      const { shouldShowConflictModal, markConflictsAsSeen } =
         useConflictAcknowledgment()
 
       expect(shouldShowConflictModal.value).toBe(true)
 
-      dismissConflictModal()
+      markConflictsAsSeen()
       expect(shouldShowConflictModal.value).toBe(false)
     })
 
@@ -120,15 +120,19 @@ describe('useConflictAcknowledgment', () => {
 
   describe('localStorage persistence', () => {
     it('should persist to localStorage automatically', () => {
-      const { dismissConflictModal, dismissWarningBanner } =
+      const { markConflictsAsSeen, dismissWarningBanner } =
         useConflictAcknowledgment()
 
-      dismissConflictModal()
+      markConflictsAsSeen()
       dismissWarningBanner()
 
       // VueUse useStorage should automatically persist to localStorage
-      expect(localStorage.getItem('Comfy.ConflictModalDismissed')).not.toBeNull()
-      expect(localStorage.getItem('Comfy.ConflictWarningBannerDismissed')).not.toBeNull()
+      expect(
+        localStorage.getItem('Comfy.ConflictModalDismissed')
+      ).not.toBeNull()
+      expect(
+        localStorage.getItem('Comfy.ConflictWarningBannerDismissed')
+      ).not.toBeNull()
     })
   })
 })
