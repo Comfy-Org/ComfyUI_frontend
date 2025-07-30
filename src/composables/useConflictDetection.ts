@@ -17,15 +17,14 @@ import type {
   ConflictDetectionResult,
   ConflictDetectionSummary,
   ConflictType,
+  Node,
   NodePackRequirements,
-  SupportedAccelerator,
-  SupportedOS,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
 import {
   cleanVersion,
   satisfiesVersion,
-  checkVersionCompatibility as utilCheckVersionCompatibility
+  utilCheckVersionCompatibility
 } from '@/utils/versionUtil'
 
 /**
@@ -33,10 +32,8 @@ import {
  * Error-resilient and asynchronous to avoid affecting other components.
  */
 export function useConflictDetection() {
-  // Store references
   const managerStore = useComfyManagerStore()
 
-  // Use installed packs composable instead of direct API calls
   const {
     startFetchInstalled,
     installedPacks,
@@ -44,15 +41,12 @@ export function useConflictDetection() {
     isReady: installedPacksReady
   } = useInstalledPacks()
 
-  // State management
   const isDetecting = ref(false)
   const lastDetectionTime = ref<string | null>(null)
   const detectionError = ref<string | null>(null)
 
-  // System environment information
   const systemEnvironment = ref<SystemEnvironment | null>(null)
 
-  // Conflict detection results
   const detectionResults = ref<ConflictDetectionResult[]>([])
   // Store merged conflicts separately for testing
   const storedMergedConflicts = ref<ConflictDetectionResult[]>([])
@@ -61,13 +55,10 @@ export function useConflictDetection() {
   // Registry API request cancellation
   const abortController = ref<AbortController | null>(null)
 
-  // Acknowledgment management
   const acknowledgment = useConflictAcknowledgment()
 
-  // Store management
   const conflictStore = useConflictDetectionStore()
 
-  // Computed properties - use store instead of local state
   const hasConflicts = computed(() => conflictStore.hasConflicts)
   const conflictedPackages = computed(() => {
     return conflictStore.conflictedPackages
@@ -97,7 +88,6 @@ export function useConflictDetection() {
       // Extract system information from system stats
       const systemStats = systemStatsStore.systemStats
       const comfyuiVersion = systemStats?.system?.comfyui_version || 'unknown'
-      const pythonVersion = systemStats?.system?.python_version || 'unknown'
 
       // Use system stats for OS detection (more accurate than browser detection)
       const systemOS = systemStats?.system?.os || 'unknown'
@@ -118,7 +108,6 @@ export function useConflictDetection() {
           frontendVersion.status === 'fulfilled'
             ? frontendVersion.value
             : 'unknown',
-        python_version: pythonVersion,
 
         // Platform information (from system stats)
         os: detectedOS,
@@ -159,7 +148,6 @@ export function useConflictDetection() {
       const fallbackEnvironment: SystemEnvironment = {
         comfyui_version: 'unknown',
         frontend_version: frontendVersion,
-        python_version: 'unknown',
         os: detectOSFromSystemStats(navigator.platform),
         platform_details: navigator.platform,
         architecture: getArchitecture(),
@@ -283,18 +271,12 @@ export function useConflictDetection() {
             supported_comfyui_frontend_version:
               versionData.supported_comfyui_frontend_version,
             supported_os: normalizeOSValues(versionData.supported_os),
-            supported_accelerators:
-              versionData.supported_accelerators as SupportedAccelerator[],
-            dependencies: versionData.dependencies || [],
+            supported_accelerators: versionData.supported_accelerators,
 
             // Status information
-            registry_status: undefined, // Node status - not critical for conflict detection
             version_status: versionData.status,
             is_banned: versionData.status === 'NodeVersionStatusBanned',
-
-            // Metadata
-            registry_fetch_time: new Date().toISOString(),
-            has_registry_data: true
+            is_pending: versionData.status === 'NodeVersionStatusPending'
           }
 
           requirements.push(requirement)
@@ -310,8 +292,7 @@ export function useConflictDetection() {
             installed_version: installedVersion,
             is_enabled: isEnabled,
             is_banned: false,
-            registry_fetch_time: new Date().toISOString(),
-            has_registry_data: false
+            is_pending: false
           }
 
           requirements.push(fallbackRequirement)
@@ -350,10 +331,7 @@ export function useConflictDetection() {
     }
 
     // 1. ComfyUI version conflict check
-    if (
-      packageReq.has_registry_data &&
-      !isCompatibleWithAll(packageReq.supported_comfyui_version)
-    ) {
+    if (!isCompatibleWithAll(packageReq.supported_comfyui_version)) {
       const versionConflict = checkVersionConflict(
         'comfyui_version',
         sysEnv.comfyui_version,
@@ -363,10 +341,7 @@ export function useConflictDetection() {
     }
 
     // 2. Frontend version conflict check
-    if (
-      packageReq.has_registry_data &&
-      !isCompatibleWithAll(packageReq.supported_comfyui_frontend_version)
-    ) {
+    if (!isCompatibleWithAll(packageReq.supported_comfyui_frontend_version)) {
       const versionConflict = checkVersionConflict(
         'frontend_version',
         sysEnv.frontend_version,
@@ -376,19 +351,13 @@ export function useConflictDetection() {
     }
 
     // 3. OS compatibility check
-    if (
-      packageReq.has_registry_data &&
-      !isCompatibleWithAll(packageReq.supported_os)
-    ) {
+    if (!isCompatibleWithAll(packageReq.supported_os)) {
       const osConflict = checkOSConflict(packageReq.supported_os!, sysEnv.os)
       if (osConflict) conflicts.push(osConflict)
     }
 
     // 4. Accelerator compatibility check
-    if (
-      packageReq.has_registry_data &&
-      !isCompatibleWithAll(packageReq.supported_accelerators)
-    ) {
+    if (!isCompatibleWithAll(packageReq.supported_accelerators)) {
       const acceleratorConflict = checkAcceleratorConflict(
         packageReq.supported_accelerators!,
         sysEnv.available_accelerators
@@ -403,9 +372,9 @@ export function useConflictDetection() {
     }
 
     // 6. Registry data availability check using shared logic
-    const securityConflict = checkSecurityStatus(packageReq.has_registry_data)
-    if (securityConflict) {
-      conflicts.push(securityConflict)
+    const pendingConflict = checkPendingStatus(packageReq.is_pending)
+    if (pendingConflict) {
+      conflicts.push(pendingConflict)
     }
 
     // Generate result
@@ -481,10 +450,12 @@ export function useConflictDetection() {
    * @param importFailInfo Import failure data from Manager API
    * @returns Array of conflict detection results for failed imports
    */
-  function detectPythonImportConflicts(
-    importFailInfo: Record<string, any>
+  function detectImportFailConflicts(
+    importFailInfo: Record<string, { msg: string; name: string; path: string }>
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
+
+    console.log('@@@', importFailInfo)
 
     if (!importFailInfo || typeof importFailInfo !== 'object') {
       return results
@@ -497,22 +468,17 @@ export function useConflictDetection() {
         const errorMsg = failureInfo.msg || 'Unknown import error'
         const modulePath = failureInfo.path || ''
 
-        // Parse error message to extract missing dependency
-        const missingDependency = extractMissingDependency(errorMsg)
-
-        const conflicts: ConflictDetail[] = [
-          {
-            type: 'python_dependency',
-            current_value: 'missing',
-            required_value: missingDependency
-          }
-        ]
-
         results.push({
           package_id: packageId,
           package_name: packageId,
           has_conflict: true,
-          conflicts,
+          conflicts: [
+            {
+              type: 'import_failed',
+              current_value: 'installed',
+              required_value: failureInfo.msg
+            }
+          ],
           is_compatible: false
         })
 
@@ -520,8 +486,7 @@ export function useConflictDetection() {
           `[ConflictDetection] Python import failure detected for ${packageId}:`,
           {
             path: modulePath,
-            error: errorMsg,
-            missingDependency
+            error: errorMsg
           }
         )
       }
@@ -579,7 +544,7 @@ export function useConflictDetection() {
 
       // 4. Detect Python import failures
       const importFailInfo = await fetchImportFailInfo()
-      const importFailResults = detectPythonImportConflicts(importFailInfo)
+      const importFailResults = detectImportFailConflicts(importFailInfo)
       console.log(
         '[ConflictDetection] Python import failures detected:',
         importFailResults
@@ -769,18 +734,12 @@ export function useConflictDetection() {
   }
 
   /**
-   * Check compatibility for a specific version of a package.
+   * Check compatibility for a node.
    * Used by components like PackVersionSelectorPopover.
    */
-  function checkVersionCompatibility(versionData: {
-    supported_os?: string[]
-    supported_accelerators?: string[]
-    supported_comfyui_version?: string
-    supported_comfyui_frontend_version?: string
-    supported_python_version?: string
-    is_banned?: boolean
-    has_registry_data?: boolean
-  }) {
+  function checkNodeCompatibility(
+    node: Node | components['schemas']['NodeVersion']
+  ) {
     const systemStatsStore = useSystemStatsStore()
     const systemStats = systemStatsStore.systemStats
     if (!systemStats) return { hasConflict: false, conflicts: [] }
@@ -788,34 +747,28 @@ export function useConflictDetection() {
     const conflicts: ConflictDetail[] = []
 
     // Check OS compatibility using centralized function
-    if (versionData.supported_os && versionData.supported_os.length > 0) {
+    if (node.supported_os && node.supported_os.length > 0) {
       const currentOS = systemStats.system?.os || 'unknown'
-      const osConflict = checkOSConflict(
-        versionData.supported_os as SupportedOS[],
-        currentOS as SupportedOS
-      )
+      const osConflict = checkOSConflict(node.supported_os, currentOS)
       if (osConflict) {
         conflicts.push(osConflict)
       }
     }
 
     // Check accelerator compatibility using centralized function
-    if (
-      versionData.supported_accelerators &&
-      versionData.supported_accelerators.length > 0
-    ) {
+    if (node.supported_accelerators && node.supported_accelerators.length > 0) {
       // Extract available accelerators from system stats
       const acceleratorInfo = extractAcceleratorInfo(systemStats)
-      const availableAccelerators: SupportedAccelerator[] = []
+      const availableAccelerators: Node['supported_accelerators'] = []
 
-      acceleratorInfo.available.forEach((accel) => {
+      acceleratorInfo.available?.forEach((accel) => {
         if (accel === 'CUDA') availableAccelerators.push('CUDA')
         if (accel === 'Metal') availableAccelerators.push('Metal')
         if (accel === 'CPU') availableAccelerators.push('CPU')
       })
 
       const acceleratorConflict = checkAcceleratorConflict(
-        versionData.supported_accelerators as SupportedAccelerator[],
+        node.supported_accelerators,
         availableAccelerators
       )
       if (acceleratorConflict) {
@@ -824,13 +777,13 @@ export function useConflictDetection() {
     }
 
     // Check ComfyUI version compatibility
-    if (versionData.supported_comfyui_version) {
+    if (node.supported_comfyui_version) {
       const currentComfyUIVersion = systemStats.system?.comfyui_version
       if (currentComfyUIVersion && currentComfyUIVersion !== 'unknown') {
         const versionConflict = utilCheckVersionCompatibility(
           'comfyui_version',
           currentComfyUIVersion,
-          versionData.supported_comfyui_version
+          node.supported_comfyui_version
         )
         if (versionConflict) {
           conflicts.push(versionConflict)
@@ -839,28 +792,13 @@ export function useConflictDetection() {
     }
 
     // Check ComfyUI Frontend version compatibility
-    if (versionData.supported_comfyui_frontend_version) {
+    if (node.supported_comfyui_frontend_version) {
       const currentFrontendVersion = config.app_version
       if (currentFrontendVersion && currentFrontendVersion !== 'unknown') {
         const versionConflict = utilCheckVersionCompatibility(
           'frontend_version',
           currentFrontendVersion,
-          versionData.supported_comfyui_frontend_version
-        )
-        if (versionConflict) {
-          conflicts.push(versionConflict)
-        }
-      }
-    }
-
-    // Check Python version compatibility
-    if (versionData.supported_python_version) {
-      const currentPythonVersion = systemStats.system?.python_version
-      if (currentPythonVersion && currentPythonVersion !== 'unknown') {
-        const versionConflict = utilCheckVersionCompatibility(
-          'python_version',
-          currentPythonVersion,
-          versionData.supported_python_version
+          node.supported_comfyui_frontend_version
         )
         if (versionConflict) {
           conflicts.push(versionConflict)
@@ -869,15 +807,20 @@ export function useConflictDetection() {
     }
 
     // Check banned package status using shared logic
-    const bannedConflict = checkBannedStatus(versionData.is_banned)
+    const bannedConflict = checkBannedStatus(
+      node.status === 'NodeStatusBanned' ||
+        node.status === 'NodeVersionStatusBanned'
+    )
     if (bannedConflict) {
       conflicts.push(bannedConflict)
     }
 
-    // Check security/registry data status using shared logic
-    const securityConflict = checkSecurityStatus(versionData.has_registry_data)
-    if (securityConflict) {
-      conflicts.push(securityConflict)
+    // Check pending status using shared logic
+    const pendingConflict = checkPendingStatus(
+      node.status === 'NodeVersionStatusPending'
+    )
+    if (pendingConflict) {
+      conflicts.push(pendingConflict)
     }
 
     return {
@@ -917,7 +860,7 @@ export function useConflictDetection() {
     acknowledgePackageConflict,
 
     // Helper functions for other components
-    checkVersionCompatibility
+    checkNodeCompatibility
   }
 }
 
@@ -974,44 +917,6 @@ function mergeConflictsByPackageName(
 }
 
 /**
- * Extracts missing dependency name from Python error message.
- * @param errorMsg Error message from Python import failure
- * @returns Name of missing dependency
- */
-function extractMissingDependency(errorMsg: string): string {
-  // Try to extract module name from common error patterns
-
-  // Pattern 1: "ModuleNotFoundError: No module named 'module_name'"
-  const moduleNotFoundMatch = errorMsg.match(/No module named '([^']+)'/)
-  if (moduleNotFoundMatch) {
-    return moduleNotFoundMatch[1]
-  }
-
-  // Pattern 2: "ImportError: cannot import name 'something' from 'module_name'"
-  const importErrorMatch = errorMsg.match(
-    /cannot import name '[^']+' from '([^']+)'/
-  )
-  if (importErrorMatch) {
-    return importErrorMatch[1]
-  }
-
-  // Pattern 3: "from module_name import something" in the traceback
-  const fromImportMatch = errorMsg.match(/from ([a-zA-Z_][a-zA-Z0-9_]*) import/)
-  if (fromImportMatch) {
-    return fromImportMatch[1]
-  }
-
-  // Pattern 4: "import module_name" in the traceback
-  const importMatch = errorMsg.match(/import ([a-zA-Z_][a-zA-Z0-9_]*)/)
-  if (importMatch) {
-    return importMatch[1]
-  }
-
-  // Fallback: return generic message
-  return 'unknown dependency'
-}
-
-/**
  * Fetches frontend version from config.
  * @returns Promise that resolves to frontend version string
  */
@@ -1044,7 +949,9 @@ function getArchitecture(): string {
  * @param osValues OS values from Registry API
  * @returns Normalized OS values
  */
-function normalizeOSValues(osValues: string[] | undefined): SupportedOS[] {
+function normalizeOSValues(
+  osValues: string[] | undefined
+): Node['supported_os'] {
   if (!osValues || osValues.length === 0) {
     return []
   }
@@ -1065,7 +972,7 @@ function normalizeOSValues(osValues: string[] | undefined): SupportedOS[] {
     }
 
     // Return as-is if it matches standard format
-    return os as SupportedOS
+    return os
   })
 }
 
@@ -1078,7 +985,7 @@ function normalizeOSValues(osValues: string[] | undefined): SupportedOS[] {
 function detectOSFromSystemStats(
   systemOS: string,
   systemStats?: SystemStats | null
-): SupportedOS {
+): string {
   const os = systemOS.toLowerCase()
 
   // Handle specific OS strings (return Registry standard format)
@@ -1100,14 +1007,7 @@ function detectOSFromSystemStats(
       }
     }
 
-    // Method 2: Check Python version string for platform hints
-    if (systemStats?.system?.python_version) {
-      const pythonVersion = systemStats.system.python_version.toLowerCase()
-      if (pythonVersion.includes('darwin')) return 'macOS'
-      if (pythonVersion.includes('linux')) return 'Linux'
-    }
-
-    // Method 3: Check user agent as fallback
+    // Method 2: Check user agent as fallback
     const userAgent = navigator.userAgent.toLowerCase()
     if (userAgent.includes('mac')) return 'macOS'
     if (userAgent.includes('linux')) return 'Linux'
@@ -1187,14 +1087,14 @@ function extractArchitectureFromSystemStats(
  * @returns Accelerator information object
  */
 function extractAcceleratorInfo(systemStats: SystemStats | null): {
-  available: SupportedAccelerator[]
-  primary: SupportedAccelerator
+  available: Node['supported_accelerators']
+  primary: string
   memory_mb?: number
 } {
   try {
     if (systemStats?.devices && systemStats.devices.length > 0) {
-      const accelerators = new Set<SupportedAccelerator>()
-      let primaryDevice: SupportedAccelerator = 'CPU'
+      const accelerators = new Set<string>()
+      let primaryDevice: string = 'CPU'
       let totalMemory = 0
       let maxDevicePriority = 0
 
@@ -1226,7 +1126,7 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
         const priority = getDevicePriority(deviceType)
 
         // Map device type to SupportedAccelerator (Registry standard format)
-        let acceleratorType: SupportedAccelerator = 'CPU'
+        let acceleratorType: string = 'CPU'
         if (deviceType === 'cuda') {
           acceleratorType = 'CUDA'
         } else if (deviceType === 'mps') {
@@ -1329,17 +1229,17 @@ function checkVersionConflict(
  * Checks for OS compatibility conflicts.
  */
 function checkOSConflict(
-  supportedOS: SupportedOS[],
-  currentOS: SupportedOS
+  supportedOS: Node['supported_os'],
+  currentOS: string
 ): ConflictDetail | null {
-  if (supportedOS.includes('any') || supportedOS.includes(currentOS)) {
+  if (supportedOS?.includes('any') || supportedOS?.includes(currentOS)) {
     return null
   }
 
   return {
     type: 'os',
     current_value: currentOS,
-    required_value: supportedOS.join(', ')
+    required_value: supportedOS ? supportedOS?.join(', ') : ''
   }
 }
 
@@ -1347,20 +1247,24 @@ function checkOSConflict(
  * Checks for accelerator compatibility conflicts.
  */
 function checkAcceleratorConflict(
-  supportedAccelerators: SupportedAccelerator[],
-  availableAccelerators: SupportedAccelerator[]
+  supportedAccelerators: Node['supported_accelerators'],
+  availableAccelerators: Node['supported_accelerators']
 ): ConflictDetail | null {
   if (
-    supportedAccelerators.includes('any') ||
-    supportedAccelerators.some((acc) => availableAccelerators.includes(acc))
+    supportedAccelerators?.includes('any') ||
+    supportedAccelerators?.some((acc) => availableAccelerators?.includes(acc))
   ) {
     return null
   }
 
   return {
     type: 'accelerator',
-    current_value: availableAccelerators.join(', '),
-    required_value: supportedAccelerators.join(', ')
+    current_value: availableAccelerators
+      ? availableAccelerators.join(', ')
+      : '',
+    required_value: supportedAccelerators
+      ? supportedAccelerators.join(', ')
+      : ''
   }
 }
 
@@ -1379,14 +1283,14 @@ function checkBannedStatus(isBanned?: boolean): ConflictDetail | null {
 }
 
 /**
- * Checks for security/registry data availability conflicts.
+ * Checks for pending package status conflicts.
  */
-function checkSecurityStatus(hasRegistryData?: boolean): ConflictDetail | null {
-  if (hasRegistryData === false) {
+function checkPendingStatus(isPending?: boolean): ConflictDetail | null {
+  if (isPending === true) {
     return {
-      type: 'security_pending',
-      current_value: 'no_registry_data',
-      required_value: 'registry_data_available'
+      type: 'pending',
+      current_value: 'installed',
+      required_value: 'not_pending'
     }
   }
   return null
@@ -1402,23 +1306,23 @@ function generateSummary(
   const conflictsByType: Record<ConflictType, number> = {
     comfyui_version: 0,
     frontend_version: 0,
-    python_version: 0,
+    import_failed: 0,
     os: 0,
     accelerator: 0,
     banned: 0,
-    security_pending: 0,
-    python_dependency: 0
+    pending: 0
+    // python_version: 0
   }
 
   const conflictsByTypeDetails: Record<ConflictType, string[]> = {
     comfyui_version: [],
     frontend_version: [],
-    python_version: [],
+    import_failed: [],
     os: [],
     accelerator: [],
     banned: [],
-    security_pending: [],
-    python_dependency: []
+    pending: []
+    // python_version: [],
   }
 
   let bannedCount = 0
@@ -1433,7 +1337,7 @@ function generateSummary(
       }
 
       if (conflict.type === 'banned') bannedCount++
-      if (conflict.type === 'security_pending') securityPendingCount++
+      if (conflict.type === 'pending') securityPendingCount++
     })
   })
 
@@ -1442,7 +1346,7 @@ function generateSummary(
     compatible_packages: results.filter((r) => r.is_compatible).length,
     conflicted_packages: results.filter((r) => r.has_conflict).length,
     banned_packages: bannedCount,
-    security_pending_packages: securityPendingCount,
+    pending_packages: securityPendingCount,
     conflicts_by_type_details: conflictsByTypeDetails,
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: durationMs
@@ -1458,16 +1362,16 @@ function getEmptySummary(): ConflictDetectionSummary {
     compatible_packages: 0,
     conflicted_packages: 0,
     banned_packages: 0,
-    security_pending_packages: 0,
+    pending_packages: 0,
     conflicts_by_type_details: {
       comfyui_version: [],
       frontend_version: [],
-      python_version: [],
+      import_failed: [],
       os: [],
       accelerator: [],
       banned: [],
-      security_pending: [],
-      python_dependency: []
+      pending: []
+      // python_version: [],
     },
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: 0

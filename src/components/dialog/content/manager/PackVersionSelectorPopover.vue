@@ -25,7 +25,7 @@
       v-model="selectedVersion"
       option-label="label"
       option-value="value"
-      :options="versionOptions"
+      :options="processedVersionOptions"
       :highlight-on-select="false"
       class="w-full max-h-[50vh] border-none shadow-none rounded-md"
       :pt="{
@@ -35,19 +35,14 @@
       <template #option="slotProps">
         <div class="flex justify-between items-center w-full p-1">
           <div class="flex items-center gap-2">
-            <!-- Show no icon for nightly versions since compatibility is uncertain -->
             <template v-if="slotProps.option.value === 'nightly'">
               <div class="w-4"></div>
-              <!-- Empty space to maintain alignment -->
             </template>
             <template v-else>
               <i
-                v-if="
-                  getVersionCompatibility(slotProps.option.value).hasConflict
-                "
+                v-if="slotProps.option.hasConflict"
                 v-tooltip="{
-                  value: getVersionCompatibility(slotProps.option.value)
-                    .conflictMessage,
+                  value: slotProps.option.conflictMessage,
                   showDelay: 300
                 }"
                 class="pi pi-exclamation-triangle text-yellow-500"
@@ -57,7 +52,7 @@
             <span>{{ slotProps.option.label }}</span>
           </div>
           <i
-            v-if="selectedVersion === slotProps.option.value"
+            v-if="slotProps.option.isSelected"
             class="pi pi-check text-highlight"
           />
         </div>
@@ -89,7 +84,7 @@ import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
@@ -115,11 +110,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const registryService = useComfyRegistryService()
 const managerStore = useComfyManagerStore()
-const { checkVersionCompatibility } = useConflictDetection()
+const { checkNodeCompatibility } = useConflictDetection()
 
 const isQueueing = ref(false)
 
 const selectedVersion = ref<string>('latest')
+
 onMounted(() => {
   const initialVersion = getInitialSelectedVersion() ?? 'latest'
   selectedVersion.value =
@@ -130,13 +126,13 @@ onMounted(() => {
 const getInitialSelectedVersion = () => {
   if (!nodePack.id) return
 
-  // If unclaimed, set selected version to nightly
-  if (nodePack.publisher?.name === 'Unclaimed')
-    return 'nightly' as ManagerComponents['schemas']['SelectedVersion']
-
   // If node pack is installed, set selected version to the installed version
   if (managerStore.isPackInstalled(nodePack.id))
     return managerStore.getInstalledPackVersion(nodePack.id)
+
+  // If unclaimed, set selected version to nightly
+  if (nodePack.publisher?.name === 'Unclaimed')
+    return 'nightly' as ManagerComponents['schemas']['SelectedVersion']
 
   // If node pack is not installed, set selected version to latest
   return nodePack.latest_version?.version
@@ -235,76 +231,35 @@ const handleSubmit = async () => {
   emit('submit')
 }
 
-// Function to get version data (either from nodePack or fetchedVersions)
 const getVersionData = (version: string) => {
-  // Use latest_version data for both "latest" and the actual latest version number
   const latestVersionNumber = nodePack.latest_version?.version
   const useLatestVersionData =
     version === 'latest' || version === latestVersionNumber
 
   if (useLatestVersionData) {
-    // For "latest" and the actual latest version number, use consistent data from latest_version
     const latestVersionData = nodePack.latest_version
     return {
-      supported_os: latestVersionData?.supported_os ?? nodePack.supported_os,
-      supported_accelerators:
-        latestVersionData?.supported_accelerators ??
-        nodePack.supported_accelerators,
-      supported_comfyui_version:
-        latestVersionData?.supported_comfyui_version ??
-        nodePack.supported_comfyui_version,
-      supported_comfyui_frontend_version:
-        latestVersionData?.supported_comfyui_frontend_version ??
-        nodePack.supported_comfyui_frontend_version
+      ...latestVersionData
     }
   }
 
-  if (version === 'nightly') {
-    // For nightly, we can't determine exact compatibility since it's dynamic Git HEAD
-    // But we can assume it's generally compatible (nightly = latest development)
-    // Use nodePack data as fallback, but nightly is typically more permissive
-    return {
-      supported_os: nodePack.supported_os || [], // If no OS restrictions, assume all supported
-      supported_accelerators: nodePack.supported_accelerators || [], // If no accelerator restrictions, assume all supported
-      supported_comfyui_version: nodePack.supported_comfyui_version, // Use latest known requirement
-      supported_comfyui_frontend_version:
-        nodePack.supported_comfyui_frontend_version // Use latest known requirement
-    }
-  }
-
-  // For specific versions, find in fetched versions
   const versionData = fetchedVersions.value.find((v) => v.version === version)
   if (versionData) {
     return {
-      supported_os: versionData.supported_os,
-      supported_accelerators: versionData.supported_accelerators,
-      supported_comfyui_version: versionData.supported_comfyui_version,
-      supported_comfyui_frontend_version:
-        versionData.supported_comfyui_frontend_version
+      ...versionData
     }
   }
 
   // Fallback to nodePack data
   return {
-    supported_os: nodePack.supported_os,
-    supported_accelerators: nodePack.supported_accelerators,
-    supported_comfyui_version: nodePack.supported_comfyui_version,
-    supported_comfyui_frontend_version:
-      nodePack.supported_comfyui_frontend_version
+    ...nodePack
   }
-}
-
-// Function to check version compatibility using centralized logic
-const checkVersionCompatibilityLocal = (
-  versionData: ReturnType<typeof getVersionData>
-) => {
-  return checkVersionCompatibility(versionData)
 }
 
 // Main function to get version compatibility info
 const getVersionCompatibility = (version: string) => {
   const versionData = getVersionData(version)
-  const compatibility = checkVersionCompatibilityLocal(versionData)
+  const compatibility = checkNodeCompatibility(versionData)
 
   const conflictMessage = compatibility.hasConflict
     ? getJoinedConflictMessages(compatibility.conflicts, t)
@@ -315,4 +270,33 @@ const getVersionCompatibility = (version: string) => {
     conflictMessage
   }
 }
+
+// Helper to determine if an option is selected.
+const isOptionSelected = (optionValue: string) => {
+  if (selectedVersion.value === optionValue) {
+    return true
+  }
+  if (
+    optionValue === 'latest' &&
+    selectedVersion.value === nodePack.latest_version?.version
+  ) {
+    return true
+  }
+  return false
+}
+
+// Checks if an option is selected, treating 'latest' as an alias for the actual latest version number.
+const processedVersionOptions = computed(() => {
+  return versionOptions.value.map((option) => {
+    const compatibility = getVersionCompatibility(option.value)
+    const isSelected = isOptionSelected(option.value)
+
+    return {
+      ...option,
+      hasConflict: compatibility.hasConflict,
+      conflictMessage: compatibility.conflictMessage,
+      isSelected: isSelected
+    }
+  })
+})
 </script>

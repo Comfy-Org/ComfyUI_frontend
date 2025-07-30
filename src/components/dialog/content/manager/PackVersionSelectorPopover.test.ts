@@ -53,7 +53,7 @@ const mockNodePack = {
 // Create mock functions
 const mockGetPackVersions = vi.fn()
 const mockInstallPack = vi.fn().mockResolvedValue(undefined)
-const mockCheckVersionCompatibility = vi.fn()
+const mockCheckNodeCompatibility = vi.fn()
 
 // Mock the registry service
 vi.mock('@/services/comfyRegistryService', () => ({
@@ -77,7 +77,7 @@ vi.mock('@/stores/comfyManagerStore', () => ({
 // Mock the conflict detection composable
 vi.mock('@/composables/useConflictDetection', () => ({
   useConflictDetection: vi.fn(() => ({
-    checkVersionCompatibility: mockCheckVersionCompatibility
+    checkNodeCompatibility: mockCheckNodeCompatibility
   }))
 }))
 
@@ -91,7 +91,7 @@ describe('PackVersionSelectorPopover', () => {
     vi.clearAllMocks()
     mockGetPackVersions.mockReset()
     mockInstallPack.mockReset().mockResolvedValue(undefined)
-    mockCheckVersionCompatibility
+    mockCheckNodeCompatibility
       .mockReset()
       .mockReturnValue({ hasConflict: false, conflicts: [] })
   })
@@ -376,7 +376,7 @@ describe('PackVersionSelectorPopover', () => {
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
       // Mock compatibility check to return conflict for specific version
-      mockCheckVersionCompatibility.mockImplementation((versionData) => {
+      mockCheckNodeCompatibility.mockImplementation((versionData) => {
         if (versionData.supported_os?.includes('linux')) {
           return {
             hasConflict: true,
@@ -404,7 +404,7 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Check that compatibility checking function was called
-      expect(mockCheckVersionCompatibility).toHaveBeenCalled()
+      expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // The warning icon should be shown for incompatible versions
       const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
@@ -416,7 +416,7 @@ describe('PackVersionSelectorPopover', () => {
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
       // Mock compatibility check to return no conflicts
-      mockCheckVersionCompatibility.mockReturnValue({
+      mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
       })
@@ -425,7 +425,7 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Check that compatibility checking function was called
-      expect(mockCheckVersionCompatibility).toHaveBeenCalled()
+      expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // The verified icon should be shown for compatible versions
       // Look for the VerifiedIcon component or SVG elements
@@ -469,20 +469,24 @@ describe('PackVersionSelectorPopover', () => {
       })
       await waitForPromises()
 
+      // Clear previous calls from component mounting/rendering
+      mockCheckNodeCompatibility.mockClear()
+      
       // Trigger compatibility check by accessing getVersionCompatibility
       const vm = wrapper.vm as any
       vm.getVersionCompatibility('1.0.0')
 
-      // Verify that checkVersionCompatibility was called with correct data
+      // Verify that checkNodeCompatibility was called with correct data
       // Since 1.0.0 is the latest version, it should use latest_version data
-      expect(mockCheckVersionCompatibility).toHaveBeenCalledWith({
+      expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
         supported_os: ['windows', 'linux'],
         supported_accelerators: ['CPU'], // latest_version data takes precedence
         supported_comfyui_version: '>=0.1.0',
         supported_comfyui_frontend_version: '>=1.0.0',
         supported_python_version: '>=3.8',
         is_banned: false,
-        has_registry_data: true
+        has_registry_data: true,
+        version: '1.0.0'
       })
     })
 
@@ -491,7 +495,7 @@ describe('PackVersionSelectorPopover', () => {
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
       // Mock compatibility check to return version conflicts
-      mockCheckVersionCompatibility.mockImplementation((versionData) => {
+      mockCheckNodeCompatibility.mockImplementation((versionData) => {
         const conflicts = []
         if (versionData.supported_comfyui_version) {
           conflicts.push({
@@ -525,7 +529,7 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Check that compatibility checking function was called
-      expect(mockCheckVersionCompatibility).toHaveBeenCalled()
+      expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // The warning icon should be shown for version incompatible packages
       const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
@@ -559,76 +563,56 @@ describe('PackVersionSelectorPopover', () => {
 
       const vm = wrapper.vm as any
 
+      // Clear previous calls from component mounting/rendering
+      mockCheckNodeCompatibility.mockClear()
+
       // Test latest version
       vm.getVersionCompatibility('latest')
-      expect(mockCheckVersionCompatibility).toHaveBeenCalledWith({
+      expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
         supported_os: ['windows'],
         supported_accelerators: ['CPU'],
         supported_comfyui_version: '>=0.1.0',
         supported_comfyui_frontend_version: '>=1.0.0',
         supported_python_version: '>=3.8',
         is_banned: false,
-        has_registry_data: true
+        has_registry_data: true,
+        version: '1.0.0'
       })
 
+      // Clear for next test call
+      mockCheckNodeCompatibility.mockClear()
+      
       // Test nightly version
       vm.getVersionCompatibility('nightly')
-      expect(mockCheckVersionCompatibility).toHaveBeenCalledWith({
+      expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
+        id: 'test-pack',
+        name: 'Test Pack',
         supported_os: ['windows'],
         supported_accelerators: ['CPU'],
         supported_comfyui_version: '>=0.1.0',
         supported_comfyui_frontend_version: '>=1.0.0',
-        supported_python_version: undefined,
-        is_banned: false,
-        has_registry_data: false
-      })
-    })
-
-    it('shows python version conflict warnings', async () => {
-      // Set up the mock for versions
-      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
-
-      // Mock compatibility check to return python version conflicts
-      mockCheckVersionCompatibility.mockImplementation((versionData) => {
-        if (versionData.supported_python_version) {
-          return {
-            hasConflict: true,
-            conflicts: [
-              {
-                type: 'python_version',
-                current_value: '3.8.0',
-                required_value: versionData.supported_python_version
-              }
-            ]
-          }
+        repository: 'https://github.com/user/repo',
+        has_registry_data: true,
+        latest_version: {
+          supported_os: ['windows'],
+          supported_accelerators: ['CPU'], 
+          supported_python_version: '>=3.8',
+          is_banned: false,
+          has_registry_data: true,
+          version: '1.0.0',
+          supported_comfyui_version: '>=0.1.0',
+          supported_comfyui_frontend_version: '>=1.0.0'
         }
-        return { hasConflict: false, conflicts: [] }
       })
-
-      const nodePackWithPythonRequirement = {
-        ...mockNodePack,
-        supported_python_version: '>=3.9.0'
-      }
-
-      const wrapper = mountComponent({
-        props: { nodePack: nodePackWithPythonRequirement }
-      })
-      await waitForPromises()
-
-      // Check that compatibility checking function was called
-      expect(mockCheckVersionCompatibility).toHaveBeenCalled()
-
-      // The warning icon should be shown for python version incompatible packages
-      const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
-      expect(warningIcons.length).toBeGreaterThan(0)
     })
+
 
     it('shows banned package warnings', async () => {
       // Set up the mock for versions
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
       // Mock compatibility check to return banned conflicts
-      mockCheckVersionCompatibility.mockImplementation((versionData) => {
+      mockCheckNodeCompatibility.mockImplementation((versionData) => {
         if (versionData.is_banned === true) {
           return {
             hasConflict: true,
@@ -659,7 +643,7 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Check that compatibility checking function was called
-      expect(mockCheckVersionCompatibility).toHaveBeenCalled()
+      expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // Open the dropdown to see the options
       const select = wrapper.find('.p-select')
@@ -684,13 +668,13 @@ describe('PackVersionSelectorPopover', () => {
       mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
       // Mock compatibility check to return security pending conflicts
-      mockCheckVersionCompatibility.mockImplementation((versionData) => {
+      mockCheckNodeCompatibility.mockImplementation((versionData) => {
         if (versionData.has_registry_data === false) {
           return {
             hasConflict: true,
             conflicts: [
               {
-                type: 'security_pending',
+                type: 'pending',
                 current_value: 'no_registry_data',
                 required_value: 'registry_data_available'
               }
@@ -715,7 +699,7 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Check that compatibility checking function was called
-      expect(mockCheckVersionCompatibility).toHaveBeenCalled()
+      expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // The warning icon should be shown for security pending packages
       const warningIcons = wrapper.findAll('.pi-exclamation-triangle')

@@ -29,7 +29,7 @@ export const useConflictDetectionStore = defineStore(
 
     const securityPendingPackages = computed(() =>
       conflictedPackages.value.filter((pkg) =>
-        pkg.conflicts.some((conflict) => conflict.type === 'security_pending')
+        pkg.conflicts.some((conflict) => conflict.type === 'pending')
       )
     )
 

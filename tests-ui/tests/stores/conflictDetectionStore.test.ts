@@ -17,7 +17,7 @@ describe('useConflictDetectionStore', () => {
       is_compatible: false,
       conflicts: [
         {
-          type: 'security_pending',
+          type: 'pending',
           current_value: 'no_registry_data',
           required_value: 'registry_data_available'
         }
@@ -130,7 +130,7 @@ describe('useConflictDetectionStore', () => {
   })
 
   describe('securityPendingPackages', () => {
-    it('should filter packages with security_pending conflicts', () => {
+    it('should filter packages with pending conflicts', () => {
       const store = useConflictDetectionStore()
       store.setConflictedPackages(mockConflictedPackages)
 
@@ -234,7 +234,7 @@ describe('useConflictDetectionStore', () => {
             required_value: 'not_banned'
           },
           {
-            type: 'security_pending',
+            type: 'pending',
             current_value: 'no_registry_data',
             required_value: 'registry_data_available'
           }
