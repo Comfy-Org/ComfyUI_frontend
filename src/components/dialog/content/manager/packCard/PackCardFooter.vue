@@ -60,21 +60,9 @@ const hasConflict = computed(() => {
   }
 
   // For uninstalled packages, check compatibility directly
-  if (
-    nodePack.supported_os ||
-    nodePack.supported_accelerators ||
-    nodePack.supported_comfyui_version
-  ) {
-    const compatibility = checkVersionCompatibility({
-      supported_os: nodePack.supported_os,
-      supported_accelerators: nodePack.supported_accelerators,
-      supported_comfyui_version: nodePack.supported_comfyui_version,
-      supported_comfyui_frontend_version:
-        nodePack.supported_comfyui_frontend_version
-    })
-    return compatibility.hasConflict
-  }
+  const compatibility = checkVersionCompatibility(nodePack)
+  console.log(compatibility)
 
-  return false
+  return compatibility.hasConflict
 })
 </script>
