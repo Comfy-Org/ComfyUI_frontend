@@ -5,7 +5,7 @@
       :key="index"
       class="p-3 bg-yellow-800/20 rounded-md"
     >
-      <div class="text-sm">
+      <div class="text-sm break-words">
         {{ getConflictMessage(conflict, $t) }}
       </div>
     </div>
