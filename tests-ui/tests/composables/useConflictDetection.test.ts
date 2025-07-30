@@ -325,7 +325,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
       expect(unknownPackage.conflicts).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            type: 'security_pending',
+            type: 'pending',
             current_value: 'no_registry_data',
             required_value: 'registry_data_available'
           })

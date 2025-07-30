@@ -1,7 +1,17 @@
 /**
  * Type definitions for the conflict detection system.
  * These types are used to detect compatibility issues between Node Packs and the system environment.
+ *
+ * This file extends and uses types from comfyRegistryTypes.ts to maintain consistency
+ * with the Registry API schema.
  */
+import type { components } from './comfyRegistryTypes'
+
+// Re-export core types from Registry API
+export type Node = components['schemas']['Node']
+export type NodeVersion = components['schemas']['NodeVersion']
+export type NodeStatus = components['schemas']['NodeStatus']
+export type NodeVersionStatus = components['schemas']['NodeVersionStatus']
 
 /**
  * Conflict types that can be detected in the system
@@ -10,30 +20,13 @@
 export type ConflictType =
   | 'comfyui_version' // ComfyUI version mismatch
   | 'frontend_version' // Frontend version mismatch
-  | 'python_version' // Python version mismatch
+  | 'import_failed'
+  // TBD
+  // | 'python_version' // Python version mismatch
   | 'os' // Operating system incompatibility
   | 'accelerator' // GPU/accelerator incompatibility
   | 'banned' // Banned package
-  | 'security_pending' // Security verification pending
-  | 'python_dependency' // Python module dependency missing
-
-/**
- * Security scan status for packages
- * @enum {string}
- */
-export type SecurityScanStatus = 'pending' | 'passed' | 'failed' | 'unknown'
-
-/**
- * Supported operating systems (as per Registry Admin guide)
- * @enum {string}
- */
-export type SupportedOS = 'Windows' | 'macOS' | 'Linux' | 'any'
-
-/**
- * Supported accelerators for GPU computation (as per Registry Admin guide)
- * @enum {string}
- */
-export type SupportedAccelerator = 'CUDA' | 'ROCm' | 'Metal' | 'CPU' | 'any'
+  | 'pending' // Security verification pending
 
 /**
  * Version comparison operators
@@ -53,48 +46,17 @@ export interface VersionRequirement {
 
 /**
  * Node Pack requirements from Registry API
+ * Extends Node type with additional installation and compatibility metadata
  */
-export interface NodePackRequirements {
-  /** @description Unique package identifier */
-  package_id: string
-  /** @description Human-readable package name */
-  package_name: string
-  /** @description Currently installed version */
+export interface NodePackRequirements extends Node {
   installed_version: string
-  /** @description Whether the package is enabled locally */
   is_enabled: boolean
-
-  /** @description Supported ComfyUI version from Registry */
-  supported_comfyui_version?: string
-  /** @description Supported frontend version from Registry */
-  supported_comfyui_frontend_version?: string
-  /** @description List of supported operating systems from Registry */
-  supported_os?: SupportedOS[]
-  /** @description List of supported accelerators from Registry */
-  supported_accelerators?: SupportedAccelerator[]
-  /** @description Package dependencies from Registry */
-  dependencies?: string[]
-
-  /** @description Node status from Registry (Active/Banned/Deleted) */
-  registry_status?:
-    | 'NodeStatusActive'
-    | 'NodeStatusBanned'
-    | 'NodeStatusDeleted'
-  /** @description Node version status from Registry */
-  version_status?:
-    | 'NodeVersionStatusActive'
-    | 'NodeVersionStatusBanned'
-    | 'NodeVersionStatusDeleted'
-    | 'NodeVersionStatusPending'
-    | 'NodeVersionStatusFlagged'
-  /** @description Whether package is banned (derived from status) */
   is_banned: boolean
-
-  // Metadata
-  /** @description Registry data fetch timestamp */
-  registry_fetch_time: string
-  /** @description Whether Registry data was successfully fetched */
-  has_registry_data: boolean
+  is_pending: boolean
+  // Aliases for backwards compatibility with existing code
+  package_id: string
+  package_name: string
+  version_status?: string
 }
 
 /**
@@ -102,33 +64,22 @@ export interface NodePackRequirements {
  */
 export interface SystemEnvironment {
   // Version information
-  /** @description Current ComfyUI version */
   comfyui_version: string
-  /** @description Current frontend version */
   frontend_version: string
-  /** @description Current Python version */
-  python_version: string
+  // python_version: string
 
   // Platform information
-  /** @description Operating system type */
-  os: SupportedOS
-  /** @description Detailed platform information (e.g., 'Darwin 24.5.0', 'Windows 10') */
+  os: string
   platform_details: string
-  /** @description System architecture (e.g., 'x64', 'arm64') */
   architecture: string
 
   // GPU/accelerator information
-  /** @description List of available accelerators */
-  available_accelerators: SupportedAccelerator[]
-  /** @description Primary accelerator in use */
-  primary_accelerator: SupportedAccelerator
-  /** @description GPU memory in megabytes, if available */
+  available_accelerators: Node['supported_accelerators']
+  primary_accelerator: string
   gpu_memory_mb?: number
 
   // Runtime information
-  /** @description Node.js environment mode */
   node_env: 'development' | 'production'
-  /** @description Browser user agent string */
   user_agent: string
 }
 
@@ -136,15 +87,10 @@ export interface SystemEnvironment {
  * Individual conflict detection result for a package
  */
 export interface ConflictDetectionResult {
-  /** @description Package identifier */
   package_id: string
-  /** @description Package name */
   package_name: string
-  /** @description Whether any conflicts were detected */
   has_conflict: boolean
-  /** @description List of detected conflicts */
   conflicts: ConflictDetail[]
-  /** @description Overall compatibility status */
   is_compatible: boolean
 }
 
@@ -152,11 +98,8 @@ export interface ConflictDetectionResult {
  * Detailed information about a specific conflict
  */
 export interface ConflictDetail {
-  /** @description Type of conflict detected */
   type: ConflictType
-  /** @description Human-readable description of the conflict */
   current_value: string
-  /** @description Required value for compatibility */
   required_value: string
 }
 
@@ -164,21 +107,13 @@ export interface ConflictDetail {
  * Overall conflict detection summary
  */
 export interface ConflictDetectionSummary {
-  /** @description Total number of packages checked */
   total_packages: number
-  /** @description Number of compatible packages */
   compatible_packages: number
-  /** @description Number of packages with conflicts */
   conflicted_packages: number
-  /** @description Number of banned packages */
   banned_packages: number
-  /** @description Number of packages pending security verification */
-  security_pending_packages: number
-  /** @description Node IDs grouped by conflict type */
+  pending_packages: number
   conflicts_by_type_details: Record<ConflictType, string[]>
-  /** @description Timestamp of the last conflict check */
   last_check_timestamp: string
-  /** @description Duration of the conflict check in milliseconds */
   check_duration_ms: number
 }
 
@@ -186,16 +121,9 @@ export interface ConflictDetectionSummary {
  * Response payload from conflict detection API
  */
 export interface ConflictDetectionResponse {
-  /** @description Whether the API request was successful */
   success: boolean
-  /** @description Error message if the request failed */
   error_message?: string
-
-  /** @description Summary of the conflict detection results */
   summary: ConflictDetectionSummary
-  /** @description Detailed results for each package */
   results: ConflictDetectionResult[]
-
-  /** @description System environment information detected by the server (for comparison) */
   detected_system_environment?: Partial<SystemEnvironment>
 }

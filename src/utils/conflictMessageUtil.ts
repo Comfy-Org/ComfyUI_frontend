@@ -18,7 +18,6 @@ export function getConflictMessage(
   if (
     conflict.type === 'comfyui_version' ||
     conflict.type === 'frontend_version' ||
-    conflict.type === 'python_version' ||
     conflict.type === 'os' ||
     conflict.type === 'accelerator'
   ) {
@@ -28,15 +27,8 @@ export function getConflictMessage(
     })
   }
 
-  // For dependency conflicts, show the missing dependency
-  if (conflict.type === 'python_dependency') {
-    return t(messageKey, {
-      required: conflict.required_value
-    })
-  }
-
-  // For banned and security_pending, use simple message
-  if (conflict.type === 'banned' || conflict.type === 'security_pending') {
+  // For banned and pending, use simple message
+  if (conflict.type === 'banned' || conflict.type === 'pending') {
     return t(messageKey)
   }
 
