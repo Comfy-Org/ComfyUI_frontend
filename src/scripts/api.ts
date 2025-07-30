@@ -34,12 +34,8 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
-import { useToastStore } from '@/stores/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useToastStore } from '@/stores/toastStore'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
