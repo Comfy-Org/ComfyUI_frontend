@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Alternar bloqueo en lienzo"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Lienzo Alternar Minimapa"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Omitir/No omitir nodos seleccionados"
   },
@@ -169,6 +172,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar diálogo de progreso del administrador"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Disminuir tamaño del pincel en MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Aumentar tamaño del pincel en MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir editor de máscara para el nodo seleccionado"

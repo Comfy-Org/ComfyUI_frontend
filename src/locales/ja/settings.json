@@ -29,6 +29,13 @@
     "name": "キャンバス背景画像",
     "tooltip": "キャンバスの背景画像のURLです。出力パネルで画像を右クリックし、「背景として設定」を選択すると使用できます。"
   },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "キャンバスナビゲーションモード",
+    "options": {
+      "Left-Click Pan (Legacy)": "左クリックパン（レガシー）",
+      "Standard (New)": "標準（新）"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "選択ツールボックスを表示"
   },
@@ -329,10 +336,6 @@
     },
     "tooltip": "メニューバーの位置。モバイルデバイスでは、メニューは常に上部に表示されます。"
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "ノード定義を検証（遅い）",
-    "tooltip": "ノード開発者に推奨されます。これにより、起動時にすべてのノード定義が検証されます。"
-  },
   "Comfy_Validation_Workflows": {
     "name": "ワークフローを検証"
   },
@@ -398,10 +401,6 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "ツールチップ遅延"
-  },
-  "LiteGraph_Pointer_TrackpadGestures": {
-    "name": "トラックパッドジェスチャーを有効にする",
-    "tooltip": "この設定を有効にすると、キャンバスでトラックパッドモードが有効になり、ピンチズームや2本指でのパン操作が可能になります。"
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "リルートスプラインオフセット",

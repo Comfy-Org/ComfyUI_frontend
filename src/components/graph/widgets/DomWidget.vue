@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import { CSSProperties, computed, onMounted, ref, watch } from 'vue'
+import { CSSProperties, computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
@@ -61,10 +61,13 @@ const updateDomClipping = () => {
   if (!lgCanvas || !widgetElement.value) return
 
   const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
-  if (!selectedNode) return
+  if (!selectedNode) {
+    // Clear clipping when no node is selected
+    updateClipPath(widgetElement.value, lgCanvas.canvas, false, undefined)
+    return
+  }
 
-  const node = widget.node
-  const isSelected = selectedNode === node
+  const isSelected = selectedNode === widget.node
   const renderArea = selectedNode?.renderArea
   const offset = lgCanvas.ds.offset
   const scale = lgCanvas.ds.scale
@@ -122,7 +125,10 @@ watch(
   }
 )
 
-if (isDOMWidget(widget)) {
+// Set up event listeners only after the widget is mounted and visible
+const setupDOMEventListeners = () => {
+  if (!isDOMWidget(widget) || !widgetState.visible) return
+
   if (widget.element.blur) {
     useEventListener(document, 'mousedown', (event) => {
       if (!widget.element.contains(event.target as HTMLElement)) {
@@ -140,14 +146,46 @@ if (isDOMWidget(widget)) {
   }
 }
 
+// Set up event listeners when widget becomes visible
+watch(
+  () => widgetState.visible,
+  (visible) => {
+    if (visible) {
+      setupDOMEventListeners()
+    }
+  },
+  { immediate: true }
+)
+
 const inputSpec = widget.node.constructor.nodeData
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
-onMounted(() => {
-  if (isDOMWidget(widget) && widgetElement.value) {
-    widgetElement.value.appendChild(widget.element)
+// Mount DOM element when widget is or becomes visible
+const mountElementIfVisible = () => {
+  if (widgetState.visible && isDOMWidget(widget) && widgetElement.value) {
+    // Only append if not already a child
+    if (!widgetElement.value.contains(widget.element)) {
+      widgetElement.value.appendChild(widget.element)
+    }
   }
+}
+
+// Check on mount - but only after next tick to ensure visibility is calculated
+onMounted(() => {
+  nextTick(() => {
+    mountElementIfVisible()
+  }).catch((error) => {
+    console.error('Error mounting DOM widget element:', error)
+  })
 })
+
+// And watch for visibility changes
+watch(
+  () => widgetState.visible,
+  () => {
+    mountElementIfVisible()
+  }
+)
 </script>
 
 <style scoped>

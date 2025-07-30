@@ -48,6 +48,22 @@ const zProgressWsMessage = z.object({
   node: zNodeId
 })
 
+const zNodeProgressState = z.object({
+  value: z.number(),
+  max: z.number(),
+  state: z.enum(['pending', 'running', 'finished', 'error']),
+  node_id: zNodeId,
+  prompt_id: zPromptId,
+  display_node_id: zNodeId.optional(),
+  parent_node_id: zNodeId.optional(),
+  real_node_id: zNodeId.optional()
+})
+
+const zProgressStateWsMessage = z.object({
+  prompt_id: zPromptId,
+  nodes: z.record(zNodeId, zNodeProgressState)
+})
+
 const zExecutingWsMessage = z.object({
   node: zNodeId,
   display_node: zNodeId,
@@ -134,6 +150,8 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type DisplayComponentWsMessage = z.infer<
   typeof zDisplayComponentWsMessage
 >
+export type NodeProgressState = z.infer<typeof zNodeProgressState>
+export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 // End of ws messages
 
@@ -320,6 +338,7 @@ export const zSystemStats = z.object({
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
     pytorch_version: z.string(),
+    required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
     ram_total: z.number(),
     ram_free: z.number()
@@ -449,7 +468,6 @@ const zSettings = z.object({
   'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
   'Comfy.Canvas.SelectionToolbox': z.boolean(),
   'LiteGraph.Node.TooltipDelay': z.number(),
-  'Comfy.ComfirmClear': z.boolean(),
   'LiteGraph.ContextMenu.Scaling': z.boolean(),
   'LiteGraph.Reroute.SplineOffset': z.number(),
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),
@@ -457,6 +475,8 @@ const zSettings = z.object({
   'Comfy.TutorialCompleted': z.boolean(),
   'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
+  'Comfy.Minimap.Visible': z.boolean(),
+  'Comfy.Canvas.NavigationMode': z.string(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),

@@ -32,7 +32,10 @@ import type {
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
+import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -87,6 +90,37 @@ export const useLitegraphService = () => {
       constructor() {
         super(app.graph, subgraph, instanceData)
 
+        // Set up event listener for promoted widget registration
+        subgraph.events.addEventListener('widget-promoted', (event) => {
+          const { widget } = event.detail
+          // Only handle DOM widgets
+          if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
+
+          const domWidgetStore = useDomWidgetStore()
+          if (!domWidgetStore.widgetStates.has(widget.id)) {
+            domWidgetStore.registerWidget(widget)
+            // Set initial visibility based on whether the widget's node is in the current graph
+            const widgetState = domWidgetStore.widgetStates.get(widget.id)
+            if (widgetState) {
+              const currentGraph = canvasStore.getCanvas().graph
+              widgetState.visible =
+                currentGraph?.nodes.includes(widget.node) ?? false
+            }
+          }
+        })
+
+        // Set up event listener for promoted widget removal
+        subgraph.events.addEventListener('widget-demoted', (event) => {
+          const { widget } = event.detail
+          // Only handle DOM widgets
+          if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
+
+          const domWidgetStore = useDomWidgetStore()
+          if (domWidgetStore.widgetStates.has(widget.id)) {
+            domWidgetStore.unregisterWidget(widget.id)
+          }
+        })
+
         this.#setupStrokeStyles()
         this.#addInputs(ComfyNode.nodeData.inputs)
         this.#addOutputs(ComfyNode.nodeData.outputs)
@@ -95,9 +129,15 @@ export const useLitegraphService = () => {
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
         this.badges.push(
           new LGraphBadge({
-            text: '⇌',
-            fgColor: '#dad0de',
-            bgColor: '#b3b'
+            text: '',
+            iconOptions: {
+              unicode: '\ue96e',
+              fontFamily: 'PrimeIcons',
+              color: '#ffffff',
+              fontSize: 12
+            },
+            fgColor: '#ffffff',
+            bgColor: '#3b82f6'
           })
         )
       }
@@ -107,7 +147,11 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          if (this.id == app.runningNodeId) {
+          const nodeId = String(this.id)
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const state =
+            useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
+          if (state === 'running') {
             return { color: '#0f0' }
           }
         }
@@ -362,7 +406,11 @@ export const useLitegraphService = () => {
        */
       #setupStrokeStyles() {
         this.strokeStyles['running'] = function (this: LGraphNode) {
-          if (this.id == app.runningNodeId) {
+          const nodeId = String(this.id)
+          const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+          const state =
+            useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
+          if (state === 'running') {
             return { color: '#0f0' }
           }
         }
@@ -745,7 +793,7 @@ export const useLitegraphService = () => {
 
         if (isImageNode(this)) {
           options.push({
-            content: 'Open in MaskEditor',
+            content: 'Open in MaskEditor | Image Canvas',
             callback: () => {
               ComfyApp.copyToClipspace(this)
               // @ts-expect-error fixme ts strict error

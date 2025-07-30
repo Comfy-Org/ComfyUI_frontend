@@ -7,9 +7,12 @@
     }"
     severity="secondary"
     text
-    icon="pi pi-box"
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
-  />
+  >
+    <template #icon>
+      <i-comfy:workflow />
+    </template>
+  </Button>
 </template>
 
 <script setup lang="ts">

@@ -32,6 +32,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ManagerTab } from '@/types/comfyManagerTypes'
+import { getAllNonIoNodesInSubgraph } from '@/utils/graphTraversalUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -170,11 +171,20 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const settingStore = useSettingStore()
         if (
-          !settingStore.get('Comfy.ComfirmClear') ||
+          !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
           app.clean()
-          app.graph.clear()
+          if (app.canvas.subgraph) {
+            // `clear` is not implemented on subgraphs and the parent class's
+            // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
+            // just clear the nodes but preserve input/output nodes and structure
+            const subgraph = app.canvas.subgraph
+            const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+            nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            app.graph.clear()
+          }
           api.dispatchCustomEvent('graphCleared')
         }
       }
@@ -315,6 +325,19 @@ export function useCoreCommands(): ComfyCommand[] {
           }
         }
       })()
+    },
+    {
+      id: 'Comfy.Canvas.ToggleMinimap',
+      icon: 'pi pi-map',
+      label: 'Canvas Toggle Minimap',
+      versionAdded: '1.24.1',
+      function: async () => {
+        const settingStore = useSettingStore()
+        await settingStore.set(
+          'Comfy.Minimap.Visible',
+          !settingStore.get('Comfy.Minimap.Visible')
+        )
+      }
     },
     {
       id: 'Comfy.QueuePrompt',

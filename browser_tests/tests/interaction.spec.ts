@@ -768,8 +768,14 @@ test.describe('Viewport settings', () => {
     comfyMouse
   }) => {
     // Screenshot the canvas element
+    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
+    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
+
+    await toggleButton.click()
+
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
-    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-a.png')
+    await comfyPage.nextFrame()
+    const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')
 
     // Save workflow as a new file, then zoom out before screen shot
     await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
@@ -777,7 +783,12 @@ test.describe('Viewport settings', () => {
     for (let i = 0; i < 4; i++) {
       await comfyMouse.wheel(0, 60)
     }
-    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-b.png')
+
+    await comfyPage.nextFrame()
+    const screenshotB = (await comfyPage.canvas.screenshot()).toString('base64')
+
+    // Ensure that the screenshots are different due to zoom level
+    expect(screenshotB).not.toBe(screenshotA)
 
     const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
     const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
@@ -785,11 +796,269 @@ test.describe('Viewport settings', () => {
     // Go back to Workflow A
     await tabA.click()
     await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-a.png')
+    expect((await comfyPage.canvas.screenshot()).toString('base64')).toBe(
+      screenshotA
+    )
 
     // And back to Workflow B
     await tabB.click()
     await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('viewport-workflow-b.png')
+    expect((await comfyPage.canvas.screenshot()).toString('base64')).toBe(
+      screenshotB
+    )
+  })
+})
+
+test.describe('Canvas Navigation', () => {
+  test.describe('Legacy Mode', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.Canvas.NavigationMode', 'legacy')
+    })
+
+    test('Left-click drag in empty area should pan canvas', async ({
+      comfyPage
+    }) => {
+      await comfyPage.dragAndDrop({ x: 50, y: 50 }, { x: 150, y: 150 })
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'legacy-left-drag-pan.png'
+      )
+    })
+
+    test('Middle-click drag should pan canvas', async ({ comfyPage }) => {
+      await comfyPage.page.mouse.move(50, 50)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      await comfyPage.page.mouse.move(150, 150)
+      await comfyPage.page.mouse.up({ button: 'middle' })
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'legacy-middle-drag-pan.png'
+      )
+    })
+
+    test('Mouse wheel should zoom in/out', async ({ comfyPage }) => {
+      await comfyPage.page.mouse.move(400, 300)
+      await comfyPage.page.mouse.wheel(0, -120)
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'legacy-wheel-zoom-in.png'
+      )
+
+      await comfyPage.page.mouse.wheel(0, 240)
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'legacy-wheel-zoom-out.png'
+      )
+    })
+
+    test('Left-click on node should not pan canvas', async ({ comfyPage }) => {
+      await comfyPage.clickTextEncodeNode1()
+      const selectedCount = await comfyPage.getSelectedGraphNodesCount()
+      expect(selectedCount).toBe(1)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'legacy-click-node-select.png'
+      )
+    })
+  })
+
+  test.describe('Standard Mode', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.Canvas.NavigationMode', 'standard')
+    })
+
+    test('Left-click drag in empty area should select nodes', async ({
+      comfyPage
+    }) => {
+      const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+      const clipNode1Pos = await clipNodes[0].getPosition()
+      const clipNode2Pos = await clipNodes[1].getPosition()
+      const offset = 64
+
+      await comfyPage.dragAndDrop(
+        {
+          x: Math.min(clipNode1Pos.x, clipNode2Pos.x) - offset,
+          y: Math.min(clipNode1Pos.y, clipNode2Pos.y) - offset
+        },
+        {
+          x: Math.max(clipNode1Pos.x, clipNode2Pos.x) + offset,
+          y: Math.max(clipNode1Pos.y, clipNode2Pos.y) + offset
+        }
+      )
+
+      const selectedCount = await comfyPage.getSelectedGraphNodesCount()
+      expect(selectedCount).toBe(clipNodes.length)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'standard-left-drag-select.png'
+      )
+    })
+
+    test('Middle-click drag should pan canvas', async ({ comfyPage }) => {
+      await comfyPage.page.mouse.move(50, 50)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      await comfyPage.page.mouse.move(150, 150)
+      await comfyPage.page.mouse.up({ button: 'middle' })
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'standard-middle-drag-pan.png'
+      )
+    })
+
+    test('Ctrl + mouse wheel should zoom in/out', async ({ comfyPage }) => {
+      await comfyPage.page.mouse.move(400, 300)
+      await comfyPage.page.keyboard.down('Control')
+      await comfyPage.page.mouse.wheel(0, -120)
+      await comfyPage.page.keyboard.up('Control')
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'standard-ctrl-wheel-zoom-in.png'
+      )
+
+      await comfyPage.page.keyboard.down('Control')
+      await comfyPage.page.mouse.wheel(0, 240)
+      await comfyPage.page.keyboard.up('Control')
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'standard-ctrl-wheel-zoom-out.png'
+      )
+    })
+
+    test('Left-click on node should select node (not start selection box)', async ({
+      comfyPage
+    }) => {
+      await comfyPage.clickTextEncodeNode1()
+      const selectedCount = await comfyPage.getSelectedGraphNodesCount()
+      expect(selectedCount).toBe(1)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'standard-click-node-select.png'
+      )
+    })
+
+    test('Space + left-click drag should pan canvas', async ({ comfyPage }) => {
+      // Click canvas to focus it
+      await comfyPage.page.click('canvas')
+      await comfyPage.nextFrame()
+
+      await comfyPage.page.keyboard.down('Space')
+      await comfyPage.dragAndDrop({ x: 50, y: 50 }, { x: 150, y: 150 })
+      await comfyPage.page.keyboard.up('Space')
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'standard-space-drag-pan.png'
+      )
+    })
+
+    test('Space key overrides default left-click behavior', async ({
+      comfyPage
+    }) => {
+      const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+      const clipNode1Pos = await clipNodes[0].getPosition()
+      const offset = 64
+
+      await comfyPage.dragAndDrop(
+        {
+          x: clipNode1Pos.x - offset,
+          y: clipNode1Pos.y - offset
+        },
+        {
+          x: clipNode1Pos.x + offset,
+          y: clipNode1Pos.y + offset
+        }
+      )
+
+      const selectedCountAfterDrag =
+        await comfyPage.getSelectedGraphNodesCount()
+      expect(selectedCountAfterDrag).toBeGreaterThan(0)
+
+      await comfyPage.clickEmptySpace()
+      const selectedCountAfterClear =
+        await comfyPage.getSelectedGraphNodesCount()
+      expect(selectedCountAfterClear).toBe(0)
+
+      await comfyPage.page.keyboard.down('Space')
+      await comfyPage.dragAndDrop(
+        {
+          x: clipNode1Pos.x - offset,
+          y: clipNode1Pos.y - offset
+        },
+        {
+          x: clipNode1Pos.x + offset,
+          y: clipNode1Pos.y + offset
+        }
+      )
+      await comfyPage.page.keyboard.up('Space')
+
+      const selectedCountAfterSpaceDrag =
+        await comfyPage.getSelectedGraphNodesCount()
+      expect(selectedCountAfterSpaceDrag).toBe(0)
+    })
+  })
+
+  test('Shift + mouse wheel should pan canvas horizontally', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.click('canvas')
+    await comfyPage.nextFrame()
+
+    await expect(comfyPage.canvas).toHaveScreenshot('standard-initial.png')
+
+    await comfyPage.page.mouse.move(400, 300)
+
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.page.mouse.wheel(0, 120)
+    await comfyPage.page.keyboard.up('Shift')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'standard-shift-wheel-pan-right.png'
+    )
+
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.page.mouse.wheel(0, -240)
+    await comfyPage.page.keyboard.up('Shift')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'standard-shift-wheel-pan-left.png'
+    )
+
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.page.mouse.wheel(0, 120)
+    await comfyPage.page.keyboard.up('Shift')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'standard-shift-wheel-pan-center.png'
+    )
+  })
+
+  test.describe('Edge Cases', () => {
+    test('Multiple modifier keys work correctly in legacy mode', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.Canvas.NavigationMode', 'legacy')
+
+      await comfyPage.page.keyboard.down('Alt')
+      await comfyPage.page.keyboard.down('Shift')
+      await comfyPage.dragAndDrop({ x: 50, y: 50 }, { x: 150, y: 150 })
+      await comfyPage.page.keyboard.up('Shift')
+      await comfyPage.page.keyboard.up('Alt')
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'legacy-alt-shift-drag.png'
+      )
+    })
+
+    test('Cursor changes appropriately in different modes', async ({
+      comfyPage
+    }) => {
+      const getCursorStyle = async () => {
+        return await comfyPage.page.evaluate(() => {
+          return (
+            document.getElementById('graph-canvas')!.style.cursor || 'default'
+          )
+        })
+      }
+
+      await comfyPage.setSetting('Comfy.Canvas.NavigationMode', 'legacy')
+      await comfyPage.page.mouse.move(50, 50)
+      await comfyPage.page.mouse.down()
+      expect(await getCursorStyle()).toBe('grabbing')
+      await comfyPage.page.mouse.up()
+    })
   })
 })

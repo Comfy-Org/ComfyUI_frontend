@@ -40,7 +40,7 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
   return { h, s, l }
 }
 
-function hexToRgb(hex: string): RGB {
+export function hexToRgb(hex: string): RGB {
   let r = 0,
     g = 0,
     b = 0

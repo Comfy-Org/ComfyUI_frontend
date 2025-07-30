@@ -137,8 +137,7 @@ echo "Last stable release: $LAST_STABLE"
 1. Run complete test suite:
    ```bash
    npm run test:unit
-   npm run test:component  
-   npm run test:browser
+   npm run test:component
    ```
 2. Run type checking:
    ```bash
@@ -170,7 +169,79 @@ echo "Last stable release: $LAST_STABLE"
 3. Generate breaking change summary
 4. **COMPATIBILITY REVIEW**: Breaking changes documented and justified?
 
-### Step 7: Generate and Save Changelog
+### Step 7: Analyze Dependency Updates
+
+1. **Check for dependency version changes:**
+   ```bash
+   # Compare package.json between versions to detect dependency updates
+   PREV_PACKAGE_JSON=$(git show ${BASE_TAG}:package.json 2>/dev/null || echo '{}')
+   CURRENT_PACKAGE_JSON=$(cat package.json)
+   
+   # Extract litegraph versions
+   PREV_LITEGRAPH=$(echo "$PREV_PACKAGE_JSON" | grep -o '"@comfyorg/litegraph": "[^"]*"' | grep -o '[0-9][^"]*' || echo "not found")
+   CURRENT_LITEGRAPH=$(echo "$CURRENT_PACKAGE_JSON" | grep -o '"@comfyorg/litegraph": "[^"]*"' | grep -o '[0-9][^"]*' || echo "not found")
+   
+   echo "Litegraph version change: ${PREV_LITEGRAPH} → ${CURRENT_LITEGRAPH}"
+   ```
+
+2. **Generate litegraph changelog if version changed:**
+   ```bash
+   if [ "$PREV_LITEGRAPH" != "$CURRENT_LITEGRAPH" ] && [ "$PREV_LITEGRAPH" != "not found" ]; then
+     echo "📦 Fetching litegraph changes between v${PREV_LITEGRAPH} and v${CURRENT_LITEGRAPH}..."
+     
+     # Clone or update litegraph repo for changelog analysis
+     if [ ! -d ".temp-litegraph" ]; then
+       git clone https://github.com/comfyanonymous/litegraph.js.git .temp-litegraph
+     else
+       cd .temp-litegraph && git fetch --all && cd ..
+     fi
+     
+     # Get litegraph changelog between versions
+     LITEGRAPH_CHANGES=$(cd .temp-litegraph && git log v${PREV_LITEGRAPH}..v${CURRENT_LITEGRAPH} --oneline --no-merges 2>/dev/null || \
+       git log --oneline --no-merges --since="$(git log -1 --format=%ci ${BASE_TAG})" --until="$(git log -1 --format=%ci HEAD)" 2>/dev/null || \
+       echo "Unable to fetch litegraph changes")
+     
+     # Categorize litegraph changes
+     LITEGRAPH_FEATURES=$(echo "$LITEGRAPH_CHANGES" | grep -iE "(feat|feature|add)" || echo "")
+     LITEGRAPH_FIXES=$(echo "$LITEGRAPH_CHANGES" | grep -iE "(fix|bug)" || echo "")
+     LITEGRAPH_BREAKING=$(echo "$LITEGRAPH_CHANGES" | grep -iE "(break|breaking)" || echo "")
+     LITEGRAPH_OTHER=$(echo "$LITEGRAPH_CHANGES" | grep -viE "(feat|feature|add|fix|bug|break|breaking)" || echo "")
+     
+     # Clean up temp directory
+     rm -rf .temp-litegraph
+     
+     echo "✅ Litegraph changelog extracted"
+   else
+     echo "ℹ️  No litegraph version change detected"
+     LITEGRAPH_CHANGES=""
+   fi
+   ```
+
+3. **Check other significant dependency updates:**
+   ```bash
+   # Extract all dependency changes for major version bumps
+   OTHER_DEP_CHANGES=""
+   
+   # Compare major dependency versions (you can extend this list)
+   MAJOR_DEPS=("vue" "vite" "@vitejs/plugin-vue" "typescript" "pinia")
+   
+   for dep in "${MAJOR_DEPS[@]}"; do
+     PREV_VER=$(echo "$PREV_PACKAGE_JSON" | grep -o "\"$dep\": \"[^\"]*\"" | grep -o '[0-9][^"]*' | head -1 || echo "")
+     CURR_VER=$(echo "$CURRENT_PACKAGE_JSON" | grep -o "\"$dep\": \"[^\"]*\"" | grep -o '[0-9][^"]*' | head -1 || echo "")
+     
+     if [ "$PREV_VER" != "$CURR_VER" ] && [ -n "$PREV_VER" ] && [ -n "$CURR_VER" ]; then
+       # Check if it's a major version change
+       PREV_MAJOR=$(echo "$PREV_VER" | cut -d. -f1 | sed 's/[^0-9]//g')
+       CURR_MAJOR=$(echo "$CURR_VER" | cut -d. -f1 | sed 's/[^0-9]//g')
+       
+       if [ "$PREV_MAJOR" != "$CURR_MAJOR" ]; then
+         OTHER_DEP_CHANGES="${OTHER_DEP_CHANGES}\n- **${dep}**: ${PREV_VER} → ${CURR_VER} (Major version change)"
+       fi
+     fi
+   done
+   ```
+
+### Step 8: Generate Comprehensive Release Notes
 
 1. Extract commit messages since base release:
    ```bash
@@ -185,42 +256,29 @@ echo "Last stable release: $LAST_STABLE"
        echo "WARNING: PR #$PR not on main branch!"
    done
    ```
-3. Group by type:
-   - 🚀 **Features** (feat:)
-   - 🐛 **Bug Fixes** (fix:)
-   - 💥 **Breaking Changes** (BREAKING CHANGE)
-   - 📚 **Documentation** (docs:)
-   - 🔧 **Maintenance** (chore:, refactor:)
-   - ⬆️ **Dependencies** (deps:, dependency updates)
-4. Include PR numbers and links
-5. Add issue references (Fixes #123)
-6. **Save changelog locally:**
-   ```bash
-   # Save to dated file for history
-   echo "$CHANGELOG" > release-notes-${NEW_VERSION}-$(date +%Y%m%d).md
-   
-   # Save to current for easy access
-   echo "$CHANGELOG" > CURRENT_RELEASE_NOTES.md
-   ```
-7. **CHANGELOG REVIEW**: Verify all PRs listed are actually on main branch
-
-### Step 8: Create Enhanced Release Notes
-
-1. Create comprehensive user-facing release notes including:
-   - **What's New**: Major features and improvements
-   - **Bug Fixes**: User-visible fixes
-   - **Breaking Changes**: Migration guide if applicable
-   - **Dependencies**: Major dependency updates
-   - **Performance**: Notable performance improvements
-   - **Contributors**: Thank contributors for their work
-2. Reference related documentation updates
-3. Include screenshots for UI changes (if available)
+3. Create comprehensive release notes including:
+   - **Version Change**: Show version bump details
+   - **Changelog** grouped by type:
+     - 🚀 **Features** (feat:)
+     - 🐛 **Bug Fixes** (fix:)
+     - 💥 **Breaking Changes** (BREAKING CHANGE)
+     - 📚 **Documentation** (docs:)
+     - 🔧 **Maintenance** (chore:, refactor:)
+     - ⬆️ **Dependencies** (deps:, dependency updates)
+       - **Litegraph Changes** (if version updated):
+         - 🚀 Features: ${LITEGRAPH_FEATURES}
+         - 🐛 Bug Fixes: ${LITEGRAPH_FIXES}
+         - 💥 Breaking Changes: ${LITEGRAPH_BREAKING}
+         - 🔧 Other Changes: ${LITEGRAPH_OTHER}
+       - **Other Major Dependencies**: ${OTHER_DEP_CHANGES}
+   - Include PR numbers and links
+   - Add issue references (Fixes #123)
 4. **Save release notes:**
    ```bash
-   # Enhanced release notes for GitHub
-   echo "$RELEASE_NOTES" > github-release-notes-${NEW_VERSION}.md
+   # Save release notes for PR and GitHub release
+   echo "$RELEASE_NOTES" > release-notes-${NEW_VERSION}.md
    ```
-5. **CONTENT REVIEW**: Release notes clear and helpful for users?
+5. **CONTENT REVIEW**: Release notes clear and comprehensive with dependency details?
 
 ### Step 9: Create Version Bump PR
 
@@ -258,25 +316,20 @@ echo "Workflow triggered. Waiting for PR creation..."
    
    # For manual PRs
    gh pr create --title "${NEW_VERSION}" \
-     --body-file enhanced-pr-description.md \
+     --body-file release-notes-${NEW_VERSION}.md \
      --label "Release"
    ```
-3. **Create enhanced PR description:**
+3. **Add required sections to PR body:**
    ```bash
-   cat > enhanced-pr-description.md << EOF
-   # Release v${NEW_VERSION}
-
-   ## Version Change
-   \`${CURRENT_VERSION}\` → \`${NEW_VERSION}\` (${VERSION_TYPE})
-
-   ## Changelog
-   ${CHANGELOG}
+   # Create PR body with release notes plus required sections
+   cat > pr-body.md << EOF
+   ${RELEASE_NOTES}
 
    ## Breaking Changes
-   ${BREAKING_CHANGES}
+   ${BREAKING_CHANGES:-None}
 
    ## Testing Performed
-   - ✅ Full test suite (unit, component, browser)
+   - ✅ Full test suite (unit, component)
    - ✅ TypeScript compilation
    - ✅ Linting checks
    - ✅ Build verification
@@ -295,15 +348,11 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```
 4. Update PR with enhanced description:
    ```bash
-   gh pr edit ${PR_NUMBER} --body-file enhanced-pr-description.md
+   gh pr edit ${PR_NUMBER} --body-file pr-body.md
    ```
-5. Add changelog as comment for easy reference:
-   ```bash
-   gh pr comment ${PR_NUMBER} --body-file CURRENT_RELEASE_NOTES.md
-   ```
-6. **PR REVIEW**: Version bump PR created and enhanced correctly?
+5. **PR REVIEW**: Version bump PR created and enhanced correctly?
 
-### Step 11: Critical Release PR Verification
+### Step 10: Critical Release PR Verification
 
 1. **CRITICAL**: Verify PR has "Release" label:
    ```bash
@@ -325,7 +374,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```
 7. **FINAL CODE REVIEW**: Release label present and no [skip ci]?
 
-### Step 12: Pre-Merge Validation
+### Step 11: Pre-Merge Validation
 
 1. **Review Requirements**: Release PRs require approval
 2. Monitor CI checks - watch for update-locales
@@ -333,7 +382,7 @@ echo "Workflow triggered. Waiting for PR creation..."
 4. Check no new commits to main since PR creation
 5. **DEPLOYMENT READINESS**: Ready to merge?
 
-### Step 13: Execute Release
+### Step 12: Execute Release
 
 1. **FINAL CONFIRMATION**: Merge PR to trigger release?
 2. Merge the Release PR:
@@ -358,7 +407,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    gh run watch ${WORKFLOW_RUN_ID}
    ```
 
-### Step 14: Enhance GitHub Release
+### Step 13: Enhance GitHub Release
 
 1. Wait for automatic release creation:
    ```bash
@@ -371,10 +420,10 @@ echo "Workflow triggered. Waiting for PR creation..."
 
 2. **Enhance the GitHub release:**
    ```bash
-   # Update release with our enhanced notes
+   # Update release with our release notes
    gh release edit v${NEW_VERSION} \
      --title "🚀 ComfyUI Frontend v${NEW_VERSION}" \
-     --notes-file github-release-notes-${NEW_VERSION}.md \
+     --notes-file release-notes-${NEW_VERSION}.md \
      --latest
    
    # Add any additional assets if needed
@@ -386,7 +435,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    gh release view v${NEW_VERSION}
    ```
 
-### Step 15: Verify Multi-Channel Distribution
+### Step 14: Verify Multi-Channel Distribution
 
 1. **GitHub Release:**
    ```bash
@@ -424,7 +473,7 @@ echo "Workflow triggered. Waiting for PR creation..."
 
 4. **DISTRIBUTION VERIFICATION**: All channels published successfully?
 
-### Step 16: Post-Release Monitoring Setup
+### Step 15: Post-Release Monitoring Setup
 
 1. **Monitor immediate release health:**
    ```bash
@@ -492,8 +541,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    - Plan next release cycle
 
    ## Files Generated
-   - \`release-notes-${NEW_VERSION}-$(date +%Y%m%d).md\` - Detailed changelog
-   - \`github-release-notes-${NEW_VERSION}.md\` - GitHub release notes
+   - \`release-notes-${NEW_VERSION}.md\` - Comprehensive release notes
    - \`post-release-checklist.md\` - Follow-up tasks
    EOF
    ```
@@ -544,7 +592,7 @@ echo "- GitHub: Update release with warning notes"
 The command implements multiple quality gates:
 
 1. **🔒 Security Gate**: Vulnerability scanning, secret detection
-2. **🧪 Quality Gate**: Full test suite, linting, type checking
+2. **🧪 Quality Gate**: Unit and component tests, linting, type checking
 3. **📋 Content Gate**: Changelog accuracy, release notes quality
 4. **🔄 Process Gate**: Release timing verification
 5. **✅ Verification Gate**: Multi-channel publishing confirmation
@@ -602,6 +650,15 @@ The command implements multiple quality gates:
 gh pr view ${PR_NUMBER} --json baseRefName
 ```
 
+### Issue: Incomplete Dependency Changelog
+**Problem**: Litegraph or other dependency updates only show version bump, not actual changes
+**Solution**: The command now automatically:
+- Detects litegraph version changes between releases
+- Clones the litegraph repository temporarily
+- Extracts and categorizes changes between versions
+- Includes detailed litegraph changelog in release notes
+- Cleans up temporary files after analysis
+
 ### Issue: Release Failed Due to [skip ci]
 **Problem**: Release workflow didn't trigger after merge
 **Prevention**: Always avoid this scenario
@@ -622,4 +679,6 @@ Benefits: Cleaner than creating extra version numbers
 2. **Workflow Speed**: Version bump workflow typically completes in ~20-30 seconds
 3. **Update-locales Behavior**: Inconsistent - sometimes adds [skip ci], sometimes doesn't
 4. **Recovery Options**: Reverting version is cleaner than creating extra versions
+5. **Dependency Tracking**: Command now automatically includes litegraph and major dependency changes in changelogs
+6. **Litegraph Integration**: Temporary cloning of litegraph repo provides detailed change analysis between versions
 

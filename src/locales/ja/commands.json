@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "キャンバスのロックを切り替える"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "キャンバス ミニマップ切り替え"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "選択したノードのバイパス/バイパス解除"
   },
@@ -169,6 +172,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "プログレスダイアログの切り替え"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "マスクエディタでブラシサイズを縮小"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "マスクエディタでブラシサイズを大きくする"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "選択したノードのマスクエディタを開く"
