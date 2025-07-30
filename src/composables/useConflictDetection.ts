@@ -261,8 +261,8 @@ export function useConflictDetection() {
           // Combine local installation data with version-specific Registry data
           const requirement: NodePackRequirements = {
             // Basic package info
-            package_id: packageId,
-            package_name: pack.name || packageId,
+            id: pack.id,
+            name: pack.name,
             installed_version: installedVersion,
             is_enabled: isEnabled,
 
@@ -287,8 +287,8 @@ export function useConflictDetection() {
 
           // Create fallback requirement without Registry data
           const fallbackRequirement: NodePackRequirements = {
-            package_id: packageId,
-            package_name: pack.name || packageId,
+            id: pack.id,
+            name: pack.name,
             installed_version: installedVersion,
             is_enabled: isEnabled,
             is_banned: false,
@@ -381,8 +381,8 @@ export function useConflictDetection() {
     const hasConflict = conflicts.length > 0
 
     return {
-      package_id: packageReq.package_id,
-      package_name: packageReq.package_name,
+      package_id: packageReq.id ?? '',
+      package_name: packageReq.name ?? '',
       has_conflict: hasConflict,
       conflicts,
       is_compatible: !hasConflict
@@ -528,7 +528,7 @@ export function useConflictDetection() {
             return detectPackageConflicts(packageReq, sysEnv)
           } catch (error) {
             console.warn(
-              `[ConflictDetection] Failed to detect conflicts for package ${packageReq.package_name}:`,
+              `[ConflictDetection] Failed to detect conflicts for package ${packageReq.name}:`,
               error
             )
             // Return null for failed packages, will be filtered out
@@ -699,7 +699,6 @@ export function useConflictDetection() {
 
     return hasActualConflicts && canShowModal
   }
-
 
   /**
    * Check compatibility for a node.
