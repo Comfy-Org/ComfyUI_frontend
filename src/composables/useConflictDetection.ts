@@ -594,9 +594,6 @@ export function useConflictDetection() {
           acknowledgment.checkComfyUIVersionChange(sysEnv.comfyui_version)
         }
 
-        // TODO: Show red dot on Help Center based on acknowledgment.shouldShowRedDot
-        // TODO: Store conflict state for event-based dialog triggers
-
         // Use merged conflicts in response as well
         const response: ConflictDetectionResponse = {
           success: true,
@@ -708,30 +705,6 @@ export function useConflictDetection() {
     return hasActualConflicts && canShowModal
   }
 
-  /**
-   * Mark conflict modal as dismissed
-   */
-  function dismissConflictModal(): void {
-    acknowledgment.dismissConflictModal()
-  }
-
-  /**
-   * Mark red dot notification as dismissed
-   */
-  function dismissRedDotNotification(): void {
-    acknowledgment.dismissRedDotNotification()
-  }
-
-  /**
-   * Acknowledge a specific conflict
-   */
-  function acknowledgePackageConflict(
-    packageId: string,
-    conflictType: string
-  ): void {
-    const currentVersion = systemEnvironment.value?.comfyui_version || 'unknown'
-    acknowledgment.acknowledgeConflict(packageId, conflictType, currentVersion)
-  }
 
   /**
    * Check compatibility for a node.
@@ -844,20 +817,12 @@ export function useConflictDetection() {
     bannedPackages,
     securityPendingPackages,
 
-    // Acknowledgment state
-    shouldShowConflictModal: acknowledgment.shouldShowConflictModal,
-    shouldShowRedDot: acknowledgment.shouldShowRedDot,
-    acknowledgedPackageIds: acknowledgment.acknowledgedPackageIds,
-
     // Methods
     performConflictDetection,
     detectSystemEnvironment,
     initializeConflictDetection,
     cancelRequests,
     shouldShowConflictModalAfterUpdate,
-    dismissConflictModal,
-    dismissRedDotNotification,
-    acknowledgePackageConflict,
 
     // Helper functions for other components
     checkNodeCompatibility

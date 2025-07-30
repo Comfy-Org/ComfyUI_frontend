@@ -52,8 +52,7 @@ const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack } = useComfyManagerStore()
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { showNodeConflictDialog } = useDialogService()
-const { acknowledgeConflict, isConflictAcknowledged } =
-  useConflictAcknowledgment()
+const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
 
 const isLoading = ref(false)
 
@@ -117,24 +116,20 @@ const handleToggleClick = async (enable: boolean) => {
 
   if (enable && hasConflict) {
     const conflicts = getConflictsForPackageByID(nodePack.id || '')
-    if (conflicts) {
-      const hasUnacknowledgedConflicts = conflicts.conflicts.some(
-        (conflict) => !isConflictAcknowledged(nodePack.id || '', conflict.type)
-      )
-
-      if (hasUnacknowledgedConflicts) {
-        showNodeConflictDialog({
-          conflictedPackages: [conflicts],
-          buttonText: t('manager.conflicts.enableAnyway'),
-          onButtonClick: async () => {
-            for (const conflict of conflicts.conflicts) {
-              acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
-            }
-            await performToggle(true)
+    if (conflicts && !acknowledgmentState.value.modal_dismissed) {
+      showNodeConflictDialog({
+        conflictedPackages: [conflicts],
+        buttonText: t('manager.conflicts.enableAnyway'),
+        onButtonClick: async () => {
+          await performToggle(true)
+        },
+        dialogComponentProps: {
+          onClose: () => {
+            markConflictsAsSeen()
           }
-        })
-        return
-      }
+        }
+      })
+      return
     }
   }
   await performToggle(enable)
@@ -149,11 +144,13 @@ const showConflictModal = () => {
         ? t('manager.conflicts.understood')
         : t('manager.conflicts.enableAnyway'),
       onButtonClick: async () => {
-        for (const conflict of conflicts.conflicts) {
-          acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
-        }
         if (!isEnabled.value) {
           onToggle(true)
+        }
+      },
+      dialogComponentProps: {
+        onClose: () => {
+          markConflictsAsSeen()
         }
       }
     })

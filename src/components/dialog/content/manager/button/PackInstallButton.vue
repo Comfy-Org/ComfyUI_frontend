@@ -78,10 +78,9 @@ const installAllPacks = async () => {
   //     // User chose "Install Anyway" - acknowledge all conflicts and proceed
   //     for (const conflictedPack of packsWithConflicts) {
   //       for (const conflict of conflictedPack.conflicts) {
-  //         acknowledgeConflict(
+  //         acknowledgePackageConflict(
   //           conflictedPack.package_id,
-  //           conflict.type,
-  //           '0.1.0'
+  //           conflict.type
   //         )
   //       }
   //     }

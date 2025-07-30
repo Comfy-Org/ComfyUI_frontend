@@ -142,7 +142,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
-import { useConflictBannerState } from '@/composables/useConflictBannerState'
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useDialogService } from '@/services/dialogService'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -215,10 +215,9 @@ const moreMenuItem = computed(() =>
   menuItems.value.find((item) => item.key === 'more')
 )
 
-// Use conflict banner state from composable
-const conflictBannerState = useConflictBannerState()
-const { shouldShowConflictRedDot: shouldShowManagerRedDot } =
-  conflictBannerState
+// Use conflict acknowledgment state from composable
+const { shouldShowRedDot: shouldShowManagerRedDot } =
+  useConflictAcknowledgment()
 
 const menuItems = computed<MenuItem[]>(() => {
   const moreItems: MenuItem[] = [
