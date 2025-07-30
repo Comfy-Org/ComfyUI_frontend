@@ -63,7 +63,7 @@ import { computed, onMounted, ref } from 'vue'
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
-import { useConflictBannerState } from '@/composables/useConflictBannerState'
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useDialogService } from '@/services/dialogService'
 import { useReleaseStore } from '@/stores/releaseStore'
@@ -74,12 +74,13 @@ import SidebarIcon from './SidebarIcon.vue'
 const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
 const conflictDetection = useConflictDetection()
-const conflictBannerState = useConflictBannerState()
-const dialogService = useDialogService()
+const conflictAcknowledgment = useConflictAcknowledgment()
+const { showNodeConflictDialog } = useDialogService()
 const isHelpCenterVisible = ref(false)
 
-// Use conflict banner state from composable
-const { shouldShowConflictRedDot } = conflictBannerState
+// Use conflict acknowledgment state from composable
+const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
+  conflictAcknowledgment
 
 // Use either release red dot or conflict red dot
 const shouldShowRedDot = computed(() => {
@@ -123,17 +124,14 @@ const handleWhatsNewDismissed = async () => {
  * Show the node conflict dialog with current conflict data
  */
 const showConflictModal = () => {
-  // Pass conflict data to the dialog, including onClose callback
   const conflictData = {
     conflictedPackages: conflictDetection.conflictedPackages.value
   }
-
-  // Show dialog with onClose callback in dialogComponentProps
-  dialogService.showNodeConflictDialog({
+  showNodeConflictDialog({
     ...conflictData,
     dialogComponentProps: {
       onClose: () => {
-        conflictDetection.dismissConflictModal()
+        markConflictsAsSeen()
       }
     }
   })

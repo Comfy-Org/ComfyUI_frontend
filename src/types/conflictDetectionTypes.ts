@@ -53,8 +53,6 @@ export interface NodePackRequirements extends Node {
   is_banned: boolean
   is_pending: boolean
   // Aliases for backwards compatibility with existing code
-  package_id: string
-  package_name: string
   version_status?: string
 }
 

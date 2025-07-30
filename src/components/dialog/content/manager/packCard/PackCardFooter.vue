@@ -10,11 +10,15 @@
       <template v-if="!isInstalled">
         <PackInstallButton
           :node-packs="[nodePack]"
-          :has-conflict="hasConflict"
+          :has-conflict="uninstalledPackConflict.hasConflict"
+          :conflict-info="uninstalledPackConflict.conflicts"
         />
       </template>
       <template v-else>
-        <PackEnableToggle :node-pack="nodePack" :has-conflict="hasConflict" />
+        <PackEnableToggle
+          :node-pack="nodePack"
+          :has-conflict="installedPackHasConflict"
+        />
       </template>
     </div>
   </div>
@@ -47,20 +51,17 @@ const formattedDownloads = computed(() =>
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { checkNodeCompatibility } = useConflictDetection()
 
-const hasConflict = computed(() => {
+const installedPackHasConflict = computed(() => {
   if (!nodePack.id) return false
 
-  // For installed packages, check conflicts from store
-  if (isInstalled.value) {
-    // Try exact match first
-    let conflicts = getConflictsForPackageByID(nodePack.id)
-    if (conflicts) return true
+  // Try exact match first
+  let conflicts = getConflictsForPackageByID(nodePack.id)
+  if (conflicts) return true
 
-    return false
-  }
+  return false
+})
 
-  // For uninstalled packages, check compatibility directly
-  const compatibility = checkNodeCompatibility(nodePack)
-  return compatibility.hasConflict
+const uninstalledPackConflict = computed(() => {
+  return checkNodeCompatibility(nodePack)
 })
 </script>

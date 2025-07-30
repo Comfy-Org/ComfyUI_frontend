@@ -129,7 +129,6 @@ const props = withDefaults(defineProps<Props>(), {
   conflictedPackages: () => []
 })
 
-
 const { t } = useI18n()
 
 const conflictsExpanded = ref<boolean>(false)
