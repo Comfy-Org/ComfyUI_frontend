@@ -261,8 +261,8 @@ export function useConflictDetection() {
           // Combine local installation data with version-specific Registry data
           const requirement: NodePackRequirements = {
             // Basic package info
-            package_id: packageId,
-            package_name: pack.name || packageId,
+            id: pack.id,
+            name: pack.name,
             installed_version: installedVersion,
             is_enabled: isEnabled,
 
@@ -287,8 +287,8 @@ export function useConflictDetection() {
 
           // Create fallback requirement without Registry data
           const fallbackRequirement: NodePackRequirements = {
-            package_id: packageId,
-            package_name: pack.name || packageId,
+            id: pack.id,
+            name: pack.name,
             installed_version: installedVersion,
             is_enabled: isEnabled,
             is_banned: false,
@@ -381,8 +381,8 @@ export function useConflictDetection() {
     const hasConflict = conflicts.length > 0
 
     return {
-      package_id: packageReq.package_id,
-      package_name: packageReq.package_name,
+      package_id: packageReq.id ?? '',
+      package_name: packageReq.name ?? '',
       has_conflict: hasConflict,
       conflicts,
       is_compatible: !hasConflict
@@ -528,7 +528,7 @@ export function useConflictDetection() {
             return detectPackageConflicts(packageReq, sysEnv)
           } catch (error) {
             console.warn(
-              `[ConflictDetection] Failed to detect conflicts for package ${packageReq.package_name}:`,
+              `[ConflictDetection] Failed to detect conflicts for package ${packageReq.name}:`,
               error
             )
             // Return null for failed packages, will be filtered out
@@ -588,14 +588,6 @@ export function useConflictDetection() {
           ...mergedConflicts
         )
         storedMergedConflicts.value = [...mergedConflicts]
-
-        // Check for ComfyUI version change to reset acknowledgments
-        if (sysEnv.comfyui_version !== 'unknown') {
-          acknowledgment.checkComfyUIVersionChange(sysEnv.comfyui_version)
-        }
-
-        // TODO: Show red dot on Help Center based on acknowledgment.shouldShowRedDot
-        // TODO: Store conflict state for event-based dialog triggers
 
         // Use merged conflicts in response as well
         const response: ConflictDetectionResponse = {
@@ -709,31 +701,6 @@ export function useConflictDetection() {
   }
 
   /**
-   * Mark conflict modal as dismissed
-   */
-  function dismissConflictModal(): void {
-    acknowledgment.dismissConflictModal()
-  }
-
-  /**
-   * Mark red dot notification as dismissed
-   */
-  function dismissRedDotNotification(): void {
-    acknowledgment.dismissRedDotNotification()
-  }
-
-  /**
-   * Acknowledge a specific conflict
-   */
-  function acknowledgePackageConflict(
-    packageId: string,
-    conflictType: string
-  ): void {
-    const currentVersion = systemEnvironment.value?.comfyui_version || 'unknown'
-    acknowledgment.acknowledgeConflict(packageId, conflictType, currentVersion)
-  }
-
-  /**
    * Check compatibility for a node.
    * Used by components like PackVersionSelectorPopover.
    */
@@ -844,20 +811,12 @@ export function useConflictDetection() {
     bannedPackages,
     securityPendingPackages,
 
-    // Acknowledgment state
-    shouldShowConflictModal: acknowledgment.shouldShowConflictModal,
-    shouldShowRedDot: acknowledgment.shouldShowRedDot,
-    acknowledgedPackageIds: acknowledgment.acknowledgedPackageIds,
-
     // Methods
     performConflictDetection,
     detectSystemEnvironment,
     initializeConflictDetection,
     cancelRequests,
     shouldShowConflictModalAfterUpdate,
-    dismissConflictModal,
-    dismissRedDotNotification,
-    acknowledgePackageConflict,
 
     // Helper functions for other components
     checkNodeCompatibility

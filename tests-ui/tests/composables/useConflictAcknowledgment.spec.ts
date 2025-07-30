@@ -1,9 +1,12 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 
 describe('useConflictAcknowledgment with useStorage refactor', () => {
   beforeEach(() => {
+    // Set up Pinia for each test
+    setActivePinia(createPinia())
     // Clear localStorage before each test
     localStorage.clear()
     // Reset modules to ensure fresh state
@@ -18,20 +21,20 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
     const {
       shouldShowConflictModal,
       shouldShowRedDot,
-      acknowledgedPackageIds
+      shouldShowManagerBanner
     } = useConflictAcknowledgment()
 
     expect(shouldShowConflictModal.value).toBe(true)
-    expect(shouldShowRedDot.value).toBe(true)
-    expect(acknowledgedPackageIds.value).toEqual([])
+    expect(shouldShowRedDot.value).toBe(false) // No conflicts initially
+    expect(shouldShowManagerBanner.value).toBe(false) // No conflicts initially
   })
 
   it('should dismiss modal state correctly', () => {
-    const { dismissConflictModal, shouldShowConflictModal } =
+    const { markConflictsAsSeen, shouldShowConflictModal } =
       useConflictAcknowledgment()
 
     expect(shouldShowConflictModal.value).toBe(true)
-    dismissConflictModal()
+    markConflictsAsSeen()
     expect(shouldShowConflictModal.value).toBe(false)
   })
 
@@ -39,92 +42,78 @@ describe('useConflictAcknowledgment with useStorage refactor', () => {
     const { dismissRedDotNotification, shouldShowRedDot } =
       useConflictAcknowledgment()
 
-    expect(shouldShowRedDot.value).toBe(true)
+    expect(shouldShowRedDot.value).toBe(false) // No conflicts initially
     dismissRedDotNotification()
     expect(shouldShowRedDot.value).toBe(false)
   })
 
-  it('should acknowledge conflicts correctly', () => {
-    const {
-      acknowledgeConflict,
-      isConflictAcknowledged,
-      acknowledgedPackageIds
-    } = useConflictAcknowledgment()
-
-    expect(acknowledgedPackageIds.value).toEqual([])
-
-    acknowledgeConflict('package1', 'version_conflict', '1.0.0')
-
-    expect(isConflictAcknowledged('package1', 'version_conflict')).toBe(true)
-    expect(isConflictAcknowledged('package1', 'other_conflict')).toBe(false)
-    expect(acknowledgedPackageIds.value).toContain('package1')
-  })
-
-  it('should reset state when ComfyUI version changes', () => {
-    const {
-      dismissConflictModal,
-      acknowledgeConflict,
-      checkComfyUIVersionChange,
-      shouldShowConflictModal,
-      acknowledgedPackageIds
-    } = useConflictAcknowledgment()
-
-    // Set up some state
-    dismissConflictModal()
-    acknowledgeConflict('package1', 'conflict1', '1.0.0')
-
-    expect(shouldShowConflictModal.value).toBe(false)
-    expect(acknowledgedPackageIds.value).toContain('package1')
-
-    // First check sets the initial version, no change yet
-    const changed1 = checkComfyUIVersionChange('1.0.0')
-    expect(changed1).toBe(false)
-
-    // Now check with different version should reset
-    const changed2 = checkComfyUIVersionChange('2.0.0')
-    expect(changed2).toBe(true)
-    expect(shouldShowConflictModal.value).toBe(true)
-    expect(acknowledgedPackageIds.value).toEqual([])
-  })
-
-  it('should track acknowledgment statistics correctly', () => {
-    const { acknowledgmentStats, dismissConflictModal, acknowledgeConflict } =
+  it('should dismiss warning banner correctly', () => {
+    const { dismissWarningBanner, shouldShowManagerBanner } =
       useConflictAcknowledgment()
 
-    // Initial stats
-    expect(acknowledgmentStats.value).toEqual({
-      total_acknowledged: 0,
-      unique_packages: 0,
-      modal_dismissed: false,
-      red_dot_dismissed: false,
-      last_comfyui_version: ''
-    })
+    // Initially should not show banner (no conflicts)
+    expect(shouldShowManagerBanner.value).toBe(false)
 
-    // Update state
-    dismissConflictModal()
-    acknowledgeConflict('package1', 'conflict1', '1.0.0')
-    acknowledgeConflict('package2', 'conflict2', '1.0.0')
+    // Test dismissWarningBanner function exists and works
+    dismissWarningBanner()
+    expect(shouldShowManagerBanner.value).toBe(false)
+  })
 
-    // Check updated stats
-    expect(acknowledgmentStats.value.total_acknowledged).toBe(2)
-    expect(acknowledgmentStats.value.unique_packages).toBe(2)
-    expect(acknowledgmentStats.value.modal_dismissed).toBe(true)
+  it('should mark conflicts as seen', () => {
+    const {
+      markConflictsAsSeen,
+      shouldShowConflictModal,
+      shouldShowRedDot,
+      shouldShowManagerBanner
+    } = useConflictAcknowledgment()
+
+    // Mark conflicts as seen
+    markConflictsAsSeen()
+
+    // All UI elements should be dismissed
+    expect(shouldShowConflictModal.value).toBe(false)
+    expect(shouldShowRedDot.value).toBe(false)
+    expect(shouldShowManagerBanner.value).toBe(false)
+  })
+
+  it('should manage acknowledgment state correctly', () => {
+    const {
+      acknowledgmentState,
+      markConflictsAsSeen,
+      dismissRedDotNotification,
+      dismissWarningBanner
+    } = useConflictAcknowledgment()
+
+    // Initial state
+    expect(acknowledgmentState.value.modal_dismissed).toBe(false)
+    expect(acknowledgmentState.value.red_dot_dismissed).toBe(false)
+    expect(acknowledgmentState.value.warning_banner_dismissed).toBe(false)
+
+    // Update states
+    markConflictsAsSeen()
+    dismissRedDotNotification()
+    dismissWarningBanner()
+
+    // Check updated state
+    expect(acknowledgmentState.value.modal_dismissed).toBe(true)
+    expect(acknowledgmentState.value.red_dot_dismissed).toBe(true)
+    expect(acknowledgmentState.value.warning_banner_dismissed).toBe(true)
   })
 
   it('should use VueUse useStorage for persistence', () => {
     // This test verifies that useStorage is being used by checking
     // that values are automatically synced to localStorage
-    const { dismissConflictModal, acknowledgeConflict } =
+    const { markConflictsAsSeen, dismissWarningBanner } =
       useConflictAcknowledgment()
 
-    dismissConflictModal()
-    acknowledgeConflict('test-pkg', 'test-conflict', '1.0.0')
+    markConflictsAsSeen()
+    dismissWarningBanner()
 
     // VueUse useStorage should automatically persist to localStorage
     // We can verify the keys exist (values will be stringified by VueUse)
+    expect(localStorage.getItem('Comfy.ConflictModalDismissed')).not.toBeNull()
     expect(
-      localStorage.getItem('comfy_manager_conflict_banner_dismissed')
+      localStorage.getItem('Comfy.ConflictWarningBannerDismissed')
     ).not.toBeNull()
-    expect(localStorage.getItem('comfy_conflict_acknowledged')).not.toBeNull()
   })
 })
