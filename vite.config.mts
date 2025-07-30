@@ -1,5 +1,6 @@
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
+import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -120,12 +121,19 @@ export default defineConfig({
     ]),
 
     Icons({
-      compiler: 'vue3'
+      compiler: 'vue3',
+      customCollections: {
+        comfy: FileSystemIconLoader('src/assets/icons/custom')
+      }
     }),
 
     Components({
       dts: true,
-      resolvers: [IconsResolver()],
+      resolvers: [
+        IconsResolver({
+          customCollections: ['comfy']
+        })
+      ],
       dirs: ['src/components', 'src/layout', 'src/views'],
       deep: true,
       extensions: ['vue']
