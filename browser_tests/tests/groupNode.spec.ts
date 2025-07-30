@@ -265,7 +265,7 @@ test.describe('Group Node', () => {
       comfyPage
     }) => {
       // Set setting
-      await comfyPage.setSetting('Comfy.ClearWorkflow.Confirmation', false)
+      await comfyPage.setSetting('Comfy.ConfirmClear', false)
 
       // Clear workflow
       await comfyPage.menu.topbar.triggerTopbarCommand([
