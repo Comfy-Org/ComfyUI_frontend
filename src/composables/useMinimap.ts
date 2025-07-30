@@ -5,9 +5,11 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 interface GraphCallbacks {
   onNodeAdded?: (node: LGraphNode) => void
@@ -19,6 +21,7 @@ export function useMinimap() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
   const colorPaletteStore = useColorPaletteStore()
+  const workflowStore = useWorkflowStore()
 
   const containerRef = ref<HTMLDivElement>()
   const canvasRef = ref<HTMLCanvasElement>()
@@ -105,7 +108,15 @@ export function useMinimap() {
   }
 
   const canvas = computed(() => canvasStore.canvas)
-  const graph = computed(() => canvas.value?.graph)
+  const graph = ref(app.canvas?.graph)
+
+  // Update graph ref when subgraph context changes
+  watch(
+    () => workflowStore.activeSubgraph,
+    () => {
+      graph.value = app.canvas?.graph
+    }
+  )
 
   const containerStyles = computed(() => ({
     width: `${width}px`,
@@ -129,7 +140,7 @@ export function useMinimap() {
 
   const calculateGraphBounds = () => {
     const g = graph.value
-    if (!g?._nodes || g._nodes.length === 0) {
+    if (!g || !g._nodes || g._nodes.length === 0) {
       return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }
     }
 
@@ -280,13 +291,14 @@ export function useMinimap() {
   }
 
   const renderMinimap = () => {
-    if (!canvasRef.value || !graph.value) return
+    const g = graph.value
+    if (!canvasRef.value || !g) return
 
     const ctx = canvasRef.value.getContext('2d')
     if (!ctx) return
 
     // Fast path for 0 nodes - just show background
-    if (!graph.value._nodes || graph.value._nodes.length === 0) {
+    if (!g._nodes || g._nodes.length === 0) {
       ctx.clearRect(0, 0, width, height)
       return
     }
