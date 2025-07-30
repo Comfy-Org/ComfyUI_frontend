@@ -686,6 +686,12 @@ Component test verifies Vue components in `src/components/`.
 
 Playwright test verifies the whole app. See <https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/README.md> for details.
 
+### Custom Icons
+
+The project supports custom SVG icons through the unplugin-icons system. Custom icons are stored in `src/assets/icons/custom/` and can be used as Vue components with the `i-comfy:` prefix.
+
+For detailed instructions on adding and using custom icons, see [src/assets/icons/README.md](src/assets/icons/README.md).
+
 ### litegraph.js
 
 This repo is using litegraph package hosted on <https://github.com/Comfy-Org/litegraph.js>. Any changes to litegraph should be submitted in that repo instead.
