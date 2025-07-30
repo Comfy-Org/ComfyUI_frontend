@@ -272,6 +272,7 @@
     "category": "카테고리",
     "choose_file_to_upload": "업로드할 파일 선택",
     "clear": "지우기",
+    "clearFilters": "필터 지우기",
     "close": "닫기",
     "color": "색상",
     "comingSoon": "곧 출시 예정",
@@ -1225,6 +1226,8 @@
       "Video": "비디오",
       "Video API": "비디오 API"
     },
+    "loadingMore": "템플릿을 더 불러오는 중...",
+    "searchPlaceholder": "템플릿 검색...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",

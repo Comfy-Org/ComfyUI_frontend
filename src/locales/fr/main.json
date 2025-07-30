@@ -272,6 +272,7 @@
     "category": "Catégorie",
     "choose_file_to_upload": "choisissez le fichier à télécharger",
     "clear": "Effacer",
+    "clearFilters": "Effacer les filtres",
     "close": "Fermer",
     "color": "Couleur",
     "comingSoon": "Bientôt disponible",
@@ -1225,6 +1226,8 @@
       "Video": "Vidéo",
       "Video API": "API vidéo"
     },
+    "loadingMore": "Chargement de plus de modèles...",
+    "searchPlaceholder": "Rechercher des modèles...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",

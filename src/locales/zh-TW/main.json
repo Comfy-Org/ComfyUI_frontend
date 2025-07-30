@@ -272,6 +272,7 @@
     "category": "分類",
     "choose_file_to_upload": "選擇要上傳的檔案",
     "clear": "清除",
+    "clearFilters": "清除篩選",
     "close": "關閉",
     "color": "顏色",
     "comingSoon": "即將推出",
@@ -1225,6 +1226,8 @@
       "Video": "影片",
       "Video API": "影片 API"
     },
+    "loadingMore": "正在載入更多範本...",
+    "searchPlaceholder": "搜尋範本...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",

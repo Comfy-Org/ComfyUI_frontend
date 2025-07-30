@@ -272,6 +272,7 @@
     "category": "Категория",
     "choose_file_to_upload": "выберите файл для загрузки",
     "clear": "Очистить",
+    "clearFilters": "Сбросить фильтры",
     "close": "Закрыть",
     "color": "Цвет",
     "comingSoon": "Скоро будет",
@@ -1225,6 +1226,8 @@
       "Video": "Видео",
       "Video API": "Video API"
     },
+    "loadingMore": "Загрузка дополнительных шаблонов...",
+    "searchPlaceholder": "Поиск шаблонов...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",
