@@ -70,12 +70,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'Backspace'
-    },
-    commandId: 'Comfy.ClearWorkflow'
-  },
-  {
-    combo: {
       key: 'g',
       ctrl: true
     },
