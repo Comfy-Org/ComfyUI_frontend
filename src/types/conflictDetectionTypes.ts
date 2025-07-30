@@ -21,7 +21,6 @@ export type ConflictType =
   | 'comfyui_version' // ComfyUI version mismatch
   | 'frontend_version' // Frontend version mismatch
   | 'import_failed'
-  // TBD
   // | 'python_version' // Python version mismatch
   | 'os' // Operating system incompatibility
   | 'accelerator' // GPU/accelerator incompatibility

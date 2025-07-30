@@ -800,19 +800,21 @@ export function useConflictDetection() {
     }
 
     // Check banned package status using shared logic
-    const bannedConflict = checkBannedStatus(node.status === 'NodeStatusBanned')
+    const bannedConflict = checkBannedStatus(
+      node.status === 'NodeStatusBanned' ||
+        node.status === 'NodeVersionStatusBanned'
+    )
     if (bannedConflict) {
       conflicts.push(bannedConflict)
     }
 
-    // TBD
-    // Check security/registry data status using shared logic
-    // const pendingConflict = checkPendingStatus(
-    //   node.versionStatus === 'NodeVersionStatusPending'
-    // )
-    // if (pendingConflict) {
-    //   conflicts.push(pendingConflict)
-    // }
+    // Check pending status using shared logic
+    const pendingConflict = checkPendingStatus(
+      node.status === 'NodeVersionStatusPending'
+    )
+    if (pendingConflict) {
+      conflicts.push(pendingConflict)
+    }
 
     return {
       hasConflict: conflicts.length > 0,
@@ -1302,7 +1304,6 @@ function generateSummary(
     accelerator: 0,
     banned: 0,
     pending: 0
-    // TBD
     // python_version: 0
   }
 
@@ -1314,7 +1315,6 @@ function generateSummary(
     accelerator: [],
     banned: [],
     pending: []
-    // TBD
     // python_version: [],
   }
 
@@ -1364,7 +1364,6 @@ function getEmptySummary(): ConflictDetectionSummary {
       accelerator: [],
       banned: [],
       pending: []
-      // TBD
       // python_version: [],
     },
     last_check_timestamp: new Date().toISOString(),
