@@ -186,6 +186,9 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       options: this.options
     })
     cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
     return cloned
   }
 }
@@ -217,6 +220,9 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       options: this.options
     })
     cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
     return cloned
   }
 
