@@ -112,6 +112,14 @@ vi.mock('@/stores/settingStore', () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)
 }))
 
+vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+  useColorPaletteStore: vi.fn(() => ({
+    completedActivePalette: {
+      light_theme: false
+    }
+  }))
+}))
+
 vi.mock('@/scripts/api', () => ({
   api: {
     addEventListener: vi.fn(),
@@ -753,7 +761,7 @@ describe('useMinimap', () => {
   })
 
   describe('container styles', () => {
-    it('should provide correct container styles', () => {
+    it('should provide correct container styles for dark theme', () => {
       const minimap = useMinimap()
       const styles = minimap.containerStyles.value
 
