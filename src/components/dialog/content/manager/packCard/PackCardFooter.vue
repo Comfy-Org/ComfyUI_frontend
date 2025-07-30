@@ -45,7 +45,7 @@ const formattedDownloads = computed(() =>
 )
 
 const { getConflictsForPackageByID } = useConflictDetectionStore()
-const { checkVersionCompatibility } = useConflictDetection()
+const { checkNodeCompatibility } = useConflictDetection()
 
 const hasConflict = computed(() => {
   if (!nodePack.id) return false
@@ -60,9 +60,7 @@ const hasConflict = computed(() => {
   }
 
   // For uninstalled packages, check compatibility directly
-  const compatibility = checkVersionCompatibility(nodePack)
-  console.log(compatibility)
-
+  const compatibility = checkNodeCompatibility(nodePack)
   return compatibility.hasConflict
 })
 </script>

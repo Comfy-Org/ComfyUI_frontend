@@ -1,31 +1,24 @@
-import { uniqBy } from 'lodash'
-import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
+import { uniqBy } from 'lodash';
+import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue';
 
-import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import config from '@/config'
-import { useComfyManagerService } from '@/services/comfyManagerService'
-import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { SystemStats } from '@/types'
-import type { components } from '@/types/comfyRegistryTypes'
-import type {
-  ConflictDetail,
-  ConflictDetectionResponse,
-  ConflictDetectionResult,
-  ConflictDetectionSummary,
-  ConflictType,
-  Node,
-  NodePackRequirements,
-  SystemEnvironment
-} from '@/types/conflictDetectionTypes'
-import {
-  cleanVersion,
-  satisfiesVersion,
-  checkVersionCompatibility as utilCheckVersionCompatibility
-} from '@/utils/versionUtil'
+
+
+import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks';
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment';
+import config from '@/config';
+import { useComfyManagerService } from '@/services/comfyManagerService';
+import { useComfyRegistryService } from '@/services/comfyRegistryService';
+import { useComfyManagerStore } from '@/stores/comfyManagerStore';
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore';
+import { useSystemStatsStore } from '@/stores/systemStatsStore';
+import type { SystemStats } from '@/types';
+import type { components } from '@/types/comfyRegistryTypes';
+import type { ConflictDetail, ConflictDetectionResponse, ConflictDetectionResult, ConflictDetectionSummary, ConflictType, Node, NodePackRequirements, SystemEnvironment } from '@/types/conflictDetectionTypes';
+import { cleanVersion, satisfiesVersion, utilCheckVersionCompatibility } from '@/utils/versionUtil';
+
+
+
+
 
 /**
  * Composable for conflict detection system.
@@ -734,10 +727,12 @@ export function useConflictDetection() {
   }
 
   /**
-   * Check compatibility for a specific version of a package.
+   * Check compatibility for a node.
    * Used by components like PackVersionSelectorPopover.
    */
-  function checkVersionCompatibility(node: Node) {
+  function checkNodeCompatibility(
+    node: Node | components['schemas']['NodeVersion']
+  ) {
     const systemStatsStore = useSystemStatsStore()
     const systemStats = systemStatsStore.systemStats
     if (!systemStats) return { hasConflict: false, conflicts: [] }
@@ -856,7 +851,7 @@ export function useConflictDetection() {
     acknowledgePackageConflict,
 
     // Helper functions for other components
-    checkVersionCompatibility
+    checkNodeCompatibility
   }
 }
 
@@ -1302,6 +1297,7 @@ function generateSummary(
   const conflictsByType: Record<ConflictType, number> = {
     comfyui_version: 0,
     frontend_version: 0,
+    import_failed: 0,
     os: 0,
     accelerator: 0,
     banned: 0,

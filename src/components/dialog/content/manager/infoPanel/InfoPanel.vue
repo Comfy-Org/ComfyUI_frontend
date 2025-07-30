@@ -94,7 +94,7 @@ whenever(isInstalled, () => {
   isInstalling.value = false
 })
 
-const { checkVersionCompatibility } = useConflictDetection()
+const { checkNodeCompatibility } = useConflictDetection()
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 
 const { t, d, n } = useI18n()
@@ -107,22 +107,12 @@ const conflictResult = computed((): ConflictDetectionResult | null => {
   }
 
   // For non-installed packages, perform compatibility check
-  const compatibility = checkVersionCompatibility({
-    supported_os: nodePack.supported_os,
-    supported_accelerators: nodePack.supported_accelerators,
-    supported_comfyui_version: nodePack.supported_comfyui_version,
-    supported_comfyui_frontend_version:
-      nodePack.supported_comfyui_frontend_version
-    // TODO: Add when API provides these fields
-    // supported_python_version: nodePack.supported_python_version,
-    // is_banned: nodePack.is_banned,
-    // has_registry_data: nodePack.has_registry_data
-  })
+  const compatibility = checkNodeCompatibility(nodePack)
 
-  if (compatibility.hasConflict && nodePack.id && nodePack.name) {
+  if (compatibility.hasConflict) {
     return {
-      package_id: nodePack.id,
-      package_name: nodePack.name,
+      package_id: nodePack.id || '',
+      package_name: nodePack.name || '',
       has_conflict: true,
       conflicts: compatibility.conflicts,
       is_compatible: false
@@ -133,7 +123,7 @@ const conflictResult = computed((): ConflictDetectionResult | null => {
 })
 
 const hasCompatibilityIssues = computed(() => {
-  return isInstalled.value && conflictResult.value?.has_conflict ? true : false
+  return conflictResult.value?.has_conflict
 })
 
 const infoItems = computed<InfoItem[]>(() => [

@@ -65,7 +65,7 @@ export function isValidVersion(version: string): boolean {
  * @param supportedVersion Required version range string
  * @returns ConflictDetail object if incompatible, null if compatible
  */
-export function checkVersionCompatibility(
+export function utilCheckVersionCompatibility(
   type: ConflictType,
   currentVersion: string,
   supportedVersion: string
