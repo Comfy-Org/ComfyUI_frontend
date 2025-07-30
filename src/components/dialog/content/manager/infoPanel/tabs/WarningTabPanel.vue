@@ -6,7 +6,9 @@
       @click="showImportFailedDialog"
     >
       <i class="pi pi-code text-base"></i>
-      <span class="text-white text-sm">{{ t('serverStart.openLogs') }}</span>
+      <span class="dark-theme:text-white text-sm">{{
+        t('serverStart.openLogs')
+      }}</span>
     </button>
     <div
       v-for="(conflict, index) in conflictResult?.conflicts || []"

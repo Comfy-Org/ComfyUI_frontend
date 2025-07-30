@@ -73,16 +73,14 @@ const statusPropsMap: Record<Status, StatusProps> = {
   }
 }
 
-const statusLabel = computed(() =>
-  importFailed
-    ? 'importFailed'
-    : hasCompatibilityIssues
-      ? 'conflicting'
-      : statusPropsMap[statusType]?.label || 'unknown'
-)
-const statusSeverity = computed(() =>
-  hasCompatibilityIssues || importFailed
-    ? 'error'
-    : statusPropsMap[statusType]?.severity || 'secondary'
-)
+const statusLabel = computed(() => {
+  if (importFailed) return 'importFailed'
+  if (hasCompatibilityIssues) return 'conflicting'
+  return statusPropsMap[statusType]?.label || 'unknown'
+})
+
+const statusSeverity = computed(() => {
+  if (hasCompatibilityIssues || importFailed) return 'error'
+  return statusPropsMap[statusType]?.severity || 'secondary'
+})
 </script>
