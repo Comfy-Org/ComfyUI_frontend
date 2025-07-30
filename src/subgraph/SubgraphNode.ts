@@ -68,6 +68,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (widget) this.ensureWidgetRemoved(widget)
 
       this.removeInput(e.detail.index)
+      this.setDirtyCanvas(true, true)
     }, { signal })
 
     subgraphEvents.addEventListener("output-added", (e) => {
@@ -77,6 +78,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     subgraphEvents.addEventListener("removing-output", (e) => {
       this.removeOutput(e.detail.index)
+      this.setDirtyCanvas(true, true)
     }, { signal })
 
     subgraphEvents.addEventListener("renaming-input", (e) => {
