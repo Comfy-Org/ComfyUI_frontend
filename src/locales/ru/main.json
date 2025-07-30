@@ -297,6 +297,7 @@
     "devices": "Устройства",
     "disableAll": "Отключить все",
     "disabling": "Отключение",
+    "dismiss": "Закрыть",
     "download": "Скачать",
     "edit": "Редактировать",
     "empty": "Пусто",
@@ -311,6 +312,8 @@
     "filter": "Фильтр",
     "findIssues": "Найти проблемы",
     "firstTimeUIMessage": "Вы впервые используете новый интерфейс. Выберите \"Меню > Использовать новое меню > Отключено\", чтобы восстановить старый интерфейс.",
+    "frontendNewer": "Версия интерфейса {frontendVersion} может быть несовместима с версией сервера {backendVersion}.",
+    "frontendOutdated": "Версия интерфейса {frontendVersion} устарела. Требуется версия не ниже {requiredVersion} для работы с сервером.",
     "goToNode": "Перейти к ноде",
     "help": "Помощь",
     "icon": "Иконка",
@@ -390,11 +393,14 @@
     "unknownError": "Неизвестная ошибка",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
+    "updateFrontend": "Обновить интерфейс",
     "updated": "Обновлено",
     "updating": "Обновление",
     "upload": "Загрузить",
     "usageHint": "Подсказка по использованию",
     "user": "Пользователь",
+    "versionMismatchWarning": "Предупреждение о несовместимости версий",
+    "versionMismatchWarningMessage": "{warning}: {detail} Посетите https://docs.comfy.org/installation/update_comfyui#common-update-issues для инструкций по обновлению.",
     "videoFailedToLoad": "Не удалось загрузить видео",
     "workflow": "Рабочий процесс"
   },
@@ -1604,6 +1610,13 @@
     "personalDataConsentRequired": "Вы должны согласиться на обработку ваших персональных данных.",
     "prefix": "Должно начинаться с {prefix}",
     "required": "Обязательно"
+  },
+  "versionMismatchWarning": {
+    "dismiss": "Закрыть",
+    "frontendNewer": "Версия интерфейса {frontendVersion} может быть несовместима с версией сервера {backendVersion}.",
+    "frontendOutdated": "Версия интерфейса {frontendVersion} устарела. Для работы с сервером требуется версия {requiredVersion} или новее.",
+    "title": "Предупреждение о несовместимости версий",
+    "updateFrontend": "Обновить интерфейс"
   },
   "welcome": {
     "getStarted": "Начать",

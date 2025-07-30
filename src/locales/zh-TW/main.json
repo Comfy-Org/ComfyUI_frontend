@@ -297,6 +297,7 @@
     "devices": "裝置",
     "disableAll": "全部停用",
     "disabling": "停用中",
+    "dismiss": "關閉",
     "download": "下載",
     "edit": "編輯",
     "empty": "空",
@@ -311,6 +312,8 @@
     "filter": "篩選",
     "findIssues": "尋找問題",
     "firstTimeUIMessage": "這是您第一次使用新介面。若要返回舊介面，請前往「選單」>「使用新介面」>「關閉」。",
+    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
+    "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 或更高版本。",
     "goToNode": "前往節點",
     "help": "說明",
     "icon": "圖示",
@@ -390,11 +393,14 @@
     "unknownError": "未知錯誤",
     "update": "更新",
     "updateAvailable": "有可用更新",
+    "updateFrontend": "更新前端",
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上傳",
     "usageHint": "使用提示",
     "user": "使用者",
+    "versionMismatchWarning": "版本相容性警告",
+    "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
     "videoFailedToLoad": "無法載入影片",
     "workflow": "工作流程"
   },
@@ -1604,6 +1610,13 @@
     "personalDataConsentRequired": "您必須同意我們處理您的個人資料。",
     "prefix": "必須以 {prefix} 開頭",
     "required": "必填"
+  },
+  "versionMismatchWarning": {
+    "dismiss": "關閉",
+    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
+    "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要版本 {requiredVersion} 或更高版本。",
+    "title": "版本相容性警告",
+    "updateFrontend": "更新前端"
   },
   "welcome": {
     "getStarted": "開始使用",

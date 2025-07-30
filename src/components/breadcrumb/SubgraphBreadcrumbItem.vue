@@ -1,7 +1,10 @@
 <template>
   <a
     ref="wrapperRef"
-    v-tooltip.bottom="item.label"
+    v-tooltip.bottom="{
+      value: item.label,
+      showDelay: 512
+    }"
     href="#"
     class="cursor-pointer p-breadcrumb-item-link"
     :class="{
@@ -78,6 +81,9 @@ const rename = async (
   initialName: string
 ) => {
   if (newName && newName !== initialName) {
+    // Synchronize the node titles with the new name
+    props.item.updateTitle?.(newName)
+
     if (workflowStore.activeSubgraph) {
       workflowStore.activeSubgraph.name = newName
     } else if (workflowStore.activeWorkflow) {
