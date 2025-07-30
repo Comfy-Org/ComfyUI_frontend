@@ -12,18 +12,19 @@
       <i class="pi pi-exclamation-triangle text-yellow-500 text-xl"></i>
     </div>
     <ToggleSwitch
+      v-if="!canToggleDirectly"
+      :model-value="isEnabled"
+      :disabled="isLoading"
+      :readonly="!canToggleDirectly"
+      aria-label="Enable or disable pack"
+      @focus="handleToggleInteraction"
+    />
+    <ToggleSwitch
+      v-else
       :model-value="isEnabled"
       :disabled="isLoading"
       aria-label="Enable or disable pack"
-      :class="{
-        'opacity-50 cursor-not-allowed': isLoading
-      }"
-      :pt="{
-        handle: {
-          class: 'bg-white'
-        }
-      }"
-      @update:model-value="handleToggleClick"
+      @update:model-value="onToggle"
     />
   </div>
 </template>
@@ -52,12 +53,43 @@ const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack } = useComfyManagerStore()
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { showNodeConflictDialog } = useDialogService()
-const { acknowledgeConflict, isConflictAcknowledged } =
-  useConflictAcknowledgment()
+const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
 
 const isLoading = ref(false)
 
 const isEnabled = computed(() => isPackEnabled(nodePack.id))
+const packageConflict = computed(() =>
+  getConflictsForPackageByID(nodePack.id || '')
+)
+
+const canToggleDirectly = computed(() => {
+  return !(
+    hasConflict &&
+    !acknowledgmentState.value.modal_dismissed &&
+    packageConflict.value
+  )
+})
+
+const showConflictModal = () => {
+  if (packageConflict.value && !acknowledgmentState.value.modal_dismissed) {
+    showNodeConflictDialog({
+      conflictedPackages: [packageConflict.value],
+      buttonText: !isEnabled.value
+        ? t('manager.conflicts.enableAnyway')
+        : t('manager.conflicts.understood'),
+      onButtonClick: async () => {
+        if (!isEnabled.value) {
+          await handleEnable()
+        }
+      },
+      dialogComponentProps: {
+        onClose: () => {
+          markConflictsAsSeen()
+        }
+      }
+    })
+  }
+}
 
 const handleEnable = () => {
   if (!nodePack.id) {
@@ -90,73 +122,30 @@ const handleDisable = () => {
   })
 }
 
-const performToggle = async (enable: boolean) => {
+const handleToggle = async (enable: boolean) => {
   if (isLoading.value) return
+
   isLoading.value = true
-  try {
-    if (enable) {
-      await handleEnable()
-    } else {
-      await handleDisable()
-    }
-  } finally {
-    isLoading.value = false
+  if (enable) {
+    await handleEnable()
+  } else {
+    await handleDisable()
   }
+  isLoading.value = false
 }
 
 const onToggle = debounce(
   (enable: boolean) => {
-    void performToggle(enable)
+    void handleToggle(enable)
   },
   TOGGLE_DEBOUNCE_MS,
   { trailing: true }
 )
 
-const handleToggleClick = async (enable: boolean) => {
-  if (isLoading.value) return
-
-  if (enable && hasConflict) {
-    const conflicts = getConflictsForPackageByID(nodePack.id || '')
-    if (conflicts) {
-      const hasUnacknowledgedConflicts = conflicts.conflicts.some(
-        (conflict) => !isConflictAcknowledged(nodePack.id || '', conflict.type)
-      )
-
-      if (hasUnacknowledgedConflicts) {
-        showNodeConflictDialog({
-          conflictedPackages: [conflicts],
-          buttonText: t('manager.conflicts.enableAnyway'),
-          onButtonClick: async () => {
-            for (const conflict of conflicts.conflicts) {
-              acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
-            }
-            await performToggle(true)
-          }
-        })
-        return
-      }
-    }
-  }
-  await performToggle(enable)
-}
-
-const showConflictModal = () => {
-  const conflicts = getConflictsForPackageByID(nodePack.id || '')
-  if (conflicts) {
-    showNodeConflictDialog({
-      conflictedPackages: [conflicts],
-      buttonText: isEnabled.value
-        ? t('manager.conflicts.understood')
-        : t('manager.conflicts.enableAnyway'),
-      onButtonClick: async () => {
-        for (const conflict of conflicts.conflicts) {
-          acknowledgeConflict(nodePack.id || '', conflict.type, '0.1.0')
-        }
-        if (!isEnabled.value) {
-          onToggle(true)
-        }
-      }
-    })
+const handleToggleInteraction = async (event: Event) => {
+  if (!canToggleDirectly.value) {
+    event.preventDefault()
+    showConflictModal()
   }
 }
 </script>

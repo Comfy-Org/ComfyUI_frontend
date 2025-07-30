@@ -11,7 +11,6 @@
     :loading-message="$t('g.installing')"
     :has-warning="hasConflict"
     @action="installAllPacks"
-    @click="onClick"
   />
 </template>
 
@@ -19,26 +18,32 @@
 import { inject, ref } from 'vue'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
+import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import {
+  type ConflictDetail,
+  type ConflictDetectionResult
+} from '@/types/conflictDetectionTypes'
 import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks, variant, label, hasConflict } = defineProps<{
+const { nodePacks, variant, label, hasConflict, conflictInfo } = defineProps<{
   nodePacks: NodePack[]
   variant?: 'default' | 'black'
   label?: string
   hasConflict?: boolean
+  conflictInfo?: ConflictDetail[]
 }>()
 
 const isInstalling = inject(IsInstallingKey, ref(false))
 const managerStore = useComfyManagerStore()
-
-const onClick = (): void => {
-  isInstalling.value = true
-}
+const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
+const { showNodeConflictDialog } = useDialogService()
 
 const createPayload = (
   installItem: NodePack
@@ -69,36 +74,40 @@ const installPack = (item: NodePack) =>
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
 
-  // TBD Install Anyway modal
-  // if (hasConflict && !isConflictAcknowledged) {
-  // showNodeConflictDialog({
-  //   conflictedPackages: nodePacks,
-  //   buttonText: t('manager.conflicts.installAnyway'),
-  //   onButtonClick: async () => {
-  //     // User chose "Install Anyway" - acknowledge all conflicts and proceed
-  //     for (const conflictedPack of packsWithConflicts) {
-  //       for (const conflict of conflictedPack.conflicts) {
-  //         acknowledgeConflict(
-  //           conflictedPack.package_id,
-  //           conflict.type,
-  //           '0.1.0'
-  //         )
-  //       }
-  //     }
-  //     // Proceed with installation
-  //     await performInstallation(uninstalledPacks)
-  //   }
-  // })
-  // return
-  // }
+  if (
+    hasConflict &&
+    conflictInfo &&
+    !acknowledgmentState.value.modal_dismissed
+  ) {
+    const conflictedPackages: ConflictDetectionResult[] = nodePacks.map(
+      (pack) => ({
+        package_id: pack.id || '',
+        package_name: pack.name || '',
+        has_conflict: true,
+        conflicts: conflictInfo || [],
+        is_compatible: false
+      })
+    )
 
-  const uninstalledPacks = nodePacks.filter(
-    (pack) => !managerStore.isPackInstalled(pack.id)
-  )
-  if (!uninstalledPacks.length) return
-
+    showNodeConflictDialog({
+      conflictedPackages,
+      buttonText: t('manager.conflicts.installAnyway'),
+      onButtonClick: async () => {
+        // Proceed with installation
+        isInstalling.value = true
+        await performInstallation(nodePacks)
+      },
+      dialogComponentProps: {
+        onClose: () => {
+          markConflictsAsSeen()
+        }
+      }
+    })
+    return
+  }
   // No conflicts or conflicts acknowledged - proceed with installation
-  await performInstallation(uninstalledPacks)
+  isInstalling.value = true
+  await performInstallation(nodePacks)
 }
 
 const performInstallation = async (packs: NodePack[]) => {

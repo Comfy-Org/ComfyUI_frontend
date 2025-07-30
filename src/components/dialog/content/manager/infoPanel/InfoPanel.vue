@@ -18,7 +18,10 @@
             class="flex"
             style="align-items: center"
           >
-            <PackEnableToggle :node-pack="nodePack" />
+            <PackEnableToggle
+              :node-pack="nodePack"
+              :has-conflict="hasCompatibilityIssues"
+            />
           </MetadataRow>
           <MetadataRow
             v-for="item in infoItems"
