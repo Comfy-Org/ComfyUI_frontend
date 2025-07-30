@@ -1,7 +1,7 @@
 import type { ISlotType } from "@/interfaces"
 import type { TWidgetType } from "@/types/widgets"
 
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { LGraphNode, Subgraph } from "@/litegraph"
 import { BaseWidget } from "@/widgets/BaseWidget"
@@ -14,6 +14,7 @@ function createNodeWithWidget(
   widgetType: TWidgetType = "number",
   widgetValue: any = 42,
   slotType: ISlotType = "number",
+  tooltip?: string,
 ) {
   const node = new LGraphNode(title)
   const input = node.addInput("value", slotType)
@@ -26,6 +27,7 @@ function createNodeWithWidget(
     y: 0,
     options: widgetType === "number" ? { min: 0, max: 100, step: 1 } : {},
     node,
+    tooltip,
   })
   node.widgets = [widget]
   input.widget = { name: widget.name }
@@ -242,6 +244,106 @@ describe("SubgraphWidgetPromotion", () => {
 
       // Widget should be removed (through event listeners)
       expect(subgraphNode.widgets).toHaveLength(0)
+    })
+  })
+
+  describe("Tooltip Promotion", () => {
+    it("should preserve widget tooltip when promoting", () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: "value", type: "number" }],
+      })
+
+      const originalTooltip = "This is a test tooltip"
+      const { node } = createNodeWithWidget("Test Node", "number", 42, "number", originalTooltip)
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+
+      // The promoted widget should preserve the original tooltip
+      expect(subgraphNode.widgets).toHaveLength(1)
+      expect(subgraphNode.widgets[0].tooltip).toBe(originalTooltip)
+    })
+
+    it("should handle widgets with no tooltip", () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: "value", type: "number" }],
+      })
+
+      const { node } = createNodeWithWidget("Test Node", "number", 42, "number")
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+
+      // The promoted widget should have undefined tooltip
+      expect(subgraphNode.widgets).toHaveLength(1)
+      expect(subgraphNode.widgets[0].tooltip).toBeUndefined()
+    })
+
+    it("should preserve tooltips for multiple promoted widgets", () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: "input1", type: "number" },
+          { name: "input2", type: "string" },
+        ],
+      })
+
+      // Create node with multiple widgets with different tooltips
+      const multiWidgetNode = new LGraphNode("Multi Widget Node")
+      const numInput = multiWidgetNode.addInput("num", "number")
+      const strInput = multiWidgetNode.addInput("str", "string")
+
+      const widget1 = new BaseWidget({
+        name: "widget1",
+        type: "number",
+        value: 10,
+        y: 0,
+        options: {},
+        node: multiWidgetNode,
+        tooltip: "Number widget tooltip",
+      })
+
+      const widget2 = new BaseWidget({
+        name: "widget2",
+        type: "string",
+        value: "hello",
+        y: 40,
+        options: {},
+        node: multiWidgetNode,
+        tooltip: "String widget tooltip",
+      })
+
+      multiWidgetNode.widgets = [widget1, widget2]
+      numInput.widget = { name: widget1.name }
+      strInput.widget = { name: widget2.name }
+      subgraph.add(multiWidgetNode)
+
+      // Connect both inputs
+      subgraph.inputNode.slots[0].connect(multiWidgetNode.inputs[0], multiWidgetNode)
+      subgraph.inputNode.slots[1].connect(multiWidgetNode.inputs[1], multiWidgetNode)
+
+      // Create SubgraphNode
+      const subgraphNode = createTestSubgraphNode(subgraph)
+
+      // Both widgets should preserve their tooltips
+      expect(subgraphNode.widgets).toHaveLength(2)
+      expect(subgraphNode.widgets[0].tooltip).toBe("Number widget tooltip")
+      expect(subgraphNode.widgets[1].tooltip).toBe("String widget tooltip")
+    })
+
+    it("should preserve original tooltip after promotion", () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: "value", type: "number" }],
+      })
+
+      const originalTooltip = "Original tooltip"
+      const { node } = createNodeWithWidget("Test Node", "number", 42, "number", originalTooltip)
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+
+      const promotedWidget = subgraphNode.widgets[0]
+
+      // The promoted widget should preserve the original tooltip
+      expect(promotedWidget.tooltip).toBe(originalTooltip)
+      
+      // The promoted widget should still function normally
+      expect(promotedWidget.name).toBe("value") // Uses subgraph input name
+      expect(promotedWidget.type).toBe("number")
+      expect(promotedWidget.value).toBe(42)
     })
   })
 })

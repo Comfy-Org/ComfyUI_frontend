@@ -216,6 +216,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       set label(value) {
         console.warn("Promoted widget: setting label is not allowed", this, value)
       },
+      get tooltip() {
+        // Preserve the original widget's tooltip for promoted widgets
+        return widget.tooltip
+      },
+      set tooltip(value) {
+        console.warn("Promoted widget: setting tooltip is not allowed", this, value)
+      },
     })
 
     this.widgets.push(promotedWidget)
