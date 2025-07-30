@@ -5,6 +5,7 @@
         <InfoPanelHeader
           :node-packs="[nodePack]"
           :has-conflict="hasCompatibilityIssues"
+          :import-failed="importFailed"
         />
       </div>
       <div
@@ -13,7 +14,7 @@
       >
         <div class="mb-6">
           <MetadataRow
-            v-if="isPackInstalled(nodePack.id)"
+            v-if="!importFailed && isPackInstalled(nodePack.id)"
             :label="t('manager.filter.enabled')"
             class="flex"
             style="align-items: center"
@@ -36,6 +37,7 @@
                 nodePack.status as components['schemas']['NodeVersionStatus']
               "
               :has-compatibility-issues="hasCompatibilityIssues"
+              :import-failed="importFailed"
             />
           </MetadataRow>
           <MetadataRow :label="t('manager.version')">
@@ -47,6 +49,7 @@
             :node-pack="nodePack"
             :has-compatibility-issues="hasCompatibilityIssues"
             :conflict-result="conflictResult"
+            :import-failed="importFailed"
           />
         </div>
       </div>
@@ -127,6 +130,15 @@ const conflictResult = computed((): ConflictDetectionResult | null => {
 
 const hasCompatibilityIssues = computed(() => {
   return conflictResult.value?.has_conflict
+})
+
+const importFailed = computed(() => {
+  if (!nodePack.id || !isInstalled.value) return false
+
+  const conflicts = getConflictsForPackageByID(nodePack.id)
+  return (
+    conflicts?.conflicts.some((item) => item.type === 'import_failed') ?? false
+  )
 })
 
 const infoItems = computed<InfoItem[]>(() => [

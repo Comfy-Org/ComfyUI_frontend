@@ -11,7 +11,10 @@
         <span class="inline-block text-base">{{ nodePacks[0].name }}</span>
       </slot>
     </h2>
-    <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
+    <div
+      v-if="!importFailed"
+      class="mt-2 mb-4 w-full max-w-xs flex justify-center"
+    >
       <slot name="install-button">
         <PackUninstallButton
           v-if="isAllInstalled"
@@ -48,6 +51,7 @@ import { components } from '@/types/comfyRegistryTypes'
 const { nodePacks, hasConflict } = defineProps<{
   nodePacks: components['schemas']['Node'][]
   hasConflict?: boolean
+  importFailed?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()

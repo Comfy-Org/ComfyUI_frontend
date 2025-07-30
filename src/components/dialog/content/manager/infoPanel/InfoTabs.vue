@@ -5,7 +5,7 @@
         <Tab v-if="hasCompatibilityIssues" value="warning" class="p-2 mr-6">
           <div class="flex items-center gap-1">
             <span>⚠️</span>
-            {{ $t('g.warning') }}
+            {{ importFailed ? $t('g.error') : $t('g.warning') }}
           </div>
         </Tab>
         <Tab value="description" class="p-2 mr-6">
@@ -55,6 +55,7 @@ const { nodePack, hasCompatibilityIssues, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']
   hasCompatibilityIssues?: boolean
   conflictResult?: ConflictDetectionResult | null
+  importFailed?: boolean
 }>()
 
 const nodeNames = computed(() => {
