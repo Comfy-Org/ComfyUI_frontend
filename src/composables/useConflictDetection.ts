@@ -589,11 +589,6 @@ export function useConflictDetection() {
         )
         storedMergedConflicts.value = [...mergedConflicts]
 
-        // Check for ComfyUI version change to reset acknowledgments
-        if (sysEnv.comfyui_version !== 'unknown') {
-          acknowledgment.checkComfyUIVersionChange(sysEnv.comfyui_version)
-        }
-
         // Use merged conflicts in response as well
         const response: ConflictDetectionResponse = {
           success: true,

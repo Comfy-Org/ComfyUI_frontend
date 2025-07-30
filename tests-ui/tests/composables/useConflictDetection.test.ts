@@ -906,23 +906,11 @@ describe.skip('useConflictDetection with Registry Store', () => {
       )
     })
 
-    it('should expose acknowledgment state and methods', () => {
+    it('should expose conflict modal display method', () => {
       const {
-        shouldShowConflictModal,
-        shouldShowRedDot,
-        acknowledgedPackageIds,
-        dismissConflictModal,
-        dismissRedDotNotification,
-        acknowledgePackageConflict,
         shouldShowConflictModalAfterUpdate
       } = useConflictDetection()
 
-      expect(shouldShowConflictModal).toBeDefined()
-      expect(shouldShowRedDot).toBeDefined()
-      expect(acknowledgedPackageIds).toBeDefined()
-      expect(dismissConflictModal).toBeDefined()
-      expect(dismissRedDotNotification).toBeDefined()
-      expect(acknowledgePackageConflict).toBeDefined()
       expect(shouldShowConflictModalAfterUpdate).toBeDefined()
     })
 
@@ -981,18 +969,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
       expect(result).toBe(true) // Should show modal when conflicts exist and not dismissed
     })
 
-    it('should call acknowledgment methods when dismissing', () => {
-      const { dismissConflictModal, dismissRedDotNotification } =
-        useConflictDetection()
 
-      dismissConflictModal()
-      expect(mockAcknowledgment.dismissConflictModal).toHaveBeenCalled()
-
-      dismissRedDotNotification()
-      expect(mockAcknowledgment.dismissRedDotNotification).toHaveBeenCalled()
-    })
-
-    it('should acknowledge package conflicts with system version', async () => {
+    it('should detect system environment correctly', async () => {
       // Mock system environment
       mockSystemStatsStore.systemStats = {
         system: {
@@ -1002,20 +980,12 @@ describe.skip('useConflictDetection with Registry Store', () => {
         devices: []
       }
 
-      const { acknowledgePackageConflict, detectSystemEnvironment } =
-        useConflictDetection()
+      const { detectSystemEnvironment } = useConflictDetection()
 
-      // First detect system environment
-      await detectSystemEnvironment()
+      // Detect system environment
+      const environment = await detectSystemEnvironment()
 
-      // Then acknowledge conflict
-      acknowledgePackageConflict('TestPackage', 'os')
-
-      expect(mockAcknowledgment.acknowledgeConflict).toHaveBeenCalledWith(
-        'TestPackage',
-        'os',
-        '0.3.41' // System version from mock data
-      )
+      expect(environment.comfyui_version).toBe('0.3.41')
     })
   })
 
