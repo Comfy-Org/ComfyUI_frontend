@@ -105,11 +105,25 @@ export const useSubgraphNavigationStore = defineStore(
     /**
      * Update the navigation stack when the active subgraph changes.
      * @param subgraph The new active subgraph.
+     * @param prevSubgraph The previous active subgraph.
      */
-    const onNavigated = (subgraph: Subgraph | undefined) => {
+    const onNavigated = (
+      subgraph: Subgraph | undefined,
+      prevSubgraph: Subgraph | undefined
+    ) => {
+      // Save viewport state for the graph we're leaving
+      if (prevSubgraph) {
+        // Leaving a subgraph
+        saveViewport(prevSubgraph.id)
+      } else if (!prevSubgraph && subgraph) {
+        // Leaving root graph to enter a subgraph
+        saveViewport('root')
+      }
+
       const isInRootGraph = !subgraph
       if (isInRootGraph) {
         idStack.value.length = 0
+        restoreViewport('root')
         return
       }
 
@@ -121,6 +135,9 @@ export const useSubgraphNavigationStore = defineStore(
         // Treat as if opening a new subgraph
         idStack.value = [subgraph.id]
       }
+
+      // Always try to restore viewport for the target subgraph
+      restoreViewport(subgraph.id)
     }
 
     // Update navigation stack when opened subgraph changes (also triggers when switching workflows)

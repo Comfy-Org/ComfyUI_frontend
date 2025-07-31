@@ -7,17 +7,36 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflow } from '@/stores/workflowStore'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    graph: {
-      nodes: [],
-      subgraphs: new Map(),
-      getNodeById: vi.fn()
+vi.mock('@/scripts/app', () => {
+  const mockCanvas = {
+    subgraph: null,
+    ds: {
+      scale: 1,
+      offset: [0, 0],
+      state: {
+        scale: 1,
+        offset: [0, 0]
+      }
     },
-    canvas: {
-      subgraph: null
+    setDirty: vi.fn()
+  }
+
+  return {
+    app: {
+      graph: {
+        nodes: [],
+        subgraphs: new Map(),
+        getNodeById: vi.fn()
+      },
+      canvas: mockCanvas
     }
   }
+})
+
+vi.mock('@/stores/graphStore', () => ({
+  useCanvasStore: () => ({
+    getCanvas: () => (app as any).canvas
+  })
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({

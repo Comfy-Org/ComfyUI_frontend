@@ -190,14 +190,11 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockCanvas.ds.state.scale = 2
       mockCanvas.ds.state.offset = [100, 100]
 
-      // Manually save root viewport before navigating
-      navigationStore.saveViewport('root')
-
       // Navigate to subgraph
       workflowStore.activeSubgraph = subgraph1 as any
       await nextTick()
 
-      // Root viewport should have been saved
+      // Root viewport should have been saved automatically
       const rootViewport = navigationStore.viewportCache.get('root')
       expect(rootViewport).toBeDefined()
       expect(rootViewport?.scale).toBe(2)
@@ -207,23 +204,17 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockCanvas.ds.state.scale = 0.5
       mockCanvas.ds.state.offset = [-50, -50]
 
-      // Manually save subgraph viewport before navigating back
-      navigationStore.saveViewport('sub1')
-
       // Navigate back to root
       workflowStore.activeSubgraph = undefined
       await nextTick()
 
-      // Subgraph viewport should have been saved
+      // Subgraph viewport should have been saved automatically
       const sub1Viewport = navigationStore.viewportCache.get('sub1')
       expect(sub1Viewport).toBeDefined()
       expect(sub1Viewport?.scale).toBe(0.5)
       expect(sub1Viewport?.offset).toEqual([-50, -50])
 
-      // Manually restore root viewport
-      navigationStore.restoreViewport('root')
-
-      // Root viewport should be restored
+      // Root viewport should be restored automatically
       expect(mockCanvas.ds.scale).toBe(2)
       expect(mockCanvas.ds.offset).toEqual([100, 100])
     })
