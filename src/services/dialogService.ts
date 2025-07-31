@@ -28,6 +28,7 @@ import {
   type ShowDialogOptions,
   useDialogStore
 } from '@/stores/dialogStore'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -434,6 +435,7 @@ export const useDialogService = () => {
   function showNodeConflictDialog(
     options: {
       showAfterWhatsNew?: boolean
+      conflictedPackages?: ConflictDetectionResult[]
       dialogComponentProps?: DialogComponentProps
       buttonText?: string
       onButtonClick?: () => void
@@ -443,7 +445,8 @@ export const useDialogService = () => {
       dialogComponentProps,
       buttonText,
       onButtonClick,
-      showAfterWhatsNew
+      showAfterWhatsNew,
+      conflictedPackages
     } = options
 
     return dialogStore.showDialog({
@@ -467,7 +470,8 @@ export const useDialogService = () => {
         ...dialogComponentProps
       },
       props: {
-        showAfterWhatsNew
+        showAfterWhatsNew,
+        conflictedPackages
       },
       footerProps: {
         buttonText,

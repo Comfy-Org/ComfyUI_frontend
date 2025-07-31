@@ -907,9 +907,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
     })
 
     it('should expose conflict modal display method', () => {
-      const {
-        shouldShowConflictModalAfterUpdate
-      } = useConflictDetection()
+      const { shouldShowConflictModalAfterUpdate } = useConflictDetection()
 
       expect(shouldShowConflictModalAfterUpdate).toBeDefined()
     })
@@ -968,7 +966,6 @@ describe.skip('useConflictDetection with Registry Store', () => {
       const result = await shouldShowConflictModalAfterUpdate()
       expect(result).toBe(true) // Should show modal when conflicts exist and not dismissed
     })
-
 
     it('should detect system environment correctly', async () => {
       // Mock system environment
