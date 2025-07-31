@@ -205,7 +205,7 @@ export function findSubgraphByUuid(
   targetUuid: string
 ): Subgraph | null {
   // Check all nodes in the current graph
-  for (const node of graph._nodes) {
+  for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
@@ -235,7 +235,7 @@ export function findSubgraphPathById(
   while (stack.length > 0) {
     const { graph, path } = stack.pop()!
 
-    for (const node of graph._nodes) {
+    for (const node of graph.nodes) {
       if (node.isSubgraphNode?.() && node.subgraph) {
         const newPath = [...path, String(node.subgraph.id)]
         if (node.subgraph.id === targetId) {

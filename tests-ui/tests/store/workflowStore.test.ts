@@ -597,7 +597,8 @@ describe('useWorkflowStore', () => {
       // Setup mock graph structure with subgraphs
       const mockSubgraph = {
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        _nodes: []
+        rootGraph: null as any,
+        nodes: []
       }
 
       const mockNode = {
@@ -607,13 +608,15 @@ describe('useWorkflowStore', () => {
       }
 
       const mockRootGraph = {
-        _nodes: [mockNode],
+        nodes: [mockNode],
         subgraphs: new Map([[mockSubgraph.id, mockSubgraph]]),
         getNodeById: (id: string | number) => {
           if (String(id) === '123') return mockNode
           return null
         }
       }
+
+      mockSubgraph.rootGraph = mockRootGraph as any
 
       vi.mocked(comfyApp).graph = mockRootGraph as any
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph as any

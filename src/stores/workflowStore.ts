@@ -602,7 +602,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
         return path
       }
 
-      for (const node of graph._nodes) {
+      for (const node of graph.nodes) {
         if (node.isSubgraphNode() && node.subgraph) {
           const result = findSubgraphPath(node.subgraph, targetUuid, [
             ...path,

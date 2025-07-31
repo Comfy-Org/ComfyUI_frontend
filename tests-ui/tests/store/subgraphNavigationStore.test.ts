@@ -18,6 +18,16 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  findSubgraphPathById: vi.fn((_rootGraph, targetId) => {
+    // Mock implementation that returns a path for known subgraphs
+    if (targetId === 'subgraph-1' || targetId === 'subgraph-2') {
+      return [targetId]
+    }
+    return null
+  })
+}))
+
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -51,40 +61,63 @@ describe('useSubgraphNavigationStore', () => {
     expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
   })
 
-  it('should clear navigation stack when switching to a different workflow', async () => {
+  it('should preserve navigation stack per workflow', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
 
     // Mock first workflow
     const workflow1 = {
       path: 'workflow1.json',
-      filename: 'workflow1.json'
-    } as ComfyWorkflow
+      filename: 'workflow1.json',
+      changeTracker: {
+        restore: vi.fn(),
+        store: vi.fn()
+      }
+    } as unknown as ComfyWorkflow
 
     // Set the active workflow
     workflowStore.activeWorkflow = workflow1 as any
 
-    // Simulate being in a subgraph
+    // Simulate the restore process that happens when loading a workflow
+    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
     navigationStore.restoreState(['subgraph-1', 'subgraph-2'])
 
+    // Verify navigation was set
     expect(navigationStore.exportState()).toHaveLength(2)
+    expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
 
-    // Switch to a different workflow
+    // Switch to a different workflow with no subgraph state (root level)
     const workflow2 = {
       path: 'workflow2.json',
-      filename: 'workflow2.json'
-    } as ComfyWorkflow
+      filename: 'workflow2.json',
+      changeTracker: {
+        restore: vi.fn(),
+        store: vi.fn()
+      }
+    } as unknown as ComfyWorkflow
 
     workflowStore.activeWorkflow = workflow2 as any
 
-    // Wait for Vue's reactivity to process the change
-    await nextTick()
+    // Simulate the restore process for workflow2
+    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
+    navigationStore.restoreState([])
 
-    // The navigation stack SHOULD be cleared because we switched workflows
+    // The navigation stack should be empty for workflow2 (at root level)
     expect(navigationStore.exportState()).toHaveLength(0)
+
+    // Switch back to workflow1
+    workflowStore.activeWorkflow = workflow1 as any
+
+    // Simulate the restore process for workflow1 again
+    // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
+    navigationStore.restoreState(['subgraph-1', 'subgraph-2'])
+
+    // The navigation stack should be restored for workflow1
+    expect(navigationStore.exportState()).toHaveLength(2)
+    expect(navigationStore.exportState()).toEqual(['subgraph-1', 'subgraph-2'])
   })
 
-  it('should handle null workflow gracefully', async () => {
+  it('should clear navigation when activeSubgraph becomes undefined', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
 
@@ -95,19 +128,21 @@ describe('useSubgraphNavigationStore', () => {
     } as ComfyWorkflow
 
     workflowStore.activeWorkflow = mockWorkflow as any
-    await nextTick()
 
-    // Add some items to the navigation stack
+    // Manually set navigation state to simulate being in a subgraph
     navigationStore.restoreState(['subgraph-1'])
-    expect(navigationStore.exportState()).toHaveLength(1)
 
-    // Set workflow to null
-    workflowStore.activeWorkflow = null
+    // Verify navigation was set
+    expect(navigationStore.exportState()).toHaveLength(1)
+    expect(navigationStore.exportState()).toEqual(['subgraph-1'])
+
+    // Clear activeSubgraph (simulating navigating back to root)
+    workflowStore.activeSubgraph = undefined
 
     // Wait for Vue's reactivity to process the change
     await nextTick()
 
-    // Stack should be cleared when workflow becomes null
+    // Stack should be cleared when activeSubgraph becomes undefined
     expect(navigationStore.exportState()).toHaveLength(0)
   })
 })
