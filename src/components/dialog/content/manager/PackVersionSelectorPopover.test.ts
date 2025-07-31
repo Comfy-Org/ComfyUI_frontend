@@ -18,8 +18,8 @@ import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
 // Default mock versions for reference
 const defaultMockVersions = [
-  { 
-    version: '1.0.0', 
+  {
+    version: '1.0.0',
     createdAt: '2023-01-01',
     supported_os: ['windows', 'linux'],
     supported_accelerators: ['CPU'],
@@ -36,7 +36,7 @@ const defaultMockVersions = [
 const mockNodePack = {
   id: 'test-pack',
   name: 'Test Pack',
-  latest_version: { 
+  latest_version: {
     version: '1.0.0',
     supported_os: ['windows', 'linux'],
     supported_accelerators: ['CPU'],
@@ -471,7 +471,7 @@ describe('PackVersionSelectorPopover', () => {
 
       // Clear previous calls from component mounting/rendering
       mockCheckNodeCompatibility.mockClear()
-      
+
       // Trigger compatibility check by accessing getVersionCompatibility
       const vm = wrapper.vm as any
       vm.getVersionCompatibility('1.0.0')
@@ -581,7 +581,7 @@ describe('PackVersionSelectorPopover', () => {
 
       // Clear for next test call
       mockCheckNodeCompatibility.mockClear()
-      
+
       // Test nightly version
       vm.getVersionCompatibility('nightly')
       expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
@@ -595,7 +595,7 @@ describe('PackVersionSelectorPopover', () => {
         has_registry_data: true,
         latest_version: {
           supported_os: ['windows'],
-          supported_accelerators: ['CPU'], 
+          supported_accelerators: ['CPU'],
           supported_python_version: '>=3.8',
           is_banned: false,
           has_registry_data: true,
@@ -605,7 +605,6 @@ describe('PackVersionSelectorPopover', () => {
         }
       })
     })
-
 
     it('shows banned package warnings', async () => {
       // Set up the mock for versions
