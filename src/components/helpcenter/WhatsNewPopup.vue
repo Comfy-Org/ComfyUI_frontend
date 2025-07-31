@@ -90,7 +90,7 @@ const latestRelease = computed<ReleaseNote | null>(
 
 // Show popup when on latest version and not dismissed
 const shouldShow = computed(
-  () => true && !isDismissed.value
+  () => releaseStore.shouldShowPopup && !isDismissed.value
 )
 
 // Generate changelog URL with version anchor (language-aware)
