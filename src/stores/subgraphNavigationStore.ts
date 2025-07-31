@@ -141,7 +141,12 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     // Update navigation stack when opened subgraph changes (also triggers when switching workflows)
-    watch(() => workflowStore.activeSubgraph, onNavigated)
+    watch(
+      () => workflowStore.activeSubgraph,
+      (newValue, oldValue) => {
+        onNavigated(newValue, oldValue)
+      }
+    )
 
     return {
       activeSubgraph,
