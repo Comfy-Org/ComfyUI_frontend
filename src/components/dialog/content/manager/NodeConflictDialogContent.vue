@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[552px] max-h-[246px] flex flex-col">
+  <div class="w-[552px] flex flex-col">
     <ContentDivider :width="1" />
     <div class="px-4 py-6 w-full h-full flex flex-col gap-2">
       <!-- Description -->
