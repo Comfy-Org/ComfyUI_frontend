@@ -15,6 +15,20 @@ import { isAbortError } from '@/utils/typeGuardUtil'
 const GENERIC_SECURITY_ERR_MSG =
   'Forbidden: A security error has occurred. Please check the terminal logs'
 
+// TODO: These types will be auto-generated once ComfyUI-Manager types are updated
+// After the ComfyUI-Manager PR is merged and types are generated, replace these with the generated types
+interface ImportFailInfoBulkRequest {
+  cnr_ids?: string[]
+  urls?: string[]
+}
+
+interface ImportFailInfoItem {
+  error?: string | null
+  traceback?: string | null
+}
+
+type ImportFailInfoBulkResponse = Record<string, ImportFailInfoItem | null>
+
 /**
  * API routes for ComfyUI Manager
  */
@@ -32,6 +46,7 @@ enum ManagerRoute {
   GET_NODES = 'customnode/getmappings',
   GET_PACKS = 'customnode/getlist',
   IMPORT_FAIL_INFO = 'customnode/import_fail_info',
+  IMPORT_FAIL_INFO_BULK = 'v2/customnode/import_fail_info_bulk',
   REBOOT = 'manager/reboot'
 }
 
@@ -154,6 +169,35 @@ export const useComfyManagerService = () => {
     )
   }
 
+  /**
+   * Retrieves import failure information for multiple custom nodes in bulk
+   * @param params - Object containing arrays of cnr_ids or urls to check
+   * @param signal - Optional AbortSignal for request cancellation
+   * @returns Dictionary mapping each cnr_id/url to its import failure info (or null if no failure)
+   */
+  const getImportFailInfoBulk = async (
+    params: ImportFailInfoBulkRequest,
+    signal?: AbortSignal
+  ) => {
+    const errorContext = 'Fetching bulk import failure information'
+    const routeSpecificErrors = {
+      400: 'Bad Request: Either cnr_ids or urls field is required'
+    }
+
+    // Validate that at least one field is provided
+    if (!params.cnr_ids?.length && !params.urls?.length) {
+      throw new Error('Either cnr_ids or urls field is required')
+    }
+
+    return executeRequest<ImportFailInfoBulkResponse>(
+      () =>
+        managerApiClient.post(ManagerRoute.IMPORT_FAIL_INFO_BULK, params, {
+          signal
+        }),
+      { errorContext, routeSpecificErrors }
+    )
+  }
+
   const installPack = async (
     params: InstallPackParams,
     signal?: AbortSignal
@@ -260,6 +304,7 @@ export const useComfyManagerService = () => {
     // Pack management
     listInstalledPacks,
     getImportFailInfo,
+    getImportFailInfoBulk,
     installPack,
     uninstallPack,
     enablePack: installPack, // enable is done via install
