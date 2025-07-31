@@ -124,11 +124,8 @@ const handleWhatsNewDismissed = async () => {
  * Show the node conflict dialog with current conflict data
  */
 const showConflictModal = () => {
-  const conflictData = {
-    conflictedPackages: conflictDetection.conflictedPackages.value
-  }
   showNodeConflictDialog({
-    ...conflictData,
+    showAfterWhatsNew: true,
     dialogComponentProps: {
       onClose: () => {
         markConflictsAsSeen()

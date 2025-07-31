@@ -1,15 +1,66 @@
 <template>
-  <div class="w-[552px] max-h-[246px] flex flex-col">
+  <div class="w-[552px] flex flex-col">
     <ContentDivider :width="1" />
     <div class="px-4 py-6 w-full h-full flex flex-col gap-2">
       <!-- Description -->
-      <!-- <div>
-        <p class="text-sm leading-4 text-gray-100 m-0 mb-4">
+      <div v-if="showAfterWhatsNew">
+        <p
+          class="text-sm leading-4 text-neutral-800 dark-theme:text-white m-0 mb-4"
+        >
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
         </p>
-      </div> -->
+      </div>
+
+      <!-- Import Failed List Wrapper -->
+      <div
+        v-if="importFailedConflicts.length > 0"
+        class="w-full flex flex-col bg-neutral-200 dark-theme:bg-black min-h-8 rounded-lg"
+      >
+        <div
+          class="w-full h-8 flex items-center justify-between gap-2 pl-4"
+          @click="toggleImportFailedPanel"
+        >
+          <div class="flex-1 flex">
+            <span
+              class="text-xs font-bold text-yellow-600 dark-theme:text-yellow-400 mr-2"
+              >{{ importFailedConflicts.length }}</span
+            >
+            <span
+              class="text-xs font-bold text-neutral-600 dark-theme:text-white"
+              >{{ $t('manager.conflicts.importFailedExtensions') }}</span
+            >
+          </div>
+          <div>
+            <Button
+              :icon="
+                importFailedExpanded
+                  ? 'pi pi-chevron-down text-xs'
+                  : 'pi pi-chevron-right text-xs'
+              "
+              text
+              class="text-neutral-600 dark-theme:text-neutral-300 !bg-transparent"
+            />
+          </div>
+        </div>
+        <!-- Import failed list -->
+        <div
+          v-if="importFailedExpanded"
+          class="py-2 px-4 flex flex-col gap-2.5 max-h-[142px] overflow-y-auto scrollbar-hide"
+        >
+          <div
+            v-for="(packageName, i) in importFailedConflicts"
+            :key="i"
+            class="flex items-center justify-between h-6 px-4 flex-shrink-0 conflict-list-item"
+          >
+            <span class="text-xs text-neutral-600 dark-theme:text-neutral-300">
+              {{ packageName }}
+            </span>
+            <span class="pi pi-info-circle text-sm"></span>
+          </div>
+        </div>
+      </div>
       <!-- Conflict List Wrapper -->
       <div
         class="w-full flex flex-col bg-neutral-200 dark-theme:bg-black min-h-8 rounded-lg"
@@ -111,48 +162,66 @@
 </template>
 
 <script setup lang="ts">
+import { filter, flatMap, map, some } from 'lodash'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
 interface Props {
-  conflicts?: ConflictDetectionResult[]
-  conflictedPackages?: ConflictDetectionResult[]
+  showAfterWhatsNew?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  conflicts: () => [],
-  conflictedPackages: () => []
+const { showAfterWhatsNew } = withDefaults(defineProps<Props>(), {
+  showAfterWhatsNew: false
 })
 
 const { t } = useI18n()
+const { conflictedPackages } = useConflictDetection()
 
 const conflictsExpanded = ref<boolean>(false)
 const extensionsExpanded = ref<boolean>(false)
+const importFailedExpanded = ref<boolean>(false)
 
-// Use conflictedPackages if provided, otherwise fallback to conflicts
-const conflictData = computed(() =>
-  props.conflictedPackages.length > 0
-    ? props.conflictedPackages
-    : props.conflicts
-)
+const conflictData = computed(() => conflictedPackages.value)
 
-const allConflictDetails = computed(() =>
-  conflictData.value.flatMap((result) => result.conflicts)
-)
+const allConflictDetails = computed(() => {
+  const allConflicts = flatMap(conflictData.value, (result) => result.conflicts)
+  return filter(allConflicts, (conflict) => conflict.type !== 'import_failed')
+})
+
+const packagesWithImportFailed = computed(() => {
+  return filter(conflictData.value, (result) =>
+    some(result.conflicts, (conflict) => conflict.type === 'import_failed')
+  )
+})
+
+const importFailedConflicts = computed(() => {
+  return map(
+    packagesWithImportFailed.value,
+    (result) => result.package_name || result.package_id
+  )
+})
+
+const toggleImportFailedPanel = () => {
+  importFailedExpanded.value = !importFailedExpanded.value
+  conflictsExpanded.value = false
+  extensionsExpanded.value = false
+}
 
 const toggleConflictsPanel = () => {
   conflictsExpanded.value = !conflictsExpanded.value
   extensionsExpanded.value = false
+  importFailedExpanded.value = false
 }
 
 const toggleExtensionsPanel = () => {
   extensionsExpanded.value = !extensionsExpanded.value
   conflictsExpanded.value = false
+  importFailedExpanded.value = false
 }
 </script>
 <style scoped>

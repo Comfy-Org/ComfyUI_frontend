@@ -18,7 +18,6 @@
 import { inject, ref } from 'vue'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -42,7 +41,6 @@ const { nodePacks, variant, label, hasConflict, conflictInfo } = defineProps<{
 
 const isInstalling = inject(IsInstallingKey, ref(false))
 const managerStore = useComfyManagerStore()
-const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
 const { showNodeConflictDialog } = useDialogService()
 
 const createPayload = (
@@ -74,11 +72,7 @@ const installPack = (item: NodePack) =>
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
 
-  if (
-    hasConflict &&
-    conflictInfo &&
-    !acknowledgmentState.value.modal_dismissed
-  ) {
+  if (hasConflict && conflictInfo) {
     const conflictedPackages: ConflictDetectionResult[] = nodePacks.map(
       (pack) => ({
         package_id: pack.id || '',
@@ -96,11 +90,6 @@ const installAllPacks = async () => {
         // Proceed with installation
         isInstalling.value = true
         await performInstallation(nodePacks)
-      },
-      dialogComponentProps: {
-        onClose: () => {
-          markConflictsAsSeen()
-        }
       }
     })
     return

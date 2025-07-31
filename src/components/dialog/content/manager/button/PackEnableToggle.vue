@@ -7,7 +7,7 @@
         showDelay: 300
       }"
       class="flex items-center justify-center w-6 h-6 cursor-pointer"
-      @click="showConflictModal"
+      @click="showConflictModal(true)"
     >
       <i class="pi pi-exclamation-triangle text-yellow-500 text-xl"></i>
     </div>
@@ -70,8 +70,10 @@ const canToggleDirectly = computed(() => {
   )
 })
 
-const showConflictModal = () => {
-  if (packageConflict.value && !acknowledgmentState.value.modal_dismissed) {
+const showConflictModal = (skipModalDismissed: boolean) => {
+  let modal_dismissed = acknowledgmentState.value.modal_dismissed
+  if (skipModalDismissed) modal_dismissed = false
+  if (packageConflict.value && !modal_dismissed) {
     showNodeConflictDialog({
       conflictedPackages: [packageConflict.value],
       buttonText: !isEnabled.value

@@ -153,7 +153,10 @@
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
-    "failed": "Failed ({count})",
+    "failed": "Failed",
+    "failedToInstall": "Failed to Install",
+    "installError": "Install Error",
+    "importFailedGenericError": "Package failed to import. Check the console for more details.",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
     "installationQueue": "Installation Queue",
@@ -196,7 +199,8 @@
       "deleted": "Deleted",
       "banned": "Banned",
       "unknown": "Unknown",
-      "conflicting": "Conflicting"
+      "conflicting": "Conflicting",
+      "importFailed": "Install Error"
     },
     "sort": {
       "downloads": "Most Popular",
@@ -215,6 +219,7 @@
       "info": "If you continue with the update, the conflicting extensions will be disabled automatically. You can review and manage them anytime in the ComfyUI Manager.",
       "extensionAtRisk": "Extension at Risk",
       "conflicts": "Conflicts",
+      "importFailedExtensions": "Import Failed Extensions",
       "conflictInfoTitle": "Why is this happening?",
       "installAnyway": "Install Anyway",
       "enableAnyway": "Enable Anyway",
@@ -231,7 +236,8 @@
         "accelerator": "GPU/Accelerator not supported (available: {current}, required: {required})",
         "generic": "Compatibility issue (current: {current}, required: {required})",
         "banned": "This package is banned for security reasons",
-        "pending": "Security verification pending - compatibility cannot be verified"
+        "pending": "Security verification pending - compatibility cannot be verified",
+        "import_failed": "Import Failed"
       },
       "warningTooltip": "This package may have compatibility issues with your current environment"
     }

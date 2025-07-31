@@ -432,14 +432,19 @@ export const useDialogService = () => {
   }
 
   function showNodeConflictDialog(
-    options: InstanceType<typeof NodeConflictDialogContent>['$props'] & {
+    options: {
+      showAfterWhatsNew?: boolean
       dialogComponentProps?: DialogComponentProps
       buttonText?: string
       onButtonClick?: () => void
     } = {}
   ) {
-    const { dialogComponentProps, buttonText, onButtonClick, ...props } =
-      options
+    const {
+      dialogComponentProps,
+      buttonText,
+      onButtonClick,
+      showAfterWhatsNew
+    } = options
 
     return dialogStore.showDialog({
       key: 'global-node-conflict',
@@ -461,7 +466,9 @@ export const useDialogService = () => {
         },
         ...dialogComponentProps
       },
-      props,
+      props: {
+        showAfterWhatsNew
+      },
       footerProps: {
         buttonText,
         onButtonClick
