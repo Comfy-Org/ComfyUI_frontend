@@ -59,6 +59,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import {
@@ -124,7 +125,7 @@ export class ComfyApp {
   #queueItems: {
     number: number
     batchCount: number
-    queueNodeIds?: NodeId[]
+    queueNodeIds?: NodeExecutionId[]
   }[] = []
   /**
    * If the queue is currently being processed
@@ -1207,20 +1208,16 @@ export class ComfyApp {
     })
   }
 
-  async graphToPrompt(
-    graph = this.graph,
-    options: { queueNodeIds?: NodeId[] } = {}
-  ) {
+  async graphToPrompt(graph = this.graph) {
     return graphToPrompt(graph, {
-      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave'),
-      queueNodeIds: options.queueNodeIds
+      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
     })
   }
 
   async queuePrompt(
     number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeId[]
+    queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
     this.#queueItems.push({ number, batchCount, queueNodeIds })
 
@@ -1249,11 +1246,13 @@ export class ComfyApp {
             executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
           }
 
-          const p = await this.graphToPrompt(this.graph, { queueNodeIds })
+          const p = await this.graphToPrompt(this.graph)
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
-            const res = await api.queuePrompt(number, p)
+            const res = await api.queuePrompt(number, p, {
+              partialExecutionTargets: queueNodeIds
+            })
             delete api.authToken
             delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null

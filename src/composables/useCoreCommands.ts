@@ -29,7 +29,11 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { getAllNonIoNodesInSubgraph } from '@/utils/graphTraversalUtil'
+import {
+  getAllNonIoNodesInSubgraph,
+  getExecutionIdsForSelectedNodes
+} from '@/utils/graphTraversalUtil'
+import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -363,10 +367,10 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.19.6',
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
-        const queueNodeIds = getSelectedNodes()
-          .filter((node) => node.constructor.nodeData?.output_node)
-          .map((node) => node.id)
-        if (queueNodeIds.length === 0) {
+        const selectedNodes = getSelectedNodes()
+        const selectedOutputNodes = filterOutputNodes(selectedNodes)
+
+        if (selectedOutputNodes.length === 0) {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToQueue'),
@@ -375,7 +379,11 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        await app.queuePrompt(0, batchCount, queueNodeIds)
+
+        // Get execution IDs for all selected output nodes and their descendants
+        const executionIds =
+          getExecutionIdsForSelectedNodes(selectedOutputNodes)
+        await app.queuePrompt(0, batchCount, executionIds)
       }
     },
     {
