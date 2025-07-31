@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { inject, ref, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -47,14 +47,18 @@ import PackUninstallButton from '@/components/dialog/content/manager/button/Pack
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePacks, hasConflict } = defineProps<{
   nodePacks: components['schemas']['Node'][]
   hasConflict?: boolean
-  importFailed?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()
+
+// Inject import failed context from parent
+const importFailedContext = inject(ImportFailedKey)
+const importFailed = importFailedContext?.importFailed
 
 const isAllInstalled = ref(false)
 watch(

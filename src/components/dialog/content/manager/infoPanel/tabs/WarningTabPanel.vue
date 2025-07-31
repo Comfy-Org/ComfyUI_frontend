@@ -26,43 +26,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-import { useDialogService } from '@/services/dialogService'
-import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
+import { t } from '@/i18n'
+import { components } from '@/types/comfyRegistryTypes'
+import { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
-const { conflictResult } = defineProps<{
-  conflictResult?: ConflictDetectionResult | null
+const { nodePack, conflictResult } = defineProps<{
+  nodePack: components['schemas']['Node']
+  conflictResult: ConflictDetectionResult | null
 }>()
 
-const { t } = useI18n()
-const { showErrorDialog } = useDialogService()
-
-const importFailedInfo = computed(() => {
-  if (!conflictResult?.conflicts) return null
-
-  const importFailedConflicts = conflictResult.conflicts.filter(
-    (item) => item.type === 'import_failed'
-  )
-
-  return importFailedConflicts.length > 0 ? importFailedConflicts : null
-})
-
-const showImportFailedDialog = () => {
-  if (importFailedInfo.value) {
-    const errorMessage =
-      importFailedInfo.value
-        .map((conflict) => conflict.required_value)
-        .filter(Boolean)
-        .join('\n') || t('manager.importFailedGenericError')
-
-    const error = new Error(errorMessage)
-
-    showErrorDialog(error, {
-      title: t('manager.failedToInstall'),
-      reportType: 'importFailedError'
-    })
-  }
-}
+const packageId = computed(() => nodePack?.id || '')
+const { importFailedInfo, showImportFailedDialog } =
+  useImportFailedDetection(packageId)
 </script>

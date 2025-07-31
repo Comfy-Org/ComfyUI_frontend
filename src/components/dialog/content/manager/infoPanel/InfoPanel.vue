@@ -5,7 +5,6 @@
         <InfoPanelHeader
           :node-packs="[nodePack]"
           :has-conflict="hasCompatibilityIssues"
-          :import-failed="importFailed"
         />
       </div>
       <div
@@ -37,7 +36,6 @@
                 nodePack.status as components['schemas']['NodeVersionStatus']
               "
               :has-compatibility-issues="hasCompatibilityIssues"
-              :import-failed="importFailed"
             />
           </MetadataRow>
           <MetadataRow :label="t('manager.version')">
@@ -49,7 +47,6 @@
             :node-pack="nodePack"
             :has-compatibility-issues="hasCompatibilityIssues"
             :conflict-result="conflictResult"
-            :import-failed="importFailed"
           />
         </div>
       </div>
@@ -74,11 +71,13 @@ import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoP
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 interface InfoItem {
   key: string
@@ -132,13 +131,13 @@ const hasCompatibilityIssues = computed(() => {
   return conflictResult.value?.has_conflict
 })
 
-const importFailed = computed(() => {
-  if (!nodePack.id || !isInstalled.value) return false
+const packageId = computed(() => nodePack.id || '')
+const { importFailed, showImportFailedDialog } =
+  useImportFailedDetection(packageId)
 
-  const conflicts = getConflictsForPackageByID(nodePack.id)
-  return (
-    conflicts?.conflicts.some((item) => item.type === 'import_failed') ?? false
-  )
+provide(ImportFailedKey, {
+  importFailed,
+  showImportFailedDialog
 })
 
 const infoItems = computed<InfoItem[]>(() => [

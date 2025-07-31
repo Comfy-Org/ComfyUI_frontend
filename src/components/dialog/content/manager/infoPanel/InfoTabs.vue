@@ -43,20 +43,24 @@ import TabList from 'primevue/tablist'
 import TabPanel from 'primevue/tabpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, inject, ref, watchEffect } from 'vue'
 
 import DescriptionTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.vue'
 import NodesTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/NodesTabPanel.vue'
 import WarningTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/WarningTabPanel.vue'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePack, hasCompatibilityIssues, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']
   hasCompatibilityIssues?: boolean
   conflictResult?: ConflictDetectionResult | null
-  importFailed?: boolean
 }>()
+
+// Inject import failed context from parent
+const importFailedContext = inject(ImportFailedKey)
+const importFailed = importFailedContext?.importFailed
 
 const nodeNames = computed(() => {
   // @ts-expect-error comfy_nodes is an Algolia-specific field

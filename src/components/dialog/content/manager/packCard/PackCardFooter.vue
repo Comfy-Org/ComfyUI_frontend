@@ -44,7 +44,7 @@ import { useI18n } from 'vue-i18n'
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
-import { useDialogService } from '@/services/dialogService'
+import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -64,40 +64,14 @@ const formattedDownloads = computed(() =>
 
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { checkNodeCompatibility } = useConflictDetection()
-const { showErrorDialog } = useDialogService()
 
-const conflicts = computed(() => getConflictsForPackageByID(nodePack.id!))
+const { importFailed, showImportFailedDialog } = useImportFailedDetection(
+  nodePack.id
+)
 
-const importFailedInfo = computed(() => {
-  if (!nodePack.id || !conflicts.value) return null
-
-  const importFailedConflicts = conflicts.value.conflicts.filter(
-    (item) => item.type === 'import_failed'
-  )
-
-  return importFailedConflicts.length > 0 ? importFailedConflicts : null
-})
-
-const importFailed = computed(() => {
-  return importFailedInfo.value !== null
-})
-
-const showImportFailedDialog = () => {
-  if (importFailedInfo.value) {
-    const errorMessage =
-      importFailedInfo.value
-        .map((conflict) => conflict.required_value)
-        .filter(Boolean)
-        .join('\n') || t('manager.importFailedGenericError')
-
-    const error = new Error(errorMessage)
-
-    showErrorDialog(error, {
-      title: t('manager.failedToInstall'),
-      reportType: 'importFailedError'
-    })
-  }
-}
+const conflicts = computed(
+  () => getConflictsForPackageByID(nodePack.id!) || null
+)
 
 const installedPackHasConflict = computed(() => {
   if (!nodePack.id) return false
