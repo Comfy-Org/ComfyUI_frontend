@@ -59,6 +59,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import {
@@ -127,7 +128,7 @@ export class ComfyApp {
   #queueItems: {
     number: number
     batchCount: number
-    queueNodeIds?: NodeId[]
+    queueNodeIds?: NodeExecutionId[]
   }[] = []
   /**
    * If the queue is currently being processed
@@ -1248,7 +1249,7 @@ export class ComfyApp {
   async queuePrompt(
     number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeId[]
+    queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
     this.#queueItems.push({ number, batchCount, queueNodeIds })
 
@@ -1283,11 +1284,9 @@ export class ComfyApp {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
             // Pass queueNodeIds as partial_execution_targets to backend
-            const res = await api.queuePrompt(
-              number,
-              p,
-              queueNodeIds?.map(String)
-            )
+            const res = await api.queuePrompt(number, p, {
+              partialExecutionTargets: queueNodeIds
+            })
             delete api.authToken
             delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null

@@ -33,6 +33,7 @@ import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
 } from '@/utils/graphTraversalUtil'
+import { getSelectedOutputNodes } from '@/utils/nodeFilterUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -366,9 +367,8 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.19.6',
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
-        const selectedOutputNodes = getSelectedNodes().filter(
-          (node) => node.constructor.nodeData?.output_node
-        )
+        const selectedNodes = getSelectedNodes()
+        const selectedOutputNodes = getSelectedOutputNodes(selectedNodes)
 
         if (selectedOutputNodes.length === 0) {
           toastStore.add({

@@ -35,12 +35,13 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
-  partial_execution_targets?: string[]
+  partial_execution_targets?: NodeExecutionId[]
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -79,6 +80,18 @@ interface QueuePromptRequestBody {
   }
   front?: boolean
   number?: number
+}
+
+/**
+ * Options for queuePrompt method
+ */
+interface QueuePromptOptions {
+  /**
+   * Optional list of node execution IDs to execute (partial execution).
+   * Each ID represents a node's position in nested subgraphs.
+   * Format: Colon-separated path of node IDs (e.g., "123:456:789")
+   */
+  partialExecutionTargets?: NodeExecutionId[]
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -611,22 +624,22 @@ export class ComfyApi extends EventTarget {
   /**
    * Queues a prompt to be executed
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
-   * @param {object} prompt The prompt data to queue
-   * @param {string[]} partialExecutionTargets Optional list of node IDs to execute (partial execution)
+   * @param {object} data The prompt data to queue
+   * @param {QueuePromptOptions} options Optional execution options
    * @throws {PromptExecutionError} If the prompt fails to execute
    */
   async queuePrompt(
     number: number,
     data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON },
-    partialExecutionTargets?: string[]
+    options?: QueuePromptOptions
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
 
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
       prompt,
-      ...(partialExecutionTargets && {
-        partial_execution_targets: partialExecutionTargets
+      ...(options?.partialExecutionTargets && {
+        partial_execution_targets: options.partialExecutionTargets
       }),
       extra_data: {
         auth_token_comfy_org: this.authToken,

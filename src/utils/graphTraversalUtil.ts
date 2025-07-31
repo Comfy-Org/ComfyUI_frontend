@@ -1,6 +1,6 @@
 import type { LGraph, LGraphNode, Subgraph } from '@comfyorg/litegraph'
 
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
@@ -436,11 +436,11 @@ export function collectFromNodes<T, C>(
  */
 export function getExecutionIdsForSelectedNodes(
   selectedNodes: LGraphNode[]
-): string[] {
+): NodeExecutionId[] {
   return collectFromNodes(
     selectedNodes,
     // Collector: build execution ID for each node
-    (node, parentExecutionId: string) => {
+    (node, parentExecutionId: string): NodeExecutionId => {
       const nodeId = String(node.id)
       return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
     },

@@ -1068,6 +1068,120 @@ describe('graphTraversalUtil', () => {
 
         expect(executionIds).toEqual(['1'])
       })
+
+      it('should handle nodes with very long execution paths', () => {
+        // Create a chain of 10 nested subgraphs
+        let currentSubgraph = createMockSubgraph('deep-10', [
+          createMockNode('10')
+        ])
+
+        for (let i = 9; i >= 1; i--) {
+          const node = createMockNode(`${i}0`, {
+            isSubgraph: true,
+            subgraph: currentSubgraph
+          })
+          currentSubgraph = createMockSubgraph(`deep-${i}`, [node])
+        }
+
+        const topNode = createMockNode('1', {
+          isSubgraph: true,
+          subgraph: currentSubgraph
+        })
+
+        const executionIds = getExecutionIdsForSelectedNodes([topNode])
+
+        expect(executionIds).toHaveLength(11)
+        expect(executionIds[0]).toBe('1')
+        expect(executionIds[10]).toBe('1:10:20:30:40:50:60:70:80:90:10')
+      })
+
+      it('should handle duplicate node IDs in different subgraphs', () => {
+        // Create two subgraphs with nodes that have the same IDs
+        const subgraph1 = createMockSubgraph('sub1-uuid', [
+          createMockNode('100'),
+          createMockNode('101')
+        ])
+
+        const subgraph2 = createMockSubgraph('sub2-uuid', [
+          createMockNode('100'), // Same ID as in subgraph1
+          createMockNode('101') // Same ID as in subgraph1
+        ])
+
+        const nodes = [
+          createMockNode('1', { isSubgraph: true, subgraph: subgraph1 }),
+          createMockNode('2', { isSubgraph: true, subgraph: subgraph2 })
+        ]
+
+        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+
+        expect(executionIds).toEqual([
+          '2',
+          '2:100',
+          '2:101',
+          '1',
+          '1:100',
+          '1:101'
+        ])
+      })
+
+      it('should handle subgraphs with many children efficiently', () => {
+        // Create a subgraph with 100 nodes
+        const manyNodes = []
+        for (let i = 0; i < 100; i++) {
+          manyNodes.push(createMockNode(`child-${i}`))
+        }
+        const bigSubgraph = createMockSubgraph('big-uuid', manyNodes)
+
+        const node = createMockNode('parent', {
+          isSubgraph: true,
+          subgraph: bigSubgraph
+        })
+
+        const start = performance.now()
+        const executionIds = getExecutionIdsForSelectedNodes([node])
+        const duration = performance.now() - start
+
+        expect(executionIds).toHaveLength(101)
+        expect(executionIds[0]).toBe('parent')
+        expect(executionIds[100]).toBe('parent:child-0') // Due to DFS LIFO order
+
+        // Should complete quickly even with many nodes
+        expect(duration).toBeLessThan(50)
+      })
+
+      it('should handle selection of nodes at different depths', () => {
+        // Create a complex nested structure
+        const deepNode = createMockNode('300')
+        const deepSubgraph = createMockSubgraph('deep-uuid', [deepNode])
+
+        const midNode1 = createMockNode('201')
+        const midNode2 = createMockNode('202', {
+          isSubgraph: true,
+          subgraph: deepSubgraph
+        })
+        const midSubgraph = createMockSubgraph('mid-uuid', [midNode1, midNode2])
+
+        const topNode = createMockNode('100', {
+          isSubgraph: true,
+          subgraph: midSubgraph
+        })
+
+        // Select nodes at different nesting levels
+        const selectedNodes = [
+          createMockNode('1'), // Root level
+          topNode, // Contains subgraph
+          createMockNode('2') // Root level
+        ]
+
+        const executionIds = getExecutionIdsForSelectedNodes(selectedNodes)
+
+        expect(executionIds).toContain('1')
+        expect(executionIds).toContain('2')
+        expect(executionIds).toContain('100')
+        expect(executionIds).toContain('100:201')
+        expect(executionIds).toContain('100:202')
+        expect(executionIds).toContain('100:202:300')
+      })
     })
   })
 })
