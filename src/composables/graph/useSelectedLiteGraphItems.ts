@@ -1,5 +1,4 @@
 import { Positionable, Reroute } from '@comfyorg/litegraph'
-import { ComputedRef, computed } from 'vue'
 
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -38,39 +37,34 @@ export function useSelectedLiteGraphItems() {
   }
 
   /**
-   * Get the raw selected items from the canvas.
-   * Note: This returns the store's reactive array which is updated via updateSelectedItems().
+   * Get the filtered selected items from the canvas.
+   * @returns The filtered Set of selected items.
    */
-  const selectedItems: ComputedRef<Positionable[]> = computed(() => {
-    return canvasStore.selectedItems
-  })
-
-  /**
-   * Get the filtered selected items that should be included in selection operations.
-   */
-  const selectableItems: ComputedRef<Set<Positionable>> = computed(() => {
-    return filterSelectableItems(new Set(selectedItems.value))
-  })
+  const getSelectableItems = (): Set<Positionable> => {
+    const { selectedItems } = canvasStore.getCanvas()
+    return filterSelectableItems(selectedItems)
+  }
 
   /**
    * Check if there are any selectable items.
+   * @returns True if there are selectable items, false otherwise.
    */
-  const hasSelectableItems: ComputedRef<boolean> = computed(() => {
-    return selectableItems.value.size > 0
-  })
+  const hasSelectableItems = (): boolean => {
+    return getSelectableItems().size > 0
+  }
 
   /**
    * Check if there are multiple selectable items.
+   * @returns True if there are multiple selectable items, false otherwise.
    */
-  const hasMultipleSelectableItems: ComputedRef<boolean> = computed(() => {
-    return selectableItems.value.size > 1
-  })
+  const hasMultipleSelectableItems = (): boolean => {
+    return getSelectableItems().size > 1
+  }
 
   return {
     isIgnoredItem,
     filterSelectableItems,
-    selectedItems,
-    selectableItems,
+    getSelectableItems,
     hasSelectableItems,
     hasMultipleSelectableItems
   }

@@ -1,7 +1,6 @@
 import { Positionable, Reroute } from '@comfyorg/litegraph'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markRaw } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/graph/useSelectedLiteGraphItems'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -46,13 +45,19 @@ class MockReroute extends Reroute implements Positionable {
 
 describe('useSelectedLiteGraphItems', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
+  let mockCanvas: any
 
   beforeEach(() => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
 
-    // Initialize selectedItems as empty array
-    canvasStore.selectedItems = []
+    // Mock canvas with selectedItems Set
+    mockCanvas = {
+      selectedItems: new Set<Positionable>()
+    }
+
+    // Mock getCanvas to return our mock canvas
+    vi.spyOn(canvasStore, 'getCanvas').mockReturnValue(mockCanvas)
   })
 
   describe('isIgnoredItem', () => {
@@ -109,118 +114,103 @@ describe('useSelectedLiteGraphItems', () => {
     })
   })
 
-  describe('computed properties', () => {
-    it('selectedItems should return all selected items from store', () => {
-      const { selectedItems } = useSelectedLiteGraphItems()
-      const node = markRaw(new MockNode())
-      const reroute = markRaw(new MockReroute())
+  describe('methods', () => {
+    it('getSelectableItems should return only non-ignored items', () => {
+      const { getSelectableItems } = useSelectedLiteGraphItems()
+      const node1 = new MockNode()
+      const node2 = new MockNode()
+      const reroute = new MockReroute()
 
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node, reroute]
+      mockCanvas.selectedItems.add(node1)
+      mockCanvas.selectedItems.add(node2)
+      mockCanvas.selectedItems.add(reroute)
 
-      expect(selectedItems.value.length).toBe(2)
-      expect(selectedItems.value[0]).toBe(node)
-      expect(selectedItems.value[1]).toBe(reroute)
-    })
-
-    it('selectableItems should return only non-ignored items', () => {
-      const { selectableItems } = useSelectedLiteGraphItems()
-      const node1 = markRaw(new MockNode())
-      const node2 = markRaw(new MockNode())
-      const reroute = markRaw(new MockReroute())
-
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node1, node2, reroute]
-
-      expect(selectableItems.value.size).toBe(2)
-      const selectableArray = Array.from(selectableItems.value)
-      expect(selectableArray).toContain(node1)
-      expect(selectableArray).toContain(node2)
-      expect(selectableArray).not.toContain(reroute)
+      const selectableItems = getSelectableItems()
+      expect(selectableItems.size).toBe(2)
+      // @ts-expect-error - Test mock
+      expect(selectableItems.has(node1)).toBe(true)
+      // @ts-expect-error - Test mock
+      expect(selectableItems.has(node2)).toBe(true)
+      expect(selectableItems.has(reroute)).toBe(false)
     })
 
     it('hasSelectableItems should be true when there are selectable items', () => {
       const { hasSelectableItems } = useSelectedLiteGraphItems()
-      const node = markRaw(new MockNode())
+      const node = new MockNode()
 
-      expect(hasSelectableItems.value).toBe(false)
+      expect(hasSelectableItems()).toBe(false)
 
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node]
-      expect(hasSelectableItems.value).toBe(true)
+      mockCanvas.selectedItems.add(node)
+      expect(hasSelectableItems()).toBe(true)
     })
 
     it('hasSelectableItems should be false when only ignored items are selected', () => {
       const { hasSelectableItems } = useSelectedLiteGraphItems()
-      const reroute = markRaw(new MockReroute())
+      const reroute = new MockReroute()
 
-      canvasStore.selectedItems = [reroute]
-      expect(hasSelectableItems.value).toBe(false)
+      mockCanvas.selectedItems.add(reroute)
+      expect(hasSelectableItems()).toBe(false)
     })
 
     it('hasMultipleSelectableItems should be true when there are 2+ selectable items', () => {
       const { hasMultipleSelectableItems } = useSelectedLiteGraphItems()
-      const node1 = markRaw(new MockNode())
-      const node2 = markRaw(new MockNode())
+      const node1 = new MockNode()
+      const node2 = new MockNode()
 
-      expect(hasMultipleSelectableItems.value).toBe(false)
+      expect(hasMultipleSelectableItems()).toBe(false)
 
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node1]
-      expect(hasMultipleSelectableItems.value).toBe(false)
+      mockCanvas.selectedItems.add(node1)
+      expect(hasMultipleSelectableItems()).toBe(false)
 
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node1, node2]
-      expect(hasMultipleSelectableItems.value).toBe(true)
+      mockCanvas.selectedItems.add(node2)
+      expect(hasMultipleSelectableItems()).toBe(true)
     })
 
     it('hasMultipleSelectableItems should not count ignored items', () => {
       const { hasMultipleSelectableItems } = useSelectedLiteGraphItems()
-      const node = markRaw(new MockNode())
-      const reroute1 = markRaw(new MockReroute())
-      const reroute2 = markRaw(new MockReroute())
+      const node = new MockNode()
+      const reroute1 = new MockReroute()
+      const reroute2 = new MockReroute()
 
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node, reroute1, reroute2]
+      mockCanvas.selectedItems.add(node)
+      mockCanvas.selectedItems.add(reroute1)
+      mockCanvas.selectedItems.add(reroute2)
 
       // Even though there are 3 items total, only 1 is selectable
-      expect(hasMultipleSelectableItems.value).toBe(false)
+      expect(hasMultipleSelectableItems()).toBe(false)
     })
   })
 
-  describe('reactivity', () => {
-    it('computed properties should update when selectedItems change', () => {
+  describe('dynamic behavior', () => {
+    it('methods should reflect changes when selectedItems change', () => {
       const {
-        selectableItems,
+        getSelectableItems,
         hasSelectableItems,
         hasMultipleSelectableItems
       } = useSelectedLiteGraphItems()
-      const node1 = markRaw(new MockNode())
-      const node2 = markRaw(new MockNode())
+      const node1 = new MockNode()
+      const node2 = new MockNode()
 
-      expect(hasSelectableItems.value).toBe(false)
-      expect(hasMultipleSelectableItems.value).toBe(false)
+      expect(hasSelectableItems()).toBe(false)
+      expect(hasMultipleSelectableItems()).toBe(false)
 
       // Add first node
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node1]
-      expect(hasSelectableItems.value).toBe(true)
-      expect(hasMultipleSelectableItems.value).toBe(false)
-      expect(selectableItems.value.size).toBe(1)
+      mockCanvas.selectedItems.add(node1)
+      expect(hasSelectableItems()).toBe(true)
+      expect(hasMultipleSelectableItems()).toBe(false)
+      expect(getSelectableItems().size).toBe(1)
 
       // Add second node
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node1, node2]
-      expect(hasSelectableItems.value).toBe(true)
-      expect(hasMultipleSelectableItems.value).toBe(true)
-      expect(selectableItems.value.size).toBe(2)
+      mockCanvas.selectedItems.add(node2)
+      expect(hasSelectableItems()).toBe(true)
+      expect(hasMultipleSelectableItems()).toBe(true)
+      expect(getSelectableItems().size).toBe(2)
 
       // Remove a node
-      // @ts-expect-error - Test data
-      canvasStore.selectedItems = [node2]
-      expect(hasSelectableItems.value).toBe(true)
-      expect(hasMultipleSelectableItems.value).toBe(false)
-      expect(selectableItems.value.size).toBe(1)
+      mockCanvas.selectedItems.delete(node1)
+      expect(hasSelectableItems()).toBe(true)
+      expect(hasMultipleSelectableItems()).toBe(false)
+      expect(getSelectableItems().size).toBe(1)
     })
   })
 })

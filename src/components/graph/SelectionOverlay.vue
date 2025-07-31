@@ -23,21 +23,22 @@ import { useCanvasStore } from '@/stores/graphStore'
 
 const canvasStore = useCanvasStore()
 const { style, updatePosition } = useAbsolutePosition()
-const { selectableItems, hasSelectableItems, hasMultipleSelectableItems } =
-  useSelectedLiteGraphItems()
+const { getSelectableItems } = useSelectedLiteGraphItems()
 
 const visible = ref(false)
 const showBorder = ref(false)
 
 const positionSelectionOverlay = () => {
-  if (!hasSelectableItems.value) {
+  const selectableItems = getSelectableItems()
+  showBorder.value = selectableItems.size > 1
+
+  if (!selectableItems.size) {
     visible.value = false
     return
   }
 
-  showBorder.value = hasMultipleSelectableItems.value
   visible.value = true
-  const bounds = createBounds(selectableItems.value)
+  const bounds = createBounds(selectableItems)
   if (bounds) {
     updatePosition({
       pos: [bounds[0], bounds[1]],
