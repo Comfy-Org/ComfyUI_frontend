@@ -219,6 +219,37 @@ export function findSubgraphByUuid(
 }
 
 /**
+ * Iteratively finds the path of node IDs to a subgraph.
+ * @param rootGraph The graph to start searching from.
+ * @param targetId The ID of the subgraph to find.
+ * @returns An array of subgraph IDs representing the path, or `null` if not found.
+ */
+export function findSubgraphPathById(
+  rootGraph: LGraph,
+  targetId: string
+): string[] | null {
+  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
+    { graph: rootGraph, path: [] }
+  ]
+
+  while (stack.length > 0) {
+    const { graph, path } = stack.pop()!
+
+    for (const node of graph._nodes) {
+      if (node.isSubgraphNode?.() && node.subgraph) {
+        const newPath = [...path, String(node.subgraph.id)]
+        if (node.subgraph.id === targetId) {
+          return newPath
+        }
+        stack.push({ graph: node.subgraph, path: newPath })
+      }
+    }
+  }
+
+  return null
+}
+
+/**
  * Get a node by its execution ID from anywhere in the graph hierarchy.
  * Execution IDs use hierarchical format like "123:456:789" for nested nodes.
  *

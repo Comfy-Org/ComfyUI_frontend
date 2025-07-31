@@ -2,9 +2,10 @@ import QuickLRU from '@alloc/quick-lru'
 import type { Subgraph } from '@comfyorg/litegraph'
 import type { DragAndScaleState } from '@comfyorg/litegraph/dist/DragAndScale'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { app } from '@/scripts/app'
+import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
 import { useCanvasStore } from './graphStore'
@@ -25,7 +26,7 @@ export const useSubgraphNavigationStore = defineStore(
     const activeSubgraph = shallowRef<Subgraph>()
 
     /** The stack of subgraph IDs from the root graph to the currently opened subgraph. */
-    const idStack = shallowReactive<string[]>([])
+    const idStack = ref<string[]>([])
 
     /** LRU cache for viewport states. Key: subgraph ID or 'root' for root graph */
     const viewportCache = new QuickLRU<string, DragAndScaleState>({
@@ -37,7 +38,9 @@ export const useSubgraphNavigationStore = defineStore(
      * the current opened subgraph.
      */
     const navigationStack = computed(() =>
-      idStack.map((id) => app.graph.subgraphs.get(id)).filter(isNonNullish)
+      idStack.value
+        .map((id) => app.graph.subgraphs.get(id))
+        .filter(isNonNullish)
     )
 
     /**
@@ -46,8 +49,8 @@ export const useSubgraphNavigationStore = defineStore(
      * @see exportState
      */
     const restoreState = (subgraphIds: string[]) => {
-      idStack.length = 0
-      for (const id of subgraphIds) idStack.push(id)
+      idStack.value.length = 0
+      for (const id of subgraphIds) idStack.value.push(id)
     }
 
     /**
@@ -55,7 +58,7 @@ export const useSubgraphNavigationStore = defineStore(
      * @returns The list of subgraph IDs, ending with the currently active subgraph.
      * @see restoreState
      */
-    const exportState = () => [...idStack]
+    const exportState = () => [...idStack.value]
 
     /**
      * Get the current viewport state.
@@ -99,49 +102,29 @@ export const useSubgraphNavigationStore = defineStore(
       canvas.setDirty(true, true)
     }
 
-    // Reset on workflow change
-    watch(
-      () => workflowStore.activeWorkflow,
-      () => {
-        idStack.length = 0
+    /**
+     * Update the navigation stack when the active subgraph changes.
+     * @param subgraph The new active subgraph.
+     */
+    const onNavigated = (subgraph: Subgraph | undefined) => {
+      const isInRootGraph = !subgraph
+      if (isInRootGraph) {
+        idStack.value.length = 0
+        return
       }
-    )
 
-    // Update navigation stack when opened subgraph changes
-    watch(
-      () => workflowStore.activeSubgraph,
-      (subgraph, prevSubgraph) => {
-        // Save viewport state for the graph we're leaving
-        if (prevSubgraph) {
-          // Leaving a subgraph
-          saveViewport(prevSubgraph.id)
-        } else if (!prevSubgraph && subgraph) {
-          // Leaving root graph to enter a subgraph
-          saveViewport('root')
-        }
-
-        // Navigated back to the root graph
-        if (!subgraph) {
-          idStack.length = 0
-          restoreViewport('root')
-          return
-        }
-
-        const index = idStack.lastIndexOf(subgraph.id)
-        const lastIndex = idStack.length - 1
-
-        if (index === -1) {
-          // Opened a new subgraph
-          idStack.push(subgraph.id)
-        } else if (index !== lastIndex) {
-          // Navigated to a different subgraph
-          idStack.splice(index + 1, lastIndex - index)
-        }
-
-        // Always try to restore viewport for the target subgraph
-        restoreViewport(subgraph.id)
+      const path = findSubgraphPathById(subgraph.rootGraph, subgraph.id)
+      const isInReachableSubgraph = !!path
+      if (isInReachableSubgraph) {
+        idStack.value = [...path]
+      } else {
+        // Treat as if opening a new subgraph
+        idStack.value = [subgraph.id]
       }
-    )
+    }
+
+    // Update navigation stack when opened subgraph changes (also triggers when switching workflows)
+    watch(() => workflowStore.activeSubgraph, onNavigated)
 
     return {
       activeSubgraph,
