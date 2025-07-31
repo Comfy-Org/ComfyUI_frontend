@@ -1,10 +1,7 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 import { describe, expect, it } from 'vitest'
 
-import {
-  filterOutputNodes,
-  getSelectedOutputNodes
-} from '@/utils/nodeFilterUtil'
+import { filterOutputNodes, isOutputNode } from '@/utils/nodeFilterUtil'
 
 describe('nodeFilterUtil', () => {
   // Helper to create a mock node
@@ -86,7 +83,7 @@ describe('nodeFilterUtil', () => {
     })
   })
 
-  describe('getSelectedOutputNodes', () => {
+  describe('isOutputNode', () => {
     it('should filter selected nodes to only output nodes', () => {
       const selectedNodes = [
         createMockNode(1, false),
@@ -96,20 +93,21 @@ describe('nodeFilterUtil', () => {
         createMockNode(5, false)
       ]
 
-      const result = getSelectedOutputNodes(selectedNodes)
+      const result = selectedNodes.filter(isOutputNode)
       expect(result).toHaveLength(2)
       expect(result.map((n) => n.id)).toEqual([2, 4])
     })
 
     it('should handle empty selection', () => {
-      const result = getSelectedOutputNodes([])
+      const emptyNodes: LGraphNode[] = []
+      const result = emptyNodes.filter(isOutputNode)
       expect(result).toEqual([])
     })
 
     it('should handle selection with no output nodes', () => {
       const selectedNodes = [createMockNode(1, false), createMockNode(2, false)]
 
-      const result = getSelectedOutputNodes(selectedNodes)
+      const result = selectedNodes.filter(isOutputNode)
       expect(result).toHaveLength(0)
     })
   })

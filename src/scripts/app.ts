@@ -1278,12 +1278,10 @@ export class ComfyApp {
             executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
           }
 
-          // Don't pass queueNodeIds to graphToPrompt anymore - let backend handle partial execution
           const p = await this.graphToPrompt(this.graph)
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
-            // Pass queueNodeIds as partial_execution_targets to backend
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds
             })
