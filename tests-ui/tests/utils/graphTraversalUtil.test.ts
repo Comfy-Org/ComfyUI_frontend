@@ -1143,7 +1143,7 @@ describe('graphTraversalUtil', () => {
 
         expect(executionIds).toHaveLength(101)
         expect(executionIds[0]).toBe('parent')
-        expect(executionIds[100]).toBe('parent:child-0') // Due to DFS LIFO order
+        expect(executionIds[100]).toBe('parent:child-99') // Due to backward iteration optimization
 
         // Should complete quickly even with many nodes
         expect(duration).toBeLessThan(50)
