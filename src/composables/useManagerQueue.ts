@@ -1,101 +1,153 @@
 import { useEventListener, whenever } from '@vueuse/core'
-import { computed, readonly, ref } from 'vue'
+import { mapKeys, pickBy } from 'lodash'
+import { Ref, computed, ref } from 'vue'
 
-import { api } from '@/scripts/api'
-import { ManagerWsQueueStatus } from '@/types/comfyManagerTypes'
+import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
+import { components } from '@/types/generatedManagerTypes'
 
-type QueuedTask<T> = {
-  task: () => Promise<T>
-  onComplete?: () => void
-}
+type ManagerTaskHistory = Record<
+  string,
+  components['schemas']['TaskHistoryItem']
+>
+type ManagerTaskQueue = components['schemas']['TaskStateMessage']
+type ManagerWsTaskDoneMsg = components['schemas']['MessageTaskDone']
+type ManagerWsTaskStartedMsg = components['schemas']['MessageTaskStarted']
+type QueueTaskItem = components['schemas']['QueueTaskItem']
+type HistoryTaskItem = components['schemas']['TaskHistoryItem']
+type Task = QueueTaskItem | HistoryTaskItem
 
-const MANAGER_WS_MSG_TYPE = 'cm-queue-status'
+const MANAGER_WS_TASK_DONE_NAME = 'cm-task-completed'
+const MANAGER_WS_TASK_STARTED_NAME = 'cm-task-started'
 
-export const useManagerQueue = () => {
-  const clientQueueItems = ref<QueuedTask<unknown>[]>([])
-  const clientQueueLength = computed(() => clientQueueItems.value.length)
-  const onCompletedQueue = ref<((() => void) | undefined)[]>([])
-  const onCompleteWaitingCount = ref(0)
-  const uncompletedCount = computed(
-    () => clientQueueLength.value + onCompleteWaitingCount.value
+export const useManagerQueue = (
+  taskHistory: Ref<ManagerTaskHistory>,
+  taskQueue: Ref<ManagerTaskQueue>,
+  installedPacks: Ref<Record<string, any>>
+) => {
+  const { showManagerProgressDialog } = useDialogService()
+
+  // Task queue state (read-only from server)
+  const maxHistoryItems = ref(64)
+  const isLoading = ref(false)
+  const isProcessing = ref(false)
+
+  // Computed values
+  const currentQueueLength = computed(
+    () =>
+      taskQueue.value.running_queue.length +
+      taskQueue.value.pending_queue.length
   )
 
-  const serverQueueStatus = ref<ManagerWsQueueStatus>(ManagerWsQueueStatus.DONE)
-  const isServerIdle = computed(
-    () => serverQueueStatus.value === ManagerWsQueueStatus.DONE
-  )
+  /**
+   * Update the processing state based on the current queue length.
+   * If the queue is empty, or all tasks in the queue are associated
+   * with different clients, then this client is not processing any tasks.
+   */
+  const updateProcessingState = (): void => {
+    isProcessing.value = currentQueueLength.value > 0
+  }
 
-  const allTasksDone = computed(
-    () => isServerIdle.value && clientQueueLength.value === 0
-  )
-  const nextTaskReady = computed(
-    () => isServerIdle.value && clientQueueLength.value > 0
-  )
+  const allTasksDone = computed(() => currentQueueLength.value === 0)
+  const historyCount = computed(() => Object.keys(taskHistory.value).length)
 
-  const cleanupListener = useEventListener(
-    api,
-    MANAGER_WS_MSG_TYPE,
-    (event: CustomEvent<{ status: ManagerWsQueueStatus }>) => {
-      if (event?.type === MANAGER_WS_MSG_TYPE && event.detail?.status) {
-        serverQueueStatus.value = event.detail.status
+  /**
+   * Check if a task is associated with this client.
+   * Task can be from running queue, pending queue, or history.
+   * @param task - The task to check
+   * @returns True if the task belongs to this client
+   */
+  const isTaskFromThisClient = (task: Task): boolean =>
+    task.client_id === app.api.clientId
+
+  /**
+   * Filter queue tasks by client id.
+   * Ensures that only tasks associated with this client are processed and
+   * added to client state.
+   * @param tasks - Array of queue tasks to filter
+   * @returns Filtered array containing only tasks from this client
+   */
+  const filterQueueByClientId = (tasks: QueueTaskItem[]): QueueTaskItem[] =>
+    tasks.filter(isTaskFromThisClient)
+
+  /**
+   * Filter history tasks by client id using lodash pickBy for optimal performance.
+   * Returns a new object containing only tasks associated with this client.
+   * @param history - The history object to filter
+   * @returns Filtered history object containing only tasks from this client
+   */
+  const filterHistoryByClientId = (history: ManagerTaskHistory) =>
+    pickBy(history, isTaskFromThisClient)
+
+  /**
+   * Update task queue and history state with filtered data from server.
+   * Ensures only tasks from this client are stored in local state.
+   * @param state - The task state message from the server
+   */
+  const updateTaskState = (state: ManagerTaskQueue) => {
+    taskQueue.value.running_queue = filterQueueByClientId(state.running_queue)
+    taskQueue.value.pending_queue = filterQueueByClientId(state.pending_queue)
+    taskHistory.value = filterHistoryByClientId(state.history)
+
+    if (state.installed_packs) {
+      // The keys are 'cleaned' by stripping the version suffix.
+      // The pack object itself (the value) still contains the version info.
+      const packsWithCleanedKeys = mapKeys(
+        state.installed_packs,
+        (_value, key) => {
+          return key.split('@')[0]
+        }
+      )
+      installedPacks.value = packsWithCleanedKeys
+    }
+    updateProcessingState()
+  }
+
+  // WebSocket event listener for task done
+  const cleanupTaskDoneListener = useEventListener(
+    app.api,
+    MANAGER_WS_TASK_DONE_NAME,
+    (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
+      if (event?.type === MANAGER_WS_TASK_DONE_NAME) {
+        const { state } = event.detail
+        updateTaskState(state)
       }
     }
   )
 
-  const startNextTask = () => {
-    const nextTask = clientQueueItems.value.shift()
-    if (!nextTask) return
-
-    const { task, onComplete } = nextTask
-    if (onComplete) {
-      // Set the task's onComplete to be executed the next time the server is idle
-      onCompletedQueue.value.push(onComplete)
-      onCompleteWaitingCount.value++
-    }
-
-    task().catch((e) => {
-      const message = `Error enqueuing task for ComfyUI Manager: ${e}`
-      console.error(message)
-    })
-  }
-
-  const enqueueTask = <T>(task: QueuedTask<T>): void => {
-    clientQueueItems.value.push(task)
-  }
-
-  const clearQueue = () => {
-    clientQueueItems.value = []
-    onCompletedQueue.value = []
-    onCompleteWaitingCount.value = 0
-  }
-
-  const cleanup = () => {
-    clearQueue()
-    cleanupListener()
-  }
-
-  whenever(nextTaskReady, startNextTask)
-  whenever(isServerIdle, () => {
-    if (onCompletedQueue.value?.length) {
-      while (
-        onCompleteWaitingCount.value > 0 &&
-        onCompletedQueue.value.length > 0
-      ) {
-        const onComplete = onCompletedQueue.value.shift()
-        onComplete?.()
-        onCompleteWaitingCount.value--
+  // WebSocket event listener for task started
+  const cleanupTaskStartedListener = useEventListener(
+    app.api,
+    MANAGER_WS_TASK_STARTED_NAME,
+    (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
+      if (event?.type === MANAGER_WS_TASK_STARTED_NAME) {
+        const { state } = event.detail
+        updateTaskState(state)
       }
     }
-  })
+  )
+
+  whenever(currentQueueLength, () => showManagerProgressDialog())
+
+  const stopListening = () => {
+    cleanupTaskDoneListener()
+    cleanupTaskStartedListener()
+  }
 
   return {
-    allTasksDone,
-    statusMessage: readonly(serverQueueStatus),
-    queueLength: clientQueueLength,
-    uncompletedCount,
+    // Queue state (read-only from server)
+    taskHistory,
+    taskQueue,
+    maxHistoryItems,
+    isLoading,
 
-    enqueueTask,
-    clearQueue,
-    cleanup
+    // Computed state
+    allTasksDone,
+    isProcessing,
+    queueLength: currentQueueLength,
+    historyCount,
+
+    // Actions
+    stopListening
   }
 }

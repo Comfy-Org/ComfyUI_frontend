@@ -9,8 +9,8 @@
     :variant="variant"
     :loading="isInstalling"
     :loading-message="$t('g.installing')"
+    :has-warning="hasConflict"
     @action="installAllPacks"
-    @click="onClick"
   />
 </template>
 
@@ -18,44 +18,51 @@
 import { inject, ref } from 'vue'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
+import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import {
-  IsInstallingKey,
-  ManagerChannel,
-  ManagerDatabaseSource,
-  SelectedVersion
-} from '@/types/comfyManagerTypes'
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import {
+  type ConflictDetail,
+  type ConflictDetectionResult
+} from '@/types/conflictDetectionTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks, variant, label } = defineProps<{
+const { nodePacks, variant, label, hasConflict, conflictInfo } = defineProps<{
   nodePacks: NodePack[]
   variant?: 'default' | 'black'
   label?: string
+  hasConflict?: boolean
+  conflictInfo?: ConflictDetail[]
 }>()
 
 const isInstalling = inject(IsInstallingKey, ref(false))
-
-const onClick = (): void => {
-  isInstalling.value = true
-}
-
 const managerStore = useComfyManagerStore()
+const { showNodeConflictDialog } = useDialogService()
 
-const createPayload = (installItem: NodePack) => {
+const createPayload = (
+  installItem: NodePack
+): ManagerComponents['schemas']['InstallPackParams'] => {
+  if (!installItem.id) {
+    throw new Error('Node ID is required for installation')
+  }
+
   const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
   const versionToInstall = isUnclaimedPack
-    ? SelectedVersion.NIGHTLY
-    : installItem.latest_version?.version ?? SelectedVersion.LATEST
+    ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
+    : installItem.latest_version?.version ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
 
   return {
     id: installItem.id,
+    version: versionToInstall,
     repository: installItem.repository ?? '',
-    channel: ManagerChannel.DEV,
-    mode: ManagerDatabaseSource.CACHE,
-    selected_version: versionToInstall,
-    version: versionToInstall
+    channel: 'dev' as ManagerComponents['schemas']['ManagerChannel'],
+    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
+    selected_version: versionToInstall
   }
 }
 
@@ -65,14 +72,35 @@ const installPack = (item: NodePack) =>
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
 
+  if (hasConflict && conflictInfo) {
+    const conflictedPackages: ConflictDetectionResult[] = nodePacks.map(
+      (pack) => ({
+        package_id: pack.id || '',
+        package_name: pack.name || '',
+        has_conflict: true,
+        conflicts: conflictInfo || [],
+        is_compatible: false
+      })
+    )
+
+    showNodeConflictDialog({
+      conflictedPackages,
+      buttonText: t('manager.conflicts.installAnyway'),
+      onButtonClick: async () => {
+        // Proceed with installation
+        isInstalling.value = true
+        await performInstallation(nodePacks)
+      }
+    })
+    return
+  }
+  // No conflicts or conflicts acknowledged - proceed with installation
   isInstalling.value = true
+  await performInstallation(nodePacks)
+}
 
-  const uninstalledPacks = nodePacks.filter(
-    (pack) => !managerStore.isPackInstalled(pack.id)
-  )
-  if (!uninstalledPacks.length) return
-
-  await Promise.all(uninstalledPacks.map(installPack))
+const performInstallation = async (packs: NodePack[]) => {
+  await Promise.all(packs.map(installPack))
   managerStore.installPack.clear()
 }
 </script>

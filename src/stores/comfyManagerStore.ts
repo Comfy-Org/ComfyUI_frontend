@@ -1,21 +1,29 @@
 import { whenever } from '@vueuse/core'
+import { mapKeys } from 'lodash'
 import { defineStore } from 'pinia'
+import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useManagerQueue } from '@/composables/useManagerQueue'
 import { useServerLogs } from '@/composables/useServerLogs'
+import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
-import {
-  InstallPackParams,
-  InstalledPacksResponse,
-  ManagerPackInfo,
-  ManagerPackInstalled,
-  TaskLog,
-  UpdateAllPacksParams
-} from '@/types/comfyManagerTypes'
+import { TaskLog } from '@/types/comfyManagerTypes'
+import { components } from '@/types/generatedManagerTypes'
+
+type InstallPackParams = components['schemas']['InstallPackParams']
+type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
+type ManagerPackInfo = components['schemas']['ManagerPackInfo']
+type ManagerPackInstalled = components['schemas']['ManagerPackInstalled']
+type ManagerTaskHistory = Record<
+  string,
+  components['schemas']['TaskHistoryItem']
+>
+type ManagerTaskQueue = components['schemas']['TaskStateMessage']
+type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
 
 /**
  * Store for state of installed node packs
@@ -31,13 +39,61 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const installedPacksIds = ref<Set<string>>(new Set())
   const isStale = ref(true)
   const taskLogs = ref<TaskLog[]>([])
+  const succeededTasksLogs = ref<TaskLog[]>([])
+  const failedTasksLogs = ref<TaskLog[]>([])
 
-  const { statusMessage, allTasksDone, enqueueTask, uncompletedCount } =
-    useManagerQueue()
+  const taskHistory = ref<ManagerTaskHistory>({})
+  const succeededTasksIds = ref<string[]>([])
+  const failedTasksIds = ref<string[]>([])
+  const taskQueue = ref<ManagerTaskQueue>({
+    history: {},
+    running_queue: [],
+    pending_queue: [],
+    installed_packs: {}
+  })
+
+  const managerQueue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
   const setStale = () => {
     isStale.value = true
   }
+
+  const partitionTaskLogs = () => {
+    const successTaskLogs: TaskLog[] = []
+    const failTaskLogs: TaskLog[] = []
+    for (const log of taskLogs.value) {
+      if (failedTasksIds.value.includes(log.taskId)) {
+        failTaskLogs.push(log)
+      } else {
+        successTaskLogs.push(log)
+      }
+    }
+    succeededTasksLogs.value = successTaskLogs
+    failedTasksLogs.value = failTaskLogs
+  }
+
+  const partitionTasks = () => {
+    const successTasksIds = []
+    const failTasksIds = []
+    for (const task of Object.values(taskHistory.value)) {
+      if (task.status?.status_str === 'success') {
+        successTasksIds.push(task.ui_id)
+      } else {
+        failTasksIds.push(task.ui_id)
+      }
+    }
+    succeededTasksIds.value = successTasksIds
+    failedTasksIds.value = failTasksIds
+  }
+
+  whenever(
+    taskHistory,
+    () => {
+      partitionTasks()
+      partitionTaskLogs()
+    },
+    { deep: true }
+  )
 
   const getPackId = (pack: ManagerPackInstalled) => pack.cnr_id || pack.aux_id
 
@@ -97,11 +153,13 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   }
 
   const updateInstalledIds = (packs: ManagerPackInstalled[]) => {
-    installedPacksIds.value = packsToIdSet(packs)
+    const newIds = packsToIdSet(packs)
+    installedPacksIds.value = newIds
   }
 
   const onPacksChanged = () => {
     const packs = Object.values(installedPacks.value)
+
     updateDisabledIds(packs)
     updateInstalledIds(packs)
   }
@@ -110,28 +168,58 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const refreshInstalledList = async () => {
     const packs = await managerService.listInstalledPacks()
-    if (packs) installedPacks.value = packs
+    if (packs) {
+      // The keys are 'cleaned' by stripping the version suffix.
+      // The pack object itself (the value) still contains the version info.
+      const packsWithCleanedKeys = mapKeys(packs, (_value, key) => {
+        return key.split('@')[0]
+      })
+      installedPacks.value = packsWithCleanedKeys
+    }
     isStale.value = false
   }
 
   whenever(isStale, refreshInstalledList, { immediate: true })
-  whenever(uncompletedCount, () => showManagerProgressDialog())
 
-  const withLogs = (task: () => Promise<null>, taskName: string) => {
-    const { startListening, stopListening, logs } = useServerLogs()
+  const enqueueTaskWithLogs = async (
+    task: (taskId: string) => Promise<null>,
+    taskName: string
+  ) => {
+    const taskId = uuidv4()
+    const { logs } = useServerLogs({
+      ui_id: taskId,
+      immediate: true
+    })
 
-    const loggedTask = async () => {
-      taskLogs.value.push({ taskName, logs: logs.value })
-      await startListening()
-      return task()
+    try {
+      // Show progress dialog immediately when task is queued
+      showManagerProgressDialog()
+      managerQueue.isProcessing.value = true
+
+      // Prepare logging hook
+      taskLogs.value.push({ taskName, taskId, logs: logs.value })
+
+      // Queue the task to the server
+      await task(taskId)
+    } catch (error) {
+      // Reset processing state on error
+      managerQueue.isProcessing.value = false
+
+      // The server has authority over task history in general, but in rare
+      // case of client-side error, we add that to failed tasks from the client side
+      taskHistory.value[taskId] = {
+        ui_id: taskId,
+        client_id: api.clientId || 'unknown',
+        kind: 'error',
+        result: 'failed',
+        status: {
+          status_str: 'error',
+          completed: false,
+          messages: [error instanceof Error ? error.message : String(error)]
+        },
+        timestamp: new Date().toISOString()
+      }
     }
-
-    const onComplete = async () => {
-      await stopListening()
-      setStale()
-    }
-
-    return { task: loggedTask, onComplete }
   }
 
   const installPack = useCachedRequest<InstallPackParams, void>(
@@ -152,39 +240,62 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         }
       }
 
-      const task = () => managerService.installPack(params, signal)
-      enqueueTask(withLogs(task, `${actionDescription} ${params.id}`))
+      const task = (taskId: string) =>
+        managerService.installPack(params, taskId, signal)
+      await enqueueTaskWithLogs(task, `${actionDescription} ${params.id}`)
     },
     { maxSize: 1 }
   )
 
-  const uninstallPack = (params: ManagerPackInfo, signal?: AbortSignal) => {
+  const uninstallPack = async (
+    params: ManagerPackInfo,
+    signal?: AbortSignal
+  ) => {
     installPack.clear()
     installPack.cancel()
-    const task = () => managerService.uninstallPack(params, signal)
-    enqueueTask(withLogs(task, t('manager.uninstalling', { id: params.id })))
+    const uninstallParams: components['schemas']['UninstallPackParams'] = {
+      node_name: params.id,
+      is_unknown: false
+    }
+    const task = (taskId: string) =>
+      managerService.uninstallPack(uninstallParams, taskId, signal)
+    await enqueueTaskWithLogs(
+      task,
+      t('manager.uninstalling', { id: params.id })
+    )
   }
 
   const updatePack = useCachedRequest<ManagerPackInfo, void>(
     async (params: ManagerPackInfo, signal?: AbortSignal) => {
       updateAllPacks.cancel()
-      const task = () => managerService.updatePack(params, signal)
-      enqueueTask(withLogs(task, t('g.updating', { id: params.id })))
+      const updateParams: components['schemas']['UpdatePackParams'] = {
+        node_name: params.id,
+        node_ver: params.version
+      }
+      const task = (taskId: string) =>
+        managerService.updatePack(updateParams, taskId, signal)
+      await enqueueTaskWithLogs(task, t('g.updating', { id: params.id }))
     },
     { maxSize: 1 }
   )
 
   const updateAllPacks = useCachedRequest<UpdateAllPacksParams, void>(
     async (params: UpdateAllPacksParams, signal?: AbortSignal) => {
-      const task = () => managerService.updateAllPacks(params, signal)
-      enqueueTask(withLogs(task, t('manager.updatingAllPacks')))
+      const task = (taskId: string) =>
+        managerService.updateAllPacks(params, taskId, signal)
+      await enqueueTaskWithLogs(task, t('manager.updatingAllPacks'))
     },
     { maxSize: 1 }
   )
 
-  const disablePack = (params: ManagerPackInfo, signal?: AbortSignal) => {
-    const task = () => managerService.disablePack(params, signal)
-    enqueueTask(withLogs(task, t('g.disabling', { id: params.id })))
+  const disablePack = async (params: ManagerPackInfo, signal?: AbortSignal) => {
+    const disableParams: components['schemas']['DisablePackParams'] = {
+      node_name: params.id,
+      is_unknown: false
+    }
+    const task = (taskId: string) =>
+      managerService.disablePack(disableParams, taskId, signal)
+    await enqueueTaskWithLogs(task, t('g.disabling', { id: params.id }))
   }
 
   const getInstalledPackVersion = (packId: string) => {
@@ -192,19 +303,50 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     return pack?.ver
   }
 
+  /**
+   * Get installed pack by CNR ID or aux ID for O(1) lookup performance
+   * @param id - The CNR ID or aux ID to search for
+   * @returns The installed pack if found, undefined otherwise
+   */
+  const getInstalledPackByCnrId = (id: string) => {
+    // Use cached Map for O(1) lookup instead of O(n) Object.values().find()
+    for (const pack of Object.values(installedPacks.value)) {
+      if (pack.cnr_id === id || pack.aux_id === id) {
+        return pack
+      }
+    }
+    return undefined
+  }
+
   const clearLogs = () => {
     taskLogs.value = []
+  }
+
+  const resetTaskState = () => {
+    // Clear all task-related reactive state for fresh start after restart
+    taskLogs.value = []
+    taskHistory.value = {}
+    succeededTasksIds.value = []
+    failedTasksIds.value = []
+    succeededTasksLogs.value = []
+    failedTasksLogs.value = []
+
+    // Reset task queue to initial state
+    taskQueue.value = {
+      history: {},
+      running_queue: [],
+      pending_queue: [],
+      installed_packs: {}
+    }
   }
 
   return {
     // Manager state
     isLoading: managerService.isLoading,
     error: managerService.error,
-    statusMessage,
-    allTasksDone,
-    uncompletedCount,
     taskLogs,
     clearLogs,
+    resetTaskState,
     setStale,
 
     // Installed packs state
@@ -213,7 +355,17 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     isPackInstalled: isInstalledPackId,
     isPackEnabled: isEnabledPackId,
     getInstalledPackVersion,
+    getInstalledPackByCnrId,
     refreshInstalledList,
+
+    // Task queue state and actions
+    taskHistory,
+    isProcessingTasks: managerQueue.isProcessing,
+    succeededTasksIds,
+    failedTasksIds,
+    succeededTasksLogs,
+    failedTasksLogs,
+    managerQueue,
 
     // Pack actions
     installPack,
@@ -234,6 +386,15 @@ export const useManagerProgressDialogStore = defineStore(
   'managerProgressDialog',
   () => {
     const isExpanded = ref(false)
+    const activeTabIndex = ref(0)
+
+    const setActiveTabIndex = (index: number) => {
+      activeTabIndex.value = index
+    }
+
+    const getActiveTabIndex = () => {
+      return activeTabIndex.value
+    }
 
     const toggle = () => {
       isExpanded.value = !isExpanded.value
@@ -250,7 +411,9 @@ export const useManagerProgressDialogStore = defineStore(
       isExpanded,
       toggle,
       collapse,
-      expand
+      expand,
+      setActiveTabIndex,
+      getActiveTabIndex
     }
   }
 )

@@ -628,12 +628,14 @@
     "title": "維護"
   },
   "manager": {
+    "applyChanges": "套用變更",
     "changingVersion": "正在將版本從 {from} 變更為 {to}",
     "createdBy": "建立者",
     "dependencies": "相依套件",
     "discoverCommunityContent": "探索社群製作的節點包、擴充功能等...",
     "downloads": "下載次數",
     "errorConnecting": "連線至 Comfy Node Registry 時發生錯誤。",
+    "extensionsSuccessfullyInstalled": "擴充功能安裝成功，已可使用！",
     "failed": "失敗（{count}）",
     "filter": {
       "disabled": "已停用",
@@ -645,6 +647,7 @@
     "installAllMissingNodes": "安裝所有缺少的節點",
     "installSelected": "安裝所選項目",
     "installationQueue": "安裝佇列",
+    "installingDependencies": "正在安裝相依套件……",
     "lastUpdated": "最後更新",
     "latestVersion": "最新版本",
     "legacyManagerUI": "使用舊版介面",
@@ -661,6 +664,7 @@
     "packsSelected": "已選擇套件",
     "repository": "儲存庫",
     "restartToApplyChanges": "請重新啟動 ComfyUI 以套用變更",
+    "restartingBackend": "正在重新啟動後端以套用變更……",
     "searchPlaceholder": "搜尋",
     "selectVersion": "選擇版本",
     "sort": {
@@ -685,6 +689,8 @@
     "uninstallSelected": "解除安裝所選項目",
     "uninstalling": "正在解除安裝",
     "update": "更新",
+    "updateAll": "全部更新",
+    "updateSelected": "更新所選項目",
     "updatingAllPacks": "正在更新所有套件",
     "version": "版本"
   },
@@ -818,6 +824,7 @@
     "Save": "儲存",
     "Save As": "另存新檔",
     "Show Settings Dialog": "顯示設定對話框",
+    "Show the Custom Nodes Manager": "顯示自訂節點管理員",
     "Sign Out": "登出",
     "Toggle Bottom Panel": "切換下方面板",
     "Toggle Focus Mode": "切換專注模式",

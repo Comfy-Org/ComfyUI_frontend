@@ -156,7 +156,7 @@
     "label": "Load Default Workflow"
   },
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "Custom Nodes Manager"
+    "label": "Show the Custom Nodes Manager"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
     "label": "Custom Nodes (Legacy)"

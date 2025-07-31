@@ -156,7 +156,7 @@
     "label": "載入預設工作流程"
   },
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "自訂節點管理器"
+    "label": "顯示自訂節點管理器"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
     "label": "自訂節點（舊版）"
