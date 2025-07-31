@@ -169,24 +169,41 @@ import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
 interface Props {
+  conflicts?: ConflictDetectionResult[]
+  conflictedPackages?: ConflictDetectionResult[]
   showAfterWhatsNew?: boolean
 }
 
-const { showAfterWhatsNew } = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
+  conflicts: () => [],
+  conflictedPackages: () => [],
   showAfterWhatsNew: false
 })
 
 const { t } = useI18n()
-const { conflictedPackages } = useConflictDetection()
+const { conflictedPackages: globalConflictedPackages } = useConflictDetection()
 
 const conflictsExpanded = ref<boolean>(false)
 const extensionsExpanded = ref<boolean>(false)
 const importFailedExpanded = ref<boolean>(false)
 
-const conflictData = computed(() => conflictedPackages.value)
+// Use props if provided, otherwise use composable data
+const conflictData = computed(() => {
+  // If props have conflictedPackages, prioritize them
+  if (props.conflictedPackages.length > 0) {
+    return props.conflictedPackages
+  }
+  // If props have conflicts, use them
+  if (props.conflicts.length > 0) {
+    return props.conflicts
+  }
+  // Otherwise, use global conflicted packages from composable
+  return globalConflictedPackages.value
+})
 
 const allConflictDetails = computed(() => {
   const allConflicts = flatMap(conflictData.value, (result) => result.conflicts)

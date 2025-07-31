@@ -9,7 +9,7 @@ import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 // Mock getConflictMessage utility
 vi.mock('@/utils/conflictMessageUtil', () => ({
-  getConflictMessage: vi.fn((conflict, t) => {
+  getConflictMessage: vi.fn((conflict) => {
     return `${conflict.type}: ${conflict.current_value} vs ${conflict.required_value}`
   })
 }))
@@ -194,6 +194,70 @@ describe('NodeConflictDialogContent', () => {
       )[1]
       expect(conflictsSection.text()).toContain('3')
       expect(conflictsSection.text()).toContain('Conflicts')
+    })
+
+    it('should render with conflict data from props (conflictedPackages)', () => {
+      // Clear composable data to ensure props are used
+      mockConflictData.value = []
+
+      const wrapper = createWrapper({
+        conflictedPackages: mockConflictResults
+      })
+
+      // Should show 3 total conflicts (2 from Package1 + 1 from Package2, excluding import_failed)
+      expect(wrapper.text()).toContain('3')
+      expect(wrapper.text()).toContain('Conflicts')
+      // Should show 3 extensions at risk (all packages)
+      expect(wrapper.text()).toContain('Extensions at Risk')
+      // Should show import failed section
+      expect(wrapper.text()).toContain('Import Failed Extensions')
+      expect(wrapper.text()).toContain('1') // 1 import failed package
+    })
+
+    it('should render with conflict data from props (conflicts)', () => {
+      // Clear composable data to ensure props are used
+      mockConflictData.value = []
+
+      const wrapper = createWrapper({
+        conflicts: mockConflictResults
+      })
+
+      // Should show 3 total conflicts (excluding import_failed)
+      expect(wrapper.text()).toContain('3')
+      expect(wrapper.text()).toContain('Conflicts')
+      expect(wrapper.text()).toContain('Extensions at Risk')
+      expect(wrapper.text()).toContain('Import Failed Extensions')
+    })
+
+    it('should prioritize conflictedPackages over conflicts prop', () => {
+      const singleConflict: ConflictDetectionResult[] = [
+        {
+          package_id: 'SinglePackage',
+          package_name: 'Single Package',
+          has_conflict: true,
+          is_compatible: false,
+          conflicts: [
+            {
+              type: 'os',
+              current_value: 'macOS',
+              required_value: 'Windows'
+            }
+          ]
+        }
+      ]
+
+      // Clear composable data
+      mockConflictData.value = []
+
+      const wrapper = createWrapper({
+        conflicts: mockConflictResults, // 4 conflicts total
+        conflictedPackages: singleConflict // 1 conflict
+      })
+
+      // Should use conflictedPackages (1 conflict) instead of conflicts (4 conflicts)
+      expect(wrapper.text()).toContain('1')
+      expect(wrapper.text()).toContain('Conflicts')
+      expect(wrapper.text()).toContain('Extensions at Risk')
     })
   })
 

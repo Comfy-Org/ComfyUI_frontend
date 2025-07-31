@@ -55,7 +55,7 @@ import { ImportFailedKey } from '@/types/importFailedTypes'
 const { nodePack, hasCompatibilityIssues, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']
   hasCompatibilityIssues?: boolean
-  conflictResult?: ConflictDetectionResult | null
+  conflictResult?: ConflictDetectionResult | null | undefined
 }>()
 
 // Inject import failed context from parent

@@ -35,7 +35,7 @@ import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
 const { nodePack, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']
-  conflictResult: ConflictDetectionResult | null
+  conflictResult: ConflictDetectionResult | null | undefined
 }>()
 
 const packageId = computed(() => nodePack?.id || '')
