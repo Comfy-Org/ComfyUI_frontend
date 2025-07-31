@@ -17,9 +17,10 @@
 
 <script setup lang="ts">
 import Message from 'primevue/message'
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import { components } from '@/types/comfyRegistryTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']
@@ -36,6 +37,10 @@ const { statusType, hasCompatibilityIssues } = defineProps<{
   statusType: Status
   hasCompatibilityIssues?: boolean
 }>()
+
+// Inject import failed context from parent
+const importFailedContext = inject(ImportFailedKey)
+const importFailed = importFailedContext?.importFailed
 
 const statusPropsMap: Record<Status, StatusProps> = {
   NodeStatusActive: {
@@ -72,14 +77,14 @@ const statusPropsMap: Record<Status, StatusProps> = {
   }
 }
 
-const statusLabel = computed(() =>
-  hasCompatibilityIssues
-    ? 'conflicting'
-    : statusPropsMap[statusType]?.label || 'unknown'
-)
-const statusSeverity = computed(() =>
-  hasCompatibilityIssues
-    ? 'error'
-    : statusPropsMap[statusType]?.severity || 'secondary'
-)
+const statusLabel = computed(() => {
+  if (importFailed?.value) return 'importFailed'
+  if (hasCompatibilityIssues) return 'conflicting'
+  return statusPropsMap[statusType]?.label || 'unknown'
+})
+
+const statusSeverity = computed(() => {
+  if (hasCompatibilityIssues || importFailed?.value) return 'error'
+  return statusPropsMap[statusType]?.severity || 'secondary'
+})
 </script>
