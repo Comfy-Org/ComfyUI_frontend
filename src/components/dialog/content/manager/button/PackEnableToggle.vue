@@ -147,7 +147,7 @@ const onToggle = debounce(
 const handleToggleInteraction = async (event: Event) => {
   if (!canToggleDirectly.value) {
     event.preventDefault()
-    showConflictModal()
+    showConflictModal(false)
   }
 }
 </script>

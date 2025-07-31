@@ -9,7 +9,7 @@ import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 // Mock getConflictMessage utility
 vi.mock('@/utils/conflictMessageUtil', () => ({
-  getConflictMessage: vi.fn((conflict, t) => {
+  getConflictMessage: vi.fn((conflict) => {
     return `${conflict.type}: ${conflict.current_value} vs ${conflict.required_value}`
   })
 }))
