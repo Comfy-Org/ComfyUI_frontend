@@ -7,18 +7,31 @@
       <span>{{ formattedDownloads }}</span>
     </div>
     <div class="flex justify-end items-center gap-2">
-      <template v-if="!isInstalled">
-        <PackInstallButton
-          :node-packs="[nodePack]"
-          :has-conflict="uninstalledPackConflict.hasConflict"
-          :conflict-info="uninstalledPackConflict.conflicts"
-        />
+      <template v-if="importFailed">
+        <div
+          class="flex justify-center items-center gap-2 cursor-pointer"
+          @click="showImportFailedDialog"
+        >
+          <i class="pi pi-exclamation-triangle text-red-500 text-sm"></i>
+          <span class="text-red-500 text-xs pt-0.5">{{
+            t('manager.failedToInstall')
+          }}</span>
+        </div>
       </template>
       <template v-else>
-        <PackEnableToggle
-          :node-pack="nodePack"
-          :has-conflict="installedPackHasConflict"
-        />
+        <template v-if="!isInstalled">
+          <PackInstallButton
+            :node-packs="[nodePack]"
+            :has-conflict="uninstalledPackConflict.hasConflict"
+            :conflict-info="uninstalledPackConflict.conflicts"
+          />
+        </template>
+        <template v-else>
+          <PackEnableToggle
+            :node-pack="nodePack"
+            :has-conflict="installedPackHasConflict"
+          />
+        </template>
       </template>
     </div>
   </div>
@@ -31,6 +44,7 @@ import { useI18n } from 'vue-i18n'
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -42,7 +56,7 @@ const { nodePack } = defineProps<{
 const { isPackInstalled } = useComfyManagerStore()
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 
-const { n } = useI18n()
+const { n, t } = useI18n()
 
 const formattedDownloads = computed(() =>
   nodePack.downloads ? n(nodePack.downloads) : ''
@@ -51,14 +65,17 @@ const formattedDownloads = computed(() =>
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { checkNodeCompatibility } = useConflictDetection()
 
+const { importFailed, showImportFailedDialog } = useImportFailedDetection(
+  nodePack.id
+)
+
+const conflicts = computed(
+  () => getConflictsForPackageByID(nodePack.id!) || null
+)
+
 const installedPackHasConflict = computed(() => {
   if (!nodePack.id) return false
-
-  // Try exact match first
-  let conflicts = getConflictsForPackageByID(nodePack.id)
-  if (conflicts) return true
-
-  return false
+  return !!conflicts.value
 })
 
 const uninstalledPackConflict = computed(() => {

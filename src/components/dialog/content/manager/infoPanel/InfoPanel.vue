@@ -13,7 +13,7 @@
       >
         <div class="mb-6">
           <MetadataRow
-            v-if="isPackInstalled(nodePack.id)"
+            v-if="!importFailed && isPackInstalled(nodePack.id)"
             :label="t('manager.filter.enabled')"
             class="flex"
             style="align-items: center"
@@ -71,11 +71,13 @@ import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoP
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 interface InfoItem {
   key: string
@@ -127,6 +129,15 @@ const conflictResult = computed((): ConflictDetectionResult | null => {
 
 const hasCompatibilityIssues = computed(() => {
   return conflictResult.value?.has_conflict
+})
+
+const packageId = computed(() => nodePack.id || '')
+const { importFailed, showImportFailedDialog } =
+  useImportFailedDetection(packageId)
+
+provide(ImportFailedKey, {
+  importFailed,
+  showImportFailedDialog
 })
 
 const infoItems = computed<InfoItem[]>(() => [
