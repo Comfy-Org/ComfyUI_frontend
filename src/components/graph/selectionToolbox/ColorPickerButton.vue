@@ -2,6 +2,10 @@
   <div class="relative">
     <Button
       v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
+      v-tooltip.top="{
+        value: localizedCurrentColorName ?? t('color.noColor'),
+        showDelay: 512
+      }"
       severity="secondary"
       text
       @click="() => (showColorPicker = !showColorPicker)"
@@ -122,6 +126,16 @@ const currentColor = computed(() =>
       : currentColorOption.value?.bgcolor
     : null
 )
+
+const localizedCurrentColorName = computed(() => {
+  if (!currentColorOption.value?.bgcolor) return null
+  const colorOption = colorOptions.find(
+    (option) =>
+      option.value.dark === currentColorOption.value?.bgcolor ||
+      option.value.light === currentColorOption.value?.bgcolor
+  )
+  return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
+})
 
 watch(
   () => canvasStore.selectedItems,
