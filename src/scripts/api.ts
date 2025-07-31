@@ -40,6 +40,7 @@ import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
+  partial_execution_targets?: string[]
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -611,17 +612,22 @@ export class ComfyApi extends EventTarget {
    * Queues a prompt to be executed
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
    * @param {object} prompt The prompt data to queue
+   * @param {string[]} partialExecutionTargets Optional list of node IDs to execute (partial execution)
    * @throws {PromptExecutionError} If the prompt fails to execute
    */
   async queuePrompt(
     number: number,
-    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON }
+    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON },
+    partialExecutionTargets?: string[]
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
 
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
       prompt,
+      ...(partialExecutionTargets && {
+        partial_execution_targets: partialExecutionTargets
+      }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,

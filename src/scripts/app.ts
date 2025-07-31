@@ -1239,13 +1239,9 @@ export class ComfyApp {
     })
   }
 
-  async graphToPrompt(
-    graph = this.graph,
-    options: { queueNodeIds?: NodeId[] } = {}
-  ) {
+  async graphToPrompt(graph = this.graph) {
     return graphToPrompt(graph, {
-      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave'),
-      queueNodeIds: options.queueNodeIds
+      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
     })
   }
 
@@ -1281,11 +1277,17 @@ export class ComfyApp {
             executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
           }
 
-          const p = await this.graphToPrompt(this.graph, { queueNodeIds })
+          // Don't pass queueNodeIds to graphToPrompt anymore - let backend handle partial execution
+          const p = await this.graphToPrompt(this.graph)
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
-            const res = await api.queuePrompt(number, p)
+            // Pass queueNodeIds as partial_execution_targets to backend
+            const res = await api.queuePrompt(
+              number,
+              p,
+              queueNodeIds?.map(String)
+            )
             delete api.authToken
             delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null
