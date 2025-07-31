@@ -19,7 +19,7 @@ export const IsInstallingKey: InjectionKey<Ref<boolean>> =
   Symbol('isInstalling')
 
 export enum ManagerWsQueueStatus {
-  DONE = 'done',
+  DONE = 'all-done',
   IN_PROGRESS = 'in_progress'
 }
 
