@@ -125,7 +125,8 @@ const handleWhatsNewDismissed = async () => {
  */
 const showConflictModal = () => {
   const conflictData = {
-    conflictedPackages: conflictDetection.conflictedPackages.value
+    conflictedPackages: conflictDetection.conflictedPackages.value,
+    showAfterWhatsNew: true
   }
   showNodeConflictDialog({
     ...conflictData,

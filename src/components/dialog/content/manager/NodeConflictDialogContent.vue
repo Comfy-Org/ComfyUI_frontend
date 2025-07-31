@@ -3,13 +3,15 @@
     <ContentDivider :width="1" />
     <div class="px-4 py-6 w-full h-full flex flex-col gap-2">
       <!-- Description -->
-      <!-- <div>
-        <p class="text-sm leading-4 text-gray-100 m-0 mb-4">
+      <div v-if="showAfterWhatsNew">
+        <p
+          class="text-sm leading-4 text-neutral-800 dark-theme:text-white m-0 mb-4"
+        >
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
         </p>
-      </div> -->
+      </div>
       <!-- Conflict List Wrapper -->
       <div
         class="w-full flex flex-col bg-neutral-200 dark-theme:bg-black min-h-8 rounded-lg"
@@ -122,11 +124,13 @@ import { getConflictMessage } from '@/utils/conflictMessageUtil'
 interface Props {
   conflicts?: ConflictDetectionResult[]
   conflictedPackages?: ConflictDetectionResult[]
+  showAfterWhatsNew?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   conflicts: () => [],
-  conflictedPackages: () => []
+  conflictedPackages: () => [],
+  showAfterWhatsNew: false
 })
 
 const { t } = useI18n()
