@@ -168,7 +168,7 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const settingStore = useSettingStore()
         if (
-          !settingStore.get('Comfy.ComfirmClear') ||
+          !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
           app.clean()

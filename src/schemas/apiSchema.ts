@@ -468,7 +468,6 @@ const zSettings = z.object({
   'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
   'Comfy.Canvas.SelectionToolbox': z.boolean(),
   'LiteGraph.Node.TooltipDelay': z.number(),
-  'Comfy.ComfirmClear': z.boolean(),
   'LiteGraph.ContextMenu.Scaling': z.boolean(),
   'LiteGraph.Reroute.SplineOffset': z.number(),
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),

@@ -5,8 +5,11 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 interface GraphCallbacks {
   onNodeAdded?: (node: LGraphNode) => void
@@ -17,6 +20,8 @@ interface GraphCallbacks {
 export function useMinimap() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
+  const colorPaletteStore = useColorPaletteStore()
+  const workflowStore = useWorkflowStore()
 
   const containerRef = ref<HTMLDivElement>()
   const canvasRef = ref<HTMLCanvasElement>()
@@ -52,12 +57,18 @@ export function useMinimap() {
 
   const width = 250
   const height = 200
-  const nodeColor = '#0B8CE999'
-  const linkColor = '#F99614'
-  const slotColor = '#F99614'
-  const viewportColor = '#FFF'
-  const backgroundColor = '#15161C'
-  const borderColor = '#333'
+
+  // Theme-aware colors for canvas drawing
+  const isLightTheme = computed(
+    () => colorPaletteStore.completedActivePalette.light_theme
+  )
+  const nodeColor = computed(
+    () => (isLightTheme.value ? '#3DA8E099' : '#0B8CE999') // lighter blue for light theme
+  )
+  const linkColor = computed(
+    () => (isLightTheme.value ? '#FFB347' : '#F99614') // lighter orange for light theme
+  )
+  const slotColor = computed(() => linkColor.value)
 
   const containerRect = ref({
     left: 0,
@@ -97,13 +108,21 @@ export function useMinimap() {
   }
 
   const canvas = computed(() => canvasStore.canvas)
-  const graph = computed(() => canvas.value?.graph)
+  const graph = ref(app.canvas?.graph)
+
+  // Update graph ref when subgraph context changes
+  watch(
+    () => workflowStore.activeSubgraph,
+    () => {
+      graph.value = app.canvas?.graph
+    }
+  )
 
   const containerStyles = computed(() => ({
     width: `${width}px`,
     height: `${height}px`,
-    backgroundColor: backgroundColor,
-    border: `1px solid ${borderColor}`,
+    backgroundColor: isLightTheme.value ? '#FAF9F5' : '#15161C',
+    border: `1px solid ${isLightTheme.value ? '#ccc' : '#333'}`,
     borderRadius: '8px'
   }))
 
@@ -111,8 +130,8 @@ export function useMinimap() {
     transform: `translate(${viewportTransform.value.x}px, ${viewportTransform.value.y}px)`,
     width: `${viewportTransform.value.width}px`,
     height: `${viewportTransform.value.height}px`,
-    border: `2px solid ${viewportColor}`,
-    backgroundColor: `${viewportColor}33`,
+    border: `2px solid ${isLightTheme.value ? '#E0E0E0' : '#FFF'}`,
+    backgroundColor: `#FFF33`,
     willChange: 'transform',
     backfaceVisibility: 'hidden' as const,
     perspective: '1000px',
@@ -121,7 +140,7 @@ export function useMinimap() {
 
   const calculateGraphBounds = () => {
     const g = graph.value
-    if (!g?._nodes || g._nodes.length === 0) {
+    if (!g || !g._nodes || g._nodes.length === 0) {
       return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }
     }
 
@@ -195,7 +214,7 @@ export function useMinimap() {
       const h = node.size[1] * scale.value
 
       // Render solid node blocks
-      ctx.fillStyle = nodeColor
+      ctx.fillStyle = nodeColor.value
       ctx.fillRect(x, y, w, h)
     }
   }
@@ -208,7 +227,7 @@ export function useMinimap() {
     const g = graph.value
     if (!g) return
 
-    ctx.strokeStyle = linkColor
+    ctx.strokeStyle = linkColor.value
     ctx.lineWidth = 1.4
 
     const slotRadius = 3.7 * Math.max(scale.value, 0.5) // Larger slots that scale
@@ -257,7 +276,7 @@ export function useMinimap() {
     }
 
     // Render connection slots on top
-    ctx.fillStyle = slotColor
+    ctx.fillStyle = slotColor.value
     for (const conn of connections) {
       // Output slot
       ctx.beginPath()
@@ -272,13 +291,14 @@ export function useMinimap() {
   }
 
   const renderMinimap = () => {
-    if (!canvasRef.value || !graph.value) return
+    const g = graph.value
+    if (!canvasRef.value || !g) return
 
     const ctx = canvasRef.value.getContext('2d')
     if (!ctx) return
 
     // Fast path for 0 nodes - just show background
-    if (!graph.value._nodes || graph.value._nodes.length === 0) {
+    if (!g._nodes || g._nodes.length === 0) {
       ctx.clearRect(0, 0, width, height)
       return
     }
