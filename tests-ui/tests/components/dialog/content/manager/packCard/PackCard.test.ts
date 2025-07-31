@@ -10,7 +10,13 @@ import type { MergedNodePack, RegistryPack } from '@/types/comfyManagerTypes'
 // Mock dependencies
 vi.mock('vue-i18n', () => ({
   useI18n: vi.fn(() => ({
-    d: vi.fn((date) => date.toLocaleDateString()),
+    d: vi.fn((date, options) => {
+      // Mock the date formatter to return consistent format for testing
+      if (options?.dateStyle === 'medium') {
+        return '2024. 1. 1.'
+      }
+      return date.toLocaleDateString()
+    }),
     t: vi.fn((key: string) => key)
   })),
   createI18n: vi.fn(() => ({
