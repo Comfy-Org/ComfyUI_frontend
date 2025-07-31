@@ -9,6 +9,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 type WorkflowPack = {
   id:
@@ -108,11 +109,13 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   }
 
   /**
-   * Get the node packs for all nodes in the workflow.
+   * Get the node packs for all nodes in the workflow (including subgraphs).
    */
   const getWorkflowPacks = async () => {
-    if (!app.graph?.nodes?.length) return []
-    const packs = await Promise.all(app.graph.nodes.map(workflowNodeToPack))
+    if (!app.graph) return []
+    const allNodes = collectAllNodes(app.graph)
+    if (!allNodes.length) return []
+    const packs = await Promise.all(allNodes.map(workflowNodeToPack))
     workflowPacks.value = packs.filter((pack) => pack !== undefined)
   }
 

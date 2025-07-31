@@ -29,6 +29,13 @@
     "name": "畫布背景圖片",
     "tooltip": "畫布背景的圖片網址。你可以在輸出面板中右鍵點擊圖片並選擇「設為背景」來使用，或是使用上傳按鈕上傳你自己的圖片。"
   },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "畫布導航模式",
+    "options": {
+      "Left-Click Pan (Legacy)": "左鍵拖曳平移（舊版）",
+      "Standard (New)": "標準（新）"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "顯示選取工具箱"
   },
@@ -329,10 +336,6 @@
     },
     "tooltip": "選單列位置。在行動裝置上，選單永遠顯示在頂部。"
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "驗證節點定義（較慢）",
-    "tooltip": "建議節點開發者使用。這會在啟動時驗證所有節點定義。"
-  },
   "Comfy_Validation_Workflows": {
     "name": "驗證工作流程"
   },
@@ -398,10 +401,6 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "提示延遲"
-  },
-  "LiteGraph_Pointer_TrackpadGestures": {
-    "name": "啟用觸控板手勢",
-    "tooltip": "此設定可為畫布啟用觸控板模式，允許使用兩指縮放與平移。"
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "重導樣條偏移",

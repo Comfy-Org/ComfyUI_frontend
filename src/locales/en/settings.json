@@ -29,6 +29,13 @@
     "name": "Canvas background image",
     "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
   },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "Canvas Navigation Mode",
+    "options": {
+      "Standard (New)": "Standard (New)",
+      "Left-Click Pan (Legacy)": "Left-Click Pan (Legacy)"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Show selection toolbox"
   },
@@ -329,10 +336,6 @@
       "Bottom": "Bottom"
     }
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "Validate node definitions (slow)",
-    "tooltip": "Recommended for node developers. This will validate all node definitions on startup."
-  },
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
   },
@@ -398,10 +401,6 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Tooltip Delay"
-  },
-  "LiteGraph_Pointer_TrackpadGestures": {
-    "name": "Enable trackpad gestures",
-    "tooltip": "This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers."
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Reroute spline offset",

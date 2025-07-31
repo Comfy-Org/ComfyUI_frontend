@@ -1,8 +1,9 @@
 import type { Size, Vector2 } from '@comfyorg/litegraph'
-import { CSSProperties, ref } from 'vue'
+import { CSSProperties, ref, watch } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 export interface PositionConfig {
   /* The position of the element on litegraph canvas */
@@ -18,9 +19,18 @@ export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
 
   const canvasStore = useCanvasStore()
   const lgCanvas = canvasStore.getCanvas()
-  const { canvasPosToClientPos } = useCanvasPositionConversion(
-    lgCanvas.canvas,
-    lgCanvas
+  const { canvasPosToClientPos, update: updateCanvasPosition } =
+    useCanvasPositionConversion(lgCanvas.canvas, lgCanvas)
+
+  const settingStore = useSettingStore()
+  watch(
+    [
+      () => settingStore.get('Comfy.Sidebar.Location'),
+      () => settingStore.get('Comfy.Sidebar.Size'),
+      () => settingStore.get('Comfy.UseNewMenu')
+    ],
+    () => updateCanvasPosition(),
+    { flush: 'post' }
   )
 
   /**
