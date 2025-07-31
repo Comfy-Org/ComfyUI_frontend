@@ -90,7 +90,21 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   const getIdToken = async (): Promise<string | null> => {
     if (currentUser.value) {
-      return currentUser.value.getIdToken()
+      try {
+        return await currentUser.value.getIdToken()
+      } catch (error: any) {
+        // Handle network-related Firebase Auth errors gracefully
+        if (error?.code === 'auth/network-request-failed' || 
+            error?.message?.includes('network') ||
+            error?.message?.includes('Network error') ||
+            error?.message?.includes('A network error has occurred')) {
+          // Return null for network errors to allow offline functionality
+          console.warn('Firebase Auth network error, working offline:', error.message)
+          return null
+        }
+        // Re-throw other errors as they might be important
+        throw error
+      }
     }
     return null
   }
