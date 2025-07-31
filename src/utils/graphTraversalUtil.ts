@@ -383,10 +383,11 @@ export function traverseNodesDepthFirst<T>(
 
     // If it's a subgraph and we should expand, add children to stack
     if (expandSubgraphs && node.isSubgraphNode?.() && node.subgraph) {
-      // Add in reverse order to maintain left-to-right processing
-      const children = Array.from(node.subgraph.nodes).reverse()
-      for (const childNode of children) {
-        stack.push({ node: childNode, context: childContext })
+      // Process children in reverse order to maintain left-to-right DFS processing
+      // when popping from stack (LIFO). Iterate backwards to avoid array reversal.
+      const children = node.subgraph.nodes
+      for (let i = children.length - 1; i >= 0; i--) {
+        stack.push({ node: children[i], context: childContext })
       }
     }
   }
