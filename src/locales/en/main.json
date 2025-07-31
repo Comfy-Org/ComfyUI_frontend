@@ -214,6 +214,7 @@
       "info": "If you continue with the update, the conflicting extensions will be disabled automatically. You can review and manage them anytime in the ComfyUI Manager.",
       "extensionAtRisk": "Extension at Risk",
       "conflicts": "Conflicts",
+      "importFailedExtensions": "Import Failed Extensions",
       "conflictInfoTitle": "Why is this happening?",
       "installAnyway": "Install Anyway",
       "enableAnyway": "Enable Anyway",
