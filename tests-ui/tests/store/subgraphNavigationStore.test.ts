@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflow } from '@/stores/workflowStore'
@@ -9,6 +10,7 @@ import type { ComfyWorkflow } from '@/stores/workflowStore'
 vi.mock('@/scripts/app', () => ({
   app: {
     graph: {
+      nodes: [],
       subgraphs: new Map(),
       getNodeById: vi.fn()
     },
@@ -19,13 +21,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
-  findSubgraphPathById: vi.fn((_rootGraph, targetId) => {
-    // Mock implementation that returns a path for known subgraphs
-    if (targetId === 'subgraph-1' || targetId === 'subgraph-2') {
-      return [targetId]
-    }
-    return null
-  })
+  findSubgraphPathById: vi.fn()
 }))
 
 describe('useSubgraphNavigationStore', () => {
@@ -120,6 +116,17 @@ describe('useSubgraphNavigationStore', () => {
   it('should clear navigation when activeSubgraph becomes undefined', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+
+    // Create mock subgraph and graph structure
+    const mockSubgraph = {
+      id: 'subgraph-1',
+      rootGraph: (app as any).graph,
+      nodes: [] // Add nodes property
+    }
+
+    // Add the subgraph to the graph's subgraphs map
+    ;(app as any).graph.subgraphs.set('subgraph-1', mockSubgraph)
 
     // First set an active workflow
     const mockWorkflow = {
@@ -129,15 +136,23 @@ describe('useSubgraphNavigationStore', () => {
 
     workflowStore.activeWorkflow = mockWorkflow as any
 
-    // Manually set navigation state to simulate being in a subgraph
-    navigationStore.restoreState(['subgraph-1'])
+    // Mock findSubgraphPathById to return the correct path
+    vi.mocked(findSubgraphPathById).mockReturnValue(['subgraph-1'])
 
-    // Verify navigation was set
+    // Set canvas.subgraph and trigger update to set activeSubgraph
+    ;(app as any).canvas.subgraph = mockSubgraph
+    workflowStore.updateActiveGraph()
+
+    // Wait for Vue's reactivity to process the change
+    await nextTick()
+
+    // Verify navigation was set by the watcher
     expect(navigationStore.exportState()).toHaveLength(1)
     expect(navigationStore.exportState()).toEqual(['subgraph-1'])
 
-    // Clear activeSubgraph (simulating navigating back to root)
-    workflowStore.activeSubgraph = undefined
+    // Clear canvas.subgraph and trigger update (simulating navigating back to root)
+    ;(app as any).canvas.subgraph = null
+    workflowStore.updateActiveGraph()
 
     // Wait for Vue's reactivity to process the change
     await nextTick()
