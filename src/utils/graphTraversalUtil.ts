@@ -219,7 +219,7 @@ export function findSubgraphByUuid(
 }
 
 /**
- * Iteratively finds the path of node IDs to a subgraph.
+ * Iteratively finds the path of subgraph IDs to a target subgraph.
  * @param rootGraph The graph to start searching from.
  * @param targetId The ID of the subgraph to find.
  * @returns An array of subgraph IDs representing the path, or `null` if not found.
