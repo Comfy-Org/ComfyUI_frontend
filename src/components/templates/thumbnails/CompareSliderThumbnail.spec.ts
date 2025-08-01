@@ -12,6 +12,15 @@ vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
   }
 }))
 
+vi.mock('@/components/common/LazyImage.vue', () => ({
+  default: {
+    name: 'LazyImage',
+    template:
+      '<img :src="src" :alt="alt" :class="imageClass" :style="imageStyle" draggable="false" />',
+    props: ['src', 'alt', 'imageClass', 'imageStyle']
+  }
+}))
+
 vi.mock('@vueuse/core', () => ({
   useMouseInElement: () => ({
     elementX: ref(50),
@@ -35,23 +44,24 @@ describe('CompareSliderThumbnail', () => {
 
   it('renders both base and overlay images', () => {
     const wrapper = mountThumbnail()
-    const images = wrapper.findAll('img')
-    expect(images.length).toBe(2)
-    expect(images[0].attributes('src')).toBe('/base-image.jpg')
-    expect(images[1].attributes('src')).toBe('/overlay-image.jpg')
+    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
+    expect(lazyImages.length).toBe(2)
+    expect(lazyImages[0].props('src')).toBe('/base-image.jpg')
+    expect(lazyImages[1].props('src')).toBe('/overlay-image.jpg')
   })
 
   it('applies correct alt text to both images', () => {
     const wrapper = mountThumbnail({ alt: 'Custom Alt Text' })
-    const images = wrapper.findAll('img')
-    expect(images[0].attributes('alt')).toBe('Custom Alt Text')
-    expect(images[1].attributes('alt')).toBe('Custom Alt Text')
+    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
+    expect(lazyImages[0].props('alt')).toBe('Custom Alt Text')
+    expect(lazyImages[1].props('alt')).toBe('Custom Alt Text')
   })
 
   it('applies clip-path style to overlay image', () => {
     const wrapper = mountThumbnail()
-    const overlay = wrapper.findAll('img')[1]
-    expect(overlay.attributes('style')).toContain('clip-path')
+    const overlayLazyImage = wrapper.findAllComponents({ name: 'LazyImage' })[1]
+    const imageStyle = overlayLazyImage.props('imageStyle')
+    expect(imageStyle.clipPath).toContain('inset')
   })
 
   it('renders slider divider', () => {
