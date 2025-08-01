@@ -1,5 +1,11 @@
-import { Positionable, Reroute } from '@comfyorg/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
+  Positionable,
+  Reroute
+} from '@comfyorg/litegraph'
 
+import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 
 /**
@@ -61,11 +67,46 @@ export function useSelectedLiteGraphItems() {
     return getSelectableItems().size > 1
   }
 
+  /**
+   * Get only the selected nodes (LGraphNode instances) from the canvas.
+   * This filters out other types of selected items like groups or reroutes.
+   * @returns Array of selected LGraphNode instances.
+   */
+  const getSelectedNodes = (): LGraphNode[] => {
+    const selectedNodes = app.canvas.selected_nodes
+    const result: LGraphNode[] = []
+    if (selectedNodes) {
+      for (const i in selectedNodes) {
+        const node = selectedNodes[i]
+        result.push(node)
+      }
+    }
+    return result
+  }
+
+  /**
+   * Toggle the execution mode of all selected nodes.
+   * If a node is already in the specified mode, it will be set to ALWAYS.
+   * Otherwise, it will be set to the specified mode.
+   * @param mode - The LGraphEventMode to toggle to.
+   */
+  const toggleSelectedNodesMode = (mode: LGraphEventMode): void => {
+    getSelectedNodes().forEach((node) => {
+      if (node.mode === mode) {
+        node.mode = LGraphEventMode.ALWAYS
+      } else {
+        node.mode = mode
+      }
+    })
+  }
+
   return {
     isIgnoredItem,
     filterSelectableItems,
     getSelectableItems,
     hasSelectableItems,
-    hasMultipleSelectableItems
+    hasMultipleSelectableItems,
+    getSelectedNodes,
+    toggleSelectedNodesMode
   }
 }
