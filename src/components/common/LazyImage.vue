@@ -64,9 +64,7 @@ useIntersectionObserver(
   containerRef,
   (entries) => {
     const entry = entries[0]
-    if (entry?.isIntersecting) {
-      isIntersecting.value = true
-    }
+    isIntersecting.value = entry?.isIntersecting ?? false
   },
   {
     rootMargin,
@@ -96,6 +94,11 @@ watch(
         // Fallback to original src
         cachedSrc.value = src
       }
+    } else if (!shouldLoad) {
+      // Hide image when out of view
+      isImageLoaded.value = false
+      cachedSrc.value = undefined
+      hasError.value = false
     }
   },
   { immediate: true }
