@@ -8,7 +8,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 interface GraphCallbacks {
@@ -21,7 +20,6 @@ export function useMinimap() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
   const colorPaletteStore = useColorPaletteStore()
-  const workflowStore = useWorkflowStore()
 
   const containerRef = ref<HTMLDivElement>()
   const canvasRef = ref<HTMLCanvasElement>()
@@ -110,29 +108,6 @@ export function useMinimap() {
   const canvas = computed(() => canvasStore.canvas)
   const graph = ref(app.canvas?.graph)
 
-  // Update graph ref when subgraph context changes
-  watch(
-    () => workflowStore.activeSubgraph,
-    () => {
-      graph.value = app.canvas?.graph
-      // Force viewport update when switching subgraphs
-      if (initialized.value && visible.value) {
-        updateViewport()
-      }
-    }
-  )
-
-  // Update viewport when switching workflows
-  watch(
-    () => workflowStore.activeWorkflow,
-    () => {
-      // Force viewport update when switching workflows
-      if (initialized.value && visible.value) {
-        updateViewport()
-      }
-    }
-  )
-
   const containerStyles = computed(() => ({
     width: `${width}px`,
     height: `${height}px`,
@@ -191,6 +166,15 @@ export function useMinimap() {
       maxY += padding
       currentHeight = minViewportHeight
     }
+
+    console.log('calculateGraphBounds', {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: currentWidth,
+      height: currentHeight
+    })
 
     return {
       minX,
@@ -371,12 +355,18 @@ export function useMinimap() {
   }
 
   const updateMinimap = () => {
+    console.log('updateMinimap', {
+      needsBoundsUpdate: needsBoundsUpdate.value,
+      updateFlags: updateFlags.value
+    })
     if (needsBoundsUpdate.value || updateFlags.value.bounds) {
       bounds.value = calculateGraphBounds()
       scale.value = calculateScale()
       needsBoundsUpdate.value = false
       updateFlags.value.bounds = false
       needsFullRedraw.value = true
+      // When bounds change, we need to update the viewport position
+      updateFlags.value.viewport = true
     }
 
     if (
@@ -385,6 +375,11 @@ export function useMinimap() {
       updateFlags.value.connections
     ) {
       renderMinimap()
+    }
+
+    // Update viewport if needed (e.g., after bounds change)
+    if (updateFlags.value.viewport) {
+      updateViewport()
     }
   }
 
@@ -435,6 +430,7 @@ export function useMinimap() {
     }
 
     if (structureChanged || positionChanged || connectionChanged) {
+      console.log('checkForChanges:updateMinimap')
       updateMinimap()
     }
   }, 500)
@@ -443,6 +439,7 @@ export function useMinimap() {
     useRafFn(
       async () => {
         if (visible.value) {
+          console.log('pauseChangeDetection:checkForChanges')
           await checkForChanges()
         }
       },
@@ -546,6 +543,7 @@ export function useMinimap() {
     updateFlags.value.bounds = true
     updateFlags.value.nodes = true
     updateFlags.value.connections = true
+    console.log('handleGraphChanged:updateMinimap')
     updateMinimap()
   }, 500)
 
@@ -618,8 +616,14 @@ export function useMinimap() {
       updateFlags.value.connections = true
       updateFlags.value.viewport = true
 
+      console.log('init:updateMinimap')
       updateMinimap()
       updateViewport()
+      console.log('init', {
+        bounds: bounds.value,
+        scale: scale.value,
+        viewport: viewportTransform.value
+      })
 
       if (visible.value) {
         resumeChangeDetection()
@@ -660,7 +664,7 @@ export function useMinimap() {
         await init()
       }
     },
-    { immediate: true }
+    { immediate: true, flush: 'post' }
   )
 
   watch(visible, async (isVisible) => {
@@ -678,8 +682,16 @@ export function useMinimap() {
 
       await nextTick()
 
+      await nextTick()
+
+      console.log('watch:visible:updateMinimap')
       updateMinimap()
       updateViewport()
+      console.log('watch:visible', {
+        bounds: bounds.value,
+        scale: scale.value,
+        viewport: viewportTransform.value
+      })
       resumeChangeDetection()
       startViewportSync()
     } else {
