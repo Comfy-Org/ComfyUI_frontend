@@ -417,6 +417,9 @@ export function useCoreCommands(): ComfyCommand[] {
         )
         group.resizeTo(canvas.selectedItems, padding)
         canvas.graph?.add(group)
+
+        group.recomputeInsideNodes()
+
         useTitleEditorStore().titleEditorTarget = group
       }
     },
