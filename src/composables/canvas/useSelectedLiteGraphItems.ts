@@ -102,32 +102,50 @@ export function useSelectedLiteGraphItems() {
   }
 
   /**
-   * Toggle the execution mode of all selected nodes.
-   * If a node is already in the specified mode, it will be set to ALWAYS.
-   * Otherwise, it will be set to the specified mode.
-   * This includes all nodes within selected subgraphs.
-   * @param mode - The LGraphEventMode to toggle to.
+   * Toggle the execution mode of all selected nodes with unified subgraph behavior.
+   *
+   * Top-level behavior (selected nodes): Standard toggle logic
+   * - If the selected node is already in the specified mode → set to ALWAYS
+   * - Otherwise → set to the specified mode
+   *
+   * Subgraph behavior (children of selected subgraph nodes): Unified state application
+   * - All children inherit the same mode that their parent subgraph node was set to
+   * - This creates predictable behavior: if you toggle a subgraph to "mute",
+   *   ALL nodes inside become muted, regardless of their previous individual states
+   *
+   * @param mode - The LGraphEventMode to toggle to (e.g., NEVER for mute, BYPASS for bypass)
    */
   const toggleSelectedNodesMode = (mode: LGraphEventMode): void => {
     const selectedNodes = app.canvas.selected_nodes
     if (!selectedNodes) return
 
     // Convert selected_nodes object to array
-    const nodeArray: LGraphNode[] = []
+    const selectedNodeArray: LGraphNode[] = []
     for (const i in selectedNodes) {
-      nodeArray.push(selectedNodes[i])
+      selectedNodeArray.push(selectedNodes[i])
     }
 
-    // Use traverseNodesDepthFirst to apply the mode toggle to all nodes including those in subgraphs
-    traverseNodesDepthFirst(nodeArray, {
-      visitor: (node) => {
-        // Toggle the mode
-        if (node.mode === mode) {
-          node.mode = LGraphEventMode.ALWAYS
-        } else {
-          node.mode = mode
-        }
-        return undefined
+    // Process each selected node independently to determine its target state and apply to children
+    selectedNodeArray.forEach((selectedNode) => {
+      // Apply standard toggle logic to the selected node itself
+      const newModeForSelectedNode =
+        selectedNode.mode === mode ? LGraphEventMode.ALWAYS : mode
+
+      selectedNode.mode = newModeForSelectedNode
+
+      // If this selected node is a subgraph, apply the same mode uniformly to all its children
+      // This ensures predictable behavior: all children get the same state as their parent
+      if (selectedNode.isSubgraphNode?.() && selectedNode.subgraph) {
+        traverseNodesDepthFirst([selectedNode], {
+          visitor: (node) => {
+            // Skip the parent node since we already handled it above
+            if (node === selectedNode) return undefined
+
+            // Apply the parent's new mode to all children uniformly
+            node.mode = newModeForSelectedNode
+            return undefined
+          }
+        })
       }
     })
   }

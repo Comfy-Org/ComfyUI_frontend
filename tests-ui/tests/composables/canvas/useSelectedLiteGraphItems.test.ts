@@ -279,7 +279,7 @@ describe('useSelectedLiteGraphItems', () => {
       expect(selectedNodes).toContainEqual(subNode2)
     })
 
-    it('toggleSelectedNodesMode should toggle modes in subgraphs', () => {
+    it('toggleSelectedNodesMode should apply unified state to subgraph children', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
       const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
       const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
@@ -298,14 +298,42 @@ describe('useSelectedLiteGraphItems', () => {
       // Toggle to NEVER mode
       toggleSelectedNodesMode(LGraphEventMode.NEVER)
 
-      // subgraphNode: ALWAYS -> NEVER
+      // Selected nodes follow standard toggle logic:
+      // subgraphNode: ALWAYS -> NEVER (since ALWAYS != NEVER)
       expect(subgraphNode.mode).toBe(LGraphEventMode.NEVER)
-      // subNode1: ALWAYS -> NEVER
-      expect(subNode1.mode).toBe(LGraphEventMode.NEVER)
-      // subNode2: NEVER -> ALWAYS (already NEVER)
-      expect(subNode2.mode).toBe(LGraphEventMode.ALWAYS)
-      // regularNode: BYPASS -> NEVER
+      // regularNode: BYPASS -> NEVER (since BYPASS != NEVER)
       expect(regularNode.mode).toBe(LGraphEventMode.NEVER)
+
+      // Subgraph children get unified state (same as their parent):
+      // Both children should now be NEVER, regardless of their previous states
+      expect(subNode1.mode).toBe(LGraphEventMode.NEVER) // was ALWAYS, now NEVER
+      expect(subNode2.mode).toBe(LGraphEventMode.NEVER) // was NEVER, stays NEVER
+    })
+
+    it('toggleSelectedNodesMode should toggle to ALWAYS when subgraph is already in target mode', () => {
+      const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const subNode2 = { id: 12, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const subgraphNode = {
+        id: 1,
+        mode: LGraphEventMode.NEVER, // Already in NEVER mode
+        isSubgraphNode: () => true,
+        subgraph: {
+          nodes: [subNode1, subNode2]
+        }
+      } as unknown as LGraphNode
+
+      app.canvas.selected_nodes = { '0': subgraphNode }
+
+      // Toggle to NEVER mode (but subgraphNode is already NEVER)
+      toggleSelectedNodesMode(LGraphEventMode.NEVER)
+
+      // Selected subgraph should toggle to ALWAYS (since it was already NEVER)
+      expect(subgraphNode.mode).toBe(LGraphEventMode.ALWAYS)
+
+      // All children should also get ALWAYS (unified with parent's new state)
+      expect(subNode1.mode).toBe(LGraphEventMode.ALWAYS)
+      expect(subNode2.mode).toBe(LGraphEventMode.ALWAYS)
     })
   })
 
