@@ -1,8 +1,7 @@
 import type {
   ExecutableLGraphNode,
   ExecutionId,
-  LGraph,
-  NodeId
+  LGraph
 } from '@comfyorg/litegraph'
 import {
   ExecutableNodeDTO,
@@ -19,45 +18,19 @@ import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
- * Recursively target node's parent nodes to the new output.
- * @param nodeId The node id to add.
- * @param oldOutput The old output.
- * @param newOutput The new output.
- * @returns The new output.
- */
-function recursiveAddNodes(
-  nodeId: NodeId,
-  oldOutput: ComfyApiWorkflow,
-  newOutput: ComfyApiWorkflow
-) {
-  const currentId = String(nodeId)
-  const currentNode = oldOutput[currentId]!
-  if (newOutput[currentId] == null) {
-    newOutput[currentId] = currentNode
-    for (const inputValue of Object.values(currentNode.inputs || [])) {
-      if (Array.isArray(inputValue)) {
-        recursiveAddNodes(inputValue[0], oldOutput, newOutput)
-      }
-    }
-  }
-  return newOutput
-}
-
-/**
  * Converts the current graph workflow for sending to the API.
  * @note Node widgets are updated before serialization to prepare queueing.
  *
  * @param graph The graph to convert.
  * @param options The options for the conversion.
  *  - `sortNodes`: Whether to sort the nodes by execution order.
- *  - `queueNodeIds`: The output nodes to execute. Execute all output nodes if not provided.
  * @returns The workflow and node links
  */
 export const graphToPrompt = async (
   graph: LGraph,
-  options: { sortNodes?: boolean; queueNodeIds?: NodeId[] } = {}
+  options: { sortNodes?: boolean } = {}
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
-  const { sortNodes = false, queueNodeIds } = options
+  const { sortNodes = false } = options
 
   for (const node of graph.computeExecutionOrder(false)) {
     const innerNodes = node.getInnerNodes
@@ -104,7 +77,7 @@ export const graphToPrompt = async (
     nodeDtoMap.set(dto.id, dto)
   }
 
-  let output: ComfyApiWorkflow = {}
+  const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
   for (const node of nodeDtoMap.values()) {
     // Don't serialize muted nodes
@@ -178,15 +151,6 @@ export const graphToPrompt = async (
         delete inputs[i]
       }
     }
-  }
-
-  // Partial execution
-  if (queueNodeIds?.length) {
-    const newOutput = {}
-    for (const queueNodeId of queueNodeIds) {
-      recursiveAddNodes(queueNodeId, output, newOutput)
-    }
-    output = newOutput
   }
 
   return { workflow: workflow as ComfyWorkflowJSON, output }
