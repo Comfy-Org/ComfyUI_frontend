@@ -26,7 +26,11 @@
         <!-- 2. Tasks completed (waiting for restart) -->
         <template v-else>
           <span class="mr-2">✅</span>
-          <span>{{ $t('manager.restartToApplyChanges') }}</span>
+          <span>
+            {{ $t('manager.clickToFinishSetup') }}
+            '{{ $t('manager.applyChanges') }}'
+            {{ $t('manager.toFinishSetup') }}
+          </span>
         </template>
       </div>
     </div>
