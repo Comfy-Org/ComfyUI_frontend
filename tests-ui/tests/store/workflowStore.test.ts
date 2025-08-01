@@ -598,6 +598,7 @@ describe('useWorkflowStore', () => {
       const mockSubgraph = {
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         rootGraph: null as any,
+        _nodes: [],
         nodes: []
       }
 
@@ -608,6 +609,7 @@ describe('useWorkflowStore', () => {
       }
 
       const mockRootGraph = {
+        _nodes: [mockNode],
         nodes: [mockNode],
         subgraphs: new Map([[mockSubgraph.id, mockSubgraph]]),
         getNodeById: (id: string | number) => {

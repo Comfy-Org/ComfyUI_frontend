@@ -24,6 +24,7 @@ vi.mock('@/scripts/app', () => {
   return {
     app: {
       graph: {
+        _nodes: [],
         nodes: [],
         subgraphs: new Map(),
         getNodeById: vi.fn()
@@ -141,7 +142,8 @@ describe('useSubgraphNavigationStore', () => {
     const mockSubgraph = {
       id: 'subgraph-1',
       rootGraph: (app as any).graph,
-      nodes: [] // Add nodes property
+      _nodes: [],
+      nodes: []
     }
 
     // Add the subgraph to the graph's subgraphs map

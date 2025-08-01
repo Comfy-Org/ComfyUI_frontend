@@ -24,6 +24,7 @@ vi.mock('@/scripts/app', () => {
   return {
     app: {
       graph: {
+        _nodes: [],
         nodes: [],
         subgraphs: new Map(),
         getNodeById: vi.fn()
@@ -174,8 +175,9 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const navigationStore = useSubgraphNavigationStore()
       const workflowStore = useWorkflowStore()
 
-      // Create mock subgraph with nodes property
+      // Create mock subgraph with both _nodes and nodes properties
       const mockRootGraph = {
+        _nodes: [],
         nodes: [],
         subgraphs: new Map(),
         getNodeById: vi.fn()
@@ -183,6 +185,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const subgraph1 = {
         id: 'sub1',
         rootGraph: mockRootGraph,
+        _nodes: [],
         nodes: []
       }
 

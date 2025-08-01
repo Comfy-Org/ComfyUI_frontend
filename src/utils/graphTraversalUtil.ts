@@ -235,12 +235,12 @@ export function findSubgraphPathById(
   while (stack.length > 0) {
     const { graph, path } = stack.pop()!
 
-    // Check if graph exists and has nodes property
-    if (!graph || !graph.nodes || !Array.isArray(graph.nodes)) {
+    // Check if graph exists and has _nodes property
+    if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
       continue
     }
 
-    for (const node of graph.nodes) {
+    for (const node of graph._nodes) {
       if (node.isSubgraphNode?.() && node.subgraph) {
         const newPath = [...path, String(node.subgraph.id)]
         if (node.subgraph.id === targetId) {
