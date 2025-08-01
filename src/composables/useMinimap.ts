@@ -167,15 +167,6 @@ export function useMinimap() {
       currentHeight = minViewportHeight
     }
 
-    console.log('calculateGraphBounds', {
-      minX,
-      minY,
-      maxX,
-      maxY,
-      width: currentWidth,
-      height: currentHeight
-    })
-
     return {
       minX,
       minY,
@@ -355,10 +346,6 @@ export function useMinimap() {
   }
 
   const updateMinimap = () => {
-    console.log('updateMinimap', {
-      needsBoundsUpdate: needsBoundsUpdate.value,
-      updateFlags: updateFlags.value
-    })
     if (needsBoundsUpdate.value || updateFlags.value.bounds) {
       bounds.value = calculateGraphBounds()
       scale.value = calculateScale()
@@ -430,7 +417,6 @@ export function useMinimap() {
     }
 
     if (structureChanged || positionChanged || connectionChanged) {
-      console.log('checkForChanges:updateMinimap')
       updateMinimap()
     }
   }, 500)
@@ -439,7 +425,6 @@ export function useMinimap() {
     useRafFn(
       async () => {
         if (visible.value) {
-          console.log('pauseChangeDetection:checkForChanges')
           await checkForChanges()
         }
       },
@@ -543,7 +528,6 @@ export function useMinimap() {
     updateFlags.value.bounds = true
     updateFlags.value.nodes = true
     updateFlags.value.connections = true
-    console.log('handleGraphChanged:updateMinimap')
     updateMinimap()
   }, 500)
 
@@ -616,14 +600,8 @@ export function useMinimap() {
       updateFlags.value.connections = true
       updateFlags.value.viewport = true
 
-      console.log('init:updateMinimap')
       updateMinimap()
       updateViewport()
-      console.log('init', {
-        bounds: bounds.value,
-        scale: scale.value,
-        viewport: viewportTransform.value
-      })
 
       if (visible.value) {
         resumeChangeDetection()
@@ -684,14 +662,8 @@ export function useMinimap() {
 
       await nextTick()
 
-      console.log('watch:visible:updateMinimap')
       updateMinimap()
       updateViewport()
-      console.log('watch:visible', {
-        bounds: bounds.value,
-        scale: scale.value,
-        viewport: viewportTransform.value
-      })
       resumeChangeDetection()
       startViewportSync()
     } else {
