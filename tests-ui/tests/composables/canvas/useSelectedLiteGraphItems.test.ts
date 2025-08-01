@@ -254,6 +254,59 @@ describe('useSelectedLiteGraphItems', () => {
       // Should change to ALWAYS
       expect(node.mode).toBe(LGraphEventMode.ALWAYS)
     })
+
+    it('getSelectedNodes should include nodes from subgraphs', () => {
+      const { getSelectedNodes } = useSelectedLiteGraphItems()
+      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
+      const subgraphNode = {
+        id: 1,
+        mode: LGraphEventMode.ALWAYS,
+        isSubgraphNode: () => true,
+        subgraph: {
+          nodes: [subNode1, subNode2]
+        }
+      } as unknown as LGraphNode
+      const regularNode = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': subgraphNode, '1': regularNode }
+
+      const selectedNodes = getSelectedNodes()
+      expect(selectedNodes).toHaveLength(4) // subgraphNode + 2 sub nodes + regularNode
+      expect(selectedNodes).toContainEqual(subgraphNode)
+      expect(selectedNodes).toContainEqual(regularNode)
+      expect(selectedNodes).toContainEqual(subNode1)
+      expect(selectedNodes).toContainEqual(subNode2)
+    })
+
+    it('toggleSelectedNodesMode should toggle modes in subgraphs', () => {
+      const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
+      const subgraphNode = {
+        id: 1,
+        mode: LGraphEventMode.ALWAYS,
+        isSubgraphNode: () => true,
+        subgraph: {
+          nodes: [subNode1, subNode2]
+        }
+      } as unknown as LGraphNode
+      const regularNode = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': subgraphNode, '1': regularNode }
+
+      // Toggle to NEVER mode
+      toggleSelectedNodesMode(LGraphEventMode.NEVER)
+
+      // subgraphNode: ALWAYS -> NEVER
+      expect(subgraphNode.mode).toBe(LGraphEventMode.NEVER)
+      // subNode1: ALWAYS -> NEVER
+      expect(subNode1.mode).toBe(LGraphEventMode.NEVER)
+      // subNode2: NEVER -> ALWAYS (already NEVER)
+      expect(subNode2.mode).toBe(LGraphEventMode.ALWAYS)
+      // regularNode: BYPASS -> NEVER
+      expect(regularNode.mode).toBe(LGraphEventMode.NEVER)
+    })
   })
 
   describe('dynamic behavior', () => {
