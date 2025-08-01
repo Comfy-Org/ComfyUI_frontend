@@ -24,6 +24,8 @@ vi.mock('@/scripts/app', () => {
   return {
     app: {
       graph: {
+        _nodes: [],
+        nodes: [],
         subgraphs: new Map(),
         getNodeById: vi.fn()
       },
@@ -173,16 +175,29 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const navigationStore = useSubgraphNavigationStore()
       const workflowStore = useWorkflowStore()
 
+      // Create mock subgraph with both _nodes and nodes properties
+      const mockRootGraph = {
+        _nodes: [],
+        nodes: [],
+        subgraphs: new Map(),
+        getNodeById: vi.fn()
+      }
+      const subgraph1 = {
+        id: 'sub1',
+        rootGraph: mockRootGraph,
+        _nodes: [],
+        nodes: []
+      }
+
       // Start at root with custom viewport
       mockCanvas.ds.state.scale = 2
       mockCanvas.ds.state.offset = [100, 100]
 
       // Navigate to subgraph
-      const subgraph1 = { id: 'sub1' }
       workflowStore.activeSubgraph = subgraph1 as any
       await nextTick()
 
-      // Root viewport should have been saved
+      // Root viewport should have been saved automatically
       const rootViewport = navigationStore.viewportCache.get('root')
       expect(rootViewport).toBeDefined()
       expect(rootViewport?.scale).toBe(2)
@@ -196,13 +211,13 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       workflowStore.activeSubgraph = undefined
       await nextTick()
 
-      // Subgraph viewport should have been saved
+      // Subgraph viewport should have been saved automatically
       const sub1Viewport = navigationStore.viewportCache.get('sub1')
       expect(sub1Viewport).toBeDefined()
       expect(sub1Viewport?.scale).toBe(0.5)
       expect(sub1Viewport?.offset).toEqual([-50, -50])
 
-      // Root viewport should be restored
+      // Root viewport should be restored automatically
       expect(mockCanvas.ds.scale).toBe(2)
       expect(mockCanvas.ds.offset).toEqual([100, 100])
     })
