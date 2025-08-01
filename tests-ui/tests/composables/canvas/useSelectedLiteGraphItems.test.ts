@@ -1,14 +1,34 @@
-import { Positionable, Reroute } from '@comfyorg/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
+  Positionable,
+  Reroute
+} from '@comfyorg/litegraph'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
+
+// Mock the app module
+vi.mock('@/scripts/app', () => ({
+  app: {
+    canvas: {
+      selected_nodes: null
+    }
+  }
+}))
 
 // Mock the litegraph module
 vi.mock('@comfyorg/litegraph', () => ({
   Reroute: class Reroute {
     constructor() {}
+  },
+  LGraphEventMode: {
+    ALWAYS: 0,
+    NEVER: 2,
+    BYPASS: 4
   }
 }))
 
@@ -178,6 +198,142 @@ describe('useSelectedLiteGraphItems', () => {
 
       // Even though there are 3 items total, only 1 is selectable
       expect(hasMultipleSelectableItems()).toBe(false)
+    })
+  })
+
+  describe('node-specific methods', () => {
+    it('getSelectedNodes should return only LGraphNode instances', () => {
+      const { getSelectedNodes } = useSelectedLiteGraphItems()
+      const node1 = { id: 1, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const node2 = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+
+      // Mock app.canvas.selected_nodes
+      app.canvas.selected_nodes = { '0': node1, '1': node2 }
+
+      const selectedNodes = getSelectedNodes()
+      expect(selectedNodes).toHaveLength(2)
+      expect(selectedNodes[0]).toBe(node1)
+      expect(selectedNodes[1]).toBe(node2)
+    })
+
+    it('getSelectedNodes should return empty array when no nodes selected', () => {
+      const { getSelectedNodes } = useSelectedLiteGraphItems()
+
+      // @ts-expect-error - Testing null case
+      app.canvas.selected_nodes = null
+
+      const selectedNodes = getSelectedNodes()
+      expect(selectedNodes).toHaveLength(0)
+    })
+
+    it('toggleSelectedNodesMode should toggle node modes correctly', () => {
+      const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+      const node1 = { id: 1, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const node2 = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': node1, '1': node2 }
+
+      // Toggle to NEVER mode
+      toggleSelectedNodesMode(LGraphEventMode.NEVER)
+
+      // node1 should change from ALWAYS to NEVER
+      // node2 should change from NEVER to ALWAYS (since it was already NEVER)
+      expect(node1.mode).toBe(LGraphEventMode.NEVER)
+      expect(node2.mode).toBe(LGraphEventMode.ALWAYS)
+    })
+
+    it('toggleSelectedNodesMode should set mode to ALWAYS when already in target mode', () => {
+      const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+      const node = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': node }
+
+      // Toggle to BYPASS mode (node is already BYPASS)
+      toggleSelectedNodesMode(LGraphEventMode.BYPASS)
+
+      // Should change to ALWAYS
+      expect(node.mode).toBe(LGraphEventMode.ALWAYS)
+    })
+
+    it('getSelectedNodes should include nodes from subgraphs', () => {
+      const { getSelectedNodes } = useSelectedLiteGraphItems()
+      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
+      const subgraphNode = {
+        id: 1,
+        mode: LGraphEventMode.ALWAYS,
+        isSubgraphNode: () => true,
+        subgraph: {
+          nodes: [subNode1, subNode2]
+        }
+      } as unknown as LGraphNode
+      const regularNode = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': subgraphNode, '1': regularNode }
+
+      const selectedNodes = getSelectedNodes()
+      expect(selectedNodes).toHaveLength(4) // subgraphNode + 2 sub nodes + regularNode
+      expect(selectedNodes).toContainEqual(subgraphNode)
+      expect(selectedNodes).toContainEqual(regularNode)
+      expect(selectedNodes).toContainEqual(subNode1)
+      expect(selectedNodes).toContainEqual(subNode2)
+    })
+
+    it('toggleSelectedNodesMode should apply unified state to subgraph children', () => {
+      const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
+      const subgraphNode = {
+        id: 1,
+        mode: LGraphEventMode.ALWAYS,
+        isSubgraphNode: () => true,
+        subgraph: {
+          nodes: [subNode1, subNode2]
+        }
+      } as unknown as LGraphNode
+      const regularNode = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': subgraphNode, '1': regularNode }
+
+      // Toggle to NEVER mode
+      toggleSelectedNodesMode(LGraphEventMode.NEVER)
+
+      // Selected nodes follow standard toggle logic:
+      // subgraphNode: ALWAYS -> NEVER (since ALWAYS != NEVER)
+      expect(subgraphNode.mode).toBe(LGraphEventMode.NEVER)
+      // regularNode: BYPASS -> NEVER (since BYPASS != NEVER)
+      expect(regularNode.mode).toBe(LGraphEventMode.NEVER)
+
+      // Subgraph children get unified state (same as their parent):
+      // Both children should now be NEVER, regardless of their previous states
+      expect(subNode1.mode).toBe(LGraphEventMode.NEVER) // was ALWAYS, now NEVER
+      expect(subNode2.mode).toBe(LGraphEventMode.NEVER) // was NEVER, stays NEVER
+    })
+
+    it('toggleSelectedNodesMode should toggle to ALWAYS when subgraph is already in target mode', () => {
+      const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const subNode2 = { id: 12, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const subgraphNode = {
+        id: 1,
+        mode: LGraphEventMode.NEVER, // Already in NEVER mode
+        isSubgraphNode: () => true,
+        subgraph: {
+          nodes: [subNode1, subNode2]
+        }
+      } as unknown as LGraphNode
+
+      app.canvas.selected_nodes = { '0': subgraphNode }
+
+      // Toggle to NEVER mode (but subgraphNode is already NEVER)
+      toggleSelectedNodesMode(LGraphEventMode.NEVER)
+
+      // Selected subgraph should toggle to ALWAYS (since it was already NEVER)
+      expect(subgraphNode.mode).toBe(LGraphEventMode.ALWAYS)
+
+      // All children should also get ALWAYS (unified with parent's new state)
+      expect(subNode1.mode).toBe(LGraphEventMode.ALWAYS)
+      expect(subNode2.mode).toBe(LGraphEventMode.ALWAYS)
     })
   })
 
