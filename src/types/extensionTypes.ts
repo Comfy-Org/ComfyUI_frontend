@@ -14,6 +14,7 @@ export interface BaseSidebarTabExtension {
 export interface BaseBottomPanelExtension {
   id: string
   title: string
+  targetPanel?: 'terminal' | 'shortcuts'
 }
 
 export interface VueExtension {
