@@ -1092,23 +1092,42 @@ export class ComfyApp {
 
     const embeddedModels: ModelFile[] = []
 
-    for (let n of graphData.nodes) {
-      // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
-      if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
-      if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
-      if (n.type == 'SDV_img2vid_Conditioning')
-        n.type = 'SVD_img2vid_Conditioning' //typo fix
+    // Helper function to process nodes including those in subgraphs
+    const processNodesRecursively = (nodes: any[], path: string = '') => {
+      for (let n of nodes) {
+        // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
+        if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
+        if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
+        if (n.type == 'SDV_img2vid_Conditioning')
+          n.type = 'SVD_img2vid_Conditioning' //typo fix
 
-      // Find missing node types
-      if (!(n.type in LiteGraph.registered_node_types)) {
-        missingNodeTypes.push(n.type)
-        n.type = sanitizeNodeName(n.type)
+        // Find missing node types
+        if (!(n.type in LiteGraph.registered_node_types)) {
+          // Include context about subgraph location if applicable
+          const nodeTypeWithContext = path
+            ? `${n.type} (in subgraph '${path}')`
+            : n.type
+          missingNodeTypes.push(nodeTypeWithContext)
+          n.type = sanitizeNodeName(n.type)
+        }
+
+        // Collect models metadata from node
+        const selectedModels = getSelectedModelsMetadata(n)
+        if (selectedModels?.length) {
+          embeddedModels.push(...selectedModels)
+        }
       }
+    }
 
-      // Collect models metadata from node
-      const selectedModels = getSelectedModelsMetadata(n)
-      if (selectedModels?.length) {
-        embeddedModels.push(...selectedModels)
+    // Process nodes at the top level
+    processNodesRecursively(graphData.nodes)
+
+    // Process nodes in subgraphs
+    if (graphData.definitions?.subgraphs) {
+      for (const subgraph of graphData.definitions.subgraphs as any[]) {
+        if (subgraph.nodes) {
+          processNodesRecursively(subgraph.nodes, subgraph.name || subgraph.id)
+        }
       }
     }
 
