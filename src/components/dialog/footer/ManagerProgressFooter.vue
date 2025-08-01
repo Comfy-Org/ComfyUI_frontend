@@ -63,7 +63,7 @@
         <Button
           rounded
           outlined
-          class="mr-4 rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 dark-theme:bg-none dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-700"
+          class="rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 dark-theme:bg-none dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-700"
           @click="handleRestart"
         >
           {{ $t('manager.applyChanges') }}
