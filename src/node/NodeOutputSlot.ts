@@ -1,10 +1,13 @@
 import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LinkId } from "@/LLink"
+import type { SubgraphInput } from "@/subgraph/SubgraphInput"
+import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
 
 import { LabelPosition } from "@/draw"
 import { LiteGraph } from "@/litegraph"
 import { type IDrawOptions, NodeSlot } from "@/node/NodeSlot"
+import { isSubgraphOutput } from "@/subgraph/subgraphUtils"
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   #node: LGraphNode
@@ -32,8 +35,16 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     this.#node = node
   }
 
-  override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot): boolean {
-    return "link" in fromSlot && LiteGraph.isValidConnection(this.type, fromSlot.type)
+  override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput): boolean {
+    if ("link" in fromSlot) {
+      return LiteGraph.isValidConnection(this.type, fromSlot.type)
+    }
+
+    if (isSubgraphOutput(fromSlot)) {
+      return LiteGraph.isValidConnection(this.type, fromSlot.type)
+    }
+
+    return false
   }
 
   override get isConnected(): boolean {

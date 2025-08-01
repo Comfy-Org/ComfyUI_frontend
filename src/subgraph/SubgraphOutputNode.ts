@@ -1,8 +1,8 @@
+import type { SubgraphInput } from "./SubgraphInput"
 import type { SubgraphOutput } from "./SubgraphOutput"
 import type { LinkConnector } from "@/canvas/LinkConnector"
 import type { CanvasPointer } from "@/CanvasPointer"
-import type { DefaultConnectionColors, ISlotType, Positionable } from "@/interfaces"
-import type { INodeOutputSlot } from "@/interfaces"
+import type { DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, ISlotType, Positionable } from "@/interfaces"
 import type { LGraphNode, NodeId } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
 import type { RerouteId } from "@/Reroute"
@@ -90,7 +90,7 @@ export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> imple
     return findFreeSlotOfType(this.slots, type, slot => slot.linkIds.length > 0)?.slot
   }
 
-  override drawProtected(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors): void {
+  override drawProtected(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void {
     const { roundedRadius } = SubgraphIONodeBase
     const transform = ctx.getTransform()
 
@@ -114,6 +114,6 @@ export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> imple
     // Restore context
     ctx.setTransform(transform)
 
-    this.drawSlots(ctx, colorContext)
+    this.drawSlots(ctx, colorContext, fromSlot, editorAlpha)
   }
 }

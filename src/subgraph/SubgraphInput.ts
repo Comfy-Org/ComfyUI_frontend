@@ -1,15 +1,18 @@
 import type { SubgraphInputNode } from "./SubgraphInputNode"
+import type { SubgraphOutput } from "./SubgraphOutput"
 import type { SubgraphInputEventMap } from "@/infrastructure/SubgraphInputEventMap"
-import type { INodeInputSlot, Point, ReadOnlyRect } from "@/interfaces"
+import type { INodeInputSlot, INodeOutputSlot, Point, ReadOnlyRect } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
 import type { RerouteId } from "@/Reroute"
 import type { IBaseWidget } from "@/types/widgets"
 
 import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
+import { LiteGraph } from "@/litegraph"
 import { LLink } from "@/LLink"
 import { NodeSlotType } from "@/types/globalEnums"
 
 import { SubgraphSlot } from "./SubgraphSlotBase"
+import { isNodeSlot, isSubgraphOutput } from "./subgraphUtils"
 
 /**
  * An input "slot" from a parent graph into a subgraph.
@@ -210,5 +213,22 @@ export class SubgraphInput extends SubgraphSlot {
 
     pos[0] = right - height * 0.5
     pos[1] = top + height * 0.5
+  }
+
+  /**
+   * Checks if this slot is a valid target for a connection from the given slot.
+   * For SubgraphInput (which acts as an output inside the subgraph),
+   * the fromSlot should be an input slot.
+   */
+  override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput): boolean {
+    if (isNodeSlot(fromSlot)) {
+      return "link" in fromSlot && LiteGraph.isValidConnection(this.type, fromSlot.type)
+    }
+
+    if (isSubgraphOutput(fromSlot)) {
+      return LiteGraph.isValidConnection(this.type, fromSlot.type)
+    }
+
+    return false
   }
 }

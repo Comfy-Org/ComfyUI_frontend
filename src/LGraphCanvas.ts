@@ -4212,7 +4212,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // Draw subgraph IO nodes
-      this.subgraph?.draw(ctx, this.colourGetter)
+      this.subgraph?.draw(ctx, this.colourGetter, this.linkConnector.renderLinks[0]?.fromSlot, this.editor_alpha)
 
       // on top (debug)
       if (this.render_execution_order) {

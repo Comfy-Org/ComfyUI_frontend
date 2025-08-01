@@ -1,5 +1,7 @@
 import type { CanvasColour, DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, INodeSlot, ISubgraphInput, OptionalProps, Point, ReadOnlyPoint } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
+import type { SubgraphInput } from "@/subgraph/SubgraphInput"
+import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
 
 import { LabelPosition, SlotShape, SlotType } from "@/draw"
 import { LiteGraph, Rectangle } from "@/litegraph"
@@ -68,7 +70,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
    * Whether this slot is a valid target for a dragging link.
    * @param fromSlot The slot that the link is being connected from.
    */
-  abstract isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot): boolean
+  abstract isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput): boolean
 
   /**
    * The label to display in the UI.

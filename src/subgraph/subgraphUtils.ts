@@ -1,4 +1,6 @@
-import type { INodeOutputSlot, Positionable } from "@/interfaces"
+import type { SubgraphInput } from "./SubgraphInput"
+import type { SubgraphOutput } from "./SubgraphOutput"
+import type { INodeInputSlot, INodeOutputSlot, Positionable } from "@/interfaces"
 import type { LGraph } from "@/LGraph"
 import type { ISerialisedNode, SerialisableLLink, SubgraphIO } from "@/types/serialisation"
 
@@ -335,4 +337,34 @@ export function mapSubgraphOutputsAndLinks(resolvedOutputLinks: ResolvedConnecti
     outputs.push(structuredClone(outputData))
   }
   return outputs
+}
+
+/**
+ * Type guard to check if a slot is a SubgraphInput.
+ * @param slot The slot to check
+ * @returns true if the slot is a SubgraphInput
+ */
+export function isSubgraphInput(slot: unknown): slot is SubgraphInput {
+  return slot != null && typeof slot === "object" && "parent" in slot &&
+    slot.parent instanceof SubgraphInputNode
+}
+
+/**
+ * Type guard to check if a slot is a SubgraphOutput.
+ * @param slot The slot to check
+ * @returns true if the slot is a SubgraphOutput
+ */
+export function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
+  return slot != null && typeof slot === "object" && "parent" in slot &&
+    slot.parent instanceof SubgraphOutputNode
+}
+
+/**
+ * Type guard to check if a slot is a regular node slot (INodeInputSlot or INodeOutputSlot).
+ * @param slot The slot to check
+ * @returns true if the slot is a regular node slot
+ */
+export function isNodeSlot(slot: unknown): slot is INodeInputSlot | INodeOutputSlot {
+  return slot != null && typeof slot === "object" &&
+    ("link" in slot || "links" in slot)
 }

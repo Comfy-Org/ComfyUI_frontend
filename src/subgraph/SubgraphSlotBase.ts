@@ -1,4 +1,6 @@
+import type { SubgraphInput } from "./SubgraphInput"
 import type { SubgraphInputNode } from "./SubgraphInputNode"
+import type { SubgraphOutput } from "./SubgraphOutput"
 import type { SubgraphOutputNode } from "./SubgraphOutputNode"
 import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, ReadOnlyRect, ReadOnlySize } from "@/interfaces"
 import type { LGraphNode } from "@/LGraphNode"
@@ -19,6 +21,8 @@ export interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D
   colorContext: DefaultConnectionColors
   lowQuality?: boolean
+  fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
+  editorAlpha?: number
 }
 
 /** Shared base class for the slots used on Subgraph . */
@@ -132,21 +136,31 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
     this.linkIds.length = 0
   }
 
-  /** @remarks Leaves the context dirty. */
-  drawLabel(ctx: CanvasRenderingContext2D): void {
-    if (!this.displayName) return
-
-    const [x, y] = this.labelPos
-    ctx.fillStyle = this.isPointerOver ? "white" : (LiteGraph.NODE_TEXT_COLOR || "#AAA")
-
-    ctx.fillText(this.displayName, x, y)
-  }
+  /**
+   * Checks if this slot is a valid target for a connection from the given slot.
+   * @param fromSlot The slot that is being dragged to connect to this slot.
+   * @returns true if the connection is valid, false otherwise.
+   */
+  abstract isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput): boolean
 
   /** @remarks Leaves the context dirty. */
-  draw({ ctx, colorContext, lowQuality }: SubgraphSlotDrawOptions): void {
+  draw({ ctx, colorContext, lowQuality, fromSlot, editorAlpha = 1 }: SubgraphSlotDrawOptions): void {
     // Assertion: SlotShape is a subset of RenderShape
     const shape = this.shape as unknown as SlotShape
     const { isPointerOver, pos: [x, y] } = this
+
+    // Check if this slot is a valid target for the current dragging connection
+    const isValidTarget = fromSlot ? this.isValidTarget(fromSlot) : true
+    const isValid = !fromSlot || isValidTarget
+
+    // Only highlight if the slot is valid AND mouse is over it
+    const highlight = isValid && isPointerOver
+
+    // Save current alpha
+    const previousAlpha = ctx.globalAlpha
+
+    // Set opacity based on validity when dragging a connection
+    ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
 
     ctx.beginPath()
 
@@ -161,17 +175,28 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
       ctx.lineWidth = 3
       ctx.strokeStyle = color
 
-      const radius = isPointerOver ? 4 : 3
+      const radius = highlight ? 4 : 3
       ctx.arc(x, y, radius, 0, Math.PI * 2)
       ctx.stroke()
     } else {
       // Normal circle
       ctx.fillStyle = color
 
-      const radius = isPointerOver ? 5 : 4
+      const radius = highlight ? 5 : 4
       ctx.arc(x, y, radius, 0, Math.PI * 2)
       ctx.fill()
     }
+
+    // Draw label with current opacity
+    if (this.displayName) {
+      const [labelX, labelY] = this.labelPos
+      // Also apply highlight logic to text color
+      ctx.fillStyle = highlight ? "white" : (LiteGraph.NODE_TEXT_COLOR || "#AAA")
+      ctx.fillText(this.displayName, labelX, labelY)
+    }
+
+    // Restore alpha
+    ctx.globalAlpha = previousAlpha
   }
 
   asSerialisable(): SubgraphIO {

@@ -4,7 +4,7 @@ import type { Subgraph } from "./Subgraph"
 import type { SubgraphInput } from "./SubgraphInput"
 import type { SubgraphOutput } from "./SubgraphOutput"
 import type { LinkConnector } from "@/canvas/LinkConnector"
-import type { DefaultConnectionColors, Hoverable, Point, Positionable } from "@/interfaces"
+import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, Positionable } from "@/interfaces"
 import type { NodeId } from "@/LGraphNode"
 import type { ExportedSubgraphIONode, Serialisable } from "@/types/serialisation"
 
@@ -249,24 +249,23 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
     size[1] = currentY - y + roundedRadius
   }
 
-  draw(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors): void {
+  draw(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void {
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
-    this.drawProtected(ctx, colorContext)
+    this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, { lineWidth, strokeStyle, fillStyle, font, textBaseline })
   }
 
   /** @internal Leaves {@link ctx} dirty. */
-  protected abstract drawProtected(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors): void
+  protected abstract drawProtected(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void
 
   /** @internal Leaves {@link ctx} dirty. */
-  protected drawSlots(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors): void {
+  protected drawSlots(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void {
     ctx.fillStyle = "#AAA"
     ctx.font = "12px Arial"
     ctx.textBaseline = "middle"
 
     for (const slot of this.allSlots) {
-      slot.draw({ ctx, colorContext })
-      slot.drawLabel(ctx)
+      slot.draw({ ctx, colorContext, fromSlot, editorAlpha })
     }
   }
 

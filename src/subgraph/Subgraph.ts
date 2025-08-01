@@ -1,5 +1,5 @@
 import type { SubgraphEventMap } from "@/infrastructure/SubgraphEventMap"
-import type { DefaultConnectionColors } from "@/interfaces"
+import type { DefaultConnectionColors, INodeInputSlot, INodeOutputSlot } from "@/interfaces"
 import type { LGraphCanvas } from "@/LGraphCanvas"
 import type { ExportedSubgraph, ExposedWidget, ISerialisedGraph, Serialisable, SerialisableGraph } from "@/types/serialisation"
 
@@ -206,9 +206,9 @@ export class Subgraph extends LGraph implements BaseLGraph, Serialisable<Exporte
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors): void {
-    this.inputNode.draw(ctx, colorContext)
-    this.outputNode.draw(ctx, colorContext)
+  draw(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void {
+    this.inputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
+    this.outputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
   }
 
   /**
