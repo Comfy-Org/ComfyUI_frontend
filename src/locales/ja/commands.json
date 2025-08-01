@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "更新を確認する"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "カスタムノードフォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "入力フォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "ログフォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "extra_model_paths.yamlを開く"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "モデルフォルダを開く"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "出力フォルダを開く"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "DevToolsを開く"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "デスクトップユーザーガイド"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "終了"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "再インストール"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "再起動"
-  },
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
   },
@@ -70,9 +34,6 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "キャンバスのロックを切り替える"
-  },
-  "Comfy_Canvas_ToggleMinimap": {
-    "label": "キャンバス ミニマップ切り替え"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "選択したノードのバイパス/バイパス解除"
@@ -116,9 +77,6 @@
   "Comfy_Feedback": {
     "label": "フィードバック"
   },
-  "Comfy_Graph_ConvertToSubgraph": {
-    "label": "選択範囲をサブグラフに変換"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "グループを内容に合わせて調整"
   },
@@ -160,12 +118,6 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "プログレスダイアログの切り替え"
-  },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "マスクエディタでブラシサイズを縮小"
-  },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "マスクエディタでブラシサイズを大きくする"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "選択したノードのマスクエディタを開く"
@@ -229,9 +181,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "パネル下部の切り替え"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "ターミナルパネル下部の切り替え"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "ログパネル下部の切り替え"

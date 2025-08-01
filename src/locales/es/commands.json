@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Buscar actualizaciones"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Abrir carpeta de nodos personalizados"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Abrir carpeta de entradas"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Abrir carpeta de registros"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Abrir extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Abrir carpeta de modelos"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Abrir carpeta de salidas"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Abrir herramientas de desarrollo"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Guía de usuario de escritorio"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Salir"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Reinstalar"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Reiniciar"
-  },
   "Comfy_BrowseTemplates": {
     "label": "Explorar plantillas"
   },
@@ -70,9 +34,6 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Alternar bloqueo en lienzo"
-  },
-  "Comfy_Canvas_ToggleMinimap": {
-    "label": "Lienzo Alternar Minimapa"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Omitir/No omitir nodos seleccionados"
@@ -116,9 +77,6 @@
   "Comfy_Feedback": {
     "label": "Dar retroalimentación"
   },
-  "Comfy_Graph_ConvertToSubgraph": {
-    "label": "Convertir selección en subgrafo"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajustar grupo al contenido"
   },
@@ -160,12 +118,6 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar diálogo de progreso del administrador"
-  },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "Disminuir tamaño del pincel en MaskEditor"
-  },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "Aumentar tamaño del pincel en MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir editor de máscara para el nodo seleccionado"
@@ -229,9 +181,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "Alternar Panel Inferior"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Alternar Panel Inferior de Terminal"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Alternar Panel Inferior de Registros"

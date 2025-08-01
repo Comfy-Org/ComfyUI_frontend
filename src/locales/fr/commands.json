@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Vérifier les mises à jour"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Ouvrir le dossier des nœuds personnalisés"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Ouvrir le dossier des entrées"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Ouvrir le dossier des journaux"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Ouvrir extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Ouvrir le dossier des modèles"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Ouvrir le dossier des sorties"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Ouvrir les outils de développement"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Guide de l'utilisateur du bureau"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Quitter"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Réinstaller"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Redémarrer"
-  },
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },
@@ -70,9 +34,6 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Basculer le verrouillage du canevas"
-  },
-  "Comfy_Canvas_ToggleMinimap": {
-    "label": "Basculer la mini-carte du canevas"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Contourner/Ne pas contourner les nœuds sélectionnés"
@@ -116,9 +77,6 @@
   "Comfy_Feedback": {
     "label": "Retour d'information"
   },
-  "Comfy_Graph_ConvertToSubgraph": {
-    "label": "Convertir la sélection en sous-graphe"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajuster le groupe au contenu"
   },
@@ -160,12 +118,6 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Basculer la boîte de dialogue de progression"
-  },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "Réduire la taille du pinceau dans MaskEditor"
-  },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "Augmenter la taille du pinceau dans MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
@@ -229,9 +181,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "Basculer le panneau inférieur"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Basculer le panneau inférieur du terminal"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Basculer le panneau inférieur des journaux"

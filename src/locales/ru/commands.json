@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Проверить наличие обновлений"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Открыть папку пользовательских нод"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Открыть папку входных данных"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Открыть папку логов"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Открыть extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Открыть папку моделей"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Открыть папку результатов"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Открыть инструменты разработчика"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Руководство пользователя для рабочего стола"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Выйти"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Переустановить"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Перезагрузить"
-  },
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
   },
@@ -70,9 +34,6 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Переключить блокировку холста"
-  },
-  "Comfy_Canvas_ToggleMinimap": {
-    "label": "Полотно: переключить миникарту"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Обход/Необход выбранных нод"
@@ -116,9 +77,6 @@
   "Comfy_Feedback": {
     "label": "Обратная связь"
   },
-  "Comfy_Graph_ConvertToSubgraph": {
-    "label": "Преобразовать выделенное в подграф"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Подогнать группу к содержимому"
   },
@@ -160,12 +118,6 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Переключить диалоговое окно прогресса"
-  },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "Уменьшить размер кисти в MaskEditor"
-  },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "Увеличить размер кисти в MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Открыть редактор масок для выбранной ноды"
@@ -229,9 +181,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "Переключить нижнюю панель"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Переключить нижнюю панель терминала"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Переключить нижнюю панель логов"

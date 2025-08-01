@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "업데이트 확인"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "사용자 정의 노드 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "입력 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "로그 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "extra_model_paths.yaml 열기"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "모델 폴더 열기"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "출력 폴더 열기"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "DevTools 열기"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "데스크톱 사용자 가이드"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "종료"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "재설치"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "재시작"
-  },
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
@@ -70,9 +34,6 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "캔버스 잠금 토글"
-  },
-  "Comfy_Canvas_ToggleMinimap": {
-    "label": "캔버스 미니맵 전환"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "선택한 노드 우회/우회 해제"
@@ -116,9 +77,6 @@
   "Comfy_Feedback": {
     "label": "피드백"
   },
-  "Comfy_Graph_ConvertToSubgraph": {
-    "label": "선택 영역을 서브그래프로 변환"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"
   },
@@ -160,12 +118,6 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "진행 상황 대화 상자 전환"
-  },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "마스크 편집기에서 브러시 크기 줄이기"
-  },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "마스크 편집기에서 브러시 크기 늘리기"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "선택한 노드 마스크 편집기 열기"
@@ -229,9 +181,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "하단 패널 토글"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "터미널 하단 패널 토글"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "로그 하단 패널 토글"

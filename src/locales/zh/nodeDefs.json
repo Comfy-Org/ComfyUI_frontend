@@ -1,4 +1,24 @@
 {
+  "APG": {
+    "display_name": "自適應投影引導",
+    "inputs": {
+      "eta": {
+        "name": "eta",
+        "tooltip": "控制平行引導向量的比例。設定為 1 時為預設的 CFG 行為。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "momentum": {
+        "name": "動量",
+        "tooltip": "控制擴散過程中引導的移動平均，設定為 0 時停用。"
+      },
+      "norm_threshold": {
+        "name": "正規化閾值",
+        "tooltip": "將引導向量正規化到此值，設定為 0 時停用正規化。"
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "添加噪波",
     "inputs": {
@@ -89,6 +109,22 @@
       },
       "positive": {
         "name": "正面条件"
+      }
+    }
+  },
+  "CFGNorm": {
+    "display_name": "CFGNorm",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "已修補模型"
       }
     }
   },
@@ -431,6 +467,17 @@
       },
       "low_threshold": {
         "name": "低阈值"
+      }
+    }
+  },
+  "CaseConverter": {
+    "display_name": "大小寫轉換器",
+    "inputs": {
+      "mode": {
+        "name": "模式"
+      },
+      "string": {
+        "name": "字串"
       }
     }
   },
@@ -973,6 +1020,32 @@
       }
     }
   },
+  "CosmosPredict2ImageToVideoLatent": {
+    "display_name": "CosmosPredict2ImageToVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "end_image": {
+        "name": "結束圖片"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "start_image": {
+        "name": "起始圖片"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "创建约束关键帧",
     "inputs": {
@@ -1200,6 +1273,9 @@
       },
       "negative": {
         "name": "负面条件"
+      },
+      "style": {
+        "name": "風格"
       }
     }
   },
@@ -1218,6 +1294,18 @@
       },
       "type": {
         "name": "类型"
+      }
+    }
+  },
+  "EmptyAceStepLatentAudio": {
+    "display_name": "EmptyAceStepLatentAudio",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小",
+        "tooltip": "此批次中的 latent 影像數量。"
+      },
+      "seconds": {
+        "name": "秒數"
       }
     }
   },
@@ -1446,6 +1534,87 @@
       },
       "guidance": {
         "name": "引导"
+      }
+    }
+  },
+  "FluxKontextImageScale": {
+    "description": "此節點會將影像調整為更適合 flux kontext 的尺寸。",
+    "display_name": "FluxKontextImageScale",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      }
+    }
+  },
+  "FluxKontextMaxImageNode": {
+    "description": "透過 API 以 Flux.1 Kontext [max] 根據提示詞與長寬比編輯影像。",
+    "display_name": "Flux.1 Kontext [max] 影像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "影像的長寬比；必須介於 1:4 與 4:1 之間。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "guidance": {
+        "name": "引導強度",
+        "tooltip": "影像生成過程的引導強度"
+      },
+      "input_image": {
+        "name": "輸入影像"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "影像生成的提示詞－請指定要編輯的內容與方式。"
+      },
+      "prompt_upsampling": {
+        "name": "提示詞升頻",
+        "tooltip": "是否對提示詞進行升頻。啟用時，會自動修改提示詞以產生更具創意的結果，但結果將不具決定性（相同種子不會產生完全相同的結果）。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於產生雜訊的隨機種子。"
+      },
+      "steps": {
+        "name": "步數",
+        "tooltip": "影像生成過程的步數"
+      }
+    }
+  },
+  "FluxKontextProImageNode": {
+    "description": "透過 API 使用 Flux.1 Kontext [pro] 根據提示詞與長寬比編輯圖像。",
+    "display_name": "Flux.1 Kontext [pro] 圖像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "圖像的長寬比；必須介於 1:4 與 4:1 之間。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "guidance": {
+        "name": "引導強度",
+        "tooltip": "圖像生成過程的引導強度"
+      },
+      "input_image": {
+        "name": "輸入圖像"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "圖像生成的提示詞－請指定要編輯的內容與方式。"
+      },
+      "prompt_upsampling": {
+        "name": "提示詞升頻",
+        "tooltip": "是否對提示詞進行升頻。啟用時，會自動修改提示詞以產生更具創意的結果，但結果具有不確定性（相同種子不會產生完全相同的結果）。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於產生雜訊的隨機種子。"
+      },
+      "steps": {
+        "name": "步數",
+        "tooltip": "圖像生成過程的步數"
       }
     }
   },
@@ -1760,6 +1929,77 @@
       }
     }
   },
+  "GeminiInputFiles": {
+    "description": "載入並準備輸入檔案，作為 Gemini LLM 節點的輸入。Gemini 模型在生成回應時會讀取這些檔案。文字檔案的內容會計入 token 限制。🛈 提示：可與其他 Gemini Input File 節點串接使用。",
+    "display_name": "Gemini 輸入檔案",
+    "inputs": {
+      "GEMINI_INPUT_FILES": {
+        "name": "GEMINI_INPUT_FILES",
+        "tooltip": "可選的額外檔案，與本節點載入的檔案一起批次處理。允許串接多個輸入檔案，讓單一訊息可包含多個輸入檔案。"
+      },
+      "file": {
+        "name": "file",
+        "tooltip": "要作為模型上下文包含的輸入檔案。目前僅接受文字檔（.txt）與 PDF 檔（.pdf）。"
+      }
+    }
+  },
+  "GeminiNode": {
+    "description": "使用 Google 的 Gemini AI 模型生成文字回應。您可以提供多種型態的輸入（文字、圖片、音訊、影片）作為生成更相關且有意義回應的上下文。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "可選的音訊作為模型的上下文。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "files": {
+        "name": "檔案",
+        "tooltip": "可選的檔案作為模型的上下文。可接受來自 Gemini 產生內容輸入檔案節點的輸入。"
+      },
+      "images": {
+        "name": "圖片",
+        "tooltip": "可選的圖片作為模型的上下文。若要包含多張圖片，可使用批次圖片節點。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成回應的 Gemini 模型。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "輸入給模型的文字，用於生成回應。您可以包含詳細指示、問題或上下文給模型參考。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "當隨機種子設定為特定值時，模型會盡力在重複請求時提供相同的回應，但不保證完全一致。更改模型或參數（如溫度）時，即使使用相同的種子值，回應也可能有所不同。預設會使用隨機種子值。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "可選的影片作為模型的上下文。"
+      }
+    }
+  },
+  "GetImageSize": {
+    "description": "回傳圖片的寬度與高度，並保持圖片不變。",
+    "display_name": "取得圖片尺寸",
+    "inputs": {
+      "image": {
+        "name": "圖片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "寬度"
+      },
+      "1": {
+        "name": "高度"
+      },
+      "2": {
+        "name": "批次大小"
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "提取视频中的所有组件：帧、音频和帧率。",
     "display_name": "获取视频组件",
@@ -2028,6 +2268,24 @@
       }
     }
   },
+  "ImageAddNoise": {
+    "display_name": "ImageAddNoise",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖片"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於產生雜訊的隨機種子。"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
+  },
   "ImageBatch": {
     "display_name": "组合图像批次",
     "inputs": {
@@ -2121,6 +2379,17 @@
       },
       "y": {
         "name": "y"
+      }
+    }
+  },
+  "ImageFlip": {
+    "display_name": "ImageFlip",
+    "inputs": {
+      "flip_method": {
+        "name": "翻轉方式"
+      },
+      "image": {
+        "name": "圖片"
       }
     }
   },
@@ -2227,6 +2496,17 @@
       }
     }
   },
+  "ImageRotate": {
+    "display_name": "ImageRotate",
+    "inputs": {
+      "image": {
+        "name": "圖片"
+      },
+      "rotation": {
+        "name": "旋轉角度"
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "缩放图像",
     "inputs": {
@@ -2289,6 +2569,30 @@
       },
       "sigma": {
         "name": "Sigma"
+      }
+    }
+  },
+  "ImageStitch": {
+    "description": "\n將 image2 依指定方向拼接到 image1。\n若未提供 image2，則返回未更動的 image1。\n可選擇在圖片間加入間距。\n",
+    "display_name": "圖片拼接",
+    "inputs": {
+      "direction": {
+        "name": "方向"
+      },
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "match_image_size": {
+        "name": "對齊圖片尺寸"
+      },
+      "spacing_color": {
+        "name": "間距顏色"
+      },
+      "spacing_width": {
+        "name": "間距寬度"
       }
     }
   },
@@ -3417,26 +3721,17 @@
         "name": "宽度"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "image"
-      },
-      "1": {
-        "name": "mask"
-      },
-      "2": {
-        "name": "mesh_path"
-      },
-      "3": {
-        "name": "normal"
-      },
-      "4": {
-        "name": "lineart"
-      },
-      "5": {
-        "name": "camera_info"
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "錄影影片"
       }
-    }
+    ]
   },
   "Load3DAnimation": {
     "display_name": "加载3D动画",
@@ -3458,23 +3753,16 @@
         "name": "宽度"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "图像"
-      },
-      "1": {
-        "name": "遮罩"
-      },
-      "2": {
-        "name": "mesh_path"
-      },
-      "3": {
-        "name": "法线"
-      },
-      "4": {
-        "name": "相机信息"
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "錄製影片"
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "加载音频",
@@ -3519,6 +3807,7 @@
     "description": "从输出文件夹加载图像。当点击刷新按钮时，节点将更新图像列表并自动选择第一张图像，便于轻松迭代。",
     "display_name": "加载图像（来自输出）",
     "inputs": {
+      "Auto-refresh after generation": "生成後自動重新整理",
       "image": {
         "name": "图像"
       },
@@ -3526,6 +3815,44 @@
       },
       "upload": {
         "name": "选择文件上传"
+      }
+    }
+  },
+  "LoadImageSetFromFolderNode": {
+    "description": "從目錄中批次載入影像以進行訓練。",
+    "display_name": "從資料夾載入影像資料集",
+    "inputs": {
+      "folder": {
+        "name": "資料夾",
+        "tooltip": "要從中載入影像的資料夾。"
+      },
+      "resize_method": {
+        "name": "調整大小方法"
+      }
+    }
+  },
+  "LoadImageTextSetFromFolderNode": {
+    "description": "從目錄中載入一批影像與標註文字，用於訓練。",
+    "display_name": "從資料夾載入影像與文字資料集",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "用於編碼文字的CLIP模型。"
+      },
+      "folder": {
+        "name": "資料夾",
+        "tooltip": "要從中載入影像的資料夾。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "將影像調整為此高度。-1 代表使用原始高度。"
+      },
+      "resize_method": {
+        "name": "調整大小方法"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "將影像調整為此寬度。-1 代表使用原始寬度。"
       }
     }
   },
@@ -3602,6 +3929,29 @@
       }
     }
   },
+  "LoraModelLoader": {
+    "description": "從 Train LoRA 節點載入訓練好的 LoRA 權重。",
+    "display_name": "載入 LoRA 模型",
+    "inputs": {
+      "lora": {
+        "name": "lora",
+        "tooltip": "要套用到擴散模型的 LoRA 模型。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "LoRA 將套用的擴散模型。"
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "調整擴散模型的強度。此值可以為負數。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已修改的擴散模型。"
+      }
+    }
+  },
   "LoraSave": {
     "display_name": "保存LoRA",
     "inputs": {
@@ -3624,6 +3974,18 @@
       "text_encoder_diff": {
         "name": "文本编码器差异",
         "tooltip": "要转换为 LoRA 的CLIP差异输出。"
+      }
+    }
+  },
+  "LossGraphNode": {
+    "description": "繪製損失圖並儲存到輸出目錄。",
+    "display_name": "繪製損失圖",
+    "inputs": {
+      "filename_prefix": {
+        "name": "檔名前綴"
+      },
+      "loss": {
+        "name": "loss"
       }
     }
   },
@@ -4353,6 +4715,250 @@
       },
       "x_embedder_": {
         "name": "x嵌入器."
+      }
+    }
+  },
+  "ModelMergeCosmosPredict2_14B": {
+    "display_name": "ModelMergeCosmosPredict2_14B",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "t_embedding_norm_": {
+        "name": "t_embedding_norm."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      }
+    }
+  },
+  "ModelMergeCosmosPredict2_2B": {
+    "display_name": "ModelMergeCosmosPredict2_2B",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "pos_embedder_": {
+        "name": "pos_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "t_embedding_norm_": {
+        "name": "t_embedding_norm."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
       }
     }
   },
@@ -5672,6 +6278,83 @@
       }
     }
   },
+  "MoonvalleyImg2VideoNode": {
+    "description": "Moonvalley Marey 圖像轉影片節點",
+    "display_name": "Moonvalley Marey 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "參考圖像",
+        "tooltip": "用於生成影片的參考圖像"
+      },
+      "negative_prompt": {
+        "name": "反向提示詞",
+        "tooltip": "反向提示文字"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "prompt_adherence": {
+        "name": "提示詞遵循度",
+        "tooltip": "生成控制的引導強度"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出影片的解析度"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子值"
+      },
+      "steps": {
+        "name": "步數",
+        "tooltip": "去雜訊步數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片"
+      }
+    }
+  },
+  "MoonvalleyTxt2VideoNode": {
+    "display_name": "Moonvalley Marey 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "negative_prompt": {
+        "name": "反向提示詞",
+        "tooltip": "反向提示文字"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "prompt_adherence": {
+        "name": "提示詞遵循度",
+        "tooltip": "生成控制的引導強度"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出影片的解析度"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子值"
+      },
+      "steps": {
+        "name": "步數",
+        "tooltip": "去雜訊步數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片"
+      }
+    }
+  },
   "Morphology": {
     "display_name": "图像形态学",
     "inputs": {
@@ -5683,6 +6366,54 @@
       },
       "operation": {
         "name": "操作"
+      }
+    }
+  },
+  "OpenAIChatConfig": {
+    "description": "允許為 OpenAI Chat 節點指定進階設定選項。",
+    "display_name": "OpenAI Chat 進階選項",
+    "inputs": {
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "給模型的指示，說明如何產生回應"
+      },
+      "max_output_tokens": {
+        "name": "max_output_tokens",
+        "tooltip": "可產生回應的最大 token 數上限，包括可見的輸出 token"
+      },
+      "truncation": {
+        "name": "truncation",
+        "tooltip": "模型回應的截斷策略。auto：如果本次回應及先前回應的內容超過模型的上下文視窗大小，模型會自動截斷回應以符合上下文視窗，方法是移除對話中間的輸入項目。disabled：如果模型回應將超過模型的上下文視窗大小，請求將以 400 錯誤失敗。"
+      }
+    }
+  },
+  "OpenAIChatNode": {
+    "description": "從 OpenAI 模型生成文字回應。",
+    "display_name": "OpenAI 聊天",
+    "inputs": {
+      "advanced_options": {
+        "name": "進階選項",
+        "tooltip": "模型的選用設定。可接受來自 OpenAI 聊天進階選項節點的輸入。"
+      },
+      "files": {
+        "name": "檔案",
+        "tooltip": "作為模型上下文的選用檔案。可接受來自 OpenAI 聊天輸入檔案節點的輸入。"
+      },
+      "images": {
+        "name": "圖片",
+        "tooltip": "作為模型上下文的選用圖片。如需包含多張圖片，可使用批次圖片節點。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成回應的模型"
+      },
+      "persist_context": {
+        "name": "保留對話內容",
+        "tooltip": "在多次呼叫間保留聊天內容（多輪對話）"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "提供給模型的文字輸入，用於生成回應。"
       }
     }
   },
@@ -5786,6 +6517,20 @@
       "size": {
         "name": "尺寸",
         "tooltip": "图像尺寸"
+      }
+    }
+  },
+  "OpenAIInputFiles": {
+    "description": "載入並準備輸入檔案（文字、PDF 等），作為 OpenAI 聊天節點的輸入。這些檔案將在產生回應時由 OpenAI 模型讀取。🛈 提示：可與其他 OpenAI 輸入檔案節點串接使用。",
+    "display_name": "OpenAI 聊天輸入檔案",
+    "inputs": {
+      "OPENAI_INPUT_FILES": {
+        "name": "OPENAI_INPUT_FILES",
+        "tooltip": "可選的額外檔案，與本節點載入的檔案一起批次處理。允許串接多個輸入檔案，讓單一訊息可包含多個檔案。"
+      },
+      "file": {
+        "name": "file",
+        "tooltip": "要作為模型上下文包含的輸入檔案。目前僅支援文字（.txt）與 PDF（.pdf）檔案。"
       }
     }
   },
@@ -6876,6 +7621,98 @@
       }
     }
   },
+  "ReferenceLatent": {
+    "description": "此節點為編輯模型設定指引 latent。若模型支援，可串接多個節點以設定多張參考圖片。",
+    "display_name": "ReferenceLatent",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    }
+  },
+  "RegexExtract": {
+    "display_name": "正則表達式提取",
+    "inputs": {
+      "case_insensitive": {
+        "name": "不分大小寫"
+      },
+      "dotall": {
+        "name": "點號全配"
+      },
+      "group_index": {
+        "name": "群組索引"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "multiline": {
+        "name": "多行"
+      },
+      "regex_pattern": {
+        "name": "正則表達式樣式"
+      },
+      "string": {
+        "name": "字串"
+      }
+    }
+  },
+  "RegexMatch": {
+    "display_name": "正則表達式匹配",
+    "inputs": {
+      "case_insensitive": {
+        "name": "不分大小寫"
+      },
+      "dotall": {
+        "name": "點號匹配所有"
+      },
+      "multiline": {
+        "name": "多行"
+      },
+      "regex_pattern": {
+        "name": "正則表達式"
+      },
+      "string": {
+        "name": "字串"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "匹配結果"
+      }
+    }
+  },
+  "RegexReplace": {
+    "description": "使用正則表達式模式尋找並取代文字。",
+    "display_name": "正則表達式取代",
+    "inputs": {
+      "case_insensitive": {
+        "name": "不分大小寫"
+      },
+      "count": {
+        "name": "次數",
+        "tooltip": "最多取代的次數。設為 0 代表取代所有出現（預設）。設為 1 只取代第一個，2 取代前兩個，以此類推。"
+      },
+      "dotall": {
+        "name": "dotall",
+        "tooltip": "啟用時，點號（.）會匹配任何字元，包括換行字元。停用時，點號不會匹配換行。"
+      },
+      "multiline": {
+        "name": "多行"
+      },
+      "regex_pattern": {
+        "name": "正則模式"
+      },
+      "replace": {
+        "name": "取代"
+      },
+      "string": {
+        "name": "字串"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -6920,6 +7757,214 @@
       },
       "multiplier": {
         "name": "乘数"
+      }
+    }
+  },
+  "ResizeAndPadImage": {
+    "display_name": "ResizeAndPadImage",
+    "inputs": {
+      "image": {
+        "name": "圖片"
+      },
+      "interpolation": {
+        "name": "插值方式"
+      },
+      "padding_color": {
+        "name": "填充顏色"
+      },
+      "target_height": {
+        "name": "目標高度"
+      },
+      "target_width": {
+        "name": "目標寬度"
+      }
+    }
+  },
+  "Rodin3D_Detail": {
+    "description": "使用 Rodin API 生成 3D 素材",
+    "display_name": "Rodin 3D 生成 - 細節生成",
+    "inputs": {
+      "Images": {
+        "name": "圖片"
+      },
+      "Material_Type": {
+        "name": "材質類型"
+      },
+      "Polygon_count": {
+        "name": "多邊形數量"
+      },
+      "Seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 模型路徑"
+      }
+    }
+  },
+  "Rodin3D_Regular": {
+    "description": "使用 Rodin API 生成 3D 素材",
+    "display_name": "Rodin 3D 生成 - 標準生成",
+    "inputs": {
+      "Images": {
+        "name": "圖片"
+      },
+      "Material_Type": {
+        "name": "材質類型"
+      },
+      "Polygon_count": {
+        "name": "多邊形數量"
+      },
+      "Seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 模型路徑"
+      }
+    }
+  },
+  "Rodin3D_Sketch": {
+    "description": "使用 Rodin API 生成 3D 素材",
+    "display_name": "Rodin 3D 生成 - 草圖生成",
+    "inputs": {
+      "Images": {
+        "name": "圖片"
+      },
+      "Seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 模型路徑"
+      }
+    }
+  },
+  "Rodin3D_Smooth": {
+    "description": "使用 Rodin API 生成 3D 素材",
+    "display_name": "Rodin 3D 生成 - 平滑生成",
+    "inputs": {
+      "Images": {
+        "name": "圖片"
+      },
+      "Material_Type": {
+        "name": "材質類型"
+      },
+      "Polygon_count": {
+        "name": "多邊形數量"
+      },
+      "Seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 模型路徑"
+      }
+    }
+  },
+  "RunwayFirstLastFrameNode": {
+    "description": "上傳首幀與末幀關鍵影格，撰寫提示詞，並生成影片。若轉場較為複雜，例如末幀與首幀完全不同，建議選擇較長的 10 秒時長，讓生成有更多時間在兩個輸入間平順過渡。開始前，請參考這些最佳實踐，確保你的輸入選擇能讓生成順利進行：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
+    "display_name": "Runway 首末幀轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "end_frame": {
+        "name": "結束幀",
+        "tooltip": "用於影片的結束幀。僅支援 gen3a_turbo。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於生成的文字提示"
+      },
+      "ratio": {
+        "name": "比例"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於生成的隨機種子"
+      },
+      "start_frame": {
+        "name": "起始幀",
+        "tooltip": "用於影片的起始幀"
+      }
+    }
+  },
+  "RunwayImageToVideoNodeGen3a": {
+    "description": "使用 Gen3a Turbo 模型，從單一起始畫面生成影片。在開始之前，請參閱這些最佳實踐，確保您的輸入選擇能讓生成順利進行：https://help.runwayml.com/hc/en-us/articles/33927968552339-Creating-with-Act-One-on-Gen-3-Alpha-and-Turbo。",
+    "display_name": "Runway 圖像轉影片（Gen3a Turbo）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於生成的文字提示"
+      },
+      "ratio": {
+        "name": "比例"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於生成的隨機種子"
+      },
+      "start_frame": {
+        "name": "起始畫面",
+        "tooltip": "用於影片的起始畫面"
+      }
+    }
+  },
+  "RunwayImageToVideoNodeGen4": {
+    "description": "使用 Gen4 Turbo 模型，從單一起始畫面生成影片。在開始之前，請參閱這些最佳實踐，確保您的輸入選擇能讓生成順利進行：https://help.runwayml.com/hc/en-us/articles/37327109429011-Creating-with-Gen-4-Video。",
+    "display_name": "Runway 圖像轉影片（Gen4 Turbo）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於生成的文字提示"
+      },
+      "ratio": {
+        "name": "比例"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於生成的隨機種子"
+      },
+      "start_frame": {
+        "name": "起始畫面",
+        "tooltip": "用於影片的起始畫面"
+      }
+    }
+  },
+  "RunwayTextToImageNode": {
+    "description": "使用 Runway 的 Gen 4 模型，根據文字提示生成圖像。你也可以加入參考圖片來引導生成。",
+    "display_name": "Runway 文本轉圖像",
+    "inputs": {
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於圖像生成的文字提示"
+      },
+      "ratio": {
+        "name": "比例"
+      },
+      "reference_image": {
+        "name": "參考圖片",
+        "tooltip": "可選的參考圖片，用於引導生成"
       }
     }
   },
@@ -7213,6 +8258,24 @@
       }
     }
   },
+  "SamplerER_SDE": {
+    "display_name": "SamplerER_SDE",
+    "inputs": {
+      "eta": {
+        "name": "eta",
+        "tooltip": "反向時間隨機微分方程（SDE）的隨機強度。\n當 eta=0 時，會簡化為確定性常微分方程（ODE）。此設定不適用於 ER-SDE solver type。"
+      },
+      "max_stage": {
+        "name": "max_stage"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "solver_type": {
+        "name": "solver_type"
+      }
+    }
+  },
   "SamplerEulerAncestral": {
     "display_name": "EulerAncestral采样器",
     "inputs": {
@@ -7262,6 +8325,58 @@
     "inputs": {
       "order": {
         "name": "顺序"
+      }
+    }
+  },
+  "SamplerSASolver": {
+    "display_name": "SamplerSASolver",
+    "inputs": {
+      "corrector_order": {
+        "name": "修正器階數"
+      },
+      "eta": {
+        "name": "eta"
+      },
+      "model": {
+        "name": "model"
+      },
+      "predictor_order": {
+        "name": "預測器階數"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "sde_end_percent": {
+        "name": "sde_end_percent"
+      },
+      "sde_start_percent": {
+        "name": "sde_start_percent"
+      },
+      "simple_order_2": {
+        "name": "簡單二階"
+      },
+      "use_pece": {
+        "name": "使用PECE"
+      }
+    }
+  },
+  "SamplingPercentToSigma": {
+    "display_name": "SamplingPercentToSigma",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "return_actual_sigma": {
+        "name": "回傳實際 sigma 值",
+        "tooltip": "回傳實際的 sigma 值，而非用於區間檢查的值。\n此選項僅影響 0.0 與 1.0 的結果。"
+      },
+      "sampling_percent": {
+        "name": "取樣百分比"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sigma 值"
       }
     }
   },
@@ -7319,6 +8434,40 @@
       }
     }
   },
+  "SaveAudioMP3": {
+    "display_name": "儲存音訊（MP3）",
+    "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
+      "audioUI": {
+        "name": "音訊介面"
+      },
+      "filename_prefix": {
+        "name": "檔名字首"
+      },
+      "quality": {
+        "name": "音質"
+      }
+    }
+  },
+  "SaveAudioOpus": {
+    "display_name": "儲存音訊（Opus）",
+    "inputs": {
+      "audio": {
+        "name": "音訊"
+      },
+      "audioUI": {
+        "name": "音訊介面"
+      },
+      "filename_prefix": {
+        "name": "檔名字首"
+      },
+      "quality": {
+        "name": "音質"
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -7366,13 +8515,30 @@
       }
     }
   },
-  "SaveSVG": {
-    "description": "将 SVG 文件保存到磁盘。",
-    "display_name": "保存 SVG",
+  "SaveLoRANode": {
+    "display_name": "儲存 LoRA 權重",
+    "inputs": {
+      "lora": {
+        "name": "lora",
+        "tooltip": "要儲存的 LoRA 模型。請勿使用帶有 LoRA 層的模型。"
+      },
+      "prefix": {
+        "name": "前綴",
+        "tooltip": "儲存 LoRA 檔案時使用的前綴。"
+      },
+      "steps": {
+        "name": "步數",
+        "tooltip": "（選填）LoRA 已訓練的步數，將用於命名儲存的檔案。"
+      }
+    }
+  },
+  "SaveSVGNode": {
+    "description": "將 SVG 檔案儲存到磁碟。",
+    "display_name": "SaveSVGNode",
     "inputs": {
       "filename_prefix": {
-        "name": "文件名前缀",
-        "tooltip": "要保存文件的前缀。可以包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以包含来自节点的数值。"
+        "name": "檔名前綴",
+        "tooltip": "要儲存檔案的前綴。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
       },
       "svg": {
         "name": "svg"
@@ -7521,6 +8687,27 @@
       },
       "start_percent": {
         "name": "开始百分比"
+      }
+    }
+  },
+  "SkipLayerGuidanceDiTSimple": {
+    "description": "僅修改 uncond pass 的 SkipLayerGuidanceDiT 節點簡易版。",
+    "display_name": "SkipLayerGuidanceDiTSimple",
+    "inputs": {
+      "double_layers": {
+        "name": "double_layers"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "single_layers": {
+        "name": "single_layers"
+      },
+      "start_percent": {
+        "name": "start_percent"
       }
     }
   },
@@ -7919,6 +9106,108 @@
       }
     }
   },
+  "StringCompare": {
+    "display_name": "比較",
+    "inputs": {
+      "case_sensitive": {
+        "name": "區分大小寫"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "string_a": {
+        "name": "string_a"
+      },
+      "string_b": {
+        "name": "string_b"
+      }
+    }
+  },
+  "StringConcatenate": {
+    "display_name": "串接",
+    "inputs": {
+      "delimiter": {
+        "name": "分隔符"
+      },
+      "string_a": {
+        "name": "string_a"
+      },
+      "string_b": {
+        "name": "string_b"
+      }
+    }
+  },
+  "StringContains": {
+    "display_name": "包含",
+    "inputs": {
+      "case_sensitive": {
+        "name": "區分大小寫"
+      },
+      "string": {
+        "name": "字串"
+      },
+      "substring": {
+        "name": "子字串"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "包含"
+      }
+    }
+  },
+  "StringLength": {
+    "display_name": "長度",
+    "inputs": {
+      "string": {
+        "name": "字串"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "長度"
+      }
+    }
+  },
+  "StringReplace": {
+    "display_name": "取代",
+    "inputs": {
+      "find": {
+        "name": "尋找"
+      },
+      "replace": {
+        "name": "取代為"
+      },
+      "string": {
+        "name": "字串"
+      }
+    }
+  },
+  "StringSubstring": {
+    "display_name": "子字串",
+    "inputs": {
+      "end": {
+        "name": "結束位置"
+      },
+      "start": {
+        "name": "起始位置"
+      },
+      "string": {
+        "name": "字串"
+      }
+    }
+  },
+  "StringTrim": {
+    "display_name": "修剪",
+    "inputs": {
+      "mode": {
+        "name": "模式"
+      },
+      "string": {
+        "name": "字串"
+      }
+    }
+  },
   "StyleModelApply": {
     "display_name": "应用风格模型",
     "inputs": {
@@ -7958,6 +9247,37 @@
       },
       "min_padding": {
         "name": "最小填充"
+      }
+    }
+  },
+  "TCFG": {
+    "description": "TCFG – 切向阻尼 CFG (2503.18137)\n\n調整 uncond（負面）以對齊 cond（正面），提升品質。",
+    "display_name": "切向阻尼 CFG",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "已修補模型"
+      }
+    }
+  },
+  "TextEncodeAceStepAudio": {
+    "display_name": "TextEncodeAceStepAudio",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "lyrics_strength": {
+        "name": "歌詞強度"
+      },
+      "tags": {
+        "name": "標籤"
       }
     }
   },
@@ -8012,6 +9332,80 @@
       }
     }
   },
+  "TrainLoraNode": {
+    "display_name": "訓練 LoRA",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小",
+        "tooltip": "用於訓練的批次大小。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "existing_lora": {
+        "name": "現有 LoRA",
+        "tooltip": "要附加的現有 LoRA。若為新 LoRA 請設為 None。"
+      },
+      "latents": {
+        "name": "潛在空間",
+        "tooltip": "用於訓練的潛在空間，作為模型的資料集/輸入。"
+      },
+      "learning_rate": {
+        "name": "學習率",
+        "tooltip": "用於訓練的學習率。"
+      },
+      "lora_dtype": {
+        "name": "LoRA dtype",
+        "tooltip": "用於 LoRA 的 dtype。"
+      },
+      "loss_function": {
+        "name": "損失函數",
+        "tooltip": "用於訓練的損失函數。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要用於訓練 LoRA 的模型。"
+      },
+      "optimizer": {
+        "name": "最佳化器",
+        "tooltip": "用於訓練的最佳化器。"
+      },
+      "positive": {
+        "name": "正向條件",
+        "tooltip": "用於訓練的正向條件。"
+      },
+      "rank": {
+        "name": "秩",
+        "tooltip": "LoRA 層的秩。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於訓練的隨機種子（用於 LoRA 權重初始化與雜訊取樣）"
+      },
+      "steps": {
+        "name": "步數",
+        "tooltip": "訓練 LoRA 的步數。"
+      },
+      "training_dtype": {
+        "name": "訓練 dtype",
+        "tooltip": "用於訓練的 dtype。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "含 LoRA 的模型"
+      },
+      "1": {
+        "name": "LoRA"
+      },
+      "2": {
+        "name": "損失"
+      },
+      "3": {
+        "name": "步數"
+      }
+    }
+  },
   "TrimVideoLatent": {
     "display_name": "TrimVideoLatent",
     "inputs": {
@@ -8035,6 +9429,268 @@
       },
       "clip_name3": {
         "name": "CLIP名称3"
+      }
+    }
+  },
+  "TripoConversionNode": {
+    "display_name": "Tripo：模型轉換",
+    "inputs": {
+      "face_limit": {
+        "name": "面數上限"
+      },
+      "format": {
+        "name": "格式"
+      },
+      "original_model_task_id": {
+        "name": "原始模型任務 ID"
+      },
+      "quad": {
+        "name": "四邊形"
+      },
+      "texture_format": {
+        "name": "材質格式"
+      },
+      "texture_size": {
+        "name": "材質大小"
+      }
+    }
+  },
+  "TripoImageToModelNode": {
+    "display_name": "Tripo：圖片轉模型",
+    "inputs": {
+      "face_limit": {
+        "name": "面數限制"
+      },
+      "image": {
+        "name": "圖片"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "model_version": {
+        "name": "模型版本",
+        "tooltip": "用於生成的模型版本"
+      },
+      "orientation": {
+        "name": "方向"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "quad": {
+        "name": "四邊形"
+      },
+      "style": {
+        "name": "風格"
+      },
+      "texture": {
+        "name": "材質"
+      },
+      "texture_alignment": {
+        "name": "材質對齊"
+      },
+      "texture_quality": {
+        "name": "材質品質"
+      },
+      "texture_seed": {
+        "name": "材質種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案"
+      },
+      "1": {
+        "name": "模型任務編號"
+      }
+    }
+  },
+  "TripoMultiviewToModelNode": {
+    "display_name": "Tripo：多視角轉模型",
+    "inputs": {
+      "face_limit": {
+        "name": "face_limit"
+      },
+      "image": {
+        "name": "image"
+      },
+      "image_back": {
+        "name": "image_back"
+      },
+      "image_left": {
+        "name": "image_left"
+      },
+      "image_right": {
+        "name": "image_right"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "用於生成的模型版本"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "quad": {
+        "name": "quad"
+      },
+      "texture": {
+        "name": "texture"
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file"
+      },
+      "1": {
+        "name": "model task_id"
+      }
+    }
+  },
+  "TripoRefineNode": {
+    "description": "僅可精修由 v1.4 Tripo 模型建立的草稿模型。",
+    "display_name": "Tripo：精修草稿模型",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id",
+        "tooltip": "必須是 v1.4 Tripo 模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file"
+      },
+      "1": {
+        "name": "model task_id"
+      }
+    }
+  },
+  "TripoRetargetNode": {
+    "display_name": "Tripo：重定向綁定模型",
+    "inputs": {
+      "animation": {
+        "name": "動畫"
+      },
+      "original_model_task_id": {
+        "name": "original_model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案"
+      },
+      "1": {
+        "name": "重定向任務編號"
+      }
+    }
+  },
+  "TripoRigNode": {
+    "display_name": "Tripo：骨架模型",
+    "inputs": {
+      "original_model_task_id": {
+        "name": "原始模型任務 ID"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案"
+      },
+      "1": {
+        "name": "骨架任務 ID"
+      }
+    }
+  },
+  "TripoTextToModelNode": {
+    "display_name": "Tripo：文字轉模型",
+    "inputs": {
+      "face_limit": {
+        "name": "面數上限"
+      },
+      "image_seed": {
+        "name": "圖片種子"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "model_version": {
+        "name": "模型版本"
+      },
+      "negative_prompt": {
+        "name": "反向提示詞"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "quad": {
+        "name": "四邊形"
+      },
+      "style": {
+        "name": "風格"
+      },
+      "texture": {
+        "name": "材質"
+      },
+      "texture_quality": {
+        "name": "材質品質"
+      },
+      "texture_seed": {
+        "name": "材質種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案"
+      },
+      "1": {
+        "name": "模型任務 ID"
+      }
+    }
+  },
+  "TripoTextureNode": {
+    "display_name": "Tripo：材質模型",
+    "inputs": {
+      "model_task_id": {
+        "name": "模型任務 ID"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "texture": {
+        "name": "材質"
+      },
+      "texture_alignment": {
+        "name": "材質對齊"
+      },
+      "texture_quality": {
+        "name": "材質品質"
+      },
+      "texture_seed": {
+        "name": "材質種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案"
+      },
+      "1": {
+        "name": "模型任務 ID"
       }
     }
   },
@@ -8377,6 +10033,98 @@
       }
     }
   },
+  "WanCameraEmbedding": {
+    "display_name": "WanCameraEmbedding",
+    "inputs": {
+      "camera_pose": {
+        "name": "相機姿態"
+      },
+      "cx": {
+        "name": "cx"
+      },
+      "cy": {
+        "name": "cy"
+      },
+      "fx": {
+        "name": "fx"
+      },
+      "fy": {
+        "name": "fy"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "speed": {
+        "name": "速度"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "相機嵌入"
+      },
+      "1": {
+        "name": "寬度"
+      },
+      "2": {
+        "name": "高度"
+      },
+      "3": {
+        "name": "長度"
+      }
+    }
+  },
+  "WanCameraImageToVideo": {
+    "display_name": "WanCameraImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "camera_conditions": {
+        "name": "相機條件"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "start_image": {
+        "name": "起始圖片"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "負向"
+      },
+      "2": {
+        "name": "潛空間"
+      }
+    }
+  },
   "WanFirstLastFrameToVideo": {
     "display_name": "WanFirstLastFrameToVideo",
     "inputs": {
@@ -8558,6 +10306,49 @@
       },
       "2": {
         "name": "潜在"
+      }
+    }
+  },
+  "WanPhantomSubjectToVideo": {
+    "display_name": "WanPhantomSubjectToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "images": {
+        "name": "圖片"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "負向文字"
+      },
+      "2": {
+        "name": "負向圖片文字"
+      },
+      "3": {
+        "name": "latent"
       }
     }
   },

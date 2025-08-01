@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "檢查更新"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "開啟自訂節點資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "開啟輸入資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "開啟日誌資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "開啟 extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "開啟模型資料夾"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "開啟輸出資料夾"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "開啟開發者工具"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "桌面版使用指南"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "退出"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "重新安裝"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "重新啟動"
-  },
   "Comfy_BrowseTemplates": {
     "label": "瀏覽範本"
   },
@@ -70,9 +34,6 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "畫布切換鎖定"
-  },
-  "Comfy_Canvas_ToggleMinimap": {
-    "label": "畫布切換小地圖"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "略過/取消略過選取的節點"
@@ -116,9 +77,6 @@
   "Comfy_Feedback": {
     "label": "提供回饋"
   },
-  "Comfy_Graph_ConvertToSubgraph": {
-    "label": "將選取內容轉換為子圖"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "調整群組以符合內容"
   },
@@ -160,12 +118,6 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切換自訂節點管理器進度條"
-  },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "減少 MaskEditor 畫筆大小"
-  },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "增加 MaskEditor 畫筆大小"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "為選取的節點開啟 Mask 編輯器"
@@ -229,9 +181,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "切換下方面板"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "切換終端機底部面板"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "切換日誌底部面板"
