@@ -1104,10 +1104,14 @@ export class ComfyApp {
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
           // Include context about subgraph location if applicable
-          const nodeTypeWithContext = path
-            ? `${n.type} (in subgraph '${path}')`
-            : n.type
-          missingNodeTypes.push(nodeTypeWithContext)
+          if (path) {
+            missingNodeTypes.push({
+              type: n.type,
+              hint: `in subgraph '${path}'`
+            })
+          } else {
+            missingNodeTypes.push(n.type)
+          }
           n.type = sanitizeNodeName(n.type)
         }
 
@@ -1124,8 +1128,9 @@ export class ComfyApp {
 
     // Process nodes in subgraphs
     if (graphData.definitions?.subgraphs) {
-      for (const subgraph of graphData.definitions.subgraphs as any[]) {
-        if (subgraph.nodes) {
+      for (const subgraph of graphData.definitions.subgraphs) {
+        // Subgraph extends workflow schema and includes nodes property
+        if ('nodes' in subgraph && Array.isArray(subgraph.nodes)) {
           processNodesRecursively(subgraph.nodes, subgraph.name || subgraph.id)
         }
       }
