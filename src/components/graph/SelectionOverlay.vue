@@ -17,26 +17,28 @@ import { createBounds } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const canvasStore = useCanvasStore()
 const { style, updatePosition } = useAbsolutePosition()
+const { getSelectableItems } = useSelectedLiteGraphItems()
 
 const visible = ref(false)
 const showBorder = ref(false)
 
 const positionSelectionOverlay = () => {
-  const { selectedItems } = canvasStore.getCanvas()
-  showBorder.value = selectedItems.size > 1
+  const selectableItems = getSelectableItems()
+  showBorder.value = selectableItems.size > 1
 
-  if (!selectedItems.size) {
+  if (!selectableItems.size) {
     visible.value = false
     return
   }
 
   visible.value = true
-  const bounds = createBounds(selectedItems)
+  const bounds = createBounds(selectableItems)
   if (bounds) {
     updatePosition({
       pos: [bounds[0], bounds[1]],
@@ -45,7 +47,6 @@ const positionSelectionOverlay = () => {
   }
 }
 
-// Register listener on canvas creation.
 whenever(
   () => canvasStore.getCanvas().state.selectionChanged,
   () => {
