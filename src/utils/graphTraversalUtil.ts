@@ -1,6 +1,6 @@
 import type { LGraph, LGraphNode, Subgraph } from '@comfyorg/litegraph'
 
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
@@ -205,7 +205,7 @@ export function findSubgraphByUuid(
   targetUuid: string
 ): Subgraph | null {
   // Check all nodes in the current graph
-  for (const node of graph._nodes) {
+  for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
@@ -215,6 +215,42 @@ export function findSubgraphByUuid(
       if (found) return found
     }
   }
+  return null
+}
+
+/**
+ * Iteratively finds the path of subgraph IDs to a target subgraph.
+ * @param rootGraph The graph to start searching from.
+ * @param targetId The ID of the subgraph to find.
+ * @returns An array of subgraph IDs representing the path, or `null` if not found.
+ */
+export function findSubgraphPathById(
+  rootGraph: LGraph,
+  targetId: string
+): string[] | null {
+  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
+    { graph: rootGraph, path: [] }
+  ]
+
+  while (stack.length > 0) {
+    const { graph, path } = stack.pop()!
+
+    // Check if graph exists and has _nodes property
+    if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
+      continue
+    }
+
+    for (const node of graph._nodes) {
+      if (node.isSubgraphNode?.() && node.subgraph) {
+        const newPath = [...path, String(node.subgraph.id)]
+        if (node.subgraph.id === targetId) {
+          return newPath
+        }
+        stack.push({ graph: node.subgraph, path: newPath })
+      }
+    }
+  }
+
   return null
 }
 
@@ -350,4 +386,132 @@ export function mapSubgraphNodes<T>(
  */
 export function getAllNonIoNodesInSubgraph(subgraph: Subgraph): LGraphNode[] {
   return subgraph.nodes.filter((node) => !isSubgraphIoNode(node))
+}
+
+/**
+ * Options for traverseNodesDepthFirst function
+ */
+export interface TraverseNodesOptions<T> {
+  /** Function called for each node during traversal */
+  visitor?: (node: LGraphNode, context: T) => T
+  /** Initial context value */
+  initialContext?: T
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
+/**
+ * Performs depth-first traversal of nodes and their subgraphs.
+ * Generic visitor pattern that can be used for various node processing tasks.
+ *
+ * @param nodes - Starting nodes for traversal
+ * @param options - Optional traversal configuration
+ */
+export function traverseNodesDepthFirst<T = void>(
+  nodes: LGraphNode[],
+  options?: TraverseNodesOptions<T>
+): void {
+  const {
+    visitor = () => undefined as T,
+    initialContext = undefined as T,
+    expandSubgraphs = true
+  } = options || {}
+  type StackItem = { node: LGraphNode; context: T }
+  const stack: StackItem[] = []
+
+  // Initialize stack with starting nodes
+  for (const node of nodes) {
+    stack.push({ node, context: initialContext })
+  }
+
+  // Process stack iteratively (DFS)
+  while (stack.length > 0) {
+    const { node, context } = stack.pop()!
+
+    // Visit node and get updated context for children
+    const childContext = visitor(node, context)
+
+    // If it's a subgraph and we should expand, add children to stack
+    if (expandSubgraphs && node.isSubgraphNode?.() && node.subgraph) {
+      // Process children in reverse order to maintain left-to-right DFS processing
+      // when popping from stack (LIFO). Iterate backwards to avoid array reversal.
+      const children = node.subgraph.nodes
+      for (let i = children.length - 1; i >= 0; i--) {
+        stack.push({ node: children[i], context: childContext })
+      }
+    }
+  }
+}
+
+/**
+ * Options for collectFromNodes function
+ */
+export interface CollectFromNodesOptions<T, C> {
+  /** Function that returns data to collect for each node */
+  collector?: (node: LGraphNode, context: C) => T | null
+  /** Function that builds context for child nodes */
+  contextBuilder?: (node: LGraphNode, parentContext: C) => C
+  /** Initial context value */
+  initialContext?: C
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
+/**
+ * Collects nodes with custom data during depth-first traversal.
+ * Generic collector that can gather any type of data per node.
+ *
+ * @param nodes - Starting nodes for traversal
+ * @param options - Optional collection configuration
+ * @returns Array of collected data
+ */
+export function collectFromNodes<T = LGraphNode, C = void>(
+  nodes: LGraphNode[],
+  options?: CollectFromNodesOptions<T, C>
+): T[] {
+  const {
+    collector = (node: LGraphNode) => node as unknown as T,
+    contextBuilder = () => undefined as C,
+    initialContext = undefined as C,
+    expandSubgraphs = true
+  } = options || {}
+  const results: T[] = []
+
+  traverseNodesDepthFirst(nodes, {
+    visitor: (node, context) => {
+      const data = collector(node, context)
+      if (data !== null) {
+        results.push(data)
+      }
+      return contextBuilder(node, context)
+    },
+    initialContext,
+    expandSubgraphs
+  })
+
+  return results
+}
+
+/**
+ * Collects execution IDs for selected nodes and all their descendants.
+ * Uses the generic DFS traversal with optimized string building.
+ *
+ * @param selectedNodes - The selected nodes to process
+ * @returns Array of execution IDs for selected nodes and all nodes within selected subgraphs
+ */
+export function getExecutionIdsForSelectedNodes(
+  selectedNodes: LGraphNode[]
+): NodeExecutionId[] {
+  return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
+    collector: (node, parentExecutionId) => {
+      const nodeId = String(node.id)
+      return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
+    },
+    contextBuilder: (node, parentExecutionId) => {
+      const nodeId = String(node.id)
+      return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
+    },
+    initialContext: '',
+    expandSubgraphs: true
+  })
 }
