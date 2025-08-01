@@ -54,7 +54,7 @@
         />
       </template>
 
-      <!-- 2. 작업 완료 (재시작 대기) -->
+      <!-- 2. Tasks completed (waiting for restart) -->
       <template v-else-if="!isRestarting && !isRestartCompleted">
         <Button
           rounded
@@ -66,12 +66,12 @@
         </Button>
       </template>
 
-      <!-- 3. 재시작 중 -->
+      <!-- 3. Restarting -->
       <template v-else-if="isRestarting">
         <!-- No buttons during restart -->
       </template>
 
-      <!-- 4. 재시작 완료 -->
+      <!-- 4. Restart completed -->
       <template v-else-if="isRestartCompleted">
         <!-- No buttons after restart completed (auto-close after 3 seconds) -->
       </template>
