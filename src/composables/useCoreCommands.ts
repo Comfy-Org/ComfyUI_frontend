@@ -46,6 +46,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const bottomPanelStore = useBottomPanelStore()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -559,7 +560,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.22',
       category: 'view-controls' as const,
       function: () => {
-        useBottomPanelStore().toggleBottomPanel()
+        bottomPanelStore.toggleBottomPanel()
       }
     },
     {
@@ -811,6 +812,16 @@ export function useCoreCommands(): ComfyCommand[] {
         }
         const { node } = res
         canvas.select(node)
+      }
+    },
+    {
+      id: 'Workspace.ToggleBottomPanel.Shortcuts',
+      icon: 'pi pi-key',
+      label: 'Show Keybindings Dialog',
+      versionAdded: '1.24.1',
+      category: 'view-controls' as const,
+      function: () => {
+        bottomPanelStore.togglePanel('shortcuts')
       }
     }
   ]

@@ -4,7 +4,6 @@
       <ShortcutsList
         :commands="essentialsCommands"
         :subcategories="essentialsSubcategories"
-        layout="grid"
         :columns="3"
       />
     </div>

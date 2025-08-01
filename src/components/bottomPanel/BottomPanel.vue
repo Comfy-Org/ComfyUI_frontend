@@ -62,11 +62,11 @@ import Tabs from 'primevue/tabs'
 import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import { useCommandStore } from '@/stores/commandStore'
+import { useDialogService } from '@/services/dialogService'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 const bottomPanelStore = useBottomPanelStore()
-const commandStore = useCommandStore()
+const dialogService = useDialogService()
 
 const isShortcutsTabActive = computed(() => {
   const activeTabId = bottomPanelStore.activeBottomPanelTabId
@@ -81,7 +81,7 @@ const shouldCapitalizeTab = (tabId: string): boolean => {
 }
 
 const openKeybindingSettings = async () => {
-  await commandStore.execute('Comfy.ShowSettingsDialog')
+  dialogService.showSettingsDialog('keybinding')
 }
 
 const closeBottomPanel = () => {
