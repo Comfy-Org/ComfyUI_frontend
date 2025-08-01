@@ -61,6 +61,13 @@
       v-if="showRecordingControls"
       class="absolute top-12 right-2 z-20 pointer-events-auto"
     >
+      <ViewerControls :node="node" />
+    </div>
+
+    <div
+      v-if="showRecordingControls"
+      class="absolute top-24 right-2 z-20 pointer-events-auto"
+    >
       <RecordingControls
         :node="node"
         :is-recording="isRecording"
@@ -82,6 +89,7 @@ import { useI18n } from 'vue-i18n'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
+import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   CameraType,
