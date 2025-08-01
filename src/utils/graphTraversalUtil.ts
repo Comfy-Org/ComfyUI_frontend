@@ -205,7 +205,7 @@ export function findSubgraphByUuid(
   targetUuid: string
 ): Subgraph | null {
   // Check all nodes in the current graph
-  for (const node of graph._nodes) {
+  for (const node of graph.nodes) {
     if (node.isSubgraphNode?.() && node.subgraph) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
@@ -215,6 +215,42 @@ export function findSubgraphByUuid(
       if (found) return found
     }
   }
+  return null
+}
+
+/**
+ * Iteratively finds the path of subgraph IDs to a target subgraph.
+ * @param rootGraph The graph to start searching from.
+ * @param targetId The ID of the subgraph to find.
+ * @returns An array of subgraph IDs representing the path, or `null` if not found.
+ */
+export function findSubgraphPathById(
+  rootGraph: LGraph,
+  targetId: string
+): string[] | null {
+  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
+    { graph: rootGraph, path: [] }
+  ]
+
+  while (stack.length > 0) {
+    const { graph, path } = stack.pop()!
+
+    // Check if graph exists and has _nodes property
+    if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
+      continue
+    }
+
+    for (const node of graph._nodes) {
+      if (node.isSubgraphNode?.() && node.subgraph) {
+        const newPath = [...path, String(node.subgraph.id)]
+        if (node.subgraph.id === targetId) {
+          return newPath
+        }
+        stack.push({ graph: node.subgraph, path: newPath })
+      }
+    }
+  }
+
   return null
 }
 

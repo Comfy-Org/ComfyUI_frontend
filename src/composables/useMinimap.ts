@@ -115,6 +115,21 @@ export function useMinimap() {
     () => workflowStore.activeSubgraph,
     () => {
       graph.value = app.canvas?.graph
+      // Force viewport update when switching subgraphs
+      if (initialized.value && visible.value) {
+        updateViewport()
+      }
+    }
+  )
+
+  // Update viewport when switching workflows
+  watch(
+    () => workflowStore.activeWorkflow,
+    () => {
+      // Force viewport update when switching workflows
+      if (initialized.value && visible.value) {
+        updateViewport()
+      }
     }
   )
 
