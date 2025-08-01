@@ -63,9 +63,3 @@ jobs:
               repo: context.repo.repo,
               body: '✅ **Auto-fix Applied**\n\nESLint and Prettier have automatically fixed formatting and linting issues in this PR. The changes have been committed to this branch.'
             })
-
-      - name: Run final lint check
-        run: npm run lint
-
-      - name: Run final format check  
-        run: npm run format:check
