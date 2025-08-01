@@ -10,7 +10,6 @@
     :loading="isInstalling"
     :loading-message="$t('g.installing')"
     @action="installAllPacks"
-    @click="onClick"
   />
 </template>
 
@@ -37,10 +36,6 @@ const { nodePacks, variant, label } = defineProps<{
 
 const isInstalling = inject(IsInstallingKey, ref(false))
 
-const onClick = (): void => {
-  isInstalling.value = true
-}
-
 const managerStore = useComfyManagerStore()
 
 const createPayload = (installItem: NodePack) => {
@@ -64,8 +59,6 @@ const installPack = (item: NodePack) =>
 
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
-
-  isInstalling.value = true
 
   const uninstalledPacks = nodePacks.filter(
     (pack) => !managerStore.isPackInstalled(pack.id)

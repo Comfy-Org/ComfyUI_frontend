@@ -84,10 +84,9 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, provide, ref } from 'vue'
+import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
@@ -114,17 +113,16 @@ const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
 
-const isInstalling = ref(false)
-provide(IsInstallingKey, isInstalling)
+const { isPackInstalled, isPackEnabled, isPackInstalling } =
+  useComfyManagerStore()
 
-const { isPackInstalled, isPackEnabled } = useComfyManagerStore()
+const isInstalling = computed(() => isPackInstalling(nodePack?.id))
+provide(IsInstallingKey, isInstalling)
 
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 const isDisabled = computed(
   () => isInstalled.value && !isPackEnabled(nodePack?.id)
 )
-
-whenever(isInstalled, () => (isInstalling.value = false))
 
 const nodesCount = computed(() =>
   isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined
