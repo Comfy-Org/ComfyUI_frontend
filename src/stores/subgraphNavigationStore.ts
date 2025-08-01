@@ -91,7 +91,6 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const saveViewport = (graphId: string) => {
       const viewport = getCurrentViewport()
-      console.log('saveViewport', graphId, viewport)
       if (!viewport) return
 
       viewportCache.set(graphId, viewport)
@@ -103,7 +102,6 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const restoreViewport = (graphId: string) => {
       const viewport = viewportCache.get(graphId)
-      console.log('restoreViewport', graphId, viewport)
       if (!viewport) return
 
       const canvas = app.canvas
