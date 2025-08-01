@@ -2,7 +2,7 @@ import { Positionable, Reroute } from '@comfyorg/litegraph'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useSelectedLiteGraphItems } from '@/composables/graph/useSelectedLiteGraphItems'
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useCanvasStore } from '@/stores/graphStore'
 
 // Mock the litegraph module

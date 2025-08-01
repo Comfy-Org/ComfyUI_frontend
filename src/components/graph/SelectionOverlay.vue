@@ -17,8 +17,8 @@ import { createBounds } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
-import { useSelectedLiteGraphItems } from '@/composables/graph/useSelectedLiteGraphItems'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const canvasStore = useCanvasStore()
