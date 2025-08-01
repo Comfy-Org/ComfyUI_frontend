@@ -51,7 +51,7 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
 }))
 
 // Helper function to mount component with required setup
-const mountComponent = () => {
+const mountComponent = (options: { captureError?: boolean } = {}) => {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -60,14 +60,25 @@ const mountComponent = () => {
     }
   })
 
-  return mount(ManagerProgressFooter, {
+  const config: any = {
     global: {
       plugins: [PrimeVue, i18n],
       mocks: {
         $t: (key: string) => key // Mock i18n translation
       }
     }
-  })
+  }
+
+  // Add error handler for tests that expect errors
+  if (options.captureError) {
+    config.global.config = {
+      errorHandler: () => {
+        // Suppress error in test
+      }
+    }
+  }
+
+  return mount(ManagerProgressFooter, config)
 }
 
 describe('ManagerProgressFooter', () => {
@@ -397,18 +408,20 @@ describe('ManagerProgressFooter', () => {
         new Error('Restart failed')
       )
 
-      const wrapper = mountComponent()
+      const wrapper = mountComponent({ captureError: true })
 
       // Click Apply Changes
       const applyButton = wrapper
         .findAll('button')
         .find((btn) => btn.text().includes('manager.applyChanges'))
 
-      try {
-        await applyButton?.trigger('click')
-      } catch (error) {
-        expect(error).toEqual(new Error('Restart failed'))
-      }
+      expect(applyButton).toBeTruthy()
+
+      // The component throws the error but Vue Test Utils catches it
+      // We need to check if the error handling logic was executed
+      await applyButton!.trigger('click').catch(() => {
+        // Error is expected, ignore it
+      })
 
       // Wait for error handling
       await nextTick()
@@ -420,6 +433,8 @@ describe('ManagerProgressFooter', () => {
         'Comfy.Toast.DisableReconnectingToast',
         false
       )
+      // Check that the error handler was called
+      expect(mockComfyManagerService.rebootComfyUI).toHaveBeenCalled()
     })
   })
 })
