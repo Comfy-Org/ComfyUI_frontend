@@ -820,14 +820,13 @@ describe('graphTraversalUtil', () => {
           createMockNode('3')
         ]
 
-        traverseNodesDepthFirst(
-          nodes,
-          (node, context) => {
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node, context) => {
             visited.push(`${node.id}:${context}`)
             return `${context}-${node.id}`
           },
-          'root'
-        )
+          initialContext: 'root'
+        })
 
         expect(visited).toEqual(['3:root', '2:root', '1:root']) // DFS processes in LIFO order
       })
@@ -841,14 +840,13 @@ describe('graphTraversalUtil', () => {
           createMockNode('2', { isSubgraph: true, subgraph })
         ]
 
-        traverseNodesDepthFirst(
-          nodes,
-          (node, depth: number) => {
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node, depth: number) => {
             visited.push(`${node.id}:${depth}`)
             return depth + 1
           },
-          0
-        )
+          initialContext: 0
+        })
 
         expect(visited).toEqual(['2:0', 'sub1:1', '1:0']) // DFS: last node first, then its children
       })
@@ -862,15 +860,14 @@ describe('graphTraversalUtil', () => {
           createMockNode('2', { isSubgraph: true, subgraph })
         ]
 
-        traverseNodesDepthFirst(
-          nodes,
-          (node, context) => {
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node, context) => {
             visited.push(String(node.id))
             return context
           },
-          null,
-          false
-        )
+          initialContext: null,
+          expandSubgraphs: false
+        })
 
         expect(visited).toEqual(['2', '1']) // DFS processes in LIFO order
         expect(visited).not.toContain('sub1')
@@ -893,14 +890,13 @@ describe('graphTraversalUtil', () => {
           subgraph: midSubgraph
         })
 
-        traverseNodesDepthFirst(
-          [topNode],
-          (node, path: string) => {
+        traverseNodesDepthFirst([topNode], {
+          visitor: (node, path: string) => {
             visited.push(`${node.id}:${path}`)
             return path ? `${path}/${node.id}` : String(node.id)
           },
-          ''
-        )
+          initialContext: ''
+        })
 
         expect(visited).toEqual(['100:', '200:100', '300:100/200'])
       })
@@ -914,12 +910,11 @@ describe('graphTraversalUtil', () => {
           createMockNode('3')
         ]
 
-        const results = collectFromNodes(
-          nodes,
-          (node) => `node-${node.id}`,
-          (_node, context) => context,
-          null
-        )
+        const results = collectFromNodes(nodes, {
+          collector: (node) => `node-${node.id}`,
+          contextBuilder: (_node, context) => context,
+          initialContext: null
+        })
 
         expect(results).toEqual(['node-3', 'node-2', 'node-1']) // DFS processes in LIFO order
       })
@@ -931,12 +926,11 @@ describe('graphTraversalUtil', () => {
           createMockNode('3')
         ]
 
-        const results = collectFromNodes(
-          nodes,
-          (node) => (Number(node.id) > 1 ? `node-${node.id}` : null),
-          (_node, context) => context,
-          null
-        )
+        const results = collectFromNodes(nodes, {
+          collector: (node) => (Number(node.id) > 1 ? `node-${node.id}` : null),
+          contextBuilder: (_node, context) => context,
+          initialContext: null
+        })
 
         expect(results).toEqual(['node-3', 'node-2']) // DFS processes in LIFO order, node-1 filtered out
       })
@@ -949,13 +943,12 @@ describe('graphTraversalUtil', () => {
           createMockNode('2', { isSubgraph: true, subgraph })
         ]
 
-        const results = collectFromNodes(
-          nodes,
-          (node, prefix: string) => `${prefix}${node.id}`,
-          (node, prefix: string) => `${prefix}${node.id}-`,
-          'node-',
-          true
-        )
+        const results = collectFromNodes(nodes, {
+          collector: (node, prefix: string) => `${prefix}${node.id}`,
+          contextBuilder: (node, prefix: string) => `${prefix}${node.id}-`,
+          initialContext: 'node-',
+          expandSubgraphs: true
+        })
 
         expect(results).toEqual([
           'node-2',
@@ -973,13 +966,12 @@ describe('graphTraversalUtil', () => {
           createMockNode('2', { isSubgraph: true, subgraph })
         ]
 
-        const results = collectFromNodes(
-          nodes,
-          (node) => String(node.id),
-          (_node, context) => context,
-          null,
-          false
-        )
+        const results = collectFromNodes(nodes, {
+          collector: (node) => String(node.id),
+          contextBuilder: (_node, context) => context,
+          initialContext: null,
+          expandSubgraphs: false
+        })
 
         expect(results).toEqual(['2', '1']) // DFS processes in LIFO order
       })
