@@ -389,19 +389,33 @@ export function getAllNonIoNodesInSubgraph(subgraph: Subgraph): LGraphNode[] {
 }
 
 /**
+ * Options for traverseNodesDepthFirst function
+ */
+export interface TraverseNodesOptions<T> {
+  /** Function called for each node during traversal */
+  visitor?: (node: LGraphNode, context: T) => T
+  /** Initial context value */
+  initialContext?: T
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
+/**
  * Performs depth-first traversal of nodes and their subgraphs.
  * Generic visitor pattern that can be used for various node processing tasks.
  *
  * @param nodes - Starting nodes for traversal
- * @param visitor - Function called for each node with its context
- * @param expandSubgraphs - Whether to traverse into subgraph nodes (default: true)
+ * @param options - Optional traversal configuration
  */
-export function traverseNodesDepthFirst<T>(
+export function traverseNodesDepthFirst<T = void>(
   nodes: LGraphNode[],
-  visitor: (node: LGraphNode, context: T) => T,
-  initialContext: T,
-  expandSubgraphs: boolean = true
+  options?: TraverseNodesOptions<T>
 ): void {
+  const {
+    visitor = () => undefined as T,
+    initialContext = undefined as T,
+    expandSubgraphs = true
+  } = options || {}
   type StackItem = { node: LGraphNode; context: T }
   const stack: StackItem[] = []
 
@@ -430,27 +444,41 @@ export function traverseNodesDepthFirst<T>(
 }
 
 /**
+ * Options for collectFromNodes function
+ */
+export interface CollectFromNodesOptions<T, C> {
+  /** Function that returns data to collect for each node */
+  collector?: (node: LGraphNode, context: C) => T | null
+  /** Function that builds context for child nodes */
+  contextBuilder?: (node: LGraphNode, parentContext: C) => C
+  /** Initial context value */
+  initialContext?: C
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
+/**
  * Collects nodes with custom data during depth-first traversal.
  * Generic collector that can gather any type of data per node.
  *
  * @param nodes - Starting nodes for traversal
- * @param collector - Function that returns data to collect for each node
- * @param contextBuilder - Function that builds context for child nodes
- * @param expandSubgraphs - Whether to traverse into subgraph nodes
+ * @param options - Optional collection configuration
  * @returns Array of collected data
  */
-export function collectFromNodes<T, C>(
+export function collectFromNodes<T = LGraphNode, C = void>(
   nodes: LGraphNode[],
-  collector: (node: LGraphNode, context: C) => T | null,
-  contextBuilder: (node: LGraphNode, parentContext: C) => C,
-  initialContext: C,
-  expandSubgraphs: boolean = true
+  options?: CollectFromNodesOptions<T, C>
 ): T[] {
+  const {
+    collector = (node: LGraphNode) => node as unknown as T,
+    contextBuilder = () => undefined as C,
+    initialContext = undefined as C,
+    expandSubgraphs = true
+  } = options || {}
   const results: T[] = []
 
-  traverseNodesDepthFirst(
-    nodes,
-    (node, context) => {
+  traverseNodesDepthFirst(nodes, {
+    visitor: (node, context) => {
       const data = collector(node, context)
       if (data !== null) {
         results.push(data)
@@ -459,7 +487,7 @@ export function collectFromNodes<T, C>(
     },
     initialContext,
     expandSubgraphs
-  )
+  })
 
   return results
 }
@@ -474,19 +502,16 @@ export function collectFromNodes<T, C>(
 export function getExecutionIdsForSelectedNodes(
   selectedNodes: LGraphNode[]
 ): NodeExecutionId[] {
-  return collectFromNodes(
-    selectedNodes,
-    // Collector: build execution ID for each node
-    (node, parentExecutionId: string): NodeExecutionId => {
+  return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
+    collector: (node, parentExecutionId) => {
       const nodeId = String(node.id)
       return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
     },
-    // Context builder: pass execution ID to children
-    (node, parentExecutionId: string) => {
+    contextBuilder: (node, parentExecutionId) => {
       const nodeId = String(node.id)
       return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
     },
-    '', // Initial context: empty parent execution ID
-    true // Expand subgraphs
-  )
+    initialContext: '',
+    expandSubgraphs: true
+  })
 }
