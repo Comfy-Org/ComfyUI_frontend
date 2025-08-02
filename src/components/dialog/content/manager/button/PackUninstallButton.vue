@@ -6,16 +6,14 @@
         ? $t('manager.uninstallSelected')
         : $t('manager.uninstall')
     "
-    severity="danger"
+    variant="red"
     :loading-message="$t('manager.uninstalling')"
     @action="uninstallItems"
   />
 </template>
-
 <script setup lang="ts">
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { ManagerPackInfo } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
@@ -26,15 +24,15 @@ const { nodePacks } = defineProps<{
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (uninstallItem: NodePack): ManagerPackInfo => {
-  return {
-    id: uninstallItem.id,
-    version: uninstallItem.latest_version?.version
+const uninstallPack = (item: NodePack) => {
+  if (!item.id) {
+    throw new Error('Node ID is required for uninstallation')
   }
+  return managerStore.uninstallPack({
+    id: item.id,
+    version: item.latest_version?.version ?? ''
+  })
 }
-
-const uninstallPack = (item: NodePack) =>
-  managerStore.uninstallPack(createPayload(item))
 
 const uninstallItems = async () => {
   if (!nodePacks?.length) return
