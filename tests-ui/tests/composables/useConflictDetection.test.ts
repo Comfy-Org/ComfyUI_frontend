@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import type { InstalledPacksResponse } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 // Mock dependencies
 vi.mock('@/scripts/api', () => ({
@@ -199,21 +199,20 @@ describe.skip('useConflictDetection with Registry Store', () => {
   describe('package requirements detection with Registry Store', () => {
     it('should fetch and combine local + Registry data successfully', async () => {
       // Mock installed packages
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          'ComfyUI-Manager': {
-            ver: 'cb0fa5829d5378e5dddb8e8515b30a3ff20e1471',
-            cnr_id: '',
-            aux_id: 'viva-jinyi/ComfyUI-Manager',
-            enabled: true
-          },
-          'ComfyUI-TestNode': {
-            ver: '1.0.0',
-            cnr_id: 'test-node',
-            aux_id: null,
-            enabled: false
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        'ComfyUI-Manager': {
+          ver: 'cb0fa5829d5378e5dddb8e8515b30a3ff20e1471',
+          cnr_id: '',
+          aux_id: 'viva-jinyi/ComfyUI-Manager',
+          enabled: true
+        },
+        'ComfyUI-TestNode': {
+          ver: '1.0.0',
+          cnr_id: 'test-node',
+          aux_id: null,
+          enabled: false
         }
+      }
 
       // Mock Registry data
       const mockRegistryPacks: components['schemas']['Node'][] = [
@@ -291,15 +290,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should handle Registry Store failures gracefully', async () => {
       // Mock installed packages
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          'Unknown-Package': {
-            ver: '1.0.0',
-            cnr_id: 'unknown',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        'Unknown-Package': {
+          ver: '1.0.0',
+          cnr_id: 'unknown',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
@@ -343,15 +341,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
   describe('conflict detection logic with Registry Store', () => {
     it('should detect no conflicts for fully compatible packages', async () => {
       // Mock compatible package
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          CompatibleNode: {
-            ver: '1.0.0',
-            cnr_id: 'compatible-node',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        CompatibleNode: {
+          ver: '1.0.0',
+          cnr_id: 'compatible-node',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockCompatibleRegistryPacks: components['schemas']['Node'][] = [
         {
@@ -388,15 +385,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should detect OS incompatibility conflicts', async () => {
       // Mock OS-incompatible package
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          WindowsOnlyNode: {
-            ver: '1.0.0',
-            cnr_id: 'windows-only',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        WindowsOnlyNode: {
+          ver: '1.0.0',
+          cnr_id: 'windows-only',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockWindowsOnlyRegistryPacks: components['schemas']['Node'][] = [
         {
@@ -441,15 +437,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should detect accelerator incompatibility conflicts', async () => {
       // Mock CUDA-only package
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          CudaOnlyNode: {
-            ver: '1.0.0',
-            cnr_id: 'cuda-only',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        CudaOnlyNode: {
+          ver: '1.0.0',
+          cnr_id: 'cuda-only',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockCudaOnlyRegistryPacks: components['schemas']['Node'][] = [
         {
@@ -494,15 +489,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should treat Registry-banned packages as conflicts', async () => {
       // Mock Registry-banned package
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          BannedNode: {
-            ver: '1.0.0',
-            cnr_id: 'banned-node',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        BannedNode: {
+          ver: '1.0.0',
+          cnr_id: 'banned-node',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockBannedRegistryPacks: components['schemas']['NodeVersion'][] = [
         {
@@ -548,15 +542,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should treat locally disabled packages as banned', async () => {
       // Mock locally disabled package
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          DisabledNode: {
-            ver: '1.0.0',
-            cnr_id: 'disabled-node',
-            aux_id: null,
-            enabled: false
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        DisabledNode: {
+          ver: '1.0.0',
+          cnr_id: 'disabled-node',
+          aux_id: null,
+          enabled: false
         }
+      }
 
       const mockActiveRegistryPacks: components['schemas']['Node'][] = [
         {
@@ -605,15 +598,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
   describe('computed properties with Registry Store', () => {
     it('should return true for hasConflicts when Registry conflicts exist', async () => {
       // Mock package with OS incompatibility
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          ConflictedNode: {
-            ver: '1.0.0',
-            cnr_id: 'conflicted-node',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        ConflictedNode: {
+          ver: '1.0.0',
+          cnr_id: 'conflicted-node',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockConflictedRegistryPacks: components['schemas']['Node'][] = [
         {
@@ -653,15 +645,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should return packages with conflicts', async () => {
       // Mock package with conflicts
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          ErrorNode: {
-            ver: '1.0.0',
-            cnr_id: 'error-node',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        ErrorNode: {
+          ver: '1.0.0',
+          cnr_id: 'error-node',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockErrorRegistryPacks: components['schemas']['Node'][] = [
         {
@@ -700,21 +691,20 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should return only banned packages for bannedPackages', async () => {
       // Mock one banned and one normal package
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          BannedNode: {
-            ver: '1.0.0',
-            cnr_id: 'banned-node',
-            aux_id: null,
-            enabled: false
-          },
-          NormalNode: {
-            ver: '1.0.0',
-            cnr_id: 'normal-node',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        BannedNode: {
+          ver: '1.0.0',
+          cnr_id: 'banned-node',
+          aux_id: null,
+          enabled: false
+        },
+        NormalNode: {
+          ver: '1.0.0',
+          cnr_id: 'normal-node',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockRegistryPacks: components['schemas']['Node'][] = [
         {
@@ -797,21 +787,20 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should handle Registry Store partial data gracefully', async () => {
       // Mock successful local data but partial Registry data
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          'Package-A': {
-            ver: '1.0.0',
-            cnr_id: 'a',
-            aux_id: null,
-            enabled: true
-          },
-          'Package-B': {
-            ver: '2.0.0',
-            cnr_id: 'b',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        'Package-A': {
+          ver: '1.0.0',
+          cnr_id: 'a',
+          aux_id: null,
+          enabled: true
+        },
+        'Package-B': {
+          ver: '2.0.0',
+          cnr_id: 'b',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(
         mockInstalledPacks
@@ -921,15 +910,14 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should show conflict modal after update when conflicts exist', async () => {
       // Mock package with conflicts
-      const mockInstalledPacks: ManagerComponents['schemas']['InstalledPacksResponse'] =
-        {
-          ConflictedNode: {
-            ver: '1.0.0',
-            cnr_id: 'conflicted-node',
-            aux_id: null,
-            enabled: true
-          }
+      const mockInstalledPacks: InstalledPacksResponse = {
+        ConflictedNode: {
+          ver: '1.0.0',
+          cnr_id: 'conflicted-node',
+          aux_id: null,
+          enabled: true
         }
+      }
 
       const mockConflictedRegistryPacks: components['schemas']['Node'][] = [
         {

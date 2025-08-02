@@ -25,6 +25,7 @@ vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
     isPackInstalled: vi.fn(() => false),
     isPackEnabled: vi.fn(() => true),
+    isPackInstalling: vi.fn(() => false),
     installedPacksIds: []
   }))
 }))
