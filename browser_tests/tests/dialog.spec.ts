@@ -13,6 +13,21 @@ test.describe('Load workflow warning', () => {
     const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
     await expect(missingNodesWarning).toBeVisible()
   })
+
+  test('Should display a warning when loading a workflow with missing nodes in subgraphs', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('missing_nodes_in_subgraph')
+
+    // Wait for the element with the .comfy-missing-nodes selector to be visible
+    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    await expect(missingNodesWarning).toBeVisible()
+
+    // Verify the missing node text includes subgraph context
+    const warningText = await missingNodesWarning.textContent()
+    expect(warningText).toContain('MISSING_NODE_TYPE_IN_SUBGRAPH')
+    expect(warningText).toContain('in subgraph')
+  })
 })
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
@@ -369,7 +384,7 @@ test.describe('Signin dialog', () => {
     await textBox.press('Control+c')
 
     await comfyPage.page.evaluate(() => {
-      window['app'].extensionManager.dialog.showSignInDialog()
+      void window['app'].extensionManager.dialog.showSignInDialog()
     })
 
     const input = comfyPage.page.locator('#comfy-org-sign-in-password')
