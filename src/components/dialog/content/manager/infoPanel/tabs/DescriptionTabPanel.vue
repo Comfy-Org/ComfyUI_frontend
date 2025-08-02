@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-4 overflow-hidden">
+  <div class="overflow-hidden">
     <InfoTextSection
       v-if="nodePack?.description"
       :sections="descriptionSections"
