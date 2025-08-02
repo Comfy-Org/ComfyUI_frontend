@@ -132,7 +132,7 @@
 import Button from 'primevue/button'
 import {
   type CSSProperties,
-  Component,
+  type Component,
   computed,
   nextTick,
   onMounted,
