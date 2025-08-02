@@ -43,6 +43,7 @@ interface DialogInstance {
   component: Component
   contentProps: Record<string, any>
   footerComponent?: Component
+  footerProps?: Record<string, any>
   dialogComponentProps: DialogComponentProps
   priority: number
 }
