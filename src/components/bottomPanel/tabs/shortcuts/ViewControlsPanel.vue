@@ -4,7 +4,6 @@
       <ShortcutsList
         :commands="viewControlsCommands"
         :subcategories="viewControlsSubcategories"
-        :columns="2"
       />
     </div>
   </div>

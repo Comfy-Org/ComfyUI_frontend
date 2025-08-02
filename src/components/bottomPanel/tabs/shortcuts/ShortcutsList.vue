@@ -54,7 +54,6 @@ const { t } = useI18n()
 const { subcategories } = defineProps<{
   commands: ComfyCommandImpl[]
   subcategories: Record<string, ComfyCommandImpl[]>
-  columns?: number
 }>()
 
 const getSubcategoryTitle = (subcategory: string): string => {
