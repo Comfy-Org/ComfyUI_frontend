@@ -68,6 +68,7 @@ import { marked } from 'marked'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { COMFY_URLS } from '@/constants/urls'
 import type { ReleaseNote } from '@/services/releaseService'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -92,8 +93,8 @@ const shouldShow = computed(
 const changelogUrl = computed(() => {
   const isChineseLocale = locale.value === 'zh'
   const baseUrl = isChineseLocale
-    ? 'https://docs.comfy.org/zh-CN/changelog'
-    : 'https://docs.comfy.org/changelog'
+    ? COMFY_URLS.docs.changelog.zh
+    : COMFY_URLS.docs.changelog.en
 
   if (latestRelease.value?.version) {
     const versionAnchor = formatVersionAnchor(latestRelease.value.version)
