@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { createBounds } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
@@ -39,12 +39,24 @@ const positionSelectionOverlay = () => {
 
   visible.value = true
   const bounds = createBounds(selectableItems)
+
   if (bounds) {
     updatePosition({
       pos: [bounds[0], bounds[1]],
       size: [bounds[2], bounds[3]]
     })
   }
+}
+
+let rafId: number | null = null
+
+const throttledPositionUpdate = () => {
+  if (rafId !== null) return // Already scheduled - skip redundant calls
+
+  rafId = requestAnimationFrame(() => {
+    positionSelectionOverlay()
+    rafId = null
+  })
 }
 
 whenever(
@@ -58,7 +70,10 @@ whenever(
   { immediate: true }
 )
 
-canvasStore.getCanvas().ds.onChanged = positionSelectionOverlay
+const canvas = canvasStore.getCanvas()
+if (canvas?.ds) {
+  canvas.ds.onChanged = throttledPositionUpdate
+}
 
 watch(
   () => canvasStore.canvas?.state?.draggingItems,
@@ -70,7 +85,7 @@ watch(
     if (draggingItems === false) {
       requestAnimationFrame(() => {
         visible.value = true
-        positionSelectionOverlay()
+        throttledPositionUpdate() // Use throttled version here too
       })
     } else {
       // Selection change update to visible state is delayed by a frame. Here
@@ -82,6 +97,13 @@ watch(
     }
   }
 )
+
+// **PROPER CLEANUP**: Cancel pending animation frame on component unmount
+onUnmounted(() => {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+  }
+})
 </script>
 
 <style scoped>
