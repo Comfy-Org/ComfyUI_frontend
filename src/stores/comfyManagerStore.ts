@@ -1,4 +1,5 @@
 import { whenever } from '@vueuse/core'
+import { mapKeys } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -114,7 +115,14 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const refreshInstalledList = async () => {
     const packs = await managerService.listInstalledPacks()
-    if (packs) installedPacks.value = packs
+    if (packs) {
+      // The keys are 'cleaned' by stripping the version suffix.
+      // The pack object itself (the value) still contains the version info.
+      const packsWithCleanedKeys = mapKeys(packs, (_value, key) => {
+        return key.split('@')[0]
+      })
+      installedPacks.value = packsWithCleanedKeys
+    }
     isStale.value = false
   }
 

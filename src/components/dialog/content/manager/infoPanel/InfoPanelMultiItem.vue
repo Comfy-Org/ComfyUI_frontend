@@ -6,8 +6,12 @@
           <PackIconStacked :node-packs="nodePacks" />
         </template>
         <template #title>
-          {{ nodePacks.length }}
-          {{ $t('manager.packsSelected') }}
+          <div class="mt-5">
+            <span class="inline-block mr-2 text-blue-500 text-base">{{
+              nodePacks.length
+            }}</span>
+            <span class="text-base">{{ $t('manager.packsSelected') }}</span>
+          </div>
         </template>
         <template #install-button>
           <PackUninstallButton

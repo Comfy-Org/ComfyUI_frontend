@@ -1,17 +1,20 @@
 <template>
-  <div v-if="nodePacks?.length" class="flex flex-col items-center mb-6">
+  <div v-if="nodePacks?.length" class="flex flex-col items-center">
     <slot name="thumbnail">
-      <PackIcon :node-pack="nodePacks[0]" width="24" height="24" />
+      <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
     </slot>
     <h2
       class="text-2xl font-bold text-center mt-4 mb-2"
       style="word-break: break-all"
     >
       <slot name="title">
-        {{ nodePacks[0].name }}
+        <span class="inline-block text-base">{{ nodePacks[0].name }}</span>
       </slot>
     </h2>
-    <div class="mt-2 mb-4 w-full max-w-xs flex justify-center">
+    <div
+      v-if="!importFailed"
+      class="mt-2 mb-4 w-full max-w-xs flex justify-center"
+    >
       <slot name="install-button">
         <PackUninstallButton
           v-if="isAllInstalled"
@@ -25,11 +28,12 @@
           size="md"
           :is-installing="isInstalling"
           :node-packs="nodePacks"
+          :has-conflict="hasConflict"
         />
       </slot>
     </div>
   </div>
-  <div v-else class="flex flex-col items-center mb-6">
+  <div v-else class="flex flex-col items-center">
     <NoResultsPlaceholder
       :message="$t('manager.status.unknown')"
       :title="$t('manager.tryAgainLater')"
@@ -38,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -46,12 +50,18 @@ import PackUninstallButton from '@/components/dialog/content/manager/button/Pack
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
-const { nodePacks } = defineProps<{
+const { nodePacks, hasConflict } = defineProps<{
   nodePacks: components['schemas']['Node'][]
+  hasConflict?: boolean
 }>()
 
 const managerStore = useComfyManagerStore()
+
+// Inject import failed context from parent
+const importFailedContext = inject(ImportFailedKey)
+const importFailed = importFailedContext?.importFailed
 
 const isAllInstalled = ref(false)
 watch(

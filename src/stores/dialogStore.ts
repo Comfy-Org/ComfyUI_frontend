@@ -54,6 +54,7 @@ export interface ShowDialogOptions {
   footerComponent?: Component
   component: Component
   props?: Record<string, any>
+  footerProps?: Record<string, any>
   dialogComponentProps?: DialogComponentProps
   /**
    * Optional priority for dialog stacking.
@@ -127,6 +128,7 @@ export const useDialogStore = defineStore('dialog', () => {
     footerComponent?: Component
     component: Component
     props?: Record<string, any>
+    footerProps?: Record<string, any>
     dialogComponentProps?: DialogComponentProps
     priority?: number
   }) {
@@ -146,6 +148,7 @@ export const useDialogStore = defineStore('dialog', () => {
         : undefined,
       component: markRaw(options.component),
       contentProps: { ...options.props },
+      footerProps: { ...options.footerProps },
       priority: options.priority ?? 1,
       dialogComponentProps: {
         maximizable: false,
