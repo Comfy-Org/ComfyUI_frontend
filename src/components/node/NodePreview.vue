@@ -6,16 +6,17 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
   <div class="_sb_node_preview">
     <div class="_sb_table">
       <div
-        class="node_header"
+        class="node_header overflow-ellipsis mr-4"
+        :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
           color: litegraphColors.NODE_TITLE_COLOR
         }"
       >
-        <div class="_sb_dot headdot" />
+        <div class="_sb_dot headdot pr-3" />
         {{ nodeDef.display_name }}
       </div>
-      <div class="_sb_preview_badge">PREVIEW</div>
+      <div class="_sb_preview_badge">{{ $t('g.preview') }}</div>
 
       <!-- Node slot I/O -->
       <div

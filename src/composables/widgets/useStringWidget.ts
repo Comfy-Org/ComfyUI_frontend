@@ -8,6 +8,8 @@ import { app } from '@/scripts/app'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 
+const TRACKPAD_DETECTION_THRESHOLD = 50
+
 function addMultilineWidget(
   node: LGraphNode,
   name: string,
@@ -54,38 +56,55 @@ function addMultilineWidget(
     }
   })
 
-  /** Timer reference. `null` when the timer completes. */
-  let ignoreEventsTimer: ReturnType<typeof setTimeout> | null = null
-  /** Total number of events ignored since the timer started. */
-  let ignoredEvents = 0
-
-  // Pass wheel events to the canvas when appropriate
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    if (!Object.is(event.deltaX, -0)) return
+    const gesturesEnabled = useSettingStore().get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+    const deltaX = event.deltaX
+    const deltaY = event.deltaY
 
-    // If the textarea has focus, require more effort to activate pass-through
-    const multiplier = document.activeElement === inputEl ? 2 : 1
-    const maxScrollHeight = inputEl.scrollHeight - inputEl.clientHeight
+    const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
 
-    if (
-      (event.deltaY < 0 && inputEl.scrollTop === 0) ||
-      (event.deltaY > 0 && inputEl.scrollTop === maxScrollHeight)
-    ) {
-      // Attempting to scroll past the end of the textarea
-      if (!ignoreEventsTimer || ignoredEvents > 25 * multiplier) {
-        app.canvas.processMouseWheel(event)
-      } else {
-        ignoredEvents++
-      }
-    } else if (event.deltaY !== 0) {
-      // Start timer whenever a successful scroll occurs
-      ignoredEvents = 0
-      if (ignoreEventsTimer) clearTimeout(ignoreEventsTimer)
-
-      ignoreEventsTimer = setTimeout(() => {
-        ignoreEventsTimer = null
-      }, 800 * multiplier)
+    // Prevent pinch zoom from zooming the page
+    if (event.ctrlKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
     }
+
+    // Detect if this is likely a trackpad gesture vs mouse wheel
+    // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
+    // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
+    const isLikelyTrackpad =
+      Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
+
+    // Trackpad gestures: when enabled, trackpad panning goes to canvas
+    if (gesturesEnabled && isLikelyTrackpad) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
+    if (isHorizontal) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+    if (canScrollY) {
+      event.stopPropagation()
+      return
+    }
+
+    // If textarea can't scroll vertically, pass to canvas
+    event.preventDefault()
+    app.canvas.processMouseWheel(event)
   })
 
   return widget

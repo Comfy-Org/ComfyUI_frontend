@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Basculer le verrouillage du canevas"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Basculer la mini-carte du canevas"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Contourner/Ne pas contourner les nœuds sélectionnés"
   },
@@ -113,6 +116,9 @@
   "Comfy_Feedback": {
     "label": "Retour d'information"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Convertir la sélection en sous-graphe"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajuster le groupe au contenu"
   },
@@ -154,6 +160,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Basculer la boîte de dialogue de progression"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Réduire la taille du pinceau dans MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Augmenter la taille du pinceau dans MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"

@@ -57,22 +57,42 @@ While services can interact with both UI components and stores (centralized stat
 
 ## Core Services
 
-The core services include:
+The following table lists ALL services in the system as of 2025-01-30:
+
+### Main Services
+
+| Service | Description | Category |
+|---------|-------------|----------|
+| autoQueueService.ts | Manages automatic queue execution | Execution |
+| colorPaletteService.ts | Handles color palette management and customization | UI |
+| comfyManagerService.ts | Manages ComfyUI application packages and updates | Manager |
+| comfyRegistryService.ts | Handles registration and discovery of ComfyUI extensions | Registry |
+| dialogService.ts | Provides dialog and modal management | UI |
+| extensionService.ts | Manages extension registration and lifecycle | Extensions |
+| keybindingService.ts | Handles keyboard shortcuts and keybindings | Input |
+| litegraphService.ts | Provides utilities for working with the LiteGraph library | Graph |
+| load3dService.ts | Manages 3D model loading and visualization | 3D |
+| nodeHelpService.ts | Provides node documentation and help | Nodes |
+| nodeOrganizationService.ts | Handles node organization and categorization | Nodes |
+| nodeSearchService.ts | Implements node search functionality | Search |
+| releaseService.ts | Manages application release information and updates | System |
+| subgraphService.ts | Handles subgraph operations and navigation | Graph |
+| workflowService.ts | Handles workflow operations (save, load, execute) | Workflows |
+
+### Gateway Services
+Located in `services/gateway/`:
 
 | Service | Description |
 |---------|-------------|
-| algoliaSearchService.ts | Implements search functionality using Algolia |
-| autoQueueService.ts | Manages automatic queue execution |
-| colorPaletteService.ts | Handles color palette management and customization |
-| comfyManagerService.ts | Manages ComfyUI application packages and updates |
-| comfyRegistryService.ts | Handles registration and discovery of ComfyUI extensions |
-| dialogService.ts | Provides dialog and modal management |
-| extensionService.ts | Manages extension registration and lifecycle |
-| keybindingService.ts | Handles keyboard shortcuts and keybindings |
-| litegraphService.ts | Provides utilities for working with the LiteGraph library |
-| load3dService.ts | Manages 3D model loading and visualization |
-| nodeSearchService.ts | Implements node search functionality |
-| workflowService.ts | Handles workflow operations (save, load, execute) |
+| registrySearchGateway.ts | Gateway for registry search operations |
+
+### Provider Services
+Located in `services/providers/`:
+
+| Service | Description |
+|---------|-------------|
+| algoliaSearchProvider.ts | Implements search functionality using Algolia |
+| registrySearchProvider.ts | Provides registry search capabilities |
 
 ## Service Development Guidelines
 

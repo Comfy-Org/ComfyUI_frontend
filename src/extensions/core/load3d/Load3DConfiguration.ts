@@ -128,6 +128,9 @@ class Load3DConfiguration {
       if (!value) return
 
       const filename = value as string
+
+      this.setResourceFolder(filename)
+
       const modelUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
@@ -157,12 +160,6 @@ class Load3DConfiguration {
 
       this.load3d.setEdgeThreshold(edgeThreshold)
 
-      const texturePath = this.load3d.loadNodeProperty('Texture', null)
-
-      if (texturePath) {
-        await this.load3d.applyTexture(texturePath)
-      }
-
       if (isFirstLoad && cameraState && typeof cameraState === 'object') {
         try {
           this.load3d.setCameraState(cameraState)
@@ -171,6 +168,21 @@ class Load3DConfiguration {
         }
         isFirstLoad = false
       }
+    }
+  }
+
+  private setResourceFolder(filename: string): void {
+    const pathParts = filename.split('/').filter((part) => part.trim())
+
+    if (pathParts.length <= 2) {
+      return
+    }
+
+    const subfolderParts = pathParts.slice(1, -1)
+    const subfolder = subfolderParts.join('/')
+
+    if (subfolder) {
+      this.load3d.node.properties['Resource Folder'] = subfolder
     }
   }
 }

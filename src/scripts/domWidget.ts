@@ -11,7 +11,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
-export interface BaseDOMWidget<V extends object | string>
+export interface BaseDOMWidget<V extends object | string = object | string>
   extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
   // ICustomWidget properties
   type: string
@@ -45,11 +45,29 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
 }
 
 /**
+ * Additional props that can be passed to component widgets.
+ * These are in addition to the standard props that are always provided:
+ * - modelValue: The widget's value (handled by v-model)
+ * - widget: Reference to the widget instance
+ * - onUpdate:modelValue: The update handler for v-model
+ */
+export type ComponentWidgetCustomProps = Record<string, unknown>
+
+/**
+ * Standard props that are handled separately by DomWidget.vue and should be
+ * omitted when defining custom props for component widgets
+ */
+export type ComponentWidgetStandardProps =
+  | 'modelValue'
+  | 'widget'
+  | 'onUpdate:modelValue'
+
+/**
  * A DOM widget that wraps a Vue component as a litegraph widget.
  */
 export interface ComponentWidget<
   V extends object | string,
-  P = Record<string, unknown>
+  P extends ComponentWidgetCustomProps = ComponentWidgetCustomProps
 > extends BaseDOMWidget<V> {
   readonly component: Component
   readonly inputSpec: InputSpec
@@ -158,6 +176,21 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   override onRemove(): void {
     useDomWidgetStore().unregisterWidget(this.id)
   }
+
+  override createCopyForNode(node: LGraphNode): this {
+    // @ts-expect-error
+    const cloned: this = new (this.constructor as typeof this)({
+      node: node,
+      name: this.name,
+      type: this.type,
+      options: this.options
+    })
+    cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
+    return cloned
+  }
 }
 
 export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
@@ -175,6 +208,22 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }) {
     super(obj)
     this.element = obj.element
+  }
+
+  override createCopyForNode(node: LGraphNode): this {
+    // @ts-expect-error
+    const cloned: this = new (this.constructor as typeof this)({
+      node: node,
+      name: this.name,
+      type: this.type,
+      element: this.element, // Include the element!
+      options: this.options
+    })
+    cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
+    return cloned
   }
 
   /** Extract DOM widget size info */
@@ -222,7 +271,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 
 export class ComponentWidgetImpl<
     V extends object | string,
-    P = Record<string, unknown>
+    P extends ComponentWidgetCustomProps = ComponentWidgetCustomProps
   >
   extends BaseDOMWidgetImpl<V>
   implements ComponentWidget<V, P>
@@ -330,9 +379,8 @@ LGraphNode.prototype.addDOMWidget = function <
 export const pruneWidgets = (nodes: LGraphNode[]) => {
   const nodeSet = new Set(nodes)
   const domWidgetStore = useDomWidgetStore()
-  for (const widgetState of domWidgetStore.widgetStates.values()) {
-    const widget = widgetState.widget
-    if (!nodeSet.has(widget.node as LGraphNode)) {
+  for (const { widget } of domWidgetStore.widgetStates.values()) {
+    if (!nodeSet.has(widget.node)) {
       domWidgetStore.unregisterWidget(widget.id)
     }
   }

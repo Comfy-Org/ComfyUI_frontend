@@ -1,10 +1,10 @@
 <template>
   <div class="comfyui-body grid h-full w-full overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top">
-      <TopMenubar v-if="useNewMenu === 'Top'" />
+      <TopMenubar v-if="showTopMenu" />
     </div>
     <div id="comfyui-body-bottom" class="comfyui-body-bottom">
-      <TopMenubar v-if="useNewMenu === 'Bottom'" />
+      <TopMenubar v-if="showBottomMenu" />
     </div>
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
@@ -15,16 +15,22 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
-  <!-- Release toast now managed by SidebarHelpCenterIcon component -->
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useBreakpoints, useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  watch,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -36,6 +42,7 @@ import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVersionMismatchWarning'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
@@ -55,6 +62,7 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -71,6 +79,14 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const versionCompatibilityStore = useVersionCompatibilityStore()
+
+const breakpoints = useBreakpoints({ md: 961 })
+const isMobile = breakpoints.smaller('md')
+const showTopMenu = computed(() => isMobile.value || useNewMenu.value === 'Top')
+const showBottomMenu = computed(
+  () => !isMobile.value && useNewMenu.value === 'Bottom'
+)
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -220,7 +236,15 @@ useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 
 const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
 
-// Note: WhatsNew popup functionality is now handled directly by the toast
+// Initialize version mismatch warning in setup context
+// It will be triggered automatically when the store is ready
+useFrontendVersionMismatchWarning({ immediate: true })
+
+void nextTick(() => {
+  versionCompatibilityStore.initialize().catch((error) => {
+    console.warn('Version compatibility check failed:', error)
+  })
+})
 
 const onGraphReady = () => {
   requestIdleCallback(

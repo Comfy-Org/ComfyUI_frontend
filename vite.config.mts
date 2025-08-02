@@ -1,5 +1,6 @@
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
+import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -7,11 +8,7 @@ import { type UserConfig, defineConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import {
-  addElementVnodeExportPlugin,
-  comfyAPIPlugin,
-  generateImportMapPlugin
-} from './build/plugins'
+import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
 
 dotenv.config()
 
@@ -88,19 +85,55 @@ export default defineConfig({
       : [vue()]),
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
-      { name: 'vue', pattern: /[\\/]node_modules[\\/]vue[\\/]/ },
-      { name: 'primevue', pattern: /[\\/]node_modules[\\/]primevue[\\/]/ },
-      { name: 'vue-i18n', pattern: /[\\/]node_modules[\\/]vue-i18n[\\/]/ }
+      {
+        name: 'vue',
+        pattern: 'vue',
+        entry: './dist/vue.esm-browser.prod.js'
+      },
+      {
+        name: 'vue-i18n',
+        pattern: 'vue-i18n',
+        entry: './dist/vue-i18n.esm-browser.prod.js'
+      },
+      {
+        name: 'primevue',
+        pattern: /^primevue\/?.*/,
+        entry: './index.mjs',
+        recursiveDependence: true
+      },
+      {
+        name: '@primevue/themes',
+        pattern: /^@primevue\/themes\/?.*/,
+        entry: './index.mjs',
+        recursiveDependence: true
+      },
+      {
+        name: '@primevue/forms',
+        pattern: /^@primevue\/forms\/?.*/,
+        entry: './index.mjs',
+        recursiveDependence: true,
+        override: {
+          '@primeuix/forms': {
+            entry: ''
+          }
+        }
+      }
     ]),
-    addElementVnodeExportPlugin(),
 
     Icons({
-      compiler: 'vue3'
+      compiler: 'vue3',
+      customCollections: {
+        comfy: FileSystemIconLoader('src/assets/icons/custom')
+      }
     }),
 
     Components({
       dts: true,
-      resolvers: [IconsResolver()],
+      resolvers: [
+        IconsResolver({
+          customCollections: ['comfy']
+        })
+      ],
       dirs: ['src/components', 'src/layout', 'src/views'],
       deep: true,
       extensions: ['vue']

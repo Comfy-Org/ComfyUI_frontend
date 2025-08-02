@@ -529,7 +529,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (v16 or later) and npm
+  - Node.js (v16 or later; v20/v22 strongly recommended) and npm
   - Git for version control
   - A running ComfyUI backend instance
   
@@ -685,6 +685,12 @@ Component test verifies Vue components in `src/components/`.
 ### Playwright Test
 
 Playwright test verifies the whole app. See <https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/README.md> for details.
+
+### Custom Icons
+
+The project supports custom SVG icons through the unplugin-icons system. Custom icons are stored in `src/assets/icons/custom/` and can be used as Vue components with the `i-comfy:` prefix.
+
+For detailed instructions on adding and using custom icons, see [src/assets/icons/README.md](src/assets/icons/README.md).
 
 ### litegraph.js
 

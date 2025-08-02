@@ -55,7 +55,6 @@
       @update-up-direction="handleUpdateUpDirection"
       @update-material-mode="handleUpdateMaterialMode"
       @update-edge-threshold="handleUpdateEdgeThreshold"
-      @upload-texture="handleUploadTexture"
       @export-model="handleExportModel"
     />
     <div
@@ -206,26 +205,13 @@ const handleBackgroundImageUpdate = async (file: File | null) => {
     return
   }
 
-  backgroundImage.value = await Load3dUtils.uploadFile(file)
+  const resourceFolder = (node.properties['Resource Folder'] as string) || ''
+
+  const subfolder = resourceFolder.trim() ? `3d/${resourceFolder.trim()}` : '3d'
+
+  backgroundImage.value = await Load3dUtils.uploadFile(file, subfolder)
 
   node.properties['Background Image'] = backgroundImage.value
-}
-
-const handleUploadTexture = async (file: File) => {
-  if (!load3DSceneRef.value?.load3d) {
-    useToastStore().addAlert(t('toastMessages.no3dScene'))
-    return
-  }
-
-  try {
-    const texturePath = await Load3dUtils.uploadFile(file)
-    await load3DSceneRef.value.load3d.applyTexture(texturePath)
-
-    node.properties['Texture'] = texturePath
-  } catch (error) {
-    console.error('Error applying texture:', error)
-    useToastStore().addAlert(t('toastMessages.failedToApplyTexture'))
-  }
 }
 
 const handleUpdateFOV = (value: number) => {

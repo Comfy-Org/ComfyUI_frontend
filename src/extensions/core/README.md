@@ -25,20 +25,85 @@ ComfyUI's extension system follows these key principles:
 
 ## Core Extensions List
 
-The core extensions include:
+The following table lists ALL core extensions in the system as of 2025-01-30:
 
-| Extension | Description |
-|-----------|-------------|
-| clipspace.ts | Implements the Clipspace feature for temporary image storage |
-| dynamicPrompts.ts | Provides dynamic prompt generation capabilities |
-| groupNode.ts | Implements the group node functionality to organize workflows |
-| load3d.ts | Supports 3D model loading and visualization |
-| maskeditor.ts | Implements the mask editor for image masking operations |
-| noteNode.ts | Adds note nodes for documentation within workflows |
-| rerouteNode.ts | Implements reroute nodes for cleaner workflow connections |
-| uploadImage.ts | Handles image upload functionality |
-| webcamCapture.ts | Provides webcam capture capabilities |
-| widgetInputs.ts | Implements various widget input types |
+### Main Extensions
+
+| Extension | Description | Category |
+|-----------|-------------|----------|
+| clipspace.ts | Implements the Clipspace feature for temporary image storage | Image |
+| contextMenuFilter.ts | Provides context menu filtering capabilities | UI |
+| dynamicPrompts.ts | Provides dynamic prompt generation capabilities | Prompts |
+| editAttention.ts | Implements attention editing functionality | Text |
+| electronAdapter.ts | Adapts functionality for Electron environment | Platform |
+| groupNode.ts | Implements the group node functionality to organize workflows | Graph |
+| groupNodeManage.ts | Provides group node management operations | Graph |
+| groupOptions.ts | Handles group node configuration options | Graph |
+| index.ts | Main extension registration and coordination | Core |
+| load3d.ts | Supports 3D model loading and visualization | 3D |
+| maskEditorOld.ts | Legacy mask editor implementation | Image |
+| maskeditor.ts | Implements the mask editor for image masking operations | Image |
+| nodeTemplates.ts | Provides node template functionality | Templates |
+| noteNode.ts | Adds note nodes for documentation within workflows | Graph |
+| previewAny.ts | Universal preview functionality for various data types | Preview |
+| rerouteNode.ts | Implements reroute nodes for cleaner workflow connections | Graph |
+| saveImageExtraOutput.ts | Handles additional image output saving | Image |
+| saveMesh.ts | Implements 3D mesh saving functionality | 3D |
+| simpleTouchSupport.ts | Provides basic touch interaction support | Input |
+| slotDefaults.ts | Manages default values for node slots | Nodes |
+| uploadAudio.ts | Handles audio file upload functionality | Audio |
+| uploadImage.ts | Handles image upload functionality | Image |
+| webcamCapture.ts | Provides webcam capture capabilities | Media |
+| widgetInputs.ts | Implements various widget input types | Widgets |
+
+### load3d Subdirectory
+Located in `extensions/core/load3d/`:
+
+| File | Description | Type |
+|------|-------------|------|
+| AnimationManager.ts | Manages 3D animations | Manager |
+| CameraManager.ts | Handles camera controls and positioning | Manager |
+| ControlsManager.ts | Manages 3D scene controls | Manager |
+| EventManager.ts | Handles 3D scene events | Manager |
+| interfaces.ts | TypeScript interfaces for 3D functionality | Types |
+| LightingManager.ts | Manages scene lighting | Manager |
+| Load3DConfiguration.ts | Configuration for 3D loading | Config |
+| Load3d.ts | Core 3D loading functionality | Core |
+| Load3dAnimation.ts | Animation-specific 3D operations | Animation |
+| Load3dUtils.ts | Utility functions for 3D operations | Utils |
+| LoaderManager.ts | Manages various 3D file loaders | Manager |
+| ModelExporter.ts | Exports 3D models to different formats | Export |
+| ModelManager.ts | Manages 3D model lifecycle | Manager |
+| NodeStorage.ts | Handles storage for 3D nodes | Storage |
+| PreviewManager.ts | Manages 3D model previews | Manager |
+| RecordingManager.ts | Handles 3D scene recording | Manager |
+| SceneManager.ts | Core 3D scene management | Manager |
+| ViewHelperManager.ts | Manages 3D view helpers and gizmos | Manager |
+
+### Conditional Lines Subdirectory
+Located in `extensions/core/load3d/conditional-lines/`:
+
+| File | Description |
+|------|-------------|
+| ColoredShadowMaterial.js | Material for colored shadow rendering |
+| ConditionalEdgesGeometry.js | Geometry for conditional edge rendering |
+| ConditionalEdgesShader.js | Shader for conditional edges |
+| OutsideEdgesGeometry.js | Geometry for outside edge detection |
+
+### Lines2 Subdirectory  
+Located in `extensions/core/load3d/conditional-lines/Lines2/`:
+
+| File | Description |
+|------|-------------|
+| ConditionalLineMaterial.js | Material for conditional line rendering |
+| ConditionalLineSegmentsGeometry.js | Geometry for conditional line segments |
+
+### ThreeJS Override Subdirectory
+Located in `extensions/core/load3d/threejsOverride/`:
+
+| File | Description |
+|------|-------------|
+| OverrideMTLLoader.js | Custom MTL loader with enhanced functionality |
 
 ## Extension Development
 

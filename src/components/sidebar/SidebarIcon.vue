@@ -1,6 +1,10 @@
 <template>
   <Button
-    v-tooltip="{ value: tooltip, showDelay: 300, hideDelay: 300 }"
+    v-tooltip="{
+      value: computedTooltip,
+      showDelay: 300,
+      hideDelay: 300
+    }"
     text
     :pt="{
       root: {
@@ -9,16 +13,18 @@
             ? 'p-button-primary side-bar-button-selected'
             : 'p-button-secondary'
         }`,
-        'aria-label': tooltip
+        'aria-label': computedTooltip
       }
     }"
     @click="emit('click', $event)"
   >
     <template #icon>
-      <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
-        <i :class="icon + ' side-bar-button-icon'" />
-      </OverlayBadge>
-      <i v-else :class="icon + ' side-bar-button-icon'" />
+      <slot name="icon">
+        <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
+          <i :class="icon + ' side-bar-button-icon'" />
+        </OverlayBadge>
+        <i v-else :class="icon + ' side-bar-button-icon'" />
+      </slot>
     </template>
   </Button>
 </template>
@@ -27,16 +33,20 @@
 import Button from 'primevue/button'
 import OverlayBadge from 'primevue/overlaybadge'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const {
   icon = '',
   selected = false,
   tooltip = '',
+  tooltipSuffix = '',
   iconBadge = ''
 } = defineProps<{
   icon?: string
   selected?: boolean
   tooltip?: string
+  tooltipSuffix?: string
   iconBadge?: string | (() => string | null)
 }>()
 
@@ -47,6 +57,7 @@ const overlayValue = computed(() =>
   typeof iconBadge === 'function' ? iconBadge() ?? '' : iconBadge
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
+const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 </script>
 
 <style>

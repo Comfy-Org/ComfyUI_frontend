@@ -183,3 +183,9 @@ onUnmounted(() => {
   transform: translate(-50%, -50%);
 }
 </style>
+
+<style>
+.p-tooltip.workflow-tab-tooltip {
+  z-index: 1200 !important;
+}
+</style>

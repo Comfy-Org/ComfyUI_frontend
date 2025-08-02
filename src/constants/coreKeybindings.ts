@@ -70,12 +70,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'Backspace'
-    },
-    commandId: 'Comfy.ClearWorkflow'
-  },
-  {
-    combo: {
       key: 'g',
       ctrl: true
     },
@@ -173,5 +167,20 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'f'
     },
     commandId: 'Workspace.ToggleFocusMode'
+  },
+  {
+    combo: {
+      key: 'e',
+      ctrl: true,
+      shift: true
+    },
+    commandId: 'Comfy.Graph.ConvertToSubgraph'
+  },
+  {
+    combo: {
+      key: 'm',
+      alt: true
+    },
+    commandId: 'Comfy.Canvas.ToggleMinimap'
   }
 ]

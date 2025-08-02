@@ -1,5 +1,11 @@
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
+import {
+  type ExecutableLGraphNode,
+  type ExecutionId,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@comfyorg/litegraph'
+import { type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 
 import { t } from '@/i18n'
 import {
@@ -9,10 +15,13 @@ import {
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyExtension } from '@/types/comfy'
+import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
+import { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
@@ -25,8 +34,6 @@ type GroupNodeWorkflowData = {
   links: ComfyLink[]
   nodes: ComfyNode[]
 }
-
-const GROUP = Symbol()
 
 // v1 Prefix + Separator: workflow/
 // v2 Prefix + Separator: workflow> (ComfyUI_frontend v1.2.63)
@@ -813,6 +820,7 @@ export class GroupNodeHandler {
         innerNodeIndex++
       ) {
         const innerNode = this.innerNodes[innerNodeIndex]
+        innerNode.graph ??= this.node.graph
 
         for (const w of innerNode.widgets ?? []) {
           if (w.type === 'converted-widget') {
@@ -899,7 +907,20 @@ export class GroupNodeHandler {
       return link
     }
 
-    this.node.getInnerNodes = () => {
+    /** @internal Used to flatten the subgraph before execution. Recursive; call with no args. */
+    this.node.getInnerNodes = (
+      computedNodeDtos: Map<ExecutionId, ExecutableLGraphNode>,
+      /** The path of subgraph node IDs. */
+      subgraphNodePath: readonly NodeId[] = [],
+      /** The list of nodes to add to. */
+      nodes: ExecutableLGraphNode[] = [],
+      /** The set of visited nodes. */
+      visited = new Set<LGraphNode>()
+    ): ExecutableLGraphNode[] => {
+      if (visited.has(this.node))
+        throw new Error('RecursionError: while flattening subgraph')
+      visited.add(this.node)
+
       if (!this.innerNodes) {
         // @ts-expect-error fixme ts strict error
         this.node.setInnerNodes(
@@ -910,6 +931,8 @@ export class GroupNodeHandler {
             innerNode.configure(n)
             // @ts-expect-error fixme ts strict error
             innerNode.id = `${this.node.id}:${i}`
+            // @ts-expect-error fixme ts strict error
+            innerNode.graph = this.node.graph
             return innerNode
           })
         )
@@ -917,7 +940,31 @@ export class GroupNodeHandler {
 
       this.updateInnerWidgets()
 
-      return this.innerNodes
+      const subgraphInstanceIdPath = [...subgraphNodePath, this.node.id]
+
+      // Assertion: Deprecated, does not matter.
+      const subgraphNode = (this.node.graph?.getNodeById(
+        subgraphNodePath.at(-1)
+      ) ?? undefined) as SubgraphNode | undefined
+
+      for (const node of this.innerNodes) {
+        node.graph ??= this.node.graph
+
+        // Create minimal DTOs rather than cloning the node
+        const currentId = String(node.id)
+        node.id = currentId.split(':').at(-1)
+        const aVeryRealNode = new ExecutableGroupNodeChildDTO(
+          node,
+          subgraphInstanceIdPath,
+          computedNodeDtos,
+          subgraphNode
+        )
+        node.id = currentId
+        aVeryRealNode.groupNodeHandler = this
+
+        nodes.push(aVeryRealNode)
+      }
+      return nodes
     }
 
     // @ts-expect-error fixme ts strict error
@@ -1178,9 +1225,10 @@ export class GroupNodeHandler {
     node.onDrawForeground = function (ctx) {
       // @ts-expect-error fixme ts strict error
       onDrawForeground?.apply?.(this, arguments)
+      const progressState = useExecutionStore().nodeProgressStates[this.id]
       if (
-        // @ts-expect-error fixme ts strict error
-        +app.runningNodeId === this.id &&
+        progressState &&
+        progressState.state === 'running' &&
         this.runningInternalNodeId !== null
       ) {
         // @ts-expect-error fixme ts strict error
@@ -1294,6 +1342,7 @@ export class GroupNodeHandler {
     this.node.onRemoved = function () {
       // @ts-expect-error fixme ts strict error
       onRemoved?.apply(this, arguments)
+      // api.removeEventListener('progress_state', progress_state)
       api.removeEventListener('executing', executing)
       api.removeEventListener('executed', executed)
     }
@@ -1503,6 +1552,9 @@ export class GroupNodeHandler {
 
       this.linkOutputs(node, i)
       app.graph.remove(node)
+
+      // Set internal ID to what is expected after workflow is reloaded
+      node.id = `${this.node.id}:${i}`
     }
 
     this.linkInputs()
@@ -1583,57 +1635,6 @@ export class GroupNodeHandler {
   }
 }
 
-function addConvertToGroupOptions() {
-  // @ts-expect-error fixme ts strict error
-  function addConvertOption(options, index) {
-    const selected = Object.values(app.canvas.selected_nodes ?? {})
-    const disabled =
-      selected.length < 2 ||
-      selected.find((n) => GroupNodeHandler.isGroupNode(n))
-    options.splice(index, null, {
-      content: `Convert to Group Node`,
-      disabled,
-      callback: convertSelectedNodesToGroupNode
-    })
-  }
-
-  // @ts-expect-error fixme ts strict error
-  function addManageOption(options, index) {
-    const groups = app.graph.extra?.groupNodes
-    const disabled = !groups || !Object.keys(groups).length
-    options.splice(index, null, {
-      content: `Manage Group Nodes`,
-      disabled,
-      callback: () => manageGroupNodes()
-    })
-  }
-
-  // Add to canvas
-  const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
-  LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-    // @ts-expect-error fixme ts strict error
-    const options = getCanvasMenuOptions.apply(this, arguments)
-    const index = options.findIndex((o) => o?.content === 'Add Group')
-    const insertAt = index === -1 ? options.length - 1 : index + 2
-    addConvertOption(options, insertAt)
-    addManageOption(options, insertAt + 1)
-    return options
-  }
-
-  // Add to nodes
-  const getNodeMenuOptions = LGraphCanvas.prototype.getNodeMenuOptions
-  LGraphCanvas.prototype.getNodeMenuOptions = function (node) {
-    // @ts-expect-error fixme ts strict error
-    const options = getNodeMenuOptions.apply(this, arguments)
-    if (!GroupNodeHandler.isGroupNode(node)) {
-      const index = options.findIndex((o) => o?.content === 'Properties')
-      const insertAt = index === -1 ? options.length - 1 : index
-      addConvertOption(options, insertAt)
-    }
-    return options
-  }
-}
-
 const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   for (const node of nodes) {
     if (typeof node.type === 'string' && node.type.startsWith('workflow/')) {
@@ -1659,8 +1660,14 @@ async function convertSelectedNodesToGroupNode() {
   if (nodes.length === 1) {
     throw new Error('Please select multiple nodes to convert to group node')
   }
-  if (nodes.some((n) => GroupNodeHandler.isGroupNode(n))) {
-    throw new Error('Selected nodes contain a group node')
+
+  for (const node of nodes) {
+    if (node instanceof SubgraphNode) {
+      throw new Error('Selected nodes contain a subgraph node')
+    }
+    if (GroupNodeHandler.isGroupNode(node)) {
+      throw new Error('Selected nodes contain a group node')
+    }
   }
   return await GroupNodeHandler.fromNodes(nodes)
 }
@@ -1723,9 +1730,6 @@ const ext: ComfyExtension = {
       }
     }
   ],
-  setup() {
-    addConvertToGroupOptions()
-  },
   async beforeConfigureGraph(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: string[]

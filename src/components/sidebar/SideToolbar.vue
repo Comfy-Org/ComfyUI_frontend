@@ -6,16 +6,16 @@
         :key="tab.id"
         :icon="tab.icon"
         :icon-badge="tab.iconBadge"
-        :tooltip="tab.tooltip + getTabTooltipSuffix(tab)"
+        :tooltip="tab.tooltip"
+        :tooltip-suffix="getTabTooltipSuffix(tab)"
         :selected="tab.id === selectedTab?.id"
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
       />
       <div class="side-tool-bar-end">
         <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
-        <SidebarThemeToggleIcon />
         <SidebarHelpCenterIcon />
-        <SidebarSettingsToggleIcon />
+        <SidebarBottomPanelToggleButton />
       </div>
     </nav>
   </teleport>
@@ -31,6 +31,7 @@
 import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useUserStore } from '@/stores/userStore'
@@ -40,8 +41,6 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
-import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'
-import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
