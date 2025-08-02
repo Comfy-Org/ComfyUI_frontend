@@ -169,22 +169,24 @@ import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
-interface Props {
+const { showAfterWhatsNew = false, conflictedPackages } = defineProps<{
   showAfterWhatsNew?: boolean
-}
-
-const { showAfterWhatsNew = false } = defineProps<Props>()
+  conflictedPackages?: ConflictDetectionResult[]
+}>()
 
 const { t } = useI18n()
-const { conflictedPackages } = useConflictDetection()
+const { conflictedPackages: globalConflictPackages } = useConflictDetection()
 
 const conflictsExpanded = ref<boolean>(false)
 const extensionsExpanded = ref<boolean>(false)
 const importFailedExpanded = ref<boolean>(false)
 
-const conflictData = computed(() => conflictedPackages.value)
+const conflictData = computed(
+  () => conflictedPackages || globalConflictPackages.value
+)
 
 const allConflictDetails = computed(() => {
   const allConflicts = flatMap(conflictData.value, (result) => result.conflicts)
