@@ -1,5 +1,7 @@
 import '@comfyorg/litegraph'
 import type { LLink, Size } from '@comfyorg/litegraph'
+import type { ExecutableLGraphNode, ExecutionId } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -69,9 +71,6 @@ declare module '@comfyorg/litegraph/dist/interfaces' {
  *  ComfyUI extensions of litegraph
  */
 declare module '@comfyorg/litegraph' {
-  import type { ExecutableLGraphNode, ExecutionId } from '@comfyorg/litegraph'
-  import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
     comfyClass: string
