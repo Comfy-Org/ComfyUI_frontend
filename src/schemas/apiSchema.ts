@@ -356,7 +356,8 @@ const zUserData = z.array(z.array(z.string(), z.string()))
 const zUserDataFullInfo = z.object({
   path: z.string(),
   size: z.number(),
-  modified: z.number()
+  modified: z.number(),
+  created: z.number()
 })
 const zBookmarkCustomization = z.object({
   icon: z.string().optional(),
@@ -426,6 +427,9 @@ const zSettings = z.object({
   'Comfy.Sidebar.Location': z.enum(['left', 'right']),
   'Comfy.Sidebar.Size': z.enum(['small', 'normal']),
   'Comfy.Sidebar.UnifiedWidth': z.boolean(),
+  'Comfy.Sidebar.RecentItems.MaxCount': z.number(),
+  'Comfy.Sidebar.RecentItems.ShowRecentlyAdded': z.boolean(),
+  'Comfy.Sidebar.RecentItems.ShowRecentlyUsed': z.boolean(),
   'Comfy.SwitchUser': z.any(),
   'Comfy.SnapToGrid.GridSize': z.number(),
   'Comfy.TextareaWidget.FontSize': z.number(),
