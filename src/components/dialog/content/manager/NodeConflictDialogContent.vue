@@ -175,9 +175,7 @@ interface Props {
   showAfterWhatsNew?: boolean
 }
 
-const { showAfterWhatsNew } = withDefaults(defineProps<Props>(), {
-  showAfterWhatsNew: false
-})
+const { showAfterWhatsNew = false } = defineProps<Props>()
 
 const { t } = useI18n()
 const { conflictedPackages } = useConflictDetection()
