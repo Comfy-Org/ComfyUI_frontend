@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Check for Updates"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Open Custom Nodes Folder"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Open Inputs Folder"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Open Logs Folder"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "Open extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Open Models Folder"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Open Outputs Folder"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Open DevTools"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Desktop User Guide"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Quit"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Reinstall"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Restart"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
@@ -34,6 +70,9 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Canvas Toggle Lock"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Canvas Toggle Minimap"
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Pin/Unpin Selected Items"
@@ -77,6 +116,9 @@
   "Comfy_Feedback": {
     "label": "Give Feedback"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Convert Selection to Subgraph"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Fit Group To Contents"
   },
@@ -118,6 +160,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle the Custom Nodes Manager Progress Bar"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Decrease Brush Size in MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Increase Brush Size in MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
@@ -181,6 +229,9 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "Toggle Bottom Panel"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Toggle Terminal Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Toggle Logs Bottom Panel"

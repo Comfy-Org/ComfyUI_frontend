@@ -1,7 +1,40 @@
 {
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "自动检查更新"
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "发送匿名使用情况统计"
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "Pypi 安装镜像",
+    "tooltip": "默认 pip 安装镜像"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Python安装镜像",
+    "tooltip": "管理的Python安装包从Astral python-build-standalone项目下载。此变量可以设置为镜像URL，以使用不同的Python安装源。提供的URL将替换https://github.com/astral-sh/python-build-standalone/releases/download，例如，在https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz中。可以通过使用file:// URL方案从本地目录读取分发包。"
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "Torch安装镜像",
+    "tooltip": "用于pytorch的Pip安装镜像"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "窗口样式",
+    "options": {
+      "custom": "自定义",
+      "default": "默认"
+    },
+    "tooltip": "选择自定义选项以隐藏系统标题栏"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "画布背景图像",
     "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
+  },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "畫布導航模式",
+    "options": {
+      "Left-Click Pan (Legacy)": "左鍵拖曳（舊版）",
+      "Standard (New)": "標準（新）"
+    }
   },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "显示选择工具箱"
@@ -233,6 +266,10 @@
     "name": "吸附高亮节点",
     "tooltip": "在拖动连线经过具有可用输入接口的节点时，高亮显示该节点。"
   },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "显示版本更新",
+    "tooltip": "显示新模型和主要新功能的更新。"
+  },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "指针点击漂移延迟",
     "tooltip": "按下指针按钮后，忽略指针移动的最大时间（毫秒）。\n\n有助于防止在点击时意外移动鼠标。"
@@ -296,11 +333,8 @@
       "Bottom": "底部",
       "Disabled": "禁用",
       "Top": "顶部"
-    }
-  },
-  "Comfy_Validation_NodeDefs": {
-    "name": "驗證節點定義（較慢）",
-    "tooltip": "建議節點開發者使用。這會在啟動時驗證所有節點定義。"
+    },
+    "tooltip": "選單列位置。在行動裝置上，選單始終顯示於頂端。"
   },
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
@@ -367,10 +401,6 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "工具提示延迟"
-  },
-  "LiteGraph_Pointer_TrackpadGestures": {
-    "name": "啟用觸控板手勢",
-    "tooltip": "此設定可為畫布啟用觸控板模式，允許使用兩指縮放與平移。"
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "重新路由样条偏移",
