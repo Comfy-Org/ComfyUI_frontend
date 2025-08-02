@@ -36,7 +36,7 @@ import { stringOrEmpty } from "./strings"
 import { type GraphOrSubgraph, Subgraph } from "./subgraph/Subgraph"
 import { SubgraphInput } from "./subgraph/SubgraphInput"
 import { SubgraphOutput } from "./subgraph/SubgraphOutput"
-import { getBoundaryLinks, groupResolvedByOutput, mapSubgraphInputsAndLinks, mapSubgraphOutputsAndLinks, multiClone, splitPositionables } from "./subgraph/subgraphUtils"
+import { findUsedSubgraphIds, getBoundaryLinks, groupResolvedByOutput, mapSubgraphInputsAndLinks, mapSubgraphOutputsAndLinks, multiClone, splitPositionables } from "./subgraph/subgraphUtils"
 import { Alignment, LGraphEventMode } from "./types/globalEnums"
 import { getAllNestedItems } from "./utils/collections"
 
@@ -1674,7 +1674,14 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
     }
 
     if (this.isRootGraph && this._subgraphs.size) {
-      data.definitions = { subgraphs: [...this._subgraphs.values()].map(x => x.asSerialisable()) }
+      const usedSubgraphIds = findUsedSubgraphIds(this, this._subgraphs)
+      const usedSubgraphs = [...this._subgraphs.values()]
+        .filter(subgraph => usedSubgraphIds.has(subgraph.id))
+        .map(x => x.asSerialisable())
+
+      if (usedSubgraphs.length > 0) {
+        data.definitions = { subgraphs: usedSubgraphs }
+      }
     }
 
     this.onSerialize?.(data)

@@ -1,8 +1,10 @@
+import type { GraphOrSubgraph } from "./Subgraph"
 import type { SubgraphInput } from "./SubgraphInput"
 import type { SubgraphOutput } from "./SubgraphOutput"
 import type { INodeInputSlot, INodeOutputSlot, Positionable } from "@/interfaces"
 import type { LGraph } from "@/LGraph"
 import type { ISerialisedNode, SerialisableLLink, SubgraphIO } from "@/types/serialisation"
+import type { UUID } from "@/utils/uuid"
 
 import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
 import { LGraphGroup } from "@/LGraphGroup"
@@ -337,6 +339,54 @@ export function mapSubgraphOutputsAndLinks(resolvedOutputLinks: ResolvedConnecti
     outputs.push(structuredClone(outputData))
   }
   return outputs
+}
+
+/**
+ * Collects all subgraph IDs used directly in a single graph (non-recursive).
+ * @param graph The graph to check for subgraph nodes
+ * @returns Set of subgraph IDs used in this graph
+ */
+export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<UUID> {
+  const subgraphIds = new Set<UUID>()
+
+  for (const node of graph._nodes) {
+    if (node.isSubgraphNode()) {
+      subgraphIds.add(node.type)
+    }
+  }
+
+  return subgraphIds
+}
+
+/**
+ * Collects all subgraph IDs referenced in a graph hierarchy using BFS.
+ * @param rootGraph The graph to start from
+ * @param subgraphRegistry Map of all available subgraphs
+ * @returns Set of all subgraph IDs found
+ */
+export function findUsedSubgraphIds(
+  rootGraph: GraphOrSubgraph,
+  subgraphRegistry: Map<UUID, GraphOrSubgraph>,
+): Set<UUID> {
+  const usedSubgraphIds = new Set<UUID>()
+  const toVisit: GraphOrSubgraph[] = [rootGraph]
+
+  while (toVisit.length > 0) {
+    const graph = toVisit.shift()!
+    const directIds = getDirectSubgraphIds(graph)
+
+    for (const id of directIds) {
+      if (!usedSubgraphIds.has(id)) {
+        usedSubgraphIds.add(id)
+        const subgraph = subgraphRegistry.get(id)
+        if (subgraph) {
+          toVisit.push(subgraph)
+        }
+      }
+    }
+  }
+
+  return usedSubgraphIds
 }
 
 /**
