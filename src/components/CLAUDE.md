@@ -31,7 +31,9 @@
 
 - Use Tailwind CSS only (no custom CSS)
 - Dark theme: use "dark-theme:" prefix
-- Leverage VueUse for performance-enhancing styles
+- For common operations, try to use existing VueUse composables that automatically handle effect scope
+  - Example: Use `useElementHover` instead of manually managing mouseover/mouseout event listeners
+  - Example: Use `useIntersectionObserver` for visibility detection instead of custom scroll handlers
 
 ## Best Practices
 
