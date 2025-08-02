@@ -359,6 +359,55 @@ export const useComfyRegistryService = () => {
     )
   }
 
+  /**
+   * Get multiple pack versions in a single bulk request.
+   * This is more efficient than making individual requests for each pack version.
+   *
+   * @param nodeVersions - Array of node ID and version pairs to retrieve
+   * @param signal - Optional AbortSignal for request cancellation
+   * @returns Bulk response containing the requested node versions or null on error
+   *
+   * @example
+   * ```typescript
+   * const versions = await getBulkNodeVersions([
+   *   { node_id: 'ComfyUI-Manager', version: '1.0.0' },
+   *   { node_id: 'ComfyUI-Impact-Pack', version: '2.0.0' }
+   * ])
+   * if (versions) {
+   *   versions.node_versions.forEach(result => {
+   *     if (result.status === 'success' && result.node_version) {
+   *       console.log(`Retrieved ${result.identifier.node_id}@${result.identifier.version}`)
+   *     }
+   *   })
+   * }
+   * ```
+   */
+  const getBulkNodeVersions = async (
+    nodeVersions: components['schemas']['NodeVersionIdentifier'][],
+    signal?: AbortSignal
+  ) => {
+    const endpoint = '/bulk/nodes/versions'
+    const errorContext = 'Failed to get bulk node versions'
+    const routeSpecificErrors = {
+      400: 'Bad request: Invalid node version identifiers provided'
+    }
+
+    const requestBody: components['schemas']['BulkNodeVersionsRequest'] = {
+      node_versions: nodeVersions
+    }
+
+    return executeApiRequest(
+      () =>
+        registryApiClient.post<
+          components['schemas']['BulkNodeVersionsResponse']
+        >(endpoint, requestBody, {
+          signal
+        }),
+      errorContext,
+      routeSpecificErrors
+    )
+  }
+
   return {
     isLoading,
     error,
@@ -372,6 +421,7 @@ export const useComfyRegistryService = () => {
     listPacksForPublisher,
     getNodeDefs,
     postPackReview,
-    inferPackFromNodeName
+    inferPackFromNodeName,
+    getBulkNodeVersions
   }
 }
