@@ -43,7 +43,7 @@
             </span>
             <p
               v-if="nodePack.description"
-              class="flex-1 text-muted text-xs font-medium break-words overflow-hidden min-h-12 line-clamp-3 my-0 leading-4 mb-1 overflow-hidden"
+              class="flex-1 text-muted text-xs font-medium break-words max-h-12 line-clamp-3 my-0 leading-4 mb-1 overflow-hidden"
             >
               {{ nodePack.description }}
             </p>
