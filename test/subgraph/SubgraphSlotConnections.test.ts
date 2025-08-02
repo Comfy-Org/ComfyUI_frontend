@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
-import { LGraphNode } from "@/litegraph"
+import { LinkConnector } from "@/canvas/LinkConnector"
+import { ToInputFromIoNodeLink } from "@/canvas/ToInputFromIoNodeLink"
+import { SUBGRAPH_INPUT_ID } from "@/constants"
+import { LGraphNode, type LinkNetwork } from "@/litegraph"
 import { NodeInputSlot } from "@/node/NodeInputSlot"
 import { NodeOutputSlot } from "@/node/NodeOutputSlot"
 import { isSubgraphInput, isSubgraphOutput } from "@/subgraph/subgraphUtils"
@@ -100,6 +103,55 @@ describe("Subgraph slot connections", () => {
       const subgraphOutput2 = subgraph.addOutput("result2", "number")
 
       expect(subgraphOutput1.isValidTarget(subgraphOutput2)).toBe(false)
+    })
+  })
+
+  describe("LinkConnector dragging behavior", () => {
+    it("should drag existing link when dragging from input slot connected to subgraph input node", () => {
+      // Create a subgraph with one input
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: "input1", type: "number" }],
+      })
+
+      // Create a node inside the subgraph
+      const internalNode = new LGraphNode("InternalNode")
+      internalNode.id = 100
+      internalNode.addInput("in", "number")
+      subgraph.add(internalNode)
+
+      // Connect the subgraph input to the internal node's input
+      const link = subgraph.inputNode.slots[0].connect(internalNode.inputs[0], internalNode)
+      expect(link).toBeDefined()
+      expect(link!.origin_id).toBe(SUBGRAPH_INPUT_ID)
+      expect(link!.target_id).toBe(internalNode.id)
+
+      // Verify the input slot has the link
+      expect(internalNode.inputs[0].link).toBe(link!.id)
+
+      // Create a LinkConnector
+      const setConnectingLinks = vi.fn()
+      const connector = new LinkConnector(setConnectingLinks)
+
+      // Now try to drag from the input slot
+      connector.moveInputLink(subgraph as LinkNetwork, internalNode.inputs[0])
+
+      // Verify that we're dragging the existing link
+      expect(connector.isConnecting).toBe(true)
+      expect(connector.state.connectingTo).toBe("input")
+      expect(connector.state.draggingExistingLinks).toBe(true)
+
+      // Check that we have exactly one render link
+      expect(connector.renderLinks).toHaveLength(1)
+
+      // The render link should be a ToInputFromIoNodeLink, not MovingInputLink
+      expect(connector.renderLinks[0]).toBeInstanceOf(ToInputFromIoNodeLink)
+
+      // The input links collection should contain our link
+      expect(connector.inputLinks).toHaveLength(1)
+      expect(connector.inputLinks[0]).toBe(link)
+
+      // Verify the link is marked as dragging
+      expect(link!._dragging).toBe(true)
     })
   })
 

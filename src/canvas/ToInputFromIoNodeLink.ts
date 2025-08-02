@@ -18,6 +18,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
   readonly fromSlotIndex: number
   readonly fromPos: Point
   fromDirection: LinkDirection = LinkDirection.RIGHT
+  readonly existingLink?: LLink
 
   constructor(
     readonly network: LinkNetwork,
@@ -25,6 +26,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
     readonly fromSlot: SubgraphInput,
     readonly fromReroute?: Reroute,
     public dragDirection: LinkDirection = LinkDirection.CENTER,
+    existingLink?: LLink,
   ) {
     const outputIndex = node.slots.indexOf(fromSlot)
     if (outputIndex === -1 && fromSlot !== node.emptySlot) {
@@ -35,6 +37,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
     this.fromPos = fromReroute
       ? fromReroute.pos
       : fromSlot.pos
+    this.existingLink = existingLink
   }
 
   canConnectToInput(inputNode: NodeLike, input: INodeInputSlot): boolean {
@@ -46,10 +49,17 @@ export class ToInputFromIoNodeLink implements RenderLink {
   }
 
   connectToInput(node: LGraphNode, input: INodeInputSlot, events: CustomEventTarget<LinkConnectorEventMap>) {
-    const { fromSlot, fromReroute } = this
+    const { fromSlot, fromReroute, existingLink } = this
 
     const newLink = fromSlot.connect(input, node, fromReroute?.id)
-    events.dispatch("link-created", newLink)
+
+    if (existingLink) {
+      // Moving an existing link
+      events.dispatch("input-moved", this)
+    } else {
+      // Creating a new link
+      events.dispatch("link-created", newLink)
+    }
   }
 
   connectToSubgraphOutput(): void {
@@ -96,7 +106,14 @@ export class ToInputFromIoNodeLink implements RenderLink {
         }
       }
     }
-    events.dispatch("link-created", newLink)
+
+    if (this.existingLink) {
+      // Moving an existing link
+      events.dispatch("input-moved", this)
+    } else {
+      // Creating a new link
+      events.dispatch("link-created", newLink)
+    }
   }
 
   connectToOutput() {

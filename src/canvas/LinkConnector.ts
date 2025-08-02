@@ -150,25 +150,59 @@ export class LinkConnector {
       const link = network.links.get(linkId)
       if (!link) return
 
-      try {
-        const reroute = network.getReroute(link.parentId)
-        const renderLink = new MovingInputLink(network, link, reroute)
+      // Special handling for links from subgraph input nodes
+      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+        // For subgraph input links, we need to handle them differently
+        // since they don't have a regular output node
+        const subgraphInput = network.inputNode?.slots[link.origin_slot]
+        if (!subgraphInput) {
+          console.warn(`Could not find subgraph input for slot [${link.origin_slot}]`)
+          return
+        }
 
-        const mayContinue = this.events.dispatch("before-move-input", renderLink)
-        if (mayContinue === false) return
+        try {
+          const reroute = network.getReroute(link.parentId)
+          const renderLink = new ToInputFromIoNodeLink(network, network.inputNode, subgraphInput, reroute, LinkDirection.CENTER, link)
 
-        renderLinks.push(renderLink)
+          // Note: We don't dispatch the before-move-input event for subgraph input links
+          // as the event type doesn't support ToInputFromIoNodeLink
 
-        this.listenUntilReset("input-moved", (e) => {
-          e.detail.link.disconnect(network, "output")
-        })
-      } catch (error) {
-        console.warn(`Could not create render link for link id: [${link.id}].`, link, error)
-        return
+          renderLinks.push(renderLink)
+
+          this.listenUntilReset("input-moved", () => {
+            link.disconnect(network, "input")
+          })
+        } catch (error) {
+          console.warn(`Could not create render link for subgraph input link id: [${link.id}].`, link, error)
+          return
+        }
+
+        link._dragging = true
+        inputLinks.push(link)
+      } else {
+        // Regular node links
+        try {
+          const reroute = network.getReroute(link.parentId)
+          const renderLink = new MovingInputLink(network, link, reroute)
+
+          const mayContinue = this.events.dispatch("before-move-input", renderLink)
+          if (mayContinue === false) return
+
+          renderLinks.push(renderLink)
+
+          this.listenUntilReset("input-moved", (e) => {
+            if ("link" in e.detail && e.detail.link) {
+              e.detail.link.disconnect(network, "output")
+            }
+          })
+        } catch (error) {
+          console.warn(`Could not create render link for link id: [${link.id}].`, link, error)
+          return
+        }
+
+        link._dragging = true
+        inputLinks.push(link)
       }
-
-      link._dragging = true
-      inputLinks.push(link)
     }
 
     state.connectingTo = "input"

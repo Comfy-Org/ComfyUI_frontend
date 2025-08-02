@@ -2,6 +2,7 @@ import type { FloatingRenderLink } from "@/canvas/FloatingRenderLink"
 import type { MovingInputLink } from "@/canvas/MovingInputLink"
 import type { MovingOutputLink } from "@/canvas/MovingOutputLink"
 import type { RenderLink } from "@/canvas/RenderLink"
+import type { ToInputFromIoNodeLink } from "@/canvas/ToInputFromIoNodeLink"
 import type { ToInputRenderLink } from "@/canvas/ToInputRenderLink"
 import type { LGraphNode } from "@/LGraphNode"
 import type { LLink } from "@/LLink"
@@ -26,7 +27,7 @@ export interface LinkConnectorEventMap {
   "before-move-input": MovingInputLink | FloatingRenderLink
   "before-move-output": MovingOutputLink | FloatingRenderLink
 
-  "input-moved": MovingInputLink | FloatingRenderLink
+  "input-moved": MovingInputLink | FloatingRenderLink | ToInputFromIoNodeLink
   "output-moved": MovingOutputLink | FloatingRenderLink
 
   "link-created": LLink | null | undefined

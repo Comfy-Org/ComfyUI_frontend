@@ -1,7 +1,7 @@
 import type { ISlotType } from "@/interfaces"
 import type { TWidgetType } from "@/types/widgets"
 
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
 import { LGraphNode, Subgraph } from "@/litegraph"
 import { BaseWidget } from "@/widgets/BaseWidget"
@@ -339,7 +339,7 @@ describe("SubgraphWidgetPromotion", () => {
 
       // The promoted widget should preserve the original tooltip
       expect(promotedWidget.tooltip).toBe(originalTooltip)
-      
+
       // The promoted widget should still function normally
       expect(promotedWidget.name).toBe("value") // Uses subgraph input name
       expect(promotedWidget.type).toBe("number")
