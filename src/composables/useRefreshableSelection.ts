@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@comfyorg/litegraph'
+import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { computed, ref, watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/stores/graphStore'
@@ -8,11 +9,12 @@ interface RefreshableItem {
   refresh: () => Promise<void> | void
 }
 
-const isRefreshableWidget = (widget: unknown): widget is RefreshableItem =>
-  widget != null &&
-  typeof widget === 'object' &&
-  'refresh' in widget &&
-  typeof widget.refresh === 'function'
+type RefreshableWidget = IBaseWidget & RefreshableItem
+
+const isRefreshableWidget = (
+  widget: IBaseWidget
+): widget is RefreshableWidget =>
+  'refresh' in widget && typeof widget.refresh === 'function'
 
 /**
  * Tracks selected nodes and their refreshable widgets
@@ -25,17 +27,10 @@ export const useRefreshableSelection = () => {
     selectedNodes.value = graphStore.selectedItems.filter(isLGraphNode)
   })
 
-  const refreshableWidgets = computed<RefreshableItem[]>(() =>
-    selectedNodes.value.flatMap((node) => {
-      if (!node.widgets) return []
-      const items: RefreshableItem[] = []
-      for (const widget of node.widgets) {
-        if (isRefreshableWidget(widget)) {
-          items.push(widget)
-        }
-      }
-      return items
-    })
+  const refreshableWidgets = computed(() =>
+    selectedNodes.value.flatMap(
+      (node) => node.widgets?.filter(isRefreshableWidget) ?? []
+    )
   )
 
   const isRefreshable = computed(() => refreshableWidgets.value.length > 0)

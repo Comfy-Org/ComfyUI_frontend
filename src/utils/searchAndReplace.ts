@@ -1,14 +1,11 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
 
 import { formatDate } from '@/utils/formatUtil'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 export function applyTextReplacements(
-  graph: LGraph | Subgraph,
+  allNodes: LGraphNode[],
   value: string
 ): string {
-  const allNodes = collectAllNodes(graph)
-
   return value.replace(/%([^%]+)%/g, function (match, text) {
     const split = text.split('.')
     if (split.length !== 2) {

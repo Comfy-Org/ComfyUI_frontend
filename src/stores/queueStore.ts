@@ -14,8 +14,6 @@ import type {
 import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 // Task type used in the API.
 export type APITaskType = 'queue' | 'history'
@@ -379,18 +377,7 @@ export class TaskItemImpl {
     }
     await app.loadGraphData(toRaw(this.workflow))
     if (this.outputs) {
-      const nodeOutputsStore = useNodeOutputStore()
-      const rawOutputs = toRaw(this.outputs)
-      for (const nodeExecutionId in rawOutputs) {
-        nodeOutputsStore.setNodeOutputsByExecutionId(
-          nodeExecutionId,
-          rawOutputs[nodeExecutionId]
-        )
-      }
-      useExtensionService().invokeExtensions(
-        'onNodeOutputsUpdated',
-        app.nodeOutputs
-      )
+      app.nodeOutputs = toRaw(this.outputs)
     }
   }
 

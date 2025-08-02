@@ -9,7 +9,6 @@ export function useErrorHandling() {
       summary: t('g.error'),
       detail: error instanceof Error ? error.message : t('g.unknownError')
     })
-    console.error(error)
   }
 
   const wrapWithErrorHandling =

@@ -71,9 +71,6 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "锁定视图"
   },
-  "Comfy_Canvas_ToggleMinimap": {
-    "label": "畫布切換小地圖"
-  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
   },
@@ -116,9 +113,6 @@
   "Comfy_Feedback": {
     "label": "反馈"
   },
-  "Comfy_Graph_ConvertToSubgraph": {
-    "label": "将选区转换为子图"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
   },
@@ -160,12 +154,6 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切换进度对话框"
-  },
-  "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "減小 MaskEditor 中的筆刷大小"
-  },
-  "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "增加 MaskEditor 畫筆大小"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"

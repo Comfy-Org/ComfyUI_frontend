@@ -1,9 +1,5 @@
 if [[ "$OS" == "Windows_NT" ]]; then
   npx.cmd lint-staged
-  # Check for unused i18n keys in staged files
-  npx.cmd tsx scripts/check-unused-i18n-keys.ts
 else
   npx lint-staged
-  # Check for unused i18n keys in staged files
-  npx tsx scripts/check-unused-i18n-keys.ts
 fi

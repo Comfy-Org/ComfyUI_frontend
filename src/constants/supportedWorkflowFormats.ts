@@ -6,8 +6,8 @@
  * All supported image formats that can contain workflow data
  */
 export const IMAGE_WORKFLOW_FORMATS = {
-  extensions: ['.png', '.webp', '.svg', '.avif'],
-  mimeTypes: ['image/png', 'image/webp', 'image/svg+xml', 'image/avif']
+  extensions: ['.png', '.webp', '.svg'],
+  mimeTypes: ['image/png', 'image/webp', 'image/svg+xml']
 }
 
 /**

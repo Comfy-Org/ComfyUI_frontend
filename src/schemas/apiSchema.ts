@@ -48,22 +48,6 @@ const zProgressWsMessage = z.object({
   node: zNodeId
 })
 
-const zNodeProgressState = z.object({
-  value: z.number(),
-  max: z.number(),
-  state: z.enum(['pending', 'running', 'finished', 'error']),
-  node_id: zNodeId,
-  prompt_id: zPromptId,
-  display_node_id: zNodeId.optional(),
-  parent_node_id: zNodeId.optional(),
-  real_node_id: zNodeId.optional()
-})
-
-const zProgressStateWsMessage = z.object({
-  prompt_id: zPromptId,
-  nodes: z.record(zNodeId, zNodeProgressState)
-})
-
 const zExecutingWsMessage = z.object({
   node: zNodeId,
   display_node: zNodeId,
@@ -129,8 +113,6 @@ const zLogRawResponse = z.object({
   entries: z.array(zLogEntry)
 })
 
-const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
-
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -150,9 +132,6 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type DisplayComponentWsMessage = z.infer<
   typeof zDisplayComponentWsMessage
 >
-export type NodeProgressState = z.infer<typeof zNodeProgressState>
-export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
-export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 // End of ws messages
 
 const zPromptInputItem = z.object({
@@ -338,7 +317,6 @@ export const zSystemStats = z.object({
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
     pytorch_version: z.string(),
-    required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
     ram_total: z.number(),
     ram_free: z.number()
@@ -448,7 +426,6 @@ const zSettings = z.object({
   'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode,
   'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode,
   'Comfy.NodeBadge.ShowApiPricing': z.boolean(),
-  'Comfy.Notification.ShowVersionUpdates': z.boolean(),
   'Comfy.QueueButton.BatchCountLimit': z.number(),
   'Comfy.Queue.MaxHistoryItems': z.number(),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
@@ -474,10 +451,7 @@ const zSettings = z.object({
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),
   'Comfy.Workflow.Persist': z.boolean(),
   'Comfy.TutorialCompleted': z.boolean(),
-  'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
-  'Comfy.Minimap.Visible': z.boolean(),
-  'Comfy.Canvas.NavigationMode': z.string(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),

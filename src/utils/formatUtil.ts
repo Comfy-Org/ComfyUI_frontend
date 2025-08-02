@@ -39,11 +39,7 @@ export function trimJsonExt(path?: string) {
 
 export function highlightQuery(text: string, query: string) {
   if (!query) return text
-
-  // Escape special regex characters in the query string
-  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-  const regex = new RegExp(`(${escapedQuery})`, 'gi')
+  const regex = new RegExp(`(${query})`, 'gi')
   return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
@@ -390,10 +386,8 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
   }
 }
 
-export const isSemVer = (
-  version: string
-): version is `${number}.${number}.${number}` => {
-  const regex = /^\d+\.\d+\.\d+$/
+export const isSemVer = (version: string) => {
+  const regex = /^(\d+)\.(\d+)\.(\d+)$/
   return regex.test(version)
 }
 

@@ -21,7 +21,7 @@ export function clone<T>(obj: T): T {
  * There are external callers to this function, so we need to keep it for now
  */
 export function applyTextReplacements(app: ComfyApp, value: string): string {
-  return _applyTextReplacements(app.graph, value)
+  return _applyTextReplacements(app.graph.nodes, value)
 }
 
 export async function addStylesheet(

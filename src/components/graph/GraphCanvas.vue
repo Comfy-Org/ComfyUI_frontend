@@ -12,18 +12,11 @@
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
-      <div class="absolute top-0 left-0 w-auto max-w-full pointer-events-auto">
-        <SecondRowWorkflowTabs
-          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
-        />
-      </div>
-      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
-
-      <MiniMap
-        v-if="comfyAppReady && minimapEnabled"
-        ref="minimapRef"
+      <SecondRowWorkflowTabs
+        v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
         class="pointer-events-auto"
       />
+      <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
@@ -46,18 +39,19 @@
     </SelectionOverlay>
     <DomWidgets />
   </template>
+  <SubgraphBreadcrumb />
 </template>
 
 <script setup lang="ts">
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { useEventListener, whenever } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
-import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -72,18 +66,17 @@ import { useContextMenuTranslation } from '@/composables/useContextMenuTranslati
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
-import { useMinimap } from '@/composables/useMinimap'
 import { usePaste } from '@/composables/usePaste'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
+import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { newUserService } from '@/services/newUserService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -91,7 +84,6 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -118,10 +110,6 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(() =>
   settingStore.get('Comfy.Canvas.SelectionToolbox')
 )
-
-const minimapRef = ref<InstanceType<typeof MiniMap>>()
-const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
-const minimap = useMinimap()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -201,26 +189,22 @@ watch(
   }
 )
 
-// Update the progress of executing nodes
+// Update the progress of the executing node
 watch(
   () =>
-    [executionStore.nodeLocationProgressStates, canvasStore.canvas] as const,
-  ([nodeLocationProgressStates, canvas]) => {
-    if (!canvas?.graph) return
-    for (const node of canvas.graph.nodes) {
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
-      const progressState = nodeLocationProgressStates[nodeLocatorId]
-      if (progressState && progressState.state === 'running') {
-        node.progress = progressState.value / progressState.max
+    [executionStore.executingNodeId, executionStore.executingNodeProgress] as [
+      NodeId | null,
+      number | null
+    ],
+  ([executingNodeId, executingNodeProgress]) => {
+    for (const node of comfyApp.graph.nodes) {
+      if (node.id == executingNodeId) {
+        node.progress = executingNodeProgress ?? undefined
       } else {
         node.progress = undefined
       }
     }
-
-    // Force canvas redraw to ensure progress updates are visible
-    canvas.graph.setDirtyCanvas(true, false)
-  },
-  { deep: true }
+  }
 )
 
 // Update node slot errors
@@ -316,9 +300,6 @@ onMounted(async () => {
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
   })
-
-  await newUserService().initializeIfNewUser(settingStore)
-
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
@@ -356,23 +337,6 @@ onMounted(async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
       await useWorkflowService().reloadCurrentWorkflow()
     }
-  )
-
-  whenever(
-    () => minimapRef.value,
-    (ref) => {
-      minimap.setMinimapRef(ref)
-    }
-  )
-
-  whenever(
-    () => useCanvasStore().canvas,
-    (canvas) => {
-      useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
-        useWorkflowStore().updateActiveGraph()
-      })
-    },
-    { immediate: true }
   )
 
   emit('ready')

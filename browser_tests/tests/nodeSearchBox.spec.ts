@@ -27,21 +27,6 @@ test.describe('Node search box', () => {
     await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
 
-  test('New user (1.24.1+) gets search box by default on link release', async ({
-    comfyPage
-  }) => {
-    // Start fresh to test new user behavior
-    await comfyPage.setup({ clearStorage: true })
-    // Simulate new user with 1.24.1+ installed version
-    await comfyPage.setSetting('Comfy.InstalledVersion', '1.24.1')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
-    // Don't set LinkRelease settings explicitly to test versioned defaults
-
-    await comfyPage.disconnectEdge()
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
-    await expect(comfyPage.searchBox.input).toBeVisible()
-  })
-
   test('Can add node', async ({ comfyPage }) => {
     await comfyPage.doubleClickCanvas()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
@@ -187,10 +172,10 @@ test.describe('Node search box', () => {
       await comfyPage.page.mouse.click(panelBounds!.x - 10, panelBounds!.y - 10)
 
       // Verify the filter selection panel is hidden
-      await expect(panel.header).not.toBeVisible()
+      expect(panel.header).not.toBeVisible()
 
       // Verify the node search dialog is still visible
-      await expect(comfyPage.searchBox.input).toBeVisible()
+      expect(comfyPage.searchBox.input).toBeVisible()
     })
 
     test('Can add multiple filters', async ({ comfyPage }) => {
@@ -278,39 +263,5 @@ test.describe('Release context menu', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'link-context-menu-search.png'
     )
-  })
-
-  test('Existing user (pre-1.24.1) gets context menu by default on link release', async ({
-    comfyPage
-  }) => {
-    // Start fresh to test existing user behavior
-    await comfyPage.setup({ clearStorage: true })
-    // Simulate existing user with pre-1.24.1 version
-    await comfyPage.setSetting('Comfy.InstalledVersion', '1.23.0')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
-    // Don't set LinkRelease settings explicitly to test versioned defaults
-
-    await comfyPage.disconnectEdge()
-    // Context menu should appear, search box should not
-    await expect(comfyPage.searchBox.input).toHaveCount(0)
-    const contextMenu = comfyPage.page.locator('.litecontextmenu')
-    await expect(contextMenu).toBeVisible()
-  })
-
-  test('Explicit setting overrides versioned defaults', async ({
-    comfyPage
-  }) => {
-    // Start fresh and simulate new user who should get search box by default
-    await comfyPage.setup({ clearStorage: true })
-    await comfyPage.setSetting('Comfy.InstalledVersion', '1.24.1')
-    // But explicitly set to context menu (overriding versioned default)
-    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'context menu')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
-
-    await comfyPage.disconnectEdge()
-    // Context menu should appear due to explicit setting, not search box
-    await expect(comfyPage.searchBox.input).toHaveCount(0)
-    const contextMenu = comfyPage.page.locator('.litecontextmenu')
-    await expect(contextMenu).toBeVisible()
   })
 })

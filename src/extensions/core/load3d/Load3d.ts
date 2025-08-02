@@ -118,7 +118,11 @@ class Load3d {
       options
     )
 
-    this.loaderManager = new LoaderManager(this.modelManager, this.eventManager)
+    this.loaderManager = new LoaderManager(
+      this.modelManager,
+      this.eventManager,
+      options
+    )
 
     this.recordingManager = new RecordingManager(
       this.sceneManager.scene,
@@ -290,6 +294,23 @@ class Load3d {
       throw error
     } finally {
       this.eventManager.emitEvent('exportLoadingEnd', null)
+    }
+  }
+
+  async applyTexture(texturePath: string): Promise<void> {
+    if (!this.modelManager.currentModel) {
+      throw new Error('No model to apply texture to')
+    }
+
+    this.eventManager.emitEvent('textureLoadingStart', null)
+
+    try {
+      await this.modelManager.applyTexture(texturePath)
+    } catch (error) {
+      console.error('Error applying texture:', error)
+      throw error
+    } finally {
+      this.eventManager.emitEvent('textureLoadingEnd', null)
     }
   }
 

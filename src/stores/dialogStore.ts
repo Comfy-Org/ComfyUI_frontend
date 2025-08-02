@@ -26,8 +26,6 @@ interface CustomDialogComponentProps {
   modal?: boolean
   position?: DialogPosition
   pt?: DialogPassThroughOptions
-  closeOnEscape?: boolean
-  dismissableMask?: boolean
 }
 
 type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
@@ -64,12 +62,6 @@ export interface ShowDialogOptions {
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack = ref<DialogInstance[]>([])
 
-  /**
-   * The key of the currently active (top-most) dialog.
-   * Only the active dialog can be closed with the ESC key.
-   */
-  const activeKey = ref<string | null>(null)
-
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
   /**
@@ -95,27 +87,17 @@ export const useDialogStore = defineStore('dialog', () => {
     if (index !== -1) {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
-      activeKey.value = dialogKey
-      updateCloseOnEscapeStates()
     }
   }
 
   function closeDialog(options?: { key: string }) {
     const targetDialog = options
       ? dialogStack.value.find((d) => d.key === options.key)
-      : dialogStack.value.find((d) => d.key === activeKey.value)
+      : dialogStack.value[0]
     if (!targetDialog) return
 
     targetDialog.dialogComponentProps?.onClose?.()
-    const index = dialogStack.value.indexOf(targetDialog)
-    dialogStack.value.splice(index, 1)
-
-    activeKey.value =
-      dialogStack.value.length > 0
-        ? dialogStack.value[dialogStack.value.length - 1].key
-        : null
-
-    updateCloseOnEscapeStates()
+    dialogStack.value.splice(dialogStack.value.indexOf(targetDialog), 1)
   }
 
   function createDialog(options: {
@@ -132,7 +114,7 @@ export const useDialogStore = defineStore('dialog', () => {
       dialogStack.value.shift()
     }
 
-    const dialog = {
+    const dialog: DialogInstance = {
       key: options.key,
       visible: true,
       title: options.title,
@@ -153,6 +135,7 @@ export const useDialogStore = defineStore('dialog', () => {
         dismissableMask: true,
         ...options.dialogComponentProps,
         maximized: false,
+        // @ts-expect-error TODO: fix this
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
@@ -173,27 +156,8 @@ export const useDialogStore = defineStore('dialog', () => {
     }
 
     insertDialogByPriority(dialog)
-    activeKey.value = options.key
-    updateCloseOnEscapeStates()
 
     return dialog
-  }
-
-  /**
-   * Ensures only the top-most dialog in the stack can be closed with the Escape key.
-   * This is necessary because PrimeVue Dialogs do not handle `closeOnEscape` prop
-   * correctly when multiple dialogs are open.
-   */
-  function updateCloseOnEscapeStates() {
-    const topDialog = dialogStack.value.find((d) => d.key === activeKey.value)
-    const topClosable = topDialog?.dialogComponentProps.closable
-
-    dialogStack.value.forEach((dialog) => {
-      dialog.dialogComponentProps = {
-        ...dialog.dialogComponentProps,
-        closeOnEscape: dialog === topDialog && !!topClosable
-      }
-    })
   }
 
   function showDialog(options: ShowDialogOptions) {
@@ -242,7 +206,6 @@ export const useDialogStore = defineStore('dialog', () => {
     showDialog,
     closeDialog,
     showExtensionDialog,
-    isDialogOpen,
-    activeKey
+    isDialogOpen
   }
 })

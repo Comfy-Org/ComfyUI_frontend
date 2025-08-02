@@ -272,7 +272,7 @@ export const useDialogService = () => {
           onSuccess: () => resolve(true)
         },
         dialogComponentProps: {
-          closable: true,
+          closable: false,
           onClose: () => resolve(false)
         }
       })

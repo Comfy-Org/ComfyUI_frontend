@@ -529,7 +529,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (v16 or later; v20/v22 strongly recommended) and npm
+  - Node.js (v16 or later) and npm
   - Git for version control
   - A running ComfyUI backend instance
   

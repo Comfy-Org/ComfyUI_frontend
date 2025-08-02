@@ -3,23 +3,14 @@ import { ref } from 'vue'
 
 import ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  ComponentWidgetImpl,
-  type ComponentWidgetStandardProps,
-  addWidget
-} from '@/scripts/domWidget'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-
-type ChatHistoryCustomProps = Omit<
-  InstanceType<typeof ChatHistoryWidget>['$props'],
-  ComponentWidgetStandardProps
->
 
 const PADDING = 16
 
 export const useChatHistoryWidget = (
   options: {
-    props?: ChatHistoryCustomProps
+    props?: Omit<InstanceType<typeof ChatHistoryWidget>['$props'], 'widget'>
   } = {}
 ) => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (
@@ -29,7 +20,7 @@ export const useChatHistoryWidget = (
     const widgetValue = ref<string>('')
     const widget = new ComponentWidgetImpl<
       string | object,
-      ChatHistoryCustomProps
+      InstanceType<typeof ChatHistoryWidget>['$props']
     >({
       node,
       name: inputSpec.name,

@@ -5,7 +5,6 @@ import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLib
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { useWorkflowsSidebarTab } from '@/composables/sidebarTabs/useWorkflowsSidebarTab'
-import { t, te } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 
@@ -26,23 +25,11 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
   const registerSidebarTab = (tab: SidebarTabExtension) => {
     sidebarTabs.value = [...sidebarTabs.value, tab]
-
-    // Generate label in format "Toggle X Sidebar"
-    const labelFunction = () => {
-      const tabTitle = te(tab.title) ? t(tab.title) : tab.title
-      return `Toggle ${tabTitle} Sidebar`
-    }
-    const tooltipFunction = tab.tooltip
-      ? te(String(tab.tooltip))
-        ? () => t(String(tab.tooltip))
-        : String(tab.tooltip)
-      : undefined
-
     useCommandStore().registerCommand({
       id: `Workspace.ToggleSidebarTab.${tab.id}`,
       icon: tab.icon,
-      label: labelFunction,
-      tooltip: tooltipFunction,
+      label: `Toggle ${tab.title} Sidebar`,
+      tooltip: tab.tooltip,
       versionAdded: '1.3.9',
       function: () => {
         toggleSidebarTab(tab.id)

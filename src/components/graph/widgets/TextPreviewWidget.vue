@@ -20,44 +20,33 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
-const props = defineProps<{
+defineProps<{
   widget?: object
-  nodeId: NodeId
 }>()
 
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = ref(true)
 const formattedText = computed(() => nl2br(linkifyHtml(modelValue.value)))
 
-let parentNodeId: NodeId | null = null
+let executingNodeId: NodeId | null = null
 onMounted(() => {
-  // Get the parent node ID from props if provided
-  // For backward compatibility, fall back to the first executing node
-  parentNodeId = props.nodeId
+  executingNodeId = executionStore.executingNodeId
 })
 
 // Watch for either a new node has starting execution or overall execution ending
 const stopWatching = watch(
-  [() => executionStore.executingNodeIds, () => executionStore.isIdle],
+  [() => executionStore.executingNode, () => executionStore.isIdle],
   () => {
-    if (executionStore.isIdle) {
-      isParentNodeExecuting.value = false
-      stopWatching()
-      return
-    }
-
-    // Check if parent node is no longer in the executing nodes list
     if (
-      parentNodeId &&
-      !executionStore.executingNodeIds.includes(parentNodeId)
+      executionStore.isIdle ||
+      (executionStore.executingNode &&
+        executionStore.executingNode.id !== executingNodeId)
     ) {
       isParentNodeExecuting.value = false
       stopWatching()
     }
-
-    // Set parent node ID if not set yet
-    if (!parentNodeId && executionStore.executingNodeIds.length > 0) {
-      parentNodeId = executionStore.executingNodeIds[0]
+    if (!executingNodeId) {
+      executingNodeId = executionStore.executingNodeId
     }
   }
 )

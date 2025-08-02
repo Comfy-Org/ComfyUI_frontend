@@ -699,27 +699,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/publishers/{publisherId}/nodes/{nodeId}/claim-my-node': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Claim nodeId into publisherId for the authenticated publisher
-     * @description This endpoint allows a publisher to claim an unclaimed node that they own the repo, which is identified by the nodeId. The unclaimed node's repository must be owned by the authenticated user.
-     *
-     */
-    post: operations['claimMyNode']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/publishers/{publisherId}/nodes/v2': {
     parameters: {
       query?: never
@@ -954,26 +933,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/comfy-nodes/{comfyNodeName}/node': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Retrieve a node by ComfyUI node name
-     * @description Returns the node that contains a ComfyUI node with the specified name
-     */
-    get: operations['getNodeByComfyNodeName']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/nodes/{nodeId}': {
     parameters: {
       query?: never
@@ -1082,23 +1041,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/bulk/nodes/versions': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Retrieve multiple node versions in a single request */
-    post: operations['getBulkNodeVersions']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/versions': {
     parameters: {
       query?: never
@@ -1127,26 +1069,6 @@ export interface paths {
     put?: never
     /** Create a new custom node using admin priviledge */
     post: operations['adminCreateNode']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/admin/nodes/{nodeId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    /**
-     * Admin Update Node
-     * @description Only admins can update a node with admin privileges.
-     */
-    put: operations['adminUpdateNode']
-    post?: never
     delete?: never
     options?: never
     head?: never
@@ -3000,7 +2922,7 @@ export interface paths {
       cookie?: never
     }
     /** Get Prompt Details */
-    get: operations['MoonvalleyGetPrompt']
+    get: operations['Moonvalley']
     put?: never
     post?: never
     delete?: never
@@ -3009,7 +2931,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/proxy/moonvalley/prompts/text-to-video': {
+  '/proxy/moonvalley/prompts': {
     parameters: {
       query?: never
       header?: never
@@ -3018,42 +2940,8 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Create Text to Video Prompt */
-    post: operations['MoonvalleyTextToVideo']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/proxy/moonvalley/prompts/text-to-image': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Create Text to Image Prompt */
-    post: operations['MoonvalleyTextToImage']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/proxy/moonvalley/prompts/image-to-video': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Create Image to Video Prompt */
-    post: operations['MoonvalleyImageToVideo']
+    /** Create Text-to-Video or Image-to-Video Prompt */
+    post: operations['MoonvalleyCreatePrompt']
     delete?: never
     options?: never
     head?: never
@@ -3069,15 +2957,15 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Create Video to Video Prompt */
-    post: operations['MoonvalleyVideoToVideo']
+    /** Create Video-to-Video Prompt */
+    post: operations['MoonvalleyCreateVideoToVideoPrompt']
     delete?: never
     options?: never
     head?: never
     patch?: never
     trace?: never
   }
-  '/proxy/moonvalley/prompts/video-to-video/resize': {
+  '/proxy/moonvalley/prompts/text-to-image': {
     parameters: {
       query?: never
       header?: never
@@ -3086,8 +2974,8 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Resize a video */
-    post: operations['MoonvalleyVideoToVideoResize']
+    /** Create Text-to-Image Prompt */
+    post: operations['MoonvalleyCreateTextToImagePrompt']
     delete?: never
     options?: never
     head?: never
@@ -3103,8 +2991,8 @@ export interface paths {
     }
     get?: never
     put?: never
-    /** Upload Files */
-    post: operations['MoonvalleyUpload']
+    /** Upload File */
+    post: operations['MoonvalleyUploadFile']
     delete?: never
     options?: never
     head?: never
@@ -3115,37 +3003,6 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
-    ClaimMyNodeRequest: {
-      /** @description GitHub token to verify if the user owns the repo of the node */
-      GH_TOKEN: string
-    }
-    BulkNodeVersionsRequest: {
-      /** @description List of node ID and version pairs to retrieve */
-      node_versions: components['schemas']['NodeVersionIdentifier'][]
-    }
-    NodeVersionIdentifier: {
-      /** @description The unique identifier of the node */
-      node_id: string
-      /** @description The version of the node */
-      version: string
-    }
-    BulkNodeVersionsResponse: {
-      /** @description List of retrieved node versions with their status */
-      node_versions: components['schemas']['BulkNodeVersionResult'][]
-    }
-    BulkNodeVersionResult: {
-      /** @description The node and version identifier */
-      identifier: components['schemas']['NodeVersionIdentifier']
-      /**
-       * @description Status of the retrieval operation
-       * @enum {string}
-       */
-      status: 'success' | 'not_found' | 'error'
-      /** @description The retrieved node version data (only present if status is success) */
-      node_version?: components['schemas']['NodeVersion']
-      /** @description Error message if retrieval failed (only present if status is error) */
-      error_message?: string
-    }
     PersonalAccessToken: {
       /**
        * Format: uuid
@@ -8802,212 +8659,55 @@ export interface components {
       | 'computer-use-preview'
       | 'computer-use-preview-2025-03-11'
       | 'chatgpt-4o-latest'
-    MoonvalleyTextToVideoInferenceParams: {
-      /**
-       * @description Height of the generated video in pixels
-       * @default 1080
-       */
+    MoonvalleyInferenceParams: {
+      /** @default 1080 */
       height: number
-      /**
-       * @description Width of the generated video in pixels
-       * @default 1920
-       */
+      /** @default 1920 */
       width: number
-      /**
-       * @description Number of frames to generate
-       * @default 64
-       */
+      /** @default 64 */
       num_frames: number
-      /**
-       * @description Frames per second of the generated video
-       * @default 24
-       */
+      /** @default 24 */
       fps: number
       /**
        * Format: float
-       * @description Guidance scale for generation control
-       * @default 10
+       * @default 12.5
        */
       guidance_scale: number
-      /** @description Random seed for generation (default: random) */
       seed?: number
-      /**
-       * @description Number of denoising steps
-       * @default 80
-       */
+      /** @default 80 */
       steps: number
-      /**
-       * @description Whether to use timestep transformation
-       * @default true
-       */
+      /** @default true */
       use_timestep_transform: boolean
       /**
        * Format: float
-       * @description Shift value for generation control
        * @default 3
        */
       shift_value: number
-      /**
-       * @description Whether to use guidance scheduling
-       * @default true
-       */
+      /** @default true */
       use_guidance_schedule: boolean
-      /**
-       * @description Whether to add quality guidance
-       * @default true
-       */
+      /** @default true */
       add_quality_guidance: boolean
       /**
        * Format: float
-       * @description CLIP value for generation control
        * @default 3
        */
       clip_value: number
-      /**
-       * @description Whether to use negative prompts
-       * @default false
-       */
+      /** @default false */
       use_negative_prompts: boolean
-      /** @description Negative prompt text */
       negative_prompt?: string
-      /**
-       * @description Number of warmup steps (calculated based on num_frames)
-       * @default 0
-       */
-      warmup_steps: number
-      /**
-       * @description Number of cooldown steps (calculated based on num_frames)
-       * @default 75
-       */
-      cooldown_steps: number
+      warmup_steps?: number
+      cooldown_steps?: number
       /**
        * Format: float
-       * @description Caching coefficient for optimization
        * @default 0.3
        */
       caching_coefficient: number
-      /**
-       * @description Number of caching warmup steps
-       * @default 3
-       */
+      /** @default 3 */
       caching_warmup: number
-      /**
-       * @description Number of caching cooldown steps
-       * @default 3
-       */
+      /** @default 3 */
       caching_cooldown: number
-      /**
-       * @description Index of the conditioning frame
-       * @default 0
-       */
+      /** @default 0 */
       conditioning_frame_index: number
-    }
-    MoonvalleyVideoToVideoInferenceParams: {
-      /**
-       * Format: float
-       * @description Guidance scale for generation control
-       * @default 15
-       */
-      guidance_scale: number
-      /** @description Random seed for generation (default: random) */
-      seed?: number
-      /**
-       * @description Number of denoising steps
-       * @default 80
-       */
-      steps: number
-      /**
-       * @description Whether to use timestep transformation
-       * @default true
-       */
-      use_timestep_transform: boolean
-      /**
-       * Format: float
-       * @description Shift value for generation control
-       * @default 3
-       */
-      shift_value: number
-      /**
-       * @description Whether to use guidance scheduling
-       * @default true
-       */
-      use_guidance_schedule: boolean
-      /**
-       * @description Whether to add quality guidance
-       * @default true
-       */
-      add_quality_guidance: boolean
-      /**
-       * Format: float
-       * @description CLIP value for generation control
-       * @default 3
-       */
-      clip_value: number
-      /**
-       * @description Whether to use negative prompts
-       * @default false
-       */
-      use_negative_prompts: boolean
-      /** @description Negative prompt text */
-      negative_prompt?: string
-      /**
-       * @description Number of warmup steps (calculated based on num_frames)
-       * @default 24
-       */
-      warmup_steps: number
-      /**
-       * @description Number of cooldown steps (calculated based on num_frames)
-       * @default 36
-       */
-      cooldown_steps: number
-      /**
-       * Format: float
-       * @description Caching coefficient for optimization
-       * @default 0.3
-       */
-      caching_coefficient: number
-      /**
-       * @description Number of caching warmup steps
-       * @default 3
-       */
-      caching_warmup: number
-      /**
-       * @description Number of caching cooldown steps
-       * @default 3
-       */
-      caching_cooldown: number
-      /**
-       * @description Index of the conditioning frame
-       * @default 0
-       */
-      conditioning_frame_index: number
-    }
-    MoonvalleyTextToImageRequest: {
-      prompt_text?: string
-      image_url?: string
-      inference_params?: components['schemas']['MoonvalleyTextToVideoInferenceParams']
-      webhook_url?: string
-    }
-    MoonvalleyTextToVideoRequest: {
-      prompt_text?: string
-      image_url?: string
-      inference_params?: components['schemas']['MoonvalleyTextToVideoInferenceParams']
-      webhook_url?: string
-    }
-    MoonvalleyVideoToVideoRequest: {
-      /** @description Describes the video to generate */
-      prompt_text: string
-      /** @description Url to control video */
-      video_url: string
-      /**
-       * @description Supported types for video control
-       * @enum {string}
-       */
-      control_type: 'motion_control' | 'pose_control'
-      /** @description Parameters for video-to-video generation inference */
-      inference_params?: components['schemas']['MoonvalleyVideoToVideoInferenceParams']
-      /** @description Optional webhook URL for notifications */
-      webhook_url?: string
     }
     MoonvalleyPromptResponse: {
       id?: string
@@ -9020,23 +8720,26 @@ export interface components {
       frame_conditioning?: Record<string, never>
       error?: Record<string, never>
     }
-    MoonvalleyImageToVideoRequest: components['schemas']['MoonvalleyTextToVideoRequest'] & {
-      keyframes?: {
-        [key: string]: {
-          image_url?: string
-        }
-      }
+    MoonvalleyCreatePromptRequest: {
+      prompt_text: string
+      image_url?: string
+      inference_params?: components['schemas']['MoonvalleyInferenceParams']
+      webhook_url?: string
     }
-    MoonvalleyResizeVideoRequest: components['schemas']['MoonvalleyVideoToVideoRequest'] & {
-      frame_position?: number[]
-      frame_resolution?: number[]
-      scale?: number[]
+    MoonvalleyCreatePromptResponse: {
+      id?: string
+      status?: string
+      approximate_wait_time?: number
     }
-    MoonvalleyUploadFileRequest: {
-      /** Format: binary */
-      file?: string
+    MoonvalleyCreateVideoToVideoRequest: {
+      prompt_text: string
+      video_url: string
+      /** @enum {string} */
+      control_type: 'motion_control'
+      inference_params?: components['schemas']['MoonvalleyInferenceParams']
+      webhook_url?: string
     }
-    MoonvalleyUploadFileResponse: {
+    MoonvalleyUploadResponse: {
       access_url?: string
     }
     /** @description GitHub release webhook payload based on official webhook documentation */
@@ -10651,89 +10354,6 @@ export interface operations {
       }
     }
   }
-  claimMyNode: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        publisherId: string
-        nodeId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ClaimMyNodeRequest']
-      }
-    }
-    responses: {
-      /** @description Node claimed successfully */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Bad request, invalid input data */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Forbidden - various authorization and permission issues
-       *     Includes:
-       *     - The authenticated user does not have permission to claim the node
-       *     - The node is already claimed by another publisher
-       *     - The GH_TOKEN is invalid
-       *     - The repository is not owned by the authenticated GitHub user
-       *      */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Too many requests - GitHub API rate limit exceeded */
-      429: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Internal server error */
-      500: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Service unavailable - GitHub API is currently unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
   listNodesForPublisherV2: {
     parameters: {
       query?: {
@@ -11667,47 +11287,6 @@ export interface operations {
       }
     }
   }
-  getNodeByComfyNodeName: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The name of the ComfyUI node */
-        comfyNodeName: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Node details */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Node']
-        }
-      }
-      /** @description No node found containing the specified ComfyUI node name */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Internal server error */
-      500: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
   getNode: {
     parameters: {
       query?: {
@@ -12022,48 +11601,6 @@ export interface operations {
       }
     }
   }
-  getBulkNodeVersions: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BulkNodeVersionsRequest']
-      }
-    }
-    responses: {
-      /** @description Successfully retrieved node versions */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['BulkNodeVersionsResponse']
-        }
-      }
-      /** @description Bad request, invalid input */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Internal server error */
-      500: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
   listAllNodeVersions: {
     parameters: {
       query?: {
@@ -12189,75 +11726,6 @@ export interface operations {
       }
     }
   }
-  adminUpdateNode: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        nodeId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['Node']
-      }
-    }
-    responses: {
-      /** @description Node updated successfully */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Node']
-        }
-      }
-      /** @description Bad request, invalid input data. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Forbidden */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Node not found */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-      /** @description Internal server error */
-      500: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
-        }
-      }
-    }
-  }
   adminUpdateNodeVersion: {
     parameters: {
       query?: never
@@ -12274,14 +11742,6 @@ export interface operations {
           status?: components['schemas']['NodeVersionStatus']
           /** @description The reason for the status change. */
           status_reason?: string
-          /** @description Supported versions of ComfyUI frontend */
-          supported_comfyui_frontend_version?: string
-          /** @description Supported versions of ComfyUI */
-          supported_comfyui_version?: string
-          /** @description List of operating systems that this node supports */
-          supported_os?: string[]
-          /** @description List of accelerators (e.g. CUDA, DirectML, ROCm) that this node supports */
-          supported_accelerators?: string[]
         }
       }
     }
@@ -19300,7 +18760,7 @@ export interface operations {
       }
     }
   }
-  MoonvalleyGetPrompt: {
+  Moonvalley: {
     parameters: {
       query?: never
       header?: never
@@ -19311,7 +18771,7 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Prompt details retrieved */
+      /** @description Prompt details */
       200: {
         headers: {
           [name: string]: unknown
@@ -19322,7 +18782,7 @@ export interface operations {
       }
     }
   }
-  MoonvalleyTextToVideo: {
+  MoonvalleyCreatePrompt: {
     parameters: {
       query?: never
       header?: never
@@ -19331,7 +18791,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MoonvalleyTextToVideoRequest']
+        'application/json': components['schemas']['MoonvalleyCreatePromptRequest']
       }
     }
     responses: {
@@ -19341,12 +18801,12 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyPromptResponse']
+          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
         }
       }
     }
   }
-  MoonvalleyTextToImage: {
+  MoonvalleyCreateVideoToVideoPrompt: {
     parameters: {
       query?: never
       header?: never
@@ -19355,7 +18815,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MoonvalleyTextToImageRequest']
+        'application/json': components['schemas']['MoonvalleyCreateVideoToVideoRequest']
       }
     }
     responses: {
@@ -19365,12 +18825,12 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyPromptResponse']
+          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
         }
       }
     }
   }
-  MoonvalleyImageToVideo: {
+  MoonvalleyCreateTextToImagePrompt: {
     parameters: {
       query?: never
       header?: never
@@ -19379,7 +18839,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MoonvalleyImageToVideoRequest']
+        'application/json': components['schemas']['MoonvalleyCreatePromptRequest']
       }
     }
     responses: {
@@ -19389,12 +18849,12 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyPromptResponse']
+          'application/json': components['schemas']['MoonvalleyCreatePromptResponse']
         }
       }
     }
   }
-  MoonvalleyVideoToVideo: {
+  MoonvalleyUploadFile: {
     parameters: {
       query?: never
       header?: never
@@ -19403,65 +18863,20 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MoonvalleyVideoToVideoRequest']
+        'multipart/form-data': {
+          /** Format: binary */
+          file?: string
+        }
       }
     }
     responses: {
-      /** @description Prompt created */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MoonvalleyPromptResponse']
-        }
-      }
-    }
-  }
-  MoonvalleyVideoToVideoResize: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['MoonvalleyResizeVideoRequest']
-      }
-    }
-    responses: {
-      /** @description Prompt created */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MoonvalleyPromptResponse']
-        }
-      }
-    }
-  }
-  MoonvalleyUpload: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['MoonvalleyUploadFileRequest']
-      }
-    }
-    responses: {
-      /** @description File uploaded successfully */
+      /** @description Upload successful */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MoonvalleyUploadFileResponse']
+          'application/json': components['schemas']['MoonvalleyUploadResponse']
         }
       }
     }

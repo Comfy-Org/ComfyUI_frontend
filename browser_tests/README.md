@@ -2,133 +2,66 @@
 
 This document outlines the setup, usage, and common patterns for Playwright browser tests in the ComfyUI_frontend project.
 
-## Prerequisites
+## WARNING
 
-**CRITICAL**: Start ComfyUI backend with `--multi-user` flag:
-
-```bash
-python main.py --multi-user
-```
-
-Without this flag, parallel tests will conflict and fail randomly.
+The browser tests will change the ComfyUI backend state, such as user settings and saved workflows.
+If `TEST_COMFYUI_DIR` in `.env` isn't set to your `(Comfy Path)/ComfyUI` directory, these changes won't be automatically restored.
 
 ## Setup
 
 ### ComfyUI devtools
-
 Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` directory.  
 _ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
 
 ### Node.js & Playwright Prerequisites
-
-Ensure you have Node.js v20 or v22 installed. Then, set up the Chromium test driver:
-
+Ensure you have Node.js v20 or later installed. Then, set up the Chromium test driver:
 ```bash
 npx playwright install chromium --with-deps
 ```
 
-### Environment Configuration
+### Environment Variables
+Ensure the environment variables in `.env` are set correctly according to your setup. 
 
-Create `.env` from the template:
+The `.env` file will not exist until you create it yourself.
 
-```bash
-cp .env_example .env
-```
+A template with helpful information can be found in `.env_example`.
 
-Key settings for debugging:
-
-```bash
-# Remove Vue dev overlay that blocks UI elements
-DISABLE_VUE_PLUGINS=true
-
-# Test against dev server (recommended) or backend directly
-PLAYWRIGHT_TEST_URL=http://localhost:5173  # Dev server
-# PLAYWRIGHT_TEST_URL=http://localhost:8188  # Direct backend
-
-# Path to ComfyUI for backing up user data/settings before tests
-TEST_COMFYUI_DIR=/path/to/your/ComfyUI
-```
-
-### Common Setup Issues
-
-**Most tests require the new menu system** - Add to your test:
-
-```typescript
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-})
-```
-
-### Release API Mocking
-
-By default, all tests mock the release API (`api.comfy.org/releases`) to prevent release notification popups from interfering with test execution. This is necessary because the release notifications can appear over UI elements and block test interactions.
-
-To test with real release data, you can disable mocking:
-
-```typescript
-await comfyPage.setup({ mockReleases: false })
-```
-
-For tests that specifically need to test release functionality, see the example in `tests/releaseNotifications.spec.ts`.
+### Multiple Tests
+If you are running Playwright tests in parallel or running the same test multiple times, the flag `--multi-user` must be added to the main ComfyUI process.
 
 ## Running Tests
 
-**Always use UI mode for development:**
+There are multiple ways to run the tests:
 
-```bash
-npx playwright test --ui
-```
+1. **Headless mode with report generation:**
+   ```bash
+   npx playwright test
+   ```
+   This runs all tests without a visible browser and generates a comprehensive test report.
 
-UI mode features:
+2. **UI mode for interactive testing:**
+   ```bash
+   npx playwright test --ui
+   ```
+   This opens a user interface where you can select specific tests to run and inspect the test execution timeline.
 
-- **Locator picker**: Click the target icon, then click any element to get the exact locator code to use in your test. The code appears in the _Locator_ tab.
-- **Step debugging**: Step through your test line-by-line by clicking _Source_ tab
-- **Time travel**: In the _Actions_ tab/panel, click any step to see the browser state at that moment
-- **Console/Network Tabs**: View logs and API calls at each step
-- **Attachments Tab**: View all snapshots with expected and actual images
+   ![Playwright UI Mode](https://github.com/user-attachments/assets/6a1ebef0-90eb-4157-8694-f5ee94d03755)
 
-![Playwright UI Mode](https://github.com/user-attachments/assets/c158c93f-b39a-44c5-a1a1-e0cc975ee9f2)
-
-For CI or headless testing:
-
-```bash
-npx playwright test                    # Run all tests
-npx playwright test widget.spec.ts     # Run specific test file
-```
-
-### Local Development Config
-
-For debugging, you can try adjusting these settings in `playwright.config.ts`:
-
-```typescript
-export default defineConfig({
-  // VERY HELPFUL: Skip screenshot tests locally
-  grep: process.env.CI ? undefined : /^(?!.*screenshot).*$/
-
-  retries: 0, // No retries while debugging. Increase if writing new tests. that may be flaky.
-  workers: 1, // Single worker for easier debugging. Increase to match CPU cores if you want to run a lot of tests in parallel.
-  timeout: 30000, // Longer timeout for breakpoints
-
-  use: {
-    trace: 'on', // Always capture traces (CI uses 'on-first-retry')
-    video: 'on' // Always record video (CI uses 'retain-on-failure')
-  },
-
-})
-```
+3. **Running specific tests:**
+   ```bash
+   npx playwright test widget.spec.ts
+   ```
 
 ## Test Structure
 
 Browser tests in this project follow a specific organization pattern:
 
 - **Fixtures**: Located in `fixtures/` - These provide test setup and utilities
-
   - `ComfyPage.ts` - The main fixture for interacting with ComfyUI
   - `ComfyMouse.ts` - Utility for mouse interactions with the canvas
   - Components fixtures in `fixtures/components/` - Page object models for UI components
 
 - **Tests**: Located in `tests/` - The actual test specifications
-
   - Organized by functionality (e.g., `widget.spec.ts`, `interaction.spec.ts`)
   - Snapshot directories (e.g., `widget.spec.ts-snapshots/`) contain reference screenshots
 
@@ -143,18 +76,18 @@ When writing new tests, follow these patterns:
 
 ```typescript
 // Import the test fixture
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage';
 
 test.describe('Feature Name', () => {
   // Set up test environment if needed
   test.beforeEach(async ({ comfyPage }) => {
     // Common setup
-  })
+  });
 
   test('should do something specific', async ({ comfyPage }) => {
     // Test implementation
-  })
-})
+  });
+});
 ```
 
 ### Leverage Existing Fixtures and Helpers
@@ -176,101 +109,65 @@ Most common testing needs are already addressed by these helpers, which will mak
 
 1. **Focus elements explicitly**:
    Canvas-based elements often need explicit focus before interaction:
-
    ```typescript
    // Click the canvas first to focus it before pressing keys
-   await comfyPage.canvas.click()
-   await comfyPage.page.keyboard.press('a')
+   await comfyPage.canvas.click();
+   await comfyPage.page.keyboard.press('a');
    ```
 
 2. **Mark canvas as dirty if needed**:
    Some interactions need explicit canvas updates:
-
    ```typescript
    // After programmatically changing node state, mark canvas dirty
    await comfyPage.page.evaluate(() => {
-     window['app'].graph.setDirtyCanvas(true, true)
-   })
+     window['app'].graph.setDirtyCanvas(true, true);
+   });
    ```
 
-3. **Use node references over coordinates**:
+3. **Use node references over coordinates**: 
    Node references from `fixtures/utils/litegraphUtils.ts` provide stable ways to interact with nodes:
-
    ```typescript
    // Prefer this:
-   const node = await comfyPage.getNodeRefsByType('LoadImage')[0]
-   await node.click('title')
-
+   const node = await comfyPage.getNodeRefsByType('LoadImage')[0];
+   await node.click('title');
+   
    // Over this:
-   await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+   await comfyPage.canvas.click({ position: { x: 100, y: 100 } });
    ```
 
 4. **Wait for canvas to render after UI interactions**:
-
    ```typescript
-   await comfyPage.nextFrame()
+   await comfyPage.nextFrame();
    ```
 
 5. **Clean up persistent server state**:
    While most state is reset between tests, anything stored on the server persists:
-
    ```typescript
    // Reset settings that affect other tests (these are stored on server)
-   await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
-   await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', 'None')
-
+   await comfyPage.setSetting('Comfy.ColorPalette', 'dark');
+   await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', 'None');
+   
    // Clean up uploaded files if needed
-   await comfyPage.request.delete(`${comfyPage.url}/api/delete/image.png`)
+   await comfyPage.request.delete(`${comfyPage.url}/api/delete/image.png`);
    ```
 
 6. **Prefer functional assertions over screenshots**:
    Use screenshots only when visual verification is necessary:
-
    ```typescript
    // Prefer this:
-   expect(await node.isPinned()).toBe(true)
-   expect(await node.getProperty('title')).toBe('Expected Title')
-
+   expect(await node.isPinned()).toBe(true);
+   expect(await node.getProperty('title')).toBe('Expected Title');
+   
    // Over this - only use when needed:
-   await expect(comfyPage.canvas).toHaveScreenshot('state.png')
+   await expect(comfyPage.canvas).toHaveScreenshot('state.png');
    ```
 
 7. **Use minimal test workflows**:
    When creating test workflows, keep them as minimal as possible:
-
    ```typescript
    // Include only the components needed for the test
-   await comfyPage.loadWorkflow('single_ksampler')
+   await comfyPage.loadWorkflow('single_ksampler');
    ```
-
-8. **Debug helpers for visual debugging** (remove before committing):
-
-   ComfyPage includes temporary debug methods for troubleshooting:
-
-   ```typescript
-   test('debug failing interaction', async ({ comfyPage }, testInfo) => {
-     // Add visual markers to see click positions
-     await comfyPage.debugAddMarker({ x: 100, y: 200 })
-
-     // Attach screenshot with markers to test report
-     await comfyPage.debugAttachScreenshot(testInfo, 'node-positions', {
-       element: 'canvas',
-       markers: [{ position: { x: 100, y: 200 } }]
-     })
-
-     // Show canvas overlay for easier debugging
-     await comfyPage.debugShowCanvasOverlay()
-
-     // Remember to remove debug code before committing!
-   })
-   ```
-
-   Available debug methods:
-
-   - `debugAddMarker(position)` - Red circle at position
-   - `debugAttachScreenshot(testInfo, name)` - Attach to test report
-   - `debugShowCanvasOverlay()` - Show canvas as overlay
-   - `debugGetCanvasDataURL()` - Get canvas as base64
 
 ## Common Patterns and Utilities
 
@@ -285,7 +182,7 @@ test('Can toggle boolean widget', async ({ comfyPage }) => {
   const node = (await comfyPage.getFirstNodeRef())!
   const widget = await node.getWidget(0)
   await widget.click()
-})
+});
 ```
 
 ### Node References
@@ -325,8 +222,8 @@ Canvas operations use special helpers to ensure proper timing:
 ```typescript
 // Using ComfyMouse for drag and drop
 await comfyMouse.dragAndDrop(
-  { x: 100, y: 100 }, // From
-  { x: 200, y: 200 } // To
+  { x: 100, y: 100 },  // From
+  { x: 200, y: 200 }   // To
 )
 
 // Standard ComfyPage helpers
@@ -368,52 +265,21 @@ await expect(node).toBeCollapsed()
 - **Screenshots vary**: Ensure your OS and browser match the reference environment (Linux)
 - **Async / await**: Race conditions are a very common cause of test flakiness
 
-## Screenshot Testing
+## Screenshot Expectations
 
 Due to variations in system font rendering, screenshot expectations are platform-specific. Please note:
 
-- **Do not commit local screenshot expectations** to the repository
+- **DO NOT commit local screenshot expectations** to the repository
 - We maintain Linux screenshot expectations as our GitHub Action runner operates in a Linux environment
 - While developing, you can generate local screenshots for your tests, but these will differ from CI-generated ones
 
-### Working with Screenshots Locally
+To set new test expectations for PR:
 
-Option 1 - Skip screenshot tests (add to `playwright.config.ts`):
+1. Write your test with screenshot assertions using `toHaveScreenshot(filename)`
+2. Create a pull request from a `Comfy-Org/ComfyUI_frontend` branch
+3. Add the `New Browser Test Expectation` tag to your pull request
+4. The GitHub CI will automatically generate and commit the reference screenshots
 
-```typescript
-export default defineConfig({
-  grep: process.env.CI ? undefined : /^(?!.*screenshot).*$/
-})
-```
+This approach ensures consistent screenshot expectations across all PRs and avoids issues with platform-specific rendering.
 
-Option 2 - Generate local baselines for comparison:
-
-```bash
-npx playwright test --update-snapshots
-```
-
-### Getting Test Artifacts from GitHub Actions
-
-When tests fail in CI, you can download screenshots and traces:
-
-1. Go to the failed workflow run in GitHub Actions
-2. Scroll to "Artifacts" section at the bottom
-3. Download `playwright-report` or `test-results`
-4. Extract and open the HTML report locally
-5. View actual vs expected screenshots and execution traces
-
-### Creating New Screenshot Baselines
-
-For PRs from `Comfy-Org/ComfyUI_frontend` branches:
-
-1. Write test with `toHaveScreenshot('filename.png')`
-2. Create PR and add `New Browser Test Expectation` label
-3. CI will generate and commit the Linux baseline screenshots
-
-> **Note:** Fork PRs cannot auto-commit screenshots. A maintainer will need to commit the screenshots manually for you (don't worry, they'll do it).
-
-## Resources
-
-- [Playwright UI Mode](https://playwright.dev/docs/test-ui-mode) - Interactive test debugging
-- [Playwright Debugging Guide](https://playwright.dev/docs/debug)
-- [act](https://github.com/nektos/act) - Run GitHub Actions locally for CI debugging
+> **Note:** If you're making a pull request from a forked repository, the GitHub action won't be able to commit updated screenshot expectations directly to your PR branch.

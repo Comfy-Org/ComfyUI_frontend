@@ -69,6 +69,9 @@ const eventConfig = {
   exportLoadingEnd: () => {
     loadingOverlayRef.value?.endLoading()
   },
+  textureLoadingStart: () =>
+    loadingOverlayRef.value?.startLoading(t('load3d.applyingTexture')),
+  textureLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
   recordingStatusChange: (value: boolean) =>
     emit('recordingStatusChange', value)
 } as const

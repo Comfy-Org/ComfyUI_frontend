@@ -6,7 +6,7 @@ import type {
   LLink,
   Vector2
 } from '@comfyorg/litegraph'
-import type { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
+import type { CanvasMouseEvent } from '@comfyorg/litegraph/dist/types/events'
 import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 
 import {
@@ -46,7 +46,7 @@ export class PrimitiveNode extends LGraphNode {
     ]
     let v = this.widgets?.[0].value
     if (v && this.properties[replacePropertyName]) {
-      v = applyTextReplacements(app.graph, v as string)
+      v = applyTextReplacements(app.graph.nodes, v as string)
     }
 
     // For each output link copy our value over the original widget value
@@ -78,7 +78,7 @@ export class PrimitiveNode extends LGraphNode {
         app.canvas,
         node,
         app.canvas.graph_mouse,
-        {} as CanvasPointerEvent
+        {} as CanvasMouseEvent
       )
     }
   }

@@ -1,4 +1,3 @@
-import { LGraph } from '@comfyorg/litegraph'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { describe, expect, it } from 'vitest'
 
@@ -22,11 +21,7 @@ describe('applyTextReplacements', () => {
         } as LGraphNode
       ]
 
-      const mockGraph = new LGraph()
-      for (const node of mockNodes) {
-        mockGraph.add(node)
-      }
-      const result = applyTextReplacements(mockGraph, '%TestNode.testWidget%')
+      const result = applyTextReplacements(mockNodes, '%TestNode.testWidget%')
 
       // The expected result should have all invalid characters replaced with underscores
       expect(result).toBe('file_name_with_invalid_chars_____control_chars__')
@@ -56,11 +51,7 @@ describe('applyTextReplacements', () => {
           } as LGraphNode
         ]
 
-        const mockGraph = new LGraph()
-        for (const node of mockNodes) {
-          mockGraph.add(node)
-        }
-        const result = applyTextReplacements(mockGraph, '%TestNode.testWidget%')
+        const result = applyTextReplacements(mockNodes, '%TestNode.testWidget%')
         expect(result).toBe(expected)
       }
     })
@@ -75,11 +66,7 @@ describe('applyTextReplacements', () => {
         } as LGraphNode
       ]
 
-      const mockGraph = new LGraph()
-      for (const node of mockNodes) {
-        mockGraph.add(node)
-      }
-      const result = applyTextReplacements(mockGraph, '%TestNode.testWidget%')
+      const result = applyTextReplacements(mockNodes, '%TestNode.testWidget%')
       expect(result).toBe(validChars)
     })
   })

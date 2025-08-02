@@ -1,7 +1,6 @@
 import { LiteGraph } from '@comfyorg/litegraph'
 
 import { api } from './api'
-import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
 
@@ -12,10 +11,6 @@ export function getPngMetadata(file: File): Promise<Record<string, string>> {
 
 export function getFlacMetadata(file: File): Promise<Record<string, string>> {
   return getFromFlacFile(file)
-}
-
-export function getAvifMetadata(file: File): Promise<Record<string, string>> {
-  return getFromAvifFile(file)
 }
 
 // @ts-expect-error fixme ts strict error

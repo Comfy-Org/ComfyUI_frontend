@@ -11,6 +11,7 @@
 </template>
 
 <script setup lang="ts">
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
@@ -20,35 +21,26 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const domWidgetStore = useDomWidgetStore()
-
-const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
+const widgetStates = computed(() =>
+  Array.from(domWidgetStore.widgetStates.values())
+)
 
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
 
   const lowQuality = lgCanvas.low_quality
-  const currentGraph = lgCanvas.graph
-
-  for (const widgetState of widgetStates.value) {
+  for (const widgetState of domWidgetStore.widgetStates.values()) {
     const widget = widgetState.widget
+    const node = widget.node as LGraphNode
 
-    // Early exit for non-visible widgets
-    if (!widget.isVisible()) {
-      widgetState.visible = false
-      continue
-    }
-
-    // Check if the widget's node is in the current graph
-    const node = widget.node
-    const isInCorrectGraph = currentGraph?.nodes.includes(node)
-
-    widgetState.visible =
-      !!isInCorrectGraph &&
+    const visible =
       lgCanvas.isNodeVisible(node) &&
-      !(widget.options.hideOnZoom && lowQuality)
+      !(widget.options.hideOnZoom && lowQuality) &&
+      widget.isVisible()
 
-    if (widgetState.visible && node) {
+    widgetState.visible = visible
+    if (visible) {
       const margin = widget.margin
       widgetState.pos = [node.pos[0] + margin, node.pos[1] + margin + widget.y]
       widgetState.size = [

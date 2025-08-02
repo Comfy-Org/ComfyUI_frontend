@@ -1,19 +1,15 @@
 import { Page } from '@playwright/test'
 
-import { ComfyPage } from '../ComfyPage'
-
 export class SettingDialog {
-  constructor(
-    public readonly page: Page,
-    public readonly comfyPage: ComfyPage
-  ) {}
+  constructor(public readonly page: Page) {}
 
   get root() {
     return this.page.locator('div.settings-container')
   }
 
   async open() {
-    await this.comfyPage.executeCommand('Comfy.ShowSettingsDialog')
+    const button = this.page.locator('button.comfy-settings-btn:visible')
+    await button.click()
     await this.page.waitForSelector('div.settings-container')
   }
 

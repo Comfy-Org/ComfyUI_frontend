@@ -32,9 +32,6 @@ export const useReleaseStore = defineStore('release', () => {
   const releaseTimestamp = computed(() =>
     settingStore.get('Comfy.Release.Timestamp')
   )
-  const showVersionUpdates = computed(() =>
-    settingStore.get('Comfy.Notification.ShowVersionUpdates')
-  )
 
   // Most recent release
   const recentRelease = computed(() => {
@@ -76,11 +73,6 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Skip if notifications are disabled
-    if (!showVersionUpdates.value) {
-      return false
-    }
-
     if (!isNewVersionAvailable.value) {
       return false
     }
@@ -93,7 +85,7 @@ export const useReleaseStore = defineStore('release', () => {
     // Skip if user already skipped or changelog seen
     if (
       releaseVersion.value === recentRelease.value?.version &&
-      ['skipped', 'changelog seen'].includes(releaseStatus.value)
+      !['skipped', 'changelog seen'].includes(releaseStatus.value)
     ) {
       return false
     }
@@ -103,11 +95,6 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
-    // Skip if notifications are disabled
-    if (!showVersionUpdates.value) {
-      return false
-    }
-
     // Already latest → no dot
     if (!isNewVersionAvailable.value) {
       return false
@@ -145,11 +132,6 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show "What's New" popup
   const shouldShowPopup = computed(() => {
-    // Skip if notifications are disabled
-    if (!showVersionUpdates.value) {
-      return false
-    }
-
     if (!isLatestVersion.value) {
       return false
     }
@@ -201,14 +183,7 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Fetch releases from API
   async function fetchReleases(): Promise<void> {
-    if (isLoading.value) {
-      return
-    }
-
-    // Skip fetching if notifications are disabled
-    if (!showVersionUpdates.value) {
-      return
-    }
+    if (isLoading.value) return
 
     isLoading.value = true
     error.value = null

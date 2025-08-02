@@ -9,7 +9,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { SelectedVersion, UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 type WorkflowPack = {
   id:
@@ -27,7 +26,7 @@ const CORE_NODES_PACK_NAME = 'comfy-core'
 export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   const nodeDefStore = useNodeDefStore()
   const systemStatsStore = useSystemStatsStore()
-  const { inferPackFromNodeName } = useComfyRegistryStore()
+  const { search } = useComfyRegistryStore()
 
   const workflowPacks = ref<WorkflowPack[]>([])
 
@@ -71,19 +70,18 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
       }
     }
 
-    // Query the registry to find which pack provides this node
-    const pack = await inferPackFromNodeName.call(nodeName)
-
-    if (pack) {
+    // Search the registry for non-core nodes
+    const searchResult = await search.call({
+      comfy_node_search: nodeName,
+      limit: 1
+    })
+    if (searchResult?.nodes?.length) {
+      const pack = searchResult.nodes[0]
       return {
         id: pack.id,
         version: pack.latest_version?.version ?? SelectedVersion.NIGHTLY
       }
     }
-
-    // No pack found - this node doesn't exist in the registry or couldn't be
-    // extracted from the parent node pack successfully
-    return undefined
   }
 
   /**
@@ -110,13 +108,11 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   }
 
   /**
-   * Get the node packs for all nodes in the workflow (including subgraphs).
+   * Get the node packs for all nodes in the workflow.
    */
   const getWorkflowPacks = async () => {
-    if (!app.graph) return []
-    const allNodes = collectAllNodes(app.graph)
-    if (!allNodes.length) return []
-    const packs = await Promise.all(allNodes.map(workflowNodeToPack))
+    if (!app.graph?.nodes?.length) return []
+    const packs = await Promise.all(app.graph.nodes.map(workflowNodeToPack))
     workflowPacks.value = packs.filter((pack) => pack !== undefined)
   }
 

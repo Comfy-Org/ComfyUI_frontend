@@ -11,7 +11,7 @@ export const useCanvasPositionConversion = (
   canvasElement: Parameters<typeof useElementBounding>[0],
   lgCanvas: LGraphCanvas
 ) => {
-  const { left, top, update } = useElementBounding(canvasElement)
+  const { left, top } = useElementBounding(canvasElement)
 
   const clientPosToCanvasPos = (pos: Vector2): Vector2 => {
     const { offset, scale } = lgCanvas.ds
@@ -31,7 +31,6 @@ export const useCanvasPositionConversion = (
 
   return {
     clientPosToCanvasPos,
-    canvasPosToClientPos,
-    update
+    canvasPosToClientPos
   }
 }

@@ -34,14 +34,13 @@ class Load3dUtils {
     return await resp.json()
   }
 
-  static async uploadFile(file: File, subfolder: string) {
+  static async uploadFile(file: File) {
     let uploadPath
 
     try {
       const body = new FormData()
       body.append('image', file)
-
-      body.append('subfolder', subfolder)
+      body.append('subfolder', '3d')
 
       const resp = await api.fetchApi('/upload/image', {
         method: 'POST',
@@ -96,14 +95,6 @@ class Load3dUtils {
     ].join('&')
 
     return `/view?${params}`
-  }
-
-  static async uploadMultipleFiles(files: FileList, subfolder: string = '3d') {
-    const uploadPromises = Array.from(files).map((file) =>
-      this.uploadFile(file, subfolder)
-    )
-
-    await Promise.all(uploadPromises)
   }
 }
 

@@ -4,7 +4,6 @@
     <nav class="help-menu-section" role="menubar">
       <button
         v-for="menuItem in menuItems"
-        v-show="menuItem.visible !== false"
         :key="menuItem.key"
         type="button"
         class="help-menu-item"
@@ -30,20 +29,14 @@
         @mouseenter="onSubmenuHover"
         @mouseleave="onSubmenuLeave"
       >
-        <template
-          v-for="submenuItem in moreMenuItem?.items"
-          :key="submenuItem.key"
-        >
-          <div
-            v-if="submenuItem.type === 'divider'"
-            v-show="submenuItem.visible !== false"
-            class="submenu-divider"
-          />
+        <template v-for="submenuItem in submenuItems" :key="submenuItem.key">
+          <div v-if="submenuItem.type === 'divider'" class="submenu-divider" />
           <button
             v-else
-            v-show="submenuItem.visible !== false"
             type="button"
             class="help-menu-item submenu-item"
+            :class="{ disabled: submenuItem.disabled }"
+            :disabled="submenuItem.disabled"
             role="menuitem"
             @click="submenuItem.action"
           >
@@ -54,7 +47,7 @@
     </Teleport>
 
     <!-- What's New Section -->
-    <section v-if="showVersionUpdates" class="whats-new-section">
+    <section class="whats-new-section">
       <h3 class="section-description">{{ $t('helpCenter.whatsNew') }}</h3>
 
       <!-- Release Items -->
@@ -72,12 +65,7 @@
           <i class="pi pi-refresh help-menu-icon" aria-hidden="true" />
           <div class="release-content">
             <span class="release-title">
-              {{
-                $t('g.releaseTitle', {
-                  package: 'Comfy',
-                  version: release.version
-                })
-              }}
+              Comfy {{ release.version }} Release
             </span>
             <time class="release-date" :datetime="release.published_at">
               <span class="normal-state">
@@ -124,21 +112,24 @@ import { type CSSProperties, computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { type ReleaseNote } from '@/services/releaseService'
-import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
 // Types
 interface MenuItem {
   key: string
-  icon?: string
+  icon: string
+  label: string
+  action: () => void
+}
+
+interface SubmenuItem {
+  key: string
+  type?: 'item' | 'divider'
   label?: string
   action?: () => void
-  visible?: boolean
-  type?: 'item' | 'divider'
-  items?: MenuItem[]
+  disabled?: boolean
 }
 
 // Constants
@@ -146,7 +137,7 @@ const EXTERNAL_LINKS = {
   DOCS: 'https://docs.comfy.org/',
   DISCORD: 'https://www.comfy.org/discord',
   GITHUB: 'https://github.com/comfyanonymous/ComfyUI',
-  DESKTOP_GUIDE: 'https://comfyorg.notion.site/',
+  DESKTOP_GUIDE: 'https://docs.comfy.org/installation/desktop',
   UPDATE_GUIDE: 'https://docs.comfy.org/installation/update_comfyui'
 } as const
 
@@ -162,19 +153,12 @@ const TIME_UNITS = {
 const SUBMENU_CONFIG = {
   DELAY_MS: 100,
   OFFSET_PX: 8,
-  Z_INDEX: 10001
+  Z_INDEX: 1002
 } as const
 
 // Composables
 const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
-const commandStore = useCommandStore()
-const settingStore = useSettingStore()
-
-// Emits
-const emit = defineEmits<{
-  close: []
-}>()
 
 // State
 const isSubmenuVisible = ref(false)
@@ -184,103 +168,67 @@ let hoverTimeout: number | null = null
 
 // Computed
 const hasReleases = computed(() => releaseStore.releases.length > 0)
-const showVersionUpdates = computed(() =>
-  settingStore.get('Comfy.Notification.ShowVersionUpdates')
-)
 
-const moreMenuItem = computed(() =>
-  menuItems.value.find((item) => item.key === 'more')
-)
+const menuItems = computed<MenuItem[]>(() => [
+  {
+    key: 'docs',
+    icon: 'pi pi-book',
+    label: t('helpCenter.docs'),
+    action: () => openExternalLink(EXTERNAL_LINKS.DOCS)
+  },
+  {
+    key: 'discord',
+    icon: 'pi pi-discord',
+    label: 'Discord',
+    action: () => openExternalLink(EXTERNAL_LINKS.DISCORD)
+  },
+  {
+    key: 'github',
+    icon: 'pi pi-github',
+    label: t('helpCenter.github'),
+    action: () => openExternalLink(EXTERNAL_LINKS.GITHUB)
+  },
+  {
+    key: 'help',
+    icon: 'pi pi-question-circle',
+    label: t('helpCenter.helpFeedback'),
+    action: () => openExternalLink(EXTERNAL_LINKS.DISCORD)
+  },
+  {
+    key: 'more',
+    icon: '',
+    label: t('helpCenter.more'),
+    action: () => {} // No action for more item
+  }
+])
 
-const menuItems = computed<MenuItem[]>(() => {
-  const moreItems: MenuItem[] = [
-    {
-      key: 'desktop-guide',
-      type: 'item',
-      label: t('helpCenter.desktopUserGuide'),
-      action: () => {
-        openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
-        emit('close')
-      }
-    },
-    {
-      key: 'dev-tools',
-      type: 'item',
-      label: t('helpCenter.openDevTools'),
-      visible: isElectron(),
-      action: () => {
-        openDevTools()
-        emit('close')
-      }
-    },
-    {
-      key: 'divider-1',
-      type: 'divider',
-      visible: isElectron()
-    },
-    {
-      key: 'reinstall',
-      type: 'item',
-      label: t('helpCenter.reinstall'),
-      visible: isElectron(),
-      action: () => {
-        onReinstall()
-        emit('close')
-      }
-    }
-  ]
-
-  return [
-    {
-      key: 'docs',
-      type: 'item',
-      icon: 'pi pi-book',
-      label: t('helpCenter.docs'),
-      action: () => {
-        openExternalLink(EXTERNAL_LINKS.DOCS)
-        emit('close')
-      }
-    },
-    {
-      key: 'discord',
-      type: 'item',
-      icon: 'pi pi-discord',
-      label: 'Discord',
-      action: () => {
-        openExternalLink(EXTERNAL_LINKS.DISCORD)
-        emit('close')
-      }
-    },
-    {
-      key: 'github',
-      type: 'item',
-      icon: 'pi pi-github',
-      label: t('helpCenter.github'),
-      action: () => {
-        openExternalLink(EXTERNAL_LINKS.GITHUB)
-        emit('close')
-      }
-    },
-    {
-      key: 'help',
-      type: 'item',
-      icon: 'pi pi-question-circle',
-      label: t('helpCenter.helpFeedback'),
-      action: () => {
-        void commandStore.execute('Comfy.Feedback')
-        emit('close')
-      }
-    },
-    {
-      key: 'more',
-      type: 'item',
-      icon: '',
-      label: t('helpCenter.more'),
-      action: () => {}, // No action for more item
-      items: moreItems
-    }
-  ]
-})
+const submenuItems = computed<SubmenuItem[]>(() => [
+  {
+    key: 'desktop-guide',
+    type: 'item',
+    label: t('helpCenter.desktopUserGuide'),
+    action: () => openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE),
+    disabled: false
+  },
+  {
+    key: 'dev-tools',
+    type: 'item',
+    label: t('helpCenter.openDevTools'),
+    action: openDevTools,
+    disabled: !isElectron()
+  },
+  {
+    key: 'divider-1',
+    type: 'divider'
+  },
+  {
+    key: 'reinstall',
+    type: 'item',
+    label: t('helpCenter.reinstall'),
+    action: onReinstall,
+    disabled: !isElectron()
+  }
+])
 
 // Utility Functions
 const openExternalLink = (url: string): void => {
@@ -298,12 +246,8 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   const rect = button.getBoundingClientRect()
   const submenuWidth = 210 // Width defined in CSS
 
-  // Get actual submenu height if available, otherwise estimate based on visible item count
-  const visibleItemCount =
-    moreMenuItem.value?.items?.filter((item) => item.visible !== false)
-      .length || 0
-  const estimatedHeight = visibleItemCount * 48 + 16 // ~48px per item + padding
-  const submenuHeight = submenuRef.value?.offsetHeight || estimatedHeight
+  // Get actual submenu height if available, otherwise use estimated height
+  const submenuHeight = submenuRef.value?.offsetHeight || 120 // More realistic estimate for 2 items
 
   // Get viewport dimensions
   const viewportWidth = window.innerWidth
@@ -332,8 +276,6 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   if (top < SUBMENU_CONFIG.OFFSET_PX) {
     top = SUBMENU_CONFIG.OFFSET_PX
   }
-
-  top -= 8
 
   return {
     position: 'fixed',
@@ -381,13 +323,7 @@ const onMenuItemHover = async (
   key: string,
   event: MouseEvent
 ): Promise<void> => {
-  if (key !== 'more' || !moreMenuItem.value?.items) return
-
-  // Don't show submenu if all items are hidden
-  const hasVisibleItems = moreMenuItem.value.items.some(
-    (item) => item.visible !== false
-  )
-  if (!hasVisibleItems) return
+  if (key !== 'more') return
 
   clearHoverTimeout()
 
@@ -439,12 +375,10 @@ const onReleaseClick = (release: ReleaseNote): void => {
   const versionAnchor = formatVersionAnchor(release.version)
   const changelogUrl = `${getChangelogUrl()}#${versionAnchor}`
   openExternalLink(changelogUrl)
-  emit('close')
 }
 
 const onUpdate = (_: ReleaseNote): void => {
   openExternalLink(EXTERNAL_LINKS.UPDATE_GUIDE)
-  emit('close')
 }
 
 // Generate language-aware changelog URL
@@ -610,6 +544,13 @@ onMounted(async () => {
 .submenu-item:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+.submenu-item.disabled,
+.submenu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .submenu-divider {

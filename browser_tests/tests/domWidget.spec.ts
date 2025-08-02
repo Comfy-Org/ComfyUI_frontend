@@ -47,42 +47,4 @@ test.describe('DOM Widget', () => {
     const finalCount = await comfyPage.getDOMWidgetCount()
     expect(finalCount).toBe(initialCount + 1)
   })
-
-  test('should reposition when layout changes', async ({ comfyPage }) => {
-    // --- setup ---
-
-    const textareaWidget = comfyPage.page
-      .locator('.comfy-multiline-input')
-      .first()
-    await expect(textareaWidget).toBeVisible()
-
-    await comfyPage.setSetting('Comfy.Sidebar.Size', 'small')
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'left')
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.nextFrame()
-
-    let oldPos: [number, number]
-    const checkBboxChange = async () => {
-      const boudningBox = (await textareaWidget.boundingBox())!
-      expect(boudningBox).not.toBeNull()
-      const position: [number, number] = [boudningBox.x, boudningBox.y]
-      expect(position).not.toEqual(oldPos)
-      oldPos = position
-    }
-    await checkBboxChange()
-
-    // --- test ---
-
-    await comfyPage.setSetting('Comfy.Sidebar.Size', 'normal')
-    await comfyPage.nextFrame()
-    await checkBboxChange()
-
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'right')
-    await comfyPage.nextFrame()
-    await checkBboxChange()
-
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Bottom')
-    await comfyPage.nextFrame()
-    await checkBboxChange()
-  })
 })

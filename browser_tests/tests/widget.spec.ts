@@ -48,7 +48,7 @@ test.describe('Combo text widget', () => {
     await comfyPage.page.keyboard.press('r')
 
     // Wait for nodes' widgets to be updated
-    await comfyPage.page.waitForTimeout(500)
+    await comfyPage.nextFrame()
 
     const refreshedComboValues = await getComboValues()
     expect(refreshedComboValues).not.toEqual(initialComboValues)

@@ -8,7 +8,6 @@ import { app } from '@/scripts/app'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 /**
  * Composable to find missing NodePacks from workflow
@@ -57,7 +56,7 @@ export const useMissingNodes = () => {
   }
 
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
-    const missingNodes = collectAllNodes(app.graph, isMissingCoreNode)
+    const missingNodes = app.graph.nodes.filter(isMissingCoreNode)
     return groupBy(missingNodes, (node) => String(node.properties?.ver || ''))
   })
 

@@ -2,7 +2,7 @@
   <NoResultsPlaceholder
     class="pb-0"
     icon="pi pi-exclamation-circle"
-    title="Some Nodes Are Missing"
+    title="Missing Node Types"
     message="When loading the graph, the following node types were not found"
   />
   <MissingCoreNodesMessage :missing-core-nodes="missingCoreNodes" />

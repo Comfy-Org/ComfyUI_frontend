@@ -30,11 +30,10 @@ import ComfyQueueButton from './ComfyQueueButton.vue'
 
 const settingsStore = useSettingStore()
 
-const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
+const visible = computed(
+  () => settingsStore.get('Comfy.UseNewMenu') !== 'Disabled'
+)
 
-const visible = computed(() => position.value !== 'Disabled')
-
-const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
@@ -50,16 +49,7 @@ const {
 } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
-  containerElement: document.body,
-  onMove: (event) => {
-    // Prevent dragging the menu over the top of the tabs
-    if (position.value === 'Top') {
-      const minY = topMenuRef?.value?.getBoundingClientRect().top ?? 40
-      if (event.y < minY) {
-        event.y = minY
-      }
-    }
-  }
+  containerElement: document.body
 })
 
 // Update storedPosition when x or y changes
@@ -192,6 +182,7 @@ const adjustMenuPosition = () => {
 
 useEventListener(window, 'resize', adjustMenuPosition)
 
+const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const topMenuBounds = useElementBounding(topMenuRef)
 const overlapThreshold = 20 // pixels
 const isOverlappingWithTopMenu = computed(() => {

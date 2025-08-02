@@ -124,12 +124,9 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode') as
-      | 'standard'
-      | 'legacy'
-
-    LiteGraph.canvasNavigationMode = navigationMode
-    LiteGraph.macTrackpadGestures = navigationMode === 'standard'
+    LiteGraph.macTrackpadGestures = settingStore.get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
   })
 
   watchEffect(() => {

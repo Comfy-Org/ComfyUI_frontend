@@ -3,17 +3,8 @@ import { ref } from 'vue'
 
 import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  ComponentWidgetImpl,
-  type ComponentWidgetStandardProps,
-  addWidget
-} from '@/scripts/domWidget'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-
-type TextPreviewCustomProps = Omit<
-  InstanceType<typeof TextPreviewWidget>['$props'],
-  ComponentWidgetStandardProps
->
 
 const PADDING = 16
 
@@ -27,17 +18,11 @@ export const useTextPreviewWidget = (
     inputSpec: InputSpec
   ) => {
     const widgetValue = ref<string>('')
-    const widget = new ComponentWidgetImpl<
-      string | object,
-      TextPreviewCustomProps
-    >({
+    const widget = new ComponentWidgetImpl<string | object>({
       node,
       name: inputSpec.name,
       component: TextPreviewWidget,
       inputSpec,
-      props: {
-        nodeId: node.id
-      },
       options: {
         getValue: () => widgetValue.value,
         setValue: (value: string | object) => {

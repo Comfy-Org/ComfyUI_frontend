@@ -32,10 +32,9 @@ export interface Setting {
   render: () => HTMLElement
 }
 
-export interface SettingParams<TValue = unknown> extends FormItem {
+export interface SettingParams extends FormItem {
   id: keyof Settings
   defaultValue: any | (() => any)
-  defaultsByInstallVersion?: Record<`${number}.${number}.${number}`, TValue>
   onChange?: (newValue: any, oldValue?: any) => void
   // By default category is id.split('.'). However, changing id to assign
   // new category has poor backward compatibility. Use this field to overwrite

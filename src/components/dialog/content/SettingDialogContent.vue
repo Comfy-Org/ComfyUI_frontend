@@ -50,7 +50,7 @@
         <Suspense v-for="panel in panels" :key="panel.node.key">
           <component :is="panel.component" />
           <template #fallback>
-            <div>{{ $t('g.loadingPanel', { panel: panel.node.label }) }}</div>
+            <div>Loading {{ panel.node.label }} panel...</div>
           </template>
         </Suspense>
       </TabPanels>
