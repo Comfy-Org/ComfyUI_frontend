@@ -272,6 +272,7 @@
     "category": "类别",
     "choose_file_to_upload": "选择要上传的文件",
     "clear": "清除",
+    "clearFilters": "清除篩選",
     "close": "关闭",
     "color": "颜色",
     "comingSoon": "即将推出",
@@ -1231,6 +1232,8 @@
       "Video": "视频生成",
       "Video API": "视频 API"
     },
+    "loadingMore": "正在載入更多範本...",
+    "searchPlaceholder": "搜尋範本...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "混元3D 2.0 图生模型",

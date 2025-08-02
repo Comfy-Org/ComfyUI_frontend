@@ -272,6 +272,7 @@
     "category": "カテゴリ",
     "choose_file_to_upload": "アップロードするファイルを選択",
     "clear": "クリア",
+    "clearFilters": "フィルターをクリア",
     "close": "閉じる",
     "color": "色",
     "comingSoon": "近日公開",
@@ -1231,6 +1232,8 @@
       "Video": "ビデオ",
       "Video API": "動画API"
     },
+    "loadingMore": "さらにテンプレートを読み込み中...",
+    "searchPlaceholder": "テンプレートを検索...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",

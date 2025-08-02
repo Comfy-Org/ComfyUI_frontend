@@ -1,24 +1,24 @@
 <template>
   <BaseThumbnail :is-hovered="isHovered">
-    <img
+    <LazyImage
       :src="baseImageSrc"
       :alt="alt"
-      :class="
+      :image-class="
         isVideoType
           ? 'w-full h-full object-cover'
           : 'max-w-full max-h-64 object-contain'
       "
     />
     <div ref="containerRef" class="absolute inset-0">
-      <img
+      <LazyImage
         :src="overlayImageSrc"
         :alt="alt"
-        :class="
+        :image-class="
           isVideoType
             ? 'w-full h-full object-cover'
             : 'max-w-full max-h-64 object-contain'
         "
-        :style="{
+        :image-style="{
           clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`
         }"
       />
@@ -36,6 +36,7 @@
 import { useMouseInElement } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
+import LazyImage from '@/components/common/LazyImage.vue'
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
 const SLIDER_START_POSITION = 50
