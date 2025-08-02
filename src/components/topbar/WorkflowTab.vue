@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -167,6 +167,10 @@ usePragmaticDroppable(tabGetter, {
       workflowStore.reorderWorkflows(fromIndex, toIndex)
     }
   }
+})
+
+onUnmounted(() => {
+  popoverRef.value?.hidePopover()
 })
 </script>
 
