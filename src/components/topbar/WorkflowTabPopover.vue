@@ -1,17 +1,18 @@
 <template>
   <div
     ref="positionRef"
-    class="absolute bottom-0 left-1/2 -translate-x-1/2"
+    class="absolute left-1/2 -translate-x-1/2"
+    :class="positions.positioner"
   ></div>
   <Popover
     ref="popoverRef"
     append-to="body"
     :pt="{
       root: {
-        class: 'workflow-popover-fade',
+        class: 'workflow-popover-fade fit-content ' + positions.root,
         'data-popover-id': id,
         style: {
-          '--popover-width': `${POPOVER_WIDTH}px`
+          transform: positions.active
         }
       }
     }"
@@ -23,22 +24,26 @@
         v-if="thumbnailUrl && !isActiveTab"
         class="workflow-preview-thumbnail relative"
       >
-        <img :src="thumbnailUrl" class="w-[300px] h-[200px] object-cover" />
+        <img
+          :src="thumbnailUrl"
+          class="block h-[200px] object-cover rounded-lg p-2"
+          :style="{ width: `${POPOVER_WIDTH}px` }"
+        />
       </div>
-      <span class="text-sm p-2 overflow-hidden text-ellipsis whitespace-nowrap">
-        {{ workflowFilename }}
-      </span>
+      <div class="workflow-preview-footer">
+        <span class="workflow-preview-name">{{ workflowFilename }}</span>
+      </div>
     </div>
   </Popover>
 </template>
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { nextTick, ref, toRefs, useId } from 'vue'
+import { computed, nextTick, ref, toRefs, useId } from 'vue'
 
-import { DEFAULT_THUMBNAIL_WIDTH } from '@/composables/useWorkflowThumbnail'
+import { useSettingStore } from '@/stores/settingStore'
 
-const POPOVER_WIDTH = DEFAULT_THUMBNAIL_WIDTH
+const POPOVER_WIDTH = 250
 
 interface Props {
   workflowFilename: string
@@ -48,6 +53,28 @@ interface Props {
 
 const props = defineProps<Props>()
 const { thumbnailUrl, isActiveTab } = toRefs(props)
+
+const settingStore = useSettingStore()
+const positions = computed<{
+  positioner: string
+  root?: string
+  active?: string
+}>(() => {
+  if (
+    settingStore.get('Comfy.Workflow.WorkflowTabsPosition') === 'Topbar' &&
+    settingStore.get('Comfy.UseNewMenu') === 'Bottom'
+  ) {
+    return {
+      positioner: 'top-0',
+      root: 'p-popover-flipped',
+      active: isActiveTab.value ? 'translateY(-100%)' : undefined
+    }
+  }
+
+  return {
+    positioner: 'bottom-0'
+  }
+})
 
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const positionRef = ref<HTMLElement | null>(null)
@@ -143,29 +170,57 @@ defineExpose({
 
 <style scoped>
 .workflow-preview-content {
-  @apply relative overflow-hidden flex flex-col;
+  @apply flex flex-col rounded-xl overflow-hidden;
   max-width: var(--popover-width);
-  max-height: 200px;
-  border-radius: 8px;
+  background-color: var(--border-color);
 }
 
 .workflow-preview-thumbnail {
-  @apply overflow-hidden;
+  @apply relative p-2;
+}
+
+.workflow-preview-thumbnail img {
+  @apply shadow-md;
+  background-color: color-mix(
+    in srgb,
+    var(--comfy-menu-secondary-bg) 70%,
+    black
+  );
+}
+
+.dark-theme .workflow-preview-thumbnail img {
+  @apply shadow-lg;
+}
+
+.workflow-preview-footer {
+  @apply pt-1 pb-2 px-3;
+}
+
+.workflow-preview-name {
+  @apply block text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap;
+  color: var(--fg-color);
 }
 </style>
 
 <style>
 .workflow-popover-fade {
-  --p-popover-background: var(--comfy-menu-bg);
-  --p-popover-content-padding: 4px;
-  background-color: var(--comfy-menu-bg);
-  color: var(--fg-color);
-  border-radius: 8px;
+  --p-popover-background: transparent;
+  --p-popover-content-padding: 0;
+  @apply bg-transparent rounded-xl shadow-lg;
   transition: opacity 0.15s ease-out !important;
+}
+
+.workflow-popover-fade.p-popover-flipped {
+  @apply -translate-y-full;
+}
+
+.dark-theme .workflow-popover-fade {
+  @apply shadow-2xl;
 }
 
 .workflow-popover-fade.p-popover:after,
 .workflow-popover-fade.p-popover:before {
+  --p-popover-border-color: var(--border-color);
   left: 50%;
   transform: translateX(calc(-50% + var(--shift)));
   margin-left: 0;

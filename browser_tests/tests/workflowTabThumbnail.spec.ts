@@ -5,6 +5,7 @@ import { type ComfyPage, comfyPageFixture as test } from '../fixtures/ComfyPage'
 test.describe('Workflow Tab Thumbnails', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setSetting('Comfy.Workflow.WorkflowTabsPosition', 'Topbar')
     await comfyPage.setup()
   })
 
@@ -12,7 +13,6 @@ test.describe('Workflow Tab Thumbnails', () => {
     const tab = comfyPage.page
       .locator(`.workflow-tabs .p-togglebutton`)
       .nth(index)
-    console.log('Got tab', index, tab)
     return tab
   }
 
@@ -46,7 +46,6 @@ test.describe('Workflow Tab Thumbnails', () => {
   async function getNodeThumbnailBase64(comfyPage: ComfyPage, index: number) {
     const thumbnailImg = await getTabThumbnailImage(comfyPage, index)
     const src = (await thumbnailImg.getAttribute('src'))!
-    console.log('Got node thumbnail base64', index, src)
 
     // Convert blob to base64, need to execute a script to get the base64
     const base64 = await comfyPage.page.evaluate(async (src: string) => {
@@ -92,7 +91,7 @@ test.describe('Workflow Tab Thumbnails', () => {
     )
     await comfyPage.delay(300) // Wait for the popover to hide
 
-    await comfyPage.rightClickCanvas(100, 100)
+    await comfyPage.rightClickCanvas(200, 200)
     await comfyPage.page.getByText('Add Node').click()
     await comfyPage.nextFrame()
     await comfyPage.page.getByText(category).click()

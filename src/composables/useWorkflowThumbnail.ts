@@ -2,67 +2,30 @@ import { ref } from 'vue'
 
 import { ComfyWorkflow } from '@/stores/workflowStore'
 
+import { useMinimap } from './useMinimap'
+
 // Store thumbnails for each workflow
 const workflowThumbnails = ref<Map<string, string>>(new Map())
 
-export const DEFAULT_THUMBNAIL_WIDTH = 300
-export const DEFAULT_THUMBNAIL_HEIGHT = 200
+// Shared minimap instance
+let minimap: ReturnType<typeof useMinimap> | null = null
 
 export const useWorkflowThumbnail = () => {
   /**
    * Capture a thumbnail of the canvas
    */
-  const captureCanvasThumbnail = async (
-    width: number = DEFAULT_THUMBNAIL_WIDTH,
-    height: number = DEFAULT_THUMBNAIL_HEIGHT
-  ): Promise<string | null> => {
-    const graphCanvas = document.getElementById(
-      'graph-canvas'
-    ) as HTMLCanvasElement
-
+  const createMinimapPreview = (): Promise<string | null> => {
     try {
-      const resizedCanvas = document.createElement('canvas')
-      const resizedContext = resizedCanvas.getContext('2d')
-      if (!resizedContext) return null
-
-      resizedCanvas.height = height
-      resizedCanvas.width = width
-
-      // Calculate aspect ratios
-      const sourceAspect = graphCanvas.width / graphCanvas.height
-      const targetAspect = width / height
-
-      let sourceX = 0
-      let sourceY = 0
-      let sourceWidth = graphCanvas.width
-      let sourceHeight = graphCanvas.height
-
-      // If source is wider than target, crop horizontally
-      if (sourceAspect > targetAspect) {
-        sourceWidth = graphCanvas.height * targetAspect
-        sourceX = (graphCanvas.width - sourceWidth) / 2
+      if (!minimap) {
+        minimap = useMinimap()
+        minimap.canvasRef.value = document.createElement('canvas')
+        minimap.canvasRef.value.width = minimap.width
+        minimap.canvasRef.value.height = minimap.height
       }
-      // If source is taller than target, crop vertically
-      else if (sourceAspect < targetAspect) {
-        sourceHeight = graphCanvas.width / targetAspect
-        sourceY = (graphCanvas.height - sourceHeight) / 2
-      }
+      minimap.renderMinimap()
 
-      // Draw the cropped portion to fit the target dimensions
-      resizedContext.drawImage(
-        graphCanvas,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
-        0,
-        0,
-        width,
-        height
-      )
-
-      return await new Promise((resolve) => {
-        resizedCanvas.toBlob((blob) => {
+      return new Promise((resolve) => {
+        minimap!.canvasRef.value!.toBlob((blob) => {
           if (blob) {
             resolve(URL.createObjectURL(blob))
           } else {
@@ -72,19 +35,15 @@ export const useWorkflowThumbnail = () => {
       })
     } catch (error) {
       console.error('Failed to capture canvas thumbnail:', error)
-      return null
+      return Promise.resolve(null)
     }
   }
 
   /**
    * Store a thumbnail for a workflow
    */
-  const storeThumbnail = async (
-    workflow: ComfyWorkflow,
-    width: number = DEFAULT_THUMBNAIL_WIDTH,
-    height: number = DEFAULT_THUMBNAIL_HEIGHT
-  ) => {
-    const thumbnail = await captureCanvasThumbnail(width, height)
+  const storeThumbnail = async (workflow: ComfyWorkflow) => {
+    const thumbnail = await createMinimapPreview()
     if (thumbnail) {
       workflowThumbnails.value.set(workflow.key, thumbnail)
     }
@@ -119,7 +78,7 @@ export const useWorkflowThumbnail = () => {
   }
 
   return {
-    captureCanvasThumbnail,
+    createMinimapPreview,
     storeThumbnail,
     getThumbnail,
     clearThumbnail,
