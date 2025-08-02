@@ -11,18 +11,33 @@
               class="p-3 border-none"
             >
               <span class="font-bold">
-                {{ tab.title.toUpperCase() }}
+                {{
+                  shouldCapitalizeTab(tab.id)
+                    ? tab.title.toUpperCase()
+                    : tab.title
+                }}
               </span>
             </Tab>
           </div>
-          <Button
-            class="justify-self-end"
-            icon="pi pi-times"
-            severity="secondary"
-            size="small"
-            text
-            @click="bottomPanelStore.bottomPanelVisible = false"
-          />
+          <div class="flex items-center gap-2">
+            <Button
+              v-if="isShortcutsTabActive"
+              :label="$t('shortcuts.manageShortcuts')"
+              icon="pi pi-cog"
+              severity="secondary"
+              size="small"
+              text
+              @click="openKeybindingSettings"
+            />
+            <Button
+              class="justify-self-end"
+              icon="pi pi-times"
+              severity="secondary"
+              size="small"
+              text
+              @click="closeBottomPanel"
+            />
+          </div>
         </div>
       </TabList>
     </Tabs>
@@ -44,9 +59,32 @@ import Button from 'primevue/button'
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import Tabs from 'primevue/tabs'
+import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import { useDialogService } from '@/services/dialogService'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 const bottomPanelStore = useBottomPanelStore()
+const dialogService = useDialogService()
+
+const isShortcutsTabActive = computed(() => {
+  const activeTabId = bottomPanelStore.activeBottomPanelTabId
+  return (
+    activeTabId === 'shortcuts-essentials' ||
+    activeTabId === 'shortcuts-view-controls'
+  )
+})
+
+const shouldCapitalizeTab = (tabId: string): boolean => {
+  return tabId !== 'shortcuts-essentials' && tabId !== 'shortcuts-view-controls'
+}
+
+const openKeybindingSettings = async () => {
+  dialogService.showSettingsDialog('keybinding')
+}
+
+const closeBottomPanel = () => {
+  bottomPanelStore.activePanel = null
+}
 </script>

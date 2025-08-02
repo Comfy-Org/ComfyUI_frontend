@@ -182,5 +182,13 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ToggleMinimap'
+  },
+  {
+    combo: {
+      ctrl: true,
+      shift: true,
+      key: 'k'
+    },
+    commandId: 'Workspace.ToggleBottomPanel.Shortcuts'
   }
 ]
