@@ -169,31 +169,26 @@ import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
-import type {
+import {
   ConflictDetail,
   ConflictDetectionResult
 } from '@/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
-const {
-  showAfterWhatsNew = false,
-  conflictedPackages: propsConflictedPackages = undefined
-} = defineProps<{
+const { showAfterWhatsNew = false, conflictedPackages } = defineProps<{
   showAfterWhatsNew?: boolean
   conflictedPackages?: ConflictDetectionResult[]
 }>()
 
 const { t } = useI18n()
-const { conflictedPackages: composableConflictedPackages } =
-  useConflictDetection()
+const { conflictedPackages: globalConflictPackages } = useConflictDetection()
 
 const conflictsExpanded = ref<boolean>(false)
 const extensionsExpanded = ref<boolean>(false)
 const importFailedExpanded = ref<boolean>(false)
 
-// Use props if provided, otherwise fall back to composable
 const conflictData = computed(
-  () => propsConflictedPackages || composableConflictedPackages.value
+  () => conflictedPackages || globalConflictPackages.value
 )
 
 const allConflictDetails = computed(() => {
