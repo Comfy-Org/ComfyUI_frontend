@@ -36,6 +36,7 @@ import { getNodeInputOnPos, getNodeOutputOnPos } from "./canvas/measureSlots"
 import { NullGraphError } from "./infrastructure/NullGraphError"
 import { Rectangle } from "./infrastructure/Rectangle"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge"
+import { LGraphButton, type LGraphButtonOptions } from "./LGraphButton"
 import { LGraphCanvas } from "./LGraphCanvas"
 import { type LGraphNodeConstructor, LiteGraph, type Subgraph, type SubgraphNode } from "./litegraph"
 import { LLink } from "./LLink"
@@ -52,6 +53,7 @@ import {
 import { findFreeSlotOfType } from "./utils/collections"
 import { warnDeprecated } from "./utils/feedback"
 import { distributeSpace } from "./utils/spaceDistribution"
+import { truncateText } from "./utils/textUtils"
 import { toClass } from "./utils/type"
 import { BaseWidget } from "./widgets/BaseWidget"
 import { toConcreteWidget, type WidgetTypeMap } from "./widgets/widgetMap"
@@ -326,6 +328,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   lostFocusAt?: number
   gotFocusAt?: number
   badges: (LGraphBadge | (() => LGraphBadge))[] = []
+  title_buttons: LGraphButton[] = []
   badgePosition: BadgePosition = BadgePosition.TopLeft
   onOutputRemoved?(this: LGraphNode, slot: number): void
   onInputRemoved?(this: LGraphNode, slot: number, input: INodeInputSlot): void
@@ -686,6 +689,26 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     this.strokeStyles = {
       error: this.#getErrorStrokeStyle,
       selected: this.#getSelectedStrokeStyle,
+    }
+
+    // Assign onMouseDown implementation
+    this.onMouseDown = (e: CanvasPointerEvent, pos: Point, canvas: LGraphCanvas): boolean => {
+      // Check for title button clicks (only if not collapsed)
+      if (this.title_buttons?.length && !this.flags.collapsed) {
+        // pos contains the offset from the node's position, so we need to use node-relative coordinates
+        const nodeRelativeX = pos[0]
+        const nodeRelativeY = pos[1]
+
+        for (let i = 0; i < this.title_buttons.length; i++) {
+          const button = this.title_buttons[i]
+          if (button.visible && button.isPointInside(nodeRelativeX, nodeRelativeY)) {
+            this.onTitleButtonClick(button, canvas)
+            return true // Prevent default behavior
+          }
+        }
+      }
+
+      return false // Allow default behavior
     }
   }
 
@@ -1792,6 +1815,21 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
     return widget
+  }
+
+  addTitleButton(options: LGraphButtonOptions): LGraphButton {
+    this.title_buttons ||= []
+    const button = new LGraphButton(options)
+    this.title_buttons.push(button)
+    return button
+  }
+
+  onTitleButtonClick(button: LGraphButton, canvas: LGraphCanvas): void {
+    // Dispatch event for button click
+    canvas.dispatch("litegraph:node-title-button-clicked", {
+      node: this,
+      button: button,
+    })
   }
 
   removeWidgetByName(name: string): void {
@@ -3372,23 +3410,43 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       } else {
         ctx.fillStyle = this.constructor.title_text_color || default_title_color
       }
-      if (this.collapsed) {
-        ctx.textAlign = "left"
-        ctx.fillText(
-          // avoid urls too long
-          title.substr(0, 20),
-          title_height,
-          LiteGraph.NODE_TITLE_TEXT_Y - title_height,
-        )
-        ctx.textAlign = "left"
-      } else {
-        ctx.textAlign = "left"
-        ctx.fillText(
-          title,
-          title_height,
-          LiteGraph.NODE_TITLE_TEXT_Y - title_height,
-        )
+
+      // Calculate available width for title
+      let availableWidth = size[0] - title_height * 2 // Basic margins
+
+      // Subtract space for title buttons
+      if (this.title_buttons?.length > 0) {
+        let buttonsWidth = 0
+        const savedFont = ctx.font // Save current font
+        for (const button of this.title_buttons) {
+          if (button.visible) {
+            buttonsWidth += button.getWidth(ctx) + 2 // button width + gap
+          }
+        }
+        ctx.font = savedFont // Restore font after button measurements
+        if (buttonsWidth > 0) {
+          buttonsWidth += 10 // Extra margin before buttons
+          availableWidth -= buttonsWidth
+        }
       }
+
+      // Truncate title if needed
+      let displayTitle = title
+
+      if (this.collapsed) {
+        // For collapsed nodes, limit to 20 chars as before
+        displayTitle = title.substr(0, 20)
+      } else if (availableWidth > 0) {
+        // For regular nodes, truncate based on available width
+        displayTitle = truncateText(ctx, title, availableWidth)
+      }
+
+      ctx.textAlign = "left"
+      ctx.fillText(
+        displayTitle,
+        title_height,
+        LiteGraph.NODE_TITLE_TEXT_Y - title_height,
+      )
     }
   }
 

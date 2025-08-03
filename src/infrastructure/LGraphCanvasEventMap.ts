@@ -1,5 +1,6 @@
 import type { ConnectingLink } from "@/interfaces"
 import type { LGraph } from "@/LGraph"
+import type { LGraphButton } from "@/LGraphButton"
 import type { LGraphGroup } from "@/LGraphGroup"
 import type { LGraphNode } from "@/LGraphNode"
 import type { Subgraph } from "@/subgraph/Subgraph"
@@ -35,4 +36,10 @@ export interface LGraphCanvasEventMap {
       originalEvent?: CanvasPointerEvent
       node: LGraphNode
     }
+
+  /** A title button on a node was clicked. */
+  "litegraph:node-title-button-clicked": {
+    node: LGraphNode
+    button: LGraphButton
+  }
 }

@@ -57,7 +57,7 @@ export class LGraphBadge {
   }
 
   get visible() {
-    return this.text.length > 0 || !!this.icon
+    return (this.text?.length ?? 0) > 0 || !!this.icon
   }
 
   getWidth(ctx: CanvasRenderingContext2D) {

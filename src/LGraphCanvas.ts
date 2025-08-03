@@ -4679,6 +4679,28 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !!node.selected,
     )
 
+    // Render title buttons (if not collapsed)
+    if (node.title_buttons && !node.flags.collapsed) {
+      const title_height = LiteGraph.NODE_TITLE_HEIGHT
+      let current_x = size[0] // Start flush with right edge
+
+      for (let i = 0; i < node.title_buttons.length; i++) {
+        const button = node.title_buttons[i]
+        if (!button.visible) {
+          continue
+        }
+
+        const button_width = button.getWidth(ctx)
+        current_x -= button_width
+
+        // Center button vertically in title bar
+        const button_y = -title_height + (title_height - button.height) / 2
+
+        button.draw(ctx, current_x, button_y)
+        current_x -= 2
+      }
+    }
+
     if (!low_quality) {
       node.drawBadges(ctx)
     }

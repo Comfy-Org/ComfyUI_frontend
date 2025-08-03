@@ -7,6 +7,8 @@ import type { IBaseWidget } from "@/types/widgets"
 import type { UUID } from "@/utils/uuid"
 
 import { RecursionError } from "@/infrastructure/RecursionError"
+import { LGraphButton } from "@/LGraphButton"
+import { LGraphCanvas } from "@/LGraphCanvas"
 import { LGraphNode } from "@/LGraphNode"
 import { type INodeInputSlot, type ISlotType, type NodeId } from "@/litegraph"
 import { LLink, type ResolvedConnection } from "@/LLink"
@@ -99,6 +101,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this.type = subgraph.id
     this.configure(instanceData)
+
+    this.addTitleButton({
+      name: "enter_subgraph",
+      text: "\uE93B", // Unicode for pi-window-maximize
+      yOffset: 0, // No vertical offset needed, button is centered
+      xOffset: -10,
+      fontSize: 16,
+    })
+  }
+
+  override onTitleButtonClick(button: LGraphButton, canvas: LGraphCanvas): void {
+    if (button.name === "enter_subgraph") {
+      canvas.openSubgraph(this.subgraph)
+    } else {
+      super.onTitleButtonClick(button, canvas)
+    }
   }
 
   #addSubgraphInputListeners(subgraphInput: SubgraphInput, input: INodeInputSlot & Partial<ISubgraphInput>) {
