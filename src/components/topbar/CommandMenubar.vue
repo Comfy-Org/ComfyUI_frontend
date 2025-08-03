@@ -55,9 +55,15 @@
         v-bind="props.action"
         :href="item.url"
         target="_blank"
+        :class="typeof item.class === 'function' ? item.class() : item.class"
+        @mousedown="
+          isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
+        "
+        @click="isZoomCommand(item) ? handleZoomClick($event) : undefined"
       >
         <span v-if="item.icon" class="p-menubar-item-icon" :class="item.icon" />
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <i v-if="isMenuItemChecked(item)" class="ml-2 pi pi-check text-sm" />
         <span
           v-if="item?.comfyCommand?.keybinding"
           class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
@@ -94,6 +100,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { whileMouseDown } from '@/utils/mouseDownUtil'
 
 const colorPaletteStore = useColorPaletteStore()
 const menuItemsStore = useMenuItemStore()
@@ -163,16 +170,22 @@ const extraMenuItems: MenuItem[] = [
   },
   { separator: true },
   {
-    key: 'manage-extensions',
-    label: t('menu.manageExtensions'),
-    icon: 'mdi mdi-puzzle-outline',
-    command: showManageExtensions
+    key: 'browse-templates',
+    label: t('menuLabels.BrowseTemplates', 'Browse Templates'),
+    icon: 'pi pi-folder-open',
+    command: () => commandStore.execute('Comfy.BrowseTemplates')
   },
   {
     key: 'settings',
     label: t('g.settings'),
     icon: 'mdi mdi-cog-outline',
     command: () => showSettings()
+  },
+  {
+    key: 'manage-extensions',
+    label: t('menu.manageExtensions'),
+    icon: 'mdi mdi-puzzle-outline',
+    command: showManageExtensions
   }
 ]
 
@@ -236,6 +249,37 @@ const onMenuShow = () => {
       menuRef.value.dirty = true
     }
   })
+}
+
+const isMenuItemChecked = (item: MenuItem) => {
+  if (!item.comfyCommand?.active) return false
+  return item.comfyCommand.active()
+}
+
+const isZoomCommand = (item: MenuItem) => {
+  return (
+    item.comfyCommand?.id === 'Comfy.Canvas.ZoomIn' ||
+    item.comfyCommand?.id === 'Comfy.Canvas.ZoomOut'
+  )
+}
+
+const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
+  if (item.comfyCommand) {
+    whileMouseDown(
+      event,
+      async () => {
+        await commandStore.execute(item.comfyCommand!.id)
+      },
+      50
+    )
+  }
+}
+
+const handleZoomClick = (event: MouseEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  // Prevent the menu from closing for zoom commands
+  return false
 }
 </script>
 

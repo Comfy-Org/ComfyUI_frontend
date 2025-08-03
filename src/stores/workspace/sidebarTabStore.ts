@@ -7,6 +7,7 @@ import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab
 import { useWorkflowsSidebarTab } from '@/composables/sidebarTabs/useWorkflowsSidebarTab'
 import { t, te } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
@@ -38,15 +39,33 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         : String(tab.tooltip)
       : undefined
 
+    const menubarLabelFunction = () => {
+      const menubarLabelKeys: Record<string, string> = {
+        queue: 'menu.queue',
+        'node-library': 'sideToolbar.nodeLibrary',
+        'model-library': 'sideToolbar.modelLibrary',
+        workflows: 'sideToolbar.workflows'
+      }
+
+      const key = menubarLabelKeys[tab.id]
+      if (key && te(key)) {
+        return t(key)
+      }
+
+      return tab.title
+    }
+
     useCommandStore().registerCommand({
       id: `Workspace.ToggleSidebarTab.${tab.id}`,
       icon: tab.icon,
       label: labelFunction,
+      menubarLabel: menubarLabelFunction,
       tooltip: tooltipFunction,
       versionAdded: '1.3.9',
       function: () => {
         toggleSidebarTab(tab.id)
       },
+      active: () => activeSidebarTab.value?.id === tab.id,
       source: 'System'
     })
   }
@@ -72,6 +91,35 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
+
+    const menuStore = useMenuItemStore()
+
+    menuStore.registerCommands(
+      ['View'],
+      [
+        'Workspace.ToggleSidebarTab.queue',
+        'Workspace.ToggleSidebarTab.node-library',
+        'Workspace.ToggleSidebarTab.model-library',
+        'Workspace.ToggleSidebarTab.workflows'
+      ]
+    )
+
+    menuStore.registerCommands(
+      ['View'],
+      [
+        'Workspace.ToggleBottomPanel',
+        'Comfy.BrowseTemplates',
+        'Comfy.OpenManagerDialog',
+        'Workspace.ToggleFocusMode',
+        'Comfy.ToggleHelpCenter',
+        'Comfy.ToggleCanvasInfo'
+      ]
+    )
+
+    menuStore.registerCommands(
+      ['View'],
+      ['Comfy.Canvas.ZoomIn', 'Comfy.Canvas.ZoomOut', 'Comfy.Canvas.FitView']
+    )
   }
 
   return {

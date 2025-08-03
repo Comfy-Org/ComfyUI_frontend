@@ -536,7 +536,8 @@
     "light": "Light",
     "manageExtensions": "Manage Extensions",
     "settings": "Settings",
-    "help": "Help"
+    "help": "Help",
+    "queue": "Queue Panel"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",

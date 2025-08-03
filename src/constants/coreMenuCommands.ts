@@ -1,8 +1,8 @@
 export const CORE_MENU_COMMANDS = [
-  [['Workflow'], ['Comfy.NewBlankWorkflow']],
-  [['Workflow'], ['Comfy.OpenWorkflow', 'Comfy.BrowseTemplates']],
+  [[], ['Comfy.NewBlankWorkflow']],
+  [['File'], ['Comfy.OpenWorkflow']],
   [
-    ['Workflow'],
+    ['File'],
     [
       'Comfy.SaveWorkflow',
       'Comfy.SaveWorkflowAs',
@@ -11,8 +11,6 @@ export const CORE_MENU_COMMANDS = [
     ]
   ],
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],
-  [['Edit'], ['Comfy.RefreshNodeDefinitions']],
-  [['Edit'], ['Comfy.ClearWorkflow']],
   [['Edit'], ['Comfy.OpenClipspace']],
   [
     ['Help'],
