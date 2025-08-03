@@ -194,12 +194,18 @@ test.describe('Remote COMBO Widget', () => {
     })
 
     test('refreshes options when TTL expires', async ({ comfyPage }) => {
-      // Fulfill each request with a unique timestamp
+      let requestCount = 0
+      const timestamps: number[] = []
+      
+      // Fulfill each request with a unique timestamp and track requests
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
         async (route, request) => {
+          requestCount++
+          const timestamp = Date.now()
+          timestamps.push(timestamp)
           await route.fulfill({
-            body: JSON.stringify([Date.now()]),
+            body: JSON.stringify([`request-${requestCount}-${timestamp}`]),
             status: 200
           })
         }
@@ -208,14 +214,40 @@ test.describe('Remote COMBO Widget', () => {
       const nodeName = 'Remote Widget Node With 300ms Refresh'
       await addRemoteWidgetNode(comfyPage, nodeName)
       await waitForWidgetUpdate(comfyPage)
+      
+      // Wait for initial request to complete
+      await comfyPage.page.waitForFunction(
+        () => {
+          const node = window['app'].graph.nodes.find(n => n.title === 'Remote Widget Node With 300ms Refresh')
+          return node?.widgets[0]?.options?.values?.length > 0
+        },
+        { timeout: 5000 }
+      )
+      
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
+      expect(initialOptions).toBeDefined()
+      expect(requestCount).toBe(1)
 
-      // Wait for the refresh (TTL) to expire
-      await comfyPage.page.waitForTimeout(512)
+      // Wait for the refresh (TTL) to expire - use longer timeout to ensure expiration
+      await comfyPage.page.waitForTimeout(800)
+      
+      // Trigger widget access to force cache check and potential refresh
       await comfyPage.page.mouse.click(100, 100)
+      await waitForWidgetUpdate(comfyPage)
+      
+      // Wait for the refresh request to complete
+      await comfyPage.page.waitForFunction(
+        () => {
+          const node = window['app'].graph.nodes.find(n => n.title === 'Remote Widget Node With 300ms Refresh')
+          const values = node?.widgets[0]?.options?.values || []
+          return values.length > 0 && values[0] !== 'request-1-' + timestamps[0]
+        },
+        { timeout: 5000 }
+      )
 
       const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
       expect(refreshedOptions).not.toEqual(initialOptions)
+      expect(requestCount).toBeGreaterThanOrEqual(2)
     })
 
     test('does not refresh when TTL is not set', async ({ comfyPage }) => {

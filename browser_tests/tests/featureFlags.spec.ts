@@ -318,24 +318,37 @@ test.describe('Feature Flags', () => {
         }
       }, 10)
 
-      // Clean up after 10 seconds
+      // Clean up after 15 seconds
       setTimeout(() => {
         clearInterval(checkFeatureFlags)
         clearInterval(checkApi)
         clearInterval(checkApp)
-      }, 10000)
+      }, 15000)
     })
 
     // Navigate to the app
     await newPage.goto(comfyPage.url)
 
-    // Wait for feature flags to be received
+    // Wait for both WebSocket connection and API initialization before checking feature flags
     await newPage.waitForFunction(
-      () =>
-        window['app']?.api?.serverFeatureFlags?.supports_preview_metadata !==
-        undefined,
+      () => window['app']?.api?.ws?.readyState === 1, // WebSocket.OPEN
+      { timeout: 15000 }
+    )
+
+    // Wait additional time for feature flag negotiation to complete
+    await newPage.waitForTimeout(1000)
+
+    // Wait for feature flags to be received with more robust condition
+    await newPage.waitForFunction(
+      () => {
+        const flags = window['app']?.api?.serverFeatureFlags
+        return flags && 
+               Object.keys(flags).length > 0 &&
+               flags.supports_preview_metadata !== undefined &&
+               flags.max_upload_size !== undefined
+      },
       {
-        timeout: 10000
+        timeout: 15000
       }
     )
 
@@ -343,9 +356,13 @@ test.describe('Feature Flags', () => {
     const readiness = await newPage.evaluate(() => {
       return {
         ...(window as any).__appReadiness,
-        currentFlags: window['app'].api.serverFeatureFlags
+        currentFlags: window['app'].api.serverFeatureFlags,
+        wsState: window['app']?.api?.ws?.readyState
       }
     })
+
+    // Verify WebSocket is connected
+    expect(readiness.wsState).toBe(1) // WebSocket.OPEN
 
     // Verify feature flags are available
     expect(readiness.currentFlags).toHaveProperty('supports_preview_metadata')
@@ -353,6 +370,8 @@ test.describe('Feature Flags', () => {
       'boolean'
     )
     expect(readiness.currentFlags).toHaveProperty('max_upload_size')
+    expect(typeof readiness.currentFlags.max_upload_size).toBe('number')
+    expect(Object.keys(readiness.currentFlags).length).toBeGreaterThan(0)
 
     // Verify feature flags were received (we detected them via polling)
     expect(readiness.featureFlagsReceived).toBe(true)
