@@ -172,7 +172,8 @@ defineExpose({
 .workflow-preview-content {
   @apply flex flex-col rounded-xl overflow-hidden;
   max-width: var(--popover-width);
-  background-color: var(--border-color);
+  background-color: var(--comfy-menu-secondary-bg);
+  color: var(--fg-color);
 }
 
 .workflow-preview-thumbnail {
@@ -220,7 +221,7 @@ defineExpose({
 
 .workflow-popover-fade.p-popover:after,
 .workflow-popover-fade.p-popover:before {
-  --p-popover-border-color: var(--border-color);
+  --p-popover-border-color: var(--comfy-menu-secondary-bg);
   left: 50%;
   transform: translateX(calc(-50% + var(--shift)));
   margin-left: 0;
