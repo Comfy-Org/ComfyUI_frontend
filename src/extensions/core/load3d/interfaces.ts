@@ -37,6 +37,8 @@ export interface EventCallback {
 export interface Load3DOptions {
   node?: LGraphNode
   inputSpec?: CustomInputSpec
+  disablePreview?: boolean
+  isViewerMode?: boolean
 }
 
 export interface CaptureResult {

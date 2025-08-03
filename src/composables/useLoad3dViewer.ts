@@ -170,7 +170,11 @@ export const useLoad3dViewer = (node: LGraphNode) => {
     sourceLoad3d = source
 
     try {
-      load3d = new Load3d(containerRef, { node: node })
+      load3d = new Load3d(containerRef, {
+        node: node,
+        disablePreview: true,
+        isViewerMode: true
+      })
 
       await useLoad3dService().copyLoad3dState(source, load3d)
 
