@@ -45,8 +45,7 @@
     "label": "Delete Selected Items"
   },
   "Comfy_Canvas_FitView": {
-    "label": "Fit view to selected nodes",
-    "menubarLabel": "Zoom to fit"
+    "label": "Fit view to selected nodes"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Move Selected Nodes Down"
@@ -177,6 +176,9 @@
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Manager"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Open Workflow"
   },
@@ -203,6 +205,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Show Settings Dialog"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Canvas Performance"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Help Center"
   },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
@@ -242,22 +250,18 @@
   },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "Toggle Model Library Sidebar",
-    "tooltip": "Model Library",
-    "menubarLabel": "Model Library"
+    "tooltip": "Model Library"
   },
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Toggle Node Library Sidebar",
-    "tooltip": "Node Library",
-    "menubarLabel": "Node Library"
+    "tooltip": "Node Library"
   },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "Toggle Queue Sidebar",
-    "tooltip": "Queue",
-    "menubarLabel": "Queue Panel"
+    "tooltip": "Queue"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Toggle Workflows Sidebar",
-    "tooltip": "Workflows",
-    "menubarLabel": "Workflows"
+    "tooltip": "Workflows"
   }
 }
