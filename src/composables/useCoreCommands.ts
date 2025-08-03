@@ -173,7 +173,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Canvas.ResetView',
-      icon: 'pi pi-home',
+      icon: 'pi pi-expand',
       label: 'Reset View',
       function: () => {
         useLitegraphService().resetView()

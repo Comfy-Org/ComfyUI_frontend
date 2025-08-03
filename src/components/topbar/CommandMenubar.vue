@@ -171,7 +171,7 @@ const extraMenuItems: MenuItem[] = [
   { separator: true },
   {
     key: 'browse-templates',
-    label: t('menuLabels.BrowseTemplates', 'Browse Templates'),
+    label: t('menuLabels.BrowseTemplates'),
     icon: 'pi pi-folder-open',
     command: () => commandStore.execute('Comfy.BrowseTemplates')
   },
