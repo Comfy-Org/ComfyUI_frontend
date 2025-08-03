@@ -1,5 +1,6 @@
 export const CORE_MENU_COMMANDS = [
   [[], ['Comfy.NewBlankWorkflow']],
+  [[], []], // Separator after New
   [['File'], ['Comfy.OpenWorkflow']],
   [
     ['File'],
