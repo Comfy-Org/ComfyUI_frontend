@@ -14,7 +14,8 @@ export default [
     ignores: [
       'src/scripts/*',
       'src/extensions/core/*',
-      'src/types/vue-shim.d.ts'
+      'src/types/vue-shim.d.ts',
+      'src/lib/litegraph/**/*'
     ]
   },
   {
