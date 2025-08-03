@@ -1,5 +1,5 @@
 import { LGraphNode } from '@comfyorg/litegraph'
-import { Ref, ref, toRaw, watch } from 'vue'
+import { ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -25,7 +25,7 @@ interface Load3dViewerState {
   edgeThreshold: number
 }
 
-export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
+export const useLoad3dViewer = (node: LGraphNode) => {
   const backgroundColor = ref('')
   const showGrid = ref(true)
   const cameraType = ref<CameraType>('perspective')
@@ -36,6 +36,7 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
   const upDirection = ref<UpDirection>('original')
   const materialMode = ref<MaterialMode>('original')
   const edgeThreshold = ref(85)
+  const needApplyChanges = ref(true)
 
   let load3d: Load3d | null = null
   let sourceLoad3d: Load3d | null = null
@@ -169,7 +170,7 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
     sourceLoad3d = source
 
     try {
-      load3d = new Load3d(containerRef, { node: node.value })
+      load3d = new Load3d(containerRef, { node: node })
 
       await useLoad3dService().copyLoad3dState(source, load3d)
 
@@ -179,17 +180,14 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
       cameraType.value = sourceCameraType
       backgroundColor.value = source.sceneManager.currentBackgroundColor
       showGrid.value = source.sceneManager.gridHelper.visible
-      lightIntensity.value =
-        (node.value.properties['Light Intensity'] as number) || 1
+      lightIntensity.value = (node.properties['Light Intensity'] as number) || 1
 
       const backgroundInfo = source.sceneManager.getCurrentBackgroundInfo()
       if (
         backgroundInfo.type === 'image' &&
-        node.value.properties['Background Image']
+        node.properties['Background Image']
       ) {
-        backgroundImage.value = node.value.properties[
-          'Background Image'
-        ] as string
+        backgroundImage.value = node.properties['Background Image'] as string
         hasBackgroundImage.value = true
       } else {
         backgroundImage.value = ''
@@ -202,8 +200,7 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
 
       upDirection.value = source.modelManager.currentUpDirection
       materialMode.value = source.modelManager.materialMode
-      edgeThreshold.value =
-        (node.value.properties['Edge Threshold'] as number) || 85
+      edgeThreshold.value = (node.properties['Edge Threshold'] as number) || 85
 
       initialState.value = {
         backgroundColor: backgroundColor.value,
@@ -218,8 +215,8 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
         edgeThreshold: edgeThreshold.value
       }
 
-      const width = node.value.widgets?.find((w) => w.name === 'width')
-      const height = node.value.widgets?.find((w) => w.name === 'height')
+      const width = node.widgets?.find((w) => w.name === 'width')
+      const height = node.widgets?.find((w) => w.name === 'height')
 
       if (width && height) {
         load3d.setTargetSize(
@@ -261,7 +258,10 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
   }
 
   const restoreInitialState = () => {
-    const nodeValue = node.value
+    const nodeValue = node
+
+    needApplyChanges.value = false
+
     if (nodeValue.properties) {
       nodeValue.properties['Background Color'] =
         initialState.value.backgroundColor
@@ -280,7 +280,7 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
     if (!sourceLoad3d || !load3d) return false
 
     const viewerCameraState = load3d.getCameraState()
-    const nodeValue = node.value
+    const nodeValue = node
 
     if (nodeValue.properties) {
       nodeValue.properties['Background Color'] = backgroundColor.value
@@ -320,7 +320,7 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
 
     try {
       const resourceFolder =
-        (node.value.properties['Resource Folder'] as string) || ''
+        (node.properties['Resource Folder'] as string) || ''
       const subfolder = resourceFolder.trim()
         ? `3d/${resourceFolder.trim()}`
         : '3d'
@@ -355,6 +355,7 @@ export const useLoad3dViewer = (node: Ref<LGraphNode>) => {
     upDirection,
     materialMode,
     edgeThreshold,
+    needApplyChanges,
 
     // Methods
     initializeViewer,

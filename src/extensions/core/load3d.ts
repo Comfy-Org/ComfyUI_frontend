@@ -206,7 +206,10 @@ useExtensionService().registerExtension({
           props: props,
           dialogComponentProps: {
             style: 'width: 80vw; height: 80vh;',
-            maximizable: true
+            maximizable: true,
+            onClose: async () => {
+              await useLoad3dService().handleViewerClose(props.node)
+            }
           }
         })
       }

@@ -100,12 +100,6 @@
             :label="t('g.cancel')"
             @click="handleCancel"
           />
-          <Button
-            icon="pi pi-check"
-            severity="secondary"
-            :label="t('g.apply')"
-            @click="handleConfirm"
-          />
         </div>
       </div>
     </div>
@@ -116,14 +110,13 @@
 import { LGraphNode } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import Panel from 'primevue/panel'
-import { onBeforeUnmount, onMounted, ref, toRef } from 'vue'
+import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/viewer/CameraControls.vue'
 import ExportControls from '@/components/load3d/controls/viewer/ExportControls.vue'
 import LightControls from '@/components/load3d/controls/viewer/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/viewer/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/SceneControls.vue'
-import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import { t } from '@/i18n'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -146,7 +139,7 @@ const panelStates = ref({
   export: true
 })
 
-const viewer = useLoad3dViewer(toRef(props, 'node'))
+const viewer = useLoad3dService().getOrCreateViewer(toRaw(props.node))
 
 onMounted(async () => {
   const source = useLoad3dService().getLoad3d(props.node)
@@ -186,15 +179,6 @@ const handleCancel = () => {
   useDialogStore().closeDialog()
 }
 
-const handleConfirm = async () => {
-  const success = await viewer.applyChanges()
-  if (!success) {
-    viewer.restoreInitialState()
-  }
-
-  useDialogStore().closeDialog()
-}
-
 onBeforeUnmount(() => {
   window.removeEventListener('resize', viewer.handleResize)
 
@@ -203,7 +187,7 @@ onBeforeUnmount(() => {
     mutationObserver.value = null
   }
 
-  viewer.cleanup()
+  // we will manually cleanup the viewer in dialog close handler
 })
 </script>
 

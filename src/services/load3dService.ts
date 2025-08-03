@@ -1,11 +1,15 @@
 import { toRaw } from 'vue'
 
+import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeId } from '@/schemas/comfyWorkflowSchema'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 type Load3dReadyCallback = (load3d: Load3d | Load3dAnimation) => void
+
+const viewerInstances = new Map<NodeId, any>()
 
 export class Load3dService {
   private static instance: Load3dService
@@ -127,6 +131,24 @@ export class Load3dService {
     this.pendingCallbacks.clear()
   }
 
+  getOrCreateViewer(node: LGraphNode) {
+    if (!viewerInstances.has(node.id)) {
+      viewerInstances.set(node.id, useLoad3dViewer(node))
+    }
+
+    return viewerInstances.get(node.id)
+  }
+
+  removeViewer(node: LGraphNode) {
+    const viewer = viewerInstances.get(node.id)
+
+    if (viewer) {
+      viewer.cleanup()
+    }
+
+    viewerInstances.delete(node.id)
+  }
+
   async copyLoad3dState(source: Load3d, target: Load3d | Load3dAnimation) {
     const sourceModel = source.modelManager.currentModel
 
@@ -201,6 +223,16 @@ export class Load3dService {
     load3d.toggleCamera(currentType)
 
     load3d.getControlsManager().controls.update()
+  }
+
+  async handleViewerClose(node: LGraphNode) {
+    const viewer = useLoad3dService().getOrCreateViewer(node)
+
+    if (viewer.needApplyChanges.value) {
+      await viewer.applyChanges()
+    }
+
+    useLoad3dService().removeViewer(node)
   }
 }
 

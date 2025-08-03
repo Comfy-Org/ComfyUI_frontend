@@ -21,6 +21,7 @@ import Button from 'primevue/button'
 
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { t } from '@/i18n'
+import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const vTooltip = Tooltip
@@ -39,7 +40,10 @@ const openIn3DViewer = () => {
     props: props,
     dialogComponentProps: {
       style: 'width: 80vw; height: 80vh;',
-      maximizable: true
+      maximizable: true,
+      onClose: async () => {
+        await useLoad3dService().handleViewerClose(props.node)
+      }
     }
   })
 }

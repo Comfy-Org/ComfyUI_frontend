@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -131,8 +131,7 @@ describe('useLoad3dViewer', () => {
 
   describe('initialization', () => {
     it('should initialize with default values', () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
 
       expect(viewer.backgroundColor.value).toBe('')
       expect(viewer.showGrid.value).toBe(true)
@@ -147,8 +146,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should initialize viewer with source Load3d state', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -177,8 +175,7 @@ describe('useLoad3dViewer', () => {
       })
       mockNode.properties['Background Image'] = 'test-image.jpg'
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -192,8 +189,7 @@ describe('useLoad3dViewer', () => {
         throw new Error('Load3d creation failed')
       })
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -206,8 +202,7 @@ describe('useLoad3dViewer', () => {
 
   describe('state watchers', () => {
     it('should update background color when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -219,8 +214,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update grid visibility when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -232,8 +226,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update camera type when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -245,8 +238,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update FOV when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -258,8 +250,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update light intensity when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -271,8 +262,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update background image when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -285,8 +275,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update up direction when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -298,8 +287,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update material mode when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -311,8 +299,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should update edge threshold when state changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -328,8 +315,7 @@ describe('useLoad3dViewer', () => {
         throw new Error('Color update failed')
       })
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -345,8 +331,7 @@ describe('useLoad3dViewer', () => {
 
   describe('exportModel', () => {
     it('should export model successfully', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -359,8 +344,7 @@ describe('useLoad3dViewer', () => {
     it('should handle export errors', async () => {
       mockLoad3d.exportModel.mockRejectedValueOnce(new Error('Export failed'))
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -373,8 +357,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should not export when load3d is not initialized', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
 
       await viewer.exportModel('glb')
 
@@ -384,8 +367,7 @@ describe('useLoad3dViewer', () => {
 
   describe('UI interaction methods', () => {
     it('should handle resize', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -396,8 +378,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle mouse enter', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -408,8 +389,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle mouse leave', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -422,8 +402,7 @@ describe('useLoad3dViewer', () => {
 
   describe('restoreInitialState', () => {
     it('should restore all properties to initial values', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -443,8 +422,7 @@ describe('useLoad3dViewer', () => {
 
   describe('applyChanges', () => {
     it('should apply all changes to source and node', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -466,8 +444,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle background image during apply', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -482,8 +459,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should return false when no load3d instances', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
 
       const result = await viewer.applyChanges()
 
@@ -493,8 +469,7 @@ describe('useLoad3dViewer', () => {
 
   describe('refreshViewport', () => {
     it('should refresh viewport', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -511,8 +486,7 @@ describe('useLoad3dViewer', () => {
     it('should upload and set background image', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -529,8 +503,7 @@ describe('useLoad3dViewer', () => {
       mockNode.properties['Resource Folder'] = 'subfolder'
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -542,8 +515,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should clear background image when file is null', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -562,8 +534,7 @@ describe('useLoad3dViewer', () => {
         new Error('Upload failed')
       )
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -579,8 +550,7 @@ describe('useLoad3dViewer', () => {
 
   describe('cleanup', () => {
     it('should clean up resources', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -591,8 +561,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle cleanup when not initialized', () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
 
       expect(() => viewer.cleanup()).not.toThrow()
     })
@@ -600,8 +569,7 @@ describe('useLoad3dViewer', () => {
 
   describe('edge cases', () => {
     it('should handle missing container ref', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
 
       await viewer.initializeViewer(null as any, mockSourceLoad3d)
 
@@ -612,8 +580,7 @@ describe('useLoad3dViewer', () => {
       mockSourceLoad3d.getCurrentCameraType.mockReturnValue('orthographic')
       mockSourceLoad3d.cameraManager = {} // No perspective camera
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
@@ -624,25 +591,12 @@ describe('useLoad3dViewer', () => {
     it('should handle missing lights', async () => {
       mockSourceLoad3d.lightingManager.lights = []
 
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
+      const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
 
       expect(viewer.lightIntensity.value).toBe(1) // Default value
-    })
-
-    it('should handle node ref changes', async () => {
-      const nodeRef = ref(mockNode)
-      const viewer = useLoad3dViewer(nodeRef)
-
-      const newNode = { ...mockNode, properties: { ...mockNode.properties } }
-      nodeRef.value = newNode
-
-      viewer.restoreInitialState()
-
-      expect(newNode.properties['Background Color']).toBe('#282828')
     })
   })
 })
