@@ -23,7 +23,8 @@ import {
   ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
-  type NodeId
+  type NodeId,
+  isSubgraphDefinition
 } from '@/schemas/comfyWorkflowSchema'
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
@@ -1092,8 +1093,10 @@ export class ComfyApp {
 
     const embeddedModels: ModelFile[] = []
 
-    // Helper function to process nodes including those in subgraphs
-    const processNodesRecursively = (nodes: any[], path: string = '') => {
+    const collectMissingNodesAndModels = (
+      nodes: ComfyWorkflowJSON['nodes'],
+      path: string = ''
+    ) => {
       for (let n of nodes) {
         // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
         if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
@@ -1124,14 +1127,16 @@ export class ComfyApp {
     }
 
     // Process nodes at the top level
-    processNodesRecursively(graphData.nodes)
+    collectMissingNodesAndModels(graphData.nodes)
 
     // Process nodes in subgraphs
     if (graphData.definitions?.subgraphs) {
       for (const subgraph of graphData.definitions.subgraphs) {
-        // Subgraph extends workflow schema and includes nodes property
-        if ('nodes' in subgraph && Array.isArray(subgraph.nodes)) {
-          processNodesRecursively(subgraph.nodes, subgraph.name || subgraph.id)
+        if (isSubgraphDefinition(subgraph)) {
+          collectMissingNodesAndModels(
+            subgraph.nodes,
+            subgraph.name || subgraph.id
+          )
         }
       }
     }
