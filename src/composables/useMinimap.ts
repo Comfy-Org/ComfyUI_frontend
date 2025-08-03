@@ -8,7 +8,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 interface GraphCallbacks {
@@ -21,7 +20,6 @@ export function useMinimap() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
   const colorPaletteStore = useColorPaletteStore()
-  const workflowStore = useWorkflowStore()
 
   const containerRef = ref<HTMLDivElement>()
   const canvasRef = ref<HTMLCanvasElement>()
@@ -109,29 +107,6 @@ export function useMinimap() {
 
   const canvas = computed(() => canvasStore.canvas)
   const graph = ref(app.canvas?.graph)
-
-  // Update graph ref when subgraph context changes
-  watch(
-    () => workflowStore.activeSubgraph,
-    () => {
-      graph.value = app.canvas?.graph
-      // Force viewport update when switching subgraphs
-      if (initialized.value && visible.value) {
-        updateViewport()
-      }
-    }
-  )
-
-  // Update viewport when switching workflows
-  watch(
-    () => workflowStore.activeWorkflow,
-    () => {
-      // Force viewport update when switching workflows
-      if (initialized.value && visible.value) {
-        updateViewport()
-      }
-    }
-  )
 
   const containerStyles = computed(() => ({
     width: `${width}px`,
@@ -377,6 +352,8 @@ export function useMinimap() {
       needsBoundsUpdate.value = false
       updateFlags.value.bounds = false
       needsFullRedraw.value = true
+      // When bounds change, we need to update the viewport position
+      updateFlags.value.viewport = true
     }
 
     if (
@@ -385,6 +362,11 @@ export function useMinimap() {
       updateFlags.value.connections
     ) {
       renderMinimap()
+    }
+
+    // Update viewport if needed (e.g., after bounds change)
+    if (updateFlags.value.viewport) {
+      updateViewport()
     }
   }
 
@@ -660,7 +642,7 @@ export function useMinimap() {
         await init()
       }
     },
-    { immediate: true }
+    { immediate: true, flush: 'post' }
   )
 
   watch(visible, async (isVisible) => {
@@ -675,6 +657,8 @@ export function useMinimap() {
       updateFlags.value.nodes = true
       updateFlags.value.connections = true
       updateFlags.value.viewport = true
+
+      await nextTick()
 
       await nextTick()
 
