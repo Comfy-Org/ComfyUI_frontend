@@ -1,3 +1,5 @@
+// TODO: Make litegraph code compatible with frontend's ESLint
+
 import eslint from "@eslint/js"
 import stylistic from "@stylistic/eslint-plugin"
 import eslintPluginAntfu from "eslint-plugin-antfu"
