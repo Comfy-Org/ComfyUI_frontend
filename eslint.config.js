@@ -15,7 +15,7 @@ export default [
       'src/scripts/*',
       'src/extensions/core/*',
       'src/types/vue-shim.d.ts',
-      'src/lib/litegraph/**/*'
+      'src/lib/litegraph/**/*' // TODO: Make litegraph code compatible with frontend's ESLint
     ]
   },
   {
