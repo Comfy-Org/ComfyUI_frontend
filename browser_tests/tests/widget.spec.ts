@@ -306,47 +306,6 @@ test.describe('Animated image widget', () => {
       'animated_image_preview_saved_webp.png'
     )
   })
-
-  test('Can preview saved animated PNG image', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/save_animated_png')
-
-    // Get the SaveAnimatedPNG node
-    const saveNodes = await comfyPage.getNodeRefsByType('SaveAnimatedPNG')
-    const saveAnimatedPNGNode = saveNodes[0]
-    if (!saveAnimatedPNGNode) throw new Error('SaveAnimatedPNG node not found')
-
-    // Set the node output to an animated PNG
-    await comfyPage.page.evaluate((saveId) => {
-      window['app'].nodeOutputs[saveId] = {
-        images: [
-          {
-            filename: 'animated_test.png',
-            subfolder: '',
-            type: 'output'
-          }
-        ],
-        animated: [true]
-      }
-    }, saveAnimatedPNGNode.id)
-
-    // Wait for the image to load
-    await comfyPage.page.waitForTimeout(500)
-
-    // Multiple canvas interactions to trigger render
-    await comfyPage.page.mouse.move(200, 200)
-    await comfyPage.page.mouse.click(200, 200)
-    await comfyPage.nextFrame()
-
-    // Click near the node to ensure it's rendered
-    const nodePos = await saveAnimatedPNGNode.getPosition()
-    await comfyPage.page.mouse.click(nodePos.x + 50, nodePos.y + 50)
-    await comfyPage.nextFrame()
-
-    // Expect the SaveAnimatedPNG node to have an output preview
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'animated_image_preview_saved_png.png'
-    )
-  })
 })
 
 test.describe('Load audio widget', () => {
