@@ -1,4 +1,3 @@
-import '@/lib/litegraph/src/style.css'
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import * as Sentry from '@sentry/vue'
@@ -14,6 +13,7 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import '@/assets/css/style.css'
 import { FIREBASE_CONFIG } from '@/config/firebase'
+import '@/lib/litegraph/src/style.css'
 import router from '@/router'
 
 import App from './App.vue'

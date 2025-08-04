@@ -151,10 +151,10 @@ widget.onPointerDown = function (pointer, node, canvas) {
 
 ### TypeScript & JSDoc
 
-In-IDE typing is available for use in at least mainstream editors. It can be added to JS projects using the @comfyorg/litegraph npm package.
+In-IDE typing is available for use in at least mainstream editors. TypeScript definitions are available in the litegraph library.
 
 ```ts
-/** @import { IWidget } from './path/to/@comfyorg/litegraph/litegraph.d.ts' */
+/** @import { IWidget } from './path/to/litegraph/litegraph.d.ts' */
 /** @type IWidget */
 const widget = node.widgets[0]
 widget.onPointerDown = function (pointer, node, canvas) {}

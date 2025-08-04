@@ -16,9 +16,9 @@ Some early highlights:
 - Batch output connection move/disconnect (<https://github.com/Comfy-Org/litegraph.js/pull/39>)
 - And now with hundreds more...
 
-# Install
+# Usage
 
-`npm i @comfyorg/litegraph`
+This library is included as a git subtree in the ComfyUI frontend project at `src/lib/litegraph`.
 
 # litegraph.js
 
@@ -48,12 +48,12 @@ It can be integrated easily in any existing web applications and graphs can be r
 - Easy to integrate in any JS application (one single file, no dependencies)
 - Typescript support
 
-## Installation
+## Integration
 
-You can install it using npm
+This library is integrated as a git subtree in the ComfyUI frontend project. To use it in your code:
 
-```bash
-npm install @comfyorg/litegraph
+```typescript
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph'
 ```
 
 ## How to code a new Node type
