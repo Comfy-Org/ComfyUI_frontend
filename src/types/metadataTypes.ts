@@ -85,3 +85,57 @@ export type GltfJsonData = {
  * Null if the box was not found.
  */
 export type IsobmffBoxContentRange = { start: number; end: number } | null
+
+export type AvifInfeBox = {
+  box_header: {
+    size: number
+    type: 'infe'
+  }
+  version: number
+  flags: number
+  item_ID: number
+  item_protection_index: number
+  item_type: string
+  item_name: string
+  content_type?: string
+  content_encoding?: string
+}
+
+export type AvifIinfBox = {
+  box_header: {
+    size: number
+    type: 'iinf'
+  }
+  version: number
+  flags: number
+  entry_count: number
+  entries: AvifInfeBox[]
+}
+
+export type AvifIlocItemExtent = {
+  extent_offset: number
+  extent_length: number
+}
+
+export type AvifIlocItem = {
+  item_ID: number
+  data_reference_index: number
+  base_offset: number
+  extent_count: number
+  extents: AvifIlocItemExtent[]
+}
+
+export type AvifIlocBox = {
+  box_header: {
+    size: number
+    type: 'iloc'
+  }
+  version: number
+  flags: number
+  offset_size: number
+  length_size: number
+  base_offset_size: number
+  index_size: number
+  item_count: number
+  items: AvifIlocItem[]
+}

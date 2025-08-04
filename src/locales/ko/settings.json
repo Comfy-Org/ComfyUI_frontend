@@ -29,6 +29,13 @@
     "name": "캔버스 배경 이미지",
     "tooltip": "캔버스 배경에 사용할 이미지 URL입니다. 출력 패널에서 이미지를 마우스 오른쪽 버튼으로 클릭한 후 \"배경으로 설정\"을 선택해 사용할 수 있습니다."
   },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "캔버스 내비게이션 모드",
+    "options": {
+      "Left-Click Pan (Legacy)": "왼쪽 클릭 이동(레거시)",
+      "Standard (New)": "표준(신규)"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "선택 도구 상자 표시"
   },
@@ -338,10 +345,6 @@
     },
     "tooltip": "메뉴 바 위치입니다. 모바일 기기에서는 메뉴가 항상 상단에 표시됩니다."
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "노드 정의 유효성 검사 (느림)",
-    "tooltip": "노드 개발자에게 권장됩니다. 시작 시 모든 노드 정의를 유효성 검사합니다."
-  },
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
   },
@@ -407,10 +410,6 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "툴팁 지연"
-  },
-  "LiteGraph_Pointer_TrackpadGestures": {
-    "name": "트랙패드 제스처 활성화",
-    "tooltip": "이 설정을 켜면 캔버스에서 트랙패드 모드를 사용할 수 있으며, 두 손가락으로 확대/축소 및 이동이 가능합니다."
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "경유점 스플라인 오프셋",

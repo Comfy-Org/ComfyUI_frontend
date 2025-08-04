@@ -7,6 +7,7 @@ import {
 import { Point } from '@comfyorg/litegraph'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -29,6 +30,11 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import {
+  getAllNonIoNodesInSubgraph,
+  getExecutionIdsForSelectedNodes
+} from '@/utils/graphTraversalUtil'
+import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -41,29 +47,9 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const { getSelectedNodes, toggleSelectedNodesMode } =
+    useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
-
-  const getSelectedNodes = (): LGraphNode[] => {
-    const selectedNodes = app.canvas.selected_nodes
-    const result: LGraphNode[] = []
-    if (selectedNodes) {
-      for (const i in selectedNodes) {
-        const node = selectedNodes[i]
-        result.push(node)
-      }
-    }
-    return result
-  }
-
-  const toggleSelectedNodesMode = (mode: LGraphEventMode) => {
-    getSelectedNodes().forEach((node) => {
-      if (node.mode === mode) {
-        node.mode = LGraphEventMode.ALWAYS
-      } else {
-        node.mode = mode
-      }
-    })
-  }
 
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
@@ -167,11 +153,20 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const settingStore = useSettingStore()
         if (
-          !settingStore.get('Comfy.ComfirmClear') ||
+          !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
           app.clean()
-          app.graph.clear()
+          if (app.canvas.subgraph) {
+            // `clear` is not implemented on subgraphs and the parent class's
+            // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
+            // just clear the nodes but preserve input/output nodes and structure
+            const subgraph = app.canvas.subgraph
+            const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+            nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            app.graph.clear()
+          }
           api.dispatchCustomEvent('graphCleared')
         }
       }
@@ -314,6 +309,19 @@ export function useCoreCommands(): ComfyCommand[] {
       })()
     },
     {
+      id: 'Comfy.Canvas.ToggleMinimap',
+      icon: 'pi pi-map',
+      label: 'Canvas Toggle Minimap',
+      versionAdded: '1.24.1',
+      function: async () => {
+        const settingStore = useSettingStore()
+        await settingStore.set(
+          'Comfy.Minimap.Visible',
+          !settingStore.get('Comfy.Minimap.Visible')
+        )
+      }
+    },
+    {
       id: 'Comfy.QueuePrompt',
       icon: 'pi pi-play',
       label: 'Queue Prompt',
@@ -340,10 +348,10 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.19.6',
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
-        const queueNodeIds = getSelectedNodes()
-          .filter((node) => node.constructor.nodeData?.output_node)
-          .map((node) => node.id)
-        if (queueNodeIds.length === 0) {
+        const selectedNodes = getSelectedNodes()
+        const selectedOutputNodes = filterOutputNodes(selectedNodes)
+
+        if (selectedOutputNodes.length === 0) {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToQueue'),
@@ -352,7 +360,11 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        await app.queuePrompt(0, batchCount, queueNodeIds)
+
+        // Get execution IDs for all selected output nodes and their descendants
+        const executionIds =
+          getExecutionIdsForSelectedNodes(selectedOutputNodes)
+        await app.queuePrompt(0, batchCount, executionIds)
       }
     },
     {

@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Canvas Toggle Lock"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Canvas Toggle Minimap"
+  },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Pin/Unpin Selected Items"
   },
@@ -157,6 +160,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle the Custom Nodes Manager Progress Bar"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Decrease Brush Size in MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Increase Brush Size in MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"

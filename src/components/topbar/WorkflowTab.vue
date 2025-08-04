@@ -1,8 +1,12 @@
 <template>
   <div ref="workflowTabRef" class="flex p-2 gap-2 workflow-tab" v-bind="$attrs">
     <span
-      v-tooltip.bottom="workflowOption.workflow.key"
-      class="workflow-label text-sm max-w-[150px] truncate inline-block"
+      v-tooltip.bottom="{
+        value: workflowOption.workflow.key,
+        class: 'workflow-tab-tooltip',
+        showDelay: 512
+      }"
+      class="workflow-label text-sm max-w-[150px] min-w-[30px] truncate inline-block"
     >
       {{ workflowOption.workflow.filename }}
     </span>
@@ -140,5 +144,11 @@ usePragmaticDroppable(tabGetter, {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+</style>
+
+<style>
+.p-tooltip.workflow-tab-tooltip {
+  z-index: 1200 !important;
 }
 </style>

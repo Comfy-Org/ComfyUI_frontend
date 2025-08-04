@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Переключить блокировку холста"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Полотно: переключить миникарту"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Обход/Необход выбранных нод"
   },
@@ -157,6 +160,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Переключить диалоговое окно прогресса"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Уменьшить размер кисти в MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Увеличить размер кисти в MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Открыть редактор масок для выбранной ноды"

@@ -46,7 +46,7 @@ export class PrimitiveNode extends LGraphNode {
     ]
     let v = this.widgets?.[0].value
     if (v && this.properties[replacePropertyName]) {
-      v = applyTextReplacements(app.graph.nodes, v as string)
+      v = applyTextReplacements(app.graph, v as string)
     }
 
     // For each output link copy our value over the original widget value

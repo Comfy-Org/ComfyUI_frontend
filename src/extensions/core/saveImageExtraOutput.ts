@@ -35,7 +35,7 @@ app.registerExtension({
         // @ts-expect-error fixme ts strict error
         widget.serializeValue = () => {
           // @ts-expect-error fixme ts strict error
-          return applyTextReplacements(app.graph.nodes, widget.value)
+          return applyTextReplacements(app.graph, widget.value)
         }
 
         return r
