@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
@@ -41,7 +41,7 @@ const {
   alt = '',
   imageClass = '',
   imageStyle,
-  rootMargin = '50px'
+  rootMargin = '300px'
 } = defineProps<{
   src: string
   alt?: string
@@ -57,7 +57,7 @@ const isImageLoaded = ref(false)
 const hasError = ref(false)
 const cachedSrc = ref<string | undefined>(undefined)
 
-const { getCachedMedia } = useMediaCache()
+const { getCachedMedia, acquireUrl, releaseUrl } = useMediaCache()
 
 // Use intersection observer to detect when the image container comes into view
 useIntersectionObserver(
@@ -75,7 +75,6 @@ useIntersectionObserver(
 // Only start loading the image when it's in view
 const shouldLoad = computed(() => isIntersecting.value)
 
-// Watch for when we should load and handle caching
 watch(
   shouldLoad,
   async (shouldLoad) => {
@@ -85,16 +84,19 @@ watch(
         if (cachedMedia.error) {
           hasError.value = true
         } else if (cachedMedia.objectUrl) {
-          cachedSrc.value = cachedMedia.objectUrl
+          const acquiredUrl = acquireUrl(src)
+          cachedSrc.value = acquiredUrl || cachedMedia.objectUrl
         } else {
           cachedSrc.value = src
         }
       } catch (error) {
         console.warn('Failed to load cached media:', error)
-        // Fallback to original src
         cachedSrc.value = src
       }
     } else if (!shouldLoad) {
+      if (cachedSrc.value?.startsWith('blob:')) {
+        releaseUrl(src)
+      }
       // Hide image when out of view
       isImageLoaded.value = false
       cachedSrc.value = undefined
@@ -113,4 +115,10 @@ const onImageError = () => {
   hasError.value = true
   isImageLoaded.value = false
 }
+
+onUnmounted(() => {
+  if (cachedSrc.value?.startsWith('blob:')) {
+    releaseUrl(src)
+  }
+})
 </script>

@@ -1,4 +1,4 @@
-import { shallowRef } from 'vue'
+import { reactive } from 'vue'
 
 export interface CachedMedia {
   src: string
@@ -16,10 +16,11 @@ export interface MediaCacheOptions {
 }
 
 class MediaCacheService {
-  public cache = shallowRef(new Map<string, CachedMedia>())
+  public cache = reactive(new Map<string, CachedMedia>())
   private readonly maxSize: number
   private readonly maxAge: number
   private cleanupInterval: number | null = null
+  private urlRefCount = new Map<string, number>()
 
   constructor(options: MediaCacheOptions = {}) {
     this.maxSize = options.maxSize ?? 100
@@ -41,49 +42,58 @@ class MediaCacheService {
 
   private cleanup() {
     const now = Date.now()
-    const cacheMap = this.cache.value
     const keysToDelete: string[] = []
 
     // Find expired entries
-    for (const [key, entry] of Array.from(cacheMap.entries())) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (now - entry.lastAccessed > this.maxAge) {
-        keysToDelete.push(key)
-        // Revoke object URL to free memory
+        // Only revoke object URL if no components are using it
         if (entry.objectUrl) {
-          URL.revokeObjectURL(entry.objectUrl)
+          const refCount = this.urlRefCount.get(entry.objectUrl) || 0
+          if (refCount === 0) {
+            URL.revokeObjectURL(entry.objectUrl)
+            this.urlRefCount.delete(entry.objectUrl)
+            keysToDelete.push(key)
+          }
+          // Don't delete cache entry if URL is still in use
+        } else {
+          keysToDelete.push(key)
         }
       }
     }
 
     // Remove expired entries
-    if (keysToDelete.length > 0) {
-      const newCache = new Map(cacheMap)
-      keysToDelete.forEach((key) => newCache.delete(key))
-      this.cache.value = newCache
-    }
+    keysToDelete.forEach((key) => this.cache.delete(key))
 
-    // If still over size limit, remove oldest entries
-    if (cacheMap.size > this.maxSize) {
-      const entries = Array.from(cacheMap.entries())
+    // If still over size limit, remove oldest entries that aren't in use
+    if (this.cache.size > this.maxSize) {
+      const entries = Array.from(this.cache.entries())
       entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed)
 
-      const toRemove = entries.slice(0, cacheMap.size - this.maxSize)
-      const newCache = new Map(cacheMap)
+      let removedCount = 0
+      const targetRemoveCount = this.cache.size - this.maxSize
 
-      toRemove.forEach(([key, entry]) => {
+      for (const [key, entry] of entries) {
+        if (removedCount >= targetRemoveCount) break
+
         if (entry.objectUrl) {
-          URL.revokeObjectURL(entry.objectUrl)
+          const refCount = this.urlRefCount.get(entry.objectUrl) || 0
+          if (refCount === 0) {
+            URL.revokeObjectURL(entry.objectUrl)
+            this.urlRefCount.delete(entry.objectUrl)
+            this.cache.delete(key)
+            removedCount++
+          }
+        } else {
+          this.cache.delete(key)
+          removedCount++
         }
-        newCache.delete(key)
-      })
-
-      this.cache.value = newCache
+      }
     }
   }
 
   async getCachedMedia(src: string): Promise<CachedMedia> {
-    const cacheMap = this.cache.value
-    let entry = cacheMap.get(src)
+    let entry = this.cache.get(src)
 
     if (entry) {
       // Update last accessed time
@@ -99,9 +109,7 @@ class MediaCacheService {
     }
 
     // Update cache with loading entry
-    const newCache = new Map(cacheMap)
-    newCache.set(src, entry)
-    this.cache.value = newCache
+    this.cache.set(src, entry)
 
     try {
       // Fetch the media
@@ -122,10 +130,7 @@ class MediaCacheService {
         lastAccessed: Date.now()
       }
 
-      const finalCache = new Map(this.cache.value)
-      finalCache.set(src, updatedEntry)
-      this.cache.value = finalCache
-
+      this.cache.set(src, updatedEntry)
       return updatedEntry
     } catch (error) {
       console.warn('Failed to cache media:', src, error)
@@ -138,44 +143,45 @@ class MediaCacheService {
         lastAccessed: Date.now()
       }
 
-      const errorCache = new Map(this.cache.value)
-      errorCache.set(src, errorEntry)
-      this.cache.value = errorCache
-
+      this.cache.set(src, errorEntry)
       return errorEntry
     }
   }
 
-  getCacheStats() {
-    const cacheMap = this.cache.value
-    return {
-      size: cacheMap.size,
-      maxSize: this.maxSize,
-      entries: Array.from(cacheMap.keys())
+  acquireUrl(src: string): string | undefined {
+    const entry = this.cache.get(src)
+    if (entry?.objectUrl) {
+      const currentCount = this.urlRefCount.get(entry.objectUrl) || 0
+      this.urlRefCount.set(entry.objectUrl, currentCount + 1)
+      return entry.objectUrl
+    }
+    return undefined
+  }
+
+  releaseUrl(src: string): void {
+    const entry = this.cache.get(src)
+    if (entry?.objectUrl) {
+      const count = (this.urlRefCount.get(entry.objectUrl) || 1) - 1
+      if (count <= 0) {
+        URL.revokeObjectURL(entry.objectUrl)
+        this.urlRefCount.delete(entry.objectUrl)
+        // Remove from cache as well
+        this.cache.delete(src)
+      } else {
+        this.urlRefCount.set(entry.objectUrl, count)
+      }
     }
   }
 
   clearCache() {
-    const cacheMap = this.cache.value
     // Revoke all object URLs
-    for (const entry of Array.from(cacheMap.values())) {
+    for (const entry of Array.from(this.cache.values())) {
       if (entry.objectUrl) {
         URL.revokeObjectURL(entry.objectUrl)
       }
     }
-    this.cache.value = new Map()
-  }
-
-  preloadMedia(urls: string[]) {
-    // Preload media in the background without blocking
-    urls.forEach((url) => {
-      if (!this.cache.value.has(url)) {
-        // Don't await - fire and forget
-        this.getCachedMedia(url).catch(() => {
-          // Ignore preload errors
-        })
-      }
-    })
+    this.cache.clear()
+    this.urlRefCount.clear()
   }
 
   destroy() {
@@ -188,7 +194,7 @@ class MediaCacheService {
 }
 
 // Global instance
-let mediaCacheInstance: MediaCacheService | null = null
+export let mediaCacheInstance: MediaCacheService | null = null
 
 export function useMediaCache(options?: MediaCacheOptions) {
   if (!mediaCacheInstance) {
@@ -197,16 +203,15 @@ export function useMediaCache(options?: MediaCacheOptions) {
 
   const getCachedMedia = (src: string) =>
     mediaCacheInstance!.getCachedMedia(src)
-  const getCacheStats = () => mediaCacheInstance!.getCacheStats()
   const clearCache = () => mediaCacheInstance!.clearCache()
-  const preloadMedia = (urls: string[]) =>
-    mediaCacheInstance!.preloadMedia(urls)
+  const acquireUrl = (src: string) => mediaCacheInstance!.acquireUrl(src)
+  const releaseUrl = (src: string) => mediaCacheInstance!.releaseUrl(src)
 
   return {
     getCachedMedia,
-    getCacheStats,
     clearCache,
-    preloadMedia,
+    acquireUrl,
+    releaseUrl,
     cache: mediaCacheInstance.cache
   }
 }
