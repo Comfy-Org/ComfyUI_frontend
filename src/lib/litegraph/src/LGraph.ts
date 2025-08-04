@@ -33,7 +33,7 @@ import { MapProxyHandler } from "./MapProxyHandler"
 import { alignOutsideContainer, alignToContainer, createBounds } from "./measure"
 import { Reroute, type RerouteId } from "./Reroute"
 import { stringOrEmpty } from "./strings"
-import { type GraphOrSubgraph, Subgraph } from "./subgraph/Subgraph"
+import type { GraphOrSubgraph } from "./subgraph/Subgraph"
 import { SubgraphInput } from "./subgraph/SubgraphInput"
 import { SubgraphOutput } from "./subgraph/SubgraphOutput"
 import { findUsedSubgraphIds, getBoundaryLinks, groupResolvedByOutput, mapSubgraphInputsAndLinks, mapSubgraphOutputsAndLinks, multiClone, splitPositionables } from "./subgraph/subgraphUtils"
@@ -130,7 +130,7 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
-  readonly _subgraphs: Map<UUID, Subgraph> = new Map()
+  readonly _subgraphs: Map<UUID, any> = new Map()
 
   _nodes: (LGraphNode | SubgraphNode)[] = []
   _nodes_by_id: Record<NodeId, LGraphNode> = {}
@@ -331,7 +331,7 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
     this.canvasAction(c => c.clear())
   }
 
-  get subgraphs(): Map<UUID, Subgraph> {
+  get subgraphs(): Map<UUID, any> {
     return this.rootGraph._subgraphs
   }
 
@@ -1402,9 +1402,11 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
    * @param data Exported data (typically serialised) to configure the new subgraph with
    * @returns The newly created subgraph definition.
    */
-  createSubgraph(data: ExportedSubgraph): Subgraph {
+  createSubgraph(data: ExportedSubgraph): any {
     const { id } = data
 
+    // Lazy load Subgraph to avoid circular dependency
+    const { Subgraph } = require("./subgraph/Subgraph")
     const subgraph = new Subgraph(this.rootGraph, data)
     this.subgraphs.set(id, subgraph)
 
@@ -1413,7 +1415,7 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
     return subgraph
   }
 
-  convertToSubgraph(items: Set<Positionable>): { subgraph: Subgraph, node: SubgraphNode } {
+  convertToSubgraph(items: Set<Positionable>): { subgraph: any, node: SubgraphNode } {
     if (items.size === 0) throw new Error("Cannot convert to subgraph: nothing to convert")
     const { state, revision, config } = this
 

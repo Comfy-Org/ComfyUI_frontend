@@ -14,13 +14,20 @@ import { SUBGRAPH_OUTPUT_ID } from "@/lib/litegraph/src/constants"
 import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
 import { findFreeSlotOfType } from "@/lib/litegraph/src/utils/collections"
 
-import { EmptySubgraphOutput } from "./EmptySubgraphOutput"
 import { SubgraphIONodeBase } from "./SubgraphIONodeBase"
 
 export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> implements Positionable {
   readonly id: NodeId = SUBGRAPH_OUTPUT_ID
 
-  readonly emptySlot: EmptySubgraphOutput = new EmptySubgraphOutput(this)
+  private _emptySlot?: any // EmptySubgraphOutput type
+  get emptySlot(): any {
+    if (!this._emptySlot) {
+      // Lazy load to avoid circular dependency
+      const { EmptySubgraphOutput } = require("./EmptySubgraphOutput")
+      this._emptySlot = new EmptySubgraphOutput(this)
+    }
+    return this._emptySlot
+  }
 
   get slots() {
     return this.subgraph.outputs

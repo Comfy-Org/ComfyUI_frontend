@@ -14,13 +14,20 @@ import { LLink } from "@/lib/litegraph/src/LLink"
 import { NodeSlotType } from "@/lib/litegraph/src/types/globalEnums"
 import { findFreeSlotOfType } from "@/lib/litegraph/src/utils/collections"
 
-import { EmptySubgraphInput } from "./EmptySubgraphInput"
 import { SubgraphIONodeBase } from "./SubgraphIONodeBase"
 
 export class SubgraphInputNode extends SubgraphIONodeBase<SubgraphInput> implements Positionable {
   readonly id: NodeId = SUBGRAPH_INPUT_ID
 
-  readonly emptySlot: EmptySubgraphInput = new EmptySubgraphInput(this)
+  private _emptySlot?: any // EmptySubgraphInput type
+  get emptySlot(): any {
+    if (!this._emptySlot) {
+      // Lazy load to avoid circular dependency
+      const { EmptySubgraphInput } = require("./EmptySubgraphInput")
+      this._emptySlot = new EmptySubgraphInput(this)
+    }
+    return this._emptySlot
+  }
 
   get slots() {
     return this.subgraph.inputs
