@@ -38,5 +38,8 @@
     "tests-ui/**/*",
     "global.d.ts",
     "vite.config.mts"
+  ],
+  "exclude": [
+    "src/lib/litegraph/test/**/*"
   ]
 }
