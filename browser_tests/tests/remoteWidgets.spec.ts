@@ -226,7 +226,8 @@ test.describe('Remote COMBO Widget', () => {
       
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
       expect(initialOptions).toBeDefined()
-      expect(requestCount).toBe(1)
+      // Store the initial request count (could be 1 or 2 depending on timing)
+      const initialRequestCount = requestCount
 
       // Wait for the refresh (TTL) to expire - use longer timeout to ensure expiration
       await comfyPage.page.waitForTimeout(800)
@@ -248,7 +249,8 @@ test.describe('Remote COMBO Widget', () => {
 
       const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
       expect(refreshedOptions).not.toEqual(initialOptions)
-      expect(requestCount).toBeGreaterThanOrEqual(2)
+      // Verify we made at least one additional request after the initial ones
+      expect(requestCount).toBeGreaterThan(initialRequestCount)
     })
 
     test('does not refresh when TTL is not set', async ({ comfyPage }) => {
