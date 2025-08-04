@@ -71,6 +71,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "キャンバスのロックを切り替える"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "キャンバス ミニマップ切り替え"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "選択したノードのバイパス/バイパス解除"
   },

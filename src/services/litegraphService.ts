@@ -129,9 +129,15 @@ export const useLitegraphService = () => {
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
         this.badges.push(
           new LGraphBadge({
-            text: '⇌',
-            fgColor: '#dad0de',
-            bgColor: '#b3b'
+            text: '',
+            iconOptions: {
+              unicode: '\ue96e',
+              fontFamily: 'PrimeIcons',
+              color: '#ffffff',
+              fontSize: 12
+            },
+            fgColor: '#ffffff',
+            bgColor: '#3b82f6'
           })
         )
       }

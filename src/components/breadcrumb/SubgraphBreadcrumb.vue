@@ -19,6 +19,7 @@ import { computed } from 'vue'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
 
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
@@ -35,6 +36,14 @@ const items = computed(() => {
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
       canvas.setGraph(subgraph)
+    },
+    updateTitle: (title: string) => {
+      const rootGraph = useCanvasStore().getCanvas().graph?.rootGraph
+      if (!rootGraph) return
+
+      forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
+        node.title = title
+      })
     }
   }))
 })

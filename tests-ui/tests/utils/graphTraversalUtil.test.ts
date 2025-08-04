@@ -3,13 +3,22 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   collectAllNodes,
+  collectFromNodes,
   findNodeInHierarchy,
   findSubgraphByUuid,
+  forEachNode,
+  forEachSubgraphNode,
+  getAllNonIoNodesInSubgraph,
+  getExecutionIdsForSelectedNodes,
   getLocalNodeIdFromExecutionId,
   getNodeByExecutionId,
   getNodeByLocatorId,
+  getRootGraph,
   getSubgraphPathFromExecutionId,
+  mapAllNodes,
+  mapSubgraphNodes,
   parseExecutionId,
+  traverseNodesDepthFirst,
   traverseSubgraphPath,
   triggerCallbackOnAllNodes,
   visitGraphNodes
@@ -283,6 +292,141 @@ describe('graphTraversalUtil', () => {
       })
     })
 
+    describe('mapAllNodes', () => {
+      it('should map over all nodes in a flat graph', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        const results = mapAllNodes(graph, (node) => node.id)
+
+        expect(results).toEqual([1, 2, 3])
+      })
+
+      it('should map over nodes in subgraphs', () => {
+        const subNode = createMockNode(100)
+        const subgraph = createMockSubgraph('sub-uuid', [subNode])
+
+        const nodes = [
+          createMockNode(1),
+          createMockNode(2, { isSubgraph: true, subgraph })
+        ]
+
+        const graph = createMockGraph(nodes)
+        const results = mapAllNodes(graph, (node) => node.id)
+
+        expect(results).toHaveLength(3)
+        expect(results).toContain(100)
+      })
+
+      it('should exclude undefined results', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        const results = mapAllNodes(graph, (node) => {
+          return Number(node.id) > 1 ? node.id : undefined
+        })
+
+        expect(results).toEqual([2, 3])
+      })
+
+      it('should handle deeply nested structures', () => {
+        const deepNode = createMockNode(300)
+        const deepSubgraph = createMockSubgraph('deep-uuid', [deepNode])
+
+        const midNode = createMockNode(200)
+        const midSubgraphNode = createMockNode(201, {
+          isSubgraph: true,
+          subgraph: deepSubgraph
+        })
+        const midSubgraph = createMockSubgraph('mid-uuid', [
+          midNode,
+          midSubgraphNode
+        ])
+
+        const nodes = [
+          createMockNode(1),
+          createMockNode(2, { isSubgraph: true, subgraph: midSubgraph })
+        ]
+
+        const graph = createMockGraph(nodes)
+        const results = mapAllNodes(graph, (node) => `node-${node.id}`)
+
+        expect(results).toHaveLength(5)
+        expect(results).toContain('node-300')
+      })
+    })
+
+    describe('forEachNode', () => {
+      it('should execute function on all nodes in a flat graph', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(node.id as number)
+        })
+
+        expect(visited).toHaveLength(3)
+        expect(visited).toContain(1)
+        expect(visited).toContain(2)
+        expect(visited).toContain(3)
+      })
+
+      it('should execute function on nodes in subgraphs', () => {
+        const subNode = createMockNode(100)
+        const subgraph = createMockSubgraph('sub-uuid', [subNode])
+
+        const nodes = [
+          createMockNode(1),
+          createMockNode(2, { isSubgraph: true, subgraph })
+        ]
+
+        const graph = createMockGraph(nodes)
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(node.id as number)
+        })
+
+        expect(visited).toHaveLength(3)
+        expect(visited).toContain(100)
+      })
+
+      it('should allow node mutations', () => {
+        const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
+        const graph = createMockGraph(nodes)
+
+        // Add a title property to each node
+        forEachNode(graph, (node) => {
+          ;(node as any).title = `Node ${node.id}`
+        })
+
+        expect(nodes[0]).toHaveProperty('title', 'Node 1')
+        expect(nodes[1]).toHaveProperty('title', 'Node 2')
+        expect(nodes[2]).toHaveProperty('title', 'Node 3')
+      })
+
+      it('should handle node type matching for subgraph references', () => {
+        const subgraphId = 'my-subgraph-123'
+        const nodes = [
+          createMockNode(1),
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3),
+          { ...createMockNode(4), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const matchingNodes: number[] = []
+        forEachNode(graph, (node) => {
+          if (node.type === subgraphId) {
+            matchingNodes.push(node.id as number)
+          }
+        })
+
+        expect(matchingNodes).toEqual([2, 4])
+      })
+    })
+
     describe('findNodeInHierarchy', () => {
       it('should find node in root graph', () => {
         const nodes = [createMockNode(1), createMockNode(2), createMockNode(3)]
@@ -480,6 +624,555 @@ describe('graphTraversalUtil', () => {
         const locatorId = 'non-existent-uuid:789'
         const found = getNodeByLocatorId(graph, locatorId)
         expect(found).toBeNull()
+      })
+    })
+
+    describe('getRootGraph', () => {
+      it('should return the same graph if it is already root', () => {
+        const graph = createMockGraph([])
+        expect(getRootGraph(graph)).toBe(graph)
+      })
+
+      it('should return root graph from subgraph', () => {
+        const rootGraph = createMockGraph([])
+        const subgraph = createMockSubgraph('sub-uuid', [])
+        ;(subgraph as any).rootGraph = rootGraph
+
+        expect(getRootGraph(subgraph)).toBe(rootGraph)
+      })
+
+      it('should return root graph from deeply nested subgraph', () => {
+        const rootGraph = createMockGraph([])
+        const midSubgraph = createMockSubgraph('mid-uuid', [])
+        const deepSubgraph = createMockSubgraph('deep-uuid', [])
+
+        ;(midSubgraph as any).rootGraph = rootGraph
+        ;(deepSubgraph as any).rootGraph = midSubgraph
+
+        expect(getRootGraph(deepSubgraph)).toBe(rootGraph)
+      })
+    })
+
+    describe('forEachSubgraphNode', () => {
+      it('should apply function to all nodes matching subgraph type', () => {
+        const subgraphId = 'my-subgraph-123'
+        const nodes = [
+          createMockNode(1),
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3),
+          { ...createMockNode(4), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const matchingIds: number[] = []
+        forEachSubgraphNode(graph, subgraphId, (node) => {
+          matchingIds.push(node.id as number)
+        })
+
+        expect(matchingIds).toEqual([2, 4])
+      })
+
+      it('should work with root graph directly', () => {
+        const subgraphId = 'target-subgraph'
+        const rootNodes = [
+          { ...createMockNode(1), type: subgraphId } as LGraphNode,
+          createMockNode(2),
+          { ...createMockNode(3), type: subgraphId } as LGraphNode
+        ]
+        const rootGraph = createMockGraph(rootNodes)
+
+        const matchingIds: number[] = []
+        forEachSubgraphNode(rootGraph, subgraphId, (node) => {
+          matchingIds.push(node.id as number)
+        })
+
+        expect(matchingIds).toEqual([1, 3])
+      })
+
+      it('should handle null inputs gracefully', () => {
+        const fn = vi.fn()
+
+        forEachSubgraphNode(null, 'id', fn)
+        forEachSubgraphNode(createMockGraph([]), null, fn)
+        forEachSubgraphNode(null, null, fn)
+
+        expect(fn).not.toHaveBeenCalled()
+      })
+
+      it('should allow node mutations like title updates', () => {
+        const subgraphId = 'my-subgraph'
+        const nodes = [
+          { ...createMockNode(1), type: subgraphId } as LGraphNode,
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3)
+        ]
+        const graph = createMockGraph(nodes)
+
+        forEachSubgraphNode(graph, subgraphId, (node) => {
+          ;(node as any).title = 'Updated Title'
+        })
+
+        expect(nodes[0]).toHaveProperty('title', 'Updated Title')
+        expect(nodes[1]).toHaveProperty('title', 'Updated Title')
+        expect(nodes[2]).not.toHaveProperty('title', 'Updated Title')
+      })
+    })
+
+    describe('mapSubgraphNodes', () => {
+      it('should map over nodes matching subgraph type', () => {
+        const subgraphId = 'my-subgraph-123'
+        const nodes = [
+          createMockNode(1),
+          { ...createMockNode(2), type: subgraphId } as LGraphNode,
+          createMockNode(3),
+          { ...createMockNode(4), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const results = mapSubgraphNodes(graph, subgraphId, (node) => node.id)
+
+        expect(results).toEqual([2, 4])
+      })
+
+      it('should return empty array for null inputs', () => {
+        expect(mapSubgraphNodes(null, 'id', (n) => n.id)).toEqual([])
+        expect(
+          mapSubgraphNodes(createMockGraph([]), null, (n) => n.id)
+        ).toEqual([])
+      })
+
+      it('should work with complex transformations', () => {
+        const subgraphId = 'target'
+        const nodes = [
+          { ...createMockNode(1), type: subgraphId } as LGraphNode,
+          { ...createMockNode(2), type: 'other' } as LGraphNode,
+          { ...createMockNode(3), type: subgraphId } as LGraphNode
+        ]
+        const graph = createMockGraph(nodes)
+
+        const results = mapSubgraphNodes(graph, subgraphId, (node) => ({
+          id: node.id,
+          isTarget: true
+        }))
+
+        expect(results).toEqual([
+          { id: 1, isTarget: true },
+          { id: 3, isTarget: true }
+        ])
+      })
+    })
+
+    describe('getAllNonIoNodesInSubgraph', () => {
+      it('should filter out SubgraphInputNode and SubgraphOutputNode', () => {
+        const nodes = [
+          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } },
+          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(2)
+        expect(nonIoNodes.map((n) => n.id)).toEqual(['user1', 'user2'])
+      })
+
+      it('should handle subgraph with only IO nodes', () => {
+        const nodes = [
+          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(0)
+      })
+
+      it('should handle subgraph with only user nodes', () => {
+        const nodes = [
+          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+        ] as LGraphNode[]
+
+        const subgraph = createMockSubgraph('sub-uuid', nodes)
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(2)
+        expect(nonIoNodes).toEqual(nodes)
+      })
+
+      it('should handle empty subgraph', () => {
+        const subgraph = createMockSubgraph('sub-uuid', [])
+        const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+
+        expect(nonIoNodes).toHaveLength(0)
+      })
+    })
+
+    describe('traverseNodesDepthFirst', () => {
+      it('should traverse nodes in depth-first order', () => {
+        const visited: string[] = []
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2'),
+          createMockNode('3')
+        ]
+
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node, context) => {
+            visited.push(`${node.id}:${context}`)
+            return `${context}-${node.id}`
+          },
+          initialContext: 'root'
+        })
+
+        expect(visited).toEqual(['3:root', '2:root', '1:root']) // DFS processes in LIFO order
+      })
+
+      it('should traverse into subgraphs when expandSubgraphs is true', () => {
+        const visited: string[] = []
+        const subNode = createMockNode('sub1')
+        const subgraph = createMockSubgraph('sub-uuid', [subNode])
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2', { isSubgraph: true, subgraph })
+        ]
+
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node, depth: number) => {
+            visited.push(`${node.id}:${depth}`)
+            return depth + 1
+          },
+          initialContext: 0
+        })
+
+        expect(visited).toEqual(['2:0', 'sub1:1', '1:0']) // DFS: last node first, then its children
+      })
+
+      it('should skip subgraphs when expandSubgraphs is false', () => {
+        const visited: string[] = []
+        const subNode = createMockNode('sub1')
+        const subgraph = createMockSubgraph('sub-uuid', [subNode])
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2', { isSubgraph: true, subgraph })
+        ]
+
+        traverseNodesDepthFirst(nodes, {
+          visitor: (node, context) => {
+            visited.push(String(node.id))
+            return context
+          },
+          initialContext: null,
+          expandSubgraphs: false
+        })
+
+        expect(visited).toEqual(['2', '1']) // DFS processes in LIFO order
+        expect(visited).not.toContain('sub1')
+      })
+
+      it('should handle deeply nested subgraphs', () => {
+        const visited: string[] = []
+
+        const deepNode = createMockNode('300')
+        const deepSubgraph = createMockSubgraph('deep-uuid', [deepNode])
+
+        const midNode = createMockNode('200', {
+          isSubgraph: true,
+          subgraph: deepSubgraph
+        })
+        const midSubgraph = createMockSubgraph('mid-uuid', [midNode])
+
+        const topNode = createMockNode('100', {
+          isSubgraph: true,
+          subgraph: midSubgraph
+        })
+
+        traverseNodesDepthFirst([topNode], {
+          visitor: (node, path: string) => {
+            visited.push(`${node.id}:${path}`)
+            return path ? `${path}/${node.id}` : String(node.id)
+          },
+          initialContext: ''
+        })
+
+        expect(visited).toEqual(['100:', '200:100', '300:100/200'])
+      })
+    })
+
+    describe('collectFromNodes', () => {
+      it('should collect data from all nodes', () => {
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2'),
+          createMockNode('3')
+        ]
+
+        const results = collectFromNodes(nodes, {
+          collector: (node) => `node-${node.id}`,
+          contextBuilder: (_node, context) => context,
+          initialContext: null
+        })
+
+        expect(results).toEqual(['node-3', 'node-2', 'node-1']) // DFS processes in LIFO order
+      })
+
+      it('should filter out null results', () => {
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2'),
+          createMockNode('3')
+        ]
+
+        const results = collectFromNodes(nodes, {
+          collector: (node) => (Number(node.id) > 1 ? `node-${node.id}` : null),
+          contextBuilder: (_node, context) => context,
+          initialContext: null
+        })
+
+        expect(results).toEqual(['node-3', 'node-2']) // DFS processes in LIFO order, node-1 filtered out
+      })
+
+      it('should collect from subgraphs with context', () => {
+        const subNodes = [createMockNode('10'), createMockNode('11')]
+        const subgraph = createMockSubgraph('sub-uuid', subNodes)
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2', { isSubgraph: true, subgraph })
+        ]
+
+        const results = collectFromNodes(nodes, {
+          collector: (node, prefix: string) => `${prefix}${node.id}`,
+          contextBuilder: (node, prefix: string) => `${prefix}${node.id}-`,
+          initialContext: 'node-',
+          expandSubgraphs: true
+        })
+
+        expect(results).toEqual([
+          'node-2',
+          'node-2-10', // Actually processes in original order within subgraph
+          'node-2-11',
+          'node-1'
+        ])
+      })
+
+      it('should not expand subgraphs when expandSubgraphs is false', () => {
+        const subNodes = [createMockNode('10'), createMockNode('11')]
+        const subgraph = createMockSubgraph('sub-uuid', subNodes)
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2', { isSubgraph: true, subgraph })
+        ]
+
+        const results = collectFromNodes(nodes, {
+          collector: (node) => String(node.id),
+          contextBuilder: (_node, context) => context,
+          initialContext: null,
+          expandSubgraphs: false
+        })
+
+        expect(results).toEqual(['2', '1']) // DFS processes in LIFO order
+      })
+    })
+
+    describe('getExecutionIdsForSelectedNodes', () => {
+      it('should return simple IDs for top-level nodes', () => {
+        const nodes = [
+          createMockNode('123'),
+          createMockNode('456'),
+          createMockNode('789')
+        ]
+
+        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+
+        expect(executionIds).toEqual(['789', '456', '123']) // DFS processes in LIFO order
+      })
+
+      it('should expand subgraph nodes to include all children', () => {
+        const subNodes = [createMockNode('10'), createMockNode('11')]
+        const subgraph = createMockSubgraph('sub-uuid', subNodes)
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2', { isSubgraph: true, subgraph })
+        ]
+
+        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+
+        expect(executionIds).toEqual(['2', '2:10', '2:11', '1']) // DFS: node 2 first, then its children
+      })
+
+      it('should handle deeply nested subgraphs correctly', () => {
+        const deepNodes = [createMockNode('30'), createMockNode('31')]
+        const deepSubgraph = createMockSubgraph('deep-uuid', deepNodes)
+
+        const midNode = createMockNode('20', {
+          isSubgraph: true,
+          subgraph: deepSubgraph
+        })
+        const midSubgraph = createMockSubgraph('mid-uuid', [midNode])
+
+        const topNode = createMockNode('10', {
+          isSubgraph: true,
+          subgraph: midSubgraph
+        })
+
+        const executionIds = getExecutionIdsForSelectedNodes([topNode])
+
+        expect(executionIds).toEqual(['10', '10:20', '10:20:30', '10:20:31'])
+      })
+
+      it('should handle mixed selection of regular and subgraph nodes', () => {
+        const subNodes = [createMockNode('100'), createMockNode('101')]
+        const subgraph = createMockSubgraph('sub-uuid', subNodes)
+
+        const nodes = [
+          createMockNode('1'),
+          createMockNode('2', { isSubgraph: true, subgraph }),
+          createMockNode('3')
+        ]
+
+        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+
+        expect(executionIds).toEqual([
+          '3',
+          '2',
+          '2:100', // Subgraph children in original order
+          '2:101',
+          '1'
+        ])
+      })
+
+      it('should handle empty selection', () => {
+        const executionIds = getExecutionIdsForSelectedNodes([])
+        expect(executionIds).toEqual([])
+      })
+
+      it('should handle subgraph with no children', () => {
+        const emptySubgraph = createMockSubgraph('empty-uuid', [])
+        const node = createMockNode('1', {
+          isSubgraph: true,
+          subgraph: emptySubgraph
+        })
+
+        const executionIds = getExecutionIdsForSelectedNodes([node])
+
+        expect(executionIds).toEqual(['1'])
+      })
+
+      it('should handle nodes with very long execution paths', () => {
+        // Create a chain of 10 nested subgraphs
+        let currentSubgraph = createMockSubgraph('deep-10', [
+          createMockNode('10')
+        ])
+
+        for (let i = 9; i >= 1; i--) {
+          const node = createMockNode(`${i}0`, {
+            isSubgraph: true,
+            subgraph: currentSubgraph
+          })
+          currentSubgraph = createMockSubgraph(`deep-${i}`, [node])
+        }
+
+        const topNode = createMockNode('1', {
+          isSubgraph: true,
+          subgraph: currentSubgraph
+        })
+
+        const executionIds = getExecutionIdsForSelectedNodes([topNode])
+
+        expect(executionIds).toHaveLength(11)
+        expect(executionIds[0]).toBe('1')
+        expect(executionIds[10]).toBe('1:10:20:30:40:50:60:70:80:90:10')
+      })
+
+      it('should handle duplicate node IDs in different subgraphs', () => {
+        // Create two subgraphs with nodes that have the same IDs
+        const subgraph1 = createMockSubgraph('sub1-uuid', [
+          createMockNode('100'),
+          createMockNode('101')
+        ])
+
+        const subgraph2 = createMockSubgraph('sub2-uuid', [
+          createMockNode('100'), // Same ID as in subgraph1
+          createMockNode('101') // Same ID as in subgraph1
+        ])
+
+        const nodes = [
+          createMockNode('1', { isSubgraph: true, subgraph: subgraph1 }),
+          createMockNode('2', { isSubgraph: true, subgraph: subgraph2 })
+        ]
+
+        const executionIds = getExecutionIdsForSelectedNodes(nodes)
+
+        expect(executionIds).toEqual([
+          '2',
+          '2:100',
+          '2:101',
+          '1',
+          '1:100',
+          '1:101'
+        ])
+      })
+
+      it('should handle subgraphs with many children efficiently', () => {
+        // Create a subgraph with 100 nodes
+        const manyNodes = []
+        for (let i = 0; i < 100; i++) {
+          manyNodes.push(createMockNode(`child-${i}`))
+        }
+        const bigSubgraph = createMockSubgraph('big-uuid', manyNodes)
+
+        const node = createMockNode('parent', {
+          isSubgraph: true,
+          subgraph: bigSubgraph
+        })
+
+        const start = performance.now()
+        const executionIds = getExecutionIdsForSelectedNodes([node])
+        const duration = performance.now() - start
+
+        expect(executionIds).toHaveLength(101)
+        expect(executionIds[0]).toBe('parent')
+        expect(executionIds[100]).toBe('parent:child-99') // Due to backward iteration optimization
+
+        // Should complete quickly even with many nodes
+        expect(duration).toBeLessThan(50)
+      })
+
+      it('should handle selection of nodes at different depths', () => {
+        // Create a complex nested structure
+        const deepNode = createMockNode('300')
+        const deepSubgraph = createMockSubgraph('deep-uuid', [deepNode])
+
+        const midNode1 = createMockNode('201')
+        const midNode2 = createMockNode('202', {
+          isSubgraph: true,
+          subgraph: deepSubgraph
+        })
+        const midSubgraph = createMockSubgraph('mid-uuid', [midNode1, midNode2])
+
+        const topNode = createMockNode('100', {
+          isSubgraph: true,
+          subgraph: midSubgraph
+        })
+
+        // Select nodes at different nesting levels
+        const selectedNodes = [
+          createMockNode('1'), // Root level
+          topNode, // Contains subgraph
+          createMockNode('2') // Root level
+        ]
+
+        const executionIds = getExecutionIdsForSelectedNodes(selectedNodes)
+
+        expect(executionIds).toContain('1')
+        expect(executionIds).toContain('2')
+        expect(executionIds).toContain('100')
+        expect(executionIds).toContain('100:201')
+        expect(executionIds).toContain('100:202')
+        expect(executionIds).toContain('100:202:300')
       })
     })
   })

@@ -512,15 +512,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
-    id: 'Comfy.Validation.NodeDefs',
-    name: 'Validate node definitions (slow)',
-    type: 'boolean',
-    tooltip:
-      'Recommended for node developers. This will validate all node definitions on startup.',
-    defaultValue: false,
-    versionAdded: '1.3.14'
-  },
-  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
@@ -817,6 +808,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.15.12'
+  },
+  {
+    id: 'Comfy.Minimap.Visible',
+    name: 'Display minimap on canvas',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.25.0'
   },
   {
     id: 'Comfy.Workflow.AutoSaveDelay',

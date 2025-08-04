@@ -290,6 +290,7 @@
     "devices": "デバイス",
     "disableAll": "すべて無効にする",
     "disabling": "無効化",
+    "dismiss": "閉じる",
     "download": "ダウンロード",
     "edit": "編集",
     "empty": "空",
@@ -304,6 +305,8 @@
     "filter": "フィルタ",
     "findIssues": "問題を見つける",
     "firstTimeUIMessage": "新しいUIを初めて使用しています。「メニュー > 新しいメニューを使用 > 無効」を選択することで古いUIに戻すことが可能です。",
+    "frontendNewer": "フロントエンドのバージョン {frontendVersion} はバックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
+    "frontendOutdated": "フロントエンドのバージョン {frontendVersion} は古くなっています。バックエンドは {requiredVersion} 以上が必要です。",
     "goToNode": "ノードに移動",
     "help": "ヘルプ",
     "icon": "アイコン",
@@ -379,11 +382,14 @@
     "unknownError": "不明なエラー",
     "update": "更新",
     "updateAvailable": "更新が利用可能",
+    "updateFrontend": "フロントエンドを更新",
     "updated": "更新済み",
     "updating": "更新中",
     "upload": "アップロード",
     "usageHint": "使用ヒント",
     "user": "ユーザー",
+    "versionMismatchWarning": "バージョン互換性の警告",
+    "versionMismatchWarningMessage": "{warning}: {detail} 更新手順については https://docs.comfy.org/installation/update_comfyui#common-update-issues をご覧ください。",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
     "workflow": "ワークフロー"
   },
@@ -393,6 +399,7 @@
     "resetView": "ビューをリセット",
     "selectMode": "選択モード",
     "toggleLinkVisibility": "リンクの表示切り替え",
+    "toggleMinimap": "ミニマップの切り替え",
     "zoomIn": "拡大",
     "zoomOut": "縮小"
   },
@@ -722,6 +729,7 @@
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
     "Canvas Toggle Link Visibility": "キャンバスのリンク表示を切り替え",
     "Canvas Toggle Lock": "キャンバスのロックを切り替え",
+    "Canvas Toggle Minimap": "キャンバス ミニマップの切り替え",
     "Check for Updates": "更新を確認する",
     "Clear Pending Tasks": "保留中のタスクをクリア",
     "Clear Workflow": "ワークフローをクリア",
@@ -1582,6 +1590,13 @@
     "personalDataConsentRequired": "個人データの処理に同意する必要があります。",
     "prefix": "{prefix}で始める必要があります",
     "required": "必須"
+  },
+  "versionMismatchWarning": {
+    "dismiss": "閉じる",
+    "frontendNewer": "フロントエンドのバージョン {frontendVersion} は、バックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
+    "frontendOutdated": "フロントエンドのバージョン {frontendVersion} は古くなっています。バックエンドはバージョン {requiredVersion} 以上が必要です。",
+    "title": "バージョン互換性の警告",
+    "updateFrontend": "フロントエンドを更新"
   },
   "welcome": {
     "getStarted": "はじめる",

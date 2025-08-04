@@ -329,10 +329,6 @@
     },
     "tooltip": "메뉴 바 위치입니다. 모바일 기기에서는 메뉴가 항상 상단에 표시됩니다."
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "노드 정의 유효성 검사 (느림)",
-    "tooltip": "노드 개발자에게 권장됩니다. 시작 시 모든 노드 정의를 유효성 검사합니다."
-  },
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
   },
