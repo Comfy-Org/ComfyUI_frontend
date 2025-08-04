@@ -38,7 +38,7 @@ import type { PickNevers } from "./types/utility"
 import type { IBaseWidget } from "./types/widgets"
 import type { UUID } from "./utils/uuid"
 
-import { LinkConnector } from "@/canvas/LinkConnector"
+import { LinkConnector } from "@/lib/litegraph/src/canvas/LinkConnector"
 
 import { isOverNodeInput, isOverNodeOutput } from "./canvas/measureSlots"
 import { CanvasPointer } from "./CanvasPointer"

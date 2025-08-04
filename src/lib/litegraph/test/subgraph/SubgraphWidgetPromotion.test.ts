@@ -1,10 +1,10 @@
-import type { ISlotType } from "@/interfaces"
-import type { TWidgetType } from "@/types/widgets"
+import type { ISlotType } from "@/lib/litegraph/src/interfaces"
+import type { TWidgetType } from "@/lib/litegraph/src/types/widgets"
 
 import { describe, expect, it } from "vitest"
 
-import { LGraphNode, Subgraph } from "@/litegraph"
-import { BaseWidget } from "@/widgets/BaseWidget"
+import { LGraphNode, Subgraph } from "@/lib/litegraph/src/litegraph"
+import { BaseWidget } from "@/lib/litegraph/src/widgets/BaseWidget"
 
 import { createEventCapture, createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
 

@@ -1,6 +1,6 @@
-import type { IWidgetInputSlot, SharedIntersection } from "@/interfaces"
-import type { INodeInputSlot, INodeOutputSlot, INodeSlot, IWidget } from "@/litegraph"
-import type { ISerialisableNodeInput, ISerialisableNodeOutput } from "@/types/serialisation"
+import type { IWidgetInputSlot, SharedIntersection } from "@/lib/litegraph/src/interfaces"
+import type { INodeInputSlot, INodeOutputSlot, INodeSlot, IWidget } from "@/lib/litegraph/src/litegraph"
+import type { ISerialisableNodeInput, ISerialisableNodeOutput } from "@/lib/litegraph/src/types/serialisation"
 
 type CommonIoSlotProps = SharedIntersection<ISerialisableNodeInput, ISerialisableNodeOutput>
 

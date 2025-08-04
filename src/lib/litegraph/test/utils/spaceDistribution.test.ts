@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { distributeSpace, type SpaceRequest } from "@/utils/spaceDistribution"
+import { distributeSpace, type SpaceRequest } from "@/lib/litegraph/src/utils/spaceDistribution"
 
 describe("distributeSpace", () => {
   it("should distribute space according to minimum sizes when space is limited", () => {

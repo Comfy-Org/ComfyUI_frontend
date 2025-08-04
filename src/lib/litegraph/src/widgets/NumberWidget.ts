@@ -1,7 +1,7 @@
 import type { WidgetEventOptions } from "./BaseWidget"
-import type { INumericWidget } from "@/types/widgets"
+import type { INumericWidget } from "@/lib/litegraph/src/types/widgets"
 
-import { getWidgetStep } from "@/utils/widget"
+import { getWidgetStep } from "@/lib/litegraph/src/utils/widget"
 
 import { BaseSteppedWidget } from "./BaseSteppedWidget"
 

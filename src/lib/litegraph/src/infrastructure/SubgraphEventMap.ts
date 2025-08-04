@@ -1,8 +1,8 @@
 import type { LGraphEventMap } from "./LGraphEventMap"
-import type { SubgraphInput } from "@/subgraph/SubgraphInput"
-import type { SubgraphNode } from "@/subgraph/SubgraphNode"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
-import type { IBaseWidget } from "@/types/widgets"
+import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
+import type { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
+import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
+import type { IBaseWidget } from "@/lib/litegraph/src/types/widgets"
 
 export interface SubgraphEventMap extends LGraphEventMap {
   "adding-input": {

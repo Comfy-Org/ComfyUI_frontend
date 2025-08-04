@@ -3,15 +3,15 @@ import type { EmptySubgraphOutput } from "./EmptySubgraphOutput"
 import type { Subgraph } from "./Subgraph"
 import type { SubgraphInput } from "./SubgraphInput"
 import type { SubgraphOutput } from "./SubgraphOutput"
-import type { LinkConnector } from "@/canvas/LinkConnector"
-import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, Positionable } from "@/interfaces"
-import type { NodeId } from "@/LGraphNode"
-import type { ExportedSubgraphIONode, Serialisable } from "@/types/serialisation"
+import type { LinkConnector } from "@/lib/litegraph/src/canvas/LinkConnector"
+import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, Positionable } from "@/lib/litegraph/src/interfaces"
+import type { NodeId } from "@/lib/litegraph/src/LGraphNode"
+import type { ExportedSubgraphIONode, Serialisable } from "@/lib/litegraph/src/types/serialisation"
 
-import { Rectangle } from "@/infrastructure/Rectangle"
-import { type CanvasColour, type CanvasPointer, type CanvasPointerEvent, type IContextMenuValue, LiteGraph } from "@/litegraph"
-import { snapPoint } from "@/measure"
-import { CanvasItem } from "@/types/globalEnums"
+import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
+import { type CanvasColour, type CanvasPointer, type CanvasPointerEvent, type IContextMenuValue, LiteGraph } from "@/lib/litegraph/src/litegraph"
+import { snapPoint } from "@/lib/litegraph/src/measure"
+import { CanvasItem } from "@/lib/litegraph/src/types/globalEnums"
 
 export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphOutput> implements Positionable, Hoverable, Serialisable<ExportedSubgraphIONode> {
   static margin = 10

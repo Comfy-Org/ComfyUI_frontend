@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { LGraph } from "@/litegraph"
+import { LGraph } from "@/lib/litegraph/src/litegraph"
 
 import { subgraphTest } from "./fixtures/subgraphFixtures"
 import {

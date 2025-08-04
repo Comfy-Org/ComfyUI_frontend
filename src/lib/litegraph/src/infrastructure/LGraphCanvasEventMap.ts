@@ -1,10 +1,10 @@
-import type { ConnectingLink } from "@/interfaces"
-import type { LGraph } from "@/LGraph"
-import type { LGraphButton } from "@/LGraphButton"
-import type { LGraphGroup } from "@/LGraphGroup"
-import type { LGraphNode } from "@/LGraphNode"
-import type { Subgraph } from "@/subgraph/Subgraph"
-import type { CanvasPointerEvent } from "@/types/events"
+import type { ConnectingLink } from "@/lib/litegraph/src/interfaces"
+import type { LGraph } from "@/lib/litegraph/src/LGraph"
+import type { LGraphButton } from "@/lib/litegraph/src/LGraphButton"
+import type { LGraphGroup } from "@/lib/litegraph/src/LGraphGroup"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
+import type { Subgraph } from "@/lib/litegraph/src/subgraph/Subgraph"
+import type { CanvasPointerEvent } from "@/lib/litegraph/src/types/events"
 
 export interface LGraphCanvasEventMap {
   /** The active graph has changed. */

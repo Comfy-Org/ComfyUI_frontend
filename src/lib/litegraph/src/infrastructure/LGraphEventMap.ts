@@ -1,8 +1,8 @@
-import type { ReadOnlyRect } from "@/interfaces"
-import type { LGraph } from "@/LGraph"
-import type { LLink, ResolvedConnection } from "@/LLink"
-import type { Subgraph } from "@/subgraph/Subgraph"
-import type { ExportedSubgraph, ISerialisedGraph, SerialisableGraph } from "@/types/serialisation"
+import type { ReadOnlyRect } from "@/lib/litegraph/src/interfaces"
+import type { LGraph } from "@/lib/litegraph/src/LGraph"
+import type { LLink, ResolvedConnection } from "@/lib/litegraph/src/LLink"
+import type { Subgraph } from "@/lib/litegraph/src/subgraph/Subgraph"
+import type { ExportedSubgraph, ISerialisedGraph, SerialisableGraph } from "@/lib/litegraph/src/types/serialisation"
 
 export interface LGraphEventMap {
   "configuring": {

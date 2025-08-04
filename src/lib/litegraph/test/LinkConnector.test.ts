@@ -1,13 +1,13 @@
-import type { MovingInputLink } from "@/canvas/MovingInputLink"
-import type { LinkNetwork } from "@/interfaces"
-import type { ISlotType } from "@/interfaces"
+import type { MovingInputLink } from "@/lib/litegraph/src/canvas/MovingInputLink"
+import type { LinkNetwork } from "@/lib/litegraph/src/interfaces"
+import type { ISlotType } from "@/lib/litegraph/src/interfaces"
 
 import { describe, expect, test as baseTest, vi } from "vitest"
 
-import { LinkConnector } from "@/canvas/LinkConnector"
-import { ToInputRenderLink } from "@/canvas/ToInputRenderLink"
-import { LGraph, LGraphNode, LLink, Reroute, type RerouteId } from "@/litegraph"
-import { LinkDirection } from "@/types/globalEnums"
+import { LinkConnector } from "@/lib/litegraph/src/canvas/LinkConnector"
+import { ToInputRenderLink } from "@/lib/litegraph/src/canvas/ToInputRenderLink"
+import { LGraph, LGraphNode, LLink, Reroute, type RerouteId } from "@/lib/litegraph/src/litegraph"
+import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
 
 interface TestContext {
   network: LinkNetwork & { add(node: LGraphNode): void }

@@ -8,9 +8,9 @@
 
 import { describe, expect, it } from "vitest"
 
-import { RecursionError } from "@/infrastructure/RecursionError"
-import { LGraph, Subgraph } from "@/litegraph"
-import { createUuidv4 } from "@/utils/uuid"
+import { RecursionError } from "@/lib/litegraph/src/infrastructure/RecursionError"
+import { LGraph, Subgraph } from "@/lib/litegraph/src/litegraph"
+import { createUuidv4 } from "@/lib/litegraph/src/utils/uuid"
 
 import { subgraphTest } from "./fixtures/subgraphFixtures"
 import {

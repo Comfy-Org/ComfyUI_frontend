@@ -1,11 +1,11 @@
-import type { Point } from "@/interfaces"
-import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/litegraph"
-import type { CanvasPointerEvent } from "@/types/events"
-import type { IBaseWidget } from "@/types/widgets"
+import type { Point } from "@/lib/litegraph/src/interfaces"
+import type { CanvasPointer, LGraphCanvas, LGraphNode, Size } from "@/lib/litegraph/src/litegraph"
+import type { CanvasPointerEvent } from "@/lib/litegraph/src/types/events"
+import type { IBaseWidget } from "@/lib/litegraph/src/types/widgets"
 
-import { drawTextInArea } from "@/draw"
-import { Rectangle } from "@/infrastructure/Rectangle"
-import { LiteGraph } from "@/litegraph"
+import { drawTextInArea } from "@/lib/litegraph/src/draw"
+import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
+import { LiteGraph } from "@/lib/litegraph/src/litegraph"
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */

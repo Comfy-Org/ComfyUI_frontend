@@ -1,7 +1,7 @@
-import type { INodeInputSlot, INodeOutputSlot, Point } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
+import type { INodeInputSlot, INodeOutputSlot, Point } from "@/lib/litegraph/src/interfaces"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
 
-import { isInRectangle } from "@/measure"
+import { isInRectangle } from "@/lib/litegraph/src/measure"
 
 export function getNodeInputOnPos(node: LGraphNode, x: number, y: number): { index: number, input: INodeInputSlot, pos: Point } | undefined {
   const { inputs } = node

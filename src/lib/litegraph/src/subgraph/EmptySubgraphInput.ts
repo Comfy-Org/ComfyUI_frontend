@@ -1,11 +1,11 @@
 import type { SubgraphInputNode } from "./SubgraphInputNode"
-import type { INodeInputSlot, Point } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { RerouteId } from "@/Reroute"
+import type { INodeInputSlot, Point } from "@/lib/litegraph/src/interfaces"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
+import type { RerouteId } from "@/lib/litegraph/src/Reroute"
 
-import { LLink } from "@/LLink"
-import { nextUniqueName } from "@/strings"
-import { zeroUuid } from "@/utils/uuid"
+import { LLink } from "@/lib/litegraph/src/LLink"
+import { nextUniqueName } from "@/lib/litegraph/src/strings"
+import { zeroUuid } from "@/lib/litegraph/src/utils/uuid"
 
 import { SubgraphInput } from "./SubgraphInput"
 

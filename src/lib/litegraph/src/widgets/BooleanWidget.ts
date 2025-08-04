@@ -1,4 +1,4 @@
-import type { IBooleanWidget } from "@/types/widgets"
+import type { IBooleanWidget } from "@/lib/litegraph/src/types/widgets"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 

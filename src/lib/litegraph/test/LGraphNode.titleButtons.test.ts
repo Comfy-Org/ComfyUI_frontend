@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { LGraphButton } from "@/LGraphButton"
-import { LGraphCanvas } from "@/LGraphCanvas"
-import { LGraphNode } from "@/LGraphNode"
+import { LGraphButton } from "@/lib/litegraph/src/LGraphButton"
+import { LGraphCanvas } from "@/lib/litegraph/src/LGraphCanvas"
+import { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
 
 describe("LGraphNode Title Buttons", () => {
   describe("addTitleButton", () => {

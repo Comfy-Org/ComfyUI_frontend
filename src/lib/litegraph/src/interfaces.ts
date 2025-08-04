@@ -6,8 +6,8 @@ import type { SubgraphInputNode } from "./subgraph/SubgraphInputNode"
 import type { SubgraphOutputNode } from "./subgraph/SubgraphOutputNode"
 import type { LinkDirection, RenderShape } from "./types/globalEnums"
 import type { IBaseWidget } from "./types/widgets"
-import type { Rectangle } from "@/infrastructure/Rectangle"
-import type { CanvasPointerEvent } from "@/types/events"
+import type { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
+import type { CanvasPointerEvent } from "@/lib/litegraph/src/types/events"
 
 export type Dictionary<T> = { [key: string]: T }
 

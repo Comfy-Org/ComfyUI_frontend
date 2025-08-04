@@ -1,12 +1,12 @@
-import type { UUID } from "@/utils/uuid"
+import type { UUID } from "@/lib/litegraph/src/utils/uuid"
 
 import { describe, expect, it } from "vitest"
 
-import { LGraph } from "@/litegraph"
+import { LGraph } from "@/lib/litegraph/src/litegraph"
 import {
   findUsedSubgraphIds,
   getDirectSubgraphIds,
-} from "@/subgraph/subgraphUtils"
+} from "@/lib/litegraph/src/subgraph/subgraphUtils"
 
 import { createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
 

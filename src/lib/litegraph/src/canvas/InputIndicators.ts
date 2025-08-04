@@ -1,4 +1,4 @@
-import type { LGraphCanvas } from "@/LGraphCanvas"
+import type { LGraphCanvas } from "@/lib/litegraph/src/LGraphCanvas"
 
 /**
  * A class that can be added to the render cycle to show pointer / keyboard status symbols.

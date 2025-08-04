@@ -1,8 +1,8 @@
-import type { Point, Size } from "@/interfaces"
+import type { Point, Size } from "@/lib/litegraph/src/interfaces"
 
 import { describe, expect, test as baseTest, vi } from "vitest"
 
-import { Rectangle } from "@/infrastructure/Rectangle"
+import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
 
 // TODO: If there's a common test context, use it here
 // For now, we'll define a simple context for Rectangle tests

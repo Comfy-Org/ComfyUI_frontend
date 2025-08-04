@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { LGraphNode } from "@/litegraph"
+import { LGraphNode } from "@/lib/litegraph/src/litegraph"
 
 import { createTestSubgraph } from "./fixtures/subgraphHelpers"
 

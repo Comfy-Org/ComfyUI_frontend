@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import { inputAsSerialisable, outputAsSerialisable } from "@/node/slotUtils"
+import { INodeInputSlot, INodeOutputSlot } from "@/lib/litegraph/src/interfaces"
+import { inputAsSerialisable, outputAsSerialisable } from "@/lib/litegraph/src/node/slotUtils"
 
 describe("NodeSlot", () => {
   describe("inputAsSerialisable", () => {

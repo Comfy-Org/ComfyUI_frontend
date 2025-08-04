@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from "vitest"
 
-import { LGraph, LGraphNode, Subgraph } from "@/litegraph"
+import { LGraph, LGraphNode, Subgraph } from "@/lib/litegraph/src/litegraph"
 
 import {
   createNestedSubgraphs,

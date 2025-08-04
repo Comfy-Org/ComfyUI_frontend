@@ -1,9 +1,9 @@
 import type { WidgetEventOptions } from "./BaseWidget"
-import type { LGraphNode } from "@/LGraphNode"
-import type { IComboWidget, IStringComboWidget } from "@/types/widgets"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
+import type { IComboWidget, IStringComboWidget } from "@/lib/litegraph/src/types/widgets"
 
-import { clamp, LiteGraph } from "@/litegraph"
-import { warnDeprecated } from "@/utils/feedback"
+import { clamp, LiteGraph } from "@/lib/litegraph/src/litegraph"
+import { warnDeprecated } from "@/lib/litegraph/src/utils/feedback"
 
 import { BaseSteppedWidget } from "./BaseSteppedWidget"
 

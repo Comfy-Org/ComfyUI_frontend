@@ -16,7 +16,7 @@ import type { LinkId, SerialisedLLinkArray } from "../LLink"
 import type { FloatingRerouteSlot, RerouteId } from "../Reroute"
 import type { TWidgetValue } from "../types/widgets"
 import type { RenderShape } from "./globalEnums"
-import type { UUID } from "@/utils/uuid"
+import type { UUID } from "@/lib/litegraph/src/utils/uuid"
 
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.

@@ -1,4 +1,4 @@
-import type { IColorable } from "@/interfaces"
+import type { IColorable } from "@/lib/litegraph/src/interfaces"
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.

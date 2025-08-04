@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { ToOutputRenderLink } from "@/canvas/ToOutputRenderLink"
-import { LinkDirection } from "@/types/globalEnums"
+import { ToOutputRenderLink } from "@/lib/litegraph/src/canvas/ToOutputRenderLink"
+import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
 
 describe("ToOutputRenderLink", () => {
   describe("connectToOutput", () => {

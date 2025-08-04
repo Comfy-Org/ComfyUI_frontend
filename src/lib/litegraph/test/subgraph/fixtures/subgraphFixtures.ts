@@ -6,8 +6,8 @@
  * setup for different testing scenarios.
  */
 
-import { LGraph, Subgraph } from "@/litegraph"
-import { SubgraphNode } from "@/subgraph/SubgraphNode"
+import { LGraph, Subgraph } from "@/lib/litegraph/src/litegraph"
+import { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
 
 import { test } from "../../testExtensions"
 import {

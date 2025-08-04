@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { LGraphNode } from "@/litegraph"
+import { LGraphNode } from "@/lib/litegraph/src/litegraph"
 
 import { subgraphTest } from "./fixtures/subgraphFixtures"
 import {

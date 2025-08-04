@@ -6,15 +6,15 @@
  * verify their behavior.
  */
 
-import type { ISlotType, NodeId } from "@/litegraph"
-import type { ExportedSubgraph, ExportedSubgraphInstance } from "@/types/serialisation"
-import type { UUID } from "@/utils/uuid"
+import type { ISlotType, NodeId } from "@/lib/litegraph/src/litegraph"
+import type { ExportedSubgraph, ExportedSubgraphInstance } from "@/lib/litegraph/src/types/serialisation"
+import type { UUID } from "@/lib/litegraph/src/utils/uuid"
 
 import { expect } from "vitest"
 
-import { LGraph, LGraphNode, Subgraph } from "@/litegraph"
-import { SubgraphNode } from "@/subgraph/SubgraphNode"
-import { createUuidv4 } from "@/utils/uuid"
+import { LGraph, LGraphNode, Subgraph } from "@/lib/litegraph/src/litegraph"
+import { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
+import { createUuidv4 } from "@/lib/litegraph/src/utils/uuid"
 
 export interface TestSubgraphOptions {
   id?: UUID

@@ -1,7 +1,7 @@
-import type { IKnobWidget } from "@/types/widgets"
+import type { IKnobWidget } from "@/lib/litegraph/src/types/widgets"
 
-import { clamp } from "@/litegraph"
-import { getWidgetStep } from "@/utils/widget"
+import { clamp } from "@/lib/litegraph/src/litegraph"
+import { getWidgetStep } from "@/lib/litegraph/src/utils/widget"
 
 import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
 

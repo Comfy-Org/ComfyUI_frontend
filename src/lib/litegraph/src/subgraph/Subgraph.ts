@@ -1,11 +1,11 @@
-import type { SubgraphEventMap } from "@/infrastructure/SubgraphEventMap"
-import type { DefaultConnectionColors, INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import type { LGraphCanvas } from "@/LGraphCanvas"
-import type { ExportedSubgraph, ExposedWidget, ISerialisedGraph, Serialisable, SerialisableGraph } from "@/types/serialisation"
+import type { SubgraphEventMap } from "@/lib/litegraph/src/infrastructure/SubgraphEventMap"
+import type { DefaultConnectionColors, INodeInputSlot, INodeOutputSlot } from "@/lib/litegraph/src/interfaces"
+import type { LGraphCanvas } from "@/lib/litegraph/src/LGraphCanvas"
+import type { ExportedSubgraph, ExposedWidget, ISerialisedGraph, Serialisable, SerialisableGraph } from "@/lib/litegraph/src/types/serialisation"
 
-import { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import { type BaseLGraph, LGraph } from "@/LGraph"
-import { createUuidv4 } from "@/utils/uuid"
+import { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
+import { type BaseLGraph, LGraph } from "@/lib/litegraph/src/LGraph"
+import { createUuidv4 } from "@/lib/litegraph/src/utils/uuid"
 
 import { SubgraphInput } from "./SubgraphInput"
 import { SubgraphInputNode } from "./SubgraphInputNode"

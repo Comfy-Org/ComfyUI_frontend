@@ -1,6 +1,6 @@
-import type { INodeInputSlot, INodeOutputSlot } from "@/interfaces"
-import type { NodeId } from "@/LGraphNode"
-import type { SubgraphIO } from "@/types/serialisation"
+import type { INodeInputSlot, INodeOutputSlot } from "@/lib/litegraph/src/interfaces"
+import type { NodeId } from "@/lib/litegraph/src/LGraphNode"
+import type { SubgraphIO } from "@/lib/litegraph/src/types/serialisation"
 
 export interface NodeLike {
   id: NodeId

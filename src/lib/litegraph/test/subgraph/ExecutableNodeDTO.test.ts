@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { LGraph, LGraphNode } from "@/litegraph"
-import { ExecutableNodeDTO } from "@/subgraph/ExecutableNodeDTO"
+import { LGraph, LGraphNode } from "@/lib/litegraph/src/litegraph"
+import { ExecutableNodeDTO } from "@/lib/litegraph/src/subgraph/ExecutableNodeDTO"
 
 import {
   createNestedSubgraphs,

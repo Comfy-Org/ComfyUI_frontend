@@ -1,14 +1,14 @@
-import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { LinkId } from "@/LLink"
-import type { SubgraphInput } from "@/subgraph/SubgraphInput"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
-import type { IBaseWidget } from "@/types/widgets"
+import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/lib/litegraph/src/interfaces"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
+import type { LinkId } from "@/lib/litegraph/src/LLink"
+import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
+import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
+import type { IBaseWidget } from "@/lib/litegraph/src/types/widgets"
 
-import { LabelPosition } from "@/draw"
-import { LiteGraph } from "@/litegraph"
-import { type IDrawOptions, NodeSlot } from "@/node/NodeSlot"
-import { isSubgraphInput } from "@/subgraph/subgraphUtils"
+import { LabelPosition } from "@/lib/litegraph/src/draw"
+import { LiteGraph } from "@/lib/litegraph/src/litegraph"
+import { type IDrawOptions, NodeSlot } from "@/lib/litegraph/src/node/NodeSlot"
+import { isSubgraphInput } from "@/lib/litegraph/src/subgraph/subgraphUtils"
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null

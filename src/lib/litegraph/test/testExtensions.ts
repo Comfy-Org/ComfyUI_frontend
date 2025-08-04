@@ -2,8 +2,8 @@ import type { ISerialisedGraph, SerialisableGraph } from "../src/types/serialisa
 
 import { test as baseTest } from "vitest"
 
-import { LGraph } from "@/LGraph"
-import { LiteGraph } from "@/litegraph"
+import { LGraph } from "@/lib/litegraph/src/LGraph"
+import { LiteGraph } from "@/lib/litegraph/src/litegraph"
 
 import floatingBranch from "./assets/floatingBranch.json"
 import floatingLink from "./assets/floatingLink.json"

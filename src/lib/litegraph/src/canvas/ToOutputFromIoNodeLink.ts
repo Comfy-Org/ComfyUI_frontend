@@ -1,15 +1,15 @@
 import type { RenderLink } from "./RenderLink"
-import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
-import type { INodeOutputSlot, LinkNetwork, Point } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { Reroute } from "@/Reroute"
-import type { SubgraphOutput } from "@/subgraph/SubgraphOutput"
-import type { SubgraphOutputNode } from "@/subgraph/SubgraphOutputNode"
-import type { NodeLike } from "@/types/NodeLike"
-import type { SubgraphIO } from "@/types/serialisation"
+import type { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/lib/litegraph/src/infrastructure/LinkConnectorEventMap"
+import type { INodeOutputSlot, LinkNetwork, Point } from "@/lib/litegraph/src/interfaces"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
+import type { Reroute } from "@/lib/litegraph/src/Reroute"
+import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
+import type { SubgraphOutputNode } from "@/lib/litegraph/src/subgraph/SubgraphOutputNode"
+import type { NodeLike } from "@/lib/litegraph/src/types/NodeLike"
+import type { SubgraphIO } from "@/lib/litegraph/src/types/serialisation"
 
-import { LinkDirection } from "@/types/globalEnums"
+import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
 
 /** Connecting TO an output slot. */
 

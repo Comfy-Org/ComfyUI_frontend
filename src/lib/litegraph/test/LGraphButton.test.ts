@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { Rectangle } from "@/infrastructure/Rectangle"
-import { LGraphButton } from "@/LGraphButton"
+import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
+import { LGraphButton } from "@/lib/litegraph/src/LGraphButton"
 
 describe("LGraphButton", () => {
   describe("Constructor", () => {

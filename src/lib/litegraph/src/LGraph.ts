@@ -18,10 +18,10 @@ import type {
   SerialisableGraph,
   SerialisableReroute,
 } from "./types/serialisation"
-import type { UUID } from "@/utils/uuid"
+import type { UUID } from "@/lib/litegraph/src/utils/uuid"
 
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/constants"
-import { createUuidv4, zeroUuid } from "@/utils/uuid"
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/lib/litegraph/src/constants"
+import { createUuidv4, zeroUuid } from "@/lib/litegraph/src/utils/uuid"
 
 import { CustomEventTarget } from "./infrastructure/CustomEventTarget"
 import { LGraphCanvas } from "./LGraphCanvas"

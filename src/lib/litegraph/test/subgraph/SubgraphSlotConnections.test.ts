@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { LinkConnector } from "@/canvas/LinkConnector"
-import { ToInputFromIoNodeLink } from "@/canvas/ToInputFromIoNodeLink"
-import { SUBGRAPH_INPUT_ID } from "@/constants"
-import { LGraphNode, type LinkNetwork } from "@/litegraph"
-import { NodeInputSlot } from "@/node/NodeInputSlot"
-import { NodeOutputSlot } from "@/node/NodeOutputSlot"
-import { isSubgraphInput, isSubgraphOutput } from "@/subgraph/subgraphUtils"
+import { LinkConnector } from "@/lib/litegraph/src/canvas/LinkConnector"
+import { ToInputFromIoNodeLink } from "@/lib/litegraph/src/canvas/ToInputFromIoNodeLink"
+import { SUBGRAPH_INPUT_ID } from "@/lib/litegraph/src/constants"
+import { LGraphNode, type LinkNetwork } from "@/lib/litegraph/src/litegraph"
+import { NodeInputSlot } from "@/lib/litegraph/src/node/NodeInputSlot"
+import { NodeOutputSlot } from "@/lib/litegraph/src/node/NodeOutputSlot"
+import { isSubgraphInput, isSubgraphOutput } from "@/lib/litegraph/src/subgraph/subgraphUtils"
 
 import { createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
 

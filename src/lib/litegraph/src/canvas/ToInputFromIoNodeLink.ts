@@ -1,15 +1,15 @@
 import type { RenderLink } from "./RenderLink"
-import type { CustomEventTarget } from "@/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/infrastructure/LinkConnectorEventMap"
-import type { INodeInputSlot, LinkNetwork, Point } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
-import type { LLink } from "@/LLink"
-import type { Reroute } from "@/Reroute"
-import type { SubgraphInput } from "@/subgraph/SubgraphInput"
-import type { SubgraphInputNode } from "@/subgraph/SubgraphInputNode"
-import type { NodeLike } from "@/types/NodeLike"
+import type { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
+import type { LinkConnectorEventMap } from "@/lib/litegraph/src/infrastructure/LinkConnectorEventMap"
+import type { INodeInputSlot, LinkNetwork, Point } from "@/lib/litegraph/src/interfaces"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
+import type { LLink } from "@/lib/litegraph/src/LLink"
+import type { Reroute } from "@/lib/litegraph/src/Reroute"
+import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
+import type { SubgraphInputNode } from "@/lib/litegraph/src/subgraph/SubgraphInputNode"
+import type { NodeLike } from "@/lib/litegraph/src/types/NodeLike"
 
-import { LinkDirection } from "@/types/globalEnums"
+import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
 
 /** Connecting TO an input slot. */
 

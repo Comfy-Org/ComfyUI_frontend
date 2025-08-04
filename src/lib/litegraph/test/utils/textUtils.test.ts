@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { truncateText } from "@/utils/textUtils"
+import { truncateText } from "@/lib/litegraph/src/utils/textUtils"
 
 describe("truncateText", () => {
   const createMockContext = (charWidth: number = 10) => {

@@ -1,9 +1,9 @@
-import type { CanvasColour, DefaultConnectionColors, INodeSlot, ISlotType, IWidgetLocator, Point } from "@/interfaces"
-import type { LLink } from "@/LLink"
-import type { RenderShape } from "@/types/globalEnums"
-import type { LinkDirection } from "@/types/globalEnums"
+import type { CanvasColour, DefaultConnectionColors, INodeSlot, ISlotType, IWidgetLocator, Point } from "@/lib/litegraph/src/interfaces"
+import type { LLink } from "@/lib/litegraph/src/LLink"
+import type { RenderShape } from "@/lib/litegraph/src/types/globalEnums"
+import type { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
 
-import { Rectangle } from "@/infrastructure/Rectangle"
+import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
 
 /** Base class for all input & output slots. */
 

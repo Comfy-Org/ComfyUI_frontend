@@ -1,12 +1,12 @@
-import type { INodeInputSlot, Point } from "@/interfaces"
-import type { ISerialisedNode } from "@/types/serialisation"
+import type { INodeInputSlot, Point } from "@/lib/litegraph/src/interfaces"
+import type { ISerialisedNode } from "@/lib/litegraph/src/types/serialisation"
 
 import { afterEach, beforeEach, describe, expect, vi } from "vitest"
 
-import { LGraphNode, LiteGraph } from "@/litegraph"
-import { LGraph } from "@/litegraph"
-import { NodeInputSlot } from "@/node/NodeInputSlot"
-import { NodeOutputSlot } from "@/node/NodeOutputSlot"
+import { LGraphNode, LiteGraph } from "@/lib/litegraph/src/litegraph"
+import { LGraph } from "@/lib/litegraph/src/litegraph"
+import { NodeInputSlot } from "@/lib/litegraph/src/node/NodeInputSlot"
+import { NodeOutputSlot } from "@/lib/litegraph/src/node/NodeOutputSlot"
 
 import { test } from "./testExtensions"
 

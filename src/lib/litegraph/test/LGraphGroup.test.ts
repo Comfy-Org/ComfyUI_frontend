@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest"
 
-import { LGraphGroup } from "@/litegraph"
+import { LGraphGroup } from "@/lib/litegraph/src/litegraph"
 
 import { test } from "./testExtensions"
 

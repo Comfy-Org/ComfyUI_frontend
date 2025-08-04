@@ -1,4 +1,4 @@
-import type { LGraphNode } from "@/LGraphNode"
+import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
 import type {
   IBaseWidget,
   IBooleanWidget,
@@ -11,9 +11,9 @@ import type {
   IStringWidget,
   IWidget,
   TWidgetType,
-} from "@/types/widgets"
+} from "@/lib/litegraph/src/types/widgets"
 
-import { toClass } from "@/utils/type"
+import { toClass } from "@/lib/litegraph/src/utils/type"
 
 import { BaseWidget } from "./BaseWidget"
 import { BooleanWidget } from "./BooleanWidget"
