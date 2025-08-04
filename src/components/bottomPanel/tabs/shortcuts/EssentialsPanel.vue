@@ -12,7 +12,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
+import {
+  ESSENTIALS_CONFIG,
+  useCommandSubcategories
+} from '@/composables/bottomPanelTabs/useCommandSubcategories'
+import { useCommandStore } from '@/stores/commandStore'
 
 import ShortcutsList from './ShortcutsList.vue'
 
@@ -22,27 +26,8 @@ const essentialsCommands = computed(() =>
   commandStore.commands.filter((cmd) => cmd.category === 'essentials')
 )
 
-// Group commands by subcategory based on command ID patterns
-const essentialsSubcategories = computed(() => {
-  const subcategories: Record<string, ComfyCommandImpl[]> = {}
-
-  for (const command of essentialsCommands.value) {
-    let subcategory = 'workflow'
-
-    if (command.id.includes('Workflow')) {
-      subcategory = 'workflow'
-    } else if (command.id.includes('Node')) {
-      subcategory = 'node'
-    } else if (command.id.includes('Queue')) {
-      subcategory = 'queue'
-    }
-
-    if (!subcategories[subcategory]) {
-      subcategories[subcategory] = []
-    }
-    subcategories[subcategory].push(command)
-  }
-
-  return subcategories
-})
+const { subcategories: essentialsSubcategories } = useCommandSubcategories(
+  essentialsCommands,
+  ESSENTIALS_CONFIG
+)
 </script>
