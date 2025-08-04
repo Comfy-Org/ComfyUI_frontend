@@ -1231,6 +1231,8 @@
       "Video": "비디오",
       "Video API": "비디오 API"
     },
+    "currentVersion": "현재 버전: v{version}",
+    "requiresUpgrade": "ComfyUI v{version} 이상이 필요합니다",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",
@@ -1535,7 +1537,8 @@
         "api_veo2_i2v": "Google Veo2 API로 이미지에서 비디오를 생성합니다."
       }
     },
-    "title": "템플릿으로 시작하기"
+    "title": "템플릿으로 시작하기",
+    "upgradeToUse": "이 템플릿을 사용하려면 업그레이드하세요"
   },
   "toastMessages": {
     "cannotCreateSubgraph": "서브그래프를 생성할 수 없습니다",

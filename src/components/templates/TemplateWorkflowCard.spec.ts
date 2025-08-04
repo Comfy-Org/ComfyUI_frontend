@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
@@ -109,6 +110,10 @@ vi.mock('@/composables/useTemplateWorkflows', () => ({
 }))
 
 describe('TemplateWorkflowCard', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   const createTemplate = (overrides = {}): TemplateInfo => ({
     name: 'test-template',
     mediaType: 'image',

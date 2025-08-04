@@ -1231,6 +1231,8 @@
       "Video": "Vidéo",
       "Video API": "API vidéo"
     },
+    "currentVersion": "Version actuelle : v{version}",
+    "requiresUpgrade": "Nécessite ComfyUI v{version} ou supérieur",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",
@@ -1535,7 +1537,8 @@
         "api_veo2_i2v": "Générez des vidéos à partir d'images avec l'API Google Veo2."
       }
     },
-    "title": "Commencez avec un modèle"
+    "title": "Commencez avec un modèle",
+    "upgradeToUse": "Mettez à jour pour utiliser ce modèle"
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",

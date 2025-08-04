@@ -1231,6 +1231,8 @@
       "Video": "视频生成",
       "Video API": "视频 API"
     },
+    "currentVersion": "当前版本：v{version}",
+    "requiresUpgrade": "需要 ComfyUI v{version} 或更高版本",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "混元3D 2.0 图生模型",
@@ -1535,7 +1537,8 @@
         "api_veo2_i2v": "Google Veo2 API 图像生成视频。"
       }
     },
-    "title": "从模板开始"
+    "title": "从模板开始",
+    "upgradeToUse": "升级以使用此模板"
   },
   "toastMessages": {
     "cannotCreateSubgraph": "无法创建子图",
