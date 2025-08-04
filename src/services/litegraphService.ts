@@ -847,10 +847,13 @@ export const useLitegraphService = () => {
 
         const isAnimatedWebp =
           this.animatedImages &&
-          // @ts-expect-error fixme ts strict error
-          output.images.some((img) => img.filename?.includes('webp'))
+          output?.images?.some((img) => img.filename?.includes('webp'))
+        const isAnimatedPng =
+          this.animatedImages &&
+          output?.images?.some((img) => img.filename?.includes('png'))
         const isVideo =
-          (this.animatedImages && !isAnimatedWebp) || isVideoNode(this)
+          (this.animatedImages && !isAnimatedWebp && !isAnimatedPng) ||
+          isVideoNode(this)
         if (isVideo) {
           useNodeVideo(this).showPreview()
         } else {
