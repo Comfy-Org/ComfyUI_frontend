@@ -27,7 +27,10 @@
             </div>
 
             <div class="keybinding-display flex-shrink-0">
-              <div class="keybinding-combo flex gap-1">
+              <div
+                class="keybinding-combo flex gap-1"
+                :aria-label="`Keyboard shortcut: ${command.keybinding!.combo.getKeySequences().join(' + ')}`"
+              >
                 <span
                   v-for="key in command.keybinding!.combo.getKeySequences()"
                   :key="key"
