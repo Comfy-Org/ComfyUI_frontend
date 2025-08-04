@@ -18,7 +18,7 @@
               (cmd) => !!cmd.keybinding
             )"
             :key="command.id"
-            class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700"
+            class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors duration-200"
           >
             <div class="shortcut-info flex-grow pr-4">
               <div class="shortcut-name text-sm font-medium">
@@ -91,16 +91,6 @@ const formatKey = (key: string): string => {
 <style scoped>
 .subcategory-title {
   color: var(--p-text-muted-color);
-}
-
-.shortcuts-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.shortcut-item {
-  transition: background-color 0.2s ease;
 }
 
 .key-badge {
