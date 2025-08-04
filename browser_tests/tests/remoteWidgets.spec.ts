@@ -240,7 +240,8 @@ test.describe('Remote COMBO Widget', () => {
         () => {
           const node = window['app'].graph.nodes.find(n => n.title === 'Remote Widget Node With 300ms Refresh')
           const values = node?.widgets[0]?.options?.values || []
-          return values.length > 0 && values[0] !== 'request-1-' + timestamps[0]
+          // Check if we got a new request (requestCount should be >= 2)
+          return values.length > 0 && values[0] && values[0].startsWith('request-2-')
         },
         { timeout: 5000 }
       )
