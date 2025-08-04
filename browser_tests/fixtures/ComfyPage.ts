@@ -1,10 +1,10 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
+import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/schemas/comfyWorkflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
