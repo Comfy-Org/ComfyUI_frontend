@@ -13,6 +13,15 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
   const settings = useSettingStore()
   const modelLog = ref<ComfyModelLog | null>(null)
 
+  // Loading states
+  const isLoadingModelLog = ref(false)
+  const isModelLogLoaded = computed(
+    () => !!modelLog.value && !isLoadingModelLog.value
+  )
+  const areModelsReady = computed(
+    () => modelStore.models.length > 0 && isModelLogLoaded.value
+  )
+
   // Computed properties for "Recently Added" based on file timestamps
   const maxRecentItemCount = computed(() =>
     settings.get('Comfy.Sidebar.RecentItems.MaxCount')
@@ -26,8 +35,8 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
 
     // Sort by dateCreated and pick the first {maxRecentItemCount}
     return workflows
-      .filter((a) => typeof a.created === 'number')
-      .sort((a, b) => b.created - a.created)
+      .filter((a) => a.created && typeof a.created === 'number')
+      .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
       .slice(0, maxRecentItemCount.value)
   })
 
@@ -66,6 +75,11 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
   })
 
   const recentlyUsedModels = computed(() => {
+    // Return empty array if data isn't ready to prevent race conditions
+    if (!areModelsReady.value) {
+      return []
+    }
+
     return sortedModelEntries.value
       .slice(0, maxRecentItemCount.value)
       .map((entry) => modelLookupMap.value.get(entry.key))
@@ -79,8 +93,13 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
   }
 
   const loadRecentModels = async () => {
-    if (!modelLog.value) {
-      modelLog.value = await ComfyModelLog.fromAPI()
+    if (!modelLog.value && !isLoadingModelLog.value) {
+      isLoadingModelLog.value = true
+      try {
+        modelLog.value = await ComfyModelLog.fromAPI()
+      } finally {
+        isLoadingModelLog.value = false
+      }
     }
   }
 
@@ -90,6 +109,10 @@ export const useRecentItemsStore = defineStore('recentItems', () => {
     recentlyAddedWorkflows,
     recentlyAddedModels,
     logModelUsage,
-    loadRecentModels
+    loadRecentModels,
+    // Loading states for components to show loading indicators
+    isLoadingModelLog,
+    isModelLogLoaded,
+    areModelsReady
   }
 })

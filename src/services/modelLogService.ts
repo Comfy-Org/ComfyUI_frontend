@@ -63,6 +63,7 @@ export class ComfyModelLog extends UserFile {
   }
 
   override async save(): Promise<UserFile> {
+    if (!this._isModified) return this
     this.content = JSON.stringify(this.activeState)
     const result = await super.save({ force: true })
     this._isModified = false
