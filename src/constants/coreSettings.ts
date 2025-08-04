@@ -813,7 +813,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: true,
+    defaultValue: false,
     versionAdded: '1.25.0'
   },
   {
