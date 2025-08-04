@@ -310,7 +310,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /** @internal Used to flatten the subgraph before execution. */
-  getInnerNodes(
+  override getInnerNodes(
     /** The set of computed node DTOs for this execution. */
     executableNodes: Map<ExecutionId, ExecutableLGraphNode>,
     /** The path of subgraph node IDs. */
@@ -339,7 +339,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     executableNodes.set(subgraphNodeDto.id, subgraphNodeDto)
 
     for (const node of this.subgraph.nodes) {
-      if ("getInnerNodes" in node) {
+      if ("getInnerNodes" in node && node.getInnerNodes) {
         node.getInnerNodes(executableNodes, subgraphInstanceIdPath, nodes, new Set(visited))
       } else {
         // Create minimal DTOs rather than cloning the node

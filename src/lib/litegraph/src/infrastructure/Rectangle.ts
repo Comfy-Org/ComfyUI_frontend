@@ -49,7 +49,8 @@ export class Rectangle extends Float64Array {
       : new Rectangle(rect[0], rect[1], rect[2], rect[3])
   }
 
-  override subarray(begin: number = 0, end?: number): Float64Array<ArrayBuffer> {
+  // @ts-ignore TODO: Fix after migration to frontend tsconfig rules - ES2022/ES2023 Float64Array type mismatch
+  override subarray(begin: number = 0, end?: number): Float64Array {
     const byteOffset = begin << 3
     const length = end === undefined ? end : end - begin
     return new Float64Array(this.buffer, byteOffset, length)
@@ -62,7 +63,7 @@ export class Rectangle extends Float64Array {
    */
   get pos(): Point {
     this.#pos ??= this.subarray(0, 2)
-    return this.#pos
+    return this.#pos!
   }
 
   set pos(value: ReadOnlyPoint) {
@@ -77,7 +78,7 @@ export class Rectangle extends Float64Array {
    */
   get size(): Size {
     this.#size ??= this.subarray(2, 4)
-    return this.#size
+    return this.#size!
   }
 
   set size(value: ReadOnlySize) {

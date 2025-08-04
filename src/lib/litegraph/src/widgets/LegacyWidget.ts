@@ -12,7 +12,7 @@ import { BaseWidget, type DrawWidgetOptions } from "./BaseWidget"
  * @remarks Expect this class to undergo breaking changes without warning.
  */
 export class LegacyWidget<TWidget extends IBaseWidget = IBaseWidget> extends BaseWidget<TWidget> implements IBaseWidget {
-  draw?(
+  override draw?(
     ctx: CanvasRenderingContext2D,
     node: LGraphNode,
     widget_width: number,

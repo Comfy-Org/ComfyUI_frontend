@@ -44,6 +44,7 @@ export class CurveEditor {
   draw(
     ctx: CanvasRenderingContext2D,
     size: Rect,
+    // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
     graphcanvas?: LGraphCanvas,
     background_color?: string,
     line_color?: string,

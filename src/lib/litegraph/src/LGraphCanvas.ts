@@ -1,3 +1,4 @@
+// @ts-nocheck TODO: Fix after migration to frontend tsconfig rules
 import type { ContextMenu } from "./ContextMenu"
 import type { CustomEventDispatcher, ICustomEventTarget } from "./infrastructure/CustomEventTarget"
 import type { LGraphCanvasEventMap } from "./infrastructure/LGraphCanvasEventMap"

@@ -692,6 +692,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
 
     // Assign onMouseDown implementation
+    // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
     this.onMouseDown = (e: CanvasPointerEvent, pos: Point, canvas: LGraphCanvas): boolean => {
       // Check for title button clicks (only if not collapsed)
       if (this.title_buttons?.length && !this.flags.collapsed) {
@@ -829,6 +830,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       return this.last_serialization
 
     if (this.inputs) o.inputs = this.inputs.map(input => inputAsSerialisable(input))
+    // @ts-ignore TODO: Fix after migration to frontend tsconfig rules - widget type mismatch
     if (this.outputs) o.outputs = this.outputs.map(output => outputAsSerialisable(output))
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
@@ -845,7 +847,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       }
     }
 
-    if (!o.type) o.type = this.constructor.type
+    if (!o.type && this.constructor.type) o.type = this.constructor.type
 
     if (this.color) o.color = this.color
     if (this.bgcolor) o.bgcolor = this.bgcolor

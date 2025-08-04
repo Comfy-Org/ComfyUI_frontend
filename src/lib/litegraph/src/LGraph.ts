@@ -234,6 +234,7 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
   onGetNodeMenuOptions?(options: (IContextMenuValue<unknown> | null)[], node: LGraphNode): void
 
+  // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
   private _input_nodes?: LGraphNode[]
 
   /**
@@ -411,6 +412,7 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
       on_frame()
     } else {
       // execute every 'interval' ms
+      // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
       this.execution_timer_id = setInterval(() => {
         // execute
         this.onBeforeStep?.()
