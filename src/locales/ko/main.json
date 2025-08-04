@@ -393,6 +393,7 @@
     "resetView": "보기 재설정",
     "selectMode": "선택 모드",
     "toggleLinkVisibility": "링크 가시성 전환",
+    "toggleMinimap": "미니맵 전환",
     "zoomIn": "확대",
     "zoomOut": "축소"
   },
@@ -722,6 +723,7 @@
     "Bypass/Unbypass Selected Nodes": "선택한 노드 우회/우회 해제",
     "Canvas Toggle Link Visibility": "캔버스 토글 링크 가시성",
     "Canvas Toggle Lock": "캔버스 토글 잠금",
+    "Canvas Toggle Minimap": "캔버스 미니맵 전환",
     "Check for Updates": "업데이트 확인",
     "Clear Pending Tasks": "보류 중인 작업 제거하기",
     "Clear Workflow": "워크플로 지우기",

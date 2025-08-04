@@ -760,7 +760,8 @@
     "fitView": "Fit View",
     "selectMode": "Select Mode",
     "panMode": "Pan Mode",
-    "toggleLinkVisibility": "Toggle Link Visibility"
+    "toggleLinkVisibility": "Toggle Link Visibility",
+    "toggleMinimap": "Toggle Minimap"
   },
   "groupNode": {
     "create": "Create group node",
@@ -836,6 +837,7 @@
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Canvas Toggle Link Visibility": "Canvas Toggle Link Visibility",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
+    "Canvas Toggle Minimap": "Canvas Toggle Minimap",
     "Pin/Unpin Selected Items": "Pin/Unpin Selected Items",
     "Bypass/Unbypass Selected Nodes": "Bypass/Unbypass Selected Nodes",
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",

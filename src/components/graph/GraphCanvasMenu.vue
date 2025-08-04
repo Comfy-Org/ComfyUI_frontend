@@ -56,6 +56,15 @@
       data-testid="toggle-link-visibility-button"
       @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
     />
+    <Button
+      v-tooltip.left="t('graphCanvasMenu.toggleMinimap') + ' (Alt + m)'"
+      severity="secondary"
+      :icon="'pi pi-map'"
+      :aria-label="$t('graphCanvasMenu.toggleMinimap')"
+      :class="{ 'minimap-active': minimapVisible }"
+      data-testid="toggle-minimap-button"
+      @click="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
+    />
   </ButtonGroup>
 </template>
 
@@ -75,6 +84,7 @@ const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 
+const minimapVisible = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 const linkHidden = computed(
   () => settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK
 )
@@ -106,5 +116,16 @@ const stopRepeat = () => {
 .p-buttongroup-vertical .p-button {
   margin: 0;
   border-radius: 0;
+}
+
+.p-button.minimap-active {
+  background-color: var(--p-button-primary-background);
+  border-color: var(--p-button-primary-border-color);
+  color: var(--p-button-primary-color);
+}
+
+.p-button.minimap-active:hover {
+  background-color: var(--p-button-primary-hover-background);
+  border-color: var(--p-button-primary-hover-border-color);
 }
 </style>
