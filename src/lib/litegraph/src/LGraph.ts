@@ -1054,7 +1054,14 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
    * @returns The group or null
    */
   getGroupOnPos(x: number, y: number): LGraphGroup | undefined {
-    return this._groups.toReversed().find(g => g.isPointInside(x, y))
+    // Iterate backwards through groups to find top-most
+    for (let i = this._groups.length - 1; i >= 0; i--) {
+      const group = this._groups[i]
+      if (group.isPointInside(x, y)) {
+        return group
+      }
+    }
+    return undefined
   }
 
   /**
@@ -1064,7 +1071,14 @@ export class LGraph implements LinkNetwork, BaseLGraph, Serialisable<Serialisabl
    * @returns The group or null
    */
   getGroupTitlebarOnPos(x: number, y: number): LGraphGroup | undefined {
-    return this._groups.toReversed().find(g => g.isPointInTitlebar(x, y))
+    // Iterate backwards through groups to find top-most
+    for (let i = this._groups.length - 1; i >= 0; i--) {
+      const group = this._groups[i]
+      if (group.isPointInTitlebar(x, y)) {
+        return group
+      }
+    }
+    return undefined
   }
 
   /**
