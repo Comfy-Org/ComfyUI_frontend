@@ -7,6 +7,7 @@ import {
 import { Point } from '@comfyorg/litegraph'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -19,6 +20,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -44,29 +46,10 @@ export function useCoreCommands(): ComfyCommand[] {
   const firebaseAuthActions = useFirebaseAuthActions()
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
+  const executionStore = useExecutionStore()
+  const { getSelectedNodes, toggleSelectedNodesMode } =
+    useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
-
-  const getSelectedNodes = (): LGraphNode[] => {
-    const selectedNodes = app.canvas.selected_nodes
-    const result: LGraphNode[] = []
-    if (selectedNodes) {
-      for (const i in selectedNodes) {
-        const node = selectedNodes[i]
-        result.push(node)
-      }
-    }
-    return result
-  }
-
-  const toggleSelectedNodesMode = (mode: LGraphEventMode) => {
-    getSelectedNodes().forEach((node) => {
-      if (node.mode === mode) {
-        node.mode = LGraphEventMode.ALWAYS
-      } else {
-        node.mode = mode
-      }
-    })
-  }
 
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
