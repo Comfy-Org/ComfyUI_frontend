@@ -13,12 +13,12 @@
 </template>
 
 <script setup lang="ts">
-import { createBounds } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
+import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const canvasStore = useCanvasStore()

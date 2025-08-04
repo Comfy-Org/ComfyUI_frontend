@@ -1,5 +1,5 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
 /**
  * Function that calculates dynamic pricing based on node widget values

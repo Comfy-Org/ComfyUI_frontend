@@ -10,15 +10,15 @@
 </template>
 
 <script setup lang="ts">
-import {
-  LiteGraph,
-  isOverNodeInput,
-  isOverNodeOutput
-} from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
 import { st } from '@/i18n'
+import {
+  LiteGraph,
+  isOverNodeInput,
+  isOverNodeOutput
+} from '@/lib/litegraph/src/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

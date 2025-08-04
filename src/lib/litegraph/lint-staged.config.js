@@ -3,10 +3,7 @@ export default {
 
   "*.js": stagedFiles => prettierAndEslint(stagedFiles),
 
-  "*.{ts,mts}": stagedFiles => [
-    ...prettierAndEslint(stagedFiles),
-    "tsc",
-  ],
+  "*.{ts,mts}": stagedFiles => [...prettierAndEslint(stagedFiles), "tsc"],
 }
 
 function prettierAndEslint(fileNames) {

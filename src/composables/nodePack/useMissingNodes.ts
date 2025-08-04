@@ -1,9 +1,9 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-import { NodeProperty } from '@comfyorg/litegraph/dist/LGraphNode'
 import { groupBy } from 'lodash'
 import { computed, onMounted } from 'vue'
 
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
+import { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

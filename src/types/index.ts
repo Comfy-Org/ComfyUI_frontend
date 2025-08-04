@@ -1,5 +1,4 @@
-import type { LGraph } from '@comfyorg/litegraph'
-
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DeviceStats,
   EmbeddingsResponse,

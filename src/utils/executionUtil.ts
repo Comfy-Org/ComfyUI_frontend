@@ -2,13 +2,12 @@ import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph
-} from '@comfyorg/litegraph'
+} from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
   LGraphEventMode,
   SubgraphNode
-} from '@comfyorg/litegraph'
-
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON

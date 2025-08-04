@@ -42,11 +42,11 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import Message from 'primevue/message'
 import { computed, ref } from 'vue'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { compareVersions } from '@/utils/formatUtil'
 

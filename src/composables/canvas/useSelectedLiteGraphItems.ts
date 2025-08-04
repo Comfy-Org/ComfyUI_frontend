@@ -3,8 +3,7 @@ import {
   LGraphNode,
   Positionable,
   Reroute
-} from '@comfyorg/litegraph'
-
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import {

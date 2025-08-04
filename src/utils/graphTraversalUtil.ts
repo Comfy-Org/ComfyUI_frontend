@@ -1,5 +1,8 @@
-import type { LGraph, LGraphNode, Subgraph } from '@comfyorg/litegraph'
-
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 

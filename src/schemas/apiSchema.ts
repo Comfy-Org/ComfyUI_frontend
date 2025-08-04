@@ -1,7 +1,7 @@
-import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflowSchema'
 import { zKeybinding } from '@/schemas/keyBindingSchema'

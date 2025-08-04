@@ -1,6 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutedWsMessage,
   ResultItem,

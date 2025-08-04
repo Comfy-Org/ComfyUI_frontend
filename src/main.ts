@@ -1,4 +1,4 @@
-import '@comfyorg/litegraph/style.css'
+import '@/lib/litegraph/src/style.css'
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import * as Sentry from '@sentry/vue'

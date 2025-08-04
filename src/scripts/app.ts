@@ -1,12 +1,3 @@
-import {
-  LGraph,
-  LGraphCanvas,
-  LGraphEventMode,
-  LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
-import type { Vector2 } from '@comfyorg/litegraph'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
@@ -14,6 +5,15 @@ import { reactive } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
