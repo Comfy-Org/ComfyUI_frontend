@@ -13,7 +13,7 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import '@/assets/css/style.css'
 import { FIREBASE_CONFIG } from '@/config/firebase'
-import '@/lib/litegraph/src/style.css'
+import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 
 import App from './App.vue'
