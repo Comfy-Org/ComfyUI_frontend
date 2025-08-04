@@ -29,8 +29,8 @@ describe("Import order dependency", () => {
 
   test("Imports without error when entry point is imported first", async ({ expect }) => {
     async function importNormally() {
-      const entryPointImport = await import("@/litegraph")
-      const directImport = await import("@/LGraph")
+      const entryPointImport = await import("@/lib/litegraph/src/litegraph")
+      const directImport = await import("@/lib/litegraph/src/LGraph")
 
       // Sanity check that imports were cleared.
       expect(Object.is(LiteGraph, entryPointImport.LiteGraph)).toBe(false)

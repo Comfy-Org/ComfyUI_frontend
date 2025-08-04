@@ -14,8 +14,8 @@ describe("LGraph", () => {
   })
 
   test("is exactly the same type", async ({ expect }) => {
-    const directImport = await import("@/LGraph")
-    const entryPointImport = await import("@/litegraph")
+    const directImport = await import("@/lib/litegraph/src/LGraph")
+    const entryPointImport = await import("@/lib/litegraph/src/litegraph")
 
     expect(LiteGraph.LGraph).toBe(directImport.LGraph)
     expect(LiteGraph.LGraph).toBe(entryPointImport.LGraph)
