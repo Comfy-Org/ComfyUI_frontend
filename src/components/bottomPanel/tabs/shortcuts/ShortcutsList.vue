@@ -2,7 +2,7 @@
   <div class="shortcuts-list">
     <div class="grid gap-8 h-full grid-cols-3">
       <div
-        v-for="(subcategoryCommands, subcategory) in subcategories"
+        v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
         :key="subcategory"
         class="flex flex-col"
       >
@@ -14,9 +14,7 @@
 
         <div class="flex flex-col gap-1">
           <div
-            v-for="command in subcategoryCommands.filter(
-              (cmd) => !!cmd.keybinding
-            )"
+            v-for="command in subcategoryCommands"
             :key="command.id"
             class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors duration-200"
           >
@@ -48,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ComfyCommandImpl } from '@/stores/commandStore'
@@ -58,6 +57,16 @@ const { subcategories } = defineProps<{
   commands: ComfyCommandImpl[]
   subcategories: Record<string, ComfyCommandImpl[]>
 }>()
+
+const filteredSubcategories = computed(() => {
+  const result: Record<string, ComfyCommandImpl[]> = {}
+
+  for (const [subcategory, commands] of Object.entries(subcategories)) {
+    result[subcategory] = commands.filter((cmd) => !!cmd.keybinding)
+  }
+
+  return result
+})
 
 const getSubcategoryTitle = (subcategory: string): string => {
   const titleMap: Record<string, string> = {
