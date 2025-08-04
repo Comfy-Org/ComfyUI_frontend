@@ -34,6 +34,17 @@ export const useSubgraphNavigationStore = defineStore(
     })
 
     /**
+     * Get the ID of the root graph for the currently active workflow.
+     * @returns The ID of the root graph for the currently active workflow.
+     */
+    const getCurrentRootGraphId = () => {
+      const canvas = canvasStore.getCanvas()
+      if (!canvas) return 'root'
+
+      return canvas.graph?.rootGraph?.id ?? 'root'
+    }
+
+    /**
      * A stack representing subgraph navigation history from the root graph to
      * the current opened subgraph.
      */
@@ -117,13 +128,13 @@ export const useSubgraphNavigationStore = defineStore(
         saveViewport(prevSubgraph.id)
       } else if (!prevSubgraph && subgraph) {
         // Leaving root graph to enter a subgraph
-        saveViewport('root')
+        saveViewport(getCurrentRootGraphId())
       }
 
       const isInRootGraph = !subgraph
       if (isInRootGraph) {
         idStack.value.length = 0
-        restoreViewport('root')
+        restoreViewport(getCurrentRootGraphId())
         return
       }
 
