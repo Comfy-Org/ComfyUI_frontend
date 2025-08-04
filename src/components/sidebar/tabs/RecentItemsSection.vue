@@ -47,7 +47,10 @@
     </div>
 
     <div
-      v-show="recentlyUsedItems.length > 0 && showRecentlyUsed"
+      v-show="
+        (recentlyUsedItems.length > 0 || isLoadingRecentlyUsed) &&
+        showRecentlyUsed
+      "
       class="recently-used-items"
     >
       <div
@@ -63,7 +66,13 @@
         <span class="text-sm font-medium">{{ recentlyUsedTitle }}</span>
       </div>
       <div v-show="isRecentlyUsedExpanded" class="ml-4">
-        <div class="recent-items-list">
+        <div
+          v-if="isLoadingRecentlyUsed"
+          class="recent-items-loading p-2 text-sm text-muted-foreground"
+        >
+          {{ $t('g.loading') }}...
+        </div>
+        <div v-else class="recent-items-list">
           <div
             v-for="item in recentlyUsedItems"
             :key="item.key"
@@ -135,6 +144,7 @@ interface Props<T> {
   enablePreview?: boolean
   previewTargetId?: string
   isComfyModelDef?: (item: T) => boolean
+  isLoadingRecentlyUsed?: boolean
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
@@ -142,13 +152,16 @@ const props = withDefaults(defineProps<Props<T>>(), {
   previewTargetId: '#model-library-model-preview-container',
   recentlyAddedItems: () => [],
   recentlyUsedItems: () => [],
-  isComfyModelDef: (_item: RecentItem) => false
+  isComfyModelDef: (_item: RecentItem) => false,
+  isLoadingRecentlyUsed: false
 })
 
 const hasRecentItems = computed(
   () =>
     (props.recentlyAddedItems.length > 0 && props.showRecentlyAdded) ||
-    (props.recentlyUsedItems.length > 0 && props.showRecentlyUsed)
+    (props.recentlyUsedItems.length > 0 && props.showRecentlyUsed) ||
+    props.showRecentlyAdded ||
+    (props.isLoadingRecentlyUsed && props.showRecentlyUsed)
 )
 
 const isRecentlyAddedExpanded = ref(false)

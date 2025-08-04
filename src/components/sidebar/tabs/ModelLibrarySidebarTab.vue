@@ -48,6 +48,7 @@
           :on-item-click="handleModelClick"
           :enable-preview="true"
           :is-comfy-model-def="(_item: ComfyModelDef) => true"
+          :is-loading-recently-used="!recentItemsStore.areModelsReady"
           preview-target-id="#model-library-model-preview-container"
         >
           <template #preview="{ modelDef, previewRef }">
