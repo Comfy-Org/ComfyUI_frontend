@@ -134,7 +134,6 @@ describe('NodePreview', () => {
   describe('Description Rendering', () => {
     it('renders plain text description as HTML', () => {
       const plainTextNodeDef: ComfyNodeDefV2 = {
-
         ...mockNodeDef,
         description: 'This is a plain text description'
       }
@@ -201,7 +200,8 @@ describe('NodePreview', () => {
     it('handles potentially unsafe markdown content safely', () => {
       const unsafeNodeDef: ComfyNodeDefV2 = {
         ...mockNodeDef,
-        description: 'Safe **markdown** content <script>alert("xss")</script> with `code` blocks'
+        description:
+          'Safe **markdown** content <script>alert("xss")</script> with `code` blocks'
       }
 
       const wrapper = mountComponent(unsafeNodeDef)
@@ -273,7 +273,8 @@ describe('NodePreview', () => {
     it('prevents XSS attacks by sanitizing dangerous HTML elements', () => {
       const maliciousNodeDef: ComfyNodeDefV2 = {
         ...mockNodeDef,
-        description: 'Normal text <img src="x" onerror="alert(\'XSS\')" /> and **bold** text'
+        description:
+          'Normal text <img src="x" onerror="alert(\'XSS\')" /> and **bold** text'
       }
 
       const wrapper = mountComponent(maliciousNodeDef)
