@@ -74,17 +74,16 @@ import SidebarIcon from './SidebarIcon.vue'
 const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
 const conflictDetection = useConflictDetection()
-const conflictAcknowledgment = useConflictAcknowledgment()
 const { showNodeConflictDialog } = useDialogService()
 const isHelpCenterVisible = ref(false)
 
-// Use conflict acknowledgment state from composable
+// Use conflict acknowledgment state from composable - call only once
 const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
-  conflictAcknowledgment
+  useConflictAcknowledgment()
+
 // Use either release red dot or conflict red dot
 const shouldShowRedDot = computed(() => {
-  const releaseRedDot = releaseStore.shouldShowRedDot
-  return releaseRedDot || shouldShowConflictRedDot.value
+  return shouldShowConflictRedDot.value || releaseStore.shouldShowRedDot
 })
 
 const sidebarLocation = computed(() =>
