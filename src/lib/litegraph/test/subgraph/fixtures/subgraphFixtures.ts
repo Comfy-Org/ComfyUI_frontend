@@ -58,6 +58,7 @@ export interface SubgraphFixtures {
  */
 export const subgraphTest = test.extend<SubgraphFixtures>({
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   emptySubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
       name: 'Empty Test Subgraph',
@@ -70,6 +71,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
   },
 
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   simpleSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
       name: 'Simple Test Subgraph',
@@ -82,6 +84,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
   },
 
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   complexSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
       name: 'Complex Test Subgraph',
@@ -101,6 +104,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
   },
 
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   nestedSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const nested = createNestedSubgraphs({
       depth: 3,
@@ -113,6 +117,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
   },
 
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   subgraphWithNode: async ({}, use: (value: unknown) => Promise<void>) => {
     // Create the subgraph definition
     const subgraph = createTestSubgraph({
@@ -140,6 +145,7 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
   },
 
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   eventCapture: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
       name: 'Event Test Subgraph'
@@ -191,6 +197,7 @@ export interface EdgeCaseFixtures {
  */
 export const edgeCaseTest = subgraphTest.extend<EdgeCaseFixtures>({
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   circularSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const rootGraph = new LGraph()
 
@@ -225,6 +232,7 @@ export const edgeCaseTest = subgraphTest.extend<EdgeCaseFixtures>({
   },
 
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   deeplyNestedSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     // Create a very deep nesting structure (but not exceeding MAX_NESTED_SUBGRAPHS)
     const nested = createNestedSubgraphs({
@@ -238,6 +246,7 @@ export const edgeCaseTest = subgraphTest.extend<EdgeCaseFixtures>({
   },
 
   // @ts-expect-error TODO: Fix after merge - fixture use parameter type
+  // eslint-disable-next-line no-empty-pattern
   maxIOSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     // Create a subgraph with many inputs and outputs
     const inputs = Array.from({ length: 20 }, (_, i) => ({

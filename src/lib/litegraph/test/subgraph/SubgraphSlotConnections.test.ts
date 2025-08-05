@@ -229,7 +229,6 @@ describe('Subgraph slot connections', () => {
       expect(isSubgraphInput(subgraphInput)).toBe(true)
       expect(isSubgraphInput(node.inputs[0])).toBe(false)
       expect(isSubgraphInput(null)).toBe(false)
-      // eslint-disable-next-line unicorn/no-useless-undefined
       expect(isSubgraphInput(undefined)).toBe(false)
       expect(isSubgraphInput({})).toBe(false)
     })
@@ -243,7 +242,6 @@ describe('Subgraph slot connections', () => {
       expect(isSubgraphOutput(subgraphOutput)).toBe(true)
       expect(isSubgraphOutput(node.outputs[0])).toBe(false)
       expect(isSubgraphOutput(null)).toBe(false)
-      // eslint-disable-next-line unicorn/no-useless-undefined
       expect(isSubgraphOutput(undefined)).toBe(false)
       expect(isSubgraphOutput({})).toBe(false)
     })

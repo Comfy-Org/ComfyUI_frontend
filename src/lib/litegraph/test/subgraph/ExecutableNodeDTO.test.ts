@@ -300,7 +300,9 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     expect(dto.inputs).toHaveLength(2) // Copied input data only
 
     // Should not duplicate heavy node data
+    // eslint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('outputs')).toBe(false) // Outputs not copied
+    // eslint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('widgets')).toBe(false) // Widgets not copied
   })
 
@@ -340,7 +342,9 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     expect(dto.graph).toBe(innerNode.graph)
 
     // Should not hold heavy references that prevent GC
+    // eslint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('parentGraph')).toBe(false)
+    // eslint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('rootGraph')).toBe(false)
   })
 })

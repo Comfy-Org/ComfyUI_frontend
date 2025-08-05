@@ -32,7 +32,7 @@ describe('LGraphNode', () => {
 
   beforeEach(() => {
     origLiteGraph = Object.assign({}, LiteGraph)
-    // @ts-expect-error
+    // @ts-expect-error TODO: Fix after merge - Classes property not in type
     delete origLiteGraph.Classes
 
     Object.assign(LiteGraph, {

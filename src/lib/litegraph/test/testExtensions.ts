@@ -33,6 +33,7 @@ interface DirtyFixtures {
 }
 
 export const test = baseTest.extend<LitegraphFixtures>({
+  // eslint-disable-next-line no-empty-pattern
   minimalGraph: async ({}, use) => {
     // Before each test function
     const serialisable = structuredClone(minimalSerialisableGraph)
@@ -47,6 +48,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
     floatingLink as unknown as ISerialisedGraph
   ),
   linkedNodesGraph: structuredClone(linkedNodes as unknown as ISerialisedGraph),
+  // eslint-disable-next-line no-empty-pattern
   floatingBranchGraph: async ({}, use) => {
     const cloned = structuredClone(
       floatingBranch as unknown as ISerialisedGraph
@@ -54,6 +56,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
     const graph = new LGraph(cloned)
     await use(graph)
   },
+  // eslint-disable-next-line no-empty-pattern
   reroutesComplexGraph: async ({}, use) => {
     const cloned = structuredClone(
       reroutesComplex as unknown as ISerialisedGraph
@@ -65,6 +68,7 @@ export const test = baseTest.extend<LitegraphFixtures>({
 
 /** Test that use {@link DirtyFixtures}. One test per file. */
 export const dirtyTest = test.extend<DirtyFixtures>({
+  // eslint-disable-next-line no-empty-pattern
   basicSerialisableGraph: async ({}, use) => {
     if (!basicSerialisableGraph.nodes) throw new Error('Invalid test object')
 

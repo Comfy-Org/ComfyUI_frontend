@@ -41,6 +41,7 @@ const test = baseTest.extend<TestContext>({
     await use(reroutesComplexGraph)
   },
   setConnectingLinks: async (
+    // eslint-disable-next-line no-empty-pattern
     {},
     use: (mock: ReturnType<typeof vi.fn>) => Promise<void>
   ) => {

@@ -6,6 +6,7 @@ import type { Point, Size } from '@/lib/litegraph/src/interfaces'
 // TODO: If there's a common test context, use it here
 // For now, we'll define a simple context for Rectangle tests
 const test = baseTest.extend<{ rect: Rectangle }>({
+  // eslint-disable-next-line no-empty-pattern
   rect: async ({}, use) => {
     await use(new Rectangle())
   }

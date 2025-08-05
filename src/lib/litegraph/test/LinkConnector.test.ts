@@ -28,6 +28,7 @@ interface TestContext {
 }
 
 const test = baseTest.extend<TestContext>({
+  // eslint-disable-next-line no-empty-pattern
   network: async ({}, use) => {
     const graph = new LGraph()
     const floatingLinks = new Map<number, LLink>()
@@ -52,6 +53,7 @@ const test = baseTest.extend<TestContext>({
   },
 
   setConnectingLinks: async (
+    // eslint-disable-next-line no-empty-pattern
     {},
     use: (mock: ReturnType<typeof vi.fn>) => Promise<void>
   ) => {
