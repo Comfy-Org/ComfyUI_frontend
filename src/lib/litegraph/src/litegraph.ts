@@ -58,6 +58,7 @@ export interface LinkReleaseContextExtended {
   links: ConnectingLink[]
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {

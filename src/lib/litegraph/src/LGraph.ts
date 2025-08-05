@@ -261,7 +261,7 @@ export class LGraph
     node: LGraphNode
   ): void
 
-  // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
+  // @ts-expect-error - Private property type needs fixing
   private _input_nodes?: LGraphNode[]
 
   /**
@@ -440,7 +440,7 @@ export class LGraph
       on_frame()
     } else {
       // execute every 'interval' ms
-      // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
+      // @ts-expect-error - Timer ID type mismatch needs fixing
       this.execution_timer_id = setInterval(() => {
         // execute
         this.onBeforeStep?.()
@@ -780,7 +780,7 @@ export class LGraph
         node[eventname]()
       } else if (params && params.constructor === Array) {
         // @ts-expect-error deprecated
-        node[eventname].apply(node, params)
+        node[eventname](...params)
       } else {
         // @ts-expect-error deprecated
         node[eventname](params)
@@ -807,6 +807,7 @@ export class LGraph
     if (!list_of_graphcanvas) return
 
     for (const c of list_of_graphcanvas) {
+      // eslint-disable-next-line prefer-spread
       c[action]?.apply(c, params)
     }
   }
@@ -1182,7 +1183,7 @@ export class LGraph
   triggerInput(name: string, value: any): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
-      // @ts-expect-error
+      // @ts-expect-error - onTrigger method may not exist on all node types
       node.onTrigger(value)
     }
   }
@@ -1191,7 +1192,7 @@ export class LGraph
   setCallback(name: string, func: any): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
-      // @ts-expect-error
+      // @ts-expect-error - setTrigger method may not exist on all node types
       node.setTrigger(func)
     }
   }
@@ -2017,15 +2018,13 @@ export class LGraph
   }
 
   load(url: string | Blob | URL | File, callback: () => void) {
-    const that = this
-
     // from file
     if (url instanceof Blob || url instanceof File) {
       const reader = new FileReader()
-      reader.addEventListener('load', function (event) {
+      reader.addEventListener('load', (event) => {
         const result = stringOrEmpty(event.target?.result)
         const data = JSON.parse(result)
-        that.configure(data)
+        this.configure(data)
         callback?.()
       })
 
@@ -2037,13 +2036,13 @@ export class LGraph
     const req = new XMLHttpRequest()
     req.open('GET', url, true)
     req.send(null)
-    req.addEventListener('load', function () {
+    req.addEventListener('load', () => {
       if (req.status !== 200) {
         console.error('Error loading graph:', req.status, req.response)
         return
       }
       const data = JSON.parse(req.response)
-      that.configure(data)
+      this.configure(data)
       callback?.()
     })
     req.addEventListener('error', (err) => {

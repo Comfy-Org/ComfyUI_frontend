@@ -119,7 +119,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     // `node` has no setter - Object.assign will throw.
     // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
-    // eslint-disable-next-line unused-imports/no-unused-vars
     const {
       node: _,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
@@ -339,7 +338,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Correctly and safely typing this is currently not possible (practical?) in TypeScript 5.8.
    */
   createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error
+    // @ts-expect-error - Constructor type casting for widget cloning
     const cloned: this = new (this.constructor as typeof this)(this, node)
     cloned.value = this.value
     return cloned

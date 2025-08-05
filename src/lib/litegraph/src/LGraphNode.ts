@@ -731,7 +731,7 @@ export class LGraphNode
 
     // Assign onMouseDown implementation
     this.onMouseDown = (
-      // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
+      // @ts-expect-error - CanvasPointerEvent type needs fixing
       e: CanvasPointerEvent,
       pos: Point,
       canvas: LGraphCanvas
@@ -887,7 +887,7 @@ export class LGraphNode
     if (this.inputs)
       o.inputs = this.inputs.map((input) => inputAsSerialisable(input))
     if (this.outputs)
-      // @ts-ignore TODO: Fix after migration to frontend tsconfig rules - widget type mismatch
+      // @ts-expect-error - Output serialization type mismatch
       o.outputs = this.outputs.map((output) => outputAsSerialisable(output))
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
@@ -1871,7 +1871,7 @@ export class LGraphNode
     }
 
     const w: IBaseWidget & { type: Type } = {
-      // @ts-expect-error
+      // @ts-expect-error - Type casting for widget type property
       type: type.toLowerCase(),
       name: name,
       value: value,

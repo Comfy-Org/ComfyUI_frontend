@@ -274,6 +274,7 @@ export class ContextMenu<TValue = unknown> {
     }
 
     // menu option clicked
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this
     function inner_onclick(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value

@@ -192,7 +192,7 @@ export class FloatingRenderLink implements RenderLink {
   }
 
   connectToRerouteInput(
-    // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
+    // @ts-expect-error - Reroute type needs fixing
     reroute: Reroute,
     { node: inputNode, input }: { node: LGraphNode; input: INodeInputSlot },
     events: CustomEventTarget<LinkConnectorEventMap>
@@ -209,7 +209,7 @@ export class FloatingRenderLink implements RenderLink {
   }
 
   connectToRerouteOutput(
-    // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
+    // @ts-expect-error - Reroute type needs fixing
     reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,

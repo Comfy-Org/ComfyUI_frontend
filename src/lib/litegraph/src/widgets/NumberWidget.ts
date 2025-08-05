@@ -73,7 +73,9 @@ export class NumberWidget
           // Solve the equation if possible
           try {
             v = eval(v)
-          } catch {}
+          } catch {
+            // Ignore eval errors
+          }
         }
         const newValue = Number(v)
         if (!isNaN(newValue)) {

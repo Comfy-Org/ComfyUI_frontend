@@ -1,4 +1,3 @@
-// @ts-nocheck TODO: Fix after migration to frontend tsconfig rules
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -886,7 +885,9 @@ export class LGraphCanvas
   }
 
   static onGroupAdd(
+    // @ts-expect-error - unused parameter
     info: unknown,
+    // @ts-expect-error - unused parameter
     entry: unknown,
     mouse_event: MouseEvent
   ): void {
@@ -934,7 +935,9 @@ export class LGraphCanvas
   }
 
   static onNodeAlign(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
     event: MouseEvent,
     prev_menu: ContextMenu<string>,
@@ -957,7 +960,9 @@ export class LGraphCanvas
   }
 
   static onGroupAlign(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
     event: MouseEvent,
     prev_menu: ContextMenu<string>
@@ -978,7 +983,9 @@ export class LGraphCanvas
   }
 
   static createDistributeMenu(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
     event: MouseEvent,
     prev_menu: ContextMenu<string>
@@ -1000,7 +1007,9 @@ export class LGraphCanvas
   }
 
   static onMenuAdd(
+    // @ts-expect-error - unused parameter
     value: unknown,
+    // @ts-expect-error - unused parameter
     options: unknown,
     e: MouseEvent,
     prev_menu?: ContextMenu<string>,
@@ -1058,7 +1067,14 @@ export class LGraphCanvas
             value: category_path,
             content: name,
             has_submenu: true,
-            callback: function (value, event, mouseEvent, contextMenu) {
+            callback: function (
+              value,
+              // @ts-expect-error - unused parameter
+              event,
+              // @ts-expect-error - unused parameter
+              mouseEvent,
+              contextMenu
+            ) {
               inner_onMenuAdded(value.value, contextMenu)
             }
           })
@@ -1077,7 +1093,14 @@ export class LGraphCanvas
           value: node.type,
           content: node.title,
           has_submenu: false,
-          callback: function (value, event, mouseEvent, contextMenu) {
+          callback: function (
+            value,
+            // @ts-expect-error - unused parameter
+            event,
+            // @ts-expect-error - unused parameter
+            mouseEvent,
+            contextMenu
+          ) {
             if (!canvas.graph) throw new NullGraphError()
 
             const first_event = contextMenu.getFirstEvent()
@@ -1102,10 +1125,10 @@ export class LGraphCanvas
         entries.push(entry)
       }
 
-      // @ts-expect-error Remove param ref_window - unused
       new LiteGraph.ContextMenu(
         entries,
         { event: e, parentMenu: prev_menu },
+        // @ts-expect-error - extra parameter
         ref_window
       )
     }
@@ -1116,6 +1139,7 @@ export class LGraphCanvas
 
   /** @param _options Parameter is never used */
   static showMenuNodeOptionalOutputs(
+    // @ts-expect-error - unused parameter
     v: unknown,
     /** Unused - immediately overwritten */
     _options: INodeOutputSlot[],
@@ -1200,6 +1224,7 @@ export class LGraphCanvas
   /** @param value Parameter is never used */
   static onShowMenuNodeProperties(
     value: NodeProperty | undefined,
+    // @ts-expect-error - unused parameter
     options: unknown,
     e: MouseEvent,
     prev_menu: ContextMenu<string>,
@@ -1264,9 +1289,13 @@ export class LGraphCanvas
   }
 
   static onMenuResizeNode(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
+    // @ts-expect-error - unused parameter
     e: MouseEvent,
+    // @ts-expect-error - unused parameter
     menu: ContextMenu,
     node: LGraphNode
   ): void {
@@ -1294,8 +1323,10 @@ export class LGraphCanvas
   // TODO refactor :: this is used fot title but not for properties!
   static onShowPropertyEditor(
     item: { property: keyof LGraphNode; type: string },
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions<string>,
     e: MouseEvent,
+    // @ts-expect-error - unused parameter
     menu: ContextMenu<string>,
     node: LGraphNode
   ): void {
@@ -1370,6 +1401,7 @@ export class LGraphCanvas
     dialog.addEventListener('mouseleave', function () {
       if (LiteGraph.dialog_close_on_mouse_leave) {
         if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
+          // @ts-expect-error - setTimeout type
           dialogCloseTimer = setTimeout(
             dialog.close,
             LiteGraph.dialog_close_on_mouse_leave_delay
@@ -1424,9 +1456,13 @@ export class LGraphCanvas
   }
 
   static onMenuNodeCollapse(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
+    // @ts-expect-error - unused parameter
     e: MouseEvent,
+    // @ts-expect-error - unused parameter
     menu: ContextMenu,
     node: LGraphNode
   ): void {
@@ -1454,9 +1490,13 @@ export class LGraphCanvas
   }
 
   static onMenuToggleAdvanced(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
+    // @ts-expect-error - unused parameter
     e: MouseEvent,
+    // @ts-expect-error - unused parameter
     menu: ContextMenu,
     node: LGraphNode
   ): void {
@@ -1482,7 +1522,9 @@ export class LGraphCanvas
   }
 
   static onMenuNodeMode(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
     e: MouseEvent,
     menu: ContextMenu,
@@ -1527,6 +1569,7 @@ export class LGraphCanvas
   /** @param value Parameter is never used */
   static onMenuNodeColors(
     value: IContextMenuValue<string | null>,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
     e: MouseEvent,
     menu: ContextMenu<string | null>,
@@ -1588,7 +1631,9 @@ export class LGraphCanvas
   }
 
   static onMenuNodeShapes(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue<(typeof LiteGraph.VALID_SHAPES)[number]>,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions<(typeof LiteGraph.VALID_SHAPES)[number]>,
     e: MouseEvent,
     menu?: ContextMenu<(typeof LiteGraph.VALID_SHAPES)[number]>,
@@ -1640,9 +1685,13 @@ export class LGraphCanvas
   }
 
   static onMenuNodeClone(
+    // @ts-expect-error - unused parameter
     value: IContextMenuValue,
+    // @ts-expect-error - unused parameter
     options: IContextMenuOptions,
+    // @ts-expect-error - unused parameter
     e: MouseEvent,
+    // @ts-expect-error - unused parameter
     menu: ContextMenu,
     node: LGraphNode
   ): void {
@@ -3353,10 +3402,10 @@ export class LGraphCanvas
       if (!this.linkConnector.isConnecting) {
         this.dirty_canvas = true
 
-        // @ts-expect-error Unused param
         this.node_over?.onMouseUp?.(
           e,
           [x - this.node_over.pos[0], y - this.node_over.pos[1]],
+          // @ts-expect-error - extra parameter
           this
         )
         this.node_capturing_input?.onMouseUp?.(e, [
@@ -3405,7 +3454,7 @@ export class LGraphCanvas
     if (!this.graph || !this.allow_dragcanvas) return
 
     // TODO: Mouse wheel zoom rewrite
-    // @ts-expect-error
+    // @ts-expect-error wheelDeltaY is non-standard property on WheelEvent
     const delta = e.wheelDeltaY ?? e.detail * -60
 
     this.adjustMouseEvent(e)
@@ -3470,7 +3519,7 @@ export class LGraphCanvas
     if (!graph) return
 
     let block_default = false
-    // @ts-expect-error
+    // @ts-expect-error EventTarget.localName is not in standard types
     if (e.target.localName == 'input') return
 
     if (e.type == 'keydown') {
@@ -3508,7 +3557,7 @@ export class LGraphCanvas
         this.pasteFromClipboard({ connectInputs: e.shiftKey })
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         // delete or backspace
-        // @ts-expect-error
+        // @ts-expect-error EventTarget.localName is not in standard types
         if (e.target.localName != 'input' && e.target.localName != 'textarea') {
           if (this.selectedItems.size === 0) {
             this.#noItemsSelected()
@@ -4372,9 +4421,9 @@ export class LGraphCanvas
 
     const { ctx, canvas, graph, linkConnector } = this
 
-    // @ts-expect-error
+    // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
     if (ctx.start2D && !this.viewport) {
-      // @ts-expect-error
+      // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
       ctx.start2D()
       ctx.restore()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -4824,9 +4873,8 @@ export class LGraphCanvas
           this._bg_img = new Image()
           this._bg_img.name = this.background_image
           this._bg_img.src = this.background_image
-          const that = this
-          this._bg_img.addEventListener('load', function () {
-            that.draw(true, true)
+          this._bg_img.addEventListener('load', () => {
+            this.draw(true, true)
           })
         }
 
@@ -6037,7 +6085,11 @@ export class LGraphCanvas
   /**
    * draws every group area in the background
    */
-  drawGroups(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
+  drawGroups(
+    // @ts-expect-error - unused parameter
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D
+  ): void {
     if (!this.graph) return
 
     const groups = this.graph._groups
@@ -6129,6 +6181,7 @@ export class LGraphCanvas
     function inner_clicked(
       this: LGraphCanvas,
       v: string,
+      // @ts-expect-error - unused parameter
       options: unknown,
       e: MouseEvent
     ) {
@@ -6410,6 +6463,7 @@ export class LGraphCanvas
       optPass || {}
     )
     const dirty = () => this.#dirty()
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this
     const { graph } = this
     const { afterRerouteId } = opts
@@ -6572,16 +6626,18 @@ export class LGraphCanvas
         }
         case 'Search':
           if (isFrom) {
-            // @ts-expect-error Subgraph
             opts.showSearchBox(e, {
+              // @ts-expect-error - Subgraph types
               node_from: opts.nodeFrom,
+              // @ts-expect-error - Subgraph types
               slot_from: slotX,
               type_filter_in: fromSlotType
             })
           } else {
-            // @ts-expect-error Subgraph
             opts.showSearchBox(e, {
+              // @ts-expect-error - Subgraph types
               node_to: opts.nodeTo,
+              // @ts-expect-error - Subgraph types
               slot_from: slotX,
               type_filter_out: fromSlotType
             })
@@ -6609,6 +6665,7 @@ export class LGraphCanvas
     event: CanvasPointerEvent,
     multiline?: boolean
   ): HTMLDivElement {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this
     title = title || ''
 
@@ -6645,6 +6702,7 @@ export class LGraphCanvas
       if (prevent_timeout) return
       if (LiteGraph.dialog_close_on_mouse_leave) {
         if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
+          // @ts-expect-error - setTimeout type
           dialogCloseTimer = setTimeout(
             dialog.close,
             LiteGraph.dialog_close_on_mouse_leave_delay
@@ -6765,7 +6823,7 @@ export class LGraphCanvas
       do_type_filter: LiteGraph.search_filter_enabled,
 
       // these are default: pass to set initially set values
-      // @ts-expect-error
+      // @ts-expect-error Property missing from interface definition
       type_filter_in: false,
 
       type_filter_out: false,
@@ -6778,6 +6836,7 @@ export class LGraphCanvas
     Object.assign(options, searchOptions)
 
     // console.log(options);
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this
     const graphcanvas = LGraphCanvas.active_canvas
     const { canvas } = graphcanvas
@@ -6844,6 +6903,7 @@ export class LGraphCanvas
 
         const hideDelay = options.hide_on_mouse_leave
         const delay = typeof hideDelay === 'number' ? hideDelay : 500
+        // @ts-expect-error - setTimeout type
         timeout_close = setTimeout(dialog.close, delay)
       })
       // if filtering, check focus changed to comboboxes and prevent closing
@@ -6913,6 +6973,7 @@ export class LGraphCanvas
           if (timeout) {
             clearInterval(timeout)
           }
+          // @ts-expect-error - setTimeout type
           timeout = setTimeout(refreshHelper, 10)
           return
         }
@@ -6941,7 +7002,7 @@ export class LGraphCanvas
           opt.innerHTML = aSlots[iK]
           selIn.append(opt)
           if (
-            // @ts-expect-error
+            // @ts-expect-error Property missing from interface definition
             options.type_filter_in !== false &&
             String(options.type_filter_in).toLowerCase() ==
               String(aSlots[iK]).toLowerCase()
@@ -7029,8 +7090,9 @@ export class LGraphCanvas
                 iS = options.slot_from.name
                   ? options.node_from.findOutputSlot(options.slot_from.name)
                   : -1
-                // @ts-expect-error change interface check
+                // @ts-expect-error - slot_index property
                 if (iS == -1 && options.slot_from.slot_index !== undefined)
+                  // @ts-expect-error - slot_index property
                   iS = options.slot_from.slot_index
                 break
               case 'number':
@@ -7073,8 +7135,9 @@ export class LGraphCanvas
                 iS = options.slot_from.name
                   ? options.node_to.findInputSlot(options.slot_from.name)
                   : -1
-                // @ts-expect-error change interface check
+                // @ts-expect-error - slot_index property
                 if (iS == -1 && options.slot_from.slot_index !== undefined)
+                  // @ts-expect-error - slot_index property
                   iS = options.slot_from.slot_index
                 break
               case 'number':
@@ -7175,7 +7238,7 @@ export class LGraphCanvas
           (sIn.value || sOut.value)
         ) {
           // FIXME: Undeclared variable again
-          // @ts-expect-error
+          // @ts-expect-error Variable declared without type annotation
           filtered_extra = []
           for (const i in LiteGraph.registered_node_types) {
             if (
@@ -7184,11 +7247,11 @@ export class LGraphCanvas
                 outTypeOverride: sOut && sOut.value ? '*' : false
               })
             ) {
-              // @ts-expect-error
+              // @ts-expect-error Variable declared without type annotation
               filtered_extra.push(i)
             }
           }
-          // @ts-expect-error
+          // @ts-expect-error Variable declared without type annotation
           for (const extraItem of filtered_extra) {
             addResult(extraItem, 'generic_type')
             if (
@@ -7205,14 +7268,14 @@ export class LGraphCanvas
           helper.childNodes.length == 0 &&
           options.show_general_if_none_on_typefilter
         ) {
-          // @ts-expect-error
+          // @ts-expect-error Variable declared without type annotation
           filtered_extra = []
           for (const i in LiteGraph.registered_node_types) {
             if (inner_test_filter(i, { skipFilter: true }))
-              // @ts-expect-error
+              // @ts-expect-error Variable declared without type annotation
               filtered_extra.push(i)
           }
-          // @ts-expect-error
+          // @ts-expect-error Variable declared without type annotation
           for (const extraItem of filtered_extra) {
             addResult(extraItem, 'not_in_filter')
             if (
@@ -7358,7 +7421,7 @@ export class LGraphCanvas
       input = dialog.querySelector('input')
       input?.addEventListener('click', function () {
         dialog.modified()
-        // @ts-expect-error
+        // @ts-expect-error setValue function signature not strictly typed
         setValue(!!input.checked)
       })
     } else {
@@ -7376,7 +7439,7 @@ export class LGraphCanvas
           v = JSON.stringify(v)
         }
 
-        // @ts-expect-error
+        // @ts-expect-error HTMLInputElement.value expects string but v can be other types
         input.value = v
         input.addEventListener('keydown', function (e) {
           if (e.key == 'Escape') {
@@ -7513,6 +7576,7 @@ export class LGraphCanvas
       if (prevent_timeout) return
 
       if (!dialog.is_modified && LiteGraph.dialog_close_on_mouse_leave) {
+        // @ts-expect-error - setTimeout type
         dialogCloseTimer = setTimeout(
           dialog.close,
           LiteGraph.dialog_close_on_mouse_leave_delay
@@ -7730,7 +7794,7 @@ export class LGraphCanvas
               className: 'dark',
               callback: inner_clicked
             },
-            // @ts-expect-error
+            // @ts-expect-error ref_window parameter unused in ContextMenu constructor
             ref_window
           )
         })
@@ -7780,8 +7844,8 @@ export class LGraphCanvas
     const inner_refresh = () => {
       // clear
       panel.content.innerHTML = ''
-      // @ts-expect-error ctor props
       panel.addHTML(
+        // @ts-expect-error - desc property
         `<span class='node_type'>${node.type}</span><span class='node_desc'>${node.constructor.desc || ''}</span><span class='separator'></span>`
       )
 
@@ -8027,9 +8091,13 @@ export class LGraphCanvas
         {
           content: 'Properties Panel',
           callback: function (
+            // @ts-expect-error - unused parameter
             item: any,
+            // @ts-expect-error - unused parameter
             options: any,
+            // @ts-expect-error - unused parameter
             e: any,
+            // @ts-expect-error - unused parameter
             menu: any,
             node: LGraphNode
           ) {

@@ -779,6 +779,7 @@ export class LiteGraphGlobal {
         oDOM.addEventListener(sMethod + sEvent, fCall, capture)
       }
       // only pointerevents
+      // falls through
       case 'leave':
       case 'cancel':
       case 'gotpointercapture':
@@ -789,6 +790,7 @@ export class LiteGraphGlobal {
         }
       }
       // not "pointer" || "mouse"
+      // falls through
       default:
         return oDOM.addEventListener(sEvent, fCall, capture)
     }
@@ -829,6 +831,7 @@ export class LiteGraphGlobal {
         }
       }
       // only pointerevents
+      // falls through
       case 'leave':
       case 'cancel':
       case 'gotpointercapture':
@@ -843,6 +846,7 @@ export class LiteGraphGlobal {
         }
       }
       // not "pointer" || "mouse"
+      // falls through
       default:
         return oDOM.removeEventListener(sEvent, fCall, capture)
     }
@@ -949,6 +953,7 @@ export class LiteGraphGlobal {
   extendClass(target: any, origin: any): void {
     for (const i in origin) {
       // copy class properties
+      // eslint-disable-next-line no-prototype-builtins
       if (target.hasOwnProperty(i)) continue
       target[i] = origin[i]
     }
@@ -957,9 +962,11 @@ export class LiteGraphGlobal {
       // copy prototype properties
       for (const i in origin.prototype) {
         // only enumerable
+        // eslint-disable-next-line no-prototype-builtins
         if (!origin.prototype.hasOwnProperty(i)) continue
 
         // avoid overwriting existing ones
+        // eslint-disable-next-line no-prototype-builtins
         if (target.prototype.hasOwnProperty(i)) continue
 
         // copy getters
