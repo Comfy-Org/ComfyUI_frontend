@@ -48,3 +48,12 @@ When referencing Comfy-Org repos:
 1. Check for local copy
 2. Use GitHub API for branches/PRs/metadata
 3. Curl GitHub website if needed
+
+## Common Pitfalls
+
+- NEVER use `any` type - use proper TypeScript types
+- NEVER use `as any` type assertions - fix the underlying type issue
+- ALWAYS check if PrimeVue component is deprecated (see src/components/CLAUDE.md)
+- NEVER use `--no-verify` flag when committing
+- NEVER delete or disable tests to make them pass
+- NEVER circumvent quality checks
