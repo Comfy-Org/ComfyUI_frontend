@@ -20,6 +20,7 @@ export const oldSchemaGraph: ISerialisedGraph = {
     }
   ],
   nodes: [
+    // @ts-expect-error TODO: Fix after merge - missing required properties for test
     {
       id: 1
     }
@@ -64,6 +65,7 @@ export const basicSerialisableGraph: SerialisableGraph = {
     }
   ],
   nodes: [
+    // @ts-expect-error TODO: Fix after merge - missing required properties for test
     {
       id: 1,
       type: 'mustBeSet'

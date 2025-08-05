@@ -75,6 +75,7 @@ describe('SubgraphSerialization - Basic Serialization', () => {
     // Verify core properties
     expect(restored.id).toBe(original.id)
     expect(restored.name).toBe(original.name)
+    // @ts-expect-error description property not in type definition
     expect(restored.description).toBe(original.description)
 
     // Verify I/O structure
@@ -250,6 +251,7 @@ describe('SubgraphSerialization - Version Compatibility', () => {
     }
 
     expect(() => {
+      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), modernFormat)
       expect(subgraph.name).toBe('Modern Subgraph')
       expect(subgraph.inputs.length).toBe(1)
@@ -279,6 +281,7 @@ describe('SubgraphSerialization - Version Compatibility', () => {
     }
 
     expect(() => {
+      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), incompleteFormat)
       expect(subgraph.name).toBe('Incomplete Subgraph')
       // Should have default empty arrays
@@ -313,6 +316,7 @@ describe('SubgraphSerialization - Version Compatibility', () => {
 
     // Should handle future format gracefully
     expect(() => {
+      // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), futureFormat)
       expect(subgraph.name).toBe('Future Subgraph')
     }).not.toThrow()

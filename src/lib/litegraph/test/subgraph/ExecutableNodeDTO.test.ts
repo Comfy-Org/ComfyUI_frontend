@@ -84,6 +84,7 @@ describe('ExecutableNodeDTO Creation', () => {
 
     // Test that wrapper calls original method
     const args = ['arg1', 'arg2']
+    // @ts-expect-error TODO: Fix after merge - applyToGraph expects different arguments
     dto.applyToGraph!(args[0], args[1])
 
     expect(mockApplyToGraph).toHaveBeenCalledWith(args[0], args[1])

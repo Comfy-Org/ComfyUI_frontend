@@ -135,6 +135,7 @@ describe('SubgraphNode Title Button', () => {
         80 - subgraphNode.pos[1] // 80 - 100 = -20
       ]
 
+      // @ts-expect-error onMouseDown possibly undefined
       const handled = subgraphNode.onMouseDown(
         event,
         clickPosRelativeToNode,
@@ -171,6 +172,7 @@ describe('SubgraphNode Title Button', () => {
         150 - subgraphNode.pos[1] // 150 - 100 = 50
       ]
 
+      // @ts-expect-error onMouseDown possibly undefined
       const handled = subgraphNode.onMouseDown(
         event,
         clickPosRelativeToNode,
@@ -217,6 +219,7 @@ describe('SubgraphNode Title Button', () => {
         80 - subgraphNode.pos[1] // -20
       ]
 
+      // @ts-expect-error onMouseDown possibly undefined
       const handled = subgraphNode.onMouseDown(
         event,
         clickPosRelativeToNode,

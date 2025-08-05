@@ -39,6 +39,7 @@ describe('LGraphNode Title Buttons', () => {
     it('should create buttons with default options', () => {
       const node = new LGraphNode('Test Node')
 
+      // @ts-expect-error TODO: Fix after merge - addTitleButton type issues
       const button = node.addTitleButton({})
 
       expect(button).toBeInstanceOf(LGraphButton)
@@ -56,6 +57,7 @@ describe('LGraphNode Title Buttons', () => {
       const button = node.addTitleButton({
         name: 'close_button',
         text: 'X',
+        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
         visible: true
       })
 
@@ -89,6 +91,7 @@ describe('LGraphNode Title Buttons', () => {
       ]
 
       // Simulate the click - onMouseDown should detect button click
+      // @ts-expect-error TODO: Fix after merge - onMouseDown method type issues
       const handled = node.onMouseDown(event, clickPosRelativeToNode, canvas)
 
       expect(handled).toBe(true)
@@ -109,6 +112,7 @@ describe('LGraphNode Title Buttons', () => {
       const button = node.addTitleButton({
         name: 'test_button',
         text: 'T',
+        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
         visible: true
       })
 
@@ -137,6 +141,7 @@ describe('LGraphNode Title Buttons', () => {
         180 - node.pos[1] // 180 - 200 = -20
       ]
 
+      // @ts-expect-error TODO: Fix after merge - onMouseDown method type issues
       const handled = node.onMouseDown(event, clickPosRelativeToNode, canvas)
 
       expect(handled).toBe(false)
@@ -151,12 +156,14 @@ describe('LGraphNode Title Buttons', () => {
       const button1 = node.addTitleButton({
         name: 'button1',
         text: 'A',
+        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
         visible: true
       })
 
       const button2 = node.addTitleButton({
         name: 'button2',
         text: 'B',
+        // @ts-expect-error TODO: Fix after merge - visible property not defined in type
         visible: true
       })
 
@@ -196,6 +203,7 @@ describe('LGraphNode Title Buttons', () => {
         titleY - node.pos[1] // 178 - 200 = -22
       ]
 
+      // @ts-expect-error onMouseDown possibly undefined
       const handled = node.onMouseDown(event, clickPosRelativeToNode, canvas)
 
       expect(handled).toBe(true)
@@ -252,6 +260,7 @@ describe('LGraphNode Title Buttons', () => {
         titleY - node.pos[1] // 178 - 200 = -22
       ]
 
+      // @ts-expect-error onMouseDown possibly undefined
       const handled = node.onMouseDown(event, clickPosRelativeToNode, canvas)
 
       expect(handled).toBe(true)
@@ -268,6 +277,7 @@ describe('LGraphNode Title Buttons', () => {
   describe('onTitleButtonClick', () => {
     it('should dispatch litegraph:node-title-button-clicked event', () => {
       const node = new LGraphNode('Test Node')
+      // @ts-expect-error TODO: Fix after merge - LGraphButton constructor type issues
       const button = new LGraphButton({ name: 'test_button' })
 
       const canvas = {

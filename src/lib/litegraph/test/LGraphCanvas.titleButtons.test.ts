@@ -43,6 +43,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
     canvasElement.getContext = vi.fn().mockReturnValue(ctx)
 
+    // @ts-expect-error TODO: Fix after merge - LGraphCanvas constructor type issues
     canvas = new LGraphCanvas(canvasElement, null, {
       skip_render: true,
       skip_events: true
@@ -54,11 +55,15 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
     // Mock required methods
     node.drawTitleBarBackground = vi.fn()
+    // @ts-expect-error Property 'drawTitleBarText' does not exist on type 'LGraphNode'
     node.drawTitleBarText = vi.fn()
     node.drawBadges = vi.fn()
+    // @ts-expect-error TODO: Fix after merge - drawToggles not defined in type
     node.drawToggles = vi.fn()
+    // @ts-expect-error TODO: Fix after merge - drawNodeShape not defined in type
     node.drawNodeShape = vi.fn()
     node.drawSlots = vi.fn()
+    // @ts-expect-error TODO: Fix after merge - drawContent not defined in type
     node.drawContent = vi.fn()
     node.drawWidgets = vi.fn()
     node.drawCollapsedSlots = vi.fn()
@@ -67,6 +72,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
     node.drawProgressBar = vi.fn()
     node._setConcreteSlots = vi.fn()
     node.arrange = vi.fn()
+    // @ts-expect-error TODO: Fix after merge - isSelectable not defined in type
     node.isSelectable = vi.fn().mockReturnValue(true)
   })
 
@@ -75,12 +81,14 @@ describe('LGraphCanvas Title Button Rendering', () => {
       const button1 = node.addTitleButton({
         name: 'button1',
         text: 'A',
+        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
         visible: true
       })
 
       const button2 = node.addTitleButton({
         name: 'button2',
         text: 'B',
+        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
         visible: true
       })
 
@@ -117,6 +125,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
       const visibleButton = node.addTitleButton({
         name: 'visible',
         text: 'V',
+        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
         visible: true
       })
 
@@ -160,6 +169,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
         const button = node.addTitleButton({
           name: `button${i}`,
           text: String(i),
+          // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
           visible: true
         })
         button.getWidth = vi.fn().mockReturnValue(15) // All same width for simplicity
@@ -184,6 +194,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
       const button = node.addTitleButton({
         name: 'test',
         text: 'T',
+        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
         visible: true
       })
 
@@ -191,6 +202,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
       const drawSpy = vi.spyOn(button, 'draw')
 
       // Set low quality rendering
+      // @ts-expect-error TODO: Fix after merge - lowQualityRenderingRequired not defined in type
       canvas.lowQualityRenderingRequired = true
 
       canvas.drawNode(node, ctx)
@@ -205,12 +217,14 @@ describe('LGraphCanvas Title Button Rendering', () => {
       const smallButton = node.addTitleButton({
         name: 'small',
         text: 'S',
+        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
         visible: true
       })
 
       const largeButton = node.addTitleButton({
         name: 'large',
         text: 'LARGE',
+        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
         visible: true
       })
 
@@ -240,6 +254,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
       const button = node.addTitleButton({
         name: 'test',
         text: 'X',
+        // @ts-expect-error TODO: Fix after merge - visible property not in LGraphButtonOptions
         visible: true
       })
 

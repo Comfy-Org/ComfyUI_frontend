@@ -9,12 +9,14 @@ import {
 describe('NodeSlot', () => {
   describe('inputAsSerialisable', () => {
     it('removes _data from serialized slot', () => {
+      // @ts-expect-error Missing boundingRect property for test
       const slot: INodeOutputSlot = {
         _data: 'test data',
         name: 'test-id',
         type: 'STRING',
         links: []
       }
+      // @ts-expect-error Argument type mismatch for test
       const serialized = outputAsSerialisable(slot)
       expect(serialized).not.toHaveProperty('_data')
     })
@@ -27,6 +29,7 @@ describe('NodeSlot', () => {
         link: null,
         widget: {
           name: 'test-widget',
+          // @ts-expect-error TODO: Fix after merge - type property not in IWidgetLocator
           type: 'combo',
           value: 'test-value-1',
           options: {
@@ -40,6 +43,7 @@ describe('NodeSlot', () => {
     })
 
     it('preserves pos for non-widget input slots', () => {
+      // @ts-expect-error TODO: Fix after merge - missing boundingRect property for test
       const normalSlot: INodeInputSlot = {
         name: 'test-id',
         type: 'STRING',
@@ -57,6 +61,7 @@ describe('NodeSlot', () => {
         link: null,
         widget: {
           name: 'test-widget',
+          // @ts-expect-error TODO: Fix after merge - type property not in IWidgetLocator
           type: 'combo',
           value: 'test-value-1',
           options: {

@@ -71,6 +71,7 @@ describe('SubgraphNode Memory Management', () => {
           size: [200, 100],
           inputs: [],
           outputs: [],
+          // @ts-expect-error TODO: Fix after merge - properties not in ExportedSubgraphInstance
           properties: {},
           flags: {},
           mode: 0
@@ -108,8 +109,10 @@ describe('SubgraphNode Memory Management', () => {
       }
 
       // Simulate widget promotion
+      // @ts-expect-error TODO: Fix after merge - mockWidget type mismatch
       input._widget = mockWidget
       input.widget = { name: 'promoted_widget' }
+      // @ts-expect-error TODO: Fix after merge - mockWidget type mismatch
       subgraphNode.widgets.push(mockWidget)
 
       expect(input._widget).toBe(mockWidget)
@@ -117,6 +120,7 @@ describe('SubgraphNode Memory Management', () => {
       expect(subgraphNode.widgets).toContain(mockWidget)
 
       // Remove widget (this should clean up references)
+      // @ts-expect-error TODO: Fix after merge - mockWidget type mismatch
       subgraphNode.removeWidget(mockWidget)
 
       // Widget should be removed from array
@@ -141,6 +145,7 @@ describe('SubgraphNode Memory Management', () => {
           size: [200, 100],
           inputs: [],
           outputs: [],
+          // @ts-expect-error TODO: Fix after merge - properties not in ExportedSubgraphInstance
           properties: {},
           flags: {},
           mode: 0
@@ -327,6 +332,7 @@ describe('SubgraphMemory - Widget Reference Management', () => {
     const widget2 = { type: 'string', value: 'test', name: 'widget2' }
 
     if (subgraphNode.widgets) {
+      // @ts-expect-error TODO: Fix after merge - widget type mismatch
       subgraphNode.widgets.push(widget1, widget2)
       expect(subgraphNode.widgets.length).toBe(initialWidgetCount + 2)
     }

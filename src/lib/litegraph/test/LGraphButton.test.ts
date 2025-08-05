@@ -6,6 +6,7 @@ import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 describe('LGraphButton', () => {
   describe('Constructor', () => {
     it('should create a button with default options', () => {
+      // @ts-expect-error TODO: Fix after merge - LGraphButton constructor type issues
       const button = new LGraphButton({})
       expect(button).toBeInstanceOf(LGraphButton)
       expect(button.name).toBeUndefined()
@@ -13,6 +14,7 @@ describe('LGraphButton', () => {
     })
 
     it('should create a button with custom name', () => {
+      // @ts-expect-error TODO: Fix after merge - LGraphButton constructor type issues
       const button = new LGraphButton({ name: 'test_button' })
       expect(button.name).toBe('test_button')
     })
@@ -157,6 +159,7 @@ describe('LGraphButton', () => {
       const button = new LGraphButton({
         text: '→',
         fontSize: 20,
+        // @ts-expect-error TODO: Fix after merge - color property not defined in type
         color: '#FFFFFF',
         backgroundColor: '#333333',
         xOffset: -10,

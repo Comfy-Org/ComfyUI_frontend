@@ -349,6 +349,7 @@ describe('SubgraphEdgeCases - Performance and Scale', () => {
     const subgraphNode = createTestSubgraphNode(subgraph)
 
     // Simulate concurrent operations
+    // @ts-expect-error TODO: Fix after merge - operations implicitly has any[] type
     const operations = []
     for (let i = 0; i < 20; i++) {
       operations.push(
@@ -369,6 +370,7 @@ describe('SubgraphEdgeCases - Performance and Scale', () => {
 
     // Execute all operations - should not crash
     expect(() => {
+      // @ts-expect-error TODO: Fix after merge - operations implicitly has any[] type
       for (const op of operations) op()
     }).not.toThrow()
   })

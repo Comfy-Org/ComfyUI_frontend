@@ -21,6 +21,7 @@ describe('SubgraphEvents - Event Payload Verification', () => {
         })
       })
 
+      // @ts-expect-error TODO: Fix after merge - detail is of type unknown
       expect(addedEvents[0].detail.input).toBe(input)
     }
   )
@@ -42,6 +43,7 @@ describe('SubgraphEvents - Event Payload Verification', () => {
         })
       })
 
+      // @ts-expect-error TODO: Fix after merge - detail is of type unknown
       expect(addedEvents[0].detail.output).toBe(output)
     }
   )
@@ -68,6 +70,7 @@ describe('SubgraphEvents - Event Payload Verification', () => {
         index: 0
       })
 
+      // @ts-expect-error TODO: Fix after merge - detail is of type unknown
       expect(removingEvents[0].detail.input).toBe(input)
     }
   )
@@ -94,6 +97,7 @@ describe('SubgraphEvents - Event Payload Verification', () => {
         index: 0
       })
 
+      // @ts-expect-error TODO: Fix after merge - detail is of type unknown
       expect(removingEvents[0].detail.output).toBe(output)
     }
   )
@@ -121,6 +125,7 @@ describe('SubgraphEvents - Event Payload Verification', () => {
         newName: 'new_name'
       })
 
+      // @ts-expect-error TODO: Fix after merge - detail is of type unknown
       expect(renamingEvents[0].detail.input).toBe(input)
 
       // Verify the label was updated after the event (renameInput sets label, not name)
@@ -154,6 +159,7 @@ describe('SubgraphEvents - Event Payload Verification', () => {
         newName: 'new_name'
       })
 
+      // @ts-expect-error TODO: Fix after merge - detail is of type unknown
       expect(renamingEvents[0].detail.output).toBe(output)
 
       // Verify the label was updated after the event

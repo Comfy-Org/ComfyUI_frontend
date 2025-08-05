@@ -23,6 +23,7 @@ function createNodeWithWidget(
   const input = node.addInput('value', slotType)
   node.addOutput('out', slotType)
 
+  // @ts-expect-error Abstract class instantiation
   const widget = new BaseWidget({
     name: 'widget',
     type: widgetType,
@@ -130,7 +131,9 @@ describe('SubgraphWidgetPromotion', () => {
       // Check event was fired
       const promotedEvents = eventCapture.getEventsByType('widget-promoted')
       expect(promotedEvents).toHaveLength(1)
+      // @ts-expect-error Object is of type 'unknown'
       expect(promotedEvents[0].detail.widget).toBeDefined()
+      // @ts-expect-error Object is of type 'unknown'
       expect(promotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
 
       eventCapture.cleanup()
@@ -155,7 +158,9 @@ describe('SubgraphWidgetPromotion', () => {
       // Check event was fired
       const demotedEvents = eventCapture.getEventsByType('widget-demoted')
       expect(demotedEvents).toHaveLength(1)
+      // @ts-expect-error Object is of type 'unknown'
       expect(demotedEvents[0].detail.widget).toBeDefined()
+      // @ts-expect-error Object is of type 'unknown'
       expect(demotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
 
       // Widget should be removed
@@ -177,6 +182,7 @@ describe('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
+      // @ts-expect-error Abstract class instantiation
       const widget1 = new BaseWidget({
         name: 'widget1',
         type: 'number',
@@ -186,6 +192,7 @@ describe('SubgraphWidgetPromotion', () => {
         node: multiWidgetNode
       })
 
+      // @ts-expect-error Abstract class instantiation
       const widget2 = new BaseWidget({
         name: 'widget2',
         type: 'string',
@@ -325,6 +332,7 @@ describe('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
+      // @ts-expect-error Abstract class instantiation
       const widget1 = new BaseWidget({
         name: 'widget1',
         type: 'number',
@@ -335,6 +343,7 @@ describe('SubgraphWidgetPromotion', () => {
         tooltip: 'Number widget tooltip'
       })
 
+      // @ts-expect-error Abstract class instantiation
       const widget2 = new BaseWidget({
         name: 'widget2',
         type: 'string',
