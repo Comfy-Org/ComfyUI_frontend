@@ -1,6 +1,13 @@
-import type { CompassCorners, Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, ReadOnlyTypedArray, Size } from "@/lib/litegraph/src/interfaces"
-
-import { isInRectangle } from "@/lib/litegraph/src/measure"
+import type {
+  CompassCorners,
+  Point,
+  ReadOnlyPoint,
+  ReadOnlyRect,
+  ReadOnlySize,
+  ReadOnlyTypedArray,
+  Size
+} from '@/lib/litegraph/src/interfaces'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**
  * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
@@ -17,7 +24,12 @@ export class Rectangle extends Float64Array {
   #pos: Point | undefined
   #size: Size | undefined
 
-  constructor(x: number = 0, y: number = 0, width: number = 0, height: number = 0) {
+  constructor(
+    x: number = 0,
+    y: number = 0,
+    width: number = 0,
+    height: number = 0
+  ) {
     super(4)
 
     this[0] = x
@@ -37,7 +49,11 @@ export class Rectangle extends Float64Array {
    * @param height The height of the rectangle.  Default: {@link width}
    * @returns A new rectangle whose centre is at {@link x}
    */
-  static fromCentre([x, y]: ReadOnlyPoint, width: number, height = width): Rectangle {
+  static fromCentre(
+    [x, y]: ReadOnlyPoint,
+    width: number,
+    height = width
+  ): Rectangle {
     const left = x - width * 0.5
     const top = y - height * 0.5
     return new Rectangle(left, top, width, height)
@@ -161,12 +177,12 @@ export class Rectangle extends Float64Array {
 
   /** The x co-ordinate of the centre of this rectangle. */
   get centreX() {
-    return this[0] + (this[2] * 0.5)
+    return this[0] + this[2] * 0.5
   }
 
   /** The y co-ordinate of the centre of this rectangle. */
   get centreY() {
-    return this[1] + (this[3] * 0.5)
+    return this[1] + this[3] * 0.5
   }
   // #endregion Property accessors
 
@@ -189,10 +205,7 @@ export class Rectangle extends Float64Array {
    */
   containsXy(x: number, y: number): boolean {
     const [left, top, width, height] = this
-    return x >= left &&
-      x < left + width &&
-      y >= top &&
-      y < top + height
+    return x >= left && x < left + width && y >= top && y < top + height
   }
 
   /**
@@ -202,10 +215,7 @@ export class Rectangle extends Float64Array {
    */
   containsPoint([x, y]: ReadOnlyPoint): boolean {
     const [left, top, width, height] = this
-    return x >= left &&
-      x < left + width &&
-      y >= top &&
-      y < top + height
+    return x >= left && x < left + width && y >= top && y < top + height
   }
 
   /**
@@ -219,16 +229,19 @@ export class Rectangle extends Float64Array {
     const otherRight = other[0] + other[2]
     const otherBottom = other[1] + other[3]
 
-    const identical = this.x === other[0] &&
+    const identical =
+      this.x === other[0] &&
       this.y === other[1] &&
       right === otherRight &&
       bottom === otherBottom
 
-    return !identical &&
+    return (
+      !identical &&
       this.x <= other[0] &&
       this.y <= other[1] &&
       right >= otherRight &&
       bottom >= otherBottom
+    )
   }
 
   /**
@@ -237,10 +250,12 @@ export class Rectangle extends Float64Array {
    * @returns `true` if {@link rect} overlaps with this rectangle, otherwise `false`.
    */
   overlaps(rect: ReadOnlyRect): boolean {
-    return this.x < rect[0] + rect[2] &&
+    return (
+      this.x < rect[0] + rect[2] &&
       this.y < rect[1] + rect[3] &&
       this.x + this.width > rect[0] &&
       this.y + this.height > rect[1]
+    )
   }
 
   /**
@@ -250,11 +265,15 @@ export class Rectangle extends Float64Array {
    * @param cornerSize Each corner is treated as an inset square with this width and height.
    * @returns The compass direction of the corner that contains the point, or `undefined` if the point is not in any corner.
    */
-  findContainingCorner(x: number, y: number, cornerSize: number): CompassCorners | undefined {
-    if (this.isInTopLeftCorner(x, y, cornerSize)) return "NW"
-    if (this.isInTopRightCorner(x, y, cornerSize)) return "NE"
-    if (this.isInBottomLeftCorner(x, y, cornerSize)) return "SW"
-    if (this.isInBottomRightCorner(x, y, cornerSize)) return "SE"
+  findContainingCorner(
+    x: number,
+    y: number,
+    cornerSize: number
+  ): CompassCorners | undefined {
+    if (this.isInTopLeftCorner(x, y, cornerSize)) return 'NW'
+    if (this.isInTopRightCorner(x, y, cornerSize)) return 'NE'
+    if (this.isInBottomLeftCorner(x, y, cornerSize)) return 'SW'
+    if (this.isInBottomRightCorner(x, y, cornerSize)) return 'SE'
   }
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the top-left corner of this rectangle, otherwise `false`. */
@@ -264,17 +283,38 @@ export class Rectangle extends Float64Array {
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the top-right corner of this rectangle, otherwise `false`. */
   isInTopRightCorner(x: number, y: number, cornerSize: number): boolean {
-    return isInRectangle(x, y, this.right - cornerSize, this.y, cornerSize, cornerSize)
+    return isInRectangle(
+      x,
+      y,
+      this.right - cornerSize,
+      this.y,
+      cornerSize,
+      cornerSize
+    )
   }
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the bottom-left corner of this rectangle, otherwise `false`. */
   isInBottomLeftCorner(x: number, y: number, cornerSize: number): boolean {
-    return isInRectangle(x, y, this.x, this.bottom - cornerSize, cornerSize, cornerSize)
+    return isInRectangle(
+      x,
+      y,
+      this.x,
+      this.bottom - cornerSize,
+      cornerSize,
+      cornerSize
+    )
   }
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the bottom-right corner of this rectangle, otherwise `false`. */
   isInBottomRightCorner(x: number, y: number, cornerSize: number): boolean {
-    return isInRectangle(x, y, this.right - cornerSize, this.bottom - cornerSize, cornerSize, cornerSize)
+    return isInRectangle(
+      x,
+      y,
+      this.right - cornerSize,
+      this.bottom - cornerSize,
+      cornerSize,
+      cornerSize
+    )
   }
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the top edge of this rectangle, otherwise `false`. */
@@ -284,7 +324,14 @@ export class Rectangle extends Float64Array {
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the bottom edge of this rectangle, otherwise `false`. */
   isInBottomEdge(x: number, y: number, edgeSize: number): boolean {
-    return isInRectangle(x, y, this.x, this.bottom - edgeSize, this.width, edgeSize)
+    return isInRectangle(
+      x,
+      y,
+      this.x,
+      this.bottom - edgeSize,
+      this.width,
+      edgeSize
+    )
   }
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the left edge of this rectangle, otherwise `false`. */
@@ -294,7 +341,14 @@ export class Rectangle extends Float64Array {
 
   /** @returns `true` if the point [{@link x}, {@link y}] is in the right edge of this rectangle, otherwise `false`. */
   isInRightEdge(x: number, y: number, edgeSize: number): boolean {
-    return isInRectangle(x, y, this.right - edgeSize, this.y, edgeSize, this.height)
+    return isInRectangle(
+      x,
+      y,
+      this.right - edgeSize,
+      this.y,
+      edgeSize,
+      this.height
+    )
   }
 
   /** @returns The centre point of this rectangle, as a new {@link Point}. */
@@ -387,7 +441,9 @@ export class Rectangle extends Float64Array {
   }
 
   /** Alias of {@link export}. */
-  toArray() { return this.export() }
+  toArray() {
+    return this.export()
+  }
 
   /** @returns A new, untyped array (serializable) containing the values of this rectangle. */
   export(): [number, number, number, number] {
@@ -398,7 +454,7 @@ export class Rectangle extends Float64Array {
    * Draws a debug outline of this rectangle.
    * @internal Convenience debug/development interface; not for production use.
    */
-  _drawDebug(ctx: CanvasRenderingContext2D, colour = "red") {
+  _drawDebug(ctx: CanvasRenderingContext2D, colour = 'red') {
     const { strokeStyle, lineWidth } = ctx
     try {
       ctx.strokeStyle = colour
@@ -414,12 +470,12 @@ export class Rectangle extends Float64Array {
 
 export type ReadOnlyRectangle = Omit<
   ReadOnlyTypedArray<Rectangle>,
-  | "setHeightBottomAnchored"
-  | "setWidthRightAnchored"
-  | "resizeTopLeft"
-  | "resizeBottomLeft"
-  | "resizeTopRight"
-  | "resizeBottomRight"
-  | "resizeBottomRight"
-  | "updateTo"
+  | 'setHeightBottomAnchored'
+  | 'setWidthRightAnchored'
+  | 'resizeTopLeft'
+  | 'resizeBottomLeft'
+  | 'resizeTopRight'
+  | 'resizeBottomRight'
+  | 'resizeBottomRight'
+  | 'updateTo'
 >

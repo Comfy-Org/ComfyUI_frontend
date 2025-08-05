@@ -21,13 +21,13 @@ export class LGraphIcon {
 
   constructor({
     unicode,
-    fontFamily = "PrimeIcons",
-    color = "#e6c200",
+    fontFamily = 'PrimeIcons',
+    color = '#e6c200',
     bgColor,
     fontSize = 16,
     circlePadding = 2,
     xOffset = 0,
-    yOffset = 0,
+    yOffset = 0
   }: LGraphIconOptions) {
     this.unicode = unicode
     this.fontFamily = fontFamily
@@ -46,8 +46,8 @@ export class LGraphIcon {
     const { font, textBaseline, textAlign, fillStyle } = ctx
 
     ctx.font = `${this.fontSize}px '${this.fontFamily}'`
-    ctx.textBaseline = "middle"
-    ctx.textAlign = "center"
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'center'
     const iconRadius = this.fontSize / 2 + this.circlePadding
     // Draw icon background circle if bgColor is set
     if (this.bgColor) {

@@ -1,11 +1,17 @@
-import type { IBaseWidget } from "@/lib/litegraph/src/types/widgets"
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
 /**
  * Base class for widgets that have increment and decrement buttons.
  */
-export abstract class BaseSteppedWidget<TWidget extends IBaseWidget = IBaseWidget> extends BaseWidget<TWidget> {
+export abstract class BaseSteppedWidget<
+  TWidget extends IBaseWidget = IBaseWidget
+> extends BaseWidget<TWidget> {
   /**
    * Whether the widget can increment its value
    * @returns `true` if the widget can increment its value, otherwise `false`
@@ -55,7 +61,10 @@ export abstract class BaseSteppedWidget<TWidget extends IBaseWidget = IBaseWidge
     ctx.fill()
   }
 
-  override drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions) {
+  override drawWidget(
+    ctx: CanvasRenderingContext2D,
+    options: DrawWidgetOptions
+  ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
 

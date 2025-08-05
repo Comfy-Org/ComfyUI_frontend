@@ -1,7 +1,10 @@
-import type { NeverNever, PickNevers } from "@/lib/litegraph/src/types/utility"
+import type { NeverNever, PickNevers } from '@/lib/litegraph/src/types/utility'
 
 type EventListeners<T> = {
-  readonly [K in keyof T]: ((this: EventTarget, ev: CustomEvent<T[K]>) => any) | EventListenerObject | null
+  readonly [K in keyof T]:
+    | ((this: EventTarget, ev: CustomEvent<T[K]>) => any)
+    | EventListenerObject
+    | null
 }
 
 /**
@@ -9,18 +12,18 @@ type EventListeners<T> = {
  */
 export interface ICustomEventTarget<
   EventMap extends Record<Keys, unknown>,
-  Keys extends keyof EventMap & string = keyof EventMap & string,
+  Keys extends keyof EventMap & string = keyof EventMap & string
 > {
   addEventListener<K extends Keys>(
     type: K,
     listener: EventListeners<EventMap>[K],
-    options?: boolean | AddEventListenerOptions,
+    options?: boolean | AddEventListenerOptions
   ): void
 
   removeEventListener<K extends Keys>(
     type: K,
     listener: EventListeners<EventMap>[K],
-    options?: boolean | EventListenerOptions,
+    options?: boolean | EventListenerOptions
   ): void
 
   /** @deprecated Use {@link dispatch}. */
@@ -33,9 +36,12 @@ export interface ICustomEventTarget<
  */
 export interface CustomEventDispatcher<
   EventMap extends Record<Keys, unknown>,
-  Keys extends keyof EventMap & string = keyof EventMap & string,
+  Keys extends keyof EventMap & string = keyof EventMap & string
 > {
-  dispatch<T extends keyof NeverNever<EventMap>>(type: T, detail: EventMap[T]): boolean
+  dispatch<T extends keyof NeverNever<EventMap>>(
+    type: T,
+    detail: EventMap[T]
+  ): boolean
   dispatch<T extends keyof PickNevers<EventMap>>(type: T): boolean
 }
 
@@ -75,10 +81,12 @@ export interface CustomEventDispatcher<
  *    ```
  */
 export class CustomEventTarget<
-  EventMap extends Record<Keys, unknown>,
-  Keys extends keyof EventMap & string = keyof EventMap & string,
->
-  extends EventTarget implements ICustomEventTarget<EventMap, Keys> {
+    EventMap extends Record<Keys, unknown>,
+    Keys extends keyof EventMap & string = keyof EventMap & string
+  >
+  extends EventTarget
+  implements ICustomEventTarget<EventMap, Keys>
+{
   /**
    * Type-safe event dispatching.
    * @see {@link EventTarget.dispatchEvent}
@@ -86,7 +94,10 @@ export class CustomEventTarget<
    * @param detail A custom object to send with the event
    * @returns `true` if the event was dispatched successfully, otherwise `false`.
    */
-  dispatch<T extends keyof NeverNever<EventMap>>(type: T, detail: EventMap[T]): boolean
+  dispatch<T extends keyof NeverNever<EventMap>>(
+    type: T,
+    detail: EventMap[T]
+  ): boolean
   dispatch<T extends keyof PickNevers<EventMap>>(type: T): boolean
   dispatch<T extends keyof EventMap>(type: T, detail?: EventMap[T]) {
     const event = new CustomEvent(type as string, { detail, cancelable: true })
@@ -96,7 +107,7 @@ export class CustomEventTarget<
   override addEventListener<K extends Keys>(
     type: K,
     listener: EventListeners<EventMap>[K],
-    options?: boolean | AddEventListenerOptions,
+    options?: boolean | AddEventListenerOptions
   ): void {
     // Assertion: Contravariance on CustomEvent => Event
     super.addEventListener(type as string, listener as EventListener, options)
@@ -105,10 +116,14 @@ export class CustomEventTarget<
   override removeEventListener<K extends Keys>(
     type: K,
     listener: EventListeners<EventMap>[K],
-    options?: boolean | EventListenerOptions,
+    options?: boolean | EventListenerOptions
   ): void {
     // Assertion: Contravariance on CustomEvent => Event
-    super.removeEventListener(type as string, listener as EventListener, options)
+    super.removeEventListener(
+      type as string,
+      listener as EventListener,
+      options
+    )
   }
 
   /** @deprecated Use {@link dispatch}. */

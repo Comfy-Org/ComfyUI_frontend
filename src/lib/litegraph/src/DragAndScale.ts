@@ -1,6 +1,5 @@
-import type { Point, ReadOnlyRect, Rect } from "./interfaces"
-
-import { EaseFunction, Rectangle } from "./litegraph"
+import type { Point, ReadOnlyRect, Rect } from './interfaces'
+import { EaseFunction, Rectangle } from './litegraph'
 
 export interface DragAndScaleState {
   /**
@@ -30,7 +29,7 @@ export class DragAndScale {
   state: DragAndScaleState
   lastState: DragAndScaleState = {
     offset: [0, 0],
-    scale: 0,
+    scale: 0
   }
 
   /** Maximum scale (zoom in) */
@@ -67,7 +66,7 @@ export class DragAndScale {
   constructor(element: HTMLCanvasElement) {
     this.state = {
       offset: [0, 0],
-      scale: 1,
+      scale: 1
     }
     this.max_scale = 10
     this.min_scale = 0.1
@@ -86,9 +85,11 @@ export class DragAndScale {
     const current = this.state
     const previous = this.lastState
 
-    return current.scale !== previous.scale ||
+    return (
+      current.scale !== previous.scale ||
       current.offset[0] !== previous.offset[0] ||
       current.offset[1] !== previous.offset[1]
+    )
   }
 
   computeVisibleArea(viewport: Rect | undefined): void {
@@ -127,7 +128,7 @@ export class DragAndScale {
   convertOffsetToCanvas(pos: Point): Point {
     return [
       (pos[0] + this.offset[0]) * this.scale,
-      (pos[1] + this.offset[1]) * this.scale,
+      (pos[1] + this.offset[1]) * this.scale
     ]
   }
 
@@ -146,7 +147,11 @@ export class DragAndScale {
     this.onredraw?.(this)
   }
 
-  changeScale(value: number, zooming_center?: Point, roundToScaleOne = true): void {
+  changeScale(
+    value: number,
+    zooming_center?: Point,
+    roundToScaleOne = true
+  ): void {
     if (value < this.min_scale) {
       value = this.min_scale
     } else if (value > this.max_scale) {
@@ -161,16 +166,13 @@ export class DragAndScale {
 
     const normalizedCenter: Point = [
       zooming_center[0] - rect.x,
-      zooming_center[1] - rect.y,
+      zooming_center[1] - rect.y
     ]
     const center = this.convertCanvasToOffset(normalizedCenter)
     this.scale = value
     if (roundToScaleOne && Math.abs(this.scale - 1) < 0.01) this.scale = 1
     const new_center = this.convertCanvasToOffset(normalizedCenter)
-    const delta_offset = [
-      new_center[0] - center[0],
-      new_center[1] - center[1],
-    ]
+    const delta_offset = [new_center[0] - center[0], new_center[1] - center[1]]
 
     this.offset[0] += delta_offset[0]
     this.offset[1] += delta_offset[1]
@@ -186,7 +188,10 @@ export class DragAndScale {
    * Fits the view to the specified bounds.
    * @param bounds The bounds to fit the view to, defined by a rectangle.
    */
-  fitToBounds(bounds: ReadOnlyRect, { zoom = 0.75 }: { zoom?: number } = {}): void {
+  fitToBounds(
+    bounds: ReadOnlyRect,
+    { zoom = 0.75 }: { zoom?: number } = {}
+  ): void {
     const cw = this.element.width / window.devicePixelRatio
     const ch = this.element.height / window.devicePixelRatio
     let targetScale = this.scale
@@ -204,8 +209,8 @@ export class DragAndScale {
     const scaledHeight = ch / targetScale
 
     // Calculate the target position to center the bounds in the viewport
-    const targetX = -bounds[0] - (bounds[2] * 0.5) + (scaledWidth * 0.5)
-    const targetY = -bounds[1] - (bounds[3] * 0.5) + (scaledHeight * 0.5)
+    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
+    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
 
     // Apply the changes immediately
     this.offset[0] = targetX
@@ -223,16 +228,16 @@ export class DragAndScale {
     {
       duration = 350,
       zoom = 0.75,
-      easing = EaseFunction.EASE_IN_OUT_QUAD,
-    }: AnimationOptions = {},
+      easing = EaseFunction.EASE_IN_OUT_QUAD
+    }: AnimationOptions = {}
   ) {
-    if (!(duration > 0)) throw new RangeError("Duration must be greater than 0")
+    if (!(duration > 0)) throw new RangeError('Duration must be greater than 0')
 
     const easeFunctions = {
       linear: (t: number) => t,
       easeInQuad: (t: number) => t * t,
       easeOutQuad: (t: number) => t * (2 - t),
-      easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+      easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t)
     }
     const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
 
@@ -241,8 +246,8 @@ export class DragAndScale {
     const ch = this.element.height / window.devicePixelRatio
     const startX = this.offset[0]
     const startY = this.offset[1]
-    const startX2 = startX - (cw / this.scale)
-    const startY2 = startY - (ch / this.scale)
+    const startX2 = startX - cw / this.scale
+    const startY2 = startY - ch / this.scale
     const startScale = this.scale
     let targetScale = startScale
 
@@ -257,8 +262,8 @@ export class DragAndScale {
     const scaledWidth = cw / targetScale
     const scaledHeight = ch / targetScale
 
-    const targetX = -bounds[0] - (bounds[2] * 0.5) + (scaledWidth * 0.5)
-    const targetY = -bounds[1] - (bounds[3] * 0.5) + (scaledHeight * 0.5)
+    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
+    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
     const targetX2 = targetX - scaledWidth
     const targetY2 = targetY - scaledHeight
 
@@ -267,14 +272,14 @@ export class DragAndScale {
       const progress = Math.min(elapsed / duration, 1)
       const easedProgress = easeFunction(progress)
 
-      const currentX = startX + ((targetX - startX) * easedProgress)
-      const currentY = startY + ((targetY - startY) * easedProgress)
+      const currentX = startX + (targetX - startX) * easedProgress
+      const currentY = startY + (targetY - startY) * easedProgress
       this.offset[0] = currentX
       this.offset[1] = currentY
 
       if (zoom > 0) {
-        const currentX2 = startX2 + ((targetX2 - startX2) * easedProgress)
-        const currentY2 = startY2 + ((targetY2 - startY2) * easedProgress)
+        const currentX2 = startX2 + (targetX2 - startX2) * easedProgress
+        const currentY2 = startY2 + (targetY2 - startY2) * easedProgress
         const currentWidth = Math.abs(currentX2 - currentX)
         const currentHeight = Math.abs(currentY2 - currentY)
 

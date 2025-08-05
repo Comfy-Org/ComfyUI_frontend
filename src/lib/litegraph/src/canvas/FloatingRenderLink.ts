@@ -1,17 +1,23 @@
-import type { RenderLink } from "./RenderLink"
-import type { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/lib/litegraph/src/infrastructure/LinkConnectorEventMap"
-import type { INodeOutputSlot, LinkNetwork } from "@/lib/litegraph/src/interfaces"
-import type { INodeInputSlot } from "@/lib/litegraph/src/interfaces"
-import type { Point } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode, NodeId } from "@/lib/litegraph/src/LGraphNode"
-import type { LLink } from "@/lib/litegraph/src/LLink"
-import type { Reroute } from "@/lib/litegraph/src/Reroute"
-import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
-import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type {
+  INodeOutputSlot,
+  LinkNetwork
+} from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/lib/litegraph/src/constants"
-import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
+import type { RenderLink } from './RenderLink'
 
 /**
  * Represents a floating link that is currently being dragged from one slot to another.
@@ -45,24 +51,30 @@ export class FloatingRenderLink implements RenderLink {
   constructor(
     readonly network: LinkNetwork,
     readonly link: LLink,
-    readonly toType: "input" | "output",
+    readonly toType: 'input' | 'output',
     readonly fromReroute: Reroute,
-    readonly dragDirection: LinkDirection = LinkDirection.CENTER,
+    readonly dragDirection: LinkDirection = LinkDirection.CENTER
   ) {
     const {
       origin_id: outputNodeId,
       target_id: inputNodeId,
       origin_slot: outputIndex,
-      target_slot: inputIndex,
+      target_slot: inputIndex
     } = link
 
     if (outputNodeId !== -1) {
       // Output connected
       const outputNode = network.getNodeById(outputNodeId) ?? undefined
-      if (!outputNode) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`)
+      if (!outputNode)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`
+        )
 
       const outputSlot = outputNode?.outputs.at(outputIndex)
-      if (!outputSlot) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`)
+      if (!outputSlot)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`
+        )
 
       this.outputNodeId = outputNodeId
       this.outputNode = outputNode
@@ -80,10 +92,16 @@ export class FloatingRenderLink implements RenderLink {
     } else {
       // Input connected
       const inputNode = network.getNodeById(inputNodeId) ?? undefined
-      if (!inputNode) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`)
+      if (!inputNode)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`
+        )
 
       const inputSlot = inputNode?.inputs.at(inputIndex)
-      if (!inputSlot) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`)
+      if (!inputSlot)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`
+        )
 
       this.inputNodeId = inputNodeId
       this.inputNode = inputNode
@@ -101,15 +119,15 @@ export class FloatingRenderLink implements RenderLink {
   }
 
   canConnectToInput(): boolean {
-    return this.toType === "input"
+    return this.toType === 'input'
   }
 
   canConnectToOutput(): boolean {
-    return this.toType === "output"
+    return this.toType === 'output'
   }
 
   canConnectToReroute(reroute: Reroute): boolean {
-    if (this.toType === "input") {
+    if (this.toType === 'input') {
       if (reroute.origin_id === this.inputNode?.id) return false
     } else {
       if (reroute.origin_id === this.outputNode?.id) return false
@@ -117,7 +135,11 @@ export class FloatingRenderLink implements RenderLink {
     return true
   }
 
-  connectToInput(node: LGraphNode, input: INodeInputSlot, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
+  connectToInput(
+    node: LGraphNode,
+    input: INodeInputSlot,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
     const floatingLink = this.link
     floatingLink.target_id = node.id
     floatingLink.target_slot = node.inputs.indexOf(input)
@@ -129,7 +151,11 @@ export class FloatingRenderLink implements RenderLink {
     input._floatingLinks.add(floatingLink)
   }
 
-  connectToOutput(node: LGraphNode, output: INodeOutputSlot, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
+  connectToOutput(
+    node: LGraphNode,
+    output: INodeOutputSlot,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
     const floatingLink = this.link
     floatingLink.origin_id = node.id
     floatingLink.origin_slot = node.outputs.indexOf(output)
@@ -139,7 +165,10 @@ export class FloatingRenderLink implements RenderLink {
     output._floatingLinks.add(floatingLink)
   }
 
-  connectToSubgraphInput(input: SubgraphInput, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
+  connectToSubgraphInput(
+    input: SubgraphInput,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
     const floatingLink = this.link
     floatingLink.origin_id = SUBGRAPH_INPUT_ID
     floatingLink.origin_slot = input.parent.slots.indexOf(input)
@@ -149,7 +178,10 @@ export class FloatingRenderLink implements RenderLink {
     input._floatingLinks.add(floatingLink)
   }
 
-  connectToSubgraphOutput(output: SubgraphOutput, _events?: CustomEventTarget<LinkConnectorEventMap>): void {
+  connectToSubgraphOutput(
+    output: SubgraphOutput,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
     const floatingLink = this.link
     floatingLink.origin_id = SUBGRAPH_OUTPUT_ID
     floatingLink.origin_slot = output.parent.slots.indexOf(output)
@@ -162,8 +194,8 @@ export class FloatingRenderLink implements RenderLink {
   connectToRerouteInput(
     // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
     reroute: Reroute,
-    { node: inputNode, input }: { node: LGraphNode, input: INodeInputSlot },
-    events: CustomEventTarget<LinkConnectorEventMap>,
+    { node: inputNode, input }: { node: LGraphNode; input: INodeInputSlot },
+    events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const floatingLink = this.link
     floatingLink.target_id = inputNode.id
@@ -173,7 +205,7 @@ export class FloatingRenderLink implements RenderLink {
     input._floatingLinks ??= new Set()
     input._floatingLinks.add(floatingLink)
 
-    events.dispatch("input-moved", this)
+    events.dispatch('input-moved', this)
   }
 
   connectToRerouteOutput(
@@ -181,7 +213,7 @@ export class FloatingRenderLink implements RenderLink {
     reroute: Reroute,
     outputNode: LGraphNode,
     output: INodeOutputSlot,
-    events: CustomEventTarget<LinkConnectorEventMap>,
+    events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const floatingLink = this.link
     floatingLink.origin_id = outputNode.id
@@ -191,6 +223,6 @@ export class FloatingRenderLink implements RenderLink {
     output._floatingLinks ??= new Set()
     output._floatingLinks.add(floatingLink)
 
-    events.dispatch("output-moved", this)
+    events.dispatch('output-moved', this)
   }
 }

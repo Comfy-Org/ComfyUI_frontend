@@ -1,7 +1,6 @@
-import type { CompassCorners } from "./interfaces"
-import type { CanvasPointerEvent } from "./types/events"
-
-import { dist2 } from "./measure"
+import type { CompassCorners } from './interfaces'
+import { dist2 } from './measure'
+import type { CanvasPointerEvent } from './types/events'
 
 /**
  * Allows click and drag actions to be declared ahead of time during a pointerdown event.
@@ -174,7 +173,8 @@ export class CanvasPointer {
     // Dragging, but no callback to run
     if (this.dragStarted) return
 
-    const longerThanBufferTime = e.timeStamp - eDown.timeStamp > CanvasPointer.bufferTime
+    const longerThanBufferTime =
+      e.timeStamp - eDown.timeStamp > CanvasPointer.bufferTime
     if (longerThanBufferTime || !this.#hasSamePosition(e, eDown)) {
       this.#setDragStarted(e)
     }
@@ -227,7 +227,7 @@ export class CanvasPointer {
   #hasSamePosition(
     a: PointerEvent,
     b: PointerEvent,
-    tolerance2 = CanvasPointer.#maxClickDrift2,
+    tolerance2 = CanvasPointer.#maxClickDrift2
   ): boolean {
     const drift = dist2(a.clientX, a.clientY, b.clientX, b.clientY)
     return drift <= tolerance2
@@ -244,9 +244,11 @@ export class CanvasPointer {
     // Use thrice the drift distance for double-click gap
     const tolerance2 = (3 * CanvasPointer.#maxClickDrift) ** 2
     const diff = eDown.timeStamp - eLastDown.timeStamp
-    return diff > 0 &&
+    return (
+      diff > 0 &&
       diff < CanvasPointer.doubleClickTime &&
       this.#hasSamePosition(eDown, eLastDown, tolerance2)
+    )
   }
 
   #setDragStarted(eMove?: CanvasPointerEvent): void {
@@ -283,7 +285,7 @@ export class CanvasPointer {
 
     const { element, pointerId } = this
     this.pointerId = undefined
-    if (typeof pointerId === "number" && element.hasPointerCapture(pointerId)) {
+    if (typeof pointerId === 'number' && element.hasPointerCapture(pointerId)) {
       element.releasePointerCapture(pointerId)
     }
   }

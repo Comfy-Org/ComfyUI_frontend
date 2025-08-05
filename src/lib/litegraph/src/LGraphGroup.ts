@@ -1,3 +1,9 @@
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+
+import type { LGraph } from './LGraph'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphNode } from './LGraphNode'
+import { strokeShape } from './draw'
 import type {
   ColorOption,
   IColorable,
@@ -5,25 +11,18 @@ import type {
   IPinnable,
   Point,
   Positionable,
-  Size,
-} from "./interfaces"
-import type { LGraph } from "./LGraph"
-import type { ISerialisedGroup } from "./types/serialisation"
-
-import { NullGraphError } from "@/lib/litegraph/src/infrastructure/NullGraphError"
-
-import { strokeShape } from "./draw"
-import { LGraphCanvas } from "./LGraphCanvas"
-import { LGraphNode } from "./LGraphNode"
-import { LiteGraph } from "./litegraph"
+  Size
+} from './interfaces'
+import { LiteGraph } from './litegraph'
 import {
   containsCentre,
   containsRect,
   createBounds,
   isInRectangle,
   isPointInRect,
-  snapPoint,
-} from "./measure"
+  snapPoint
+} from './measure'
+import type { ISerialisedGroup } from './types/serialisation'
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
@@ -34,7 +33,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static minHeight = 80
   static resizeLength = 10
   static padding = 4
-  static defaultColour = "#335"
+  static defaultColour = '#335'
 
   id: number
   color?: string
@@ -45,7 +44,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     10,
     10,
     LGraphGroup.minWidth,
-    LGraphGroup.minHeight,
+    LGraphGroup.minHeight
   ])
 
   _pos: Point = this._bounding.subarray(0, 2)
@@ -60,10 +59,10 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   constructor(title?: string, id?: number) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = id ?? -1
-    this.title = title || "Group"
+    this.title = title || 'Group'
 
     const { pale_blue } = LGraphCanvas.node_colors
-    this.color = pale_blue ? pale_blue.groupcolor : "#AAA"
+    this.color = pale_blue ? pale_blue.groupcolor : '#AAA'
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
@@ -77,9 +76,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
-    return Object.values(LGraphCanvas.node_colors).find(
-      colorOption => colorOption.groupcolor === this.color,
-    ) ?? null
+    return (
+      Object.values(LGraphCanvas.node_colors).find(
+        (colorOption) => colorOption.groupcolor === this.color
+      ) ?? null
+    )
   }
 
   /** Position of the group, as x,y co-ordinates in graph space */
@@ -158,7 +159,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       bounding: [...b],
       color: this.color,
       font_size: this.font_size,
-      flags: this.flags,
+      flags: this.flags
     }
   }
 
@@ -201,13 +202,17 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
     // Title
     ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
-    ctx.textAlign = "left"
-    ctx.fillText(this.title + (this.pinned ? "📌" : ""), x + padding, y + font_size)
+    ctx.textAlign = 'left'
+    ctx.fillText(
+      this.title + (this.pinned ? '📌' : ''),
+      x + padding,
+      y + font_size
+    )
 
     if (LiteGraph.highlight_selected_group && this.selected) {
       strokeShape(ctx, this._bounding, {
         title_height: this.titleHeight,
-        padding,
+        padding
       })
     }
   }
@@ -254,14 +259,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
     // Move reroutes we overlap the centre point of
     for (const reroute of reroutes.values()) {
-      if (isPointInRect(reroute.pos, this._bounding))
-        children.add(reroute)
+      if (isPointInRect(reroute.pos, this._bounding)) children.add(reroute)
     }
 
     // Move groups we wholly contain
     for (const group of groups) {
-      if (containsRect(this._bounding, group._bounding))
-        children.add(group)
+      if (containsRect(this._bounding, group._bounding)) children.add(group)
     }
 
     groups.sort((a, b) => {
@@ -300,31 +303,35 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.resizeTo([...this.children, ...this._nodes, ...nodes], padding)
   }
 
-  getMenuOptions(): (IContextMenuValue<string> | IContextMenuValue<string | null> | null)[] {
+  getMenuOptions(): (
+    | IContextMenuValue<string>
+    | IContextMenuValue<string | null>
+    | null
+  )[] {
     return [
       {
-        content: this.pinned ? "Unpin" : "Pin",
+        content: this.pinned ? 'Unpin' : 'Pin',
         callback: () => {
           if (this.pinned) this.unpin()
           else this.pin()
           this.setDirtyCanvas(false, true)
-        },
+        }
       },
       null,
-      { content: "Title", callback: LGraphCanvas.onShowPropertyEditor },
+      { content: 'Title', callback: LGraphCanvas.onShowPropertyEditor },
       {
-        content: "Color",
+        content: 'Color',
         has_submenu: true,
-        callback: LGraphCanvas.onMenuNodeColors,
+        callback: LGraphCanvas.onMenuNodeColors
       },
       {
-        content: "Font size",
-        property: "font_size",
-        type: "Number",
-        callback: LGraphCanvas.onShowPropertyEditor,
+        content: 'Font size',
+        property: 'font_size',
+        type: 'Number',
+        callback: LGraphCanvas.onShowPropertyEditor
       },
       null,
-      { content: "Remove", callback: LGraphCanvas.onMenuNodeRemove },
+      { content: 'Remove', callback: LGraphCanvas.onMenuNodeRemove }
     ]
   }
 

@@ -1,5 +1,5 @@
-import { Rectangle } from "./infrastructure/Rectangle"
-import { LGraphBadge, type LGraphBadgeOptions } from "./LGraphBadge"
+import { LGraphBadge, type LGraphBadgeOptions } from './LGraphBadge'
+import { Rectangle } from './infrastructure/Rectangle'
 
 export interface LGraphButtonOptions extends LGraphBadgeOptions {
   name?: string // To identify the button
@@ -55,13 +55,13 @@ export class LGraphButton extends LGraphBadge {
     const { font, fillStyle, textBaseline, textAlign } = ctx
 
     // Use the same color as the title text (usually white)
-    const titleTextColor = ctx.fillStyle || "white"
+    const titleTextColor = ctx.fillStyle || 'white'
 
     // Draw as icon-only without background
     ctx.font = `${this.fontSize}px 'PrimeIcons'`
     ctx.fillStyle = titleTextColor
-    ctx.textBaseline = "middle"
-    ctx.textAlign = "center"
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'center'
 
     const centerX = adjustedX + width / 2
     const centerY = adjustedY + this.height / 2

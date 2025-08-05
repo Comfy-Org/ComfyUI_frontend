@@ -1,21 +1,32 @@
-import type { SubgraphInput } from "./SubgraphInput"
-import type { SubgraphInputNode } from "./SubgraphInputNode"
-import type { SubgraphOutput } from "./SubgraphOutput"
-import type { SubgraphOutputNode } from "./SubgraphOutputNode"
-import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, ReadOnlyRect, ReadOnlySize } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { LinkId, LLink } from "@/lib/litegraph/src/LLink"
-import type { RerouteId } from "@/lib/litegraph/src/Reroute"
-import type { CanvasPointerEvent } from "@/lib/litegraph/src/types/events"
-import type { Serialisable, SubgraphIO } from "@/lib/litegraph/src/types/serialisation"
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import { SlotShape } from '@/lib/litegraph/src/draw'
+import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type {
+  DefaultConnectionColors,
+  Hoverable,
+  INodeInputSlot,
+  INodeOutputSlot,
+  Point,
+  ReadOnlyRect,
+  ReadOnlySize
+} from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type {
+  Serialisable,
+  SubgraphIO
+} from '@/lib/litegraph/src/types/serialisation'
+import { type UUID, createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
-import { SlotShape } from "@/lib/litegraph/src/draw"
-import { ConstrainedSize } from "@/lib/litegraph/src/infrastructure/ConstrainedSize"
-import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
-import { LGraphCanvas } from "@/lib/litegraph/src/LGraphCanvas"
-import { LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { SlotBase } from "@/lib/litegraph/src/node/SlotBase"
-import { createUuidv4, type UUID } from "@/lib/litegraph/src/utils/uuid"
+import type { SubgraphInput } from './SubgraphInput'
+import type { SubgraphInputNode } from './SubgraphInputNode'
+import type { SubgraphOutput } from './SubgraphOutput'
+import type { SubgraphOutputNode } from './SubgraphOutputNode'
 
 export interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D
@@ -26,14 +37,20 @@ export interface SubgraphSlotDrawOptions {
 }
 
 /** Shared base class for the slots used on Subgraph . */
-export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hoverable, Serialisable<SubgraphIO> {
+export abstract class SubgraphSlot
+  extends SlotBase
+  implements SubgraphIO, Hoverable, Serialisable<SubgraphIO>
+{
   static get defaultHeight() {
     return LiteGraph.NODE_SLOT_HEIGHT
   }
 
   readonly #pos: Point = new Float32Array(2)
 
-  readonly measurement: ConstrainedSize = new ConstrainedSize(SubgraphSlot.defaultHeight, SubgraphSlot.defaultHeight)
+  readonly measurement: ConstrainedSize = new ConstrainedSize(
+    SubgraphSlot.defaultHeight,
+    SubgraphSlot.defaultHeight
+  )
 
   readonly id: UUID
   readonly parent: SubgraphInputNode | SubgraphOutputNode
@@ -41,7 +58,12 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
 
   readonly linkIds: LinkId[] = []
 
-  override readonly boundingRect: Rectangle = new Rectangle(0, 0, 0, SubgraphSlot.defaultHeight)
+  override readonly boundingRect: Rectangle = new Rectangle(
+    0,
+    0,
+    0,
+    SubgraphSlot.defaultHeight
+  )
 
   override get pos() {
     return this.#pos
@@ -66,7 +88,10 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
 
   abstract get labelPos(): Point
 
-  constructor(slot: SubgraphIO, parent: SubgraphInputNode | SubgraphOutputNode) {
+  constructor(
+    slot: SubgraphIO,
+    parent: SubgraphInputNode | SubgraphOutputNode
+  ) {
     super(slot.name, slot.type)
 
     Object.assign(this, slot)
@@ -96,14 +121,15 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
     return links
   }
 
-  decrementSlots(inputsOrOutputs: "inputs" | "outputs"): void {
+  decrementSlots(inputsOrOutputs: 'inputs' | 'outputs'): void {
     const { links } = this.parent.subgraph
-    const linkProperty = inputsOrOutputs === "inputs" ? "origin_slot" : "target_slot"
+    const linkProperty =
+      inputsOrOutputs === 'inputs' ? 'origin_slot' : 'target_slot'
 
     for (const linkId of this.linkIds) {
       const link = links.get(linkId)
       if (link) link[linkProperty]--
-      else console.warn("decrementSlots: link ID not found", linkId)
+      else console.warn('decrementSlots: link ID not found', linkId)
     }
   }
 
@@ -120,7 +146,7 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
   abstract connect(
     slot: INodeInputSlot | INodeOutputSlot,
     node: LGraphNode,
-    afterRerouteId?: RerouteId,
+    afterRerouteId?: RerouteId
   ): LLink | undefined
 
   /**
@@ -141,13 +167,24 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
    * @param fromSlot The slot that is being dragged to connect to this slot.
    * @returns true if the connection is valid, false otherwise.
    */
-  abstract isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput): boolean
+  abstract isValidTarget(
+    fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
+  ): boolean
 
   /** @remarks Leaves the context dirty. */
-  draw({ ctx, colorContext, lowQuality, fromSlot, editorAlpha = 1 }: SubgraphSlotDrawOptions): void {
+  draw({
+    ctx,
+    colorContext,
+    lowQuality,
+    fromSlot,
+    editorAlpha = 1
+  }: SubgraphSlotDrawOptions): void {
     // Assertion: SlotShape is a subset of RenderShape
     const shape = this.shape as unknown as SlotShape
-    const { isPointerOver, pos: [x, y] } = this
+    const {
+      isPointerOver,
+      pos: [x, y]
+    } = this
 
     // Check if this slot is a valid target for the current dragging connection
     const isValidTarget = fromSlot ? this.isValidTarget(fromSlot) : true
@@ -191,7 +228,7 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
     if (this.displayName) {
       const [labelX, labelY] = this.labelPos
       // Also apply highlight logic to text color
-      ctx.fillStyle = highlight ? "white" : (LiteGraph.NODE_TEXT_COLOR || "#AAA")
+      ctx.fillStyle = highlight ? 'white' : LiteGraph.NODE_TEXT_COLOR || '#AAA'
       ctx.fillText(this.displayName, labelX, labelY)
     }
 
@@ -200,7 +237,31 @@ export abstract class SubgraphSlot extends SlotBase implements SubgraphIO, Hover
   }
 
   asSerialisable(): SubgraphIO {
-    const { id, name, type, linkIds, localized_name, label, dir, shape, color_off, color_on, pos } = this
-    return { id, name, type, linkIds, localized_name, label, dir, shape, color_off, color_on, pos }
+    const {
+      id,
+      name,
+      type,
+      linkIds,
+      localized_name,
+      label,
+      dir,
+      shape,
+      color_off,
+      color_on,
+      pos
+    } = this
+    return {
+      id,
+      name,
+      type,
+      linkIds,
+      localized_name,
+      label,
+      dir,
+      shape,
+      color_off,
+      color_on,
+      pos
+    }
   }
 }

@@ -1,13 +1,20 @@
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { IStringWidget } from "@/lib/litegraph/src/types/widgets"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
-export class TextWidget extends BaseWidget<IStringWidget> implements IStringWidget {
+export class TextWidget
+  extends BaseWidget<IStringWidget>
+  implements IStringWidget
+{
   constructor(widget: IStringWidget, node: LGraphNode) {
     super(widget, node)
-    this.type ??= "string"
-    this.value = widget.value?.toString() ?? ""
+    this.type ??= 'string'
+    this.value = widget.value?.toString() ?? ''
   }
 
   /**
@@ -15,10 +22,10 @@ export class TextWidget extends BaseWidget<IStringWidget> implements IStringWidg
    * @param ctx The canvas context
    * @param options The options for drawing the widget
    */
-  override drawWidget(ctx: CanvasRenderingContext2D, {
-    width,
-    showText = true,
-  }: DrawWidgetOptions) {
+  override drawWidget(
+    ctx: CanvasRenderingContext2D,
+    { width, showText = true }: DrawWidgetOptions
+  ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
 
@@ -35,7 +42,7 @@ export class TextWidget extends BaseWidget<IStringWidget> implements IStringWidg
   override onClick({ e, node, canvas }: WidgetEventOptions) {
     // Show prompt dialog for text input
     canvas.prompt(
-      "Value",
+      'Value',
       this.value,
       (v: string) => {
         if (v !== null) {
@@ -43,7 +50,7 @@ export class TextWidget extends BaseWidget<IStringWidget> implements IStringWidg
         }
       },
       e,
-      this.options?.multiline ?? false,
+      this.options?.multiline ?? false
     )
   }
 }

@@ -1,8 +1,8 @@
-import { LGraphIcon, type LGraphIconOptions } from "./LGraphIcon"
+import { LGraphIcon, type LGraphIconOptions } from './LGraphIcon'
 
 export enum BadgePosition {
-  TopLeft = "top-left",
-  TopRight = "top-right",
+  TopLeft = 'top-left',
+  TopRight = 'top-right'
 }
 
 export interface LGraphBadgeOptions {
@@ -32,15 +32,15 @@ export class LGraphBadge {
 
   constructor({
     text,
-    fgColor = "white",
-    bgColor = "#0F1F0F",
+    fgColor = 'white',
+    bgColor = '#0F1F0F',
     fontSize = 12,
     padding = 6,
     height = 20,
     cornerRadius = 5,
     iconOptions,
     xOffset = 0,
-    yOffset = 0,
+    yOffset = 0
   }: LGraphBadgeOptions) {
     this.text = text
     this.fgColor = fgColor
@@ -74,11 +74,7 @@ export class LGraphBadge {
     return iconWidth + textWidth + this.padding * 2
   }
 
-  draw(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-  ): void {
+  draw(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     if (!this.visible) return
 
     x += this.xOffset
@@ -113,8 +109,8 @@ export class LGraphBadge {
     // Draw badge text
     if (this.text) {
       ctx.fillStyle = this.fgColor
-      ctx.textBaseline = "middle"
-      ctx.textAlign = "left"
+      ctx.textBaseline = 'middle'
+      ctx.textAlign = 'left'
       ctx.fillText(this.text, drawX, centerY + 1)
     }
 

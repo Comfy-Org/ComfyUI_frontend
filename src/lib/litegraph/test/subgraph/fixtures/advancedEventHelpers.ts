@@ -1,6 +1,6 @@
-import type { CapturedEvent } from "./subgraphHelpers"
+import { expect } from 'vitest'
 
-import { expect } from "vitest"
+import type { CapturedEvent } from './subgraphHelpers'
 
 /**
  * Extended captured event with additional metadata not in the base infrastructure
@@ -17,7 +17,7 @@ export interface ExtendedCapturedEvent<T = unknown> extends CapturedEvent<T> {
  */
 export function createExtendedEventCapture<T = unknown>(
   eventTarget: EventTarget,
-  eventTypes: string[],
+  eventTypes: string[]
 ) {
   const capturedEvents: ExtendedCapturedEvent<T>[] = []
   const listeners: Array<() => void> = []
@@ -30,7 +30,7 @@ export function createExtendedEventCapture<T = unknown>(
         timestamp: Date.now(),
         defaultPrevented: event.defaultPrevented,
         bubbles: event.bubbles,
-        cancelable: event.cancelable,
+        cancelable: event.cancelable
       })
     }
 
@@ -40,17 +40,25 @@ export function createExtendedEventCapture<T = unknown>(
 
   return {
     events: capturedEvents,
-    clear: () => { capturedEvents.length = 0 },
-    cleanup: () => { for (const cleanup of listeners) cleanup() },
-    getEventsByType: (type: string) => capturedEvents.filter(e => e.type === type),
+    clear: () => {
+      capturedEvents.length = 0
+    },
+    cleanup: () => {
+      for (const cleanup of listeners) cleanup()
+    },
+    getEventsByType: (type: string) =>
+      capturedEvents.filter((e) => e.type === type),
     getLatestEvent: () => capturedEvents.at(-1),
     getFirstEvent: () => capturedEvents[0],
 
     /**
      * Wait for a specific event type to be captured
      */
-    async waitForEvent(type: string, timeoutMs: number = 1000): Promise<ExtendedCapturedEvent<T>> {
-      const existingEvent = capturedEvents.find(e => e.type === type)
+    async waitForEvent(
+      type: string,
+      timeoutMs: number = 1000
+    ): Promise<ExtendedCapturedEvent<T>> {
+      const existingEvent = capturedEvents.find((e) => e.type === type)
       if (existingEvent) return existingEvent
 
       return new Promise((resolve, reject) => {
@@ -60,7 +68,7 @@ export function createExtendedEventCapture<T = unknown>(
         }, timeoutMs)
 
         const eventListener = (_event: Event) => {
-          const capturedEvent = capturedEvents.find(e => e.type === type)
+          const capturedEvent = capturedEvents.find((e) => e.type === type)
           if (capturedEvent) {
             clearTimeout(timeout)
             eventTarget.removeEventListener(type, eventListener)
@@ -75,11 +83,18 @@ export function createExtendedEventCapture<T = unknown>(
     /**
      * Wait for a sequence of events to occur in order
      */
-    async waitForSequence(expectedSequence: string[], timeoutMs: number = 1000): Promise<ExtendedCapturedEvent<T>[]> {
+    async waitForSequence(
+      expectedSequence: string[],
+      timeoutMs: number = 1000
+    ): Promise<ExtendedCapturedEvent<T>[]> {
       // Check if sequence is already complete
       if (capturedEvents.length >= expectedSequence.length) {
-        const actualSequence = capturedEvents.slice(0, expectedSequence.length).map(e => e.type)
-        if (JSON.stringify(actualSequence) === JSON.stringify(expectedSequence)) {
+        const actualSequence = capturedEvents
+          .slice(0, expectedSequence.length)
+          .map((e) => e.type)
+        if (
+          JSON.stringify(actualSequence) === JSON.stringify(expectedSequence)
+        ) {
           return capturedEvents.slice(0, expectedSequence.length)
         }
       }
@@ -87,15 +102,24 @@ export function createExtendedEventCapture<T = unknown>(
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           cleanup()
-          const actual = capturedEvents.map(e => e.type).join(", ")
-          const expected = expectedSequence.join(", ")
-          reject(new Error(`Event sequence not completed within ${timeoutMs}ms. Expected: ${expected}, Got: ${actual}`))
+          const actual = capturedEvents.map((e) => e.type).join(', ')
+          const expected = expectedSequence.join(', ')
+          reject(
+            new Error(
+              `Event sequence not completed within ${timeoutMs}ms. Expected: ${expected}, Got: ${actual}`
+            )
+          )
         }, timeoutMs)
 
         const checkSequence = () => {
           if (capturedEvents.length >= expectedSequence.length) {
-            const actualSequence = capturedEvents.slice(0, expectedSequence.length).map(e => e.type)
-            if (JSON.stringify(actualSequence) === JSON.stringify(expectedSequence)) {
+            const actualSequence = capturedEvents
+              .slice(0, expectedSequence.length)
+              .map((e) => e.type)
+            if (
+              JSON.stringify(actualSequence) ===
+              JSON.stringify(expectedSequence)
+            ) {
               cleanup()
               resolve(capturedEvents.slice(0, expectedSequence.length))
             }
@@ -119,7 +143,7 @@ export function createExtendedEventCapture<T = unknown>(
         // Initial check in case events already exist
         checkSequence()
       })
-    },
+    }
   }
 }
 
@@ -138,14 +162,14 @@ export interface MemoryLeakTestOptions {
  * Useful for testing that event listeners and references are properly cleaned up
  */
 export function createMemoryLeakTest<T>(
-  setupFn: () => { ref: WeakRef<T>, cleanup: () => void },
-  options: MemoryLeakTestOptions = {},
+  setupFn: () => { ref: WeakRef<T>; cleanup: () => void },
+  options: MemoryLeakTestOptions = {}
 ) {
   const {
     cycles = 1,
     instancesPerCycle = 1,
     gcAfterEach = true,
-    maxMemoryGrowth = 0,
+    maxMemoryGrowth = 0
   } = options
 
   return async () => {
@@ -165,19 +189,21 @@ export function createMemoryLeakTest<T>(
 
       if (gcAfterEach && global.gc) {
         global.gc()
-        await new Promise(resolve => setTimeout(resolve, 10))
+        await new Promise((resolve) => setTimeout(resolve, 10))
       }
     }
 
     // Final garbage collection
     if (global.gc) {
       global.gc()
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
 
       // Check if objects were collected
-      const uncollectedRefs = refs.filter(ref => ref.deref() !== undefined)
+      const uncollectedRefs = refs.filter((ref) => ref.deref() !== undefined)
       if (uncollectedRefs.length > 0) {
-        console.warn(`${uncollectedRefs.length} objects were not garbage collected`)
+        console.warn(
+          `${uncollectedRefs.length} objects were not garbage collected`
+        )
       }
     }
 
@@ -187,7 +213,9 @@ export function createMemoryLeakTest<T>(
       const memoryGrowth = finalMemory - initialMemory
 
       if (memoryGrowth > maxMemoryGrowth) {
-        throw new Error(`Memory growth ${memoryGrowth} bytes exceeds limit ${maxMemoryGrowth} bytes`)
+        throw new Error(
+          `Memory growth ${memoryGrowth} bytes exceeds limit ${maxMemoryGrowth} bytes`
+        )
       }
     }
 
@@ -214,7 +242,7 @@ export function createEventPerformanceMonitor() {
       measurements.push({
         operation,
         duration: end - start,
-        timestamp: start,
+        timestamp: start
       })
 
       return result
@@ -223,22 +251,33 @@ export function createEventPerformanceMonitor() {
     getMeasurements: () => [...measurements],
 
     getAverageDuration: (operation: string) => {
-      const operationMeasurements = measurements.filter(m => m.operation === operation)
+      const operationMeasurements = measurements.filter(
+        (m) => m.operation === operation
+      )
       if (operationMeasurements.length === 0) return 0
 
-      const totalDuration = operationMeasurements.reduce((sum, m) => sum + m.duration, 0)
+      const totalDuration = operationMeasurements.reduce(
+        (sum, m) => sum + m.duration,
+        0
+      )
       return totalDuration / operationMeasurements.length
     },
 
-    clear: () => { measurements.length = 0 },
+    clear: () => {
+      measurements.length = 0
+    },
 
     assertPerformance: (operation: string, maxDuration: number) => {
       const measurements = this.getMeasurements()
-      const relevantMeasurements = measurements.filter(m => m.operation === operation)
+      const relevantMeasurements = measurements.filter(
+        (m) => m.operation === operation
+      )
       if (relevantMeasurements.length === 0) return
 
-      const avgDuration = relevantMeasurements.reduce((sum, m) => sum + m.duration, 0) / relevantMeasurements.length
+      const avgDuration =
+        relevantMeasurements.reduce((sum, m) => sum + m.duration, 0) /
+        relevantMeasurements.length
       expect(avgDuration).toBeLessThan(maxDuration)
-    },
+    }
   }
 }

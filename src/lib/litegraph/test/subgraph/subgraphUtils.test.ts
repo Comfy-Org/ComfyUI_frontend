@@ -1,24 +1,26 @@
-import type { UUID } from "@/lib/litegraph/src/utils/uuid"
+import { describe, expect, it } from 'vitest'
 
-import { describe, expect, it } from "vitest"
-
-import { LGraph } from "@/lib/litegraph/src/litegraph"
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   findUsedSubgraphIds,
-  getDirectSubgraphIds,
-} from "@/lib/litegraph/src/subgraph/subgraphUtils"
+  getDirectSubgraphIds
+} from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
-import { createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
-describe("subgraphUtils", () => {
-  describe("getDirectSubgraphIds", () => {
-    it("should return empty set for graph with no subgraph nodes", () => {
+describe('subgraphUtils', () => {
+  describe('getDirectSubgraphIds', () => {
+    it('should return empty set for graph with no subgraph nodes', () => {
       const graph = new LGraph()
       const result = getDirectSubgraphIds(graph)
       expect(result.size).toBe(0)
     })
 
-    it("should find single subgraph node", () => {
+    it('should find single subgraph node', () => {
       const graph = new LGraph()
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
@@ -29,10 +31,10 @@ describe("subgraphUtils", () => {
       expect(result.has(subgraph.id)).toBe(true)
     })
 
-    it("should find multiple unique subgraph nodes", () => {
+    it('should find multiple unique subgraph nodes', () => {
       const graph = new LGraph()
-      const subgraph1 = createTestSubgraph({ name: "Subgraph 1" })
-      const subgraph2 = createTestSubgraph({ name: "Subgraph 2" })
+      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
 
       const node1 = createTestSubgraphNode(subgraph1)
       const node2 = createTestSubgraphNode(subgraph2)
@@ -46,7 +48,7 @@ describe("subgraphUtils", () => {
       expect(result.has(subgraph2.id)).toBe(true)
     })
 
-    it("should return unique IDs when same subgraph is used multiple times", () => {
+    it('should return unique IDs when same subgraph is used multiple times', () => {
       const graph = new LGraph()
       const subgraph = createTestSubgraph()
 
@@ -62,8 +64,8 @@ describe("subgraphUtils", () => {
     })
   })
 
-  describe("findUsedSubgraphIds", () => {
-    it("should handle graph with no subgraphs", () => {
+  describe('findUsedSubgraphIds', () => {
+    it('should handle graph with no subgraphs', () => {
       const graph = new LGraph()
       const registry = new Map<UUID, any>()
 
@@ -71,10 +73,10 @@ describe("subgraphUtils", () => {
       expect(result.size).toBe(0)
     })
 
-    it("should find nested subgraphs", () => {
+    it('should find nested subgraphs', () => {
       const rootGraph = new LGraph()
-      const subgraph1 = createTestSubgraph({ name: "Level 1" })
-      const subgraph2 = createTestSubgraph({ name: "Level 2" })
+      const subgraph1 = createTestSubgraph({ name: 'Level 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Level 2' })
 
       // Add subgraph1 node to root
       const node1 = createTestSubgraphNode(subgraph1)
@@ -86,7 +88,7 @@ describe("subgraphUtils", () => {
 
       const registry = new Map<UUID, any>([
         [subgraph1.id, subgraph1],
-        [subgraph2.id, subgraph2],
+        [subgraph2.id, subgraph2]
       ])
 
       const result = findUsedSubgraphIds(rootGraph, registry)
@@ -95,10 +97,10 @@ describe("subgraphUtils", () => {
       expect(result.has(subgraph2.id)).toBe(true)
     })
 
-    it("should handle circular references without infinite loop", () => {
+    it('should handle circular references without infinite loop', () => {
       const rootGraph = new LGraph()
-      const subgraph1 = createTestSubgraph({ name: "Subgraph 1" })
-      const subgraph2 = createTestSubgraph({ name: "Subgraph 2" })
+      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
 
       // Add subgraph1 to root
       const node1 = createTestSubgraphNode(subgraph1)
@@ -114,7 +116,7 @@ describe("subgraphUtils", () => {
 
       const registry = new Map<UUID, any>([
         [subgraph1.id, subgraph1],
-        [subgraph2.id, subgraph2],
+        [subgraph2.id, subgraph2]
       ])
 
       const result = findUsedSubgraphIds(rootGraph, registry)
@@ -123,10 +125,10 @@ describe("subgraphUtils", () => {
       expect(result.has(subgraph2.id)).toBe(true)
     })
 
-    it("should handle missing subgraphs in registry gracefully", () => {
+    it('should handle missing subgraphs in registry gracefully', () => {
       const rootGraph = new LGraph()
-      const subgraph1 = createTestSubgraph({ name: "Subgraph 1" })
-      const subgraph2 = createTestSubgraph({ name: "Subgraph 2" })
+      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
 
       // Add both subgraph nodes
       const node1 = createTestSubgraphNode(subgraph1)

@@ -1,13 +1,14 @@
-import type { ContextMenu } from "./ContextMenu"
-import type { LGraphNode, NodeId } from "./LGraphNode"
-import type { LinkId, LLink } from "./LLink"
-import type { Reroute, RerouteId } from "./Reroute"
-import type { SubgraphInputNode } from "./subgraph/SubgraphInputNode"
-import type { SubgraphOutputNode } from "./subgraph/SubgraphOutputNode"
-import type { LinkDirection, RenderShape } from "./types/globalEnums"
-import type { IBaseWidget } from "./types/widgets"
-import type { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
-import type { CanvasPointerEvent } from "@/lib/litegraph/src/types/events"
+import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+
+import type { ContextMenu } from './ContextMenu'
+import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LLink, LinkId } from './LLink'
+import type { Reroute, RerouteId } from './Reroute'
+import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import type { LinkDirection, RenderShape } from './types/globalEnums'
+import type { IBaseWidget } from './types/widgets'
 
 export type Dictionary<T> = { [key: string]: T }
 
@@ -20,13 +21,21 @@ export type NullableProperties<T> = {
  * If {@link T} is `null` or `undefined`, evaluates to {@link Result}. Otherwise, evaluates to {@link T}.
  * Useful for functions that return e.g. `undefined` when a param is nullish.
  */
-export type WhenNullish<T, Result> = T & {} | (T extends null ? Result : T extends undefined ? Result : T & {})
+export type WhenNullish<T, Result> =
+  | (T & {})
+  | (T extends null ? Result : T extends undefined ? Result : T & {})
 
 /** A type with each of the {@link Properties} made optional. */
-export type OptionalProps<T, Properties extends keyof T> = Omit<T, Properties> & { [K in Properties]?: T[K] }
+export type OptionalProps<T, Properties extends keyof T> = Omit<
+  T,
+  Properties
+> & { [K in Properties]?: T[K] }
 
 /** A type with each of the {@link Properties} marked as required. */
-export type RequiredProps<T, Properties extends keyof T> = Omit<T, Properties> & { [K in Properties]-?: T[K] }
+export type RequiredProps<T, Properties extends keyof T> = Omit<
+  T,
+  Properties
+> & { [K in Properties]-?: T[K] }
 
 /** Bitwise AND intersection of two types; returns a new, non-union type that includes only properties that exist on both types. */
 export type SharedIntersection<T1, T2> = {
@@ -167,7 +176,10 @@ export interface LinkNetwork extends ReadonlyLinkNetwork {
 export interface ItemLocator {
   getNodeOnPos(x: number, y: number, nodeList?: LGraphNode[]): LGraphNode | null
   getRerouteOnPos(x: number, y: number): Reroute | undefined
-  getIoNodeOnPos?(x: number, y: number): SubgraphInputNode | SubgraphOutputNode | undefined
+  getIoNodeOnPos?(
+    x: number,
+    y: number
+  ): SubgraphInputNode | SubgraphOutputNode | undefined
 }
 
 /** Contains a cached 2D canvas path and a centre point, with an optional forward angle. */
@@ -254,10 +266,16 @@ type TypedArrays =
 
 type TypedBigIntArrays = BigInt64Array | BigUint64Array
 export type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =
-  Omit<Readonly<T>, "fill" | "copyWithin" | "reverse" | "set" | "sort" | "subarray">
+  Omit<
+    Readonly<T>,
+    'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
+  >
 
 /** Union of property names that are of type Match */
-export type KeysOfType<T, Match> = Exclude<{ [P in keyof T]: T[P] extends Match ? P : never }[keyof T], undefined>
+export type KeysOfType<T, Match> = Exclude<
+  { [P in keyof T]: T[P] extends Match ? P : never }[keyof T],
+  undefined
+>
 
 /** A new type that contains only the properties of T that are of type Match */
 export type PickByType<T, Match> = { [P in keyof T]: Extract<T[P], Match> }
@@ -272,10 +290,10 @@ export interface IBoundaryNodes {
   left: LGraphNode
 }
 
-export type Direction = "top" | "bottom" | "left" | "right"
+export type Direction = 'top' | 'bottom' | 'left' | 'right'
 
 /** Resize handle positions (compass points) */
-export type CompassCorners = "NE" | "SE" | "SW" | "NW"
+export type CompassCorners = 'NE' | 'SE' | 'SW' | 'NW'
 
 /**
  * A string that represents a specific data / slot type, e.g. `STRING`.
@@ -383,7 +401,8 @@ interface IContextMenuBase {
 }
 
 /** ContextMenu */
-export interface IContextMenuOptions<TValue = unknown, TExtra = unknown> extends IContextMenuBase {
+export interface IContextMenuOptions<TValue = unknown, TExtra = unknown>
+  extends IContextMenuBase {
   ignore_item_callbacks?: boolean
   parentMenu?: ContextMenu<TValue>
   event?: MouseEvent
@@ -401,11 +420,15 @@ export interface IContextMenuOptions<TValue = unknown, TExtra = unknown> extends
     options?: unknown,
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
-    extra?: unknown,
+    extra?: unknown
   ): void | boolean
 }
 
-export interface IContextMenuValue<TValue = unknown, TExtra = unknown, TCallbackValue = unknown> extends IContextMenuBase {
+export interface IContextMenuValue<
+  TValue = unknown,
+  TExtra = unknown,
+  TCallbackValue = unknown
+> extends IContextMenuBase {
   value?: TValue
   content: string | undefined
   has_submenu?: boolean
@@ -420,20 +443,26 @@ export interface IContextMenuValue<TValue = unknown, TExtra = unknown, TCallback
     options?: unknown,
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
-    extra?: TExtra,
+    extra?: TExtra
   ): void | boolean
 }
 
-export interface IContextMenuSubmenu<TValue = unknown> extends IContextMenuOptions<TValue> {
+export interface IContextMenuSubmenu<TValue = unknown>
+  extends IContextMenuOptions<TValue> {
   options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
 }
 
-export interface ContextMenuDivElement<TValue = unknown> extends HTMLDivElement {
+export interface ContextMenuDivElement<TValue = unknown>
+  extends HTMLDivElement {
   value?: string | IContextMenuValue<TValue>
   onclick_callback?: never
 }
 
-export type INodeSlotContextItem = [string, ISlotType, Partial<INodeInputSlot & INodeOutputSlot>]
+export type INodeSlotContextItem = [
+  string,
+  ISlotType,
+  Partial<INodeInputSlot & INodeOutputSlot>
+]
 
 export interface DefaultConnectionColors {
   getConnectedColor(type: ISlotType): CanvasColour
@@ -463,7 +492,8 @@ export type CallbackParams<T extends ((...args: any) => any) | undefined> =
  * Shorthand for {@link ReturnType} of optional callbacks.
  * @see {@link CallbackParams}
  */
-export type CallbackReturn<T extends ((...args: any) => any) | undefined> = ReturnType<Exclude<T, undefined>>
+export type CallbackReturn<T extends ((...args: any) => any) | undefined> =
+  ReturnType<Exclude<T, undefined>>
 
 /**
  * An object that can be hovered over.

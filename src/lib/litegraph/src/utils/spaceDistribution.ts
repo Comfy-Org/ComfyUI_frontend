@@ -11,7 +11,7 @@ export interface SpaceRequest {
  */
 export function distributeSpace(
   totalSpace: number,
-  requests: SpaceRequest[],
+  requests: SpaceRequest[]
 ): number[] {
   // Handle edge cases
   if (requests.length === 0) return []
@@ -21,14 +21,14 @@ export function distributeSpace(
 
   // If we can't meet minimum requirements, return the minimum sizes
   if (totalSpace < totalMinSize) {
-    return requests.map(req => req.minSize)
+    return requests.map((req) => req.minSize)
   }
 
   // Initialize allocations with minimum sizes
-  let allocations = requests.map(req => ({
+  let allocations = requests.map((req) => ({
     computedSize: req.minSize,
     maxSize: req.maxSize ?? Infinity,
-    remaining: (req.maxSize ?? Infinity) - req.minSize,
+    remaining: (req.maxSize ?? Infinity) - req.minSize
   }))
 
   // Calculate remaining space to distribute
@@ -37,11 +37,11 @@ export function distributeSpace(
   // Distribute remaining space iteratively
   while (
     remainingSpace > 0 &&
-    allocations.some(alloc => alloc.remaining > 0)
+    allocations.some((alloc) => alloc.remaining > 0)
   ) {
     // Count items that can still grow
     const growableItems = allocations.filter(
-      alloc => alloc.remaining > 0,
+      (alloc) => alloc.remaining > 0
     ).length
 
     if (growableItems === 0) break
@@ -62,7 +62,7 @@ export function distributeSpace(
       return {
         ...alloc,
         computedSize: alloc.computedSize + growth,
-        remaining: alloc.remaining - growth,
+        remaining: alloc.remaining - growth
       }
     })
 

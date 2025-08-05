@@ -1,10 +1,17 @@
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { IButtonWidget } from "@/lib/litegraph/src/types/widgets"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
-export class ButtonWidget extends BaseWidget<IButtonWidget> implements IButtonWidget {
-  override type = "button" as const
+export class ButtonWidget
+  extends BaseWidget<IButtonWidget>
+  implements IButtonWidget
+{
+  override type = 'button' as const
   clicked: boolean
 
   constructor(widget: IButtonWidget, node: LGraphNode) {
@@ -17,10 +24,10 @@ export class ButtonWidget extends BaseWidget<IButtonWidget> implements IButtonWi
    * @param ctx The canvas context
    * @param options The options for drawing the widget
    */
-  override drawWidget(ctx: CanvasRenderingContext2D, {
-    width,
-    showText = true,
-  }: DrawWidgetOptions) {
+  override drawWidget(
+    ctx: CanvasRenderingContext2D,
+    { width, showText = true }: DrawWidgetOptions
+  ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
 
@@ -30,7 +37,7 @@ export class ButtonWidget extends BaseWidget<IButtonWidget> implements IButtonWi
     // Draw button background
     ctx.fillStyle = this.background_color
     if (this.clicked) {
-      ctx.fillStyle = "#AAA"
+      ctx.fillStyle = '#AAA'
       this.clicked = false
     }
     ctx.fillRect(margin, y, width - margin * 2, height)
@@ -49,7 +56,7 @@ export class ButtonWidget extends BaseWidget<IButtonWidget> implements IButtonWi
   }
 
   drawLabel(ctx: CanvasRenderingContext2D, x: number): void {
-    ctx.textAlign = "center"
+    ctx.textAlign = 'center'
     ctx.fillStyle = this.text_color
     ctx.fillText(this.displayName, x, this.y + this.height * 0.7)
   }

@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from "@/lib/litegraph/src/litegraph"
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { createTestSubgraph } from "./fixtures/subgraphHelpers"
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
-describe("SubgraphSlot visual feedback", () => {
+describe('SubgraphSlot visual feedback', () => {
   let mockCtx: CanvasRenderingContext2D
   let mockColorContext: any
   let globalAlphaValues: number[]
@@ -23,35 +23,35 @@ describe("SubgraphSlot visual feedback", () => {
         this._globalAlpha = value
         globalAlphaValues.push(value)
       },
-      fillStyle: "",
-      strokeStyle: "",
+      fillStyle: '',
+      strokeStyle: '',
       lineWidth: 1,
       beginPath: vi.fn(),
       arc: vi.fn(),
       fill: vi.fn(),
       stroke: vi.fn(),
       rect: vi.fn(),
-      fillText: vi.fn(),
+      fillText: vi.fn()
     }
     mockCtx = mockContext as unknown as CanvasRenderingContext2D
 
     // Create a mock color context
     mockColorContext = {
-      defaultInputColor: "#FF0000",
-      defaultOutputColor: "#00FF00",
-      getConnectedColor: vi.fn().mockReturnValue("#0000FF"),
-      getDisconnectedColor: vi.fn().mockReturnValue("#AAAAAA"),
+      defaultInputColor: '#FF0000',
+      defaultOutputColor: '#00FF00',
+      getConnectedColor: vi.fn().mockReturnValue('#0000FF'),
+      getDisconnectedColor: vi.fn().mockReturnValue('#AAAAAA')
     }
   })
 
-  it("should render SubgraphInput slots with full opacity when dragging from compatible slot", () => {
+  it('should render SubgraphInput slots with full opacity when dragging from compatible slot', () => {
     const subgraph = createTestSubgraph()
-    const node = new LGraphNode("TestNode")
-    node.addInput("in", "number")
+    const node = new LGraphNode('TestNode')
+    node.addInput('in', 'number')
     subgraph.add(node)
 
     // Add a subgraph input
-    const subgraphInput = subgraph.addInput("value", "number")
+    const subgraphInput = subgraph.addInput('value', 'number')
 
     // Simulate dragging from the subgraph input (which acts as output inside subgraph)
     const nodeInput = node.inputs[0]
@@ -61,7 +61,7 @@ describe("SubgraphSlot visual feedback", () => {
       ctx: mockCtx,
       colorContext: mockColorContext,
       fromSlot: nodeInput,
-      editorAlpha: 1,
+      editorAlpha: 1
     })
 
     // Should render with full opacity (not 0.4)
@@ -69,19 +69,19 @@ describe("SubgraphSlot visual feedback", () => {
     expect(globalAlphaValues).not.toContain(0.4)
   })
 
-  it("should render SubgraphInput slots with 40% opacity when dragging from another SubgraphInput", () => {
+  it('should render SubgraphInput slots with 40% opacity when dragging from another SubgraphInput', () => {
     const subgraph = createTestSubgraph()
 
     // Add two subgraph inputs
-    const subgraphInput1 = subgraph.addInput("value1", "number")
-    const subgraphInput2 = subgraph.addInput("value2", "number")
+    const subgraphInput1 = subgraph.addInput('value1', 'number')
+    const subgraphInput2 = subgraph.addInput('value2', 'number')
 
     // Draw subgraphInput2 while dragging from subgraphInput1 (incompatible - both are outputs inside subgraph)
     subgraphInput2.draw({
       ctx: mockCtx,
       colorContext: mockColorContext,
       fromSlot: subgraphInput1,
-      editorAlpha: 1,
+      editorAlpha: 1
     })
 
     // Should render with 40% opacity
@@ -89,14 +89,14 @@ describe("SubgraphSlot visual feedback", () => {
     expect(globalAlphaValues).toContain(0.4)
   })
 
-  it("should render SubgraphOutput slots with full opacity when dragging from compatible slot", () => {
+  it('should render SubgraphOutput slots with full opacity when dragging from compatible slot', () => {
     const subgraph = createTestSubgraph()
-    const node = new LGraphNode("TestNode")
-    node.addOutput("out", "number")
+    const node = new LGraphNode('TestNode')
+    node.addOutput('out', 'number')
     subgraph.add(node)
 
     // Add a subgraph output
-    const subgraphOutput = subgraph.addOutput("result", "number")
+    const subgraphOutput = subgraph.addOutput('result', 'number')
 
     // Simulate dragging from a node output
     const nodeOutput = node.outputs[0]
@@ -106,7 +106,7 @@ describe("SubgraphSlot visual feedback", () => {
       ctx: mockCtx,
       colorContext: mockColorContext,
       fromSlot: nodeOutput,
-      editorAlpha: 1,
+      editorAlpha: 1
     })
 
     // Should render with full opacity (not 0.4)
@@ -114,19 +114,19 @@ describe("SubgraphSlot visual feedback", () => {
     expect(globalAlphaValues).not.toContain(0.4)
   })
 
-  it("should render SubgraphOutput slots with 40% opacity when dragging from another SubgraphOutput", () => {
+  it('should render SubgraphOutput slots with 40% opacity when dragging from another SubgraphOutput', () => {
     const subgraph = createTestSubgraph()
 
     // Add two subgraph outputs
-    const subgraphOutput1 = subgraph.addOutput("result1", "number")
-    const subgraphOutput2 = subgraph.addOutput("result2", "number")
+    const subgraphOutput1 = subgraph.addOutput('result1', 'number')
+    const subgraphOutput2 = subgraph.addOutput('result2', 'number')
 
     // Draw subgraphOutput2 while dragging from subgraphOutput1 (incompatible - both are inputs inside subgraph)
     subgraphOutput2.draw({
       ctx: mockCtx,
       colorContext: mockColorContext,
       fromSlot: subgraphOutput1,
-      editorAlpha: 1,
+      editorAlpha: 1
     })
 
     // Should render with 40% opacity
@@ -154,14 +154,14 @@ describe("SubgraphSlot visual feedback", () => {
   //   expect(mockCtx.globalAlpha).toBe(1)
   // })
 
-  it("should render slots with 40% opacity when dragging between incompatible types", () => {
+  it('should render slots with 40% opacity when dragging between incompatible types', () => {
     const subgraph = createTestSubgraph()
-    const node = new LGraphNode("TestNode")
-    node.addOutput("string_output", "string")
+    const node = new LGraphNode('TestNode')
+    node.addOutput('string_output', 'string')
     subgraph.add(node)
 
     // Add subgraph output with incompatible type
-    const subgraphOutput = subgraph.addOutput("result", "number")
+    const subgraphOutput = subgraph.addOutput('result', 'number')
 
     // Get the string output slot from the node
     const nodeStringOutput = node.outputs[0]
@@ -171,7 +171,7 @@ describe("SubgraphSlot visual feedback", () => {
       ctx: mockCtx,
       colorContext: mockColorContext,
       fromSlot: nodeStringOutput,
-      editorAlpha: 1,
+      editorAlpha: 1
     })
 
     // Should render with 40% opacity due to type mismatch

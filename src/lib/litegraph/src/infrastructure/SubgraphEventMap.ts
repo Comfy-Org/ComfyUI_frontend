@@ -1,53 +1,54 @@
-import type { LGraphEventMap } from "./LGraphEventMap"
-import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
-import type { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
-import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
-import type { IBaseWidget } from "@/lib/litegraph/src/types/widgets"
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+
+import type { LGraphEventMap } from './LGraphEventMap'
 
 export interface SubgraphEventMap extends LGraphEventMap {
-  "adding-input": {
+  'adding-input': {
     name: string
     type: string
   }
-  "adding-output": {
+  'adding-output': {
     name: string
     type: string
   }
 
-  "input-added": {
+  'input-added': {
     input: SubgraphInput
   }
-  "output-added": {
+  'output-added': {
     output: SubgraphOutput
   }
 
-  "removing-input": {
+  'removing-input': {
     input: SubgraphInput
     index: number
   }
-  "removing-output": {
+  'removing-output': {
     output: SubgraphOutput
     index: number
   }
 
-  "renaming-input": {
+  'renaming-input': {
     input: SubgraphInput
     index: number
     oldName: string
     newName: string
   }
-  "renaming-output": {
+  'renaming-output': {
     output: SubgraphOutput
     index: number
     oldName: string
     newName: string
   }
 
-  "widget-promoted": {
+  'widget-promoted': {
     widget: IBaseWidget
     subgraphNode: SubgraphNode
   }
-  "widget-demoted": {
+  'widget-demoted': {
     widget: IBaseWidget
     subgraphNode: SubgraphNode
   }

@@ -1,45 +1,48 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from 'vitest'
 
-import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
-import { LGraphButton } from "@/lib/litegraph/src/LGraphButton"
+import { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 
-describe("LGraphButton", () => {
-  describe("Constructor", () => {
-    it("should create a button with default options", () => {
+describe('LGraphButton', () => {
+  describe('Constructor', () => {
+    it('should create a button with default options', () => {
       const button = new LGraphButton({})
       expect(button).toBeInstanceOf(LGraphButton)
       expect(button.name).toBeUndefined()
       expect(button._last_area).toBeInstanceOf(Rectangle)
     })
 
-    it("should create a button with custom name", () => {
-      const button = new LGraphButton({ name: "test_button" })
-      expect(button.name).toBe("test_button")
+    it('should create a button with custom name', () => {
+      const button = new LGraphButton({ name: 'test_button' })
+      expect(button.name).toBe('test_button')
     })
 
-    it("should inherit badge properties", () => {
+    it('should inherit badge properties', () => {
       const button = new LGraphButton({
-        text: "Test",
-        fgColor: "#FF0000",
-        bgColor: "#0000FF",
-        fontSize: 16,
+        text: 'Test',
+        fgColor: '#FF0000',
+        bgColor: '#0000FF',
+        fontSize: 16
       })
-      expect(button.text).toBe("Test")
-      expect(button.fgColor).toBe("#FF0000")
-      expect(button.bgColor).toBe("#0000FF")
+      expect(button.text).toBe('Test')
+      expect(button.fgColor).toBe('#FF0000')
+      expect(button.bgColor).toBe('#0000FF')
       expect(button.fontSize).toBe(16)
       expect(button.visible).toBe(true) // visible is computed based on text length
     })
   })
 
-  describe("draw", () => {
-    it("should not draw if not visible", () => {
-      const button = new LGraphButton({ text: "" }) // Empty text makes it invisible
+  describe('draw', () => {
+    it('should not draw if not visible', () => {
+      const button = new LGraphButton({ text: '' }) // Empty text makes it invisible
       const ctx = {
-        measureText: vi.fn().mockReturnValue({ width: 100 }),
+        measureText: vi.fn().mockReturnValue({ width: 100 })
       } as unknown as CanvasRenderingContext2D
 
-      const superDrawSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(button)), "draw")
+      const superDrawSpy = vi.spyOn(
+        Object.getPrototypeOf(Object.getPrototypeOf(button)),
+        'draw'
+      )
 
       button.draw(ctx, 50, 100)
 
@@ -47,11 +50,11 @@ describe("LGraphButton", () => {
       expect(button._last_area.width).toBe(0) // Rectangle default width
     })
 
-    it("should draw and update last area when visible", () => {
+    it('should draw and update last area when visible', () => {
       const button = new LGraphButton({
-        text: "Click",
+        text: 'Click',
         xOffset: 5,
-        yOffset: 10,
+        yOffset: 10
       })
 
       const ctx = {
@@ -61,9 +64,9 @@ describe("LGraphButton", () => {
         beginPath: vi.fn(),
         roundRect: vi.fn(),
         fill: vi.fn(),
-        font: "",
-        fillStyle: "",
-        globalAlpha: 1,
+        font: '',
+        fillStyle: '',
+        globalAlpha: 1
       } as unknown as CanvasRenderingContext2D
 
       const mockGetWidth = vi.fn().mockReturnValue(80)
@@ -81,9 +84,9 @@ describe("LGraphButton", () => {
       expect(button._last_area[3]).toBe(button.height)
     })
 
-    it("should calculate last area without offsets", () => {
+    it('should calculate last area without offsets', () => {
       const button = new LGraphButton({
-        text: "Test",
+        text: 'Test'
       })
 
       const ctx = {
@@ -93,9 +96,9 @@ describe("LGraphButton", () => {
         beginPath: vi.fn(),
         roundRect: vi.fn(),
         fill: vi.fn(),
-        font: "",
-        fillStyle: "",
-        globalAlpha: 1,
+        font: '',
+        fillStyle: '',
+        globalAlpha: 1
       } as unknown as CanvasRenderingContext2D
 
       const mockGetWidth = vi.fn().mockReturnValue(50)
@@ -109,9 +112,9 @@ describe("LGraphButton", () => {
     })
   })
 
-  describe("isPointInside", () => {
-    it("should return true when point is inside button area", () => {
-      const button = new LGraphButton({ text: "Test" })
+  describe('isPointInside', () => {
+    it('should return true when point is inside button area', () => {
+      const button = new LGraphButton({ text: 'Test' })
       // Set the last area manually
       button._last_area[0] = 100
       button._last_area[1] = 50
@@ -124,8 +127,8 @@ describe("LGraphButton", () => {
       expect(button.isPointInside(140, 60)).toBe(true) // Center
     })
 
-    it("should return false when point is outside button area", () => {
-      const button = new LGraphButton({ text: "Test" })
+    it('should return false when point is outside button area', () => {
+      const button = new LGraphButton({ text: 'Test' })
       // Set the last area manually
       button._last_area[0] = 100
       button._last_area[1] = 50
@@ -140,8 +143,8 @@ describe("LGraphButton", () => {
       expect(button.isPointInside(0, 0)).toBe(false) // Far away
     })
 
-    it("should work with buttons that have not been drawn yet", () => {
-      const button = new LGraphButton({ text: "Test" })
+    it('should work with buttons that have not been drawn yet', () => {
+      const button = new LGraphButton({ text: 'Test' })
       // _last_area has default values (0, 0, 0, 0)
 
       expect(button.isPointInside(10, 10)).toBe(false)
@@ -149,15 +152,15 @@ describe("LGraphButton", () => {
     })
   })
 
-  describe("Integration with LGraphBadge", () => {
-    it("should properly inherit and use badge functionality", () => {
+  describe('Integration with LGraphBadge', () => {
+    it('should properly inherit and use badge functionality', () => {
       const button = new LGraphButton({
-        text: "→",
+        text: '→',
         fontSize: 20,
-        color: "#FFFFFF",
-        backgroundColor: "#333333",
+        color: '#FFFFFF',
+        backgroundColor: '#333333',
         xOffset: -10,
-        yOffset: 5,
+        yOffset: 5
       })
 
       const ctx = {
@@ -167,9 +170,9 @@ describe("LGraphButton", () => {
         beginPath: vi.fn(),
         roundRect: vi.fn(),
         fill: vi.fn(),
-        font: "",
-        fillStyle: "",
-        globalAlpha: 1,
+        font: '',
+        fillStyle: '',
+        globalAlpha: 1
       } as unknown as CanvasRenderingContext2D
 
       // Draw the button
@@ -179,7 +182,11 @@ describe("LGraphButton", () => {
       expect(ctx.beginPath).not.toHaveBeenCalled() // No background
       expect(ctx.roundRect).not.toHaveBeenCalled() // No background
       expect(ctx.fill).not.toHaveBeenCalled() // No background
-      expect(ctx.fillText).toHaveBeenCalledWith("→", expect.any(Number), expect.any(Number)) // Just text
+      expect(ctx.fillText).toHaveBeenCalledWith(
+        '→',
+        expect.any(Number),
+        expect.any(Number)
+      ) // Just text
     })
   })
 })

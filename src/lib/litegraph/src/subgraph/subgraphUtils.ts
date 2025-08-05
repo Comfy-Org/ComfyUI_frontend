@@ -1,21 +1,31 @@
-import type { GraphOrSubgraph } from "./Subgraph"
-import type { SubgraphInput } from "./SubgraphInput"
-import type { SubgraphOutput } from "./SubgraphOutput"
-import type { INodeInputSlot, INodeOutputSlot, Positionable } from "@/lib/litegraph/src/interfaces"
-import type { LGraph } from "@/lib/litegraph/src/LGraph"
-import type { ISerialisedNode, SerialisableLLink, SubgraphIO } from "@/lib/litegraph/src/types/serialisation"
-import type { UUID } from "@/lib/litegraph/src/utils/uuid"
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
+import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import type {
+  ISerialisedNode,
+  SerialisableLLink,
+  SubgraphIO
+} from '@/lib/litegraph/src/types/serialisation'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/lib/litegraph/src/constants"
-import { LGraphGroup } from "@/lib/litegraph/src/LGraphGroup"
-import { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import { createUuidv4, LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { LLink, type ResolvedConnection } from "@/lib/litegraph/src/LLink"
-import { Reroute } from "@/lib/litegraph/src/Reroute"
-import { nextUniqueName } from "@/lib/litegraph/src/strings"
-
-import { SubgraphInputNode } from "./SubgraphInputNode"
-import { SubgraphOutputNode } from "./SubgraphOutputNode"
+import type { GraphOrSubgraph } from './Subgraph'
+import type { SubgraphInput } from './SubgraphInput'
+import { SubgraphInputNode } from './SubgraphInputNode'
+import type { SubgraphOutput } from './SubgraphOutput'
+import { SubgraphOutputNode } from './SubgraphOutputNode'
 
 export interface FilteredItems {
   nodes: Set<LGraphNode>
@@ -26,7 +36,9 @@ export interface FilteredItems {
   unknown: Set<Positionable>
 }
 
-export function splitPositionables(items: Iterable<Positionable>): FilteredItems {
+export function splitPositionables(
+  items: Iterable<Positionable>
+): FilteredItems {
   const nodes = new Set<LGraphNode>()
   const reroutes = new Set<Reroute>()
   const groups = new Set<LGraphGroup>()
@@ -37,24 +49,24 @@ export function splitPositionables(items: Iterable<Positionable>): FilteredItems
 
   for (const item of items) {
     switch (true) {
-    case item instanceof LGraphNode:
-      nodes.add(item)
-      break
-    case item instanceof LGraphGroup:
-      groups.add(item)
-      break
-    case item instanceof Reroute:
-      reroutes.add(item)
-      break
-    case item instanceof SubgraphInputNode:
-      subgraphInputNodes.add(item)
-      break
-    case item instanceof SubgraphOutputNode:
-      subgraphOutputNodes.add(item)
-      break
-    default:
-      unknown.add(item)
-      break
+      case item instanceof LGraphNode:
+        nodes.add(item)
+        break
+      case item instanceof LGraphGroup:
+        groups.add(item)
+        break
+      case item instanceof Reroute:
+        reroutes.add(item)
+        break
+      case item instanceof SubgraphInputNode:
+        subgraphInputNodes.add(item)
+        break
+      case item instanceof SubgraphOutputNode:
+        subgraphOutputNodes.add(item)
+        break
+      default:
+        unknown.add(item)
+        break
     }
   }
 
@@ -64,7 +76,7 @@ export function splitPositionables(items: Iterable<Positionable>): FilteredItems
     groups,
     subgraphInputNodes,
     subgraphOutputNodes,
-    unknown,
+    unknown
   }
 }
 
@@ -76,7 +88,10 @@ interface BoundaryLinks {
   boundaryOutputLinks: LLink[]
 }
 
-export function getBoundaryLinks(graph: LGraph, items: Set<Positionable>): BoundaryLinks {
+export function getBoundaryLinks(
+  graph: LGraph,
+  items: Set<Positionable>
+): BoundaryLinks {
   const internalLinks: LLink[] = []
   const boundaryLinks: LLink[] = []
   const boundaryInputLinks: LLink[] = []
@@ -151,7 +166,9 @@ export function getBoundaryLinks(graph: LGraph, items: Set<Positionable>): Bound
       const results = LLink.resolveMany(reroute.linkIds, graph)
       for (const { link } of results) {
         const reroutes = LLink.getReroutes(graph, link)
-        const reroutesOutside = reroutes.filter(reroute => !items.has(reroute))
+        const reroutesOutside = reroutes.filter(
+          (reroute) => !items.has(reroute)
+        )
 
         // for (const reroute of reroutes) {
         //   // TODO: Do the checks here.
@@ -170,7 +187,13 @@ export function getBoundaryLinks(graph: LGraph, items: Set<Positionable>): Bound
     }
   }
 
-  return { boundaryLinks, boundaryFloatingLinks, internalLinks, boundaryInputLinks, boundaryOutputLinks }
+  return {
+    boundaryLinks,
+    boundaryFloatingLinks,
+    internalLinks,
+    boundaryInputLinks,
+    boundaryOutputLinks
+  }
 
   /**
    * Adds any floating links that cross the boundary.
@@ -180,9 +203,9 @@ export function getBoundaryLinks(graph: LGraph, items: Set<Positionable>): Bound
     if (!floatingLinks) return
 
     for (const link of floatingLinks) {
-      const crossesBoundary = LLink
-        .getReroutes(graph, link)
-        .some(reroute => !items.has(reroute))
+      const crossesBoundary = LLink.getReroutes(graph, link).some(
+        (reroute) => !items.has(reroute)
+      )
 
       if (crossesBoundary) boundaryFloatingLinks.push(link)
     }
@@ -196,7 +219,7 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   for (const node of nodes) {
     const newNode = LiteGraph.createNode(node.type)
     if (!newNode) {
-      console.warn("Failed to create node", node.type)
+      console.warn('Failed to create node', node.type)
       continue
     }
 
@@ -216,7 +239,7 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
  * @returns A map of grouped connections.
  */
 export function groupResolvedByOutput(
-  resolvedConnections: ResolvedConnection[],
+  resolvedConnections: ResolvedConnection[]
 ): Map<SubgraphIO | INodeOutputSlot | object, ResolvedConnection[]> {
   const groupedByOutput: ReturnType<typeof groupResolvedByOutput> = new Map()
 
@@ -234,7 +257,10 @@ export function groupResolvedByOutput(
   return groupedByOutput
 }
 
-export function mapSubgraphInputsAndLinks(resolvedInputLinks: ResolvedConnection[], links: SerialisableLLink[]): SubgraphIO[] {
+export function mapSubgraphInputsAndLinks(
+  resolvedInputLinks: ResolvedConnection[],
+  links: SerialisableLLink[]
+): SubgraphIO[] {
   // Group matching links
   const groupedByOutput = groupResolvedByOutput(resolvedInputLinks)
 
@@ -261,14 +287,32 @@ export function mapSubgraphInputsAndLinks(resolvedInputLinks: ResolvedConnection
     if (!input) continue
 
     // Subgraph input slot
-    const { color_off, color_on, dir, hasErrors, label, localized_name, name, shape, type } = input
-    const uniqueName = nextUniqueName(name, inputs.map(input => input.name))
-    const uniqueLocalizedName = localized_name ? nextUniqueName(localized_name, inputs.map(input => input.localized_name ?? "")) : undefined
+    const {
+      color_off,
+      color_on,
+      dir,
+      hasErrors,
+      label,
+      localized_name,
+      name,
+      shape,
+      type
+    } = input
+    const uniqueName = nextUniqueName(
+      name,
+      inputs.map((input) => input.name)
+    )
+    const uniqueLocalizedName = localized_name
+      ? nextUniqueName(
+          localized_name,
+          inputs.map((input) => input.localized_name ?? '')
+        )
+      : undefined
 
     const inputData: SubgraphIO = {
       id: createUuidv4(),
       type: String(type),
-      linkIds: inputLinks.map(link => link.id),
+      linkIds: inputLinks.map((link) => link.id),
       name: uniqueName,
       color_off,
       color_on,
@@ -276,7 +320,7 @@ export function mapSubgraphInputsAndLinks(resolvedInputLinks: ResolvedConnection
       label,
       localized_name: uniqueLocalizedName,
       hasErrors,
-      shape,
+      shape
     }
 
     inputs.push(inputData)
@@ -291,7 +335,10 @@ export function mapSubgraphInputsAndLinks(resolvedInputLinks: ResolvedConnection
  * @param links The links to add to the subgraph.
  * @returns The subgraph output slots.
  */
-export function mapSubgraphOutputsAndLinks(resolvedOutputLinks: ResolvedConnection[], links: SerialisableLLink[]): SubgraphIO[] {
+export function mapSubgraphOutputsAndLinks(
+  resolvedOutputLinks: ResolvedConnection[],
+  links: SerialisableLLink[]
+): SubgraphIO[] {
   // Group matching links
   const groupedByOutput = groupResolvedByOutput(resolvedOutputLinks)
 
@@ -318,14 +365,32 @@ export function mapSubgraphOutputsAndLinks(resolvedOutputLinks: ResolvedConnecti
     if (!output) continue
 
     // Subgraph output slot
-    const { color_off, color_on, dir, hasErrors, label, localized_name, name, shape, type } = output
-    const uniqueName = nextUniqueName(name, outputs.map(output => output.name))
-    const uniqueLocalizedName = localized_name ? nextUniqueName(localized_name, outputs.map(output => output.localized_name ?? "")) : undefined
+    const {
+      color_off,
+      color_on,
+      dir,
+      hasErrors,
+      label,
+      localized_name,
+      name,
+      shape,
+      type
+    } = output
+    const uniqueName = nextUniqueName(
+      name,
+      outputs.map((output) => output.name)
+    )
+    const uniqueLocalizedName = localized_name
+      ? nextUniqueName(
+          localized_name,
+          outputs.map((output) => output.localized_name ?? '')
+        )
+      : undefined
 
     const outputData = {
       id: createUuidv4(),
       type: String(type),
-      linkIds: outputLinks.map(link => link.id),
+      linkIds: outputLinks.map((link) => link.id),
       name: uniqueName,
       color_off,
       color_on,
@@ -333,7 +398,7 @@ export function mapSubgraphOutputsAndLinks(resolvedOutputLinks: ResolvedConnecti
       label,
       localized_name: uniqueLocalizedName,
       hasErrors,
-      shape,
+      shape
     } satisfies SubgraphIO
 
     outputs.push(structuredClone(outputData))
@@ -366,7 +431,7 @@ export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<UUID> {
  */
 export function findUsedSubgraphIds(
   rootGraph: GraphOrSubgraph,
-  subgraphRegistry: Map<UUID, GraphOrSubgraph>,
+  subgraphRegistry: Map<UUID, GraphOrSubgraph>
 ): Set<UUID> {
   const usedSubgraphIds = new Set<UUID>()
   const toVisit: GraphOrSubgraph[] = [rootGraph]
@@ -395,8 +460,12 @@ export function findUsedSubgraphIds(
  * @returns true if the slot is a SubgraphInput
  */
 export function isSubgraphInput(slot: unknown): slot is SubgraphInput {
-  return slot != null && typeof slot === "object" && "parent" in slot &&
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    'parent' in slot &&
     slot.parent instanceof SubgraphInputNode
+  )
 }
 
 /**
@@ -405,8 +474,12 @@ export function isSubgraphInput(slot: unknown): slot is SubgraphInput {
  * @returns true if the slot is a SubgraphOutput
  */
 export function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
-  return slot != null && typeof slot === "object" && "parent" in slot &&
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    'parent' in slot &&
     slot.parent instanceof SubgraphOutputNode
+  )
 }
 
 /**
@@ -414,7 +487,12 @@ export function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
  * @param slot The slot to check
  * @returns true if the slot is a regular node slot
  */
-export function isNodeSlot(slot: unknown): slot is INodeInputSlot | INodeOutputSlot {
-  return slot != null && typeof slot === "object" &&
-    ("link" in slot || "links" in slot)
+export function isNodeSlot(
+  slot: unknown
+): slot is INodeInputSlot | INodeOutputSlot {
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    ('link' in slot || 'links' in slot)
+  )
 }

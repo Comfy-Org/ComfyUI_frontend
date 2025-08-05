@@ -1,19 +1,39 @@
-import type { EmptySubgraphInput } from "./EmptySubgraphInput"
-import type { EmptySubgraphOutput } from "./EmptySubgraphOutput"
-import type { Subgraph } from "./Subgraph"
-import type { SubgraphInput } from "./SubgraphInput"
-import type { SubgraphOutput } from "./SubgraphOutput"
-import type { LinkConnector } from "@/lib/litegraph/src/canvas/LinkConnector"
-import type { DefaultConnectionColors, Hoverable, INodeInputSlot, INodeOutputSlot, Point, Positionable } from "@/lib/litegraph/src/interfaces"
-import type { NodeId } from "@/lib/litegraph/src/LGraphNode"
-import type { ExportedSubgraphIONode, Serialisable } from "@/lib/litegraph/src/types/serialisation"
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type {
+  DefaultConnectionColors,
+  Hoverable,
+  INodeInputSlot,
+  INodeOutputSlot,
+  Point,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import {
+  type CanvasColour,
+  type CanvasPointer,
+  type CanvasPointerEvent,
+  type IContextMenuValue,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { snapPoint } from '@/lib/litegraph/src/measure'
+import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
+import type {
+  ExportedSubgraphIONode,
+  Serialisable
+} from '@/lib/litegraph/src/types/serialisation'
 
-import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
-import { type CanvasColour, type CanvasPointer, type CanvasPointerEvent, type IContextMenuValue, LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { snapPoint } from "@/lib/litegraph/src/measure"
-import { CanvasItem } from "@/lib/litegraph/src/types/globalEnums"
+import type { EmptySubgraphInput } from './EmptySubgraphInput'
+import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
+import type { Subgraph } from './Subgraph'
+import type { SubgraphInput } from './SubgraphInput'
+import type { SubgraphOutput } from './SubgraphOutput'
 
-export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphOutput> implements Positionable, Hoverable, Serialisable<ExportedSubgraphIONode> {
+export abstract class SubgraphIONodeBase<
+    TSlot extends SubgraphInput | SubgraphOutput
+  >
+  implements Positionable, Hoverable, Serialisable<ExportedSubgraphIONode>
+{
   static margin = 10
   static minWidth = 100
   static roundedRadius = 10
@@ -55,7 +75,7 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
   }
 
   protected get sideStrokeStyle(): CanvasColour {
-    return this.isPointerOver ? "white" : "#efefef"
+    return this.isPointerOver ? 'white' : '#efefef'
   }
 
   abstract readonly slots: TSlot[]
@@ -63,7 +83,7 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
 
   constructor(
     /** The subgraph that this node belongs to. */
-    readonly subgraph: Subgraph,
+    readonly subgraph: Subgraph
   ) {}
 
   move(deltaX: number, deltaY: number): void {
@@ -76,7 +96,11 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
     return this.pinned ? false : snapPoint(this.pos, snapTo)
   }
 
-  abstract onPointerDown(e: CanvasPointerEvent, pointer: CanvasPointer, linkConnector: LinkConnector): void
+  abstract onPointerDown(
+    e: CanvasPointerEvent,
+    pointer: CanvasPointer,
+    linkConnector: LinkConnector
+  ): void
 
   // #region Hoverable
 
@@ -88,7 +112,9 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
 
   onPointerMove(e: CanvasPointerEvent): CanvasItem {
     const containsPoint = this.boundingRect.containsXy(e.canvasX, e.canvasY)
-    let underPointer = containsPoint ? CanvasItem.SubgraphIoNode : CanvasItem.Nothing
+    let underPointer = containsPoint
+      ? CanvasItem.SubgraphIoNode
+      : CanvasItem.Nothing
 
     if (containsPoint) {
       if (!this.isPointerOver) this.onPointerEnter()
@@ -153,16 +179,13 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
     const options: IContextMenuValue[] = this.#getSlotMenuOptions(slot)
     if (!(options.length > 0)) return
 
-    new LiteGraph.ContextMenu(
-      options,
-      {
-        event: event as any,
-        title: slot.name || "Subgraph Output",
-        callback: (item: IContextMenuValue) => {
-          this.#onSlotMenuAction(item, slot, event)
-        },
-      },
-    )
+    new LiteGraph.ContextMenu(options, {
+      event: event as any,
+      title: slot.name || 'Subgraph Output',
+      callback: (item: IContextMenuValue) => {
+        this.#onSlotMenuAction(item, slot, event)
+      }
+    })
   }
 
   /**
@@ -175,14 +198,14 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
 
     // Disconnect option if slot has connections
     if (slot !== this.emptySlot && slot.linkIds.length > 0) {
-      options.push({ content: "Disconnect Links", value: "disconnect" })
+      options.push({ content: 'Disconnect Links', value: 'disconnect' })
     }
 
     // Remove / rename slot option (except for the empty slot)
     if (slot !== this.emptySlot) {
       options.push(
-        { content: "Remove Slot", value: "remove" },
-        { content: "Rename Slot", value: "rename" },
+        { content: 'Remove Slot', value: 'remove' },
+        { content: 'Rename Slot', value: 'rename' }
       )
     }
 
@@ -195,33 +218,39 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
    * @param slot The slot
    * @param event The event that triggered the context menu.
    */
-  #onSlotMenuAction(selectedItem: IContextMenuValue, slot: TSlot, event: CanvasPointerEvent): void {
+  #onSlotMenuAction(
+    selectedItem: IContextMenuValue,
+    slot: TSlot,
+    event: CanvasPointerEvent
+  ): void {
     switch (selectedItem.value) {
-    // Disconnect all links from this output
-    case "disconnect":
-      slot.disconnect()
-      break
+      // Disconnect all links from this output
+      case 'disconnect':
+        slot.disconnect()
+        break
 
-    // Remove the slot
-    case "remove":
-      if (slot !== this.emptySlot) {
-        this.removeSlot(slot)
-      }
-      break
+      // Remove the slot
+      case 'remove':
+        if (slot !== this.emptySlot) {
+          this.removeSlot(slot)
+        }
+        break
 
-    // Rename the slot
-    case "rename":
-      if (slot !== this.emptySlot) {
-        this.subgraph.canvasAction(c => c.prompt(
-          "Slot name",
-          slot.name,
-          (newName: string) => {
-            if (newName) this.renameSlot(slot, newName)
-          },
-          event,
-        ))
-      }
-      break
+      // Rename the slot
+      case 'rename':
+        if (slot !== this.emptySlot) {
+          this.subgraph.canvasAction((c) =>
+            c.prompt(
+              'Slot name',
+              slot.name,
+              (newName: string) => {
+                if (newName) this.renameSlot(slot, newName)
+              },
+              event
+            )
+          )
+        }
+        break
     }
 
     this.subgraph.setDirtyCanvas(true)
@@ -249,20 +278,53 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
     size[1] = currentY - y + roundedRadius
   }
 
-  draw(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    colorContext: DefaultConnectionColors,
+    fromSlot?:
+      | INodeInputSlot
+      | INodeOutputSlot
+      | SubgraphInput
+      | SubgraphOutput,
+    editorAlpha?: number
+  ): void {
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
-    Object.assign(ctx, { lineWidth, strokeStyle, fillStyle, font, textBaseline })
+    Object.assign(ctx, {
+      lineWidth,
+      strokeStyle,
+      fillStyle,
+      font,
+      textBaseline
+    })
   }
 
   /** @internal Leaves {@link ctx} dirty. */
-  protected abstract drawProtected(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void
+  protected abstract drawProtected(
+    ctx: CanvasRenderingContext2D,
+    colorContext: DefaultConnectionColors,
+    fromSlot?:
+      | INodeInputSlot
+      | INodeOutputSlot
+      | SubgraphInput
+      | SubgraphOutput,
+    editorAlpha?: number
+  ): void
 
   /** @internal Leaves {@link ctx} dirty. */
-  protected drawSlots(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void {
-    ctx.fillStyle = "#AAA"
-    ctx.font = "12px Arial"
-    ctx.textBaseline = "middle"
+  protected drawSlots(
+    ctx: CanvasRenderingContext2D,
+    colorContext: DefaultConnectionColors,
+    fromSlot?:
+      | INodeInputSlot
+      | INodeOutputSlot
+      | SubgraphInput
+      | SubgraphOutput,
+    editorAlpha?: number
+  ): void {
+    ctx.fillStyle = '#AAA'
+    ctx.font = '12px Arial'
+    ctx.textBaseline = 'middle'
 
     for (const slot of this.allSlots) {
       slot.draw({ ctx, colorContext, fromSlot, editorAlpha })
@@ -278,7 +340,7 @@ export abstract class SubgraphIONodeBase<TSlot extends SubgraphInput | SubgraphO
     return {
       id: this.id,
       bounding: this.boundingRect.export(),
-      pinned: this.pinned ? true : undefined,
+      pinned: this.pinned ? true : undefined
     }
   }
 }

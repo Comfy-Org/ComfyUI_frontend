@@ -1,3 +1,6 @@
+import { LGraphBadge } from './LGraphBadge'
+import type { LGraphNode, NodeId } from './LGraphNode'
+import { LLink, type LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -6,22 +9,18 @@ import type {
   LinkSegment,
   Point,
   Positionable,
-  ReadonlyLinkNetwork,
   ReadOnlyRect,
-} from "./interfaces"
-import type { LGraphNode, NodeId } from "./LGraphNode"
-import type { Serialisable, SerialisableReroute } from "./types/serialisation"
-
-import { LGraphBadge } from "./LGraphBadge"
-import { type LinkId, LLink } from "./LLink"
-import { distance, isPointInRect } from "./measure"
+  ReadonlyLinkNetwork
+} from './interfaces'
+import { distance, isPointInRect } from './measure'
+import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
 export type RerouteId = number
 
 /** The input or output slot that an incomplete reroute link is connected to. */
 export interface FloatingRerouteSlot {
   /** Floating connection to an input or output */
-  slotType: "input" | "output"
+  slotType: 'input' | 'output'
 }
 
 /**
@@ -31,7 +30,9 @@ export interface FloatingRerouteSlot {
  * Stores only primitive values (IDs) to reference other items in its network,
  * and a `WeakRef` to a {@link LinkNetwork} to resolve them.
  */
-export class Reroute implements Positionable, LinkSegment, Serialisable<SerialisableReroute> {
+export class Reroute
+  implements Positionable, LinkSegment, Serialisable<SerialisableReroute>
+{
   static radius: number = 10
   /** Maximum distance from reroutes to their bezier curve control points. */
   static maxSplineOffset: number = 80
@@ -75,7 +76,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
   set pos(value: Point) {
     if (!(value?.length >= 2))
-      throw new TypeError("Reroute.pos is an x,y point, and expects an indexable with at least two values.")
+      throw new TypeError(
+        'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
+      )
     this.#pos[0] = value[0]
     this.#pos[1] = value[1]
   }
@@ -135,7 +138,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
   /** Colour of the first link that rendered this reroute */
   get colour(): CanvasColour {
-    return this._colour ?? "#18184d"
+    return this._colour ?? '#18184d'
   }
 
   /**
@@ -163,20 +166,14 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     const linkId = this.linkIds.values().next().value
     return linkId === undefined
       ? undefined
-      : this.#network
-        .deref()
-        ?.links
-        .get(linkId)
+      : this.#network.deref()?.links.get(linkId)
   }
 
   get firstFloatingLink(): LLink | undefined {
     const linkId = this.floatingLinkIds.values().next().value
     return linkId === undefined
       ? undefined
-      : this.#network
-        .deref()
-        ?.floatingLinks
-        .get(linkId)
+      : this.#network.deref()?.floatingLinks.get(linkId)
   }
 
   /** @inheritdoc */
@@ -202,7 +199,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     pos?: Point,
     parentId?: RerouteId,
     linkIds?: Iterable<LinkId>,
-    floatingLinkIds?: Iterable<LinkId>,
+    floatingLinkIds?: Iterable<LinkId>
   ) {
     this.#network = new WeakRef(network)
     this.parentId = parentId
@@ -223,7 +220,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     parentId: RerouteId | undefined,
     pos?: Point,
     linkIds?: Iterable<LinkId>,
-    floating?: FloatingRerouteSlot,
+    floating?: FloatingRerouteSlot
   ): void {
     this.parentId = parentId
     if (pos) this.pos = pos
@@ -236,7 +233,10 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    * @param links Collection of valid links
    * @returns true if any links remain after validation
    */
-  validateLinks(links: ReadonlyMap<LinkId, LLink>, floatingLinks: ReadonlyMap<LinkId, LLink>): boolean {
+  validateLinks(
+    links: ReadonlyMap<LinkId, LLink>,
+    floatingLinks: ReadonlyMap<LinkId, LLink>
+  ): boolean {
     const { linkIds, floatingLinkIds } = this
     for (const linkId of linkIds) {
       if (!links.has(linkId)) linkIds.delete(linkId)
@@ -282,7 +282,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    */
   findNextReroute(
     withParentId: RerouteId,
-    visited = new Set<Reroute>(),
+    visited = new Set<Reroute>()
   ): Reroute | null | undefined {
     if (this.#parentId === withParentId) return this
     if (visited.has(this)) return null
@@ -291,8 +291,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
     return this.#network
       .deref()
-      ?.reroutes
-      .get(this.#parentId)
+      ?.reroutes.get(this.#parentId)
       ?.findNextReroute(withParentId, visited)
   }
 
@@ -300,7 +299,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    * Finds the output node and output slot of the first link passing through this reroute.
    * @returns The output node and output slot of the first link passing through this reroute, or `undefined` if no link is found.
    */
-  findSourceOutput(): { node: LGraphNode, output: INodeOutputSlot } | undefined {
+  findSourceOutput():
+    | { node: LGraphNode; output: INodeOutputSlot }
+    | undefined {
     const link = this.firstLink ?? this.firstFloatingLink
     if (!link) return
 
@@ -309,7 +310,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
     return {
       node,
-      output: node.outputs[link.origin_slot],
+      output: node.outputs[link.origin_slot]
     }
   }
 
@@ -317,7 +318,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    * Finds the inputs and nodes of (floating) links passing through this reroute.
    * @returns An array of objects containing the node and input slot of each link passing through this reroute.
    */
-  findTargetInputs(): { node: LGraphNode, input: INodeInputSlot, link: LLink }[] | undefined {
+  findTargetInputs():
+    | { node: LGraphNode; input: INodeInputSlot; link: LLink }[]
+    | undefined {
     const network = this.#network.deref()
     if (!network) return
 
@@ -335,7 +338,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     function addAllResults(
       network: ReadonlyLinkNetwork,
       linkIds: Iterable<LinkId>,
-      links: ReadonlyMap<LinkId, LLink>,
+      links: ReadonlyMap<LinkId, LLink>
     ) {
       for (const linkId of linkIds) {
         const link = links.get(linkId)
@@ -355,11 +358,11 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    * @param from Filters the links by the currently connected link side.
    * @returns An array of floating links
    */
-  getFloatingLinks(from: "input" | "output"): LLink[] | undefined {
+  getFloatingLinks(from: 'input' | 'output'): LLink[] | undefined {
     const floatingLinks = this.#network.deref()?.floatingLinks
     if (!floatingLinks) return
 
-    const idProp = from === "input" ? "origin_id" : "target_id"
+    const idProp = from === 'input' ? 'origin_id' : 'target_id'
     const out: LLink[] = []
 
     for (const linkId of this.floatingLinkIds) {
@@ -375,10 +378,15 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
    * @param output The new origin output slot
    * @param index The slot index of {@link output}
    */
-  setFloatingLinkOrigin(node: LGraphNode, output: INodeOutputSlot, index: number) {
+  setFloatingLinkOrigin(
+    node: LGraphNode,
+    output: INodeOutputSlot,
+    index: number
+  ) {
     const network = this.#network.deref()
-    const floatingOutLinks = this.getFloatingLinks("output")
-    if (!floatingOutLinks) throw new Error("[setFloatingLinkOrigin]: Invalid network.")
+    const floatingOutLinks = this.getFloatingLinks('output')
+    if (!floatingOutLinks)
+      throw new Error('[setFloatingLinkOrigin]: Invalid network.')
     if (!floatingOutLinks.length) return
 
     output._floatingLinks ??= new Set()
@@ -387,10 +395,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
       // Update cached floating links
       output._floatingLinks.add(link)
 
-      network?.getNodeById(link.origin_id)
-        ?.outputs[link.origin_slot]
-        ?._floatingLinks
-        ?.delete(link)
+      network
+        ?.getNodeById(link.origin_id)
+        ?.outputs[link.origin_slot]?._floatingLinks?.delete(link)
 
       // Update the floating link
       link.origin_id = node.id
@@ -426,7 +433,9 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
     const floatingLink = network.floatingLinks.get(linkId)
     if (!floatingLink) {
-      console.warn(`[Reroute.removeFloatingLink] Floating link not found: ${linkId}, ignoring and discarding ID.`)
+      console.warn(
+        `[Reroute.removeFloatingLink] Floating link not found: ${linkId}, ignoring and discarding ID.`
+      )
       this.floatingLinkIds.delete(linkId)
       return
     }
@@ -458,7 +467,11 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     network.removeReroute(this.id)
   }
 
-  calculateAngle(lastRenderTime: number, network: ReadonlyLinkNetwork, linkStart: Point): void {
+  calculateAngle(
+    lastRenderTime: number,
+    network: ReadonlyLinkNetwork,
+    linkStart: Point
+  ): void {
     // Ensure we run once per render
     if (!(lastRenderTime > this.#lastRenderTime)) return
     this.#lastRenderTime = lastRenderTime
@@ -484,11 +497,14 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
 
     const originToReroute = Math.atan2(
       this.#pos[1] - linkStart[1],
-      this.#pos[0] - linkStart[0],
+      this.#pos[0] - linkStart[0]
     )
     let diff = (originToReroute - sum) * 0.5
     if (Math.abs(diff) > Math.PI * 0.5) diff += Math.PI
-    const dist = Math.min(Reroute.maxSplineOffset, distance(linkStart, this.#pos) * 0.25)
+    const dist = Math.min(
+      Reroute.maxSplineOffset,
+      distance(linkStart, this.#pos) * 0.25
+    )
 
     // Store results
     const originDiff = originToReroute - diff
@@ -505,7 +521,10 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
      * @param linkIds The IDs of the links to calculate
      * @param links The link container from the link network.
      */
-    function calculateAngles(linkIds: Iterable<LinkId>, links: ReadonlyMap<LinkId, LLink>) {
+    function calculateAngles(
+      linkIds: Iterable<LinkId>,
+      links: ReadonlyMap<LinkId, LLink>
+    ) {
       for (const linkId of linkIds) {
         const link = links.get(linkId)
         const pos = getNextPos(network, link, id)
@@ -532,26 +551,26 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     ctx.arc(pos[0], pos[1], Reroute.radius, 0, 2 * Math.PI)
 
     if (this.linkIds.size === 0) {
-      ctx.fillStyle = backgroundPattern ?? "#797979"
+      ctx.fillStyle = backgroundPattern ?? '#797979'
       ctx.fill()
       ctx.globalAlpha = globalAlpha * 0.33
     }
 
     ctx.fillStyle = this.colour
     ctx.lineWidth = Reroute.radius * 0.1
-    ctx.strokeStyle = "rgb(0,0,0,0.5)"
+    ctx.strokeStyle = 'rgb(0,0,0,0.5)'
     ctx.fill()
     ctx.stroke()
 
-    ctx.fillStyle = "#ffffff55"
-    ctx.strokeStyle = "rgb(0,0,0,0.3)"
+    ctx.fillStyle = '#ffffff55'
+    ctx.strokeStyle = 'rgb(0,0,0,0.3)'
     ctx.beginPath()
     ctx.arc(pos[0], pos[1], Reroute.radius * 0.8, 0, 2 * Math.PI)
     ctx.fill()
     ctx.stroke()
 
     if (this.selected) {
-      ctx.strokeStyle = "#fff"
+      ctx.strokeStyle = '#fff'
       ctx.beginPath()
       ctx.arc(pos[0], pos[1], Reroute.radius * 1.2, 0, 2 * Math.PI)
       ctx.stroke()
@@ -649,7 +668,7 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
       parentId,
       pos: [pos[0], pos[1]],
       linkIds: [...linkIds],
-      floating: this.floating ? { slotType: this.floating.slotType } : undefined,
+      floating: this.floating ? { slotType: this.floating.slotType } : undefined
     }
   }
 }
@@ -731,14 +750,16 @@ class RerouteSlot {
    */
   draw(ctx: CanvasRenderingContext2D): void {
     const { fillStyle, strokeStyle, lineWidth } = ctx
-    const { showOutline, hovering, pos: [x, y] } = this
+    const {
+      showOutline,
+      hovering,
+      pos: [x, y]
+    } = this
     if (!showOutline) return
 
     try {
-      ctx.fillStyle = hovering
-        ? this.#reroute.colour
-        : "rgba(127,127,127,0.3)"
-      ctx.strokeStyle = "rgb(0,0,0,0.5)"
+      ctx.fillStyle = hovering ? this.#reroute.colour : 'rgba(127,127,127,0.3)'
+      ctx.strokeStyle = 'rgb(0,0,0,0.5)'
       ctx.lineWidth = 1
 
       ctx.beginPath()
@@ -760,7 +781,11 @@ class RerouteSlot {
  * @param id The ID of "this" reroute
  * @returns The position of the next reroute or the input slot target, otherwise `undefined`.
  */
-function getNextPos(network: ReadonlyLinkNetwork, link: LLink | undefined, id: RerouteId) {
+function getNextPos(
+  network: ReadonlyLinkNetwork,
+  link: LLink | undefined,
+  id: RerouteId
+) {
   if (!link) return
 
   const linkPos = LLink.findNextReroute(network, link, id)?.pos

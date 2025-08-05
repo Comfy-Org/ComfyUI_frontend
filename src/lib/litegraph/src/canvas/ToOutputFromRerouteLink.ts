@@ -1,10 +1,14 @@
-import type { LinkConnector } from "./LinkConnector"
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { INodeInputSlot, INodeOutputSlot, LinkNetwork } from "@/lib/litegraph/src/litegraph"
-import type { Reroute } from "@/lib/litegraph/src/Reroute"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  LinkNetwork
+} from '@/lib/litegraph/src/litegraph'
 
-import { ToInputRenderLink } from "./ToInputRenderLink"
-import { ToOutputRenderLink } from "./ToOutputRenderLink"
+import type { LinkConnector } from './LinkConnector'
+import { ToInputRenderLink } from './ToInputRenderLink'
+import { ToOutputRenderLink } from './ToOutputRenderLink'
 
 /**
  * @internal A workaround class to support connecting to reroutes to node outputs.
@@ -15,7 +19,7 @@ export class ToOutputFromRerouteLink extends ToOutputRenderLink {
     node: LGraphNode,
     fromSlot: INodeInputSlot,
     override readonly fromReroute: Reroute,
-    readonly linkConnector: LinkConnector,
+    readonly linkConnector: LinkConnector
   ) {
     super(network, node, fromSlot, fromReroute)
   }

@@ -1,5 +1,5 @@
-import type { Direction, IBoundaryNodes } from "../interfaces"
-import type { LGraphNode } from "../LGraphNode"
+import type { LGraphNode } from '../LGraphNode'
+import type { Direction, IBoundaryNodes } from '../interfaces'
 
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.
@@ -8,7 +8,7 @@ import type { LGraphNode } from "../LGraphNode"
  * `null` if no nodes were supplied or the first node was falsy.
  */
 export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
-  const valid = nodes?.find(x => x)
+  const valid = nodes?.find((x) => x)
   if (!valid) return null
 
   let top = valid
@@ -31,7 +31,7 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
     top,
     right,
     bottom,
-    left,
+    left
   }
 }
 
@@ -40,7 +40,10 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
  * @param nodes The nodes to distribute
  * @param horizontal If true, distributes along the horizontal plane.  Otherwise, the vertical plane.
  */
-export function distributeNodes(nodes: LGraphNode[], horizontal?: boolean): void {
+export function distributeNodes(
+  nodes: LGraphNode[],
+  horizontal?: boolean
+): void {
   const nodeCount = nodes?.length
   if (!(nodeCount > 1)) return
 
@@ -76,30 +79,33 @@ export function distributeNodes(nodes: LGraphNode[], horizontal?: boolean): void
 export function alignNodes(
   nodes: LGraphNode[],
   direction: Direction,
-  align_to?: LGraphNode,
+  align_to?: LGraphNode
 ): void {
   if (!nodes) return
 
-  const boundary = align_to === undefined
-    ? getBoundaryNodes(nodes)
-    : { top: align_to, right: align_to, bottom: align_to, left: align_to }
+  const boundary =
+    align_to === undefined
+      ? getBoundaryNodes(nodes)
+      : { top: align_to, right: align_to, bottom: align_to, left: align_to }
 
   if (boundary === null) return
 
   for (const node of nodes) {
     switch (direction) {
-    case "right":
-      node.pos[0] = boundary.right.pos[0] + boundary.right.size[0] - node.size[0]
-      break
-    case "left":
-      node.pos[0] = boundary.left.pos[0]
-      break
-    case "top":
-      node.pos[1] = boundary.top.pos[1]
-      break
-    case "bottom":
-      node.pos[1] = boundary.bottom.pos[1] + boundary.bottom.size[1] - node.size[1]
-      break
+      case 'right':
+        node.pos[0] =
+          boundary.right.pos[0] + boundary.right.size[0] - node.size[0]
+        break
+      case 'left':
+        node.pos[0] = boundary.left.pos[0]
+        break
+      case 'top':
+        node.pos[1] = boundary.top.pos[1]
+        break
+      case 'bottom':
+        node.pos[1] =
+          boundary.bottom.pos[1] + boundary.bottom.size[1] - node.size[1]
+        break
     }
   }
 }

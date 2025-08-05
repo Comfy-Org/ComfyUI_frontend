@@ -1,11 +1,17 @@
-import type { ISliderWidget } from "@/lib/litegraph/src/types/widgets"
+import { clamp } from '@/lib/litegraph/src/litegraph'
+import type { ISliderWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { clamp } from "@/lib/litegraph/src/litegraph"
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
-import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
-
-export class SliderWidget extends BaseWidget<ISliderWidget> implements ISliderWidget {
-  override type = "slider" as const
+export class SliderWidget
+  extends BaseWidget<ISliderWidget>
+  implements ISliderWidget
+{
+  override type = 'slider' as const
 
   marker?: number
 
@@ -14,10 +20,10 @@ export class SliderWidget extends BaseWidget<ISliderWidget> implements ISliderWi
    * @param ctx The canvas context
    * @param options The options for drawing the widget
    */
-  override drawWidget(ctx: CanvasRenderingContext2D, {
-    width,
-    showText = true,
-  }: DrawWidgetOptions) {
+  override drawWidget(
+    ctx: CanvasRenderingContext2D,
+    { width, showText = true }: DrawWidgetOptions
+  ) {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
 
@@ -34,7 +40,7 @@ export class SliderWidget extends BaseWidget<ISliderWidget> implements ISliderWi
     nvalue = clamp(nvalue, 0, 1)
 
     // Draw slider bar
-    ctx.fillStyle = this.options.slider_color ?? "#678"
+    ctx.fillStyle = this.options.slider_color ?? '#678'
     ctx.fillRect(margin, y, nvalue * (width - margin * 2), height)
 
     // Draw outline if not disabled
@@ -47,24 +53,19 @@ export class SliderWidget extends BaseWidget<ISliderWidget> implements ISliderWi
     if (this.marker != null) {
       let marker_nvalue = (this.marker - this.options.min) / range
       marker_nvalue = clamp(marker_nvalue, 0, 1)
-      ctx.fillStyle = this.options.marker_color ?? "#AA9"
-      ctx.fillRect(
-        margin + marker_nvalue * (width - margin * 2),
-        y,
-        2,
-        height,
-      )
+      ctx.fillStyle = this.options.marker_color ?? '#AA9'
+      ctx.fillRect(margin + marker_nvalue * (width - margin * 2), y, 2, height)
     }
 
     // Draw text
     if (showText) {
-      ctx.textAlign = "center"
+      ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
       const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)
       ctx.fillText(
         `${this.label || this.name}  ${fixedValue}`,
         width * 0.5,
-        y + height * 0.7,
+        y + height * 0.7
       )
     }
 
@@ -84,7 +85,8 @@ export class SliderWidget extends BaseWidget<ISliderWidget> implements ISliderWi
 
     // Calculate new value based on click position
     const slideFactor = clamp((x - 15) / (width - 30), 0, 1)
-    const newValue = this.options.min + (this.options.max - this.options.min) * slideFactor
+    const newValue =
+      this.options.min + (this.options.max - this.options.min) * slideFactor
 
     if (newValue !== this.value) {
       this.setValue(newValue, options)
@@ -103,7 +105,8 @@ export class SliderWidget extends BaseWidget<ISliderWidget> implements ISliderWi
 
     // Calculate new value based on drag position
     const slideFactor = clamp((x - 15) / (width - 30), 0, 1)
-    const newValue = this.options.min + (this.options.max - this.options.min) * slideFactor
+    const newValue =
+      this.options.min + (this.options.max - this.options.min) * slideFactor
 
     if (newValue !== this.value) {
       this.setValue(newValue, options)

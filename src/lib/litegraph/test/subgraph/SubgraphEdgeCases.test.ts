@@ -4,21 +4,20 @@
  * Tests for edge cases, error handling, and boundary conditions in the subgraph system.
  * This covers unusual scenarios, invalid states, and stress testing.
  */
+import { describe, expect, it } from 'vitest'
 
-import { describe, expect, it } from "vitest"
-
-import { LGraph, LGraphNode, Subgraph } from "@/lib/litegraph/src/litegraph"
+import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 
 import {
   createNestedSubgraphs,
   createTestSubgraph,
-  createTestSubgraphNode,
-} from "./fixtures/subgraphHelpers"
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
-describe("SubgraphEdgeCases - Recursion Detection", () => {
-  it("should handle circular subgraph references without crashing", () => {
-    const sub1 = createTestSubgraph({ name: "Sub1" })
-    const sub2 = createTestSubgraph({ name: "Sub2" })
+describe('SubgraphEdgeCases - Recursion Detection', () => {
+  it('should handle circular subgraph references without crashing', () => {
+    const sub1 = createTestSubgraph({ name: 'Sub1' })
+    const sub2 = createTestSubgraph({ name: 'Sub2' })
 
     // Create circular reference
     const node1 = createTestSubgraphNode(sub1, { id: 1 })
@@ -34,7 +33,7 @@ describe("SubgraphEdgeCases - Recursion Detection", () => {
     }).toThrow(/Node \[\d+\] not found/) // Current behavior: path resolution fails
   })
 
-  it("should handle deep nesting scenarios", () => {
+  it('should handle deep nesting scenarios', () => {
     // Test with reasonable depth to avoid timeout
     const nested = createNestedSubgraphs({ depth: 10, nodesPerLevel: 1 })
 
@@ -48,7 +47,7 @@ describe("SubgraphEdgeCases - Recursion Detection", () => {
     expect(firstLevel.isSubgraphNode()).toBe(true)
   })
 
-  it.todo("should use WeakSet for cycle detection", () => {
+  it.todo('should use WeakSet for cycle detection', () => {
     // TODO: This test is currently skipped because cycle detection has a bug
     // The fix is to pass 'visited' directly instead of 'new Set(visited)' in SubgraphNode.ts:299
     const subgraph = createTestSubgraph({ nodeCount: 1 })
@@ -64,10 +63,10 @@ describe("SubgraphEdgeCases - Recursion Detection", () => {
     }).toThrow(/while flattening subgraph/i)
   })
 
-  it("should respect MAX_NESTED_SUBGRAPHS constant", () => {
+  it('should respect MAX_NESTED_SUBGRAPHS constant', () => {
     // Verify the constant exists and is a reasonable positive number
     expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBeDefined()
-    expect(typeof Subgraph.MAX_NESTED_SUBGRAPHS).toBe("number")
+    expect(typeof Subgraph.MAX_NESTED_SUBGRAPHS).toBe('number')
     expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBeGreaterThan(0)
     expect(Subgraph.MAX_NESTED_SUBGRAPHS).toBeLessThanOrEqual(10_000) // Reasonable upper bound
 
@@ -76,10 +75,14 @@ describe("SubgraphEdgeCases - Recursion Detection", () => {
   })
 })
 
-describe("SubgraphEdgeCases - Invalid States", () => {
-  it("should handle removing non-existent inputs gracefully", () => {
+describe('SubgraphEdgeCases - Invalid States', () => {
+  it('should handle removing non-existent inputs gracefully', () => {
     const subgraph = createTestSubgraph()
-    const fakeInput = { name: "fake", type: "number", disconnect: () => {} } as any
+    const fakeInput = {
+      name: 'fake',
+      type: 'number',
+      disconnect: () => {}
+    } as any
 
     // Should throw appropriate error for non-existent input
     expect(() => {
@@ -87,92 +90,96 @@ describe("SubgraphEdgeCases - Invalid States", () => {
     }).toThrow(/Input not found/) // Expected error
   })
 
-  it("should handle removing non-existent outputs gracefully", () => {
+  it('should handle removing non-existent outputs gracefully', () => {
     const subgraph = createTestSubgraph()
-    const fakeOutput = { name: "fake", type: "number", disconnect: () => {} } as any
+    const fakeOutput = {
+      name: 'fake',
+      type: 'number',
+      disconnect: () => {}
+    } as any
 
     expect(() => {
       subgraph.removeOutput(fakeOutput)
     }).toThrow(/Output not found/) // Expected error
   })
 
-  it("should handle null/undefined input names", () => {
+  it('should handle null/undefined input names', () => {
     const subgraph = createTestSubgraph()
 
     // ISSUE: Current implementation allows null/undefined names which may cause runtime errors
     // TODO: Consider adding validation to prevent null/undefined names
     // This test documents the current permissive behavior
     expect(() => {
-      subgraph.addInput(null as any, "number")
+      subgraph.addInput(null as any, 'number')
     }).not.toThrow() // Current behavior: allows null
 
     expect(() => {
-      subgraph.addInput(undefined as any, "number")
+      subgraph.addInput(undefined as any, 'number')
     }).not.toThrow() // Current behavior: allows undefined
   })
 
-  it("should handle null/undefined output names", () => {
+  it('should handle null/undefined output names', () => {
     const subgraph = createTestSubgraph()
 
     // ISSUE: Current implementation allows null/undefined names which may cause runtime errors
     // TODO: Consider adding validation to prevent null/undefined names
     // This test documents the current permissive behavior
     expect(() => {
-      subgraph.addOutput(null as any, "number")
+      subgraph.addOutput(null as any, 'number')
     }).not.toThrow() // Current behavior: allows null
 
     expect(() => {
-      subgraph.addOutput(undefined as any, "number")
+      subgraph.addOutput(undefined as any, 'number')
     }).not.toThrow() // Current behavior: allows undefined
   })
 
-  it("should handle empty string names", () => {
+  it('should handle empty string names', () => {
     const subgraph = createTestSubgraph()
 
     // Current implementation may allow empty strings
     // Document the actual behavior
     expect(() => {
-      subgraph.addInput("", "number")
+      subgraph.addInput('', 'number')
     }).not.toThrow() // Current behavior: allows empty strings
 
     expect(() => {
-      subgraph.addOutput("", "number")
+      subgraph.addOutput('', 'number')
     }).not.toThrow() // Current behavior: allows empty strings
   })
 
-  it("should handle undefined types gracefully", () => {
+  it('should handle undefined types gracefully', () => {
     const subgraph = createTestSubgraph()
 
     // Undefined type should not crash but may have default behavior
     expect(() => {
-      subgraph.addInput("test", undefined as any)
+      subgraph.addInput('test', undefined as any)
     }).not.toThrow()
 
     expect(() => {
-      subgraph.addOutput("test", undefined as any)
+      subgraph.addOutput('test', undefined as any)
     }).not.toThrow()
   })
 
-  it("should handle duplicate slot names", () => {
+  it('should handle duplicate slot names', () => {
     const subgraph = createTestSubgraph()
 
     // Add first input
-    subgraph.addInput("duplicate", "number")
+    subgraph.addInput('duplicate', 'number')
 
     // Adding duplicate should not crash (current behavior allows it)
     expect(() => {
-      subgraph.addInput("duplicate", "string")
+      subgraph.addInput('duplicate', 'string')
     }).not.toThrow()
 
     // Should now have 2 inputs with same name
     expect(subgraph.inputs.length).toBe(2)
-    expect(subgraph.inputs[0].name).toBe("duplicate")
-    expect(subgraph.inputs[1].name).toBe("duplicate")
+    expect(subgraph.inputs[0].name).toBe('duplicate')
+    expect(subgraph.inputs[1].name).toBe('duplicate')
   })
 })
 
-describe("SubgraphEdgeCases - Boundary Conditions", () => {
-  it("should handle empty subgraphs (no nodes, no IO)", () => {
+describe('SubgraphEdgeCases - Boundary Conditions', () => {
+  it('should handle empty subgraphs (no nodes, no IO)', () => {
     const subgraph = createTestSubgraph({ nodeCount: 0 })
     const subgraphNode = createTestSubgraphNode(subgraph)
 
@@ -185,32 +192,32 @@ describe("SubgraphEdgeCases - Boundary Conditions", () => {
     expect(subgraph.outputs).toHaveLength(0)
   })
 
-  it("should handle single input/output subgraphs", () => {
+  it('should handle single input/output subgraphs', () => {
     const subgraph = createTestSubgraph({
-      inputs: [{ name: "single_in", type: "number" }],
-      outputs: [{ name: "single_out", type: "number" }],
-      nodeCount: 1,
+      inputs: [{ name: 'single_in', type: 'number' }],
+      outputs: [{ name: 'single_out', type: 'number' }],
+      nodeCount: 1
     })
 
     const subgraphNode = createTestSubgraphNode(subgraph)
 
     expect(subgraphNode.inputs).toHaveLength(1)
     expect(subgraphNode.outputs).toHaveLength(1)
-    expect(subgraphNode.inputs[0].name).toBe("single_in")
-    expect(subgraphNode.outputs[0].name).toBe("single_out")
+    expect(subgraphNode.inputs[0].name).toBe('single_in')
+    expect(subgraphNode.outputs[0].name).toBe('single_out')
   })
 
-  it("should handle subgraphs with many slots", () => {
+  it('should handle subgraphs with many slots', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
 
     // Add many inputs (test with 20 to keep test fast)
     for (let i = 0; i < 20; i++) {
-      subgraph.addInput(`input_${i}`, "number")
+      subgraph.addInput(`input_${i}`, 'number')
     }
 
     // Add many outputs
     for (let i = 0; i < 20; i++) {
-      subgraph.addOutput(`output_${i}`, "number")
+      subgraph.addOutput(`output_${i}`, 'number')
     }
 
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -226,26 +233,26 @@ describe("SubgraphEdgeCases - Boundary Conditions", () => {
     expect(flattened).toHaveLength(1) // Original node count
   })
 
-  it("should handle very long slot names", () => {
+  it('should handle very long slot names', () => {
     const subgraph = createTestSubgraph()
-    const longName = "a".repeat(1000) // 1000 character name
+    const longName = 'a'.repeat(1000) // 1000 character name
 
     expect(() => {
-      subgraph.addInput(longName, "number")
-      subgraph.addOutput(longName, "string")
+      subgraph.addInput(longName, 'number')
+      subgraph.addOutput(longName, 'string')
     }).not.toThrow()
 
     expect(subgraph.inputs[0].name).toBe(longName)
     expect(subgraph.outputs[0].name).toBe(longName)
   })
 
-  it("should handle Unicode characters in names", () => {
+  it('should handle Unicode characters in names', () => {
     const subgraph = createTestSubgraph()
-    const unicodeName = "测试_🚀_تست_тест"
+    const unicodeName = '测试_🚀_تست_тест'
 
     expect(() => {
-      subgraph.addInput(unicodeName, "number")
-      subgraph.addOutput(unicodeName, "string")
+      subgraph.addInput(unicodeName, 'number')
+      subgraph.addOutput(unicodeName, 'string')
     }).not.toThrow()
 
     expect(subgraph.inputs[0].name).toBe(unicodeName)
@@ -253,17 +260,17 @@ describe("SubgraphEdgeCases - Boundary Conditions", () => {
   })
 })
 
-describe("SubgraphEdgeCases - Type Validation", () => {
-  it("should allow connecting mismatched types (no validation currently)", () => {
+describe('SubgraphEdgeCases - Type Validation', () => {
+  it('should allow connecting mismatched types (no validation currently)', () => {
     const rootGraph = new LGraph()
     const subgraph = createTestSubgraph()
 
-    subgraph.addInput("num", "number")
-    subgraph.addOutput("str", "string")
+    subgraph.addInput('num', 'number')
+    subgraph.addOutput('str', 'string')
 
     // Create a basic node manually since createNode is not available
-    const numberNode = new LGraphNode("basic/const")
-    numberNode.addOutput("value", "number")
+    const numberNode = new LGraphNode('basic/const')
+    numberNode.addOutput('value', 'number')
     rootGraph.add(numberNode)
 
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -275,36 +282,36 @@ describe("SubgraphEdgeCases - Type Validation", () => {
     }).not.toThrow()
   })
 
-  it("should handle invalid type strings", () => {
+  it('should handle invalid type strings', () => {
     const subgraph = createTestSubgraph()
 
     // These should not crash (current behavior)
     expect(() => {
-      subgraph.addInput("test1", "invalid_type")
-      subgraph.addInput("test2", "")
-      subgraph.addInput("test3", "123")
-      subgraph.addInput("test4", "special!@#$%")
+      subgraph.addInput('test1', 'invalid_type')
+      subgraph.addInput('test2', '')
+      subgraph.addInput('test3', '123')
+      subgraph.addInput('test4', 'special!@#$%')
     }).not.toThrow()
   })
 
-  it("should handle complex type strings", () => {
+  it('should handle complex type strings', () => {
     const subgraph = createTestSubgraph()
 
     expect(() => {
-      subgraph.addInput("array", "array<number>")
-      subgraph.addInput("object", "object<{x: number, y: string}>")
-      subgraph.addInput("union", "number|string")
+      subgraph.addInput('array', 'array<number>')
+      subgraph.addInput('object', 'object<{x: number, y: string}>')
+      subgraph.addInput('union', 'number|string')
     }).not.toThrow()
 
     expect(subgraph.inputs).toHaveLength(3)
-    expect(subgraph.inputs[0].type).toBe("array<number>")
-    expect(subgraph.inputs[1].type).toBe("object<{x: number, y: string}>")
-    expect(subgraph.inputs[2].type).toBe("number|string")
+    expect(subgraph.inputs[0].type).toBe('array<number>')
+    expect(subgraph.inputs[1].type).toBe('object<{x: number, y: string}>')
+    expect(subgraph.inputs[2].type).toBe('number|string')
   })
 })
 
-describe("SubgraphEdgeCases - Performance and Scale", () => {
-  it("should handle large numbers of nodes in subgraph", () => {
+describe('SubgraphEdgeCases - Performance and Scale', () => {
+  it('should handle large numbers of nodes in subgraph', () => {
     // Create subgraph with many nodes (keep reasonable for test speed)
     const subgraph = createTestSubgraph({ nodeCount: 50 })
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -317,13 +324,13 @@ describe("SubgraphEdgeCases - Performance and Scale", () => {
     // Performance is acceptable for 50 nodes (typically < 1ms)
   })
 
-  it("should handle rapid IO changes", () => {
+  it('should handle rapid IO changes', () => {
     const subgraph = createTestSubgraph()
 
     // Rapidly add and remove inputs/outputs
     for (let i = 0; i < 10; i++) {
-      const input = subgraph.addInput(`rapid_${i}`, "number")
-      const output = subgraph.addOutput(`rapid_${i}`, "number")
+      const input = subgraph.addInput(`rapid_${i}`, 'number')
+      const output = subgraph.addOutput(`rapid_${i}`, 'number')
 
       // Remove them immediately
       subgraph.removeInput(input)
@@ -335,7 +342,7 @@ describe("SubgraphEdgeCases - Performance and Scale", () => {
     expect(subgraph.outputs).toHaveLength(0)
   })
 
-  it("should handle concurrent modifications safely", () => {
+  it('should handle concurrent modifications safely', () => {
     // This test ensures the system doesn't crash under concurrent access
     // Note: JavaScript is single-threaded, so this tests rapid sequential access
     const subgraph = createTestSubgraph({ nodeCount: 5 })
@@ -344,16 +351,20 @@ describe("SubgraphEdgeCases - Performance and Scale", () => {
     // Simulate concurrent operations
     const operations = []
     for (let i = 0; i < 20; i++) {
-      operations.push(() => {
-        const executableNodes = new Map()
-        subgraphNode.getInnerNodes(executableNodes)
-      }, () => {
-        subgraph.addInput(`concurrent_${i}`, "number")
-      }, () => {
-        if (subgraph.inputs.length > 0) {
-          subgraph.removeInput(subgraph.inputs[0])
+      operations.push(
+        () => {
+          const executableNodes = new Map()
+          subgraphNode.getInnerNodes(executableNodes)
+        },
+        () => {
+          subgraph.addInput(`concurrent_${i}`, 'number')
+        },
+        () => {
+          if (subgraph.inputs.length > 0) {
+            subgraph.removeInput(subgraph.inputs[0])
+          }
         }
-      })
+      )
     }
 
     // Execute all operations - should not crash

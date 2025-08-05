@@ -1,27 +1,33 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from 'vitest'
 
-import { LinkConnector } from "@/lib/litegraph/src/canvas/LinkConnector"
-import { ToInputFromIoNodeLink } from "@/lib/litegraph/src/canvas/ToInputFromIoNodeLink"
-import { SUBGRAPH_INPUT_ID } from "@/lib/litegraph/src/constants"
-import { LGraphNode, type LinkNetwork } from "@/lib/litegraph/src/litegraph"
-import { NodeInputSlot } from "@/lib/litegraph/src/node/NodeInputSlot"
-import { NodeOutputSlot } from "@/lib/litegraph/src/node/NodeOutputSlot"
-import { isSubgraphInput, isSubgraphOutput } from "@/lib/litegraph/src/subgraph/subgraphUtils"
+import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { LGraphNode, type LinkNetwork } from '@/lib/litegraph/src/litegraph'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import {
+  isSubgraphInput,
+  isSubgraphOutput
+} from '@/lib/litegraph/src/subgraph/subgraphUtils'
 
-import { createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
-describe("Subgraph slot connections", () => {
-  describe("SubgraphInput connections", () => {
-    it("should connect to compatible regular input slots", () => {
+describe('Subgraph slot connections', () => {
+  describe('SubgraphInput connections', () => {
+    it('should connect to compatible regular input slots', () => {
       const subgraph = createTestSubgraph({
-        inputs: [{ name: "test_input", type: "number" }],
+        inputs: [{ name: 'test_input', type: 'number' }]
       })
 
       const subgraphInput = subgraph.inputs[0]
 
-      const node = new LGraphNode("TestNode")
-      node.addInput("compatible_input", "number")
-      node.addInput("incompatible_input", "string")
+      const node = new LGraphNode('TestNode')
+      node.addInput('compatible_input', 'number')
+      node.addInput('incompatible_input', 'string')
       subgraph.add(node)
 
       const compatibleSlot = node.inputs[0] as NodeInputSlot
@@ -44,12 +50,12 @@ describe("Subgraph slot connections", () => {
     //   expect(subgraphOutput.isValidTarget(subgraphInput)).toBe(true)
     // })
 
-    it("should not connect to another SubgraphInput", () => {
+    it('should not connect to another SubgraphInput', () => {
       const subgraph = createTestSubgraph({
         inputs: [
-          { name: "input1", type: "number" },
-          { name: "input2", type: "number" },
-        ],
+          { name: 'input1', type: 'number' },
+          { name: 'input2', type: 'number' }
+        ]
       })
 
       const subgraphInput1 = subgraph.inputs[0]
@@ -58,15 +64,15 @@ describe("Subgraph slot connections", () => {
       expect(subgraphInput2.isValidTarget(subgraphInput1)).toBe(false)
     })
 
-    it("should not connect to output slots", () => {
+    it('should not connect to output slots', () => {
       const subgraph = createTestSubgraph({
-        inputs: [{ name: "test_input", type: "number" }],
+        inputs: [{ name: 'test_input', type: 'number' }]
       })
 
       const subgraphInput = subgraph.inputs[0]
 
-      const node = new LGraphNode("TestNode")
-      node.addOutput("test_output", "number")
+      const node = new LGraphNode('TestNode')
+      node.addOutput('test_output', 'number')
       subgraph.add(node)
       const outputSlot = node.outputs[0] as NodeOutputSlot
 
@@ -74,53 +80,56 @@ describe("Subgraph slot connections", () => {
     })
   })
 
-  describe("SubgraphOutput connections", () => {
-    it("should connect from compatible regular output slots", () => {
+  describe('SubgraphOutput connections', () => {
+    it('should connect from compatible regular output slots', () => {
       const subgraph = createTestSubgraph()
-      const node = new LGraphNode("TestNode")
-      node.addOutput("out", "number")
+      const node = new LGraphNode('TestNode')
+      node.addOutput('out', 'number')
       subgraph.add(node)
 
-      const subgraphOutput = subgraph.addOutput("result", "number")
+      const subgraphOutput = subgraph.addOutput('result', 'number')
       const nodeOutput = node.outputs[0]
 
       expect(subgraphOutput.isValidTarget(nodeOutput)).toBe(true)
     })
 
-    it("should connect from SubgraphInput", () => {
+    it('should connect from SubgraphInput', () => {
       const subgraph = createTestSubgraph()
 
-      const subgraphInput = subgraph.addInput("value", "number")
-      const subgraphOutput = subgraph.addOutput("result", "number")
+      const subgraphInput = subgraph.addInput('value', 'number')
+      const subgraphOutput = subgraph.addOutput('result', 'number')
 
       expect(subgraphOutput.isValidTarget(subgraphInput)).toBe(true)
     })
 
-    it("should not connect to another SubgraphOutput", () => {
+    it('should not connect to another SubgraphOutput', () => {
       const subgraph = createTestSubgraph()
 
-      const subgraphOutput1 = subgraph.addOutput("result1", "number")
-      const subgraphOutput2 = subgraph.addOutput("result2", "number")
+      const subgraphOutput1 = subgraph.addOutput('result1', 'number')
+      const subgraphOutput2 = subgraph.addOutput('result2', 'number')
 
       expect(subgraphOutput1.isValidTarget(subgraphOutput2)).toBe(false)
     })
   })
 
-  describe("LinkConnector dragging behavior", () => {
-    it("should drag existing link when dragging from input slot connected to subgraph input node", () => {
+  describe('LinkConnector dragging behavior', () => {
+    it('should drag existing link when dragging from input slot connected to subgraph input node', () => {
       // Create a subgraph with one input
       const subgraph = createTestSubgraph({
-        inputs: [{ name: "input1", type: "number" }],
+        inputs: [{ name: 'input1', type: 'number' }]
       })
 
       // Create a node inside the subgraph
-      const internalNode = new LGraphNode("InternalNode")
+      const internalNode = new LGraphNode('InternalNode')
       internalNode.id = 100
-      internalNode.addInput("in", "number")
+      internalNode.addInput('in', 'number')
       subgraph.add(internalNode)
 
       // Connect the subgraph input to the internal node's input
-      const link = subgraph.inputNode.slots[0].connect(internalNode.inputs[0], internalNode)
+      const link = subgraph.inputNode.slots[0].connect(
+        internalNode.inputs[0],
+        internalNode
+      )
       expect(link).toBeDefined()
       expect(link!.origin_id).toBe(SUBGRAPH_INPUT_ID)
       expect(link!.target_id).toBe(internalNode.id)
@@ -137,7 +146,7 @@ describe("Subgraph slot connections", () => {
 
       // Verify that we're dragging the existing link
       expect(connector.isConnecting).toBe(true)
-      expect(connector.state.connectingTo).toBe("input")
+      expect(connector.state.connectingTo).toBe('input')
       expect(connector.state.draggingExistingLinks).toBe(true)
 
       // Check that we have exactly one render link
@@ -155,19 +164,19 @@ describe("Subgraph slot connections", () => {
     })
   })
 
-  describe("Type compatibility", () => {
-    it("should respect type compatibility for SubgraphInput connections", () => {
+  describe('Type compatibility', () => {
+    it('should respect type compatibility for SubgraphInput connections', () => {
       const subgraph = createTestSubgraph({
-        inputs: [{ name: "number_input", type: "number" }],
+        inputs: [{ name: 'number_input', type: 'number' }]
       })
 
       const subgraphInput = subgraph.inputs[0]
 
-      const node = new LGraphNode("TestNode")
-      node.addInput("number_slot", "number")
-      node.addInput("string_slot", "string")
-      node.addInput("any_slot", "*")
-      node.addInput("boolean_slot", "boolean")
+      const node = new LGraphNode('TestNode')
+      node.addInput('number_slot', 'number')
+      node.addInput('string_slot', 'string')
+      node.addInput('any_slot', '*')
+      node.addInput('boolean_slot', 'boolean')
       subgraph.add(node)
 
       const numberSlot = node.inputs[0] as NodeInputSlot
@@ -181,27 +190,27 @@ describe("Subgraph slot connections", () => {
       expect(booleanSlot.isValidTarget(subgraphInput)).toBe(false)
     })
 
-    it("should respect type compatibility for SubgraphOutput connections", () => {
+    it('should respect type compatibility for SubgraphOutput connections', () => {
       const subgraph = createTestSubgraph()
-      const node = new LGraphNode("TestNode")
-      node.addOutput("out", "string")
+      const node = new LGraphNode('TestNode')
+      node.addOutput('out', 'string')
       subgraph.add(node)
 
-      const subgraphOutput = subgraph.addOutput("result", "number")
+      const subgraphOutput = subgraph.addOutput('result', 'number')
       const nodeOutput = node.outputs[0]
 
       expect(subgraphOutput.isValidTarget(nodeOutput)).toBe(false)
     })
 
-    it("should handle wildcard SubgraphInput", () => {
+    it('should handle wildcard SubgraphInput', () => {
       const subgraph = createTestSubgraph({
-        inputs: [{ name: "any_input", type: "*" }],
+        inputs: [{ name: 'any_input', type: '*' }]
       })
 
       const subgraphInput = subgraph.inputs[0]
 
-      const node = new LGraphNode("TestNode")
-      node.addInput("number_slot", "number")
+      const node = new LGraphNode('TestNode')
+      node.addInput('number_slot', 'number')
       subgraph.add(node)
 
       const numberSlot = node.inputs[0] as NodeInputSlot
@@ -210,12 +219,12 @@ describe("Subgraph slot connections", () => {
     })
   })
 
-  describe("Type guards", () => {
-    it("should correctly identify SubgraphInput", () => {
+  describe('Type guards', () => {
+    it('should correctly identify SubgraphInput', () => {
       const subgraph = createTestSubgraph()
-      const subgraphInput = subgraph.addInput("value", "number")
-      const node = new LGraphNode("TestNode")
-      node.addInput("in", "number")
+      const subgraphInput = subgraph.addInput('value', 'number')
+      const node = new LGraphNode('TestNode')
+      node.addInput('in', 'number')
 
       expect(isSubgraphInput(subgraphInput)).toBe(true)
       expect(isSubgraphInput(node.inputs[0])).toBe(false)
@@ -225,11 +234,11 @@ describe("Subgraph slot connections", () => {
       expect(isSubgraphInput({})).toBe(false)
     })
 
-    it("should correctly identify SubgraphOutput", () => {
+    it('should correctly identify SubgraphOutput', () => {
       const subgraph = createTestSubgraph()
-      const subgraphOutput = subgraph.addOutput("result", "number")
-      const node = new LGraphNode("TestNode")
-      node.addOutput("out", "number")
+      const subgraphOutput = subgraph.addOutput('result', 'number')
+      const node = new LGraphNode('TestNode')
+      node.addOutput('out', 'number')
 
       expect(isSubgraphOutput(subgraphOutput)).toBe(true)
       expect(isSubgraphOutput(node.outputs[0])).toBe(false)
@@ -240,23 +249,23 @@ describe("Subgraph slot connections", () => {
     })
   })
 
-  describe("Nested subgraphs", () => {
-    it("should handle dragging from SubgraphInput in nested subgraphs", () => {
+  describe('Nested subgraphs', () => {
+    it('should handle dragging from SubgraphInput in nested subgraphs', () => {
       const parentSubgraph = createTestSubgraph({
-        inputs: [{ name: "parent_input", type: "number" }],
-        outputs: [{ name: "parent_output", type: "number" }],
+        inputs: [{ name: 'parent_input', type: 'number' }],
+        outputs: [{ name: 'parent_output', type: 'number' }]
       })
 
       const nestedSubgraph = createTestSubgraph({
-        inputs: [{ name: "nested_input", type: "number" }],
-        outputs: [{ name: "nested_output", type: "number" }],
+        inputs: [{ name: 'nested_input', type: 'number' }],
+        outputs: [{ name: 'nested_output', type: 'number' }]
       })
 
       const nestedSubgraphNode = createTestSubgraphNode(nestedSubgraph)
       parentSubgraph.add(nestedSubgraphNode)
 
-      const regularNode = new LGraphNode("TestNode")
-      regularNode.addInput("test_input", "number")
+      const regularNode = new LGraphNode('TestNode')
+      regularNode.addInput('test_input', 'number')
       nestedSubgraph.add(regularNode)
 
       const nestedSubgraphInput = nestedSubgraph.inputs[0]
@@ -265,18 +274,18 @@ describe("Subgraph slot connections", () => {
       expect(regularNodeSlot.isValidTarget(nestedSubgraphInput)).toBe(true)
     })
 
-    it("should handle multiple levels of nesting", () => {
+    it('should handle multiple levels of nesting', () => {
       const level1 = createTestSubgraph({
-        inputs: [{ name: "level1_input", type: "string" }],
+        inputs: [{ name: 'level1_input', type: 'string' }]
       })
 
       const level2 = createTestSubgraph({
-        inputs: [{ name: "level2_input", type: "string" }],
+        inputs: [{ name: 'level2_input', type: 'string' }]
       })
 
       const level3 = createTestSubgraph({
-        inputs: [{ name: "level3_input", type: "string" }],
-        outputs: [{ name: "level3_output", type: "string" }],
+        inputs: [{ name: 'level3_input', type: 'string' }],
+        outputs: [{ name: 'level3_output', type: 'string' }]
       })
 
       const level2Node = createTestSubgraphNode(level2)
@@ -285,8 +294,8 @@ describe("Subgraph slot connections", () => {
       const level3Node = createTestSubgraphNode(level3)
       level2.add(level3Node)
 
-      const deepNode = new LGraphNode("DeepNode")
-      deepNode.addInput("deep_input", "string")
+      const deepNode = new LGraphNode('DeepNode')
+      deepNode.addInput('deep_input', 'string')
       level3.add(deepNode)
 
       const level3Input = level3.inputs[0]
@@ -298,24 +307,24 @@ describe("Subgraph slot connections", () => {
       expect(level3Output.isValidTarget(level3Input)).toBe(true)
     })
 
-    it("should maintain type checking across nesting levels", () => {
+    it('should maintain type checking across nesting levels', () => {
       const outer = createTestSubgraph({
-        inputs: [{ name: "outer_number", type: "number" }],
+        inputs: [{ name: 'outer_number', type: 'number' }]
       })
 
       const inner = createTestSubgraph({
         inputs: [
-          { name: "inner_number", type: "number" },
-          { name: "inner_string", type: "string" },
-        ],
+          { name: 'inner_number', type: 'number' },
+          { name: 'inner_string', type: 'string' }
+        ]
       })
 
       const innerNode = createTestSubgraphNode(inner)
       outer.add(innerNode)
 
-      const node = new LGraphNode("TestNode")
-      node.addInput("number_slot", "number")
-      node.addInput("string_slot", "string")
+      const node = new LGraphNode('TestNode')
+      node.addInput('number_slot', 'number')
+      node.addInput('string_slot', 'string')
       inner.add(node)
 
       const innerNumberInput = inner.inputs[0]

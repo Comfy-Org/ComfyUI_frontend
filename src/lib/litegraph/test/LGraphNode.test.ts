@@ -1,28 +1,32 @@
-import type { INodeInputSlot, Point } from "@/lib/litegraph/src/interfaces"
-import type { ISerialisedNode } from "@/lib/litegraph/src/types/serialisation"
+import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
-import { afterEach, beforeEach, describe, expect, vi } from "vitest"
+import type { INodeInputSlot, Point } from '@/lib/litegraph/src/interfaces'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
-import { LGraphNode, LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { LGraph } from "@/lib/litegraph/src/litegraph"
-import { NodeInputSlot } from "@/lib/litegraph/src/node/NodeInputSlot"
-import { NodeOutputSlot } from "@/lib/litegraph/src/node/NodeOutputSlot"
+import { test } from './testExtensions'
 
-import { test } from "./testExtensions"
-
-function getMockISerialisedNode(data: Partial<ISerialisedNode>): ISerialisedNode {
-  return Object.assign({
-    id: 0,
-    flags: {},
-    type: "TestNode",
-    pos: [100, 100],
-    size: [100, 100],
-    order: 0,
-    mode: 0,
-  }, data)
+function getMockISerialisedNode(
+  data: Partial<ISerialisedNode>
+): ISerialisedNode {
+  return Object.assign(
+    {
+      id: 0,
+      flags: {},
+      type: 'TestNode',
+      pos: [100, 100],
+      size: [100, 100],
+      order: 0,
+      mode: 0
+    },
+    data
+  )
 }
 
-describe("LGraphNode", () => {
+describe('LGraphNode', () => {
   let node: LGraphNode
   let origLiteGraph: typeof LiteGraph
 
@@ -35,11 +39,11 @@ describe("LGraphNode", () => {
       NODE_TITLE_HEIGHT: 20,
       NODE_SLOT_HEIGHT: 15,
       NODE_TEXT_SIZE: 14,
-      DEFAULT_SHADOW_COLOR: "rgba(0,0,0,0.5)",
+      DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
       DEFAULT_GROUP_FONT_SIZE: 24,
-      isValidConnection: vi.fn().mockReturnValue(true),
+      isValidConnection: vi.fn().mockReturnValue(true)
     })
-    node = new LGraphNode("Test Node")
+    node = new LGraphNode('Test Node')
     node.pos = [100, 200]
     node.size = [150, 100] // Example size
 
@@ -51,8 +55,8 @@ describe("LGraphNode", () => {
     Object.assign(LiteGraph, origLiteGraph)
   })
 
-  test("should serialize position/size correctly", () => {
-    const node = new LGraphNode("TestNode")
+  test('should serialize position/size correctly', () => {
+    const node = new LGraphNode('TestNode')
     node.pos = [10, 20]
     node.size = [30, 40]
     const json = node.serialize()
@@ -67,22 +71,33 @@ describe("LGraphNode", () => {
       flags: {},
       order: node.order,
       mode: node.mode,
-      inputs: node.inputs?.map(i => ({ name: i.name, type: i.type, link: i.link })),
-      outputs: node.outputs?.map(o => ({ name: o.name, type: o.type, links: o.links, slot_index: o.slot_index })),
+      inputs: node.inputs?.map((i) => ({
+        name: i.name,
+        type: i.type,
+        link: i.link
+      })),
+      outputs: node.outputs?.map((o) => ({
+        name: o.name,
+        type: o.type,
+        links: o.links,
+        slot_index: o.slot_index
+      }))
     }
     node.configure(configureData)
     expect(node.pos).toEqual(new Float32Array([50, 60]))
     expect(node.size).toEqual(new Float32Array([70, 80]))
   })
 
-  test("should configure inputs correctly", () => {
-    const node = new LGraphNode("TestNode")
-    node.configure(getMockISerialisedNode({
-      id: 0,
-      inputs: [{ name: "TestInput", type: "number", link: null }],
-    }))
+  test('should configure inputs correctly', () => {
+    const node = new LGraphNode('TestNode')
+    node.configure(
+      getMockISerialisedNode({
+        id: 0,
+        inputs: [{ name: 'TestInput', type: 'number', link: null }]
+      })
+    )
     expect(node.inputs.length).toEqual(1)
-    expect(node.inputs[0].name).toEqual("TestInput")
+    expect(node.inputs[0].name).toEqual('TestInput')
     expect(node.inputs[0].link).toEqual(null)
     expect(node.inputs[0]).instanceOf(NodeInputSlot)
 
@@ -92,15 +107,17 @@ describe("LGraphNode", () => {
     expect(node.inputs.length).toEqual(1)
   })
 
-  test("should configure outputs correctly", () => {
-    const node = new LGraphNode("TestNode")
-    node.configure(getMockISerialisedNode({
-      id: 0,
-      outputs: [{ name: "TestOutput", type: "number", links: [] }],
-    }))
+  test('should configure outputs correctly', () => {
+    const node = new LGraphNode('TestNode')
+    node.configure(
+      getMockISerialisedNode({
+        id: 0,
+        outputs: [{ name: 'TestOutput', type: 'number', links: [] }]
+      })
+    )
     expect(node.outputs.length).toEqual(1)
-    expect(node.outputs[0].name).toEqual("TestOutput")
-    expect(node.outputs[0].type).toEqual("number")
+    expect(node.outputs[0].name).toEqual('TestOutput')
+    expect(node.outputs[0].type).toEqual('number')
     expect(node.outputs[0].links).toEqual([])
     expect(node.outputs[0]).instanceOf(NodeOutputSlot)
 
@@ -110,20 +127,24 @@ describe("LGraphNode", () => {
     expect(node.outputs.length).toEqual(1)
   })
 
-  describe("Disconnect I/O Slots", () => {
-    test("should disconnect input correctly", () => {
-      const node1 = new LGraphNode("SourceNode")
-      const node2 = new LGraphNode("TargetNode")
+  describe('Disconnect I/O Slots', () => {
+    test('should disconnect input correctly', () => {
+      const node1 = new LGraphNode('SourceNode')
+      const node2 = new LGraphNode('TargetNode')
 
       // Configure nodes with input/output slots
-      node1.configure(getMockISerialisedNode({
-        id: 1,
-        outputs: [{ name: "Output1", type: "number", links: [] }],
-      }))
-      node2.configure(getMockISerialisedNode({
-        id: 2,
-        inputs: [{ name: "Input1", type: "number", link: null }],
-      }))
+      node1.configure(
+        getMockISerialisedNode({
+          id: 1,
+          outputs: [{ name: 'Output1', type: 'number', links: [] }]
+        })
+      )
+      node2.configure(
+        getMockISerialisedNode({
+          id: 2,
+          inputs: [{ name: 'Input1', type: 'number', link: null }]
+        })
+      )
 
       // Create a graph and add nodes to it
       const graph = new LGraph()
@@ -145,7 +166,7 @@ describe("LGraphNode", () => {
 
       // Test disconnecting by slot name
       node1.connect(0, node2, 0)
-      const disconnectedByName = node2.disconnectInput("Input1")
+      const disconnectedByName = node2.disconnectInput('Input1')
       expect(disconnectedByName).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
 
@@ -158,27 +179,33 @@ describe("LGraphNode", () => {
       expect(alreadyDisconnected).toBe(true)
     })
 
-    test("should disconnect output correctly", () => {
-      const sourceNode = new LGraphNode("SourceNode")
-      const targetNode1 = new LGraphNode("TargetNode1")
-      const targetNode2 = new LGraphNode("TargetNode2")
+    test('should disconnect output correctly', () => {
+      const sourceNode = new LGraphNode('SourceNode')
+      const targetNode1 = new LGraphNode('TargetNode1')
+      const targetNode2 = new LGraphNode('TargetNode2')
 
       // Configure nodes with input/output slots
-      sourceNode.configure(getMockISerialisedNode({
-        id: 1,
-        outputs: [
-          { name: "Output1", type: "number", links: [] },
-          { name: "Output2", type: "number", links: [] },
-        ],
-      }))
-      targetNode1.configure(getMockISerialisedNode({
-        id: 2,
-        inputs: [{ name: "Input1", type: "number", link: null }],
-      }))
-      targetNode2.configure(getMockISerialisedNode({
-        id: 3,
-        inputs: [{ name: "Input1", type: "number", link: null }],
-      }))
+      sourceNode.configure(
+        getMockISerialisedNode({
+          id: 1,
+          outputs: [
+            { name: 'Output1', type: 'number', links: [] },
+            { name: 'Output2', type: 'number', links: [] }
+          ]
+        })
+      )
+      targetNode1.configure(
+        getMockISerialisedNode({
+          id: 2,
+          inputs: [{ name: 'Input1', type: 'number', link: null }]
+        })
+      )
+      targetNode2.configure(
+        getMockISerialisedNode({
+          id: 3,
+          inputs: [{ name: 'Input1', type: 'number', link: null }]
+        })
+      )
 
       // Create a graph and add nodes to it
       const graph = new LGraph()
@@ -204,7 +231,10 @@ describe("LGraphNode", () => {
       // Test disconnecting by slot name
       const link3 = sourceNode.connect(1, targetNode1, 0)
       expect(link3).not.toBeNull()
-      const disconnectedByName = sourceNode.disconnectOutput("Output2", targetNode1)
+      const disconnectedByName = sourceNode.disconnectOutput(
+        'Output2',
+        targetNode1
+      )
       expect(disconnectedByName).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(sourceNode.outputs[1].links?.length).toBe(0)
@@ -231,20 +261,25 @@ describe("LGraphNode", () => {
     })
   })
 
-  describe("getInputPos and getOutputPos", () => {
-    test("should handle collapsed nodes correctly", () => {
-      const node = new LGraphNode("TestNode") as unknown as Omit<LGraphNode, "boundingRect"> & { boundingRect: Float32Array }
+  describe('getInputPos and getOutputPos', () => {
+    test('should handle collapsed nodes correctly', () => {
+      const node = new LGraphNode('TestNode') as unknown as Omit<
+        LGraphNode,
+        'boundingRect'
+      > & { boundingRect: Float32Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
       node.boundingRect[1] = 100
       node.boundingRect[2] = 100
       node.boundingRect[3] = 100
-      node.configure(getMockISerialisedNode({
-        id: 1,
-        inputs: [{ name: "Input1", type: "number", link: null }],
-        outputs: [{ name: "Output1", type: "number", links: [] }],
-      }))
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          inputs: [{ name: 'Input1', type: 'number', link: null }],
+          outputs: [{ name: 'Output1', type: 'number', links: [] }]
+        })
+      )
 
       // Collapse the node
       node.flags.collapsed = true
@@ -257,15 +292,17 @@ describe("LGraphNode", () => {
       expect(outputPos).toEqual([180, 90])
     })
 
-    test("should return correct positions for input and output slots", () => {
-      const node = new LGraphNode("TestNode")
+    test('should return correct positions for input and output slots', () => {
+      const node = new LGraphNode('TestNode')
       node.pos = [100, 100]
       node.size = [100, 100]
-      node.configure(getMockISerialisedNode({
-        id: 1,
-        inputs: [{ name: "Input1", type: "number", link: null }],
-        outputs: [{ name: "Output1", type: "number", links: [] }],
-      }))
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          inputs: [{ name: 'Input1', type: 'number', link: null }],
+          outputs: [{ name: 'Output1', type: 'number', links: [] }]
+        })
+      )
 
       const inputPos = node.getInputPos(0)
       const outputPos = node.getOutputPos(0)
@@ -275,16 +312,18 @@ describe("LGraphNode", () => {
     })
   })
 
-  describe("getSlotOnPos", () => {
-    test("should return undefined when point is outside node bounds", () => {
-      const node = new LGraphNode("TestNode")
+  describe('getSlotOnPos', () => {
+    test('should return undefined when point is outside node bounds', () => {
+      const node = new LGraphNode('TestNode')
       node.pos = [100, 100]
       node.size = [100, 100]
-      node.configure(getMockISerialisedNode({
-        id: 1,
-        inputs: [{ name: "Input1", type: "number", link: null }],
-        outputs: [{ name: "Output1", type: "number", links: [] }],
-      }))
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          inputs: [{ name: 'Input1', type: 'number', link: null }],
+          outputs: [{ name: 'Output1', type: 'number', links: [] }]
+        })
+      )
 
       // Test point far outside node bounds
       expect(node.getSlotOnPos([0, 0])).toBeUndefined()
@@ -292,74 +331,89 @@ describe("LGraphNode", () => {
       expect(node.getSlotOnPos([99, 99])).toBeUndefined()
     })
 
-    test("should detect input slots correctly", () => {
-      const node = new LGraphNode("TestNode") as unknown as Omit<LGraphNode, "boundingRect"> & { boundingRect: Float32Array }
+    test('should detect input slots correctly', () => {
+      const node = new LGraphNode('TestNode') as unknown as Omit<
+        LGraphNode,
+        'boundingRect'
+      > & { boundingRect: Float32Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
       node.boundingRect[1] = 100
       node.boundingRect[2] = 200
       node.boundingRect[3] = 200
-      node.configure(getMockISerialisedNode({
-        id: 1,
-        inputs: [
-          { name: "Input1", type: "number", link: null },
-          { name: "Input2", type: "string", link: null },
-        ],
-      }))
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          inputs: [
+            { name: 'Input1', type: 'number', link: null },
+            { name: 'Input2', type: 'string', link: null }
+          ]
+        })
+      )
 
       // Get position of first input slot
       const inputPos = node.getInputPos(0)
       // Test point directly on input slot
       const slot = node.getSlotOnPos(inputPos)
       expect(slot).toBeDefined()
-      expect(slot?.name).toBe("Input1")
+      expect(slot?.name).toBe('Input1')
 
       // Test point near but not on input slot
       expect(node.getSlotOnPos([inputPos[0] - 15, inputPos[1]])).toBeUndefined()
     })
 
-    test("should detect output slots correctly", () => {
-      const node = new LGraphNode("TestNode") as unknown as Omit<LGraphNode, "boundingRect"> & { boundingRect: Float32Array }
+    test('should detect output slots correctly', () => {
+      const node = new LGraphNode('TestNode') as unknown as Omit<
+        LGraphNode,
+        'boundingRect'
+      > & { boundingRect: Float32Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
       node.boundingRect[1] = 100
       node.boundingRect[2] = 200
       node.boundingRect[3] = 200
-      node.configure(getMockISerialisedNode({
-        id: 1,
-        outputs: [
-          { name: "Output1", type: "number", links: [] },
-          { name: "Output2", type: "string", links: [] },
-        ],
-      }))
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          outputs: [
+            { name: 'Output1', type: 'number', links: [] },
+            { name: 'Output2', type: 'string', links: [] }
+          ]
+        })
+      )
 
       // Get position of first output slot
       const outputPos = node.getOutputPos(0)
       // Test point directly on output slot
       const slot = node.getSlotOnPos(outputPos)
       expect(slot).toBeDefined()
-      expect(slot?.name).toBe("Output1")
+      expect(slot?.name).toBe('Output1')
 
       // Test point near but not on output slot
       const gotslot = node.getSlotOnPos([outputPos[0] + 30, outputPos[1]])
       expect(gotslot).toBeUndefined()
     })
 
-    test("should prioritize input slots over output slots", () => {
-      const node = new LGraphNode("TestNode") as unknown as Omit<LGraphNode, "boundingRect"> & { boundingRect: Float32Array }
+    test('should prioritize input slots over output slots', () => {
+      const node = new LGraphNode('TestNode') as unknown as Omit<
+        LGraphNode,
+        'boundingRect'
+      > & { boundingRect: Float32Array }
       node.pos = [100, 100]
       node.size = [100, 100]
       node.boundingRect[0] = 100
       node.boundingRect[1] = 100
       node.boundingRect[2] = 200
       node.boundingRect[3] = 200
-      node.configure(getMockISerialisedNode({
-        id: 1,
-        inputs: [{ name: "Input1", type: "number", link: null }],
-        outputs: [{ name: "Output1", type: "number", links: [] }],
-      }))
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          inputs: [{ name: 'Input1', type: 'number', link: null }],
+          outputs: [{ name: 'Output1', type: 'number', links: [] }]
+        })
+      )
 
       // Get positions of first input and output slots
       const inputPos = node.getInputPos(0)
@@ -368,21 +422,21 @@ describe("LGraphNode", () => {
       // Should return the input slot due to priority
       const slot = node.getSlotOnPos(inputPos)
       expect(slot).toBeDefined()
-      expect(slot?.name).toBe("Input1")
+      expect(slot?.name).toBe('Input1')
     })
   })
 
-  describe("LGraphNode slot positioning", () => {
-    test("should correctly position slots with absolute coordinates", () => {
+  describe('LGraphNode slot positioning', () => {
+    test('should correctly position slots with absolute coordinates', () => {
       // Setup
-      const node = new LGraphNode("test")
+      const node = new LGraphNode('test')
       node.pos = [100, 100]
 
       // Add input/output with absolute positions
-      node.addInput("abs-input", "number")
+      node.addInput('abs-input', 'number')
       node.inputs[0].pos = [10, 20]
 
-      node.addOutput("abs-output", "number")
+      node.addOutput('abs-output', 'number')
       node.outputs[0].pos = [50, 30]
 
       // Test
@@ -394,16 +448,16 @@ describe("LGraphNode", () => {
       expect(outputPos).toEqual([150, 130]) // node.pos + slot.pos
     })
 
-    test("should correctly position default vertical slots", () => {
+    test('should correctly position default vertical slots', () => {
       // Setup
-      const node = new LGraphNode("test")
+      const node = new LGraphNode('test')
       node.pos = [100, 100]
 
       // Add multiple inputs/outputs without absolute positions
-      node.addInput("input1", "number")
-      node.addInput("input2", "number")
-      node.addOutput("output1", "number")
-      node.addOutput("output2", "number")
+      node.addInput('input1', 'number')
+      node.addInput('input2', 'number')
+      node.addOutput('output1', 'number')
+      node.addOutput('output2', 'number')
 
       // Calculate expected positions
       const slotOffset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
@@ -413,34 +467,34 @@ describe("LGraphNode", () => {
       // Test input positions
       expect(node.getInputPos(0)).toEqual([
         100 + slotOffset,
-        100 + (0 + 0.7) * slotSpacing,
+        100 + (0 + 0.7) * slotSpacing
       ])
       expect(node.getInputPos(1)).toEqual([
         100 + slotOffset,
-        100 + (1 + 0.7) * slotSpacing,
+        100 + (1 + 0.7) * slotSpacing
       ])
 
       // Test output positions
       expect(node.getOutputPos(0)).toEqual([
         100 + nodeWidth + 1 - slotOffset,
-        100 + (0 + 0.7) * slotSpacing,
+        100 + (0 + 0.7) * slotSpacing
       ])
       expect(node.getOutputPos(1)).toEqual([
         100 + nodeWidth + 1 - slotOffset,
-        100 + (1 + 0.7) * slotSpacing,
+        100 + (1 + 0.7) * slotSpacing
       ])
     })
 
-    test("should skip absolute positioned slots when calculating vertical positions", () => {
+    test('should skip absolute positioned slots when calculating vertical positions', () => {
       // Setup
-      const node = new LGraphNode("test")
+      const node = new LGraphNode('test')
       node.pos = [100, 100]
 
       // Add mix of absolute and default positioned slots
-      node.addInput("abs-input", "number")
+      node.addInput('abs-input', 'number')
       node.inputs[0].pos = [10, 20]
-      node.addInput("default-input1", "number")
-      node.addInput("default-input2", "number")
+      node.addInput('default-input1', 'number')
+      node.addInput('default-input2', 'number')
 
       const slotOffset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
       const slotSpacing = LiteGraph.NODE_SLOT_HEIGHT
@@ -448,24 +502,24 @@ describe("LGraphNode", () => {
       // Test: default positioned slots should be consecutive, ignoring absolute positioned ones
       expect(node.getInputPos(1)).toEqual([
         100 + slotOffset,
-        100 + (0 + 0.7) * slotSpacing, // First default slot starts at index 0
+        100 + (0 + 0.7) * slotSpacing // First default slot starts at index 0
       ])
       expect(node.getInputPos(2)).toEqual([
         100 + slotOffset,
-        100 + (1 + 0.7) * slotSpacing, // Second default slot at index 1
+        100 + (1 + 0.7) * slotSpacing // Second default slot at index 1
       ])
     })
   })
 
-  describe("widget serialization", () => {
-    test("should only serialize widgets with serialize flag not set to false", () => {
-      const node = new LGraphNode("TestNode")
+  describe('widget serialization', () => {
+    test('should only serialize widgets with serialize flag not set to false', () => {
+      const node = new LGraphNode('TestNode')
       node.serialize_widgets = true
 
       // Add widgets with different serialization settings
-      node.addWidget("number", "serializable1", 1, null)
-      node.addWidget("number", "serializable2", 2, null)
-      node.addWidget("number", "non-serializable", 3, null)
+      node.addWidget('number', 'serializable1', 1, null)
+      node.addWidget('number', 'serializable2', 2, null)
+      node.addWidget('number', 'non-serializable', 3, null)
       expect(node.widgets?.length).toBe(3)
 
       // Set serialize flag to false for the last widget
@@ -484,42 +538,49 @@ describe("LGraphNode", () => {
       expect(serialized.widgets_values).toHaveLength(2)
     })
 
-    test("should only configure widgets with serialize flag not set to false", () => {
-      const node = new LGraphNode("TestNode")
+    test('should only configure widgets with serialize flag not set to false', () => {
+      const node = new LGraphNode('TestNode')
       node.serialize_widgets = true
 
-      node.addWidget("number", "non-serializable", 1, null)
-      node.addWidget("number", "serializable1", 2, null)
+      node.addWidget('number', 'non-serializable', 1, null)
+      node.addWidget('number', 'serializable1', 2, null)
       expect(node.widgets?.length).toBe(2)
 
       node.widgets![0].serialize = false
-      node.configure(getMockISerialisedNode({
-        id: 1,
-        type: "TestNode",
-        pos: [100, 100],
-        size: [100, 100],
-        properties: {},
-        widgets_values: [100],
-      }))
+      node.configure(
+        getMockISerialisedNode({
+          id: 1,
+          type: 'TestNode',
+          pos: [100, 100],
+          size: [100, 100],
+          properties: {},
+          widgets_values: [100]
+        })
+      )
 
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
   })
 
-  describe("getInputSlotPos", () => {
+  describe('getInputSlotPos', () => {
     let inputSlot: INodeInputSlot
 
     beforeEach(() => {
-      inputSlot = { name: "test_in", type: "string", link: null, boundingRect: new Float32Array([0, 0, 0, 0]) }
+      inputSlot = {
+        name: 'test_in',
+        type: 'string',
+        link: null,
+        boundingRect: new Float32Array([0, 0, 0, 0])
+      }
     })
-    test("should return position based on title height when collapsed", () => {
+    test('should return position based on title height when collapsed', () => {
       node.flags.collapsed = true
       const expectedPos: Point = [100, 200 - LiteGraph.NODE_TITLE_HEIGHT * 0.5]
       expect(node.getInputSlotPos(inputSlot)).toEqual(expectedPos)
     })
 
-    test("should return position based on input.pos when defined and not collapsed", () => {
+    test('should return position based on input.pos when defined and not collapsed', () => {
       node.flags.collapsed = false
       inputSlot.pos = [10, 50]
       node.inputs = [inputSlot]
@@ -527,39 +588,58 @@ describe("LGraphNode", () => {
       expect(node.getInputSlotPos(inputSlot)).toEqual(expectedPos)
     })
 
-    test("should return default vertical position when input.pos is undefined and not collapsed", () => {
+    test('should return default vertical position when input.pos is undefined and not collapsed', () => {
       node.flags.collapsed = false
-      const inputSlot2 = { name: "test_in_2", type: "number", link: null, boundingRect: new Float32Array([0, 0, 0, 0]) }
+      const inputSlot2 = {
+        name: 'test_in_2',
+        type: 'number',
+        link: null,
+        boundingRect: new Float32Array([0, 0, 0, 0])
+      }
       node.inputs = [inputSlot, inputSlot2]
       const slotIndex = 0
       const nodeOffsetY = (node.constructor as any).slot_start_y || 0
-      const expectedY = 200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
+      const expectedY =
+        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
       const slotIndex2 = 1
-      const expectedY2 = 200 + (slotIndex2 + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
+      const expectedY2 =
+        200 + (slotIndex2 + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       expect(node.getInputSlotPos(inputSlot2)).toEqual([expectedX, expectedY2])
     })
 
-    test("should return default vertical position including slot_start_y when defined", () => {
-      (node.constructor as any).slot_start_y = 25
+    test('should return default vertical position including slot_start_y when defined', () => {
+      ;(node.constructor as any).slot_start_y = 25
       node.flags.collapsed = false
       node.inputs = [inputSlot]
       const slotIndex = 0
       const nodeOffsetY = 25
-      const expectedY = 200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
+      const expectedY =
+        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
       delete (node.constructor as any).slot_start_y
     })
   })
 
-  describe("getInputPos", () => {
-    test("should call getInputSlotPos with the correct input slot from inputs array", () => {
-      const input0: INodeInputSlot = { name: "in0", type: "string", link: null, boundingRect: new Float32Array([0, 0, 0, 0]) }
-      const input1: INodeInputSlot = { name: "in1", type: "number", link: null, boundingRect: new Float32Array([0, 0, 0, 0]), pos: [5, 45] }
+  describe('getInputPos', () => {
+    test('should call getInputSlotPos with the correct input slot from inputs array', () => {
+      const input0: INodeInputSlot = {
+        name: 'in0',
+        type: 'string',
+        link: null,
+        boundingRect: new Float32Array([0, 0, 0, 0])
+      }
+      const input1: INodeInputSlot = {
+        name: 'in1',
+        type: 'number',
+        link: null,
+        boundingRect: new Float32Array([0, 0, 0, 0]),
+        pos: [5, 45]
+      }
       node.inputs = [input0, input1]
-      const spy = vi.spyOn(node, "getInputSlotPos")
+      const spy = vi.spyOn(node, 'getInputSlotPos')
       node.getInputPos(1)
       expect(spy).toHaveBeenCalledWith(input1)
       const expectedPos: Point = [100 + 5, 200 + 45]
@@ -569,7 +649,8 @@ describe("LGraphNode", () => {
       expect(spy).toHaveBeenCalledWith(input0)
       const slotIndex = 0
       const nodeOffsetY = (node.constructor as any).slot_start_y || 0
-      const expectedDefaultY = 200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
+      const expectedDefaultY =
+        200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedDefaultX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputPos(0)).toEqual([expectedDefaultX, expectedDefaultY])
       spy.mockRestore()

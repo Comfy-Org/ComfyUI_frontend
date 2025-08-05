@@ -1,14 +1,18 @@
-import type { INodeInputSlot, INodeOutputSlot, OptionalProps, ReadOnlyPoint } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { LinkId } from "@/lib/litegraph/src/LLink"
-import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
-import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
-import type { IBaseWidget } from "@/lib/litegraph/src/types/widgets"
-
-import { LabelPosition } from "@/lib/litegraph/src/draw"
-import { LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { type IDrawOptions, NodeSlot } from "@/lib/litegraph/src/node/NodeSlot"
-import { isSubgraphInput } from "@/lib/litegraph/src/subgraph/subgraphUtils"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LinkId } from '@/lib/litegraph/src/LLink'
+import { LabelPosition } from '@/lib/litegraph/src/draw'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  OptionalProps,
+  ReadOnlyPoint
+} from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null
@@ -32,7 +36,10 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return [0, LiteGraph.NODE_TITLE_HEIGHT * -0.5]
   }
 
-  constructor(slot: OptionalProps<INodeInputSlot, "boundingRect">, node: LGraphNode) {
+  constructor(
+    slot: OptionalProps<INodeInputSlot, 'boundingRect'>,
+    node: LGraphNode
+  ) {
     super(slot, node)
     this.link = slot.link
   }
@@ -41,8 +48,10 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return this.link != null
   }
 
-  override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput): boolean {
-    if ("links" in fromSlot) {
+  override isValidTarget(
+    fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
+  ): boolean {
+    if ('links' in fromSlot) {
       return LiteGraph.isValidConnection(fromSlot.type, this.type)
     }
 
@@ -53,14 +62,17 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return false
   }
 
-  override draw(ctx: CanvasRenderingContext2D, options: Omit<IDrawOptions, "doStroke" | "labelPosition">) {
+  override draw(
+    ctx: CanvasRenderingContext2D,
+    options: Omit<IDrawOptions, 'doStroke' | 'labelPosition'>
+  ) {
     const { textAlign } = ctx
-    ctx.textAlign = "left"
+    ctx.textAlign = 'left'
 
     super.draw(ctx, {
       ...options,
       labelPosition: LabelPosition.Right,
-      doStroke: false,
+      doStroke: false
     })
 
     ctx.textAlign = textAlign

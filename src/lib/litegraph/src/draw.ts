@@ -1,16 +1,15 @@
-import type { Rectangle } from "./infrastructure/Rectangle"
-import type { CanvasColour, Rect } from "./interfaces"
+import type { Rectangle } from './infrastructure/Rectangle'
+import type { CanvasColour, Rect } from './interfaces'
+import { LiteGraph } from './litegraph'
+import { LinkDirection, RenderShape, TitleMode } from './types/globalEnums'
 
-import { LiteGraph } from "./litegraph"
-import { LinkDirection, RenderShape, TitleMode } from "./types/globalEnums"
-
-const ELLIPSIS = "\u2026"
-const TWO_DOT_LEADER = "\u2025"
-const ONE_DOT_LEADER = "\u2024"
+const ELLIPSIS = '\u2026'
+const TWO_DOT_LEADER = '\u2025'
+const ONE_DOT_LEADER = '\u2024'
 
 export enum SlotType {
-  Array = "array",
-  Event = -1,
+  Array = 'array',
+  Event = -1
 }
 
 /** @see RenderShape */
@@ -19,7 +18,7 @@ export enum SlotShape {
   Arrow = RenderShape.ARROW,
   Grid = RenderShape.GRID,
   Circle = RenderShape.CIRCLE,
-  HollowCircle = RenderShape.HollowCircle,
+  HollowCircle = RenderShape.HollowCircle
 }
 
 /** @see LinkDirection */
@@ -27,12 +26,12 @@ export enum SlotDirection {
   Up = LinkDirection.UP,
   Right = LinkDirection.RIGHT,
   Down = LinkDirection.DOWN,
-  Left = LinkDirection.LEFT,
+  Left = LinkDirection.LEFT
 }
 
 export enum LabelPosition {
-  Left = "left",
-  Right = "right",
+  Left = 'left',
+  Right = 'right'
 }
 
 export interface IDrawBoundingOptions {
@@ -62,7 +61,7 @@ export interface IDrawTextInAreaOptions {
   /** The area the text will be drawn in. */
   area: Rectangle
   /** The alignment of the text. */
-  align?: "left" | "right" | "center"
+  align?: 'left' | 'right' | 'center'
 }
 
 /**
@@ -82,8 +81,8 @@ export function strokeShape(
     color,
     padding = 6,
     collapsed = false,
-    lineWidth: thickness = 1,
-  }: IDrawBoundingOptions = {},
+    lineWidth: thickness = 1
+  }: IDrawBoundingOptions = {}
 ): void {
   // These param defaults are not compile-time static, and must be re-evaluated at runtime
   round_radius ??= LiteGraph.ROUND_RADIUS
@@ -106,39 +105,39 @@ export function strokeShape(
   // Draw shape based on type
   const [x, y, width, height] = area
   switch (shape) {
-  case RenderShape.BOX: {
-    ctx.rect(
-      x - padding,
-      y - padding,
-      width + 2 * padding,
-      height + 2 * padding,
-    )
-    break
-  }
-  case RenderShape.ROUND:
-  case RenderShape.CARD: {
-    const radius = round_radius + padding
-    const isCollapsed = shape === RenderShape.CARD && collapsed
-    const cornerRadii =
+    case RenderShape.BOX: {
+      ctx.rect(
+        x - padding,
+        y - padding,
+        width + 2 * padding,
+        height + 2 * padding
+      )
+      break
+    }
+    case RenderShape.ROUND:
+    case RenderShape.CARD: {
+      const radius = round_radius + padding
+      const isCollapsed = shape === RenderShape.CARD && collapsed
+      const cornerRadii =
         isCollapsed || shape === RenderShape.ROUND
           ? [radius]
           : [radius, 2, radius, 2]
-    ctx.roundRect(
-      x - padding,
-      y - padding,
-      width + 2 * padding,
-      height + 2 * padding,
-      cornerRadii,
-    )
-    break
-  }
-  case RenderShape.CIRCLE: {
-    const centerX = x + width / 2
-    const centerY = y + height / 2
-    const radius = Math.max(width, height) / 2 + padding
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-    break
-  }
+      ctx.roundRect(
+        x - padding,
+        y - padding,
+        width + 2 * padding,
+        height + 2 * padding,
+        cornerRadii
+      )
+      break
+    }
+    case RenderShape.CIRCLE: {
+      const centerX = x + width / 2
+      const centerY = y + height / 2
+      const radius = Math.max(width, height) / 2 + padding
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
+      break
+    }
   }
 
   // Stroke the shape
@@ -159,8 +158,12 @@ export function strokeShape(
  * @param maxWidth The maximum width the text (plus ellipsis) can occupy.
  * @returns The truncated text, or the original text if it fits.
  */
-function truncateTextToWidth(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
-  if (!(maxWidth > 0)) return ""
+function truncateTextToWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string {
+  if (!(maxWidth > 0)) return ''
 
   // Text fits
   const fullWidth = ctx.measureText(text).width
@@ -174,7 +177,7 @@ function truncateTextToWidth(ctx: CanvasRenderingContext2D, text: string, maxWid
     if (twoDotsWidth < maxWidth) return TWO_DOT_LEADER
 
     const oneDotWidth = ctx.measureText(ONE_DOT_LEADER).width * 0.75
-    return oneDotWidth < maxWidth ? ONE_DOT_LEADER : ""
+    return oneDotWidth < maxWidth ? ONE_DOT_LEADER : ''
   }
 
   let min = 0
@@ -204,22 +207,25 @@ function truncateTextToWidth(ctx: CanvasRenderingContext2D, text: string, maxWid
     }
   }
 
-  return bestLen === 0
-    ? ELLIPSIS
-    : text.substring(0, bestLen) + ELLIPSIS
+  return bestLen === 0 ? ELLIPSIS : text.substring(0, bestLen) + ELLIPSIS
 }
 
 /**
  * Draws text within an area, truncating it and adding an ellipsis if necessary.
  */
-export function drawTextInArea({ ctx, text, area, align = "left" }: IDrawTextInAreaOptions) {
+export function drawTextInArea({
+  ctx,
+  text,
+  area,
+  align = 'left'
+}: IDrawTextInAreaOptions) {
   const { left, right, bottom, width, centreX } = area
 
   // Text already fits
   const fullWidth = ctx.measureText(text).width
   if (fullWidth <= width) {
     ctx.textAlign = align
-    const x = align === "left" ? left : (align === "right" ? right : centreX)
+    const x = align === 'left' ? left : align === 'right' ? right : centreX
     ctx.fillText(text, x, bottom)
     return
   }
@@ -229,12 +235,12 @@ export function drawTextInArea({ ctx, text, area, align = "left" }: IDrawTextInA
   if (truncated.length === 0) return
 
   // Draw text - left-aligned to prevent bouncing during resize
-  ctx.textAlign = "left"
+  ctx.textAlign = 'left'
   ctx.fillText(truncated.slice(0, -1), left, bottom)
   ctx.rect(left, bottom, width, 1)
 
   // Draw the ellipsis, right-aligned to the button
-  ctx.textAlign = "right"
+  ctx.textAlign = 'right'
   const ellipsis = truncated.at(-1)!
   ctx.fillText(ellipsis, right, bottom, ctx.measureText(ellipsis).width * 0.75)
 }

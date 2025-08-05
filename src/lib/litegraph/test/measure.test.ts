@@ -1,7 +1,6 @@
-import type { Point, Rect } from "../src/interfaces"
+import { test as baseTest } from 'vitest'
 
-import { test as baseTest } from "vitest"
-
+import type { Point, Rect } from '../src/interfaces'
 import {
   addDirectionalOffset,
   containsCentre,
@@ -17,25 +16,29 @@ import {
   isPointInRect,
   overlapBounding,
   rotateLink,
-  snapPoint,
-} from "../src/measure"
-import { LinkDirection } from "../src/types/globalEnums"
+  snapPoint
+} from '../src/measure'
+import { LinkDirection } from '../src/types/globalEnums'
 
 const test = baseTest.extend({})
 
-test("distance calculates correct distance between two points", ({ expect }) => {
+test('distance calculates correct distance between two points', ({
+  expect
+}) => {
   expect(distance([0, 0], [3, 4])).toBe(5) // 3-4-5 triangle
   expect(distance([1, 1], [4, 5])).toBe(5) // Same triangle, shifted
   expect(distance([0, 0], [0, 0])).toBe(0) // Same point
 })
 
-test("dist2 calculates squared distance between points", ({ expect }) => {
+test('dist2 calculates squared distance between points', ({ expect }) => {
   expect(dist2(0, 0, 3, 4)).toBe(25) // 3-4-5 triangle squared
   expect(dist2(1, 1, 4, 5)).toBe(25) // Same triangle, shifted
   expect(dist2(0, 0, 0, 0)).toBe(0) // Same point
 })
 
-test("isInRectangle correctly identifies points inside rectangle", ({ expect }) => {
+test('isInRectangle correctly identifies points inside rectangle', ({
+  expect
+}) => {
   // Test points inside
   expect(isInRectangle(5, 5, 0, 0, 10, 10)).toBe(true)
   // Test points on edges (should be true)
@@ -46,13 +49,17 @@ test("isInRectangle correctly identifies points inside rectangle", ({ expect }) 
   expect(isInRectangle(11, 5, 0, 0, 10, 10)).toBe(false)
 })
 
-test("isPointInRect correctly identifies points inside rectangle", ({ expect }) => {
+test('isPointInRect correctly identifies points inside rectangle', ({
+  expect
+}) => {
   const rect: Rect = [0, 0, 10, 10]
   expect(isPointInRect([5, 5], rect)).toBe(true)
   expect(isPointInRect([-1, 5], rect)).toBe(false)
 })
 
-test("overlapBounding correctly identifies overlapping rectangles", ({ expect }) => {
+test('overlapBounding correctly identifies overlapping rectangles', ({
+  expect
+}) => {
   const rect1: Rect = [0, 0, 10, 10]
   const rect2: Rect = [5, 5, 10, 10]
   const rect3: Rect = [20, 20, 10, 10]
@@ -61,7 +68,9 @@ test("overlapBounding correctly identifies overlapping rectangles", ({ expect })
   expect(overlapBounding(rect1, rect3)).toBe(false)
 })
 
-test("containsCentre correctly identifies if rectangle contains center of another", ({ expect }) => {
+test('containsCentre correctly identifies if rectangle contains center of another', ({
+  expect
+}) => {
   const container: Rect = [0, 0, 20, 20]
   const inside: Rect = [5, 5, 10, 10] // Center at 10,10
   const outside: Rect = [15, 15, 10, 10] // Center at 20,20
@@ -70,7 +79,7 @@ test("containsCentre correctly identifies if rectangle contains center of anothe
   expect(containsCentre(container, outside)).toBe(false)
 })
 
-test("addDirectionalOffset correctly adds offsets", ({ expect }) => {
+test('addDirectionalOffset correctly adds offsets', ({ expect }) => {
   const point: Point = [10, 10]
 
   // Test each direction
@@ -90,7 +99,7 @@ test("addDirectionalOffset correctly adds offsets", ({ expect }) => {
   expect(point).toEqual([10, 5])
 })
 
-test("findPointOnCurve correctly interpolates curve points", ({ expect }) => {
+test('findPointOnCurve correctly interpolates curve points', ({ expect }) => {
   const out: Point = [0, 0]
   const start: Point = [0, 0]
   const end: Point = [10, 10]
@@ -103,7 +112,7 @@ test("findPointOnCurve correctly interpolates curve points", ({ expect }) => {
   expect(out[1]).toBeCloseTo(5)
 })
 
-test("snapPoint correctly snaps points to grid", ({ expect }) => {
+test('snapPoint correctly snaps points to grid', ({ expect }) => {
   const point: Point = [12.3, 18.7]
 
   // Snap to 5
@@ -120,10 +129,10 @@ test("snapPoint correctly snaps points to grid", ({ expect }) => {
   expect(point3).toEqual([20, 20])
 })
 
-test("createBounds correctly creates bounding box", ({ expect }) => {
+test('createBounds correctly creates bounding box', ({ expect }) => {
   const objects = [
     { boundingRect: [0, 0, 10, 10] as Rect },
-    { boundingRect: [5, 5, 10, 10] as Rect },
+    { boundingRect: [5, 5, 10, 10] as Rect }
   ]
 
   const defaultBounds = createBounds(objects)
@@ -136,7 +145,9 @@ test("createBounds correctly creates bounding box", ({ expect }) => {
   expect(createBounds([])).toBe(null)
 })
 
-test("isInsideRectangle handles edge cases differently from isInRectangle", ({ expect }) => {
+test('isInsideRectangle handles edge cases differently from isInRectangle', ({
+  expect
+}) => {
   // isInsideRectangle returns false when point is exactly on left or top edge
   expect(isInsideRectangle(0, 5, 0, 0, 10, 10)).toBe(false)
   expect(isInsideRectangle(5, 0, 0, 0, 10, 10)).toBe(false)
@@ -153,7 +164,7 @@ test("isInsideRectangle handles edge cases differently from isInRectangle", ({ e
   expect(isInsideRectangle(11, 5, 0, 0, 10, 10)).toBe(false)
 })
 
-test("containsRect correctly identifies nested rectangles", ({ expect }) => {
+test('containsRect correctly identifies nested rectangles', ({ expect }) => {
   const container: Rect = [0, 0, 20, 20]
 
   // Fully contained rectangle
@@ -177,38 +188,40 @@ test("containsRect correctly identifies nested rectangles", ({ expect }) => {
   expect(containsRect(container, larger)).toBe(false)
 })
 
-test("rotateLink correctly rotates offsets between directions", ({ expect }) => {
+test('rotateLink correctly rotates offsets between directions', ({
+  expect
+}) => {
   const testCases = [
     {
       offset: [10, 5] as Point,
       from: LinkDirection.LEFT,
       to: LinkDirection.RIGHT,
-      expected: [-10, -5],
+      expected: [-10, -5]
     },
     {
       offset: [10, 5] as Point,
       from: LinkDirection.LEFT,
       to: LinkDirection.UP,
-      expected: [5, -10],
+      expected: [5, -10]
     },
     {
       offset: [10, 5] as Point,
       from: LinkDirection.LEFT,
       to: LinkDirection.DOWN,
-      expected: [-5, 10],
+      expected: [-5, 10]
     },
     {
       offset: [10, 5] as Point,
       from: LinkDirection.RIGHT,
       to: LinkDirection.LEFT,
-      expected: [-10, -5],
+      expected: [-10, -5]
     },
     {
       offset: [10, 5] as Point,
       from: LinkDirection.UP,
       to: LinkDirection.DOWN,
-      expected: [-10, -5],
-    },
+      expected: [-10, -5]
+    }
   ]
 
   for (const { offset, from, to, expected } of testCases) {
@@ -232,7 +245,9 @@ test("rotateLink correctly rotates offsets between directions", ({ expect }) => 
   expect(noneCase).toEqual([10, 5])
 })
 
-test("getOrientation correctly determines point position relative to line", ({ expect }) => {
+test('getOrientation correctly determines point position relative to line', ({
+  expect
+}) => {
   const lineStart: Point = [0, 0]
   const lineEnd: Point = [10, 10]
 
@@ -256,7 +271,9 @@ test("getOrientation correctly determines point position relative to line", ({ e
   expect(getOrientation(lineStart, vLineEnd, -5, 5)).toBeLessThan(0) // Left of line
 })
 
-test("isInRect correctly identifies if point coordinates are inside rectangle", ({ expect }) => {
+test('isInRect correctly identifies if point coordinates are inside rectangle', ({
+  expect
+}) => {
   const rect: Rect = [0, 0, 10, 10]
 
   // Points inside

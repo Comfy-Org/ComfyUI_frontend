@@ -1,16 +1,20 @@
-import type { SubgraphInput } from "./SubgraphInput"
-import type { SubgraphOutputNode } from "./SubgraphOutputNode"
-import type { INodeInputSlot, INodeOutputSlot, Point, ReadOnlyRect } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { RerouteId } from "@/lib/litegraph/src/Reroute"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  Point,
+  ReadOnlyRect
+} from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { removeFromArray } from '@/lib/litegraph/src/utils/collections'
 
-import { LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { LLink } from "@/lib/litegraph/src/LLink"
-import { NodeSlotType } from "@/lib/litegraph/src/types/globalEnums"
-import { removeFromArray } from "@/lib/litegraph/src/utils/collections"
-
-import { SubgraphSlot } from "./SubgraphSlotBase"
-import { isNodeSlot, isSubgraphInput } from "./subgraphUtils"
+import type { SubgraphInput } from './SubgraphInput'
+import type { SubgraphOutputNode } from './SubgraphOutputNode'
+import { SubgraphSlot } from './SubgraphSlotBase'
+import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
 
 /**
  * An output "slot" from a subgraph to a parent graph.
@@ -26,7 +30,11 @@ import { isNodeSlot, isSubgraphInput } from "./subgraphUtils"
 export class SubgraphOutput extends SubgraphSlot {
   declare parent: SubgraphOutputNode
 
-  override connect(slot: INodeOutputSlot, node: LGraphNode, afterRerouteId?: RerouteId): LLink | undefined {
+  override connect(
+    slot: INodeOutputSlot,
+    node: LGraphNode,
+    afterRerouteId?: RerouteId
+  ): LLink | undefined {
     const { subgraph } = this.parent
 
     // Validate type compatibility
@@ -34,16 +42,21 @@ export class SubgraphOutput extends SubgraphSlot {
 
     // Allow nodes to block connection
     const outputIndex = node.outputs.indexOf(slot)
-    if (outputIndex === -1) throw new Error("Slot is not an output of the given node")
+    if (outputIndex === -1)
+      throw new Error('Slot is not an output of the given node')
 
-    if (node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) === false) return
+    if (
+      node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
+      false
+    )
+      return
 
     // Link should not be present, but just in case, disconnect it
     const existingLink = this.getLinks().at(0)
     if (existingLink != null) {
       subgraph.beforeChange()
 
-      existingLink.disconnect(subgraph, "input")
+      existingLink.disconnect(subgraph, 'input')
       const resolved = existingLink.resolve(subgraph)
       const links = resolved.output?.links
       if (links) removeFromArray(links, existingLink.id)
@@ -56,7 +69,7 @@ export class SubgraphOutput extends SubgraphSlot {
       outputIndex,
       this.parent.id,
       this.parent.slots.indexOf(this),
-      afterRerouteId,
+      afterRerouteId
     )
 
     // Add to graph links list
@@ -92,7 +105,7 @@ export class SubgraphOutput extends SubgraphSlot {
       outputIndex,
       true,
       link,
-      slot,
+      slot
     )
 
     subgraph.afterChange()
@@ -123,9 +136,14 @@ export class SubgraphOutput extends SubgraphSlot {
    * For SubgraphOutput (which acts as an input inside the subgraph),
    * the fromSlot should be an output slot.
    */
-  override isValidTarget(fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput): boolean {
+  override isValidTarget(
+    fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
+  ): boolean {
     if (isNodeSlot(fromSlot)) {
-      return "links" in fromSlot && LiteGraph.isValidConnection(fromSlot.type, this.type)
+      return (
+        'links' in fromSlot &&
+        LiteGraph.isValidConnection(fromSlot.type, this.type)
+      )
     }
 
     if (isSubgraphInput(fromSlot)) {

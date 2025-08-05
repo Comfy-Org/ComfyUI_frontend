@@ -1,11 +1,13 @@
-import type { WidgetEventOptions } from "./BaseWidget"
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { IComboWidget, IStringComboWidget } from "@/lib/litegraph/src/types/widgets"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph, clamp } from '@/lib/litegraph/src/litegraph'
+import type {
+  IComboWidget,
+  IStringComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
-import { clamp, LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { warnDeprecated } from "@/lib/litegraph/src/utils/feedback"
-
-import { BaseSteppedWidget } from "./BaseSteppedWidget"
+import { BaseSteppedWidget } from './BaseSteppedWidget'
+import type { WidgetEventOptions } from './BaseWidget'
 
 /**
  * This is used as an (invalid) assertion to resolve issues with legacy duck-typed values.
@@ -13,35 +15,39 @@ import { BaseSteppedWidget } from "./BaseSteppedWidget"
  * Function style in use by:
  * https://github.com/kijai/ComfyUI-KJNodes/blob/c3dc82108a2a86c17094107ead61d63f8c76200e/web/js/setgetnodes.js#L401-L404
  */
-type Values = string[] | Record<string, string> | ((widget?: ComboWidget, node?: LGraphNode) => string[])
+type Values =
+  | string[]
+  | Record<string, string>
+  | ((widget?: ComboWidget, node?: LGraphNode) => string[])
 
 function toArray(values: Values): string[] {
   return Array.isArray(values) ? values : Object.keys(values)
 }
 
-export class ComboWidget extends BaseSteppedWidget<IStringComboWidget | IComboWidget> implements IComboWidget {
-  override type = "combo" as const
+export class ComboWidget
+  extends BaseSteppedWidget<IStringComboWidget | IComboWidget>
+  implements IComboWidget
+{
+  override type = 'combo' as const
 
   override get _displayValue() {
-    if (this.computedDisabled) return ""
+    if (this.computedDisabled) return ''
     const { values: rawValues } = this.options
     if (rawValues) {
-      const values = typeof rawValues === "function" ? rawValues() : rawValues
+      const values = typeof rawValues === 'function' ? rawValues() : rawValues
 
       if (values && !Array.isArray(values)) {
         return values[this.value]
       }
     }
-    return typeof this.value === "number" ? String(this.value) : this.value
+    return typeof this.value === 'number' ? String(this.value) : this.value
   }
 
   #getValues(node: LGraphNode): Values {
     const { values } = this.options
-    if (values == null) throw new Error("[ComboWidget]: values is required")
+    if (values == null) throw new Error('[ComboWidget]: values is required')
 
-    return typeof values === "function"
-      ? values(this, node)
-      : values
+    return typeof values === 'function' ? values(this, node) : values
   }
 
   /**
@@ -52,7 +58,7 @@ export class ComboWidget extends BaseSteppedWidget<IStringComboWidget | IComboWi
   #canUseButton(increment: boolean): boolean {
     const { values } = this.options
     // If using legacy duck-typed method, false is the most permissive return value
-    if (typeof values === "function") return false
+    if (typeof values === 'function') return false
 
     const valuesArray = toArray(values)
     if (!(valuesArray.length > 1)) return false
@@ -92,16 +98,15 @@ export class ComboWidget extends BaseSteppedWidget<IStringComboWidget | IComboWi
     // avoids double click event
     options.canvas.last_mouseclick = 0
 
-    const foundIndex = typeof values === "object"
-      ? indexedValues.indexOf(String(this.value)) + delta
-      // @ts-expect-error handle non-string values
-      : indexedValues.indexOf(this.value) + delta
+    const foundIndex =
+      typeof values === 'object'
+        ? indexedValues.indexOf(String(this.value)) + delta
+        : // @ts-expect-error handle non-string values
+          indexedValues.indexOf(this.value) + delta
 
     const index = clamp(foundIndex, 0, indexedValues.length - 1)
 
-    const value = Array.isArray(values)
-      ? values[index]
-      : index
+    const value = Array.isArray(values) ? values[index] : index
     this.setValue(value, options)
   }
 
@@ -110,8 +115,10 @@ export class ComboWidget extends BaseSteppedWidget<IStringComboWidget | IComboWi
     const width = this.width || node.size[0]
 
     // Deprecated functionality (warning as of v0.14.5)
-    if (typeof this.options.values === "function") {
-      warnDeprecated("Using a function for values is deprecated. Use an array of unique values instead.")
+    if (typeof this.options.values === 'function') {
+      warnDeprecated(
+        'Using a function for values is deprecated. Use an array of unique values instead.'
+      )
     }
 
     // Determine if clicked on left/right arrows
@@ -127,15 +134,13 @@ export class ComboWidget extends BaseSteppedWidget<IStringComboWidget | IComboWi
     new LiteGraph.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),
       event: e,
-      className: "dark",
+      className: 'dark',
       callback: (value: string) => {
         this.setValue(
-          values != values_list
-            ? text_values.indexOf(value)
-            : value,
-          { e, node, canvas },
+          values != values_list ? text_values.indexOf(value) : value,
+          { e, node, canvas }
         )
-      },
+      }
     })
   }
 }

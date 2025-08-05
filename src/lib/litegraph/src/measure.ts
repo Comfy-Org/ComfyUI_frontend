@@ -3,10 +3,9 @@ import type {
   Point,
   ReadOnlyPoint,
   ReadOnlyRect,
-  Rect,
-} from "./interfaces"
-
-import { Alignment, hasFlag, LinkDirection } from "./types/globalEnums"
+  Rect
+} from './interfaces'
+import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
 
 /**
  * Calculates the distance between two points (2D vector)
@@ -16,7 +15,7 @@ import { Alignment, hasFlag, LinkDirection } from "./types/globalEnums"
  */
 export function distance(a: ReadOnlyPoint, b: ReadOnlyPoint): number {
   return Math.sqrt(
-    (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]),
+    (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
   )
 }
 
@@ -30,7 +29,7 @@ export function distance(a: ReadOnlyPoint, b: ReadOnlyPoint): number {
  * @returns Distance2 (squared) between point [{@link x1}, {@link y1}] & [{@link x2}, {@link y2}]
  */
 export function dist2(x1: number, y1: number, x2: number, y2: number): number {
-  return ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1))
+  return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)
 }
 
 /**
@@ -51,12 +50,9 @@ export function isInRectangle(
   left: number,
   top: number,
   width: number,
-  height: number,
+  height: number
 ): boolean {
-  return x >= left &&
-    x < left + width &&
-    y >= top &&
-    y < top + height
+  return x >= left && x < left + width && y >= top && y < top + height
 }
 
 /**
@@ -65,11 +61,16 @@ export function isInRectangle(
  * @param rect The rectangle, as `x, y, width, height`
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
-export function isPointInRect(point: ReadOnlyPoint, rect: ReadOnlyRect): boolean {
-  return point[0] >= rect[0] &&
+export function isPointInRect(
+  point: ReadOnlyPoint,
+  rect: ReadOnlyRect
+): boolean {
+  return (
+    point[0] >= rect[0] &&
     point[0] < rect[0] + rect[2] &&
     point[1] >= rect[1] &&
     point[1] < rect[1] + rect[3]
+  )
 }
 
 /**
@@ -80,10 +81,12 @@ export function isPointInRect(point: ReadOnlyPoint, rect: ReadOnlyRect): boolean
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
 export function isInRect(x: number, y: number, rect: ReadOnlyRect): boolean {
-  return x >= rect[0] &&
+  return (
+    x >= rect[0] &&
     x < rect[0] + rect[2] &&
     y >= rect[1] &&
     y < rect[1] + rect[3]
+  )
 }
 
 /**
@@ -107,12 +110,9 @@ export function isInsideRectangle(
   left: number,
   top: number,
   width: number,
-  height: number,
+  height: number
 ): boolean {
-  return left < x &&
-    left + width > x &&
-    top < y &&
-    top + height > y
+  return left < x && left + width > x && top < y && top + height > y
 }
 
 /**
@@ -127,10 +127,7 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
   const bRight = b[0] + b[2]
   const bBottom = b[1] + b[3]
 
-  return a[0] > bRight ||
-    a[1] > bBottom ||
-    aRight < b[0] ||
-    aBottom < b[1]
+  return a[0] > bRight || a[1] > bBottom || aRight < b[0] || aBottom < b[1]
     ? false
     : true
 }
@@ -141,10 +138,7 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
  * @returns The centre of the rectangle, as `x, y`
  */
 export function getCentre(rect: ReadOnlyRect): Point {
-  return [
-    rect[0] + (rect[2] * 0.5),
-    rect[1] + (rect[3] * 0.5),
-  ]
+  return [rect[0] + rect[2] * 0.5, rect[1] + rect[3] * 0.5]
 }
 
 /**
@@ -154,8 +148,8 @@ export function getCentre(rect: ReadOnlyRect): Point {
  * @returns `true` if {@link a} contains most of {@link b}, otherwise `false`
  */
 export function containsCentre(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
-  const centreX = b[0] + (b[2] * 0.5)
-  const centreY = b[1] + (b[3] * 0.5)
+  const centreX = b[0] + b[2] * 0.5
+  const centreY = b[1] + b[3] * 0.5
   return isInRect(centreX, centreY, a)
 }
 
@@ -171,16 +165,16 @@ export function containsRect(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
   const bRight = b[0] + b[2]
   const bBottom = b[1] + b[3]
 
-  const identical = a[0] === b[0] &&
-    a[1] === b[1] &&
-    aRight === bRight &&
-    aBottom === bBottom
+  const identical =
+    a[0] === b[0] && a[1] === b[1] && aRight === bRight && aBottom === bBottom
 
-  return !identical &&
+  return (
+    !identical &&
     a[0] <= b[0] &&
     a[1] <= b[1] &&
     aRight >= bRight &&
     aBottom >= bBottom
+  )
 }
 
 /**
@@ -192,21 +186,21 @@ export function containsRect(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
 export function addDirectionalOffset(
   amount: number,
   direction: LinkDirection,
-  out: Point,
+  out: Point
 ): void {
   switch (direction) {
-  case LinkDirection.LEFT:
-    out[0] -= amount
-    return
-  case LinkDirection.RIGHT:
-    out[0] += amount
-    return
-  case LinkDirection.UP:
-    out[1] -= amount
-    return
-  case LinkDirection.DOWN:
-    out[1] += amount
-    return
+    case LinkDirection.LEFT:
+      out[0] -= amount
+      return
+    case LinkDirection.RIGHT:
+      out[0] += amount
+      return
+    case LinkDirection.UP:
+      out[1] -= amount
+      return
+    case LinkDirection.DOWN:
+      out[1] += amount
+      return
     // LinkDirection.CENTER: Nothing to do.
   }
 }
@@ -223,61 +217,61 @@ export function addDirectionalOffset(
 export function rotateLink(
   offset: Point,
   from: LinkDirection,
-  to: LinkDirection,
+  to: LinkDirection
 ): void {
   let x: number
   let y: number
 
   // Normalise to left
   switch (from) {
-  case to:
-  case LinkDirection.CENTER:
-  case LinkDirection.NONE:
-  default:
-    // Nothing to do
-    return
+    case to:
+    case LinkDirection.CENTER:
+    case LinkDirection.NONE:
+    default:
+      // Nothing to do
+      return
 
-  case LinkDirection.LEFT:
-    x = offset[0]
-    y = offset[1]
-    break
-  case LinkDirection.RIGHT:
-    x = -offset[0]
-    y = -offset[1]
-    break
-  case LinkDirection.UP:
-    x = -offset[1]
-    y = offset[0]
-    break
-  case LinkDirection.DOWN:
-    x = offset[1]
-    y = -offset[0]
-    break
+    case LinkDirection.LEFT:
+      x = offset[0]
+      y = offset[1]
+      break
+    case LinkDirection.RIGHT:
+      x = -offset[0]
+      y = -offset[1]
+      break
+    case LinkDirection.UP:
+      x = -offset[1]
+      y = offset[0]
+      break
+    case LinkDirection.DOWN:
+      x = offset[1]
+      y = -offset[0]
+      break
   }
 
   // Apply new direction
   switch (to) {
-  case LinkDirection.CENTER:
-  case LinkDirection.NONE:
-    // Nothing to do
-    return
+    case LinkDirection.CENTER:
+    case LinkDirection.NONE:
+      // Nothing to do
+      return
 
-  case LinkDirection.LEFT:
-    offset[0] = x
-    offset[1] = y
-    break
-  case LinkDirection.RIGHT:
-    offset[0] = -x
-    offset[1] = -y
-    break
-  case LinkDirection.UP:
-    offset[0] = y
-    offset[1] = -x
-    break
-  case LinkDirection.DOWN:
-    offset[0] = -y
-    offset[1] = x
-    break
+    case LinkDirection.LEFT:
+      offset[0] = x
+      offset[1] = y
+      break
+    case LinkDirection.RIGHT:
+      offset[0] = -x
+      offset[1] = -y
+      break
+    case LinkDirection.UP:
+      offset[0] = y
+      offset[1] = -x
+      break
+    case LinkDirection.DOWN:
+      offset[0] = -y
+      offset[1] = x
+      break
   }
 }
 
@@ -298,10 +292,12 @@ export function getOrientation(
   lineStart: ReadOnlyPoint,
   lineEnd: ReadOnlyPoint,
   x: number,
-  y: number,
+  y: number
 ): number {
-  return ((lineEnd[1] - lineStart[1]) * (x - lineEnd[0])) -
-    ((lineEnd[0] - lineStart[0]) * (y - lineEnd[1]))
+  return (
+    (lineEnd[1] - lineStart[1]) * (x - lineEnd[0]) -
+    (lineEnd[0] - lineStart[0]) * (y - lineEnd[1])
+  )
 }
 
 /**
@@ -318,7 +314,7 @@ export function findPointOnCurve(
   b: ReadOnlyPoint,
   controlA: ReadOnlyPoint,
   controlB: ReadOnlyPoint,
-  t: number = 0.5,
+  t: number = 0.5
 ): void {
   const iT = 1 - t
 
@@ -327,13 +323,13 @@ export function findPointOnCurve(
   const c3 = 3 * iT * (t * t)
   const c4 = t * t * t
 
-  out[0] = (c1 * a[0]) + (c2 * controlA[0]) + (c3 * controlB[0]) + (c4 * b[0])
-  out[1] = (c1 * a[1]) + (c2 * controlA[1]) + (c3 * controlB[1]) + (c4 * b[1])
+  out[0] = c1 * a[0] + c2 * controlA[0] + c3 * controlB[0] + c4 * b[0]
+  out[1] = c1 * a[1] + c2 * controlA[1] + c3 * controlB[1] + c4 * b[1]
 }
 
 export function createBounds(
   objects: Iterable<HasBoundingRect>,
-  padding: number = 10,
+  padding: number = 10
 ): ReadOnlyRect | null {
   const bounds = new Float32Array([Infinity, Infinity, -Infinity, -Infinity])
 
@@ -344,13 +340,13 @@ export function createBounds(
     bounds[2] = Math.max(bounds[2], rect[0] + rect[2])
     bounds[3] = Math.max(bounds[3], rect[1] + rect[3])
   }
-  if (!bounds.every(x => isFinite(x))) return null
+  if (!bounds.every((x) => isFinite(x))) return null
 
   return [
     bounds[0] - padding,
     bounds[1] - padding,
-    bounds[2] - bounds[0] + (2 * padding),
-    bounds[3] - bounds[1] + (2 * padding),
+    bounds[2] - bounds[0] + 2 * padding,
+    bounds[3] - bounds[1] + 2 * padding
   ]
 }
 
@@ -386,7 +382,7 @@ export function alignToContainer(
   rect: Rect,
   anchors: Alignment,
   [containerX, containerY, containerWidth, containerHeight]: ReadOnlyRect,
-  [insetX, insetY]: ReadOnlyPoint = [0, 0],
+  [insetX, insetY]: ReadOnlyPoint = [0, 0]
 ): Rect {
   if (hasFlag(anchors, Alignment.Left)) {
     // Left
@@ -396,7 +392,7 @@ export function alignToContainer(
     rect[0] = containerX + containerWidth - insetX - rect[2]
   } else if (hasFlag(anchors, Alignment.Centre)) {
     // Horizontal centre
-    rect[0] = containerX + (containerWidth * 0.5) - (rect[2] * 0.5)
+    rect[0] = containerX + containerWidth * 0.5 - rect[2] * 0.5
   }
 
   if (hasFlag(anchors, Alignment.Top)) {
@@ -407,7 +403,7 @@ export function alignToContainer(
     rect[1] = containerY + containerHeight - insetY - rect[3]
   } else if (hasFlag(anchors, Alignment.Middle)) {
     // Vertical middle
-    rect[1] = containerY + (containerHeight * 0.5) - (rect[3] * 0.5)
+    rect[1] = containerY + containerHeight * 0.5 - rect[3] * 0.5
   }
   return rect
 }
@@ -429,7 +425,7 @@ export function alignOutsideContainer(
   rect: Rect,
   anchors: Alignment,
   [otherX, otherY, otherWidth, otherHeight]: ReadOnlyRect,
-  [outsetX, outsetY]: ReadOnlyPoint = [0, 0],
+  [outsetX, outsetY]: ReadOnlyPoint = [0, 0]
 ): Rect {
   if (hasFlag(anchors, Alignment.Left)) {
     // Left
@@ -439,7 +435,7 @@ export function alignOutsideContainer(
     rect[0] = otherX + otherWidth + outsetX
   } else if (hasFlag(anchors, Alignment.Centre)) {
     // Horizontal centre
-    rect[0] = otherX + (otherWidth * 0.5) - (rect[2] * 0.5)
+    rect[0] = otherX + otherWidth * 0.5 - rect[2] * 0.5
   }
 
   if (hasFlag(anchors, Alignment.Top)) {
@@ -450,11 +446,11 @@ export function alignOutsideContainer(
     rect[1] = otherY + otherHeight + outsetY
   } else if (hasFlag(anchors, Alignment.Middle)) {
     // Vertical middle
-    rect[1] = otherY + (otherHeight * 0.5) - (rect[3] * 0.5)
+    rect[1] = otherY + otherHeight * 0.5 - rect[3] * 0.5
   }
   return rect
 }
 
 export function clamp(value: number, min: number, max: number): number {
-  return value < min ? min : (value > max ? max : value)
+  return value < min ? min : value > max ? max : value
 }

@@ -1,7 +1,6 @@
-import type { Point, Rect } from "./interfaces"
-
-import { clamp, LGraphCanvas } from "./litegraph"
-import { distance } from "./measure"
+import type { Point, Rect } from './interfaces'
+import { LGraphCanvas, clamp } from './litegraph'
+import { distance } from './measure'
 
 // used by some widgets to render a curve editor
 
@@ -48,7 +47,7 @@ export class CurveEditor {
     graphcanvas?: LGraphCanvas,
     background_color?: string,
     line_color?: string,
-    inactive = false,
+    inactive = false
   ): void {
     const points = this.points
     if (!points) return
@@ -57,17 +56,17 @@ export class CurveEditor {
     const w = size[0] - this.margin * 2
     const h = size[1] - this.margin * 2
 
-    line_color = line_color || "#666"
+    line_color = line_color || '#666'
 
     ctx.save()
     ctx.translate(this.margin, this.margin)
 
     if (background_color) {
-      ctx.fillStyle = "#111"
+      ctx.fillStyle = '#111'
       ctx.fillRect(0, 0, w, h)
-      ctx.fillStyle = "#222"
+      ctx.fillStyle = '#222'
       ctx.fillRect(w * 0.5, 0, 1, h)
-      ctx.strokeStyle = "#333"
+      ctx.strokeStyle = '#333'
       ctx.strokeRect(0, 0, w, h)
     }
     ctx.strokeStyle = line_color
@@ -80,9 +79,8 @@ export class CurveEditor {
     ctx.globalAlpha = 1
     if (!inactive) {
       for (const [i, p] of points.entries()) {
-        ctx.fillStyle = this.selected == i
-          ? "#FFF"
-          : (this.nearest == i ? "#DDD" : "#AAA")
+        ctx.fillStyle =
+          this.selected == i ? '#FFF' : this.nearest == i ? '#DDD' : '#AAA'
         ctx.beginPath()
         ctx.arc(p[0] * w, (1.0 - p[1]) * h, 2, 0, Math.PI * 2)
         ctx.fill()
@@ -98,7 +96,8 @@ export class CurveEditor {
     if (localpos[1] < 0) return
 
     // this.captureInput(true);
-    if (this.size == null) throw new Error("CurveEditor.size was null or undefined.")
+    if (this.size == null)
+      throw new Error('CurveEditor.size was null or undefined.')
     const w = this.size[0] - this.margin * 2
     const h = this.size[1] - this.margin * 2
     const x = localpos[0] - this.margin
@@ -127,12 +126,13 @@ export class CurveEditor {
     const s = this.selected
     if (s < 0) return
 
-    if (this.size == null) throw new Error("CurveEditor.size was null or undefined.")
+    if (this.size == null)
+      throw new Error('CurveEditor.size was null or undefined.')
     const x = (localpos[0] - this.margin) / (this.size[0] - this.margin * 2)
     const y = (localpos[1] - this.margin) / (this.size[1] - this.margin * 2)
     const curvepos: Point = [
       localpos[0] - this.margin,
-      localpos[1] - this.margin,
+      localpos[1] - this.margin
     ]
     const max_dist = 30 / graphcanvas.ds.scale
     this._nearest = this.getCloserPoint(curvepos, max_dist)
@@ -173,7 +173,8 @@ export class CurveEditor {
     if (!points) return -1
 
     max_dist = max_dist || 30
-    if (this.size == null) throw new Error("CurveEditor.size was null or undefined.")
+    if (this.size == null)
+      throw new Error('CurveEditor.size was null or undefined.')
     const w = this.size[0] - this.margin * 2
     const h = this.size[1] - this.margin * 2
     const num = points.length

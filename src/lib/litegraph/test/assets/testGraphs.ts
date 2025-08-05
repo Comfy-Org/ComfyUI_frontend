@@ -1,7 +1,10 @@
-import type { ISerialisedGraph, SerialisableGraph } from "@/lib/litegraph/src/litegraph"
+import type {
+  ISerialisedGraph,
+  SerialisableGraph
+} from '@/lib/litegraph/src/litegraph'
 
 export const oldSchemaGraph: ISerialisedGraph = {
-  id: "b4e984f1-b421-4d24-b8b4-ff895793af13",
+  id: 'b4e984f1-b421-4d24-b8b4-ff895793af13',
   revision: 0,
   version: 0.4,
   config: {},
@@ -11,21 +14,21 @@ export const oldSchemaGraph: ISerialisedGraph = {
     {
       id: 123,
       bounding: [20, 20, 1, 3],
-      color: "#6029aa",
+      color: '#6029aa',
       font_size: 14,
-      title: "A group to test with",
-    },
+      title: 'A group to test with'
+    }
   ],
   nodes: [
     {
-      id: 1,
-    },
+      id: 1
+    }
   ],
-  links: [],
+  links: []
 }
 
 export const minimalSerialisableGraph: SerialisableGraph = {
-  id: "d175890f-716a-4ece-ba33-1d17a513b7be",
+  id: 'd175890f-716a-4ece-ba33-1d17a513b7be',
   revision: 0,
   version: 1,
   config: {},
@@ -33,15 +36,15 @@ export const minimalSerialisableGraph: SerialisableGraph = {
     lastNodeId: 0,
     lastLinkId: 0,
     lastGroupId: 0,
-    lastRerouteId: 0,
+    lastRerouteId: 0
   },
   nodes: [],
   links: [],
-  groups: [],
+  groups: []
 }
 
 export const basicSerialisableGraph: SerialisableGraph = {
-  id: "ca9da7d8-fddd-4707-ad32-67be9be13140",
+  id: 'ca9da7d8-fddd-4707-ad32-67be9be13140',
   revision: 0,
   version: 1,
   config: {},
@@ -49,22 +52,22 @@ export const basicSerialisableGraph: SerialisableGraph = {
     lastNodeId: 0,
     lastLinkId: 0,
     lastGroupId: 0,
-    lastRerouteId: 0,
+    lastRerouteId: 0
   },
   groups: [
     {
       id: 123,
       bounding: [20, 20, 1, 3],
-      color: "#6029aa",
+      color: '#6029aa',
       font_size: 14,
-      title: "A group to test with",
-    },
+      title: 'A group to test with'
+    }
   ],
   nodes: [
     {
       id: 1,
-      type: "mustBeSet",
-    },
+      type: 'mustBeSet'
+    }
   ],
-  links: [],
+  links: []
 }

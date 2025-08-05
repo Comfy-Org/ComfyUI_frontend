@@ -1,19 +1,23 @@
-import type { ReadOnlyRect } from "@/lib/litegraph/src/interfaces"
-import type { LGraph } from "@/lib/litegraph/src/LGraph"
-import type { LLink, ResolvedConnection } from "@/lib/litegraph/src/LLink"
-import type { Subgraph } from "@/lib/litegraph/src/subgraph/Subgraph"
-import type { ExportedSubgraph, ISerialisedGraph, SerialisableGraph } from "@/lib/litegraph/src/types/serialisation"
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph,
+  SerialisableGraph
+} from '@/lib/litegraph/src/types/serialisation'
 
 export interface LGraphEventMap {
-  "configuring": {
+  configuring: {
     /** The data that was used to configure the graph. */
     data: ISerialisedGraph | SerialisableGraph
     /** If `true`, the graph will be cleared prior to adding the configuration. */
     clearGraph: boolean
   }
-  "configured": never
+  configured: never
 
-  "subgraph-created": {
+  'subgraph-created': {
     /** The subgraph that was created. */
     subgraph: Subgraph
     /** The raw data that was used to create the subgraph. */
@@ -21,7 +25,7 @@ export interface LGraphEventMap {
   }
 
   /** Dispatched when a group of items are converted to a subgraph. */
-  "convert-to-subgraph": {
+  'convert-to-subgraph': {
     /** The type of subgraph to create. */
     subgraph: Subgraph
     /** The boundary around every item that was moved into the subgraph. */
@@ -40,7 +44,7 @@ export interface LGraphEventMap {
     internalLinks: LLink[]
   }
 
-  "open-subgraph": {
+  'open-subgraph': {
     subgraph: Subgraph
     closingGraph: LGraph | Subgraph
   }

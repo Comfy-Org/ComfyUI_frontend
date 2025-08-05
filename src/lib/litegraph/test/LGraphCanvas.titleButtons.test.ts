@@ -1,16 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphCanvas } from "@/lib/litegraph/src/LGraphCanvas"
-import { LGraphNode, LiteGraph } from "@/lib/litegraph/src/litegraph"
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-describe("LGraphCanvas Title Button Rendering", () => {
+describe('LGraphCanvas Title Button Rendering', () => {
   let canvas: LGraphCanvas
   let ctx: CanvasRenderingContext2D
   let node: LGraphNode
 
   beforeEach(() => {
     // Create a mock canvas element
-    const canvasElement = document.createElement("canvas")
+    const canvasElement = document.createElement('canvas')
     ctx = {
       save: vi.fn(),
       restore: vi.fn(),
@@ -32,23 +32,23 @@ describe("LGraphCanvas Title Button Rendering", () => {
       clearRect: vi.fn(),
       setTransform: vi.fn(),
       roundRect: vi.fn(),
-      font: "",
-      fillStyle: "",
-      strokeStyle: "",
+      font: '',
+      fillStyle: '',
+      strokeStyle: '',
       lineWidth: 1,
       globalAlpha: 1,
-      textAlign: "left" as CanvasTextAlign,
-      textBaseline: "alphabetic" as CanvasTextBaseline,
+      textAlign: 'left' as CanvasTextAlign,
+      textBaseline: 'alphabetic' as CanvasTextBaseline
     } as unknown as CanvasRenderingContext2D
 
     canvasElement.getContext = vi.fn().mockReturnValue(ctx)
 
     canvas = new LGraphCanvas(canvasElement, null, {
       skip_render: true,
-      skip_events: true,
+      skip_events: true
     })
 
-    node = new LGraphNode("Test Node")
+    node = new LGraphNode('Test Node')
     node.pos = [100, 200]
     node.size = [200, 100]
 
@@ -70,25 +70,25 @@ describe("LGraphCanvas Title Button Rendering", () => {
     node.isSelectable = vi.fn().mockReturnValue(true)
   })
 
-  describe("drawNode title button rendering", () => {
-    it("should render visible title buttons", () => {
+  describe('drawNode title button rendering', () => {
+    it('should render visible title buttons', () => {
       const button1 = node.addTitleButton({
-        name: "button1",
-        text: "A",
-        visible: true,
+        name: 'button1',
+        text: 'A',
+        visible: true
       })
 
       const button2 = node.addTitleButton({
-        name: "button2",
-        text: "B",
-        visible: true,
+        name: 'button2',
+        text: 'B',
+        visible: true
       })
 
       // Mock button methods
       const getWidth1 = vi.fn().mockReturnValue(20)
       const getWidth2 = vi.fn().mockReturnValue(25)
-      const draw1 = vi.spyOn(button1, "draw")
-      const draw2 = vi.spyOn(button2, "draw")
+      const draw1 = vi.spyOn(button1, 'draw')
+      const draw2 = vi.spyOn(button2, 'draw')
 
       button1.getWidth = getWidth1
       button2.getWidth = getWidth2
@@ -113,22 +113,22 @@ describe("LGraphCanvas Title Button Rendering", () => {
       expect(draw2).toHaveBeenCalledWith(ctx, 153, buttonY) // 180 - 2 - 25
     })
 
-    it("should skip invisible title buttons", () => {
+    it('should skip invisible title buttons', () => {
       const visibleButton = node.addTitleButton({
-        name: "visible",
-        text: "V",
-        visible: true,
+        name: 'visible',
+        text: 'V',
+        visible: true
       })
 
       const invisibleButton = node.addTitleButton({
-        name: "invisible",
-        text: "", // Empty text makes it invisible
+        name: 'invisible',
+        text: '' // Empty text makes it invisible
       })
 
       const getWidthVisible = vi.fn().mockReturnValue(30)
       const getWidthInvisible = vi.fn().mockReturnValue(30)
-      const drawVisible = vi.spyOn(visibleButton, "draw")
-      const drawInvisible = vi.spyOn(invisibleButton, "draw")
+      const drawVisible = vi.spyOn(visibleButton, 'draw')
+      const drawInvisible = vi.spyOn(invisibleButton, 'draw')
 
       visibleButton.getWidth = getWidthVisible
       invisibleButton.getWidth = getWidthInvisible
@@ -143,7 +143,7 @@ describe("LGraphCanvas Title Button Rendering", () => {
       expect(drawInvisible).not.toHaveBeenCalled()
     })
 
-    it("should handle nodes without title buttons", () => {
+    it('should handle nodes without title buttons', () => {
       // Node has no title buttons
       expect(node.title_buttons).toHaveLength(0)
 
@@ -151,7 +151,7 @@ describe("LGraphCanvas Title Button Rendering", () => {
       expect(() => canvas.drawNode(node, ctx)).not.toThrow()
     })
 
-    it("should position multiple buttons with correct spacing", () => {
+    it('should position multiple buttons with correct spacing', () => {
       const buttons = []
       const drawSpies = []
 
@@ -160,10 +160,10 @@ describe("LGraphCanvas Title Button Rendering", () => {
         const button = node.addTitleButton({
           name: `button${i}`,
           text: String(i),
-          visible: true,
+          visible: true
         })
         button.getWidth = vi.fn().mockReturnValue(15) // All same width for simplicity
-        const spy = vi.spyOn(button, "draw")
+        const spy = vi.spyOn(button, 'draw')
         buttons.push(button)
         drawSpies.push(spy)
       }
@@ -180,15 +180,15 @@ describe("LGraphCanvas Title Button Rendering", () => {
       expect(drawSpies[2]).toHaveBeenCalledWith(ctx, 151, buttonY) // 168 - 2 - 15
     })
 
-    it("should render buttons in low quality mode", () => {
+    it('should render buttons in low quality mode', () => {
       const button = node.addTitleButton({
-        name: "test",
-        text: "T",
-        visible: true,
+        name: 'test',
+        text: 'T',
+        visible: true
       })
 
       button.getWidth = vi.fn().mockReturnValue(20)
-      const drawSpy = vi.spyOn(button, "draw")
+      const drawSpy = vi.spyOn(button, 'draw')
 
       // Set low quality rendering
       canvas.lowQualityRenderingRequired = true
@@ -196,28 +196,29 @@ describe("LGraphCanvas Title Button Rendering", () => {
       canvas.drawNode(node, ctx)
 
       // Buttons should still be rendered in low quality mode
-      const buttonY = -LiteGraph.NODE_TITLE_HEIGHT + (LiteGraph.NODE_TITLE_HEIGHT - 20) / 2
+      const buttonY =
+        -LiteGraph.NODE_TITLE_HEIGHT + (LiteGraph.NODE_TITLE_HEIGHT - 20) / 2
       expect(drawSpy).toHaveBeenCalledWith(ctx, 180, buttonY)
     })
 
-    it("should handle buttons with different widths", () => {
+    it('should handle buttons with different widths', () => {
       const smallButton = node.addTitleButton({
-        name: "small",
-        text: "S",
-        visible: true,
+        name: 'small',
+        text: 'S',
+        visible: true
       })
 
       const largeButton = node.addTitleButton({
-        name: "large",
-        text: "LARGE",
-        visible: true,
+        name: 'large',
+        text: 'LARGE',
+        visible: true
       })
 
       smallButton.getWidth = vi.fn().mockReturnValue(15)
       largeButton.getWidth = vi.fn().mockReturnValue(50)
 
-      const drawSmall = vi.spyOn(smallButton, "draw")
-      const drawLarge = vi.spyOn(largeButton, "draw")
+      const drawSmall = vi.spyOn(smallButton, 'draw')
+      const drawLarge = vi.spyOn(largeButton, 'draw')
 
       canvas.drawNode(node, ctx)
 
@@ -232,18 +233,18 @@ describe("LGraphCanvas Title Button Rendering", () => {
     })
   })
 
-  describe("Integration with node properties", () => {
-    it("should respect node size for button positioning", () => {
+  describe('Integration with node properties', () => {
+    it('should respect node size for button positioning', () => {
       node.size = [300, 150] // Wider node
 
       const button = node.addTitleButton({
-        name: "test",
-        text: "X",
-        visible: true,
+        name: 'test',
+        text: 'X',
+        visible: true
       })
 
       button.getWidth = vi.fn().mockReturnValue(20)
-      const drawSpy = vi.spyOn(button, "draw")
+      const drawSpy = vi.spyOn(button, 'draw')
 
       canvas.drawNode(node, ctx)
 
@@ -253,16 +254,16 @@ describe("LGraphCanvas Title Button Rendering", () => {
       expect(drawSpy).toHaveBeenCalledWith(ctx, 280, buttonY)
     })
 
-    it("should NOT render buttons on collapsed nodes", () => {
+    it('should NOT render buttons on collapsed nodes', () => {
       node.flags.collapsed = true
 
       const button = node.addTitleButton({
-        name: "test",
-        text: "C",
+        name: 'test',
+        text: 'C'
       })
 
       button.getWidth = vi.fn().mockReturnValue(20)
-      const drawSpy = vi.spyOn(button, "draw")
+      const drawSpy = vi.spyOn(button, 'draw')
 
       canvas.drawNode(node, ctx)
 

@@ -1,36 +1,38 @@
-import { beforeEach, describe, expect, vi } from "vitest"
+import { beforeEach, describe, expect, vi } from 'vitest'
 
-import { clamp, LGraphCanvas, LiteGraph } from "@/lib/litegraph/src/litegraph"
-import { LiteGraphGlobal } from "@/lib/litegraph/src/LiteGraphGlobal"
+import { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
+import { LGraphCanvas, LiteGraph, clamp } from '@/lib/litegraph/src/litegraph'
 
-import { test } from "./testExtensions"
+import { test } from './testExtensions'
 
-describe("Litegraph module", () => {
-  test("contains a global export", ({ expect }) => {
+describe('Litegraph module', () => {
+  test('contains a global export', ({ expect }) => {
     expect(LiteGraph).toBeInstanceOf(LiteGraphGlobal)
     expect(LiteGraph.LGraphCanvas).toBe(LGraphCanvas)
   })
 
-  test("has the same structure", ({ expect }) => {
+  test('has the same structure', ({ expect }) => {
     const lgGlobal = new LiteGraphGlobal()
-    expect(lgGlobal).toMatchSnapshot("minLGraph")
+    expect(lgGlobal).toMatchSnapshot('minLGraph')
   })
 
-  test("clamps values", () => {
+  test('clamps values', () => {
     expect(clamp(-1.124, 13, 24)).toStrictEqual(13)
     expect(clamp(Infinity, 18, 29)).toStrictEqual(29)
   })
 })
 
-describe("Import order dependency", () => {
+describe('Import order dependency', () => {
   beforeEach(() => {
     vi.resetModules()
   })
 
-  test("Imports without error when entry point is imported first", async ({ expect }) => {
+  test('Imports without error when entry point is imported first', async ({
+    expect
+  }) => {
     async function importNormally() {
-      const entryPointImport = await import("@/lib/litegraph/src/litegraph")
-      const directImport = await import("@/lib/litegraph/src/LGraph")
+      const entryPointImport = await import('@/lib/litegraph/src/litegraph')
+      const directImport = await import('@/lib/litegraph/src/LGraph')
 
       // Sanity check that imports were cleared.
       expect(Object.is(LiteGraph, entryPointImport.LiteGraph)).toBe(false)

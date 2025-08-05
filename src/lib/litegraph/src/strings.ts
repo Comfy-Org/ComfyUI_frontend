@@ -1,4 +1,4 @@
-import type { ISlotType } from "./litegraph"
+import type { ISlotType } from './litegraph'
 
 /**
  * Uses the standard String() function to coerce to string, unless the value is null or undefined - then null.
@@ -15,11 +15,13 @@ export function stringOrNull(value: unknown): string | null {
  * @returns String(value) or ""
  */
 export function stringOrEmpty(value: unknown): string {
-  return value == null ? "" : String(value)
+  return value == null ? '' : String(value)
 }
 
 export function parseSlotTypes(type: ISlotType): string[] {
-  return type == "" || type == "0" ? ["*"] : String(type).toLowerCase().split(",")
+  return type == '' || type == '0'
+    ? ['*']
+    : String(type).toLowerCase().split(',')
 }
 
 /**
@@ -29,7 +31,10 @@ export function parseSlotTypes(type: ISlotType): string[] {
  * @param existingNames The names that already exist. Default: an empty array
  * @returns The name, or a unique name if it already exists.
  */
-export function nextUniqueName(name: string, existingNames: string[] = []): string {
+export function nextUniqueName(
+  name: string,
+  existingNames: string[] = []
+): string {
   let i = 1
   const baseName = name
   while (existingNames.includes(name)) {

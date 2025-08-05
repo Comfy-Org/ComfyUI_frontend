@@ -10,7 +10,7 @@ export function truncateText(
   ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
-  ellipsis: string = "...",
+  ellipsis: string = '...'
 ): string {
   const textWidth = ctx.measureText(text).width
 

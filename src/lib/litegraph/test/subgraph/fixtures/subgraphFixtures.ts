@@ -5,17 +5,16 @@
  * in their test files. Each fixture provides a clean, pre-configured subgraph
  * setup for different testing scenarios.
  */
+import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
-import { LGraph, Subgraph } from "@/lib/litegraph/src/litegraph"
-import { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
-
-import { test } from "../../testExtensions"
+import { test } from '../../testExtensions'
 import {
   createEventCapture,
   createNestedSubgraphs,
   createTestSubgraph,
-  createTestSubgraphNode,
-} from "./subgraphHelpers"
+  createTestSubgraphNode
+} from './subgraphHelpers'
 
 export interface SubgraphFixtures {
   /** A minimal subgraph with no inputs, outputs, or nodes */
@@ -58,72 +57,71 @@ export interface SubgraphFixtures {
  * ```
  */
 export const subgraphTest = test.extend<SubgraphFixtures>({
-
-  emptySubgraph: async ({ }, use: (value: unknown) => Promise<void>) => {
+  emptySubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
-      name: "Empty Test Subgraph",
+      name: 'Empty Test Subgraph',
       inputCount: 0,
       outputCount: 0,
-      nodeCount: 0,
+      nodeCount: 0
     })
 
     await use(subgraph)
   },
 
-  simpleSubgraph: async ({ }, use: (value: unknown) => Promise<void>) => {
+  simpleSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
-      name: "Simple Test Subgraph",
-      inputs: [{ name: "input", type: "number" }],
-      outputs: [{ name: "output", type: "number" }],
-      nodeCount: 2,
+      name: 'Simple Test Subgraph',
+      inputs: [{ name: 'input', type: 'number' }],
+      outputs: [{ name: 'output', type: 'number' }],
+      nodeCount: 2
     })
 
     await use(subgraph)
   },
 
-  complexSubgraph: async ({ }, use: (value: unknown) => Promise<void>) => {
+  complexSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
-      name: "Complex Test Subgraph",
+      name: 'Complex Test Subgraph',
       inputs: [
-        { name: "data", type: "number" },
-        { name: "control", type: "boolean" },
-        { name: "text", type: "string" },
+        { name: 'data', type: 'number' },
+        { name: 'control', type: 'boolean' },
+        { name: 'text', type: 'string' }
       ],
       outputs: [
-        { name: "result", type: "number" },
-        { name: "status", type: "boolean" },
+        { name: 'result', type: 'number' },
+        { name: 'status', type: 'boolean' }
       ],
-      nodeCount: 5,
+      nodeCount: 5
     })
 
     await use(subgraph)
   },
 
-  nestedSubgraph: async ({ }, use: (value: unknown) => Promise<void>) => {
+  nestedSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const nested = createNestedSubgraphs({
       depth: 3,
       nodesPerLevel: 2,
       inputsPerSubgraph: 1,
-      outputsPerSubgraph: 1,
+      outputsPerSubgraph: 1
     })
 
     await use(nested)
   },
 
-  subgraphWithNode: async ({ }, use: (value: unknown) => Promise<void>) => {
+  subgraphWithNode: async ({}, use: (value: unknown) => Promise<void>) => {
     // Create the subgraph definition
     const subgraph = createTestSubgraph({
-      name: "Subgraph With Node",
-      inputs: [{ name: "input", type: "*" }],
-      outputs: [{ name: "output", type: "*" }],
-      nodeCount: 1,
+      name: 'Subgraph With Node',
+      inputs: [{ name: 'input', type: '*' }],
+      outputs: [{ name: 'output', type: '*' }],
+      nodeCount: 1
     })
 
     // Create the parent graph and subgraph node instance
     const parentGraph = new LGraph()
     const subgraphNode = createTestSubgraphNode(subgraph, {
       pos: [200, 200],
-      size: [180, 80],
+      size: [180, 80]
     })
 
     // Add the subgraph node to the parent graph
@@ -132,32 +130,32 @@ export const subgraphTest = test.extend<SubgraphFixtures>({
     await use({
       subgraph,
       subgraphNode,
-      parentGraph,
+      parentGraph
     })
   },
 
-  eventCapture: async ({ }, use: (value: unknown) => Promise<void>) => {
+  eventCapture: async ({}, use: (value: unknown) => Promise<void>) => {
     const subgraph = createTestSubgraph({
-      name: "Event Test Subgraph",
+      name: 'Event Test Subgraph'
     })
 
     // Set up event capture for all subgraph events
     const capture = createEventCapture(subgraph.events, [
-      "adding-input",
-      "input-added",
-      "removing-input",
-      "renaming-input",
-      "adding-output",
-      "output-added",
-      "removing-output",
-      "renaming-output",
+      'adding-input',
+      'input-added',
+      'removing-input',
+      'renaming-input',
+      'adding-output',
+      'output-added',
+      'removing-output',
+      'renaming-output'
     ])
 
     await use({ subgraph, capture })
 
     // Cleanup event listeners
     capture.cleanup()
-  },
+  }
 })
 
 /**
@@ -186,21 +184,20 @@ export interface EdgeCaseFixtures {
  * These tests may intentionally create invalid states.
  */
 export const edgeCaseTest = subgraphTest.extend<EdgeCaseFixtures>({
-
-  circularSubgraph: async ({ }, use: (value: unknown) => Promise<void>) => {
+  circularSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     const rootGraph = new LGraph()
 
     // Create two subgraphs that will reference each other
     const subgraphA = createTestSubgraph({
-      name: "Subgraph A",
-      inputs: [{ name: "input", type: "*" }],
-      outputs: [{ name: "output", type: "*" }],
+      name: 'Subgraph A',
+      inputs: [{ name: 'input', type: '*' }],
+      outputs: [{ name: 'output', type: '*' }]
     })
 
     const subgraphB = createTestSubgraph({
-      name: "Subgraph B",
-      inputs: [{ name: "input", type: "*" }],
-      outputs: [{ name: "output", type: "*" }],
+      name: 'Subgraph B',
+      inputs: [{ name: 'input', type: '*' }],
+      outputs: [{ name: 'output', type: '*' }]
     })
 
     // Create instances (this doesn't create circular refs by itself)
@@ -216,43 +213,43 @@ export const edgeCaseTest = subgraphTest.extend<EdgeCaseFixtures>({
       subgraphA,
       subgraphB,
       nodeA,
-      nodeB,
+      nodeB
     })
   },
 
-  deeplyNestedSubgraph: async ({ }, use: (value: unknown) => Promise<void>) => {
+  deeplyNestedSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     // Create a very deep nesting structure (but not exceeding MAX_NESTED_SUBGRAPHS)
     const nested = createNestedSubgraphs({
       depth: 50, // Deep but reasonable
       nodesPerLevel: 1,
       inputsPerSubgraph: 1,
-      outputsPerSubgraph: 1,
+      outputsPerSubgraph: 1
     })
 
     await use(nested)
   },
 
-  maxIOSubgraph: async ({ }, use: (value: unknown) => Promise<void>) => {
+  maxIOSubgraph: async ({}, use: (value: unknown) => Promise<void>) => {
     // Create a subgraph with many inputs and outputs
     const inputs = Array.from({ length: 20 }, (_, i) => ({
       name: `input_${i}`,
-      type: i % 2 === 0 ? "number" : "string" as const,
+      type: i % 2 === 0 ? 'number' : ('string' as const)
     }))
 
     const outputs = Array.from({ length: 20 }, (_, i) => ({
       name: `output_${i}`,
-      type: i % 2 === 0 ? "number" : "string" as const,
+      type: i % 2 === 0 ? 'number' : ('string' as const)
     }))
 
     const subgraph = createTestSubgraph({
-      name: "Max IO Subgraph",
+      name: 'Max IO Subgraph',
       inputs,
       outputs,
-      nodeCount: 10,
+      nodeCount: 10
     })
 
     await use(subgraph)
-  },
+  }
 })
 
 /**
@@ -261,7 +258,7 @@ export const edgeCaseTest = subgraphTest.extend<EdgeCaseFixtures>({
  */
 export function verifyFixtureIntegrity<T extends Record<string, unknown>>(
   fixture: T,
-  expectedProperties: (keyof T)[],
+  expectedProperties: (keyof T)[]
 ): void {
   for (const prop of expectedProperties) {
     if (!(prop in fixture)) {
@@ -285,9 +282,9 @@ export function createSubgraphSnapshot(subgraph: Subgraph) {
     outputCount: subgraph.outputs.length,
     nodeCount: subgraph.nodes.length,
     linkCount: subgraph.links.size,
-    inputs: subgraph.inputs.map(i => ({ name: i.name, type: i.type })),
-    outputs: subgraph.outputs.map(o => ({ name: o.name, type: o.type })),
+    inputs: subgraph.inputs.map((i) => ({ name: i.name, type: i.type })),
+    outputs: subgraph.outputs.map((o) => ({ name: o.name, type: o.type })),
     hasInputNode: !!subgraph.inputNode,
-    hasOutputNode: !!subgraph.outputNode,
+    hasOutputNode: !!subgraph.outputNode
   }
 }

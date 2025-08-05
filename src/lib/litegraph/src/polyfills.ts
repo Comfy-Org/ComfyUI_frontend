@@ -1,13 +1,13 @@
 // @ts-expect-error Polyfill
-Symbol.dispose ??= Symbol("Symbol.dispose")
+Symbol.dispose ??= Symbol('Symbol.dispose')
 // @ts-expect-error Polyfill
-Symbol.asyncDispose ??= Symbol("Symbol.asyncDispose")
+Symbol.asyncDispose ??= Symbol('Symbol.asyncDispose')
 
 // API *************************************************
 // like rect but rounded corners
 export function loadPolyfills() {
   if (
-    typeof window != "undefined" &&
+    typeof window != 'undefined' &&
     window.CanvasRenderingContext2D &&
     !window.CanvasRenderingContext2D.prototype.roundRect
   ) {
@@ -18,7 +18,7 @@ export function loadPolyfills() {
       w: number,
       h: number,
       radius: number | number[],
-      radius_low: number | number[],
+      radius_low: number | number[]
     ) {
       let top_left_radius = 0
       let top_right_radius = 0
@@ -35,7 +35,11 @@ export function loadPolyfills() {
       // make it compatible with official one
       if (Array.isArray(radius)) {
         if (radius.length == 1) {
-          top_left_radius = top_right_radius = bottom_left_radius = bottom_right_radius = radius[0]
+          top_left_radius =
+            top_right_radius =
+            bottom_left_radius =
+            bottom_right_radius =
+              radius[0]
         } else if (radius.length == 2) {
           top_left_radius = bottom_right_radius = radius[0]
           top_right_radius = bottom_left_radius = radius[1]
@@ -64,12 +68,7 @@ export function loadPolyfills() {
 
       // bottom right
       this.lineTo(x + w, y + h - bottom_right_radius)
-      this.quadraticCurveTo(
-        x + w,
-        y + h,
-        x + w - bottom_right_radius,
-        y + h,
-      )
+      this.quadraticCurveTo(x + w, y + h, x + w - bottom_right_radius, y + h)
 
       // bottom left
       this.lineTo(x + bottom_right_radius, y + h)
@@ -81,10 +80,12 @@ export function loadPolyfills() {
     }
   }
 
-  if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
+  if (typeof window != 'undefined' && !window['requestAnimationFrame']) {
     window.requestAnimationFrame =
       // @ts-expect-error Legacy code
-      window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
+      window.webkitRequestAnimationFrame ||
+      // @ts-expect-error Legacy code
+      window.mozRequestAnimationFrame ||
       function (callback) {
         window.setTimeout(callback, 1000 / 60)
       }

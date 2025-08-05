@@ -1,3 +1,10 @@
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+
+import type { LGraphConfig, LGraphExtra, LGraphState } from '../LGraph'
+import type { IGraphGroupFlags } from '../LGraphGroup'
+import type { NodeId, NodeProperty } from '../LGraphNode'
+import type { LinkId, SerialisedLLinkArray } from '../LLink'
+import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
 import type {
   Dictionary,
   INodeFlags,
@@ -6,17 +13,11 @@ import type {
   INodeSlot,
   ISlotType,
   Point,
-  Size,
-} from "../interfaces"
-import type { LGraphConfig, LGraphExtra, LGraphState } from "../LGraph"
-import type { IGraphGroupFlags } from "../LGraphGroup"
-import type { NodeId, NodeProperty } from "../LGraphNode"
-import type { LiteGraph } from "../litegraph"
-import type { LinkId, SerialisedLLinkArray } from "../LLink"
-import type { FloatingRerouteSlot, RerouteId } from "../Reroute"
-import type { TWidgetValue } from "../types/widgets"
-import type { RenderShape } from "./globalEnums"
-import type { UUID } from "@/lib/litegraph/src/utils/uuid"
+  Size
+} from '../interfaces'
+import type { LiteGraph } from '../litegraph'
+import type { TWidgetValue } from '../types/widgets'
+import type { RenderShape } from './globalEnums'
 
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
@@ -57,10 +58,16 @@ export interface SerialisableGraph extends BaseExportedGraph {
   extra?: LGraphExtra
 }
 
-export type ISerialisableNodeInput = Omit<INodeInputSlot, "boundingRect" | "widget"> & {
+export type ISerialisableNodeInput = Omit<
+  INodeInputSlot,
+  'boundingRect' | 'widget'
+> & {
   widget?: { name: string }
 }
-export type ISerialisableNodeOutput = Omit<INodeOutputSlot, "boundingRect" | "_data"> & {
+export type ISerialisableNodeOutput = Omit<
+  INodeOutputSlot,
+  'boundingRect' | '_data'
+> & {
   widget?: { name: string }
 }
 
@@ -92,7 +99,10 @@ export interface ISerialisedNode {
 }
 
 /** Properties of nodes that are used by subgraph instances. */
-type NodeSubgraphSharedProps = Omit<ISerialisedNode, "properties" | "showAdvanced">
+type NodeSubgraphSharedProps = Omit<
+  ISerialisedNode,
+  'properties' | 'showAdvanced'
+>
 
 /** A single instance of a subgraph; where it is used on a graph, any customisation to shape / colour etc. */
 export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
@@ -136,7 +146,10 @@ export interface ExportedSubgraph extends SerialisableGraph {
 }
 
 /** Properties shared by subgraph and node I/O slots. */
-type SubgraphIOShared = Omit<INodeSlot, "boundingRect" | "nameLocked" | "locked" | "removable" | "_floatingLinks">
+type SubgraphIOShared = Omit<
+  INodeSlot,
+  'boundingRect' | 'nameLocked' | 'locked' | 'removable' | '_floatingLinks'
+>
 
 /** Subgraph I/O slots */
 export interface SubgraphIO extends SubgraphIOShared {
@@ -171,7 +184,7 @@ export type TClipboardLink = [
   originSlot: number,
   nodeRelativeIndex: number,
   targetSlot: number,
-  targetNodeId: NodeId,
+  targetNodeId: NodeId
 ]
 
 /** Items copied from the canvas */

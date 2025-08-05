@@ -1,8 +1,8 @@
-import type { ConnectingLink, ISlotType, Positionable } from "../interfaces"
-import type { LinkId } from "@/lib/litegraph/src/LLink"
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LinkId } from '@/lib/litegraph/src/LLink'
+import { parseSlotTypes } from '@/lib/litegraph/src/strings'
 
-import { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import { parseSlotTypes } from "@/lib/litegraph/src/strings"
+import type { ConnectingLink, ISlotType, Positionable } from '../interfaces'
 
 /**
  * Creates a flat set of all positionable items by recursively iterating through all child items.
@@ -11,14 +11,19 @@ import { parseSlotTypes } from "@/lib/litegraph/src/strings"
  * @param items The original set of items to iterate through
  * @returns All unpinned items in the original set, and recursively, their children
  */
-export function getAllNestedItems(items: ReadonlySet<Positionable>): Set<Positionable> {
+export function getAllNestedItems(
+  items: ReadonlySet<Positionable>
+): Set<Positionable> {
   const allItems = new Set<Positionable>()
   if (items) {
     for (const item of items) addRecursively(item, allItems)
   }
   return allItems
 
-  function addRecursively(item: Positionable, flatSet: Set<Positionable>): void {
+  function addRecursively(
+    item: Positionable,
+    flatSet: Set<Positionable>
+  ): void {
     if (flatSet.has(item) || item.pinned) return
     flatSet.add(item)
     if (item.children) {
@@ -32,14 +37,19 @@ export function getAllNestedItems(items: ReadonlySet<Positionable>): Set<Positio
  * @param items The items to search through
  * @returns The first node found in {@link items}, otherwise `undefined`
  */
-export function findFirstNode(items: Iterable<Positionable>): LGraphNode | undefined {
+export function findFirstNode(
+  items: Iterable<Positionable>
+): LGraphNode | undefined {
   for (const item of items) {
     if (item instanceof LGraphNode) return item
   }
 }
 
 /** @returns `true` if the provided link ID is currently being dragged. */
-export function isDraggingLink(linkId: LinkId, connectingLinks: ConnectingLink[] | null | undefined): ConnectingLink | undefined {
+export function isDraggingLink(
+  linkId: LinkId,
+  connectingLinks: ConnectingLink[] | null | undefined
+): ConnectingLink | undefined {
   if (connectingLinks == null) return
 
   for (const connectingLink of connectingLinks) {
@@ -48,7 +58,9 @@ export function isDraggingLink(linkId: LinkId, connectingLinks: ConnectingLink[]
   }
 }
 
-type FreeSlotResult<T extends { type: ISlotType }> = { index: number, slot: T } | undefined
+type FreeSlotResult<T extends { type: ISlotType }> =
+  | { index: number; slot: T }
+  | undefined
 
 /**
  * Finds the first free in/out slot with any of the comma-delimited types in {@link type}.
@@ -65,7 +77,7 @@ type FreeSlotResult<T extends { type: ISlotType }> = { index: number, slot: T } 
 export function findFreeSlotOfType<T extends { type: ISlotType }>(
   slots: T[],
   type: ISlotType,
-  hasNoLinks: (slot: T) => boolean,
+  hasNoLinks: (slot: T) => boolean
 ) {
   if (!slots?.length) return
 
@@ -87,7 +99,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
           }
           // In case we can't find a free slot.
           occupiedSlot ??= { index, slot }
-        } else if (!wildSlot && (validType === "*" || slotType === "*")) {
+        } else if (!wildSlot && (validType === '*' || slotType === '*')) {
           // Save the first free wildcard slot as a fallback
           if (hasNoLinks(slot)) {
             wildSlot = { index, slot }

@@ -1,4 +1,4 @@
-import type { IColorable } from "@/lib/litegraph/src/interfaces"
+import type { IColorable } from '@/lib/litegraph/src/interfaces'
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.
@@ -19,5 +19,10 @@ export function toClass<P, C extends P, Args extends unknown[]>(
  * Checks if an object is an instance of {@link IColorable}.
  */
 export function isColorable(obj: unknown): obj is IColorable {
-  return typeof obj === "object" && obj !== null && "setColorOption" in obj && "getColorOption" in obj
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'setColorOption' in obj &&
+    'getColorOption' in obj
+  )
 }

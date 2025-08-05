@@ -1,6 +1,6 @@
-import type { CanvasColour, Point, RequiredProps, Size } from "../interfaces"
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from "../litegraph"
-import type { CanvasPointerEvent } from "./events"
+import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
+import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type { CanvasPointerEvent } from './events'
 
 export interface IWidgetOptions<TValues = unknown[]> {
   on?: string
@@ -27,7 +27,7 @@ export interface IWidgetOptions<TValues = unknown[]> {
   socketless?: boolean
 
   values?: TValues
-  callback?: IWidget["callback"]
+  callback?: IWidget['callback']
 }
 
 export interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
@@ -66,62 +66,75 @@ export type IWidget =
   | IButtonWidget
   | IKnobWidget
 
-export interface IBooleanWidget extends IBaseWidget<boolean, "toggle"> {
-  type: "toggle"
+export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
+  type: 'toggle'
   value: boolean
 }
 
 /** Any widget that uses a numeric backing */
-export interface INumericWidget extends IBaseWidget<number, "number"> {
-  type: "number"
+export interface INumericWidget extends IBaseWidget<number, 'number'> {
+  type: 'number'
   value: number
 }
 
-export interface ISliderWidget extends IBaseWidget<number, "slider", IWidgetSliderOptions> {
-  type: "slider"
+export interface ISliderWidget
+  extends IBaseWidget<number, 'slider', IWidgetSliderOptions> {
+  type: 'slider'
   value: number
   marker?: number
 }
 
-export interface IKnobWidget extends IBaseWidget<number, "knob", IWidgetKnobOptions> {
-  type: "knob"
+export interface IKnobWidget
+  extends IBaseWidget<number, 'knob', IWidgetKnobOptions> {
+  type: 'knob'
   value: number
   options: IWidgetKnobOptions
 }
 
 /** Avoids the type issues with the legacy IComboWidget type */
-export interface IStringComboWidget extends IBaseWidget<string, "combo", RequiredProps<IWidgetOptions<string[]>, "values">> {
-  type: "combo"
+export interface IStringComboWidget
+  extends IBaseWidget<
+    string,
+    'combo',
+    RequiredProps<IWidgetOptions<string[]>, 'values'>
+  > {
+  type: 'combo'
   value: string
 }
 
-type ComboWidgetValues = string[] | Record<string, string> | ((widget?: IComboWidget, node?: LGraphNode) => string[])
+type ComboWidgetValues =
+  | string[]
+  | Record<string, string>
+  | ((widget?: IComboWidget, node?: LGraphNode) => string[])
 
 /** A combo-box widget (dropdown, select, etc) */
-export interface IComboWidget extends IBaseWidget<
-  string | number,
-  "combo",
-  RequiredProps<IWidgetOptions<ComboWidgetValues>, "values">
-> {
-  type: "combo"
+export interface IComboWidget
+  extends IBaseWidget<
+    string | number,
+    'combo',
+    RequiredProps<IWidgetOptions<ComboWidgetValues>, 'values'>
+  > {
+  type: 'combo'
   value: string | number
 }
 
 /** A widget with a string value */
-export interface IStringWidget extends IBaseWidget<string, "string" | "text", IWidgetOptions<string[]>> {
-  type: "string" | "text"
+export interface IStringWidget
+  extends IBaseWidget<string, 'string' | 'text', IWidgetOptions<string[]>> {
+  type: 'string' | 'text'
   value: string
 }
 
-export interface IButtonWidget extends IBaseWidget<string | undefined, "button"> {
-  type: "button"
+export interface IButtonWidget
+  extends IBaseWidget<string | undefined, 'button'> {
+  type: 'button'
   value: string | undefined
   clicked: boolean
 }
 
 /** A custom widget - accepts any value and has no built-in special handling */
-export interface ICustomWidget extends IBaseWidget<string | object, "custom"> {
-  type: "custom"
+export interface ICustomWidget extends IBaseWidget<string | object, 'custom'> {
+  type: 'custom'
   value: string | object
 }
 
@@ -130,8 +143,8 @@ export interface ICustomWidget extends IBaseWidget<string | object, "custom"> {
  * Override linkedWidgets[]
  * Values not in this list will not result in litegraph errors, however they will be treated the same as "custom".
  */
-export type TWidgetType = IWidget["type"]
-export type TWidgetValue = IWidget["value"]
+export type TWidgetType = IWidget['type']
+export type TWidgetValue = IWidget['value']
 
 /**
  * The base type for all widgets.  Should not be implemented directly.
@@ -143,7 +156,7 @@ export type TWidgetValue = IWidget["value"]
 export interface IBaseWidget<
   TValue = boolean | number | string | object | undefined,
   TType extends string = string,
-  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>,
+  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
 > {
   linkedWidgets?: IBaseWidget[]
 
@@ -207,7 +220,7 @@ export interface IBaseWidget<
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
-    e?: CanvasPointerEvent,
+    e?: CanvasPointerEvent
   ): void
 
   /**
@@ -217,7 +230,11 @@ export interface IBaseWidget<
    * @param node The node this widget belongs to
    * @todo Expose CanvasPointer API to custom widgets
    */
-  mouse?(event: CanvasPointerEvent, pointerOffset: Point, node: LGraphNode): boolean
+  mouse?(
+    event: CanvasPointerEvent,
+    pointerOffset: Point,
+    node: LGraphNode
+  ): boolean
   /**
    * Draw the widget.
    * @param ctx The canvas context to draw on.
@@ -233,7 +250,7 @@ export interface IBaseWidget<
     widget_width: number,
     y: number,
     H: number,
-    lowQuality?: boolean,
+    lowQuality?: boolean
   ): void
 
   /**
@@ -272,5 +289,9 @@ export interface IBaseWidget<
    * @returns Returning `true` from this callback forces Litegraph to ignore the event and
    * not process it any further.
    */
-  onPointerDown?(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
+  onPointerDown?(
+    pointer: CanvasPointer,
+    node: LGraphNode,
+    canvas: LGraphCanvas
+  ): boolean
 }

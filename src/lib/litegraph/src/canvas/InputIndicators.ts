@@ -1,4 +1,4 @@
-import type { LGraphCanvas } from "@/lib/litegraph/src/LGraphCanvas"
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
 /**
  * A class that can be added to the render cycle to show pointer / keyboard status symbols.
@@ -19,11 +19,11 @@ export class InputIndicators implements Disposable {
   startAngle = 0
   endAngle = Math.PI * 2
 
-  inactiveColour = "#ffffff10"
-  colour1 = "#ff5f00"
-  colour2 = "#00ff7c"
-  colour3 = "#dea7ff"
-  fontString = "bold 12px Arial"
+  inactiveColour = '#ffffff10'
+  colour1 = '#ff5f00'
+  colour2 = '#00ff7c'
+  colour3 = '#dea7ff'
+  fontString = 'bold 12px Arial'
   // #endregion
 
   // #region state
@@ -51,14 +51,14 @@ export class InputIndicators implements Disposable {
     const element = canvas.canvas
     const options = { capture: true, signal } satisfies AddEventListenerOptions
 
-    element.addEventListener("pointerdown", this.#onPointerDownOrMove, options)
-    element.addEventListener("pointermove", this.#onPointerDownOrMove, options)
-    element.addEventListener("pointerup", this.#onPointerUp, options)
-    element.addEventListener("keydown", this.#onKeyDownOrUp, options)
-    document.addEventListener("keyup", this.#onKeyDownOrUp, options)
+    element.addEventListener('pointerdown', this.#onPointerDownOrMove, options)
+    element.addEventListener('pointermove', this.#onPointerDownOrMove, options)
+    element.addEventListener('pointerup', this.#onPointerUp, options)
+    element.addEventListener('keydown', this.#onKeyDownOrUp, options)
+    document.addEventListener('keyup', this.#onKeyDownOrUp, options)
 
     const origDrawFrontCanvas = canvas.drawFrontCanvas.bind(canvas)
-    signal.addEventListener("abort", () => {
+    signal.addEventListener('abort', () => {
       canvas.drawFrontCanvas = origDrawFrontCanvas
     })
 
@@ -92,8 +92,8 @@ export class InputIndicators implements Disposable {
     this.ctrlDown = e.ctrlKey
     this.altDown = e.altKey
     this.shiftDown = e.shiftKey
-    this.undoDown = e.ctrlKey && e.code === "KeyZ" && e.type === "keydown"
-    this.redoDown = e.ctrlKey && e.code === "KeyY" && e.type === "keydown"
+    this.undoDown = e.ctrlKey && e.code === 'KeyZ' && e.type === 'keydown'
+    this.redoDown = e.ctrlKey && e.code === 'KeyY' && e.type === 'keydown'
   }
 
   draw() {
@@ -108,7 +108,7 @@ export class InputIndicators implements Disposable {
       colour1,
       colour2,
       colour3,
-      fontString,
+      fontString
     } = this
 
     const { fillStyle, font } = ctx
@@ -120,11 +120,26 @@ export class InputIndicators implements Disposable {
     const textY = mouseDotY - 15
     ctx.font = fontString
 
-    textMarker(textX + 0, textY, "Shift", this.shiftDown ? colour1 : inactiveColour)
-    textMarker(textX + 45, textY + 20, "Alt", this.altDown ? colour2 : inactiveColour)
-    textMarker(textX + 30, textY, "Control", this.ctrlDown ? colour3 : inactiveColour)
-    textMarker(textX - 30, textY, "↩️", this.undoDown ? "#000" : "transparent")
-    textMarker(textX + 45, textY, "↪️", this.redoDown ? "#000" : "transparent")
+    textMarker(
+      textX + 0,
+      textY,
+      'Shift',
+      this.shiftDown ? colour1 : inactiveColour
+    )
+    textMarker(
+      textX + 45,
+      textY + 20,
+      'Alt',
+      this.altDown ? colour2 : inactiveColour
+    )
+    textMarker(
+      textX + 30,
+      textY,
+      'Control',
+      this.ctrlDown ? colour3 : inactiveColour
+    )
+    textMarker(textX - 30, textY, '↩️', this.undoDown ? '#000' : 'transparent')
+    textMarker(textX + 45, textY, '↪️', this.redoDown ? '#000' : 'transparent')
 
     ctx.beginPath()
     drawDot(mouseDotX, mouseDotY)
@@ -137,8 +152,10 @@ export class InputIndicators implements Disposable {
     const middleButtonColour = this.mouse1Down ? colour2 : inactiveColour
     const rightButtonColour = this.mouse2Down ? colour3 : inactiveColour
     if (this.mouse0Down) mouseMarker(mouseDotX, mouseDotY, leftButtonColour)
-    if (this.mouse1Down) mouseMarker(mouseDotX + 15, mouseDotY, middleButtonColour)
-    if (this.mouse2Down) mouseMarker(mouseDotX + 30, mouseDotY, rightButtonColour)
+    if (this.mouse1Down)
+      mouseMarker(mouseDotX + 15, mouseDotY, middleButtonColour)
+    if (this.mouse2Down)
+      mouseMarker(mouseDotX + 30, mouseDotY, rightButtonColour)
 
     ctx.fillStyle = fillStyle
     ctx.font = font

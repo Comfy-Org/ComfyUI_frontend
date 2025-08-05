@@ -1,6 +1,15 @@
-import type { DragAndScale } from "./DragAndScale"
-import type { IDrawBoundingOptions } from "./draw"
-import type { ReadOnlyRectangle } from "./infrastructure/Rectangle"
+import type { DragAndScale } from './DragAndScale'
+import type { LGraph } from './LGraph'
+import { BadgePosition, LGraphBadge } from './LGraphBadge'
+import { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LLink } from './LLink'
+import type { Reroute, RerouteId } from './Reroute'
+import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
+import type { IDrawBoundingOptions } from './draw'
+import { NullGraphError } from './infrastructure/NullGraphError'
+import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
+import { Rectangle } from './infrastructure/Rectangle'
 import type {
   ColorOption,
   CompassCorners,
@@ -21,42 +30,53 @@ import type {
   ReadOnlyPoint,
   ReadOnlyRect,
   Rect,
-  Size,
-} from "./interfaces"
-import type { LGraph } from "./LGraph"
-import type { Reroute, RerouteId } from "./Reroute"
-import type { SubgraphInputNode } from "./subgraph/SubgraphInputNode"
-import type { SubgraphOutputNode } from "./subgraph/SubgraphOutputNode"
-import type { CanvasPointerEvent } from "./types/events"
-import type { NodeLike } from "./types/NodeLike"
-import type { ISerialisedNode, SubgraphIO } from "./types/serialisation"
-import type { IBaseWidget, IWidgetOptions, TWidgetType, TWidgetValue } from "./types/widgets"
-
-import { getNodeInputOnPos, getNodeOutputOnPos } from "./canvas/measureSlots"
-import { NullGraphError } from "./infrastructure/NullGraphError"
-import { Rectangle } from "./infrastructure/Rectangle"
-import { BadgePosition, LGraphBadge } from "./LGraphBadge"
-import { LGraphButton, type LGraphButtonOptions } from "./LGraphButton"
-import { LGraphCanvas } from "./LGraphCanvas"
-import { type LGraphNodeConstructor, LiteGraph, type Subgraph, type SubgraphNode } from "./litegraph"
-import { LLink } from "./LLink"
-import { createBounds, isInRect, isInRectangle, isPointInRect, snapPoint } from "./measure"
-import { NodeInputSlot } from "./node/NodeInputSlot"
-import { NodeOutputSlot } from "./node/NodeOutputSlot"
-import { inputAsSerialisable, isINodeInputSlot, isWidgetInputSlot, outputAsSerialisable } from "./node/slotUtils"
+  Size
+} from './interfaces'
+import {
+  type LGraphNodeConstructor,
+  LiteGraph,
+  type Subgraph,
+  type SubgraphNode
+} from './litegraph'
+import {
+  createBounds,
+  isInRect,
+  isInRectangle,
+  isPointInRect,
+  snapPoint
+} from './measure'
+import { NodeInputSlot } from './node/NodeInputSlot'
+import { NodeOutputSlot } from './node/NodeOutputSlot'
+import {
+  inputAsSerialisable,
+  isINodeInputSlot,
+  isWidgetInputSlot,
+  outputAsSerialisable
+} from './node/slotUtils'
+import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import type { NodeLike } from './types/NodeLike'
+import type { CanvasPointerEvent } from './types/events'
 import {
   LGraphEventMode,
   NodeSlotType,
   RenderShape,
-  TitleMode,
-} from "./types/globalEnums"
-import { findFreeSlotOfType } from "./utils/collections"
-import { warnDeprecated } from "./utils/feedback"
-import { distributeSpace } from "./utils/spaceDistribution"
-import { truncateText } from "./utils/textUtils"
-import { toClass } from "./utils/type"
-import { BaseWidget } from "./widgets/BaseWidget"
-import { toConcreteWidget, type WidgetTypeMap } from "./widgets/widgetMap"
+  TitleMode
+} from './types/globalEnums'
+import type { ISerialisedNode, SubgraphIO } from './types/serialisation'
+import type {
+  IBaseWidget,
+  IWidgetOptions,
+  TWidgetType,
+  TWidgetValue
+} from './types/widgets'
+import { findFreeSlotOfType } from './utils/collections'
+import { warnDeprecated } from './utils/feedback'
+import { distributeSpace } from './utils/spaceDistribution'
+import { truncateText } from './utils/textUtils'
+import { toClass } from './utils/type'
+import { BaseWidget } from './widgets/BaseWidget'
+import { type WidgetTypeMap, toConcreteWidget } from './widgets/widgetMap'
 
 // #region Types
 
@@ -89,8 +109,8 @@ export interface ConnectByTypeOptions {
 
 /** Internal type used for type safety when implementing generic checks for inputs & outputs */
 export interface IGenericLinkOrLinks {
-  links?: INodeOutputSlot["links"]
-  link?: INodeInputSlot["link"]
+  links?: INodeOutputSlot['links']
+  link?: INodeInputSlot['link']
 }
 
 export interface FindFreeSlotOptions {
@@ -190,7 +210,9 @@ export interface LGraphNode {
  * @param type a type for the node
  */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable {
+export class LGraphNode
+  implements NodeLike, Positionable, IPinnable, IColorable
+{
   // Static properties used by dynamic child classes
   static title?: string
   static MAX_CONSOLE?: number
@@ -224,7 +246,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   graph: LGraph | Subgraph | null = null
   id: NodeId
-  type: string = ""
+  type: string = ''
   inputs: INodeInputSlot[] = []
   outputs: INodeOutputSlot[] = []
 
@@ -271,7 +293,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   /** The bg color used to render the node. */
   get renderingBgColor(): string {
-    return this.bgcolor || this.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+    return (
+      this.bgcolor || this.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+    )
   }
 
   /** The box color used to render the node. */
@@ -279,12 +303,13 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (this.boxcolor) return this.boxcolor
 
     if (LiteGraph.node_box_coloured_when_on) {
-      if (this.action_triggered) return "#FFF"
-      if (this.execute_triggered) return "#AAA"
+      if (this.action_triggered) return '#FFF'
+      if (this.execute_triggered) return '#AAA'
     }
 
     if (LiteGraph.node_box_coloured_by_mode) {
-      const modeColour = LiteGraph.NODE_MODES_COLORS[this.mode ?? LGraphEventMode.ALWAYS]
+      const modeColour =
+        LiteGraph.NODE_MODES_COLORS[this.mode ?? LGraphEventMode.ALWAYS]
       if (modeColour) return modeColour
     }
     return LiteGraph.NODE_DEFAULT_BOXCOLOR
@@ -303,16 +328,22 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
-    return Object.values(LGraphCanvas.node_colors).find(
-      colorOption =>
-        colorOption.color === this.color && colorOption.bgcolor === this.bgcolor,
-    ) ?? null
+    return (
+      Object.values(LGraphCanvas.node_colors).find(
+        (colorOption) =>
+          colorOption.color === this.color &&
+          colorOption.bgcolor === this.bgcolor
+      ) ?? null
+    )
   }
 
   /**
    * The stroke styles that should be applied to the node.
    */
-  strokeStyles: Record<string, (this: LGraphNode) => IDrawBoundingOptions | undefined>
+  strokeStyles: Record<
+    string,
+    (this: LGraphNode) => IDrawBoundingOptions | undefined
+  >
 
   /**
    * The progress of node execution. Used to render a progress bar. Value between 0 and 1.
@@ -389,7 +420,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
   get boundingOffset(): ReadOnlyPoint {
-    const { pos: [posX, posY], boundingRect: [bX, bY] } = this
+    const {
+      pos: [posX, posY],
+      boundingRect: [bX, bY]
+    } = this
     return [posX - bX, posY - bY]
   }
 
@@ -432,25 +466,25 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     return this._shape
   }
 
-  set shape(v: RenderShape | "default" | "box" | "round" | "circle" | "card") {
+  set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
     switch (v) {
-    case "default":
-      delete this._shape
-      break
-    case "box":
-      this._shape = RenderShape.BOX
-      break
-    case "round":
-      this._shape = RenderShape.ROUND
-      break
-    case "circle":
-      this._shape = RenderShape.CIRCLE
-      break
-    case "card":
-      this._shape = RenderShape.CARD
-      break
-    default:
-      this._shape = v
+      case 'default':
+        delete this._shape
+        break
+      case 'box':
+        this._shape = RenderShape.BOX
+        break
+      case 'round':
+        this._shape = RenderShape.ROUND
+        break
+      case 'circle':
+        this._shape = RenderShape.CIRCLE
+        break
+      case 'card':
+        this._shape = RenderShape.CARD
+        break
+      default:
+        this._shape = v
     }
   }
 
@@ -479,7 +513,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     type: unknown,
     output: INodeOutputSlot | SubgraphIO,
     node: LGraphNode | SubgraphInputNode,
-    slot: number,
+    slot: number
   ): boolean
   onConnectOutput?(
     this: LGraphNode,
@@ -487,14 +521,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     type: unknown,
     input: INodeInputSlot | SubgraphIO,
     target_node: number | LGraphNode | SubgraphOutputNode,
-    target_slot: number,
+    target_slot: number
   ): boolean
   onResize?(this: LGraphNode, size: Size): void
   onPropertyChanged?(
     this: LGraphNode,
     name: string,
     value: unknown,
-    prev_value?: unknown,
+    prev_value?: unknown
   ): boolean
   /** Called for each connection that is created, updated, or removed. This includes "restored" connections when deserialising. */
   onConnectionsChange?(
@@ -503,7 +537,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     index: number,
     isConnected: boolean,
     link_info: LLink | null | undefined,
-    inputOrOutput: INodeInputSlot | INodeOutputSlot | SubgraphIO,
+    inputOrOutput: INodeInputSlot | INodeOutputSlot | SubgraphIO
   ): void
   onInputAdded?(this: LGraphNode, input: INodeInputSlot): void
   onOutputAdded?(this: LGraphNode, output: INodeOutputSlot): void
@@ -512,18 +546,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   onExecute?(
     this: LGraphNode,
     param?: unknown,
-    options?: { action_call?: any },
+    options?: { action_call?: any }
   ): void
   onAction?(
     this: LGraphNode,
     action: string,
     param: unknown,
-    options: { action_call?: string },
+    options: { action_call?: string }
   ): void
-  onDrawBackground?(
-    this: LGraphNode,
-    ctx: CanvasRenderingContext2D,
-  ): void
+  onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
   /**
    * Callback invoked by {@link connect} to override the target slot index.
@@ -536,7 +567,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   onBeforeConnectInput?(
     this: LGraphNode,
     target_slot: number,
-    requested_slot?: number | string,
+    requested_slot?: number | string
   ): number | false | null
   onShowCustomPanelInfo?(this: LGraphNode, panel: any): void
   onAddPropertyToPanel?(this: LGraphNode, pName: string, panel: any): boolean
@@ -545,7 +576,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     name: string,
     value: unknown,
     old_value: unknown,
-    w: IBaseWidget,
+    w: IBaseWidget
   ): void
   onDeselected?(this: LGraphNode): void
   onKeyUp?(this: LGraphNode, e: KeyboardEvent): void
@@ -554,20 +585,20 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   getExtraMenuOptions?(
     this: LGraphNode,
     canvas: LGraphCanvas,
-    options: (IContextMenuValue<unknown> | null)[],
+    options: (IContextMenuValue<unknown> | null)[]
   ): (IContextMenuValue<unknown> | null)[]
   getMenuOptions?(this: LGraphNode, canvas: LGraphCanvas): IContextMenuValue[]
   onAdded?(this: LGraphNode, graph: LGraph): void
   onDrawCollapsed?(
     this: LGraphNode,
     ctx: CanvasRenderingContext2D,
-    cavnas: LGraphCanvas,
+    cavnas: LGraphCanvas
   ): boolean
   onDrawForeground?(
     this: LGraphNode,
     ctx: CanvasRenderingContext2D,
     canvas: LGraphCanvas,
-    canvasElement: HTMLCanvasElement,
+    canvasElement: HTMLCanvasElement
   ): void
   onMouseLeave?(this: LGraphNode, e: CanvasPointerEvent): void
   /**
@@ -577,7 +608,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   /**
    * Add extra menu options to the slot context menu.
    */
-  getExtraSlotMenuOptions?(this: LGraphNode, slot: IFoundSlot): IContextMenuValue[]
+  getExtraSlotMenuOptions?(
+    this: LGraphNode,
+    slot: IFoundSlot
+  ): IContextMenuValue[]
 
   // FIXME: Re-typing
   onDropItem?(this: LGraphNode, event: Event): boolean
@@ -585,24 +619,28 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     this: LGraphNode,
     data: string | ArrayBuffer,
     filename: any,
-    file: any,
+    file: any
   ): void
   onDropFile?(this: LGraphNode, file: any): void
   onInputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   onInputDblClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   onOutputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
-  onOutputDblClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
+  onOutputDblClick?(
+    this: LGraphNode,
+    index: number,
+    e: CanvasPointerEvent
+  ): void
   // TODO: Return type
   onGetPropertyInfo?(this: LGraphNode, property: string): any
   onNodeOutputAdd?(this: LGraphNode, value: unknown): void
   onNodeInputAdd?(this: LGraphNode, value: unknown): void
   onMenuNodeInputs?(
     this: LGraphNode,
-    entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
+    entries: (IContextMenuValue<INodeSlotContextItem> | null)[]
   ): (IContextMenuValue<INodeSlotContextItem> | null)[]
   onMenuNodeOutputs?(
     this: LGraphNode,
-    entries: (IContextMenuValue<INodeSlotContextItem> | null)[],
+    entries: (IContextMenuValue<INodeSlotContextItem> | null)[]
   ): (IContextMenuValue<INodeSlotContextItem> | null)[]
   onMouseUp?(this: LGraphNode, e: CanvasPointerEvent, pos: Point): void
   onMouseEnter?(this: LGraphNode, e: CanvasPointerEvent): void
@@ -611,21 +649,21 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     this: LGraphNode,
     e: CanvasPointerEvent,
     pos: Point,
-    canvas: LGraphCanvas,
+    canvas: LGraphCanvas
   ): boolean
   /** @param pos Offset from {@link LGraphNode.pos}. */
   onDblClick?(
     this: LGraphNode,
     e: CanvasPointerEvent,
     pos: Point,
-    canvas: LGraphCanvas,
+    canvas: LGraphCanvas
   ): void
   /** @param pos Offset from {@link LGraphNode.pos}. */
   onNodeTitleDblClick?(
     this: LGraphNode,
     e: CanvasPointerEvent,
     pos: Point,
-    canvas: LGraphCanvas,
+    canvas: LGraphCanvas
   ): void
   onDrawTitle?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onDrawTitleText?(
@@ -635,14 +673,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     size: Size,
     scale: number,
     title_text_font: string,
-    selected?: boolean,
+    selected?: boolean
   ): void
   onDrawTitleBox?(
     this: LGraphNode,
     ctx: CanvasRenderingContext2D,
     title_height: number,
     size: Size,
-    scale: number,
+    scale: number
   ): void
   onDrawTitleBar?(
     this: LGraphNode,
@@ -650,14 +688,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     title_height: number,
     size: Size,
     scale: number,
-    fgcolor: any,
+    fgcolor: any
   ): void
   onRemoved?(this: LGraphNode): void
   onMouseMove?(
     this: LGraphNode,
     e: CanvasPointerEvent,
     pos: Point,
-    arg2: LGraphCanvas,
+    arg2: LGraphCanvas
   ): void
   onPropertyChange?(this: LGraphNode): void
   updateOutputData?(this: LGraphNode, origin_slot: number): void
@@ -667,7 +705,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       return {
         padding: 12,
         lineWidth: 10,
-        color: LiteGraph.NODE_ERROR_COLOUR,
+        color: LiteGraph.NODE_ERROR_COLOUR
       }
     }
   }
@@ -675,25 +713,29 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   #getSelectedStrokeStyle(this: LGraphNode): IDrawBoundingOptions | undefined {
     if (this.selected) {
       return {
-        padding: this.has_errors ? 20 : undefined,
+        padding: this.has_errors ? 20 : undefined
       }
     }
   }
 
   constructor(title: string, type?: string) {
     this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
-    this.title = title || "Unnamed"
-    this.type = type ?? ""
+    this.title = title || 'Unnamed'
+    this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
     this.strokeStyles = {
       error: this.#getErrorStrokeStyle,
-      selected: this.#getSelectedStrokeStyle,
+      selected: this.#getSelectedStrokeStyle
     }
 
     // Assign onMouseDown implementation
-    // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
-    this.onMouseDown = (e: CanvasPointerEvent, pos: Point, canvas: LGraphCanvas): boolean => {
+    this.onMouseDown = (
+      // @ts-ignore TODO: Fix after migration to frontend tsconfig rules
+      e: CanvasPointerEvent,
+      pos: Point,
+      canvas: LGraphCanvas
+    ): boolean => {
       // Check for title button clicks (only if not collapsed)
       if (this.title_buttons?.length && !this.flags.collapsed) {
         // pos contains the offset from the node's position, so we need to use node-relative coordinates
@@ -702,7 +744,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
         for (let i = 0; i < this.title_buttons.length; i++) {
           const button = this.title_buttons[i]
-          if (button.visible && button.isPointInside(nodeRelativeX, nodeRelativeY)) {
+          if (
+            button.visible &&
+            button.isPointInside(nodeRelativeX, nodeRelativeY)
+          ) {
             this.onTitleButtonClick(button, canvas)
             return true // Prevent default behavior
           }
@@ -724,7 +769,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       this.graph._version++
     }
     for (const j in info) {
-      if (j == "properties") {
+      if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
           this.properties[k] = info.properties[k]
@@ -736,8 +781,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       // @ts-expect-error #594
       if (info[j] == null) {
         continue
-      // @ts-expect-error #594
-      } else if (typeof info[j] == "object") {
+        // @ts-expect-error #594
+      } else if (typeof info[j] == 'object') {
         // @ts-expect-error #594
         if (this[j]?.configure) {
           // @ts-expect-error #594
@@ -758,24 +803,27 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
 
     this.inputs ??= []
-    this.inputs = this.inputs.map(input => toClass(NodeInputSlot, input, this))
+    this.inputs = this.inputs.map((input) =>
+      toClass(NodeInputSlot, input, this)
+    )
     for (const [i, input] of this.inputs.entries()) {
-      const link = this.graph && input.link != null
-        ? this.graph._links.get(input.link)
-        : null
+      const link =
+        this.graph && input.link != null
+          ? this.graph._links.get(input.link)
+          : null
       this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
       this.onInputAdded?.(input)
     }
 
     this.outputs ??= []
-    this.outputs = this.outputs.map(output => toClass(NodeOutputSlot, output, this))
+    this.outputs = this.outputs.map((output) =>
+      toClass(NodeOutputSlot, output, this)
+    )
     for (const [i, output] of this.outputs.entries()) {
       if (!output.links) continue
 
       for (const linkId of output.links) {
-        const link = this.graph
-          ? this.graph._links.get(linkId)
-          : null
+        const link = this.graph ? this.graph._links.get(linkId) : null
         this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
       }
       this.onOutputAdded?.(output)
@@ -788,12 +836,19 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       for (const w of this.widgets) {
         if (!w) continue
 
-        if (w.options?.property && this.properties[w.options.property] != undefined)
-          w.value = JSON.parse(JSON.stringify(this.properties[w.options.property]))
+        if (
+          w.options?.property &&
+          this.properties[w.options.property] != undefined
+        )
+          w.value = JSON.parse(
+            JSON.stringify(this.properties[w.options.property])
+          )
       }
 
       if (info.widgets_values) {
-        const widgetsWithValue = this.widgets.filter(w => w.serialize !== false)
+        const widgetsWithValue = this.widgets.filter(
+          (w) => w.serialize !== false
+        )
         for (let i = 0; i < info.widgets_values.length; ++i) {
           const widget = widgetsWithValue[i]
           if (widget) {
@@ -822,16 +877,18 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       flags: LiteGraph.cloneObject(this.flags),
       order: this.order,
       mode: this.mode,
-      showAdvanced: this.showAdvanced,
+      showAdvanced: this.showAdvanced
     }
 
     // special case for when there were errors
     if (this.constructor === LGraphNode && this.last_serialization)
       return this.last_serialization
 
-    if (this.inputs) o.inputs = this.inputs.map(input => inputAsSerialisable(input))
-    // @ts-ignore TODO: Fix after migration to frontend tsconfig rules - widget type mismatch
-    if (this.outputs) o.outputs = this.outputs.map(output => outputAsSerialisable(output))
+    if (this.inputs)
+      o.inputs = this.inputs.map((input) => inputAsSerialisable(input))
+    if (this.outputs)
+      // @ts-ignore TODO: Fix after migration to frontend tsconfig rules - widget type mismatch
+      o.outputs = this.outputs.map((output) => outputAsSerialisable(output))
 
     if (this.title && this.title != this.constructor.title) o.title = this.title
 
@@ -854,7 +911,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (this.boxcolor) o.boxcolor = this.boxcolor
     if (this.shape) o.shape = this.shape
 
-    if (this.onSerialize?.(o)) console.warn("node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter")
+    if (this.onSerialize?.(o))
+      console.warn(
+        'node onSerialize shouldnt return anything, data should be stored in the object pass in the first parameter'
+      )
 
     return o
   }
@@ -938,7 +998,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param slot
    * @param data
    */
-  setOutputData(slot: number, data: number | string | boolean | { toToolTip?(): string }): void {
+  setOutputData(
+    slot: number,
+    data: number | string | boolean | { toToolTip?(): string }
+  ): void {
     const { outputs } = this
     if (!outputs) return
 
@@ -968,7 +1031,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   setOutputDataType(slot: number, type: ISlotType): void {
     const { outputs } = this
-    if (!outputs || (slot == -1 || slot >= outputs.length)) return
+    if (!outputs || slot == -1 || slot >= outputs.length) return
 
     const output_info = outputs[slot]
     if (!output_info) return
@@ -1026,7 +1089,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   getInputDataType(slot: number): ISlotType | null {
     if (!this.inputs) return null
-    if (slot >= this.inputs.length || this.inputs[slot].link == null) return null
+    if (slot >= this.inputs.length || this.inputs[slot].link == null)
+      return null
     if (!this.graph) throw new NullGraphError()
 
     const link_id = this.inputs[slot].link
@@ -1038,9 +1102,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (!node) return link.type
 
     const output_info = node.outputs[link.origin_slot]
-    return output_info
-      ? output_info.type
-      : null
+    return output_info ? output_info.type : null
   }
 
   /**
@@ -1051,9 +1113,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   getInputDataByName(slot_name: string, force_update: boolean): unknown {
     const slot = this.findInputSlot(slot_name)
-    return slot == -1
-      ? null
-      : this.getInputData(slot, force_update)
+    return slot == -1 ? null : this.getInputData(slot, force_update)
   }
 
   /**
@@ -1159,7 +1219,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   isOutputConnected(slot: number): boolean {
     if (!this.outputs) return false
-    return slot < this.outputs.length && Number(this.outputs[slot].links?.length) > 0
+    return (
+      slot < this.outputs.length && Number(this.outputs[slot].links?.length) > 0
+    )
   }
 
   /**
@@ -1202,29 +1264,29 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   }
 
   addOnTriggerInput(): number {
-    const trigS = this.findInputSlot("onTrigger")
+    const trigS = this.findInputSlot('onTrigger')
     if (trigS == -1) {
-      this.addInput("onTrigger", LiteGraph.EVENT, {
-        nameLocked: true,
+      this.addInput('onTrigger', LiteGraph.EVENT, {
+        nameLocked: true
       })
-      return this.findInputSlot("onTrigger")
+      return this.findInputSlot('onTrigger')
     }
     return trigS
   }
 
   addOnExecutedOutput(): number {
-    const trigS = this.findOutputSlot("onExecuted")
+    const trigS = this.findOutputSlot('onExecuted')
     if (trigS == -1) {
-      this.addOutput("onExecuted", LiteGraph.ACTION, {
-        nameLocked: true,
+      this.addOutput('onExecuted', LiteGraph.ACTION, {
+        nameLocked: true
       })
-      return this.findOutputSlot("onExecuted")
+      return this.findOutputSlot('onExecuted')
     }
     return trigS
   }
 
   onAfterExecuteNode(param: unknown, options?: { action_call?: any }) {
-    const trigS = this.findOutputSlot("onExecuted")
+    const trigS = this.findOutputSlot('onExecuted')
     if (trigS != -1) {
       this.triggerSlot(trigS, param, null, options)
     }
@@ -1232,27 +1294,27 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   changeMode(modeTo: number): boolean {
     switch (modeTo) {
-    case LGraphEventMode.ON_EVENT:
-      break
+      case LGraphEventMode.ON_EVENT:
+        break
 
-    case LGraphEventMode.ON_TRIGGER:
-      this.addOnTriggerInput()
-      this.addOnExecutedOutput()
-      break
+      case LGraphEventMode.ON_TRIGGER:
+        this.addOnTriggerInput()
+        this.addOnExecutedOutput()
+        break
 
-    case LGraphEventMode.NEVER:
-      break
+      case LGraphEventMode.NEVER:
+        break
 
-    case LGraphEventMode.ALWAYS:
-      break
+      case LGraphEventMode.ALWAYS:
+        break
 
       // @ts-expect-error Not impl.
-    case LiteGraph.ON_REQUEST:
-      break
+      case LiteGraph.ON_REQUEST:
+        break
 
-    default:
-      return false
-      break
+      default:
+        return false
+        break
     }
     this.mode = modeTo
     return true
@@ -1294,16 +1356,16 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   actionDo(
     action: string,
     param: unknown,
-    options: { action_call?: string },
+    options: { action_call?: string }
   ): void {
     options = options || {}
     if (this.onAction) {
       // enable this to give the event an ID
-      options.action_call ||= `${this.id}_${action || "action"}_${Math.floor(Math.random() * 9999)}`
+      options.action_call ||= `${this.id}_${action || 'action'}_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
       // @ts-expect-error deprecated
-      this.graph.nodes_actioning[this.id] = action || "actioning"
+      this.graph.nodes_actioning[this.id] = action || 'actioning'
       this.onAction(action, param, options)
       // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = false
@@ -1327,7 +1389,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   trigger(
     action: string,
     param: unknown,
-    options: { action_call?: any },
+    options: { action_call?: any }
   ): void {
     const { outputs } = this
     if (!outputs || !outputs.length) {
@@ -1357,18 +1419,20 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     slot: number,
     param: unknown,
     link_id: number | null,
-    options?: { action_call?: any },
+    options?: { action_call?: any }
   ): void {
     options = options || {}
     if (!this.outputs) return
 
     if (slot == null) {
-      console.error("slot must be a number")
+      console.error('slot must be a number')
       return
     }
 
-    if (typeof slot !== "number")
-      console.warn("slot must be a number, use node.trigger('name') if you want to use a string")
+    if (typeof slot !== 'number')
+      console.warn(
+        "slot must be a number, use node.trigger('name') if you want to use a string"
+      )
 
     const output = this.outputs[slot]
     if (!output) return
@@ -1454,7 +1518,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     const newSize = this.computeSize()
     this.setSize([
       Math.max(this.size[0], newSize[0]),
-      Math.max(this.size[1], newSize[1]),
+      Math.max(this.size[1], newSize[1])
     ])
   }
 
@@ -1467,7 +1531,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     name: string,
     default_value: NodeProperty | undefined,
     type?: string,
-    extra_info?: Partial<INodePropertyInfo>,
+    extra_info?: Partial<INodePropertyInfo>
   ): INodePropertyInfo {
     const o: INodePropertyInfo = { name, type, default_value }
     if (extra_info) Object.assign(o, extra_info)
@@ -1487,11 +1551,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   addOutput<TProperties extends Partial<INodeOutputSlot>>(
     name: string,
     type: ISlotType,
-    extra_info?: TProperties,
+    extra_info?: TProperties
   ): INodeOutputSlot & TProperties {
     const output = Object.assign(
       new NodeOutputSlot({ name, type, links: null }, this),
-      extra_info,
+      extra_info
     )
 
     this.outputs ||= []
@@ -1535,12 +1599,16 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param type string defining the input type ("vec3","number",...), it its a generic one use 0
    * @param extra_info this can be used to have special properties of an input (label, color, position, etc)
    */
-  addInput<TProperties extends Partial<INodeInputSlot>>(name: string, type: ISlotType, extra_info?: TProperties): INodeInputSlot & TProperties {
+  addInput<TProperties extends Partial<INodeInputSlot>>(
+    name: string,
+    type: ISlotType,
+    extra_info?: TProperties
+  ): INodeInputSlot & TProperties {
     type ||= 0
 
     const input = Object.assign(
       new NodeInputSlot({ name, type, link: null }, this),
-      extra_info,
+      extra_info
     )
 
     this.inputs ||= []
@@ -1584,8 +1652,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
     const { inputs, outputs, widgets } = this
     let rows = Math.max(
-      inputs ? inputs.filter(input => !isWidgetInputSlot(input)).length : 1,
-      outputs ? outputs.length : 1,
+      inputs ? inputs.filter((input) => !isWidgetInputSlot(input)).length : 1,
+      outputs ? outputs.length : 1
     )
     const size = out || new Float32Array([0, 0])
     rows = Math.max(rows, 1)
@@ -1594,14 +1662,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
     const padLeft = LiteGraph.NODE_TITLE_HEIGHT
     const padRight = padLeft * 0.33
-    const title_width = padLeft + compute_text_size(this.title, this.titleFontStyle) + padRight
+    const title_width =
+      padLeft + compute_text_size(this.title, this.titleFontStyle) + padRight
     let input_width = 0
     let widgetWidth = 0
     let output_width = 0
 
     if (inputs) {
       for (const input of inputs) {
-        const text = input.label || input.localized_name || input.name || ""
+        const text = input.label || input.localized_name || input.name || ''
         const text_width = compute_text_size(text, this.innerFontStyle)
         if (isWidgetInputSlot(input)) {
           const widget = this.getWidgetFromSlot(input)
@@ -1616,25 +1685,30 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
     if (outputs) {
       for (const output of outputs) {
-        const text = output.label || output.localized_name || output.name || ""
+        const text = output.label || output.localized_name || output.name || ''
         const text_width = compute_text_size(text, this.innerFontStyle)
-        if (output_width < text_width)
-          output_width = text_width
+        if (output_width < text_width) output_width = text_width
       }
     }
 
     const minWidth = LiteGraph.NODE_WIDTH * (widgets?.length ? 1.5 : 1)
     // Text + slot width + centre padding
     const centrePadding = input_width && output_width ? 5 : 0
-    const slotsWidth = input_width + output_width + (2 * LiteGraph.NODE_SLOT_HEIGHT) + centrePadding
+    const slotsWidth =
+      input_width +
+      output_width +
+      2 * LiteGraph.NODE_SLOT_HEIGHT +
+      centrePadding
 
     // Total distance from edge of node to the inner edge of the widget 'previous' arrow button
-    const widgetMargin = BaseWidget.margin + BaseWidget.arrowMargin + BaseWidget.arrowWidth
-    const widgetPadding = BaseWidget.minValueWidth + (2 * widgetMargin)
+    const widgetMargin =
+      BaseWidget.margin + BaseWidget.arrowMargin + BaseWidget.arrowWidth
+    const widgetPadding = BaseWidget.minValueWidth + 2 * widgetMargin
     if (widgetWidth) widgetWidth += widgetPadding
 
     size[0] = Math.max(slotsWidth, widgetWidth, title_width, minWidth)
-    size[1] = (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
+    size[1] =
+      (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
 
     // Get widget height & expand size if necessary
     let widgets_height = 0
@@ -1661,16 +1735,16 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
 
     // compute height using widgets height
-    if (this.widgets_up)
-      size[1] = Math.max(size[1], widgets_height)
+    if (this.widgets_up) size[1] = Math.max(size[1], widgets_height)
     else if (this.widgets_start_y != null)
       size[1] = Math.max(size[1], widgets_height + this.widgets_start_y)
-    else
-      size[1] += widgets_height
+    else size[1] += widgets_height
 
     function compute_text_size(text: string, fontStyle: string) {
-      return LGraphCanvas._measureText?.(text, fontStyle) ??
+      return (
+        LGraphCanvas._measureText?.(text, fontStyle) ??
         font_size * (text?.length ?? 0) * 0.6
+      )
     }
 
     if (this.constructor.min_height && size[1] < this.constructor.min_height) {
@@ -1685,14 +1759,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   inResizeCorner(canvasX: number, canvasY: number): boolean {
     const rows = this.outputs ? this.outputs.length : 1
-    const outputs_offset = (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
+    const outputs_offset =
+      (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
     return isInRectangle(
       canvasX,
       canvasY,
       this.pos[0] + this.size[0] - 15,
       this.pos[1] + Math.max(this.size[1] - 15, outputs_offset),
       20,
-      20,
+      20
     )
   }
 
@@ -1702,14 +1777,21 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param canvasY Y position in canvas coordinates
    * @returns The compass corner the point is in, otherwise `undefined`.
    */
-  findResizeDirection(canvasX: number, canvasY: number): CompassCorners | undefined {
+  findResizeDirection(
+    canvasX: number,
+    canvasY: number
+  ): CompassCorners | undefined {
     if (this.resizable === false) return
 
     const { boundingRect } = this
     if (!boundingRect.containsXy(canvasX, canvasY)) return
 
     // Check corners first (they take priority over edges)
-    return boundingRect.findContainingCorner(canvasX, canvasY, LGraphNode.resizeHandleSize)
+    return boundingRect.findContainingCorner(
+      canvasX,
+      canvasY,
+      LGraphNode.resizeHandleSize
+    )
   }
 
   /**
@@ -1733,7 +1815,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
     // litescene mode using the constructor
     // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-    if (this.constructor[`@${property}`]) info = this.constructor[`@${property}`]
+    if (this.constructor[`@${property}`])
+      // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
+      info = this.constructor[`@${property}`]
 
     if (this.constructor.widgets_info?.[property])
       info = this.constructor.widgets_info[property]
@@ -1745,7 +1829,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
     info ||= {}
     info.type ||= typeof this.properties[property]
-    if (info.widget == "combo") info.type = "enum"
+    if (info.widget == 'combo') info.type = 'enum'
 
     return info
   }
@@ -1759,27 +1843,29 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param options the object that contains special properties of this widget
    * @returns the created widget object
    */
-  addWidget<Type extends TWidgetType, TValue extends WidgetTypeMap[Type]["value"]>(
+  addWidget<
+    Type extends TWidgetType,
+    TValue extends WidgetTypeMap[Type]['value']
+  >(
     type: Type,
     name: string,
     value: TValue,
-    callback: IBaseWidget["callback"] | string | null,
-    options?: IWidgetOptions | string,
+    callback: IBaseWidget['callback'] | string | null,
+    options?: IWidgetOptions | string
   ): WidgetTypeMap[Type] | IBaseWidget {
     this.widgets ||= []
 
-    if (!options && callback && typeof callback === "object") {
+    if (!options && callback && typeof callback === 'object') {
       options = callback
       callback = null
     }
 
     // options can be the property name
     options ||= {}
-    if (typeof options === "string")
-      options = { property: options }
+    if (typeof options === 'string') options = { property: options }
 
     // callback can be the property name
-    if (callback && typeof callback === "string") {
+    if (callback && typeof callback === 'string') {
       options.property = callback
       callback = null
     }
@@ -1789,9 +1875,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       type: type.toLowerCase(),
       name: name,
       value: value,
-      callback: typeof callback !== "function" ? undefined : callback,
+      callback: typeof callback !== 'function' ? undefined : callback,
       options,
-      y: 0,
+      y: 0
     }
 
     if (w.options.y !== undefined) {
@@ -1799,9 +1885,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
 
     if (!callback && !w.options.callback && !w.options.property) {
-      console.warn("LiteGraph addWidget(...) without a callback or property assigned")
+      console.warn(
+        'LiteGraph addWidget(...) without a callback or property assigned'
+      )
     }
-    if (type == "combo" && !w.options.values) {
+    if (type == 'combo' && !w.options.values) {
       throw "LiteGraph addWidget('combo',...) requires to pass values in options: { values:['red','blue'] }"
     }
 
@@ -1811,8 +1899,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   }
 
   addCustomWidget<TPlainWidget extends IBaseWidget>(
-    custom_widget: TPlainWidget,
-  ): TPlainWidget | WidgetTypeMap[TPlainWidget["type"]] {
+    custom_widget: TPlainWidget
+  ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
@@ -1828,22 +1916,23 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   onTitleButtonClick(button: LGraphButton, canvas: LGraphCanvas): void {
     // Dispatch event for button click
-    canvas.dispatch("litegraph:node-title-button-clicked", {
+    canvas.dispatch('litegraph:node-title-button-clicked', {
       node: this,
-      button: button,
+      button: button
     })
   }
 
   removeWidgetByName(name: string): void {
-    const widget = this.widgets?.find(x => x.name === name)
+    const widget = this.widgets?.find((x) => x.name === name)
     if (widget) this.removeWidget(widget)
   }
 
   removeWidget(widget: IBaseWidget): void {
-    if (!this.widgets) throw new Error("removeWidget called on node without widgets")
+    if (!this.widgets)
+      throw new Error('removeWidget called on node without widgets')
 
     const widgetIndex = this.widgets.indexOf(widget)
-    if (widgetIndex === -1) throw new Error("Widget not found on this node")
+    if (widgetIndex === -1) throw new Error('Widget not found on this node')
 
     // Clean up slot references to prevent memory leaks
     if (this.inputs) {
@@ -1862,7 +1951,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     try {
       this.removeWidget(widget)
     } catch (error) {
-      console.debug("Failed to remove widget", error)
+      console.debug('Failed to remove widget', error)
     }
   }
 
@@ -1898,9 +1987,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       ctx.font = this.innerFontStyle
       this._collapsed_width = Math.min(
         this.size[0],
-        ctx.measureText(this.getTitle() ?? "").width + LiteGraph.NODE_TITLE_HEIGHT * 2,
+        ctx.measureText(this.getTitle() ?? '').width +
+          LiteGraph.NODE_TITLE_HEIGHT * 2
       )
-      out[2] = (this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH)
+      out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
       out[3] = LiteGraph.NODE_TITLE_HEIGHT
     }
   }
@@ -1965,7 +2055,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       this.pos[0],
       this.pos[1] - squareLength,
       squareLength,
-      squareLength,
+      squareLength
     )
   }
 
@@ -2041,7 +2131,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   getWidgetOnPos(
     canvasX: number,
     canvasY: number,
-    includeDisabled = false,
+    includeDisabled = false
   ): IBaseWidget | undefined {
     const { widgets, pos, size } = this
     if (!widgets?.length) return
@@ -2058,7 +2148,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         continue
       }
 
-      const h = widget.computedHeight ??
+      const h =
+        widget.computedHeight ??
         widget.computeSize?.(nodeWidth)[1] ??
         LiteGraph.NODE_WIDGET_HEIGHT
 
@@ -2078,8 +2169,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param returnObj if the obj itself wanted
    * @returns the slot (-1 if not found)
    */
-  findInputSlot<TReturn extends false>(name: string, returnObj?: TReturn): number
-  findInputSlot<TReturn extends true>(name: string, returnObj?: TReturn): INodeInputSlot
+  findInputSlot<TReturn extends false>(
+    name: string,
+    returnObj?: TReturn
+  ): number
+  findInputSlot<TReturn extends true>(
+    name: string,
+    returnObj?: TReturn
+  ): INodeInputSlot
   findInputSlot(name: string, returnObj: boolean = false) {
     const { inputs } = this
     if (!inputs) return -1
@@ -2098,8 +2195,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param returnObj if the obj itself wanted
    * @returns the slot (-1 if not found)
    */
-  findOutputSlot<TReturn extends false>(name: string, returnObj?: TReturn): number
-  findOutputSlot<TReturn extends true>(name: string, returnObj?: TReturn): INodeOutputSlot
+  findOutputSlot<TReturn extends false>(
+    name: string,
+    returnObj?: TReturn
+  ): number
+  findOutputSlot<TReturn extends true>(
+    name: string,
+    returnObj?: TReturn
+  ): INodeOutputSlot
   findOutputSlot(name: string, returnObj: boolean = false) {
     const { outputs } = this
     if (!outputs) return -1
@@ -2118,10 +2221,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @returns The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
    */
   findInputSlotFree<TReturn extends false>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
+    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
   ): number
   findInputSlotFree<TReturn extends true>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
+    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
   ): INodeInputSlot | -1
   findInputSlotFree(optsIn?: FindFreeSlotOptions) {
     return this.#findFreeSlot(this.inputs, optsIn)
@@ -2133,10 +2236,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @returns The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
    */
   findOutputSlotFree<TReturn extends false>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
+    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
   ): number
   findOutputSlotFree<TReturn extends true>(
-    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
+    optsIn?: FindFreeSlotOptions & { returnObj?: TReturn }
   ): INodeOutputSlot | -1
   findOutputSlotFree(optsIn?: FindFreeSlotOptions) {
     return this.#findFreeSlot(this.outputs, optsIn)
@@ -2148,11 +2251,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   #findFreeSlot<TSlot extends INodeInputSlot | INodeOutputSlot>(
     slots: TSlot[],
-    options?: FindFreeSlotOptions,
+    options?: FindFreeSlotOptions
   ): TSlot | number {
     const defaults = {
       returnObj: false,
-      typesNotAccepted: [],
+      typesNotAccepted: []
     }
     const opts = Object.assign(defaults, options || {})
     const length = slots?.length
@@ -2174,26 +2277,26 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): number
   findInputSlotByType<TReturn extends true>(
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): INodeInputSlot
   findInputSlotByType(
     type: ISlotType,
     returnObj?: boolean,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ) {
     return this.#findSlotByType(
       this.inputs,
       type,
       returnObj,
       preferFreeSlot,
-      doNotUseOccupied,
+      doNotUseOccupied
     )
   }
 
@@ -2204,26 +2307,26 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): number
   findOutputSlotByType<TReturn extends true>(
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): INodeOutputSlot
   findOutputSlotByType(
     type: ISlotType,
     returnObj?: boolean,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ) {
     return this.#findSlotByType(
       this.outputs,
       type,
       returnObj,
       preferFreeSlot,
-      doNotUseOccupied,
+      doNotUseOccupied
     )
   }
 
@@ -2240,44 +2343,44 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): number
   findSlotByType<TSlot extends true, TReturn extends true>(
     input: TSlot,
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): INodeInputSlot | -1
   findSlotByType<TSlot extends false, TReturn extends true>(
     input: TSlot,
     type: ISlotType,
     returnObj?: TReturn,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): INodeOutputSlot | -1
   findSlotByType(
     input: boolean,
     type: ISlotType,
     returnObj?: boolean,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): number | INodeOutputSlot | INodeInputSlot {
     return input
       ? this.#findSlotByType(
-        this.inputs,
-        type,
-        returnObj,
-        preferFreeSlot,
-        doNotUseOccupied,
-      )
+          this.inputs,
+          type,
+          returnObj,
+          preferFreeSlot,
+          doNotUseOccupied
+        )
       : this.#findSlotByType(
-        this.outputs,
-        type,
-        returnObj,
-        preferFreeSlot,
-        doNotUseOccupied,
-      )
+          this.outputs,
+          type,
+          returnObj,
+          preferFreeSlot,
+          doNotUseOccupied
+        )
   }
 
   /**
@@ -2297,31 +2400,32 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     type: ISlotType,
     returnObj?: boolean,
     preferFreeSlot?: boolean,
-    doNotUseOccupied?: boolean,
+    doNotUseOccupied?: boolean
   ): TSlot | number {
     const length = slots?.length
     if (!length) return -1
 
     // Empty string and * match anything (type:  0)
-    if (type == "" || type == "*") type = 0
-    const sourceTypes = String(type).toLowerCase().split(",")
+    if (type == '' || type == '*') type = 0
+    const sourceTypes = String(type).toLowerCase().split(',')
 
     // Run the search
     let occupiedSlot: number | TSlot | null = null
     for (let i = 0; i < length; ++i) {
       const slot: TSlot & IGenericLinkOrLinks = slots[i]
-      const destTypes = slot.type == "0" || slot.type == "*"
-        ? ["0"]
-        : String(slot.type).toLowerCase().split(",")
+      const destTypes =
+        slot.type == '0' || slot.type == '*'
+          ? ['0']
+          : String(slot.type).toLowerCase().split(',')
 
       for (const sourceType of sourceTypes) {
         // TODO: Remove _event_ entirely.
-        const source = sourceType == "_event_" ? LiteGraph.EVENT : sourceType
+        const source = sourceType == '_event_' ? LiteGraph.EVENT : sourceType
 
         for (const destType of destTypes) {
-          const dest = destType == "_event_" ? LiteGraph.EVENT : destType
+          const dest = destType == '_event_' ? LiteGraph.EVENT : destType
 
-          if (source == dest || source === "*" || dest === "*") {
+          if (source == dest || source === '*' || dest === '*') {
             if (preferFreeSlot && (slot.links?.length || slot.link != null)) {
               // In case we can't find a free slot.
               occupiedSlot ??= returnObj ? slot : i
@@ -2349,24 +2453,27 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     findInputs: boolean,
     node: LGraphNode,
     slotType: ISlotType,
-    options?: ConnectByTypeOptions,
+    options?: ConnectByTypeOptions
   ): number | undefined {
     // LEGACY: Old options names
-    if (options && typeof options === "object") {
-      if ("firstFreeIfInputGeneralInCase" in options) options.wildcardToTyped = !!options.firstFreeIfInputGeneralInCase
-      if ("firstFreeIfOutputGeneralInCase" in options) options.wildcardToTyped = !!options.firstFreeIfOutputGeneralInCase
-      if ("generalTypeInCase" in options) options.typedToWildcard = !!options.generalTypeInCase
+    if (options && typeof options === 'object') {
+      if ('firstFreeIfInputGeneralInCase' in options)
+        options.wildcardToTyped = !!options.firstFreeIfInputGeneralInCase
+      if ('firstFreeIfOutputGeneralInCase' in options)
+        options.wildcardToTyped = !!options.firstFreeIfOutputGeneralInCase
+      if ('generalTypeInCase' in options)
+        options.typedToWildcard = !!options.generalTypeInCase
     }
     const optsDef: ConnectByTypeOptions = {
       createEventInCase: true,
       wildcardToTyped: true,
-      typedToWildcard: true,
+      typedToWildcard: true
     }
     const opts = Object.assign(optsDef, options)
 
     if (!this.graph) throw new NullGraphError()
 
-    if (node && typeof node === "number") {
+    if (node && typeof node === 'number') {
       const nodeById = this.graph.getNodeById(node)
       if (!nodeById) return
 
@@ -2389,7 +2496,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     // connect to the first free input slot if not found a specific type and this output is general
     if (
       opts.wildcardToTyped &&
-      (slotType == 0 || slotType == "*" || slotType == "")
+      (slotType == 0 || slotType == '*' || slotType == '')
     ) {
       const opt = { typesNotAccepted: [LiteGraph.EVENT] }
       const nonEventSlot = findInputs
@@ -2409,8 +2516,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param type The {@link ISlotType type} of slot to find
    * @returns The index and slot if found, otherwise `undefined`.
    */
-  findOutputByType(type: ISlotType): { index: number, slot: INodeOutputSlot } | undefined {
-    return findFreeSlotOfType(this.outputs, type, output => !output.links?.length)
+  findOutputByType(
+    type: ISlotType
+  ): { index: number; slot: INodeOutputSlot } | undefined {
+    return findFreeSlotOfType(
+      this.outputs,
+      type,
+      (output) => !output.links?.length
+    )
   }
 
   /**
@@ -2423,8 +2536,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @param type The {@link ISlotType type} of slot to find
    * @returns The index and slot if found, otherwise `undefined`.
    */
-  findInputByType(type: ISlotType): { index: number, slot: INodeInputSlot } | undefined {
-    return findFreeSlotOfType(this.inputs, type, input => input.link == null)
+  findInputByType(
+    type: ISlotType
+  ): { index: number; slot: INodeInputSlot } | undefined {
+    return findFreeSlotOfType(this.inputs, type, (input) => input.link == null)
   }
 
   /**
@@ -2438,18 +2553,23 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     slot: number | string,
     target_node: LGraphNode,
     target_slotType: ISlotType,
-    optsIn?: ConnectByTypeOptions,
+    optsIn?: ConnectByTypeOptions
   ): LLink | null {
     const slotIndex = this.findConnectByTypeSlot(
       true,
       target_node,
       target_slotType,
-      optsIn,
+      optsIn
     )
     if (slotIndex !== undefined)
       return this.connect(slot, target_node, slotIndex, optsIn?.afterRerouteId)
 
-    console.debug("[connectByType]: no way to connect type:", target_slotType, "to node:", target_node)
+    console.debug(
+      '[connectByType]: no way to connect type:',
+      target_slotType,
+      'to node:',
+      target_node
+    )
     return null
   }
 
@@ -2464,32 +2584,42 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     slot: number | string,
     source_node: LGraphNode,
     source_slotType: ISlotType,
-    optsIn?: ConnectByTypeOptions,
+    optsIn?: ConnectByTypeOptions
   ): LLink | null {
     // LEGACY: Old options names
-    if (typeof optsIn === "object") {
-      if ("firstFreeIfInputGeneralInCase" in optsIn) optsIn.wildcardToTyped = !!optsIn.firstFreeIfInputGeneralInCase
-      if ("generalTypeInCase" in optsIn) optsIn.typedToWildcard = !!optsIn.generalTypeInCase
+    if (typeof optsIn === 'object') {
+      if ('firstFreeIfInputGeneralInCase' in optsIn)
+        optsIn.wildcardToTyped = !!optsIn.firstFreeIfInputGeneralInCase
+      if ('generalTypeInCase' in optsIn)
+        optsIn.typedToWildcard = !!optsIn.generalTypeInCase
     }
     const slotIndex = this.findConnectByTypeSlot(
       false,
       source_node,
       source_slotType,
-      optsIn,
+      optsIn
     )
     if (slotIndex !== undefined)
       return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
-    console.debug("[connectByType]: no way to connect type:", source_slotType, "to node:", source_node)
+    console.debug(
+      '[connectByType]: no way to connect type:',
+      source_slotType,
+      'to node:',
+      source_node
+    )
     return null
   }
 
   canConnectTo(
     node: NodeLike,
     toSlot: INodeInputSlot | SubgraphIO,
-    fromSlot: INodeOutputSlot | SubgraphIO,
+    fromSlot: INodeOutputSlot | SubgraphIO
   ) {
-    return this.id !== node.id && LiteGraph.isValidConnection(fromSlot.type, toSlot.type)
+    return (
+      this.id !== node.id &&
+      LiteGraph.isValidConnection(fromSlot.type, toSlot.type)
+    )
   }
 
   /**
@@ -2503,7 +2633,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     slot: number | string,
     target_node: LGraphNode,
     target_slot: ISlotType,
-    afterRerouteId?: RerouteId,
+    afterRerouteId?: RerouteId
   ): LLink | null {
     // Allow legacy API support for searching target_slot by string, without mutating the input variables
     let targetIndex: number | null
@@ -2512,49 +2642,53 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (!graph) {
       // could be connected before adding it to a graph
       // due to link ids being associated with graphs
-      console.log("Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them.")
+      console.log(
+        "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
+      )
       return null
     }
 
     // seek for the output slot
-    if (typeof slot === "string") {
+    if (typeof slot === 'string') {
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${slot}`)
+        if (LiteGraph.debug)
+          console.log(`Connect: Error, no slot of name ${slot}`)
         return null
       }
     } else if (!outputs || slot >= outputs.length) {
-      if (LiteGraph.debug) console.log("Connect: Error, slot number not found")
+      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
       return null
     }
 
-    if (target_node && typeof target_node === "number") {
+    if (target_node && typeof target_node === 'number') {
       const nodeById = graph.getNodeById(target_node)
-      if (!nodeById) throw "target node is null"
+      if (!nodeById) throw 'target node is null'
 
       target_node = nodeById
     }
-    if (!target_node) throw "target node is null"
+    if (!target_node) throw 'target node is null'
 
     // avoid loopback
     if (target_node == this) return null
 
     // you can specify the slot by name
-    if (typeof target_slot === "string") {
+    if (typeof target_slot === 'string') {
       targetIndex = target_node.findInputSlot(target_slot)
       if (targetIndex == -1) {
-        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${targetIndex}`)
+        if (LiteGraph.debug)
+          console.log(`Connect: Error, no slot of name ${targetIndex}`)
         return null
       }
     } else if (target_slot === LiteGraph.EVENT) {
       // TODO: Events
       if (LiteGraph.do_add_triggers_slots) {
         target_node.changeMode(LGraphEventMode.ON_TRIGGER)
-        targetIndex = target_node.findInputSlot("onTrigger")
+        targetIndex = target_node.findInputSlot('onTrigger')
       } else {
         return null
       }
-    } else if (typeof target_slot === "number") {
+    } else if (typeof target_slot === 'number') {
       targetIndex = target_slot
     } else {
       targetIndex = 0
@@ -2563,8 +2697,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     // Allow target node to change slot
     if (target_node.onBeforeConnectInput) {
       // This way node can choose another slot (or make a new one?)
-      const requestedIndex = target_node.onBeforeConnectInput(targetIndex, target_slot)
-      targetIndex = typeof requestedIndex === "number" ? requestedIndex : null
+      const requestedIndex = target_node.onBeforeConnectInput(
+        targetIndex,
+        target_slot
+      )
+      targetIndex = typeof requestedIndex === 'number' ? requestedIndex : null
     }
 
     if (
@@ -2572,7 +2709,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       !target_node.inputs ||
       targetIndex >= target_node.inputs.length
     ) {
-      if (LiteGraph.debug) console.log("Connect: Error, slot number not found")
+      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
       return null
     }
 
@@ -2582,7 +2719,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (!output) return null
 
     if (output.links?.length) {
-      if (output.type === LiteGraph.EVENT && !LiteGraph.allow_multi_output_for_events) {
+      if (
+        output.type === LiteGraph.EVENT &&
+        !LiteGraph.allow_multi_output_for_events
+      ) {
         graph.beforeChange()
         // @ts-expect-error Unused param
         this.disconnectOutput(slot, false, { doProcessChange: false })
@@ -2605,19 +2745,19 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     output: INodeOutputSlot,
     inputNode: LGraphNode,
     input: INodeInputSlot,
-    afterRerouteId: RerouteId | undefined,
+    afterRerouteId: RerouteId | undefined
   ): LLink | null | undefined {
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
     const outputIndex = this.outputs.indexOf(output)
     if (outputIndex === -1) {
-      console.warn("connectSlots: output not found")
+      console.warn('connectSlots: output not found')
       return
     }
     const inputIndex = inputNode.inputs.indexOf(input)
     if (inputIndex === -1) {
-      console.warn("connectSlots: input not found")
+      console.warn('connectSlots: input not found')
       return
     }
 
@@ -2628,9 +2768,25 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
 
     // Allow nodes to block connection
-    if (inputNode.onConnectInput?.(inputIndex, output.type, output, this, outputIndex) === false)
+    if (
+      inputNode.onConnectInput?.(
+        inputIndex,
+        output.type,
+        output,
+        this,
+        outputIndex
+      ) === false
+    )
       return null
-    if (this.onConnectOutput?.(outputIndex, input.type, input, inputNode, inputIndex) === false)
+    if (
+      this.onConnectOutput?.(
+        outputIndex,
+        input.type,
+        input,
+        inputNode,
+        inputIndex
+      ) === false
+    )
       return null
 
     // if there is something already plugged there, disconnect
@@ -2646,7 +2802,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       outputIndex,
       inputNode.id,
       inputIndex,
-      afterRerouteId,
+      afterRerouteId
     )
 
     // add to graph links list
@@ -2684,7 +2840,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       outputIndex,
       true,
       link,
-      output,
+      output
     )
 
     inputNode.onConnectionsChange?.(
@@ -2692,7 +2848,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       inputIndex,
       true,
       link,
-      input,
+      input
     )
 
     this.setDirtyCanvas(false, true)
@@ -2701,26 +2857,31 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     return link
   }
 
-  connectFloatingReroute(pos: Point, slot: INodeInputSlot | INodeOutputSlot, afterRerouteId?: RerouteId): Reroute {
+  connectFloatingReroute(
+    pos: Point,
+    slot: INodeInputSlot | INodeOutputSlot,
+    afterRerouteId?: RerouteId
+  ): Reroute {
     const { graph, id } = this
     if (!graph) throw new NullGraphError()
 
     // Assertion: It's either there or it isn't.
     const inputIndex = this.inputs.indexOf(slot as INodeInputSlot)
     const outputIndex = this.outputs.indexOf(slot as INodeOutputSlot)
-    if (inputIndex === -1 && outputIndex === -1) throw new Error("Invalid slot")
+    if (inputIndex === -1 && outputIndex === -1) throw new Error('Invalid slot')
 
-    const slotType = outputIndex === -1 ? "input" : "output"
+    const slotType = outputIndex === -1 ? 'input' : 'output'
 
     const reroute = graph.setReroute({
       pos,
       parentId: afterRerouteId,
       linkIds: [],
-      floating: { slotType },
+      floating: { slotType }
     })
 
     const parentReroute = graph.getReroute(afterRerouteId)
-    const fromLastFloatingReroute = parentReroute?.floating?.slotType === "output"
+    const fromLastFloatingReroute =
+      parentReroute?.floating?.slotType === 'output'
 
     // Adding from an ouput, or a floating reroute that is NOT the tip of an existing floating chain
     if (afterRerouteId == null || !fromLastFloatingReroute) {
@@ -2730,7 +2891,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         outputIndex === -1 ? -1 : id,
         outputIndex,
         inputIndex === -1 ? -1 : id,
-        inputIndex,
+        inputIndex
       )
       link.parentId = reroute.id
       graph.addFloatingLink(link)
@@ -2738,10 +2899,12 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
 
     // Adding a new floating reroute from the tip of a floating chain.
-    if (!parentReroute) throw new Error("[connectFloatingReroute] Parent reroute not found")
+    if (!parentReroute)
+      throw new Error('[connectFloatingReroute] Parent reroute not found')
 
-    const link = parentReroute.getFloatingLinks("output")?.[0]
-    if (!link) throw new Error("[connectFloatingReroute] Floating link not found")
+    const link = parentReroute.getFloatingLinks('output')?.[0]
+    if (!link)
+      throw new Error('[connectFloatingReroute] Floating link not found')
 
     reroute.floatingLinkIds.add(link.id)
     link.parentId = reroute.id
@@ -2757,14 +2920,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @returns if it was disconnected successfully
    */
   disconnectOutput(slot: string | number, target_node?: LGraphNode): boolean {
-    if (typeof slot === "string") {
+    if (typeof slot === 'string') {
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${slot}`)
+        if (LiteGraph.debug)
+          console.log(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.outputs || slot >= this.outputs.length) {
-      if (LiteGraph.debug) console.log("Connect: Error, slot number not found")
+      if (LiteGraph.debug) console.log('Connect: Error, slot number not found')
       return false
     }
 
@@ -2788,10 +2952,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (!graph) throw new NullGraphError()
 
     if (target_node) {
-      const target = typeof target_node === "number"
-        ? graph.getNodeById(target_node)
-        : target_node
-      if (!target) throw "Target Node not found"
+      const target =
+        typeof target_node === 'number'
+          ? graph.getNodeById(target_node)
+          : target_node
+      if (!target) throw 'Target Node not found'
 
       for (const [i, link_id] of links.entries()) {
         const link_info = graph._links.get(link_id)
@@ -2805,7 +2970,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         input.link = null
 
         // remove the link from the links pool
-        link_info.disconnect(graph, "input")
+        link_info.disconnect(graph, 'input')
         graph._version++
 
         // link_info hasn't been modified so its ok
@@ -2814,14 +2979,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
           link_info.target_slot,
           false,
           link_info,
-          input,
+          input
         )
         this.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
           slot,
           false,
           link_info,
-          output,
+          output
         )
 
         break
@@ -2846,18 +3011,18 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
             link_info.target_slot,
             false,
             link_info,
-            input,
+            input
           )
         }
         // remove the link from the links pool
-        link_info.disconnect(graph, "input")
+        link_info.disconnect(graph, 'input')
 
         this.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
           slot,
           false,
           link_info,
-          output,
+          output
         )
       }
       output.links = null
@@ -2875,22 +3040,23 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   disconnectInput(slot: number | string, keepReroutes?: boolean): boolean {
     // Allow search by string
-    if (typeof slot === "string") {
+    if (typeof slot === 'string') {
       slot = this.findInputSlot(slot)
       if (slot == -1) {
-        if (LiteGraph.debug) console.log(`Connect: Error, no slot of name ${slot}`)
+        if (LiteGraph.debug)
+          console.log(`Connect: Error, no slot of name ${slot}`)
         return false
       }
     } else if (!this.inputs || slot >= this.inputs.length) {
       if (LiteGraph.debug) {
-        console.log("Connect: Error, slot number not found")
+        console.log('Connect: Error, slot number not found')
       }
       return false
     }
 
     const input = this.inputs[slot]
     if (!input) {
-      console.debug("disconnectInput: input not found", slot, this.inputs)
+      console.debug('disconnectInput: input not found', slot, this.inputs)
       return false
     }
 
@@ -2912,20 +3078,26 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       const link_info = graph._links.get(link_id)
       if (link_info) {
         // Let SubgraphInput do the disconnect.
-        if (link_info.origin_id === -10 && "inputNode" in graph) {
+        if (link_info.origin_id === -10 && 'inputNode' in graph) {
           graph.inputNode._disconnectNodeInput(this, input, link_info)
           return true
         }
 
         const target_node = graph.getNodeById(link_info.origin_id)
         if (!target_node) {
-          console.debug("disconnectInput: target node not found", link_info.origin_id)
+          console.debug(
+            'disconnectInput: target node not found',
+            link_info.origin_id
+          )
           return false
         }
 
         const output = target_node.outputs[link_info.origin_slot]
-        if (!(output?.links?.length)) {
-          console.debug("disconnectInput: output not found", link_info.origin_slot)
+        if (!output?.links?.length) {
+          console.debug(
+            'disconnectInput: output not found',
+            link_info.origin_slot
+          )
           return false
         }
 
@@ -2938,7 +3110,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
           }
         }
 
-        link_info.disconnect(graph, keepReroutes ? "output" : undefined)
+        link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
         if (graph) graph._version++
 
         this.onConnectionsChange?.(
@@ -2946,14 +3118,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
           slot,
           false,
           link_info,
-          input,
+          input
         )
         target_node.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
           i,
           false,
           link_info,
-          output,
+          output
         )
       }
     }
@@ -2973,7 +3145,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   getConnectionPos(is_input: boolean, slot_number: number, out?: Point): Point {
     out ||= new Float32Array(2)
 
-    const { pos: [nodeX, nodeY], inputs, outputs } = this
+    const {
+      pos: [nodeX, nodeY],
+      inputs,
+      outputs
+    } = this
 
     if (this.flags.collapsed) {
       const w = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
@@ -3009,9 +3185,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       ? this.#defaultVerticalInputs.indexOf(this.inputs[slot_number])
       : this.#defaultVerticalOutputs.indexOf(this.outputs[slot_number])
 
-    out[0] = is_input
-      ? nodeX + offset
-      : nodeX + this.size[0] + 1 - offset
+    out[0] = is_input ? nodeX + offset : nodeX + this.size[0] + 1 - offset
     out[1] =
       nodeY +
       (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
@@ -3024,7 +3198,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   get #defaultVerticalInputs() {
     return this.inputs.filter(
-      slot => !slot.pos && !(this.widgets?.length && isWidgetInputSlot(slot)),
+      (slot) => !slot.pos && !(this.widgets?.length && isWidgetInputSlot(slot))
     )
   }
 
@@ -3052,7 +3226,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    const { pos: [nodeX, nodeY] } = this
+    const {
+      pos: [nodeX, nodeY]
+    } = this
 
     if (this.flags.collapsed) {
       const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
@@ -3079,7 +3255,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @returns Position of the output slot
    */
   getOutputPos(slot: number): Point {
-    const { pos: [nodeX, nodeY], outputs, size: [width] } = this
+    const {
+      pos: [nodeX, nodeY],
+      outputs,
+      size: [width]
+    } = this
 
     if (this.flags.collapsed) {
       const width = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
@@ -3115,24 +3295,27 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     this.console ||= []
     this.console.push(msg)
     // @ts-expect-error deprecated
-    if (this.console.length > LGraphNode.MAX_CONSOLE)
-      this.console.shift()
+    if (this.console.length > LGraphNode.MAX_CONSOLE) this.console.shift()
   }
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
   setDirtyCanvas(dirty_foreground: boolean, dirty_background?: boolean): void {
-    this.graph?.canvasAction(c => c.setDirty(dirty_foreground, dirty_background))
+    this.graph?.canvasAction((c) =>
+      c.setDirty(dirty_foreground, dirty_background)
+    )
   }
 
   loadImage(url: string): HTMLImageElement {
-    interface AsyncImageElement extends HTMLImageElement { ready?: boolean }
+    interface AsyncImageElement extends HTMLImageElement {
+      ready?: boolean
+    }
 
     const img: AsyncImageElement = new Image()
     img.src = LiteGraph.node_images_path + url
     img.ready = false
 
     const dirty = () => this.setDirtyCanvas(true)
-    img.addEventListener("load", function (this: AsyncImageElement) {
+    img.addEventListener('load', function (this: AsyncImageElement) {
       this.ready = true
       dirty()
     })
@@ -3144,7 +3327,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * @deprecated Use {@link LGraphCanvas.pointer} instead.
    */
   captureInput(v: boolean): void {
-    warnDeprecated("[DEPRECATED] captureInput will be removed in a future version. Please use LGraphCanvas.pointer (CanvasPointer) instead.")
+    warnDeprecated(
+      '[DEPRECATED] captureInput will be removed in a future version. Please use LGraphCanvas.pointer (CanvasPointer) instead.'
+    )
     if (!this.graph || !this.graph.list_of_graphcanvas) return
 
     const list = this.graph.list_of_graphcanvas
@@ -3181,7 +3366,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * Toggles advanced mode of the node, showing advanced widgets
    */
   toggleAdvanced() {
-    if (!this.widgets?.some(w => w.advanced)) return
+    if (!this.widgets?.some((w) => w.advanced)) return
     if (!this.graph) throw new NullGraphError()
     this.graph._version++
     this.showAdvanced = !this.showAdvanced
@@ -3215,7 +3400,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   localToScreen(x: number, y: number, dragAndScale: DragAndScale): Point {
     return [
       (x + this.pos[0]) * dragAndScale.scale + dragAndScale.offset[0],
-      (y + this.pos[1]) * dragAndScale.scale + dragAndScale.offset[1],
+      (y + this.pos[1]) * dragAndScale.scale + dragAndScale.offset[1]
     ]
   }
 
@@ -3240,13 +3425,18 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   }
 
   drawBadges(ctx: CanvasRenderingContext2D, { gap = 2 } = {}): void {
-    const badgeInstances = this.badges.map(badge =>
-      badge instanceof LGraphBadge ? badge : badge())
+    const badgeInstances = this.badges.map((badge) =>
+      badge instanceof LGraphBadge ? badge : badge()
+    )
     const isLeftAligned = this.badgePosition === BadgePosition.TopLeft
 
     let currentX = isLeftAligned
       ? 0
-      : this.width - badgeInstances.reduce((acc, badge) => acc + badge.getWidth(ctx) + gap, 0)
+      : this.width -
+        badgeInstances.reduce(
+          (acc, badge) => acc + badge.getWidth(ctx) + gap,
+          0
+        )
     const y = -(LiteGraph.NODE_TITLE_HEIGHT + gap)
 
     for (const badge of badgeInstances) {
@@ -3258,11 +3448,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   /**
    * Renders the node's title bar background
    */
-  drawTitleBarBackground(ctx: CanvasRenderingContext2D, {
-    scale,
-    title_height = LiteGraph.NODE_TITLE_HEIGHT,
-    low_quality = false,
-  }: DrawTitleOptions): void {
+  drawTitleBarBackground(
+    ctx: CanvasRenderingContext2D,
+    {
+      scale,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      low_quality = false
+    }: DrawTitleOptions
+  ): void {
     const fgcolor = this.renderingColor
     const shape = this.renderingShape
     const size = this.renderingSize
@@ -3293,11 +3486,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         title_height,
         this.collapsed
           ? [LiteGraph.ROUND_RADIUS]
-          : [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0],
+          : [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0]
       )
     }
     ctx.fill()
-    ctx.shadowColor = "transparent"
+    ctx.shadowColor = 'transparent'
   }
 
   /**
@@ -3305,12 +3498,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * when clicked toggles the node's collapsed state. The term `title box` comes
    * from the original LiteGraph implementation.
    */
-  drawTitleBox(ctx: CanvasRenderingContext2D, {
-    scale,
-    low_quality = false,
-    title_height = LiteGraph.NODE_TITLE_HEIGHT,
-    box_size = 10,
-  }: DrawTitleBoxOptions): void {
+  drawTitleBox(
+    ctx: CanvasRenderingContext2D,
+    {
+      scale,
+      low_quality = false,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      box_size = 10
+    }: DrawTitleBoxOptions
+  ): void {
     const size = this.renderingSize
     const shape = this.renderingShape
 
@@ -3323,14 +3519,14 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       [RenderShape.ROUND, RenderShape.CIRCLE, RenderShape.CARD].includes(shape)
     ) {
       if (low_quality) {
-        ctx.fillStyle = "black"
+        ctx.fillStyle = 'black'
         ctx.beginPath()
         ctx.arc(
           title_height * 0.5,
           title_height * -0.5,
           box_size * 0.5 + 1,
           0,
-          Math.PI * 2,
+          Math.PI * 2
         )
         ctx.fill()
       }
@@ -3341,7 +3537,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
           title_height * 0.5 - box_size * 0.5,
           title_height * -0.5 - box_size * 0.5,
           box_size,
-          box_size,
+          box_size
         )
       } else {
         ctx.beginPath()
@@ -3350,18 +3546,18 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
           title_height * -0.5,
           box_size * 0.5,
           0,
-          Math.PI * 2,
+          Math.PI * 2
         )
         ctx.fill()
       }
     } else {
       if (low_quality) {
-        ctx.fillStyle = "black"
+        ctx.fillStyle = 'black'
         ctx.fillRect(
           (title_height - box_size) * 0.5 - 1,
           (title_height + box_size) * -0.5 - 1,
           box_size + 2,
-          box_size + 2,
+          box_size + 2
         )
       }
       ctx.fillStyle = this.renderingBoxColor
@@ -3369,7 +3565,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         (title_height - box_size) * 0.5,
         (title_height + box_size) * -0.5,
         box_size,
-        box_size,
+        box_size
       )
     }
   }
@@ -3377,12 +3573,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   /**
    * Renders the node's title text.
    */
-  drawTitleText(ctx: CanvasRenderingContext2D, {
-    scale,
-    default_title_color,
-    low_quality = false,
-    title_height = LiteGraph.NODE_TITLE_HEIGHT,
-  }: DrawTitleTextOptions): void {
+  drawTitleText(
+    ctx: CanvasRenderingContext2D,
+    {
+      scale,
+      default_title_color,
+      low_quality = false,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT
+    }: DrawTitleTextOptions
+  ): void {
     const size = this.renderingSize
     const selected = this.selected
 
@@ -3393,7 +3592,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         size,
         scale,
         this.titleFontStyle,
-        selected,
+        selected
       )
       return
     }
@@ -3405,7 +3604,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
     ctx.font = this.titleFontStyle
     const rawTitle = this.getTitle() ?? `❌ ${this.type}`
-    const title = String(rawTitle) + (this.pinned ? "📌" : "")
+    const title = String(rawTitle) + (this.pinned ? '📌' : '')
     if (title) {
       if (selected) {
         ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR
@@ -3443,11 +3642,11 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         displayTitle = truncateText(ctx, title, availableWidth)
       }
 
-      ctx.textAlign = "left"
+      ctx.textAlign = 'left'
       ctx.fillText(
         displayTitle,
         title_height,
-        LiteGraph.NODE_TITLE_TEXT_Y - title_height,
+        LiteGraph.NODE_TITLE_TEXT_Y - title_height
       )
     }
   }
@@ -3480,7 +3679,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       if (input.link == null) continue
 
       const output = outputs[index]
-      if (!output || !LiteGraph.isValidConnection(input.type, output.type)) continue
+      if (!output || !LiteGraph.isValidConnection(input.type, output.type))
+        continue
 
       const inLink = _links.get(input.link)
       if (!inLink) continue
@@ -3511,10 +3711,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     }
     return madeAnyConnections
 
-    function bypassAllLinks(output: INodeOutputSlot, inNode: LGraphNode, inLink: LLink, graph: LGraph) {
+    function bypassAllLinks(
+      output: INodeOutputSlot,
+      inNode: LGraphNode,
+      inLink: LLink,
+      graph: LGraph
+    ) {
       const outLinks = output.links
-        ?.map(x => _links.get(x))
-        .filter(x => !!x)
+        ?.map((x) => _links.get(x))
+        .filter((x) => !!x)
       if (!outLinks?.length) return
 
       for (const outLink of outLinks) {
@@ -3525,7 +3730,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
           inLink.origin_slot,
           outNode,
           outLink.target_slot,
-          inLink.parentId,
+          inLink.parentId
         )
         madeAnyConnections ||= !!result
       }
@@ -3536,18 +3741,15 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * Returns `true` if the widget is visible, otherwise `false`.
    */
   isWidgetVisible(widget: IBaseWidget): boolean {
-    const isHidden = (
-      this.collapsed ||
-      widget.hidden ||
-      (widget.advanced && !this.showAdvanced)
-    )
+    const isHidden =
+      this.collapsed || widget.hidden || (widget.advanced && !this.showAdvanced)
     return !isHidden
   }
 
-  drawWidgets(ctx: CanvasRenderingContext2D, {
-    lowQuality = false,
-    editorAlpha = 1,
-  }: DrawWidgetsOptions): void {
+  drawWidgets(
+    ctx: CanvasRenderingContext2D,
+    { lowQuality = false, editorAlpha = 1 }: DrawWidgetsOptions
+  ): void {
     if (!this.widgets) return
 
     const nodeWidth = this.size[0]
@@ -3561,22 +3763,28 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
       if (!this.isWidgetVisible(widget)) continue
 
       const { y } = widget
-      const outlineColour = widget.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
+      const outlineColour = widget.advanced
+        ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
+        : LiteGraph.WIDGET_OUTLINE_COLOR
 
       widget.last_y = y
       // Disable widget if it is disabled or if the value is passed from socket connection.
-      widget.computedDisabled = widget.disabled || this.getSlotFromWidget(widget)?.link != null
+      widget.computedDisabled =
+        widget.disabled || this.getSlotFromWidget(widget)?.link != null
 
       ctx.strokeStyle = outlineColour
-      ctx.fillStyle = "#222"
-      ctx.textAlign = "left"
+      ctx.fillStyle = '#222'
+      ctx.textAlign = 'left'
       if (widget.computedDisabled) ctx.globalAlpha *= 0.5
       const width = widget.width || nodeWidth
 
-      if (typeof widget.draw === "function") {
+      if (typeof widget.draw === 'function') {
         widget.draw(ctx, this, width, y, H, lowQuality)
       } else {
-        toConcreteWidget(widget, this, false)?.drawWidget(ctx, { width, showText })
+        toConcreteWidget(widget, this, false)?.drawWidget(ctx, {
+          width,
+          showText
+        })
       }
       ctx.globalAlpha = editorAlpha
     }
@@ -3606,12 +3814,20 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     return [...this.inputs, ...this.outputs]
   }
 
-  #measureSlot(slot: NodeInputSlot | NodeOutputSlot, slotIndex: number, isInput: boolean): void {
-    const pos = isInput ? this.getInputPos(slotIndex) : this.getOutputPos(slotIndex)
+  #measureSlot(
+    slot: NodeInputSlot | NodeOutputSlot,
+    slotIndex: number,
+    isInput: boolean
+  ): void {
+    const pos = isInput
+      ? this.getInputPos(slotIndex)
+      : this.getOutputPos(slotIndex)
 
     slot.boundingRect[0] = pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
     slot.boundingRect[1] = pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
-    slot.boundingRect[2] = slot.isWidgetInputSlot ? BaseWidget.margin : LiteGraph.NODE_SLOT_HEIGHT
+    slot.boundingRect[2] = slot.isWidgetInputSlot
+      ? BaseWidget.margin
+      : LiteGraph.NODE_SLOT_HEIGHT
     slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
   }
 
@@ -3637,7 +3853,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
 
   #getMouseOverSlot(slot: INodeSlot): INodeSlot | null {
     const isInput = isINodeInputSlot(slot)
-    const mouseOverId = this.mouseOver?.[isInput ? "inputId" : "outputId"] ?? -1
+    const mouseOverId = this.mouseOver?.[isInput ? 'inputId' : 'outputId'] ?? -1
     if (mouseOverId === -1) {
       return null
     }
@@ -3656,8 +3872,13 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   /**
    * Returns the input slot that is associated with the given widget.
    */
-  getSlotFromWidget(widget: IBaseWidget | undefined): INodeInputSlot | undefined {
-    if (widget) return this.inputs.find(slot => isWidgetInputSlot(slot) && slot.widget.name === widget.name)
+  getSlotFromWidget(
+    widget: IBaseWidget | undefined
+  ): INodeInputSlot | undefined {
+    if (widget)
+      return this.inputs.find(
+        (slot) => isWidgetInputSlot(slot) && slot.widget.name === widget.name
+      )
   }
 
   /**
@@ -3665,18 +3886,16 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   getWidgetFromSlot(slot: INodeInputSlot): IBaseWidget | undefined {
     if (!isWidgetInputSlot(slot)) return
-    return this.widgets?.find(w => w.name === slot.widget.name)
+    return this.widgets?.find((w) => w.name === slot.widget.name)
   }
 
   /**
    * Draws the node's input and output slots.
    */
-  drawSlots(ctx: CanvasRenderingContext2D, {
-    fromSlot,
-    colorContext,
-    editorAlpha,
-    lowQuality,
-  }: DrawSlotsOptions) {
+  drawSlots(
+    ctx: CanvasRenderingContext2D,
+    { fromSlot, colorContext, editorAlpha, lowQuality }: DrawSlotsOptions
+  ) {
     for (const slot of [...this.#concreteInputs, ...this.#concreteOutputs]) {
       const isValidTarget = fromSlot && slot.isValidTarget(fromSlot)
       const isMouseOverSlot = this.#isMouseOverSlot(slot)
@@ -3701,7 +3920,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         slot.draw(ctx, {
           colorContext,
           lowQuality,
-          highlight,
+          highlight
         })
       }
     }
@@ -3718,9 +3937,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (!this.widgets || !this.widgets.length) return
 
     const bodyHeight = this.bodyHeight
-    const startY = this.widgets_start_y ?? (
-      (this.widgets_up ? 0 : widgetStartY) + 2
-    )
+    const startY =
+      this.widgets_start_y ?? (this.widgets_up ? 0 : widgetStartY) + 2
 
     let freeSpace = bodyHeight - startY
 
@@ -3742,7 +3960,7 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
         growableWidgets.push({
           minHeight,
           prefHeight: maxHeight,
-          w,
+          w
         })
       } else {
         const height = LiteGraph.NODE_WIDGET_HEIGHT + 4
@@ -3756,9 +3974,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     this.freeWidgetSpace = freeSpace
 
     // Prepare space requests for distribution
-    const spaceRequests = growableWidgets.map(d => ({
+    const spaceRequests = growableWidgets.map((d) => ({
       minSize: d.minHeight,
-      maxSize: d.prefHeight,
+      maxSize: d.prefHeight
     }))
 
     // Distribute space among DOM widgets
@@ -3794,7 +4012,10 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
   #arrangeWidgetInputSlots(): void {
     if (!this.widgets) return
 
-    const slotByWidgetName = new Map<string, INodeInputSlot & { index: number }>()
+    const slotByWidgetName = new Map<
+      string,
+      INodeInputSlot & { index: number }
+    >()
 
     for (const [i, slot] of this.inputs.entries()) {
       if (!isWidgetInputSlot(slot)) continue
@@ -3822,8 +4043,12 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    * have been removed from the ecosystem.
    */
   _setConcreteSlots(): void {
-    this.#concreteInputs = this.inputs.map(slot => toClass(NodeInputSlot, slot, this))
-    this.#concreteOutputs = this.outputs.map(slot => toClass(NodeOutputSlot, slot, this))
+    this.#concreteInputs = this.inputs.map((slot) =>
+      toClass(NodeInputSlot, slot, this)
+    )
+    this.#concreteOutputs = this.outputs.map((slot) =>
+      toClass(NodeOutputSlot, slot, this)
+    )
   }
 
   /**
@@ -3831,7 +4056,9 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
    */
   arrange(): void {
     const slotsBounds = this.#measureSlots()
-    const widgetStartY = slotsBounds ? slotsBounds[1] + slotsBounds[3] - this.pos[1] : 0
+    const widgetStartY = slotsBounds
+      ? slotsBounds[1] + slotsBounds[3] - this.pos[1]
+      : 0
     this.#arrangeWidgets(widgetStartY)
     this.#arrangeWidgetInputSlots()
   }
@@ -3844,13 +4071,8 @@ export class LGraphNode implements NodeLike, Positionable, IPinnable, IColorable
     if (!this.progress) return
 
     const originalFillStyle = ctx.fillStyle
-    ctx.fillStyle = "green"
-    ctx.fillRect(
-      0,
-      0,
-      this.width * this.progress,
-      6,
-    )
+    ctx.fillStyle = 'green'
+    ctx.fillRect(0, 0, this.width * this.progress, 6)
     ctx.fillStyle = originalFillStyle
   }
 }

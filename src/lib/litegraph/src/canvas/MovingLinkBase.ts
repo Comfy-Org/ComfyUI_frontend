@@ -1,14 +1,19 @@
-import type { RenderLink } from "./RenderLink"
-import type { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/lib/litegraph/src/infrastructure/LinkConnectorEventMap"
-import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode, NodeId } from "@/lib/litegraph/src/LGraphNode"
-import type { LLink } from "@/lib/litegraph/src/LLink"
-import type { Reroute } from "@/lib/litegraph/src/Reroute"
-import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
-import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  LinkNetwork,
+  Point
+} from '@/lib/litegraph/src/interfaces'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
-import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
+import type { RenderLink } from './RenderLink'
 
 /**
  * Represents an existing link that is currently being dragged by the user from one slot to another.
@@ -44,23 +49,29 @@ export abstract class MovingLinkBase implements RenderLink {
   constructor(
     readonly network: LinkNetwork,
     readonly link: LLink,
-    readonly toType: "input" | "output",
+    readonly toType: 'input' | 'output',
     readonly fromReroute?: Reroute,
-    readonly dragDirection: LinkDirection = LinkDirection.CENTER,
+    readonly dragDirection: LinkDirection = LinkDirection.CENTER
   ) {
     const {
       origin_id: outputNodeId,
       target_id: inputNodeId,
       origin_slot: outputIndex,
-      target_slot: inputIndex,
+      target_slot: inputIndex
     } = link
 
     // Store output info
     const outputNode = network.getNodeById(outputNodeId) ?? undefined
-    if (!outputNode) throw new Error(`Creating MovingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`)
+    if (!outputNode)
+      throw new Error(
+        `Creating MovingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`
+      )
 
     const outputSlot = outputNode.outputs.at(outputIndex)
-    if (!outputSlot) throw new Error(`Creating MovingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`)
+    if (!outputSlot)
+      throw new Error(
+        `Creating MovingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`
+      )
 
     this.outputNodeId = outputNodeId
     this.outputNode = outputNode
@@ -70,10 +81,16 @@ export abstract class MovingLinkBase implements RenderLink {
 
     // Store input info
     const inputNode = network.getNodeById(inputNodeId) ?? undefined
-    if (!inputNode) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`)
+    if (!inputNode)
+      throw new Error(
+        `Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`
+      )
 
     const inputSlot = inputNode.inputs.at(inputIndex)
-    if (!inputSlot) throw new Error(`Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`)
+    if (!inputSlot)
+      throw new Error(
+        `Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`
+      )
 
     this.inputNodeId = inputNodeId
     this.inputNode = inputNode
@@ -82,12 +99,40 @@ export abstract class MovingLinkBase implements RenderLink {
     this.inputPos = inputNode.getInputPos(inputIndex)
   }
 
-  abstract connectToInput(node: LGraphNode, input: INodeInputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
-  abstract connectToOutput(node: LGraphNode, output: INodeOutputSlot, events?: CustomEventTarget<LinkConnectorEventMap>): void
-  abstract connectToSubgraphInput(input: SubgraphInput, events?: CustomEventTarget<LinkConnectorEventMap>): void
-  abstract connectToSubgraphOutput(output: SubgraphOutput, events?: CustomEventTarget<LinkConnectorEventMap>): void
-  abstract connectToRerouteInput(reroute: Reroute, { node, input, link }: { node: LGraphNode, input: INodeInputSlot, link: LLink }, events: CustomEventTarget<LinkConnectorEventMap>, originalReroutes: Reroute[]): void
-  abstract connectToRerouteOutput(reroute: Reroute, outputNode: LGraphNode, output: INodeOutputSlot, events: CustomEventTarget<LinkConnectorEventMap>): void
+  abstract connectToInput(
+    node: LGraphNode,
+    input: INodeInputSlot,
+    events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void
+  abstract connectToOutput(
+    node: LGraphNode,
+    output: INodeOutputSlot,
+    events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void
+  abstract connectToSubgraphInput(
+    input: SubgraphInput,
+    events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void
+  abstract connectToSubgraphOutput(
+    output: SubgraphOutput,
+    events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void
+  abstract connectToRerouteInput(
+    reroute: Reroute,
+    {
+      node,
+      input,
+      link
+    }: { node: LGraphNode; input: INodeInputSlot; link: LLink },
+    events: CustomEventTarget<LinkConnectorEventMap>,
+    originalReroutes: Reroute[]
+  ): void
+  abstract connectToRerouteOutput(
+    reroute: Reroute,
+    outputNode: LGraphNode,
+    output: INodeOutputSlot,
+    events: CustomEventTarget<LinkConnectorEventMap>
+  ): void
 
   abstract disconnect(): boolean
 }

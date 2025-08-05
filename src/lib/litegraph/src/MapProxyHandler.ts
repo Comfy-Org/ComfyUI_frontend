@@ -2,23 +2,25 @@
  * Temporary workaround until downstream consumers migrate to Map.
  * A brittle wrapper with many flaws, but should be fine for simple maps using int indexes.
  */
-export class MapProxyHandler<V> implements ProxyHandler<Map<number | string, V>> {
+export class MapProxyHandler<V>
+  implements ProxyHandler<Map<number | string, V>>
+{
   getOwnPropertyDescriptor(
     target: Map<number | string, V>,
-    p: string | symbol,
+    p: string | symbol
   ): PropertyDescriptor | undefined {
     const value = this.get(target, p)
     if (value) {
       return {
         configurable: true,
         enumerable: true,
-        value,
+        value
       }
     }
   }
 
   has(target: Map<number | string, V>, p: string | symbol): boolean {
-    if (typeof p === "symbol") return false
+    if (typeof p === 'symbol') return false
 
     const int = parseInt(p, 10)
     return target.has(!isNaN(int) ? int : p)
@@ -31,14 +33,18 @@ export class MapProxyHandler<V> implements ProxyHandler<Map<number | string, V>>
   get(target: Map<number | string, V>, p: string | symbol): any {
     // Workaround does not support link IDs of "values", "entries", "constructor", etc.
     if (p in target) return Reflect.get(target, p, target)
-    if (typeof p === "symbol") return
+    if (typeof p === 'symbol') return
 
     const int = parseInt(p, 10)
     return target.get(!isNaN(int) ? int : p)
   }
 
-  set(target: Map<number | string, V>, p: string | symbol, newValue: any): boolean {
-    if (typeof p === "symbol") return false
+  set(
+    target: Map<number | string, V>,
+    p: string | symbol,
+    newValue: any
+  ): boolean {
+    if (typeof p === 'symbol') return false
 
     const int = parseInt(p, 10)
     target.set(!isNaN(int) ? int : p, newValue)

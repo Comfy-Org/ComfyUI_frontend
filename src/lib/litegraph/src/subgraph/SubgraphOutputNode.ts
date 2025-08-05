@@ -1,23 +1,31 @@
-import type { SubgraphInput } from "./SubgraphInput"
-import type { SubgraphOutput } from "./SubgraphOutput"
-import type { LinkConnector } from "@/lib/litegraph/src/canvas/LinkConnector"
-import type { CanvasPointer } from "@/lib/litegraph/src/CanvasPointer"
-import type { DefaultConnectionColors, INodeInputSlot, INodeOutputSlot, ISlotType, Positionable } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode, NodeId } from "@/lib/litegraph/src/LGraphNode"
-import type { LLink } from "@/lib/litegraph/src/LLink"
-import type { RerouteId } from "@/lib/litegraph/src/Reroute"
-import type { CanvasPointerEvent } from "@/lib/litegraph/src/types/events"
-import type { NodeLike } from "@/lib/litegraph/src/types/NodeLike"
-import type { SubgraphIO } from "@/lib/litegraph/src/types/serialisation"
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type {
+  DefaultConnectionColors,
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISlotType,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
-import { SUBGRAPH_OUTPUT_ID } from "@/lib/litegraph/src/constants"
-import { Rectangle } from "@/lib/litegraph/src/infrastructure/Rectangle"
-import { findFreeSlotOfType } from "@/lib/litegraph/src/utils/collections"
+import { EmptySubgraphOutput } from './EmptySubgraphOutput'
+import { SubgraphIONodeBase } from './SubgraphIONodeBase'
+import type { SubgraphInput } from './SubgraphInput'
+import type { SubgraphOutput } from './SubgraphOutput'
 
-import { EmptySubgraphOutput } from "./EmptySubgraphOutput"
-import { SubgraphIONodeBase } from "./SubgraphIONodeBase"
-
-export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> implements Positionable {
+export class SubgraphOutputNode
+  extends SubgraphIONodeBase<SubgraphOutput>
+  implements Positionable
+{
   readonly id: NodeId = SUBGRAPH_OUTPUT_ID
 
   readonly emptySlot: EmptySubgraphOutput = new EmptySubgraphOutput(this)
@@ -35,11 +43,18 @@ export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> imple
     return x + SubgraphIONodeBase.roundedRadius
   }
 
-  override onPointerDown(e: CanvasPointerEvent, pointer: CanvasPointer, linkConnector: LinkConnector): void {
+  override onPointerDown(
+    e: CanvasPointerEvent,
+    pointer: CanvasPointer,
+    linkConnector: LinkConnector
+  ): void {
     // Left-click handling for dragging connections
     if (e.button === 0) {
       for (const slot of this.allSlots) {
-        const slotBounds = Rectangle.fromCentre(slot.pos, slot.boundingRect.height)
+        const slotBounds = Rectangle.fromCentre(
+          slot.pos,
+          slot.boundingRect.height
+        )
 
         if (slotBounds.containsXy(e.canvasX, e.canvasY)) {
           pointer.onDragStart = () => {
@@ -53,7 +68,7 @@ export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> imple
           }
         }
       }
-    // Check for right-click
+      // Check for right-click
     } else if (e.button === 2) {
       const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
       if (slot) this.showSlotContextMenu(slot, e)
@@ -70,7 +85,11 @@ export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> imple
     this.subgraph.removeOutput(slot)
   }
 
-  canConnectTo(outputNode: NodeLike, fromSlot: SubgraphOutput, output: INodeOutputSlot | SubgraphIO): boolean {
+  canConnectTo(
+    outputNode: NodeLike,
+    fromSlot: SubgraphOutput,
+    output: INodeOutputSlot | SubgraphIO
+  ): boolean {
     return outputNode.canConnectTo(this, fromSlot, output)
   }
 
@@ -78,19 +97,36 @@ export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> imple
     slot: number,
     target_node: LGraphNode,
     target_slotType: ISlotType,
-    optsIn?: { afterRerouteId?: RerouteId },
+    optsIn?: { afterRerouteId?: RerouteId }
   ): LLink | undefined {
     const outputSlot = target_node.findOutputByType(target_slotType)
     if (!outputSlot) return
 
-    return this.slots[slot].connect(outputSlot.slot, target_node, optsIn?.afterRerouteId)
+    return this.slots[slot].connect(
+      outputSlot.slot,
+      target_node,
+      optsIn?.afterRerouteId
+    )
   }
 
   findInputByType(type: ISlotType): SubgraphOutput | undefined {
-    return findFreeSlotOfType(this.slots, type, slot => slot.linkIds.length > 0)?.slot
+    return findFreeSlotOfType(
+      this.slots,
+      type,
+      (slot) => slot.linkIds.length > 0
+    )?.slot
   }
 
-  override drawProtected(ctx: CanvasRenderingContext2D, colorContext: DefaultConnectionColors, fromSlot?: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput, editorAlpha?: number): void {
+  override drawProtected(
+    ctx: CanvasRenderingContext2D,
+    colorContext: DefaultConnectionColors,
+    fromSlot?:
+      | INodeInputSlot
+      | INodeOutputSlot
+      | SubgraphInput
+      | SubgraphOutput,
+    editorAlpha?: number
+  ): void {
     const { roundedRadius } = SubgraphIONodeBase
     const transform = ctx.getTransform()
 
@@ -108,7 +144,14 @@ export class SubgraphOutputNode extends SubgraphIONodeBase<SubgraphOutput> imple
     ctx.lineTo(0, height - roundedRadius)
 
     // Bottom rounded part
-    ctx.arc(roundedRadius, height - roundedRadius, roundedRadius, Math.PI, Math.PI * 0.5, true)
+    ctx.arc(
+      roundedRadius,
+      height - roundedRadius,
+      roundedRadius,
+      Math.PI,
+      Math.PI * 0.5,
+      true
+    )
     ctx.stroke()
 
     // Restore context

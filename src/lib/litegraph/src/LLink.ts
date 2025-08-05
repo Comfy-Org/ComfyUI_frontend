@@ -1,3 +1,10 @@
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+
+import type { LGraphNode, NodeId } from './LGraphNode'
+import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -5,15 +12,14 @@ import type {
   ISlotType,
   LinkNetwork,
   LinkSegment,
-  ReadonlyLinkNetwork,
-} from "./interfaces"
-import type { LGraphNode, NodeId } from "./LGraphNode"
-import type { Reroute, RerouteId } from "./Reroute"
-import type { Serialisable, SerialisableLLink, SubgraphIO } from "./types/serialisation"
-
-import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/lib/litegraph/src/constants"
-
-import { Subgraph } from "./litegraph"
+  ReadonlyLinkNetwork
+} from './interfaces'
+import { Subgraph } from './litegraph'
+import type {
+  Serialisable,
+  SerialisableLLink,
+  SubgraphIO
+} from './types/serialisation'
 
 export type LinkId = number
 
@@ -23,15 +29,15 @@ export type SerialisedLLinkArray = [
   origin_slot: number,
   target_id: NodeId,
   target_slot: number,
-  type: ISlotType,
+  type: ISlotType
 ]
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
 export type ResolvedConnection = BaseResolvedConnection &
   (
-    (ResolvedSubgraphInput & ResolvedNormalOutput) |
-    (ResolvedNormalInput & ResolvedSubgraphOutput) |
-    (ResolvedNormalInput & ResolvedNormalOutput)
+    | (ResolvedSubgraphInput & ResolvedNormalOutput)
+    | (ResolvedNormalInput & ResolvedSubgraphOutput)
+    | (ResolvedNormalInput & ResolvedNormalOutput)
   )
 
 interface BaseResolvedConnection {
@@ -75,7 +81,10 @@ interface ResolvedSubgraphOutput {
   subgraphInput: SubgraphIO
 }
 
-type BasicReadonlyNetwork = Pick<ReadonlyLinkNetwork, "getNodeById" | "links" | "getLink" | "inputNode" | "outputNode">
+type BasicReadonlyNetwork = Pick<
+  ReadonlyLinkNetwork,
+  'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
+>
 
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
@@ -115,7 +124,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   public set color(value: CanvasColour) {
-    this.#color = value === "" ? null : value
+    this.#color = value === '' ? null : value
   }
 
   public get isFloatingOutput(): boolean {
@@ -147,7 +156,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     origin_slot: number,
     target_id: NodeId,
     target_slot: number,
-    parentId?: RerouteId,
+    parentId?: RerouteId
   ) {
     this.id = id
     this.type = type
@@ -180,7 +189,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       data.origin_slot,
       data.target_id,
       data.target_slot,
-      data.parentId,
+      data.parentId
     )
   }
 
@@ -190,18 +199,16 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * this reroute or the reroute before it.  Otherwise, an empty array.
    */
   static getReroutes(
-    network: Pick<ReadonlyLinkNetwork, "reroutes">,
-    linkSegment: LinkSegment,
+    network: Pick<ReadonlyLinkNetwork, 'reroutes'>,
+    linkSegment: LinkSegment
   ): Reroute[] {
     if (!linkSegment.parentId) return []
-    return network.reroutes
-      .get(linkSegment.parentId)
-      ?.getReroutes() ?? []
+    return network.reroutes.get(linkSegment.parentId)?.getReroutes() ?? []
   }
 
   static getFirstReroute(
-    network: Pick<ReadonlyLinkNetwork, "reroutes">,
-    linkSegment: LinkSegment,
+    network: Pick<ReadonlyLinkNetwork, 'reroutes'>,
+    linkSegment: LinkSegment
   ): Reroute | undefined {
     return LLink.getReroutes(network, linkSegment).at(0)
   }
@@ -215,9 +222,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @returns The reroute that was found, `undefined` if no reroute was found, or `null` if an infinite loop was detected.
    */
   static findNextReroute(
-    network: Pick<ReadonlyLinkNetwork, "reroutes">,
+    network: Pick<ReadonlyLinkNetwork, 'reroutes'>,
     linkSegment: LinkSegment,
-    rerouteId: RerouteId,
+    rerouteId: RerouteId
   ): Reroute | null | undefined {
     if (!linkSegment.parentId) return
     return network.reroutes
@@ -231,7 +238,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param linkId The ID of the link to get the origin node of
    * @returns The origin node of the link, or `undefined` if the link is not found or the origin node is not found
    */
-  static getOriginNode(network: BasicReadonlyNetwork, linkId: LinkId): LGraphNode | undefined {
+  static getOriginNode(
+    network: BasicReadonlyNetwork,
+    linkId: LinkId
+  ): LGraphNode | undefined {
     const id = network.links.get(linkId)?.origin_id
     return network.getNodeById(id) ?? undefined
   }
@@ -242,7 +252,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param linkId The ID of the link to get the target node of
    * @returns The target node of the link, or `undefined` if the link is not found or the target node is not found
    */
-  static getTargetNode(network: BasicReadonlyNetwork, linkId: LinkId): LGraphNode | undefined {
+  static getTargetNode(
+    network: BasicReadonlyNetwork,
+    linkId: LinkId
+  ): LGraphNode | undefined {
     const id = network.links.get(linkId)?.target_id
     return network.getNodeById(id) ?? undefined
   }
@@ -256,7 +269,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * Whilst the performance difference should in most cases be negligible,
    * it is recommended to use simpler methods where appropriate.
    */
-  static resolve(linkId: LinkId | null | undefined, network: BasicReadonlyNetwork): ResolvedConnection | undefined {
+  static resolve(
+    linkId: LinkId | null | undefined,
+    network: BasicReadonlyNetwork
+  ): ResolvedConnection | undefined {
     return network.getLink(linkId)?.resolve(network)
   }
 
@@ -268,7 +284,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @returns An array of resolved connections.  If a link is not found, it is not included in the array.
    * @see {@link LLink.resolve}
    */
-  static resolveMany(linkIds: Iterable<LinkId>, network: BasicReadonlyNetwork): ResolvedConnection[] {
+  static resolveMany(
+    linkIds: Iterable<LinkId>,
+    network: BasicReadonlyNetwork
+  ): ResolvedConnection[] {
     const resolved: ResolvedConnection[] = []
     for (const id of linkIds) {
       const r = network.getLink(id)?.resolve(network)
@@ -286,21 +305,45 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * it is recommended to use simpler methods where appropriate.
    */
   resolve(network: BasicReadonlyNetwork): ResolvedConnection {
-    const inputNode = this.target_id === -1 ? undefined : network.getNodeById(this.target_id) ?? undefined
+    const inputNode =
+      this.target_id === -1
+        ? undefined
+        : network.getNodeById(this.target_id) ?? undefined
     const input = inputNode?.inputs[this.target_slot]
-    const subgraphInput = this.originIsIoNode ? network.inputNode?.slots[this.origin_slot] : undefined
+    const subgraphInput = this.originIsIoNode
+      ? network.inputNode?.slots[this.origin_slot]
+      : undefined
     if (subgraphInput) {
       return { inputNode, input, subgraphInput, link: this }
     }
 
-    const outputNode = this.origin_id === -1 ? undefined : network.getNodeById(this.origin_id) ?? undefined
+    const outputNode =
+      this.origin_id === -1
+        ? undefined
+        : network.getNodeById(this.origin_id) ?? undefined
     const output = outputNode?.outputs[this.origin_slot]
-    const subgraphOutput = this.targetIsIoNode ? network.outputNode?.slots[this.target_slot] : undefined
+    const subgraphOutput = this.targetIsIoNode
+      ? network.outputNode?.slots[this.target_slot]
+      : undefined
     if (subgraphOutput) {
-      return { outputNode, output, subgraphInput: undefined, subgraphOutput, link: this }
+      return {
+        outputNode,
+        output,
+        subgraphInput: undefined,
+        subgraphOutput,
+        link: this
+      }
     }
 
-    return { inputNode, outputNode, input, output, subgraphInput, subgraphOutput, link: this }
+    return {
+      inputNode,
+      outputNode,
+      input,
+      output,
+      subgraphInput,
+      subgraphOutput,
+      link: this
+    }
   }
 
   configure(o: LLink | SerialisedLLinkArray) {
@@ -348,12 +391,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param parentId The parent reroute ID of the link
    * @returns A new LLink that is floating
    */
-  toFloating(slotType: "input" | "output", parentId: RerouteId): LLink {
+  toFloating(slotType: 'input' | 'output', parentId: RerouteId): LLink {
     const exported = this.asSerialisable()
     exported.id = -1
     exported.parentId = parentId
 
-    if (slotType === "input") {
+    if (slotType === 'input') {
       exported.origin_id = -1
       exported.origin_slot = -1
     } else {
@@ -370,31 +413,32 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param keepReroutes If `undefined`, reroutes will be automatically removed if no links remain.
    * If `input` or `output`, reroutes will not be automatically removed, and retain a connection to the input or output, respectively.
    */
-  disconnect(network: LinkNetwork, keepReroutes?: "input" | "output"): void {
+  disconnect(network: LinkNetwork, keepReroutes?: 'input' | 'output'): void {
     const reroutes = LLink.getReroutes(network, this)
 
     const lastReroute = reroutes.at(-1)
 
     // When floating from output, 1-to-1 ratio of floating link to final reroute (tree-like)
-    const outputFloating = keepReroutes === "output" &&
+    const outputFloating =
+      keepReroutes === 'output' &&
       lastReroute?.linkIds.size === 1 &&
       lastReroute.floatingLinkIds.size === 0
 
     // When floating from inputs, the final (input side) reroute may have many floating links
-    if (outputFloating || (keepReroutes === "input" && lastReroute)) {
+    if (outputFloating || (keepReroutes === 'input' && lastReroute)) {
       const newLink = LLink.create(this)
       newLink.id = -1
 
-      if (keepReroutes === "input") {
+      if (keepReroutes === 'input') {
         newLink.origin_id = -1
         newLink.origin_slot = -1
 
-        lastReroute.floating = { slotType: "input" }
+        lastReroute.floating = { slotType: 'input' }
       } else {
         newLink.target_id = -1
         newLink.target_slot = -1
 
-        lastReroute.floating = { slotType: "output" }
+        lastReroute.floating = { slotType: 'output' }
       }
 
       network.addFloatingLink(newLink)
@@ -410,9 +454,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
     if (this.originIsIoNode && network instanceof Subgraph) {
       const subgraphInput = network.inputs.at(this.origin_slot)
-      if (!subgraphInput) throw new Error("Invalid link - subgraph input not found")
+      if (!subgraphInput)
+        throw new Error('Invalid link - subgraph input not found')
 
-      subgraphInput.events.dispatch("input-disconnected", { input: subgraphInput })
+      subgraphInput.events.dispatch('input-disconnected', {
+        input: subgraphInput
+      })
     }
   }
 
@@ -427,7 +474,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.origin_slot,
       this.target_id,
       this.target_slot,
-      this.type,
+      this.type
     ]
   }
 
@@ -438,7 +485,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       origin_slot: this.origin_slot,
       target_id: this.target_id,
       target_slot: this.target_slot,
-      type: this.type,
+      type: this.type
     }
     if (this.parentId) copy.parentId = this.parentId
     return copy

@@ -1,16 +1,19 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphButton } from "@/lib/litegraph/src/LGraphButton"
-import { LGraphCanvas } from "@/lib/litegraph/src/LGraphCanvas"
+import { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
-import { createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
-describe("SubgraphNode Title Button", () => {
-  describe("Constructor", () => {
-    it("should automatically add enter_subgraph button", () => {
+describe('SubgraphNode Title Button', () => {
+  describe('Constructor', () => {
+    it('should automatically add enter_subgraph button', () => {
       const subgraph = createTestSubgraph({
-        name: "Test Subgraph",
-        inputs: [{ name: "input", type: "number" }],
+        name: 'Test Subgraph',
+        inputs: [{ name: 'input', type: 'number' }]
       })
 
       const subgraphNode = createTestSubgraphNode(subgraph)
@@ -19,33 +22,33 @@ describe("SubgraphNode Title Button", () => {
 
       const button = subgraphNode.title_buttons[0]
       expect(button).toBeInstanceOf(LGraphButton)
-      expect(button.name).toBe("enter_subgraph")
-      expect(button.text).toBe("\uE93B") // pi-window-maximize
+      expect(button.name).toBe('enter_subgraph')
+      expect(button.text).toBe('\uE93B') // pi-window-maximize
       expect(button.xOffset).toBe(-10)
       expect(button.yOffset).toBe(0)
       expect(button.fontSize).toBe(16)
     })
 
-    it("should preserve enter_subgraph button when adding more buttons", () => {
+    it('should preserve enter_subgraph button when adding more buttons', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
 
       // Add another button
       const customButton = subgraphNode.addTitleButton({
-        name: "custom_button",
-        text: "C",
+        name: 'custom_button',
+        text: 'C'
       })
 
       expect(subgraphNode.title_buttons).toHaveLength(2)
-      expect(subgraphNode.title_buttons[0].name).toBe("enter_subgraph")
+      expect(subgraphNode.title_buttons[0].name).toBe('enter_subgraph')
       expect(subgraphNode.title_buttons[1]).toBe(customButton)
     })
   })
 
-  describe("onTitleButtonClick", () => {
-    it("should open subgraph when enter_subgraph button is clicked", () => {
+  describe('onTitleButtonClick', () => {
+    it('should open subgraph when enter_subgraph button is clicked', () => {
       const subgraph = createTestSubgraph({
-        name: "Test Subgraph",
+        name: 'Test Subgraph'
       })
 
       const subgraphNode = createTestSubgraphNode(subgraph)
@@ -53,7 +56,7 @@ describe("SubgraphNode Title Button", () => {
 
       const canvas = {
         openSubgraph: vi.fn(),
-        dispatch: vi.fn(),
+        dispatch: vi.fn()
       } as unknown as LGraphCanvas
 
       subgraphNode.onTitleButtonClick(enterButton, canvas)
@@ -62,35 +65,38 @@ describe("SubgraphNode Title Button", () => {
       expect(canvas.dispatch).not.toHaveBeenCalled() // Should not call parent implementation
     })
 
-    it("should call parent implementation for other buttons", () => {
+    it('should call parent implementation for other buttons', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
 
       const customButton = subgraphNode.addTitleButton({
-        name: "custom_button",
-        text: "X",
+        name: 'custom_button',
+        text: 'X'
       })
 
       const canvas = {
         openSubgraph: vi.fn(),
-        dispatch: vi.fn(),
+        dispatch: vi.fn()
       } as unknown as LGraphCanvas
 
       subgraphNode.onTitleButtonClick(customButton, canvas)
 
       expect(canvas.openSubgraph).not.toHaveBeenCalled()
-      expect(canvas.dispatch).toHaveBeenCalledWith("litegraph:node-title-button-clicked", {
-        node: subgraphNode,
-        button: customButton,
-      })
+      expect(canvas.dispatch).toHaveBeenCalledWith(
+        'litegraph:node-title-button-clicked',
+        {
+          node: subgraphNode,
+          button: customButton
+        }
+      )
     })
   })
 
-  describe("Integration with node click handling", () => {
-    it("should handle clicks on enter_subgraph button", () => {
+  describe('Integration with node click handling', () => {
+    it('should handle clicks on enter_subgraph button', () => {
       const subgraph = createTestSubgraph({
-        name: "Nested Subgraph",
-        nodeCount: 3,
+        name: 'Nested Subgraph',
+        nodeCount: 3
       })
 
       const subgraphNode = createTestSubgraphNode(subgraph)
@@ -111,31 +117,35 @@ describe("SubgraphNode Title Button", () => {
 
       const canvas = {
         ctx: {
-          measureText: vi.fn().mockReturnValue({ width: 25 }),
+          measureText: vi.fn().mockReturnValue({ width: 25 })
         } as unknown as CanvasRenderingContext2D,
         openSubgraph: vi.fn(),
-        dispatch: vi.fn(),
+        dispatch: vi.fn()
       } as unknown as LGraphCanvas
 
       // Simulate click on the enter button
       const event = {
         canvasX: 275, // Near right edge where button should be
-        canvasY: 80, // In title area
+        canvasY: 80 // In title area
       } as any
 
       // Calculate node-relative position
       const clickPosRelativeToNode: [number, number] = [
         275 - subgraphNode.pos[0], // 275 - 100 = 175
-        80 - subgraphNode.pos[1], // 80 - 100 = -20
+        80 - subgraphNode.pos[1] // 80 - 100 = -20
       ]
 
-      const handled = subgraphNode.onMouseDown(event, clickPosRelativeToNode, canvas)
+      const handled = subgraphNode.onMouseDown(
+        event,
+        clickPosRelativeToNode,
+        canvas
+      )
 
       expect(handled).toBe(true)
       expect(canvas.openSubgraph).toHaveBeenCalledWith(subgraph)
     })
 
-    it("should not interfere with normal node operations", () => {
+    it('should not interfere with normal node operations', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
       subgraphNode.pos = [100, 100]
@@ -143,31 +153,35 @@ describe("SubgraphNode Title Button", () => {
 
       const canvas = {
         ctx: {
-          measureText: vi.fn().mockReturnValue({ width: 25 }),
+          measureText: vi.fn().mockReturnValue({ width: 25 })
         } as unknown as CanvasRenderingContext2D,
         openSubgraph: vi.fn(),
-        dispatch: vi.fn(),
+        dispatch: vi.fn()
       } as unknown as LGraphCanvas
 
       // Click in the body of the node, not on button
       const event = {
         canvasX: 200, // Middle of node
-        canvasY: 150, // Body area
+        canvasY: 150 // Body area
       } as any
 
       // Calculate node-relative position
       const clickPosRelativeToNode: [number, number] = [
         200 - subgraphNode.pos[0], // 200 - 100 = 100
-        150 - subgraphNode.pos[1], // 150 - 100 = 50
+        150 - subgraphNode.pos[1] // 150 - 100 = 50
       ]
 
-      const handled = subgraphNode.onMouseDown(event, clickPosRelativeToNode, canvas)
+      const handled = subgraphNode.onMouseDown(
+        event,
+        clickPosRelativeToNode,
+        canvas
+      )
 
       expect(handled).toBe(false)
       expect(canvas.openSubgraph).not.toHaveBeenCalled()
     })
 
-    it("should not process button clicks when node is collapsed", () => {
+    it('should not process button clicks when node is collapsed', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
       subgraphNode.pos = [100, 100]
@@ -186,24 +200,28 @@ describe("SubgraphNode Title Button", () => {
 
       const canvas = {
         ctx: {
-          measureText: vi.fn().mockReturnValue({ width: 25 }),
+          measureText: vi.fn().mockReturnValue({ width: 25 })
         } as unknown as CanvasRenderingContext2D,
         openSubgraph: vi.fn(),
-        dispatch: vi.fn(),
+        dispatch: vi.fn()
       } as unknown as LGraphCanvas
 
       // Try to click on where the button would be
       const event = {
         canvasX: 275,
-        canvasY: 80,
+        canvasY: 80
       } as any
 
       const clickPosRelativeToNode: [number, number] = [
         275 - subgraphNode.pos[0], // 175
-        80 - subgraphNode.pos[1], // -20
+        80 - subgraphNode.pos[1] // -20
       ]
 
-      const handled = subgraphNode.onMouseDown(event, clickPosRelativeToNode, canvas)
+      const handled = subgraphNode.onMouseDown(
+        event,
+        clickPosRelativeToNode,
+        canvas
+      )
 
       // Should not handle the click when collapsed
       expect(handled).toBe(false)
@@ -211,15 +229,15 @@ describe("SubgraphNode Title Button", () => {
     })
   })
 
-  describe("Visual properties", () => {
-    it("should have appropriate visual properties for enter button", () => {
+  describe('Visual properties', () => {
+    it('should have appropriate visual properties for enter button', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
 
       const enterButton = subgraphNode.title_buttons[0]
 
       // Check visual properties
-      expect(enterButton.text).toBe("\uE93B") // pi-window-maximize
+      expect(enterButton.text).toBe('\uE93B') // pi-window-maximize
       expect(enterButton.fontSize).toBe(16) // Icon size
       expect(enterButton.xOffset).toBe(-10) // Positioned from right edge
       expect(enterButton.yOffset).toBe(0) // Centered vertically

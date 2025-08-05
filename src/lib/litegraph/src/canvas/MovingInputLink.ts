@@ -1,19 +1,23 @@
-import type { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/lib/litegraph/src/infrastructure/LinkConnectorEventMap"
-import type { INodeInputSlot, INodeOutputSlot, LinkNetwork, Point } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { LLink } from "@/lib/litegraph/src/LLink"
-import type { Reroute } from "@/lib/litegraph/src/Reroute"
-import type { SubgraphOutput } from "@/lib/litegraph/src/subgraph/SubgraphOutput"
-import type { NodeLike } from "@/lib/litegraph/src/types/NodeLike"
-import type { SubgraphIO } from "@/lib/litegraph/src/types/serialisation"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  LinkNetwork,
+  Point
+} from '@/lib/litegraph/src/interfaces'
+import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
 
-import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
-
-import { MovingLinkBase } from "./MovingLinkBase"
+import { MovingLinkBase } from './MovingLinkBase'
 
 export class MovingInputLink extends MovingLinkBase {
-  override readonly toType = "input"
+  override readonly toType = 'input'
 
   readonly node: LGraphNode
   readonly fromSlot: INodeOutputSlot
@@ -21,8 +25,13 @@ export class MovingInputLink extends MovingLinkBase {
   readonly fromDirection: LinkDirection
   readonly fromSlotIndex: number
 
-  constructor(network: LinkNetwork, link: LLink, fromReroute?: Reroute, dragDirection: LinkDirection = LinkDirection.CENTER) {
-    super(network, link, "input", fromReroute, dragDirection)
+  constructor(
+    network: LinkNetwork,
+    link: LLink,
+    fromReroute?: Reroute,
+    dragDirection: LinkDirection = LinkDirection.CENTER
+  ) {
+    super(network, link, 'input', fromReroute, dragDirection)
 
     this.node = this.outputNode
     this.fromSlot = this.outputSlot
@@ -31,7 +40,10 @@ export class MovingInputLink extends MovingLinkBase {
     this.fromSlotIndex = this.outputIndex
   }
 
-  canConnectToInput(inputNode: NodeLike, input: INodeInputSlot | SubgraphIO): boolean {
+  canConnectToInput(
+    inputNode: NodeLike,
+    input: INodeInputSlot | SubgraphIO
+  ): boolean {
     return this.node.canConnectTo(inputNode, input, this.outputSlot)
   }
 
@@ -43,33 +55,53 @@ export class MovingInputLink extends MovingLinkBase {
     return reroute.origin_id !== this.inputNode.id
   }
 
-  connectToInput(inputNode: LGraphNode, input: INodeInputSlot, events: CustomEventTarget<LinkConnectorEventMap>): LLink | null | undefined {
+  connectToInput(
+    inputNode: LGraphNode,
+    input: INodeInputSlot,
+    events: CustomEventTarget<LinkConnectorEventMap>
+  ): LLink | null | undefined {
     if (input === this.inputSlot) return
 
     this.inputNode.disconnectInput(this.inputIndex, true)
-    const link = this.outputNode.connectSlots(this.outputSlot, inputNode, input, this.fromReroute?.id)
-    if (link) events.dispatch("input-moved", this)
+    const link = this.outputNode.connectSlots(
+      this.outputSlot,
+      inputNode,
+      input,
+      this.fromReroute?.id
+    )
+    if (link) events.dispatch('input-moved', this)
     return link
   }
 
   connectToOutput(): never {
-    throw new Error("MovingInputLink cannot connect to an output.")
+    throw new Error('MovingInputLink cannot connect to an output.')
   }
 
   connectToSubgraphInput(): void {
-    throw new Error("MovingInputLink cannot connect to a subgraph input.")
+    throw new Error('MovingInputLink cannot connect to a subgraph input.')
   }
 
-  connectToSubgraphOutput(output: SubgraphOutput, events?: CustomEventTarget<LinkConnectorEventMap>): void {
-    const newLink = output.connect(this.fromSlot, this.node, this.fromReroute?.id)
-    events?.dispatch("link-created", newLink)
+  connectToSubgraphOutput(
+    output: SubgraphOutput,
+    events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
+    const newLink = output.connect(
+      this.fromSlot,
+      this.node,
+      this.fromReroute?.id
+    )
+    events?.dispatch('link-created', newLink)
   }
 
   connectToRerouteInput(
     reroute: Reroute,
-    { node: inputNode, input, link: existingLink }: { node: LGraphNode, input: INodeInputSlot, link: LLink },
+    {
+      node: inputNode,
+      input,
+      link: existingLink
+    }: { node: LGraphNode; input: INodeInputSlot; link: LLink },
     events: CustomEventTarget<LinkConnectorEventMap>,
-    originalReroutes: Reroute[],
+    originalReroutes: Reroute[]
   ): void {
     const { outputNode, outputSlot, fromReroute } = this
 
@@ -82,12 +114,17 @@ export class MovingInputLink extends MovingLinkBase {
     // Set the parentId of the reroute we dropped on, to the reroute we dragged from
     reroute.parentId = fromReroute?.id
 
-    const newLink = outputNode.connectSlots(outputSlot, inputNode, input, existingLink.parentId)
-    if (newLink) events.dispatch("input-moved", this)
+    const newLink = outputNode.connectSlots(
+      outputSlot,
+      inputNode,
+      input,
+      existingLink.parentId
+    )
+    if (newLink) events.dispatch('input-moved', this)
   }
 
   connectToRerouteOutput(): never {
-    throw new Error("MovingInputLink cannot connect to an output.")
+    throw new Error('MovingInputLink cannot connect to an output.')
   }
 
   disconnect(): boolean {

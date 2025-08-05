@@ -1,20 +1,24 @@
-import type { RenderLink } from "./RenderLink"
-import type { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
-import type { LinkConnectorEventMap } from "@/lib/litegraph/src/infrastructure/LinkConnectorEventMap"
-import type { INodeInputSlot, LinkNetwork, Point } from "@/lib/litegraph/src/interfaces"
-import type { LGraphNode } from "@/lib/litegraph/src/LGraphNode"
-import type { LLink } from "@/lib/litegraph/src/LLink"
-import type { Reroute } from "@/lib/litegraph/src/Reroute"
-import type { SubgraphInput } from "@/lib/litegraph/src/subgraph/SubgraphInput"
-import type { SubgraphInputNode } from "@/lib/litegraph/src/subgraph/SubgraphInputNode"
-import type { NodeLike } from "@/lib/litegraph/src/types/NodeLike"
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type {
+  INodeInputSlot,
+  LinkNetwork,
+  Point
+} from '@/lib/litegraph/src/interfaces'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
-import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
+import type { RenderLink } from './RenderLink'
 
 /** Connecting TO an input slot. */
 
 export class ToInputFromIoNodeLink implements RenderLink {
-  readonly toType = "input"
+  readonly toType = 'input'
   readonly fromSlotIndex: number
   readonly fromPos: Point
   fromDirection: LinkDirection = LinkDirection.RIGHT
@@ -26,17 +30,17 @@ export class ToInputFromIoNodeLink implements RenderLink {
     readonly fromSlot: SubgraphInput,
     readonly fromReroute?: Reroute,
     public dragDirection: LinkDirection = LinkDirection.CENTER,
-    existingLink?: LLink,
+    existingLink?: LLink
   ) {
     const outputIndex = node.slots.indexOf(fromSlot)
     if (outputIndex === -1 && fromSlot !== node.emptySlot) {
-      throw new Error(`Creating render link for node [${this.node.id}] failed: Slot index not found.`)
+      throw new Error(
+        `Creating render link for node [${this.node.id}] failed: Slot index not found.`
+      )
     }
 
     this.fromSlotIndex = outputIndex
-    this.fromPos = fromReroute
-      ? fromReroute.pos
-      : fromSlot.pos
+    this.fromPos = fromReroute ? fromReroute.pos : fromSlot.pos
     this.existingLink = existingLink
   }
 
@@ -48,22 +52,26 @@ export class ToInputFromIoNodeLink implements RenderLink {
     return false
   }
 
-  connectToInput(node: LGraphNode, input: INodeInputSlot, events: CustomEventTarget<LinkConnectorEventMap>) {
+  connectToInput(
+    node: LGraphNode,
+    input: INodeInputSlot,
+    events: CustomEventTarget<LinkConnectorEventMap>
+  ) {
     const { fromSlot, fromReroute, existingLink } = this
 
     const newLink = fromSlot.connect(input, node, fromReroute?.id)
 
     if (existingLink) {
       // Moving an existing link
-      events.dispatch("input-moved", this)
+      events.dispatch('input-moved', this)
     } else {
       // Creating a new link
-      events.dispatch("link-created", newLink)
+      events.dispatch('link-created', newLink)
     }
   }
 
   connectToSubgraphOutput(): void {
-    throw new Error("Not implemented")
+    throw new Error('Not implemented')
   }
 
   connectToRerouteInput(
@@ -71,15 +79,15 @@ export class ToInputFromIoNodeLink implements RenderLink {
     {
       node: inputNode,
       input,
-      link,
-    }: { node: LGraphNode, input: INodeInputSlot, link: LLink },
+      link
+    }: { node: LGraphNode; input: INodeInputSlot; link: LLink },
     events: CustomEventTarget<LinkConnectorEventMap>,
-    originalReroutes: Reroute[],
+    originalReroutes: Reroute[]
   ) {
     const { fromSlot, fromReroute } = this
 
     // Check before creating new link overwrites the value
-    const floatingTerminus = fromReroute?.floating?.slotType === "output"
+    const floatingTerminus = fromReroute?.floating?.slotType === 'output'
 
     // Set the parentId of the reroute we dropped on, to the reroute we dragged from
     reroute.parentId = fromReroute?.id
@@ -100,31 +108,31 @@ export class ToInputFromIoNodeLink implements RenderLink {
           reroute.remove()
         } else {
           // Convert to floating
-          const cl = link.toFloating("output", reroute.id)
+          const cl = link.toFloating('output', reroute.id)
           this.network.addFloatingLink(cl)
-          reroute.floating = { slotType: "output" }
+          reroute.floating = { slotType: 'output' }
         }
       }
     }
 
     if (this.existingLink) {
       // Moving an existing link
-      events.dispatch("input-moved", this)
+      events.dispatch('input-moved', this)
     } else {
       // Creating a new link
-      events.dispatch("link-created", newLink)
+      events.dispatch('link-created', newLink)
     }
   }
 
   connectToOutput() {
-    throw new Error("ToInputRenderLink cannot connect to an output.")
+    throw new Error('ToInputRenderLink cannot connect to an output.')
   }
 
   connectToSubgraphInput(): void {
-    throw new Error("ToInputRenderLink cannot connect to a subgraph input.")
+    throw new Error('ToInputRenderLink cannot connect to a subgraph input.')
   }
 
   connectToRerouteOutput() {
-    throw new Error("ToInputRenderLink cannot connect to an output.")
+    throw new Error('ToInputRenderLink cannot connect to an output.')
   }
 }

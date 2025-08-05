@@ -1,15 +1,14 @@
-import type { ISerialisedGraph } from "@/lib/litegraph/src/types/serialisation"
+import { describe } from 'vitest'
 
-import { describe } from "vitest"
+import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 
-import { LGraph, LGraphGroup, LGraphNode } from "@/lib/litegraph/src/litegraph"
+import { test } from './testExtensions'
 
-import { test } from "./testExtensions"
-
-describe("LGraph Serialisation", () => {
-  test("can (de)serialise node / group titles", ({ expect, minimalGraph }) => {
-    const nodeTitle = "Test Node"
-    const groupTitle = "Test Group"
+describe('LGraph Serialisation', () => {
+  test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {
+    const nodeTitle = 'Test Node'
+    const groupTitle = 'Test Group'
 
     minimalGraph.add(new LGraphNode(nodeTitle))
     minimalGraph.add(new LGraphGroup(groupTitle))

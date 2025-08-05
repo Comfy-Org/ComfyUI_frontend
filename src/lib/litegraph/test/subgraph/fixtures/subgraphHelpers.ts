@@ -5,16 +5,17 @@
  * These functions provide consistent ways to create test subgraphs, nodes, and
  * verify their behavior.
  */
+import { expect } from 'vitest'
 
-import type { ISlotType, NodeId } from "@/lib/litegraph/src/litegraph"
-import type { ExportedSubgraph, ExportedSubgraphInstance } from "@/lib/litegraph/src/types/serialisation"
-import type { UUID } from "@/lib/litegraph/src/utils/uuid"
-
-import { expect } from "vitest"
-
-import { LGraph, LGraphNode, Subgraph } from "@/lib/litegraph/src/litegraph"
-import { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
-import { createUuidv4 } from "@/lib/litegraph/src/utils/uuid"
+import type { ISlotType, NodeId } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type {
+  ExportedSubgraph,
+  ExportedSubgraphInstance
+} from '@/lib/litegraph/src/types/serialisation'
+import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
 export interface TestSubgraphOptions {
   id?: UUID
@@ -22,8 +23,8 @@ export interface TestSubgraphOptions {
   nodeCount?: number
   inputCount?: number
   outputCount?: number
-  inputs?: Array<{ name: string, type: ISlotType }>
-  outputs?: Array<{ name: string, type: ISlotType }>
+  inputs?: Array<{ name: string; type: ISlotType }>
+  outputs?: Array<{ name: string; type: ISlotType }>
 }
 
 export interface TestSubgraphNodeOptions {
@@ -72,15 +73,21 @@ export interface CapturedEvent<T = unknown> {
  * })
  * ```
  */
-export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph {
+export function createTestSubgraph(
+  options: TestSubgraphOptions = {}
+): Subgraph {
   // Validate options - cannot specify both inputs array and inputCount
   if (options.inputs && options.inputCount) {
-    throw new Error(`Cannot specify both 'inputs' array and 'inputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`)
+    throw new Error(
+      `Cannot specify both 'inputs' array and 'inputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`
+    )
   }
 
   // Validate options - cannot specify both outputs array and outputCount
   if (options.outputs && options.outputCount) {
-    throw new Error(`Cannot specify both 'outputs' array and 'outputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`)
+    throw new Error(
+      `Cannot specify both 'outputs' array and 'outputCount'. Choose one approach. Received options: ${JSON.stringify(options)}`
+    )
   }
   const rootGraph = new LGraph()
 
@@ -96,24 +103,24 @@ export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph 
 
     // Subgraph-specific properties
     id: options.id || createUuidv4(),
-    name: options.name || "Test Subgraph",
+    name: options.name || 'Test Subgraph',
 
     // IO Nodes (required for subgraph functionality)
     inputNode: {
       id: -10, // SUBGRAPH_INPUT_ID
       bounding: [10, 100, 150, 126], // [x, y, width, height]
-      pinned: false,
+      pinned: false
     },
     outputNode: {
       id: -20, // SUBGRAPH_OUTPUT_ID
       bounding: [400, 100, 140, 126], // [x, y, width, height]
-      pinned: false,
+      pinned: false
     },
 
     // IO definitions - will be populated by addInput/addOutput calls
     inputs: [],
     outputs: [],
-    widgets: [],
+    widgets: []
   }
 
   // Create the subgraph
@@ -126,7 +133,7 @@ export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph 
     }
   } else if (options.inputCount) {
     for (let i = 0; i < options.inputCount; i++) {
-      subgraph.addInput(`input_${i}`, "*")
+      subgraph.addInput(`input_${i}`, '*')
     }
   }
 
@@ -137,7 +144,7 @@ export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph 
     }
   } else if (options.outputCount) {
     for (let i = 0; i < options.outputCount; i++) {
-      subgraph.addOutput(`output_${i}`, "*")
+      subgraph.addOutput(`output_${i}`, '*')
     }
   }
 
@@ -145,8 +152,8 @@ export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph 
   if (options.nodeCount) {
     for (let i = 0; i < options.nodeCount; i++) {
       const node = new LGraphNode(`Test Node ${i}`)
-      node.addInput("in", "*")
-      node.addOutput("out", "*")
+      node.addInput('in', '*')
+      node.addOutput('out', '*')
       subgraph.add(node)
     }
   }
@@ -172,7 +179,7 @@ export function createTestSubgraph(options: TestSubgraphOptions = {}): Subgraph 
  */
 export function createTestSubgraphNode(
   subgraph: Subgraph,
-  options: TestSubgraphNodeOptions = {},
+  options: TestSubgraphNodeOptions = {}
 ): SubgraphNode {
   const parentGraph = new LGraph()
 
@@ -185,7 +192,7 @@ export function createTestSubgraphNode(
     outputs: [],
     properties: {},
     flags: {},
-    mode: 0,
+    mode: 0
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)
@@ -206,7 +213,7 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
     depth = 2,
     nodesPerLevel = 2,
     inputsPerSubgraph = 1,
-    outputsPerSubgraph = 1,
+    outputsPerSubgraph = 1
   } = options
 
   const rootGraph = new LGraph()
@@ -221,14 +228,14 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
       name: `Level ${level} Subgraph`,
       nodeCount: nodesPerLevel,
       inputCount: inputsPerSubgraph,
-      outputCount: outputsPerSubgraph,
+      outputCount: outputsPerSubgraph
     })
 
     subgraphs.push(subgraph)
 
     // Create instance in parent
     const subgraphNode = createTestSubgraphNode(subgraph, {
-      pos: [100 + level * 200, 100],
+      pos: [100 + level * 200, 100]
     })
 
     if (currentParent instanceof LGraph) {
@@ -248,7 +255,7 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
     subgraphs,
     subgraphNodes,
     depth,
-    leafSubgraph: subgraphs.at(-1),
+    leafSubgraph: subgraphs.at(-1)
   }
 }
 
@@ -268,7 +275,7 @@ export function createNestedSubgraphs(options: NestedSubgraphOptions = {}) {
  */
 export function assertSubgraphStructure(
   subgraph: Subgraph,
-  expected: SubgraphStructureExpectation,
+  expected: SubgraphStructureExpectation
 ): void {
   if (expected.inputCount !== undefined) {
     expect(subgraph.inputs.length).toBe(expected.inputCount)
@@ -314,7 +321,7 @@ export function assertSubgraphStructure(
  */
 export function verifyEventSequence<T = unknown>(
   capturedEvents: CapturedEvent<T>[],
-  expectedSequence: string[],
+  expectedSequence: string[]
 ): void {
   expect(capturedEvents.length).toBe(expectedSequence.length)
 
@@ -325,7 +332,7 @@ export function verifyEventSequence<T = unknown>(
   // Verify timestamps are in order
   for (let i = 1; i < capturedEvents.length; i++) {
     expect(capturedEvents[i].timestamp).toBeGreaterThanOrEqual(
-      capturedEvents[i - 1].timestamp,
+      capturedEvents[i - 1].timestamp
     )
   }
 }
@@ -336,7 +343,9 @@ export function verifyEventSequence<T = unknown>(
  * @param overrides Properties to override in the default data
  * @returns ExportedSubgraph data structure
  */
-export function createTestSubgraphData(overrides: Partial<ExportedSubgraph> = {}): ExportedSubgraph {
+export function createTestSubgraphData(
+  overrides: Partial<ExportedSubgraph> = {}
+): ExportedSubgraph {
   return {
     version: 1,
     nodes: [],
@@ -346,24 +355,24 @@ export function createTestSubgraphData(overrides: Partial<ExportedSubgraph> = {}
     definitions: { subgraphs: [] },
 
     id: createUuidv4(),
-    name: "Test Data Subgraph",
+    name: 'Test Data Subgraph',
 
     inputNode: {
       id: -10,
       bounding: [10, 100, 150, 126],
-      pinned: false,
+      pinned: false
     },
     outputNode: {
       id: -20,
       bounding: [400, 100, 140, 126],
-      pinned: false,
+      pinned: false
     },
 
     inputs: [],
     outputs: [],
     widgets: [],
 
-    ...overrides,
+    ...overrides
   }
 }
 
@@ -373,29 +382,34 @@ export function createTestSubgraphData(overrides: Partial<ExportedSubgraph> = {}
  * @param nodeCount Number of internal nodes to create
  * @returns Complex subgraph data structure
  */
-export function createComplexSubgraphData(nodeCount: number = 5): ExportedSubgraph {
+export function createComplexSubgraphData(
+  nodeCount: number = 5
+): ExportedSubgraph {
   const nodes = []
-  const links: Record<string, {
-    id: number
-    origin_id: number
-    origin_slot: number
-    target_id: number
-    target_slot: number
-    type: string
-  }> = {}
+  const links: Record<
+    string,
+    {
+      id: number
+      origin_id: number
+      origin_slot: number
+      target_id: number
+      target_slot: number
+      type: string
+    }
+  > = {}
 
   // Create internal nodes
   for (let i = 0; i < nodeCount; i++) {
     nodes.push({
       id: i + 1, // Start from 1 to avoid conflicts with IO nodes
-      type: "basic/test",
+      type: 'basic/test',
       pos: [100 + i * 150, 200],
       size: [120, 60],
-      inputs: [{ name: "in", type: "*", link: null }],
-      outputs: [{ name: "out", type: "*", links: [] }],
+      inputs: [{ name: 'in', type: '*', link: null }],
+      outputs: [{ name: 'out', type: '*', links: [] }],
       properties: { value: i },
       flags: {},
-      mode: 0,
+      mode: 0
     })
   }
 
@@ -408,7 +422,7 @@ export function createComplexSubgraphData(nodeCount: number = 5): ExportedSubgra
       origin_slot: 0,
       target_id: i + 2,
       target_slot: 0,
-      type: "*",
+      type: '*'
     }
   }
 
@@ -416,13 +430,13 @@ export function createComplexSubgraphData(nodeCount: number = 5): ExportedSubgra
     nodes,
     links,
     inputs: [
-      { name: "input1", type: "number", pos: [0, 0] },
-      { name: "input2", type: "string", pos: [0, 1] },
+      { name: 'input1', type: 'number', pos: [0, 0] },
+      { name: 'input2', type: 'string', pos: [0, 1] }
     ],
     outputs: [
-      { name: "output1", type: "number", pos: [0, 0] },
-      { name: "output2", type: "string", pos: [0, 1] },
-    ],
+      { name: 'output1', type: 'number', pos: [0, 0] },
+      { name: 'output2', type: 'string', pos: [0, 1] }
+    ]
   })
 }
 
@@ -434,7 +448,7 @@ export function createComplexSubgraphData(nodeCount: number = 5): ExportedSubgra
  */
 export function createEventCapture<T = unknown>(
   eventTarget: EventTarget,
-  eventTypes: string[],
+  eventTypes: string[]
 ) {
   const capturedEvents: CapturedEvent<T>[] = []
   const listeners: Array<() => void> = []
@@ -445,7 +459,7 @@ export function createEventCapture<T = unknown>(
       capturedEvents.push({
         type: eventType,
         detail: (event as CustomEvent<T>).detail,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       })
     }
 
@@ -455,12 +469,15 @@ export function createEventCapture<T = unknown>(
 
   return {
     events: capturedEvents,
-    clear: () => { capturedEvents.length = 0 },
+    clear: () => {
+      capturedEvents.length = 0
+    },
     cleanup: () => {
       // Remove all event listeners to prevent memory leaks
       for (const cleanup of listeners) cleanup()
     },
-    getEventsByType: (type: string) => capturedEvents.filter(e => e.type === type),
+    getEventsByType: (type: string) =>
+      capturedEvents.filter((e) => e.type === type)
   }
 }
 
@@ -469,7 +486,10 @@ export function createEventCapture<T = unknown>(
  * @param subgraph The subgraph to inspect
  * @param label Optional label for the log output
  */
-export function logSubgraphStructure(subgraph: Subgraph, label: string = "Subgraph"): void {
+export function logSubgraphStructure(
+  subgraph: Subgraph,
+  label: string = 'Subgraph'
+): void {
   console.log(`\n=== ${label} Structure ===`)
   console.log(`Name: ${subgraph.name}`)
   console.log(`ID: ${subgraph.id}`)
@@ -479,15 +499,21 @@ export function logSubgraphStructure(subgraph: Subgraph, label: string = "Subgra
   console.log(`Links: ${subgraph.links.size}`)
 
   if (subgraph.inputs.length > 0) {
-    console.log("Input details:", subgraph.inputs.map(i => ({ name: i.name, type: i.type })))
+    console.log(
+      'Input details:',
+      subgraph.inputs.map((i) => ({ name: i.name, type: i.type }))
+    )
   }
 
   if (subgraph.outputs.length > 0) {
-    console.log("Output details:", subgraph.outputs.map(o => ({ name: o.name, type: o.type })))
+    console.log(
+      'Output details:',
+      subgraph.outputs.map((o) => ({ name: o.name, type: o.type }))
+    )
   }
 
-  console.log("========================\n")
+  console.log('========================\n')
 }
 
 // Re-export expect from vitest for convenience
-export { expect } from "vitest"
+export { expect } from 'vitest'

@@ -1,41 +1,45 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from 'vitest'
 
-import { ToOutputRenderLink } from "@/lib/litegraph/src/canvas/ToOutputRenderLink"
-import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
+import { ToOutputRenderLink } from '@/lib/litegraph/src/canvas/ToOutputRenderLink'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
-describe("ToOutputRenderLink", () => {
-  describe("connectToOutput", () => {
-    it("should return early if inputNode is null", () => {
+describe('ToOutputRenderLink', () => {
+  describe('connectToOutput', () => {
+    it('should return early if inputNode is null', () => {
       // Setup
       const mockNetwork = {}
       const mockFromSlot = {}
-      const mockNode = { id: "test-id", inputs: [mockFromSlot], getInputPos: vi.fn().mockReturnValue([0, 0]) }
+      const mockNode = {
+        id: 'test-id',
+        inputs: [mockFromSlot],
+        getInputPos: vi.fn().mockReturnValue([0, 0])
+      }
 
       const renderLink = new ToOutputRenderLink(
         mockNetwork as any,
         mockNode as any,
         mockFromSlot as any,
         undefined,
-        LinkDirection.CENTER,
+        LinkDirection.CENTER
       )
 
       // Override the node property to simulate null case
-      Object.defineProperty(renderLink, "node", {
-        value: null,
+      Object.defineProperty(renderLink, 'node', {
+        value: null
       })
 
       const mockTargetNode = {
-        connectSlots: vi.fn(),
+        connectSlots: vi.fn()
       }
       const mockEvents = {
-        dispatch: vi.fn(),
+        dispatch: vi.fn()
       }
 
       // Act
       renderLink.connectToOutput(
         mockTargetNode as any,
         {} as any,
-        mockEvents as any,
+        mockEvents as any
       )
 
       // Assert
@@ -43,14 +47,14 @@ describe("ToOutputRenderLink", () => {
       expect(mockEvents.dispatch).not.toHaveBeenCalled()
     })
 
-    it("should create connection and dispatch event when inputNode exists", () => {
+    it('should create connection and dispatch event when inputNode exists', () => {
       // Setup
       const mockNetwork = {}
       const mockFromSlot = {}
       const mockNode = {
-        id: "test-id",
+        id: 'test-id',
         inputs: [mockFromSlot],
-        getInputPos: vi.fn().mockReturnValue([0, 0]),
+        getInputPos: vi.fn().mockReturnValue([0, 0])
       }
 
       const renderLink = new ToOutputRenderLink(
@@ -58,22 +62,22 @@ describe("ToOutputRenderLink", () => {
         mockNode as any,
         mockFromSlot as any,
         undefined,
-        LinkDirection.CENTER,
+        LinkDirection.CENTER
       )
 
-      const mockNewLink = { id: "new-link" }
+      const mockNewLink = { id: 'new-link' }
       const mockTargetNode = {
-        connectSlots: vi.fn().mockReturnValue(mockNewLink),
+        connectSlots: vi.fn().mockReturnValue(mockNewLink)
       }
       const mockEvents = {
-        dispatch: vi.fn(),
+        dispatch: vi.fn()
       }
 
       // Act
       renderLink.connectToOutput(
         mockTargetNode as any,
         {} as any,
-        mockEvents as any,
+        mockEvents as any
       )
 
       // Assert
@@ -81,11 +85,11 @@ describe("ToOutputRenderLink", () => {
         expect.anything(),
         mockNode,
         mockFromSlot,
-        undefined,
+        undefined
       )
       expect(mockEvents.dispatch).toHaveBeenCalledWith(
-        "link-created",
-        mockNewLink,
+        'link-created',
+        mockNewLink
       )
     })
   })

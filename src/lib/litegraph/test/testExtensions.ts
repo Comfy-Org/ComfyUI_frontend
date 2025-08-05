@@ -1,15 +1,21 @@
-import type { ISerialisedGraph, SerialisableGraph } from "../src/types/serialisation"
+import { test as baseTest } from 'vitest'
 
-import { test as baseTest } from "vitest"
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { LGraph } from "@/lib/litegraph/src/LGraph"
-import { LiteGraph } from "@/lib/litegraph/src/litegraph"
-
-import floatingBranch from "./assets/floatingBranch.json"
-import floatingLink from "./assets/floatingLink.json"
-import linkedNodes from "./assets/linkedNodes.json"
-import reroutesComplex from "./assets/reroutesComplex.json"
-import { basicSerialisableGraph, minimalSerialisableGraph, oldSchemaGraph } from "./assets/testGraphs"
+import type {
+  ISerialisedGraph,
+  SerialisableGraph
+} from '../src/types/serialisation'
+import floatingBranch from './assets/floatingBranch.json'
+import floatingLink from './assets/floatingLink.json'
+import linkedNodes from './assets/linkedNodes.json'
+import reroutesComplex from './assets/reroutesComplex.json'
+import {
+  basicSerialisableGraph,
+  minimalSerialisableGraph,
+  oldSchemaGraph
+} from './assets/testGraphs'
 
 interface LitegraphFixtures {
   minimalGraph: LGraph
@@ -27,7 +33,7 @@ interface DirtyFixtures {
 }
 
 export const test = baseTest.extend<LitegraphFixtures>({
-  minimalGraph: async ({ }, use) => {
+  minimalGraph: async ({}, use) => {
     // Before each test function
     const serialisable = structuredClone(minimalSerialisableGraph)
     const lGraph = new LGraph(serialisable)
@@ -37,24 +43,30 @@ export const test = baseTest.extend<LitegraphFixtures>({
   },
   minimalSerialisableGraph: structuredClone(minimalSerialisableGraph),
   oldSchemaGraph: structuredClone(oldSchemaGraph),
-  floatingLinkGraph: structuredClone(floatingLink as unknown as ISerialisedGraph),
+  floatingLinkGraph: structuredClone(
+    floatingLink as unknown as ISerialisedGraph
+  ),
   linkedNodesGraph: structuredClone(linkedNodes as unknown as ISerialisedGraph),
   floatingBranchGraph: async ({}, use) => {
-    const cloned = structuredClone(floatingBranch as unknown as ISerialisedGraph)
+    const cloned = structuredClone(
+      floatingBranch as unknown as ISerialisedGraph
+    )
     const graph = new LGraph(cloned)
     await use(graph)
   },
   reroutesComplexGraph: async ({}, use) => {
-    const cloned = structuredClone(reroutesComplex as unknown as ISerialisedGraph)
+    const cloned = structuredClone(
+      reroutesComplex as unknown as ISerialisedGraph
+    )
     const graph = new LGraph(cloned)
     await use(graph)
-  },
+  }
 })
 
 /** Test that use {@link DirtyFixtures}. One test per file. */
 export const dirtyTest = test.extend<DirtyFixtures>({
   basicSerialisableGraph: async ({}, use) => {
-    if (!basicSerialisableGraph.nodes) throw new Error("Invalid test object")
+    if (!basicSerialisableGraph.nodes) throw new Error('Invalid test object')
 
     // Register node types
     for (const node of basicSerialisableGraph.nodes) {
@@ -62,5 +74,5 @@ export const dirtyTest = test.extend<DirtyFixtures>({
     }
 
     await use(structuredClone(basicSerialisableGraph))
-  },
+  }
 })

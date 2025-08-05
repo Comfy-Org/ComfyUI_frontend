@@ -1,29 +1,28 @@
-import type { Dictionary, ISlotType, Rect, WhenNullish } from "./interfaces"
-
-import { InputIndicators } from "./canvas/InputIndicators"
-import { ContextMenu } from "./ContextMenu"
-import { CurveEditor } from "./CurveEditor"
-import { DragAndScale } from "./DragAndScale"
-import { LabelPosition, SlotDirection, SlotShape, SlotType } from "./draw"
-import { Rectangle } from "./infrastructure/Rectangle"
-import { LGraph } from "./LGraph"
-import { LGraphCanvas } from "./LGraphCanvas"
-import { LGraphGroup } from "./LGraphGroup"
-import { LGraphNode } from "./LGraphNode"
-import { LLink } from "./LLink"
-import { distance, isInsideRectangle, overlapBounding } from "./measure"
-import { Reroute } from "./Reroute"
-import { SubgraphIONodeBase } from "./subgraph/SubgraphIONodeBase"
-import { SubgraphSlot } from "./subgraph/SubgraphSlotBase"
+import { ContextMenu } from './ContextMenu'
+import { CurveEditor } from './CurveEditor'
+import { DragAndScale } from './DragAndScale'
+import { LGraph } from './LGraph'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
+import { LLink } from './LLink'
+import { Reroute } from './Reroute'
+import { InputIndicators } from './canvas/InputIndicators'
+import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
+import { Rectangle } from './infrastructure/Rectangle'
+import type { Dictionary, ISlotType, Rect, WhenNullish } from './interfaces'
+import { distance, isInsideRectangle, overlapBounding } from './measure'
+import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
+import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
 import {
   LGraphEventMode,
   LinkDirection,
   LinkRenderType,
   NodeSlotType,
   RenderShape,
-  TitleMode,
-} from "./types/globalEnums"
-import { createUuidv4 } from "./utils/uuid"
+  TitleMode
+} from './types/globalEnums'
+import { createUuidv4 } from './utils/uuid'
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -48,44 +47,47 @@ export class LiteGraphGlobal {
   NODE_MIN_WIDTH = 50
   NODE_COLLAPSED_RADIUS = 10
   NODE_COLLAPSED_WIDTH = 80
-  NODE_TITLE_COLOR = "#999"
-  NODE_SELECTED_TITLE_COLOR = "#FFF"
+  NODE_TITLE_COLOR = '#999'
+  NODE_SELECTED_TITLE_COLOR = '#FFF'
   NODE_TEXT_SIZE = 14
-  NODE_TEXT_COLOR = "#AAA"
-  NODE_TEXT_HIGHLIGHT_COLOR = "#EEE"
+  NODE_TEXT_COLOR = '#AAA'
+  NODE_TEXT_HIGHLIGHT_COLOR = '#EEE'
   NODE_SUBTEXT_SIZE = 12
-  NODE_DEFAULT_COLOR = "#333"
-  NODE_DEFAULT_BGCOLOR = "#353535"
-  NODE_DEFAULT_BOXCOLOR = "#666"
+  NODE_DEFAULT_COLOR = '#333'
+  NODE_DEFAULT_BGCOLOR = '#353535'
+  NODE_DEFAULT_BOXCOLOR = '#666'
   NODE_DEFAULT_SHAPE = RenderShape.ROUND
-  NODE_BOX_OUTLINE_COLOR = "#FFF"
-  NODE_ERROR_COLOUR = "#E00"
-  NODE_FONT = "Arial"
+  NODE_BOX_OUTLINE_COLOR = '#FFF'
+  NODE_ERROR_COLOUR = '#E00'
+  NODE_FONT = 'Arial'
 
-  DEFAULT_FONT = "Arial"
-  DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)"
+  DEFAULT_FONT = 'Arial'
+  DEFAULT_SHADOW_COLOR = 'rgba(0,0,0,0.5)'
 
   DEFAULT_GROUP_FONT = 24
   DEFAULT_GROUP_FONT_SIZE?: any
-  GROUP_FONT = "Arial"
+  GROUP_FONT = 'Arial'
 
-  WIDGET_BGCOLOR = "#222"
-  WIDGET_OUTLINE_COLOR = "#666"
-  WIDGET_ADVANCED_OUTLINE_COLOR = "rgba(56, 139, 253, 0.8)"
-  WIDGET_TEXT_COLOR = "#DDD"
-  WIDGET_SECONDARY_TEXT_COLOR = "#999"
-  WIDGET_DISABLED_TEXT_COLOR = "#666"
+  WIDGET_BGCOLOR = '#222'
+  WIDGET_OUTLINE_COLOR = '#666'
+  WIDGET_ADVANCED_OUTLINE_COLOR = 'rgba(56, 139, 253, 0.8)'
+  WIDGET_TEXT_COLOR = '#DDD'
+  WIDGET_SECONDARY_TEXT_COLOR = '#999'
+  WIDGET_DISABLED_TEXT_COLOR = '#666'
 
-  LINK_COLOR = "#9A9"
-  EVENT_LINK_COLOR = "#A86"
-  CONNECTING_LINK_COLOR = "#AFA"
+  LINK_COLOR = '#9A9'
+  EVENT_LINK_COLOR = '#A86'
+  CONNECTING_LINK_COLOR = '#AFA'
 
   /** avoid infinite loops */
   MAX_NUMBER_OF_NODES = 10_000
   /** default node position */
   DEFAULT_POSITION = [100, 100]
   /** ,"circle" */
-  VALID_SHAPES = ["default", "box", "round", "card"] satisfies ("default" | Lowercase<keyof typeof RenderShape>)[]
+  VALID_SHAPES = ['default', 'box', 'round', 'card'] satisfies (
+    | 'default'
+    | Lowercase<keyof typeof RenderShape>
+  )[]
   ROUND_RADIUS = 8
 
   // shapes are used for nodes but also for slots
@@ -108,9 +110,9 @@ export class LiteGraphGlobal {
   ACTION = -1 as const
 
   /** helper, will add "On Request" and more in the future */
-  NODE_MODES = ["Always", "On Event", "Never", "On Trigger"]
+  NODE_MODES = ['Always', 'On Event', 'Never', 'On Trigger']
   /** use with node_box_coloured_by_mode */
-  NODE_MODES_COLORS = ["#666", "#422", "#333", "#224", "#626"]
+  NODE_MODES_COLORS = ['#666', '#422', '#333', '#224', '#626']
   ALWAYS = LGraphEventMode.ALWAYS
   ON_EVENT = LGraphEventMode.ON_EVENT
   NEVER = LGraphEventMode.NEVER
@@ -123,7 +125,7 @@ export class LiteGraphGlobal {
   CENTER = LinkDirection.CENTER
 
   /** helper */
-  LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]
+  LINK_RENDER_MODES = ['Straight', 'Linear', 'Spline']
   HIDDEN_LINK = LinkRenderType.HIDDEN_LINK
   STRAIGHT_LINK = LinkRenderType.STRAIGHT_LINK
   LINEAR_LINK = LinkRenderType.LINEAR_LINK
@@ -135,11 +137,11 @@ export class LiteGraphGlobal {
   AUTOHIDE_TITLE = TitleMode.AUTOHIDE_TITLE
 
   /** arrange nodes vertically */
-  VERTICAL_LAYOUT = "vertical"
+  VERTICAL_LAYOUT = 'vertical'
 
   /** used to redirect calls */
   proxy = null
-  node_images_path = ""
+  node_images_path = ''
 
   debug = false
   catch_exceptions = true
@@ -249,7 +251,7 @@ export class LiteGraphGlobal {
   release_link_on_empty_shows_menu = false
 
   /** "mouse"|"pointer" use mouse for retrocompatibility issues? (none found @ now) */
-  pointerevents_method = "pointer"
+  pointerevents_method = 'pointer'
 
   /**
    * [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected
@@ -277,7 +279,9 @@ export class LiteGraphGlobal {
    * Array of callbacks to execute when Litegraph first reports a deprecated API being used.
    * @see alwaysRepeatWarnings By default, will not repeat identical messages.
    */
-  onDeprecationWarning: ((message: string, source?: object) => void)[] = [console.warn]
+  onDeprecationWarning: ((message: string, source?: object) => void)[] = [
+    console.warn
+  ]
 
   /**
    * If `true`, mouse wheel events will be interpreted as trackpad gestures.
@@ -300,7 +304,7 @@ export class LiteGraphGlobal {
    * "legacy": Enable dragging on left-click (original behavior)
    * @default "legacy"
    */
-  canvasNavigationMode: "standard" | "legacy" = "legacy"
+  canvasNavigationMode: 'standard' | 'legacy' = 'legacy'
 
   /**
    * If `true`, widget labels and values will both be truncated (proportionally to size),
@@ -336,22 +340,34 @@ export class LiteGraphGlobal {
   Reroute = Reroute
 
   constructor() {
-    Object.defineProperty(this, "Classes", { writable: false })
+    Object.defineProperty(this, 'Classes', { writable: false })
   }
 
   Classes = {
-    get SubgraphSlot() { return SubgraphSlot },
-    get SubgraphIONodeBase() { return SubgraphIONodeBase },
+    get SubgraphSlot() {
+      return SubgraphSlot
+    },
+    get SubgraphIONodeBase() {
+      return SubgraphIONodeBase
+    },
 
     // Rich drawing
-    get Rectangle() { return Rectangle },
+    get Rectangle() {
+      return Rectangle
+    },
 
     // Debug / helpers
-    get InputIndicators() { return InputIndicators },
+    get InputIndicators() {
+      return InputIndicators
+    }
   }
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
-  onNodeTypeReplaced?(type: string, base_class: typeof LGraphNode, prev: unknown): void
+  onNodeTypeReplaced?(
+    type: string,
+    base_class: typeof LGraphNode,
+    prev: unknown
+  ): void
 
   /**
    * Register a node class so it can be listed when the user wants to create a new one
@@ -360,14 +376,14 @@ export class LiteGraphGlobal {
    */
   registerNodeType(type: string, base_class: typeof LGraphNode): void {
     if (!base_class.prototype)
-      throw "Cannot register a simple object, it must be a class with a prototype"
+      throw 'Cannot register a simple object, it must be a class with a prototype'
     base_class.type = type
 
-    if (this.debug) console.log("Node registered:", type)
+    if (this.debug) console.log('Node registered:', type)
 
     const classname = base_class.name
 
-    const pos = type.lastIndexOf("/")
+    const pos = type.lastIndexOf('/')
     base_class.category = type.substring(0, pos)
 
     base_class.title ||= classname
@@ -380,7 +396,7 @@ export class LiteGraphGlobal {
 
     const prev = this.registered_node_types[type]
     if (prev && this.debug) {
-      console.log("replacing node type:", type)
+      console.log('replacing node type:', type)
     }
 
     this.registered_node_types[type] = base_class
@@ -391,10 +407,12 @@ export class LiteGraphGlobal {
 
     // warnings
     if (base_class.prototype.onPropertyChange)
-      console.warn(`LiteGraph node class ${type} has onPropertyChange method, it must be called onPropertyChanged with d at the end`)
+      console.warn(
+        `LiteGraph node class ${type} has onPropertyChange method, it must be called onPropertyChanged with d at the end`
+      )
 
     // TODO one would want to know input and ouput :: this would allow through registerNodeAndSlotType to get all the slots types
-    if (this.auto_load_slot_types) new base_class(base_class.title || "tmpnode")
+    if (this.auto_load_slot_types) new base_class(base_class.title || 'tmpnode')
   }
 
   /**
@@ -402,9 +420,8 @@ export class LiteGraphGlobal {
    * @param type name of the node or the node constructor itself
    */
   unregisterNodeType(type: string | typeof LGraphNode): void {
-    const base_class = typeof type === "string"
-      ? this.registered_node_types[type]
-      : type
+    const base_class =
+      typeof type === 'string' ? this.registered_node_types[type] : type
     if (!base_class) throw `node type not found: ${String(type)}`
 
     delete this.registered_node_types[String(base_class.type)]
@@ -421,28 +438,30 @@ export class LiteGraphGlobal {
   registerNodeAndSlotType(
     type: LGraphNode,
     slot_type: ISlotType,
-    out?: boolean,
+    out?: boolean
   ): void {
     out ||= false
-    // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
-    const base_class = typeof type === "string" && this.registered_node_types[type] !== "anonymous"
-      ? this.registered_node_types[type]
-      : type
+    const base_class =
+      typeof type === 'string' &&
+      // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
+      this.registered_node_types[type] !== 'anonymous'
+        ? this.registered_node_types[type]
+        : type
 
     // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
     const class_type = base_class.constructor.type
 
     let allTypes = []
-    if (typeof slot_type === "string") {
-      allTypes = slot_type.split(",")
+    if (typeof slot_type === 'string') {
+      allTypes = slot_type.split(',')
     } else if (slot_type == this.EVENT || slot_type == this.ACTION) {
-      allTypes = ["_event_"]
+      allTypes = ['_event_']
     } else {
-      allTypes = ["*"]
+      allTypes = ['*']
     }
 
     for (let slotType of allTypes) {
-      if (slotType === "") slotType = "*"
+      if (slotType === '') slotType = '*'
 
       const register = out
         ? this.registered_slot_out_types
@@ -453,9 +472,7 @@ export class LiteGraphGlobal {
       if (!nodes.includes(class_type)) nodes.push(class_type)
 
       // check if is a new type
-      const types = out
-        ? this.slot_types_out
-        : this.slot_types_in
+      const types = out ? this.slot_types_out : this.slot_types_in
       const type = slotType.toLowerCase()
 
       if (!types.includes(type)) {
@@ -484,7 +501,7 @@ export class LiteGraphGlobal {
   createNode(
     type: string,
     title?: string,
-    options?: Dictionary<unknown>,
+    options?: Dictionary<unknown>
   ): LGraphNode | null {
     const base_class = this.registered_node_types[type]
     if (!base_class) {
@@ -551,7 +568,7 @@ export class LiteGraphGlobal {
       const type = this.registered_node_types[i]
       if (type.filter != filter) continue
 
-      if (category == "") {
+      if (category == '') {
         if (type.category == null) r.push(type)
       } else if (type.category == category) {
         r.push(type)
@@ -567,7 +584,7 @@ export class LiteGraphGlobal {
    * @returns array with all the names of the categories
    */
   getNodeTypesCategories(filter?: string): string[] {
-    const categories: Dictionary<number> = { "": 1 }
+    const categories: Dictionary<number> = { '': 1 }
     for (const i in this.registered_node_types) {
       const type = this.registered_node_types[i]
       if (type.category && !type.skip_list) {
@@ -585,14 +602,14 @@ export class LiteGraphGlobal {
 
   // debug purposes: reloads all the js scripts that matches a wildcard
   reloadNodes(folder_wildcard: string): void {
-    const tmp = document.getElementsByTagName("script")
+    const tmp = document.getElementsByTagName('script')
     // weird, this array changes by its own, so we use a copy
     const script_files = []
     for (const element of tmp) {
       script_files.push(element)
     }
 
-    const docHeadObj = document.getElementsByTagName("head")[0]
+    const docHeadObj = document.getElementsByTagName('head')[0]
     folder_wildcard = document.location.href + folder_wildcard
 
     for (const script_file of script_files) {
@@ -601,24 +618,27 @@ export class LiteGraphGlobal {
         continue
 
       try {
-        if (this.debug) console.log("Reloading:", src)
-        const dynamicScript = document.createElement("script")
-        dynamicScript.type = "text/javascript"
+        if (this.debug) console.log('Reloading:', src)
+        const dynamicScript = document.createElement('script')
+        dynamicScript.type = 'text/javascript'
         dynamicScript.src = src
         docHeadObj.append(dynamicScript)
         script_file.remove()
       } catch (error) {
         if (this.throw_errors) throw error
-        if (this.debug) console.log("Error while reloading", src)
+        if (this.debug) console.log('Error while reloading', src)
       }
     }
 
-    if (this.debug) console.log("Nodes reloaded")
+    if (this.debug) console.log('Nodes reloaded')
   }
 
   // separated just to improve if it doesn't work
   /** @deprecated Prefer {@link structuredClone} */
-  cloneObject<T extends object | undefined | null>(obj: T, target?: T): WhenNullish<T, null> {
+  cloneObject<T extends object | undefined | null>(
+    obj: T,
+    target?: T
+  ): WhenNullish<T, null> {
     if (obj == null) return null as WhenNullish<T, null>
 
     const r = JSON.parse(JSON.stringify(obj))
@@ -641,8 +661,8 @@ export class LiteGraphGlobal {
    * @returns true if they can be connected
    */
   isValidConnection(type_a: ISlotType, type_b: ISlotType): boolean {
-    if (type_a == "" || type_a === "*") type_a = 0
-    if (type_b == "" || type_b === "*") type_b = 0
+    if (type_a == '' || type_a === '*') type_a = 0
+    if (type_b == '' || type_b === '*') type_b = 0
     // If generic in/output, matching types (valid for triggers), or event/action types
     if (
       !type_a ||
@@ -660,16 +680,14 @@ export class LiteGraphGlobal {
     type_b = type_b.toLowerCase()
 
     // For nodes supporting multiple connection types
-    if (!type_a.includes(",") && !type_b.includes(","))
-      return type_a == type_b
+    if (!type_a.includes(',') && !type_b.includes(',')) return type_a == type_b
 
     // Check all permutations to see if one is valid
-    const supported_types_a = type_a.split(",")
-    const supported_types_b = type_b.split(",")
+    const supported_types_a = type_a.split(',')
+    const supported_types_b = type_b.split(',')
     for (const a of supported_types_a) {
       for (const b of supported_types_b) {
-        if (this.isValidConnection(a, b))
-          return true
+        if (this.isValidConnection(a, b)) return true
       }
     }
 
@@ -679,105 +697,154 @@ export class LiteGraphGlobal {
   // used to create nodes from wrapping functions
   getParameterNames(func: (...args: any) => any): string[] {
     return String(func)
-      .replaceAll(/\/\/.*$/gm, "") // strip single-line comments
-      .replaceAll(/\s+/g, "") // strip white space
-      .replaceAll(/\/\*[^*/]*\*\//g, "") // strip multi-line comments  /**/
-      .split("){", 1)[0]
-      .replace(/^[^(]*\(/, "") // extract the parameters
-      .replaceAll(/=[^,]+/g, "") // strip any ES6 defaults
-      .split(",")
+      .replaceAll(/\/\/.*$/gm, '') // strip single-line comments
+      .replaceAll(/\s+/g, '') // strip white space
+      .replaceAll(/\/\*[^*/]*\*\//g, '') // strip multi-line comments  /**/
+      .split('){', 1)[0]
+      .replace(/^[^(]*\(/, '') // extract the parameters
+      .replaceAll(/=[^,]+/g, '') // strip any ES6 defaults
+      .split(',')
       .filter(Boolean) // split & filter [""]
   }
 
   /* helper for interaction: pointer, touch, mouse Listeners
     used by LGraphCanvas DragAndScale ContextMenu */
-  pointerListenerAdd(oDOM: Node, sEvIn: string, fCall: (e: Event) => boolean | void, capture = false): void {
-    if (!oDOM || !oDOM.addEventListener || !sEvIn || typeof fCall !== "function") return
+  pointerListenerAdd(
+    oDOM: Node,
+    sEvIn: string,
+    fCall: (e: Event) => boolean | void,
+    capture = false
+  ): void {
+    if (
+      !oDOM ||
+      !oDOM.addEventListener ||
+      !sEvIn ||
+      typeof fCall !== 'function'
+    )
+      return
 
     let sMethod = this.pointerevents_method
     let sEvent = sEvIn
 
     // UNDER CONSTRUCTION
     // convert pointerevents to touch event when not available
-    if (sMethod == "pointer" && !window.PointerEvent) {
+    if (sMethod == 'pointer' && !window.PointerEvent) {
       console.warn("sMethod=='pointer' && !window.PointerEvent")
-      console.log(`Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`)
+      console.log(
+        `Converting pointer[${sEvent}] : down move up cancel enter TO touchstart touchmove touchend, etc ..`
+      )
       switch (sEvent) {
-      case "down": {
-        sMethod = "touch"
-        sEvent = "start"
-        break
-      }
-      case "move": {
-        sMethod = "touch"
-        // sEvent = "move";
-        break
-      }
-      case "up": {
-        sMethod = "touch"
-        sEvent = "end"
-        break
-      }
-      case "cancel": {
-        sMethod = "touch"
-        // sEvent = "cancel";
-        break
-      }
-      case "enter": {
-        console.log("debug: Should I send a move event?") // ???
-        break
-      }
-      // case "over": case "out": not used at now
-      default: {
-        console.warn(`PointerEvent not available in this browser ? The event ${sEvent} would not be called`)
-      }
+        case 'down': {
+          sMethod = 'touch'
+          sEvent = 'start'
+          break
+        }
+        case 'move': {
+          sMethod = 'touch'
+          // sEvent = "move";
+          break
+        }
+        case 'up': {
+          sMethod = 'touch'
+          sEvent = 'end'
+          break
+        }
+        case 'cancel': {
+          sMethod = 'touch'
+          // sEvent = "cancel";
+          break
+        }
+        case 'enter': {
+          console.log('debug: Should I send a move event?') // ???
+          break
+        }
+        // case "over": case "out": not used at now
+        default: {
+          console.warn(
+            `PointerEvent not available in this browser ? The event ${sEvent} would not be called`
+          )
+        }
       }
     }
 
     switch (sEvent) {
-    // @ts-expect-error
-    // both pointer and move events
-    case "down": case "up": case "move": case "over": case "out": case "enter":
-    {
-      oDOM.addEventListener(sMethod + sEvent, fCall, capture)
-    }
-    // @ts-expect-error
-    // only pointerevents
-    case "leave": case "cancel": case "gotpointercapture": case "lostpointercapture":
-    {
-      if (sMethod != "mouse") {
-        return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
+      // both pointer and move events
+      case 'down':
+      case 'up':
+      case 'move':
+      case 'over':
+      case 'out':
+      // @ts-expect-error - intentional fallthrough
+      case 'enter': {
+        oDOM.addEventListener(sMethod + sEvent, fCall, capture)
       }
-    }
-    // not "pointer" || "mouse"
-    default:
-      return oDOM.addEventListener(sEvent, fCall, capture)
+      // only pointerevents
+      case 'leave':
+      case 'cancel':
+      case 'gotpointercapture':
+      // @ts-expect-error - intentional fallthrough
+      case 'lostpointercapture': {
+        if (sMethod != 'mouse') {
+          return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
+        }
+      }
+      // not "pointer" || "mouse"
+      default:
+        return oDOM.addEventListener(sEvent, fCall, capture)
     }
   }
 
-  pointerListenerRemove(oDOM: Node, sEvent: string, fCall: (e: Event) => boolean | void, capture = false): void {
-    if (!oDOM || !oDOM.removeEventListener || !sEvent || typeof fCall !== "function") return
+  pointerListenerRemove(
+    oDOM: Node,
+    sEvent: string,
+    fCall: (e: Event) => boolean | void,
+    capture = false
+  ): void {
+    if (
+      !oDOM ||
+      !oDOM.removeEventListener ||
+      !sEvent ||
+      typeof fCall !== 'function'
+    )
+      return
 
     switch (sEvent) {
-    // @ts-expect-error
-    // both pointer and move events
-    case "down": case "up": case "move": case "over": case "out": case "enter":
-    {
-      if (this.pointerevents_method == "pointer" || this.pointerevents_method == "mouse") {
-        oDOM.removeEventListener(this.pointerevents_method + sEvent, fCall, capture)
+      // both pointer and move events
+      case 'down':
+      case 'up':
+      case 'move':
+      case 'over':
+      case 'out':
+      // @ts-expect-error - intentional fallthrough
+      case 'enter': {
+        if (
+          this.pointerevents_method == 'pointer' ||
+          this.pointerevents_method == 'mouse'
+        ) {
+          oDOM.removeEventListener(
+            this.pointerevents_method + sEvent,
+            fCall,
+            capture
+          )
+        }
       }
-    }
-    // @ts-expect-error
-    // only pointerevents
-    case "leave": case "cancel": case "gotpointercapture": case "lostpointercapture":
-    {
-      if (this.pointerevents_method == "pointer") {
-        return oDOM.removeEventListener(this.pointerevents_method + sEvent, fCall, capture)
+      // only pointerevents
+      case 'leave':
+      case 'cancel':
+      case 'gotpointercapture':
+      // @ts-expect-error - intentional fallthrough
+      case 'lostpointercapture': {
+        if (this.pointerevents_method == 'pointer') {
+          return oDOM.removeEventListener(
+            this.pointerevents_method + sEvent,
+            fCall,
+            capture
+          )
+        }
       }
-    }
-    // not "pointer" || "mouse"
-    default:
-      return oDOM.removeEventListener(sEvent, fCall, capture)
+      // not "pointer" || "mouse"
+      default:
+        return oDOM.removeEventListener(sEvent, fCall, capture)
     }
   }
 
@@ -788,17 +855,11 @@ export class LiteGraphGlobal {
   distance = distance
 
   colorToString(c: [number, number, number, number]): string {
-    return (
-      `rgba(${
-        Math.round(c[0] * 255).toFixed()
-      },${
-        Math.round(c[1] * 255).toFixed()
-      },${
-        Math.round(c[2] * 255).toFixed()
-      },${
-        c.length == 4 ? c[3].toFixed(2) : "1.0"
-      })`
-    )
+    return `rgba(${Math.round(c[0] * 255).toFixed()},${Math.round(
+      c[1] * 255
+    ).toFixed()},${Math.round(c[2] * 255).toFixed()},${
+      c.length == 4 ? c[3].toFixed(2) : '1.0'
+    })`
   }
 
   isInsideRectangle = isInsideRectangle
@@ -837,12 +898,12 @@ export class LiteGraphGlobal {
   // format of a hex triplet - the kind we use for HTML colours. The function
   // will return an array with three values.
   hex2num(hex: string): number[] {
-    if (hex.charAt(0) == "#") {
+    if (hex.charAt(0) == '#') {
       hex = hex.slice(1)
-    // Remove the '#' char - if there is one.
+      // Remove the '#' char - if there is one.
     }
     hex = hex.toUpperCase()
-    const hex_alphabets = "0123456789ABCDEF"
+    const hex_alphabets = '0123456789ABCDEF'
     const value = new Array(3)
     let k = 0
     let int1, int2
@@ -858,8 +919,8 @@ export class LiteGraphGlobal {
   // Give a array with three values as the argument and the function will return
   // the corresponding hex triplet.
   num2hex(triplet: number[]): string {
-    const hex_alphabets = "0123456789ABCDEF"
-    let hex = "#"
+    const hex_alphabets = '0123456789ABCDEF'
+    let hex = '#'
     let int1, int2
     for (let i = 0; i < 3; i++) {
       int1 = triplet[i] / 16
@@ -871,11 +932,13 @@ export class LiteGraphGlobal {
   }
 
   closeAllContextMenus(ref_window: Window = window): void {
-    const elements = [...ref_window.document.querySelectorAll(".litecontextmenu")]
+    const elements = [
+      ...ref_window.document.querySelectorAll('.litecontextmenu')
+    ]
     if (!elements.length) return
 
     for (const element of elements) {
-      if ("close" in element && typeof element.close === "function") {
+      if ('close' in element && typeof element.close === 'function') {
         element.close()
       } else {
         element.remove()
@@ -903,7 +966,7 @@ export class LiteGraphGlobal {
         if (origin.prototype.__lookupGetter__(i)) {
           target.prototype.__defineGetter__(
             i,
-            origin.prototype.__lookupGetter__(i),
+            origin.prototype.__lookupGetter__(i)
           )
         } else {
           target.prototype[i] = origin.prototype[i]
@@ -913,7 +976,7 @@ export class LiteGraphGlobal {
         if (origin.prototype.__lookupSetter__(i)) {
           target.prototype.__defineSetter__(
             i,
-            origin.prototype.__lookupSetter__(i),
+            origin.prototype.__lookupSetter__(i)
           )
         }
       }

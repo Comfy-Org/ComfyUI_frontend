@@ -1,12 +1,15 @@
-import type { IKnobWidget } from "@/lib/litegraph/src/types/widgets"
+import { clamp } from '@/lib/litegraph/src/litegraph'
+import type { IKnobWidget } from '@/lib/litegraph/src/types/widgets'
+import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 
-import { clamp } from "@/lib/litegraph/src/litegraph"
-import { getWidgetStep } from "@/lib/litegraph/src/utils/widget"
-
-import { BaseWidget, type DrawWidgetOptions, type WidgetEventOptions } from "./BaseWidget"
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
 export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
-  override type = "knob" as const
+  override type = 'knob' as const
 
   /**
    * Compute the layout size of the widget.
@@ -22,7 +25,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
       minHeight: 60,
       minWidth: 20,
       maxHeight: 1_000_000,
-      maxWidth: 1_000_000,
+      maxWidth: 1_000_000
     }
   }
 
@@ -32,10 +35,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
 
   drawWidget(
     ctx: CanvasRenderingContext2D,
-    {
-      width,
-      showText = true,
-    }: DrawWidgetOptions,
+    { width, showText = true }: DrawWidgetOptions
   ): void {
     // Store original context attributes
     const { fillStyle, strokeStyle, textAlign } = ctx
@@ -43,7 +43,8 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     const { y } = this
     const { margin } = BaseWidget
 
-    const { gradient_stops = "rgb(14, 182, 201); rgb(0, 216, 72)" } = this.options
+    const { gradient_stops = 'rgb(14, 182, 201); rgb(0, 216, 72)' } =
+      this.options
     const effective_height = this.computedHeight || this.height
     // Draw background
     const size_modifier =
@@ -54,7 +55,8 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     const arc_size =
       (Math.min(width, effective_height) -
         margin * size_modifier -
-        ctx.lineWidth) / 2
+        ctx.lineWidth) /
+      2
     {
       const gradient = ctx.createRadialGradient(
         arc_center.x,
@@ -62,10 +64,10 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
         arc_size + ctx.lineWidth,
         0,
         0,
-        arc_size + ctx.lineWidth,
+        arc_size + ctx.lineWidth
       )
-      gradient.addColorStop(0, "rgb(29, 29, 29)")
-      gradient.addColorStop(1, "rgb(116, 116, 116)")
+      gradient.addColorStop(0, 'rgb(29, 29, 29)')
+      gradient.addColorStop(1, 'rgb(116, 116, 116)')
       ctx.fillStyle = gradient
     }
     ctx.beginPath()
@@ -77,7 +79,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
         arc_size + ctx.lineWidth / 2,
         0,
         Math.PI * 2,
-        false,
+        false
       )
       ctx.fill()
       ctx.closePath()
@@ -86,7 +88,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     // Draw knob's background
     const arc = {
       start_angle: Math.PI * 0.6,
-      end_angle: Math.PI * 2.4,
+      end_angle: Math.PI * 2.4
     }
     ctx.beginPath()
     {
@@ -96,10 +98,10 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
         arc_size + ctx.lineWidth,
         0,
         0,
-        arc_size + ctx.lineWidth,
+        arc_size + ctx.lineWidth
       )
-      gradient.addColorStop(0, "rgb(99, 99, 99)")
-      gradient.addColorStop(1, "rgb(36, 36, 36)")
+      gradient.addColorStop(0, 'rgb(99, 99, 99)')
+      gradient.addColorStop(1, 'rgb(36, 36, 36)')
       ctx.strokeStyle = gradient
     }
     ctx.arc(
@@ -108,7 +110,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
       arc_size,
       arc.start_angle,
       arc.end_angle,
-      false,
+      false
     )
     ctx.stroke()
     ctx.closePath()
@@ -122,9 +124,9 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     const gradient = ctx.createConicGradient(
       arc.start_angle,
       arc_center.x,
-      arc_center.y,
+      arc_center.y
     )
-    const gs = gradient_stops.split(";")
+    const gs = gradient_stops.split(';')
     for (const [index, stop] of gs.entries()) {
       gradient.addColorStop(index, stop.trim())
     }
@@ -138,7 +140,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
       arc_size,
       arc.start_angle,
       value_end_angle,
-      false,
+      false
     )
     ctx.stroke()
     ctx.closePath()
@@ -155,7 +157,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
         arc_size + ctx.lineWidth / 2,
         0,
         Math.PI * 2,
-        false,
+        false
       )
       ctx.lineWidth = 1
       ctx.stroke()
@@ -167,13 +169,13 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
 
     // Draw text
     if (showText) {
-      ctx.textAlign = "center"
+      ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
       const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)
       ctx.fillText(
         `${this.label || this.name}\n${fixedValue}`,
         width * 0.5,
-        y + effective_height * 0.5,
+        y + effective_height * 0.5
       )
     }
 
@@ -191,13 +193,19 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     const { e } = options
     const step = getWidgetStep(this.options)
     // Shift to move by 10% increments
-    const range = (this.options.max - this.options.min)
+    const range = this.options.max - this.options.min
     const range_10_percent = range / 10
     const range_1_percent = range / 100
     const step_for = {
       delta_x: step,
-      shift: range_10_percent > step ? range_10_percent - (range_10_percent % step) : step,
-      delta_y: range_1_percent > step ? range_1_percent - (range_1_percent % step) : step, // 1% increments
+      shift:
+        range_10_percent > step
+          ? range_10_percent - (range_10_percent % step)
+          : step,
+      delta_y:
+        range_1_percent > step
+          ? range_1_percent - (range_1_percent % step)
+          : step // 1% increments
     }
 
     const use_y = Math.abs(e.movementY) > Math.abs(e.movementX)
@@ -216,15 +224,15 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
 
     const step_with_shift_modifier = e.shiftKey
       ? step_for.shift
-      : (use_y
+      : use_y
         ? step_for.delta_y
-        : step)
+        : step
 
     const deltaValue = adjustment * step_with_shift_modifier
     const newValue = clamp(
       this.value + deltaValue,
       this.options.min,
-      this.options.max,
+      this.options.max
     )
     if (newValue !== this.value) {
       this.setValue(newValue, options)

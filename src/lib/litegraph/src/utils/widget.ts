@@ -1,4 +1,4 @@
-import type { IWidgetOptions } from "@/lib/litegraph/src/types/widgets"
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 /**
  * The step value for numeric widgets.
@@ -6,5 +6,5 @@ import type { IWidgetOptions } from "@/lib/litegraph/src/types/widgets"
  * {@link IWidgetOptions.step} which is scaled up by 10x in the legacy frontend logic.
  */
 export function getWidgetStep(options: IWidgetOptions<unknown>): number {
-  return options.step2 || ((options.step || 10) * 0.1)
+  return options.step2 || (options.step || 10) * 0.1
 }
