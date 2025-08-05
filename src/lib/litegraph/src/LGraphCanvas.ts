@@ -2478,8 +2478,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // Mousedown callback - can block drag
-      if (node.onMouseDown?.(e, pos, this) || !this.allow_dragnodes)
+      if (node.onMouseDown?.(e, pos, this)) {
+        // Node handled the event (e.g., title button clicked)
+        // Set a no-op click handler to prevent fallback canvas dragging
+        pointer.onClick = () => {}
         return
+      }
+
+      if (!this.allow_dragnodes) return
 
       // Check for resize AFTER checking all other interaction areas
       if (!node.flags.collapsed) {
