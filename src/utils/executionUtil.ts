@@ -3,8 +3,10 @@ import type {
   ExecutionId,
   LGraph
 } from '@/lib/litegraph/src/litegraph'
-import { ExecutableNodeDTO, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-
+import {
+  ExecutableNodeDTO,
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
