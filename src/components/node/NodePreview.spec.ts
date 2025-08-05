@@ -1,11 +1,12 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import * as markdownRendererUtil from '@/utils/markdownRendererUtil'
 
 import NodePreview from './NodePreview.vue'
 
@@ -128,5 +129,134 @@ describe('NodePreview', () => {
     const headdot = wrapper.find('.headdot')
 
     expect(headdot.classes()).toContain('pr-3')
+  })
+
+  describe('Description Rendering', () => {
+    it('renders plain text description as HTML', () => {
+      const plainTextNodeDef: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: 'This is a plain text description'
+      }
+
+      const wrapper = mountComponent(plainTextNodeDef)
+      const description = wrapper.find('._sb_description')
+
+      expect(description.exists()).toBe(true)
+      expect(description.html()).toContain('This is a plain text description')
+    })
+
+    it('renders markdown description with formatting', () => {
+      const markdownNodeDef: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: '**Bold text** and *italic text* with `code`'
+      }
+
+      const wrapper = mountComponent(markdownNodeDef)
+      const description = wrapper.find('._sb_description')
+
+      expect(description.exists()).toBe(true)
+      expect(description.html()).toContain('<strong>Bold text</strong>')
+      expect(description.html()).toContain('<em>italic text</em>')
+      expect(description.html()).toContain('<code>code</code>')
+    })
+
+    it('does not render description element when description is empty', () => {
+      const noDescriptionNodeDef: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: ''
+      }
+
+      const wrapper = mountComponent(noDescriptionNodeDef)
+      const description = wrapper.find('._sb_description')
+
+      expect(description.exists()).toBe(false)
+    })
+
+    it('does not render description element when description is undefined', () => {
+      const { description, ...nodeDefWithoutDescription } = mockNodeDef
+      const wrapper = mountComponent(nodeDefWithoutDescription as ComfyNodeDefV2)
+      const descriptionElement = wrapper.find('._sb_description')
+
+      expect(descriptionElement.exists()).toBe(false)
+    })
+
+    it('calls renderMarkdownToHtml utility function', () => {
+      const spy = vi.spyOn(markdownRendererUtil, 'renderMarkdownToHtml')
+      const testDescription = 'Test **markdown** description'
+      
+      const nodeDefWithDescription: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: testDescription
+      }
+
+      mountComponent(nodeDefWithDescription)
+
+      expect(spy).toHaveBeenCalledWith(testDescription)
+      spy.mockRestore()
+    })
+
+    it('handles potentially unsafe markdown content safely', () => {
+      const unsafeNodeDef: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: 'Safe **markdown** content with `code` blocks'
+      }
+
+      const wrapper = mountComponent(unsafeNodeDef)
+      const description = wrapper.find('._sb_description')
+
+      expect(description.exists()).toBe(true)
+      // Should contain the safe markdown content rendered as HTML
+      expect(description.html()).toContain('<strong>markdown</strong>')
+      expect(description.html()).toContain('<code>code</code>')
+    })
+
+    it('handles markdown with line breaks', () => {
+      const multilineNodeDef: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: 'Line 1\n\nLine 3 after empty line'
+      }
+
+      const wrapper = mountComponent(multilineNodeDef)
+      const description = wrapper.find('._sb_description')
+
+      expect(description.exists()).toBe(true)
+      // Should contain paragraph tags for proper line break handling
+      expect(description.html()).toContain('<p>')
+    })
+
+    it('handles markdown lists', () => {
+      const listNodeDef: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: '- Item 1\n- Item 2\n- Item 3'
+      }
+
+      const wrapper = mountComponent(listNodeDef)
+      const description = wrapper.find('._sb_description')
+
+      expect(description.exists()).toBe(true)
+      expect(description.html()).toContain('<ul>')
+      expect(description.html()).toContain('<li>')
+    })
+
+    it('applies correct styling classes to description', () => {
+      const wrapper = mountComponent()
+      const description = wrapper.find('._sb_description')
+
+      expect(description.classes()).toContain('_sb_description')
+    })
+
+    it('uses v-html directive for rendered content', () => {
+      const htmlNodeDef: ComfyNodeDefV2 = {
+        ...mockNodeDef,
+        description: 'Content with **bold** text'
+      }
+
+      const wrapper = mountComponent(htmlNodeDef)
+      const description = wrapper.find('._sb_description')
+
+      // The component should render the HTML, not escape it
+      expect(description.html()).toContain('<strong>bold</strong>')
+      expect(description.html()).not.toContain('&lt;strong&gt;')
+    })
   })
 })
