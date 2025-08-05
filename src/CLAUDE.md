@@ -6,9 +6,22 @@
 
 - Use `api.apiURL()` for backend endpoints
 - Use `api.fileURL()` for static files
-- Examples:
-  - Backend: `api.apiURL('/prompt')`
-  - Static: `api.fileURL('/templates/default.json')`
+
+#### ✅ Correct Usage
+```typescript
+// Backend API call
+const response = await api.get(api.apiURL('/prompt'))
+
+// Static file
+const template = await fetch(api.fileURL('/templates/default.json'))
+```
+
+#### ❌ Incorrect Usage
+```typescript
+// WRONG - Direct URL construction
+const response = await fetch('/api/prompt')
+const template = await fetch('/templates/default.json')
+```
 
 ### Error Handling
 

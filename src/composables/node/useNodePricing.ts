@@ -919,6 +919,33 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         return `$${price.toFixed(2)}/Run`
       }
     },
+    Veo3VideoGenerationNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const generateAudioWidget = node.widgets?.find(
+          (w) => w.name === 'generate_audio'
+        ) as IComboWidget
+
+        if (!modelWidget || !generateAudioWidget) {
+          return '$2.00-6.00/Run (varies with model & audio generation)'
+        }
+
+        const model = String(modelWidget.value)
+        const generateAudio =
+          String(generateAudioWidget.value).toLowerCase() === 'true'
+
+        if (model.includes('veo-3.0-fast-generate-001')) {
+          return generateAudio ? '$3.20/Run' : '$2.00/Run'
+        } else if (model.includes('veo-3.0-generate-001')) {
+          return generateAudio ? '$6.00/Run' : '$4.00/Run'
+        }
+
+        // Default fallback
+        return '$2.00-6.00/Run'
+      }
+    },
     LumaImageNode: {
       displayPrice: (node: LGraphNode): string => {
         const modelWidget = node.widgets?.find(
@@ -1340,6 +1367,7 @@ export const useNodePricing = () => {
       FluxProKontextProNode: [],
       FluxProKontextMaxNode: [],
       VeoVideoGenerationNode: ['duration_seconds'],
+      Veo3VideoGenerationNode: ['model', 'generate_audio'],
       LumaVideoNode: ['model', 'resolution', 'duration'],
       LumaImageToVideoNode: ['model', 'resolution', 'duration'],
       LumaImageNode: ['model', 'aspect_ratio'],

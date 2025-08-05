@@ -393,6 +393,86 @@ describe('useNodePricing', () => {
     })
   })
 
+  describe('dynamic pricing - Veo3VideoGenerationNode', () => {
+    it('should return $2.00 for veo-3.0-fast-generate-001 without audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-fast-generate-001' },
+        { name: 'generate_audio', value: false }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$2.00/Run')
+    })
+
+    it('should return $3.20 for veo-3.0-fast-generate-001 with audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-fast-generate-001' },
+        { name: 'generate_audio', value: true }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$3.20/Run')
+    })
+
+    it('should return $4.00 for veo-3.0-generate-001 without audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-generate-001' },
+        { name: 'generate_audio', value: false }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$4.00/Run')
+    })
+
+    it('should return $6.00 for veo-3.0-generate-001 with audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-generate-001' },
+        { name: 'generate_audio', value: true }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$6.00/Run')
+    })
+
+    it('should return range when widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe(
+        '$2.00-6.00/Run (varies with model & audio generation)'
+      )
+    })
+
+    it('should return range when only model widget is present', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-generate-001' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe(
+        '$2.00-6.00/Run (varies with model & audio generation)'
+      )
+    })
+
+    it('should return range when only generate_audio widget is present', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'generate_audio', value: true }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe(
+        '$2.00-6.00/Run (varies with model & audio generation)'
+      )
+    })
+  })
+
   describe('dynamic pricing - LumaVideoNode', () => {
     it('should return $2.19 for ray-flash-2 4K 5s', () => {
       const { getNodeDisplayPrice } = useNodePricing()
@@ -734,6 +814,13 @@ describe('useNodePricing', () => {
 
         const widgetNames = getRelevantWidgetNames('VeoVideoGenerationNode')
         expect(widgetNames).toEqual(['duration_seconds'])
+      })
+
+      it('should return correct widget names for Veo3VideoGenerationNode', () => {
+        const { getRelevantWidgetNames } = useNodePricing()
+
+        const widgetNames = getRelevantWidgetNames('Veo3VideoGenerationNode')
+        expect(widgetNames).toEqual(['model', 'generate_audio'])
       })
 
       it('should return correct widget names for LumaVideoNode', () => {
