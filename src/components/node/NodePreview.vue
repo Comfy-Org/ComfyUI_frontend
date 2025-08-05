@@ -5,25 +5,18 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 <template>
   <div class="_sb_node_preview">
     <div class="_sb_table">
-      <div
-        class="node_header overflow-ellipsis mr-4"
-        :title="nodeDef.display_name"
-        :style="{
-          backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
-          color: litegraphColors.NODE_TITLE_COLOR
-        }"
-      >
+      <div class="node_header overflow-ellipsis mr-4" :title="nodeDef.display_name" :style="{
+        backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
+        color: litegraphColors.NODE_TITLE_COLOR
+      }">
         <div class="_sb_dot headdot pr-3" />
         {{ nodeDef.display_name }}
       </div>
       <div class="_sb_preview_badge">{{ $t('g.preview') }}</div>
 
       <!-- Node slot I/O -->
-      <div
-        v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
-        :key="(slotInput?.name || '') + (slotOutput?.index.toString() || '')"
-        class="_sb_row slot_row"
-      >
+      <div v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
+        :key="(slotInput?.name || '') + (slotOutput?.index.toString() || '')" class="_sb_row slot_row">
         <div class="_sb_col">
           <div v-if="slotInput" :class="['_sb_dot', slotInput.type]" />
         </div>
@@ -31,12 +24,9 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
           {{ slotInput ? slotInput.name : '' }}
         </div>
         <div class="_sb_col middle-column" />
-        <div
-          class="_sb_col _sb_inherit"
-          :style="{
-            color: litegraphColors.NODE_TEXT_COLOR
-          }"
-        >
+        <div class="_sb_col _sb_inherit" :style="{
+          color: litegraphColors.NODE_TEXT_COLOR
+        }">
           {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
@@ -45,40 +35,24 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       </div>
 
       <!-- Node widget inputs -->
-      <div
-        v-for="widgetInput in widgetInputDefs"
-        :key="widgetInput.name"
-        class="_sb_row _long_field"
-      >
+      <div v-for="widgetInput in widgetInputDefs" :key="widgetInput.name" class="_sb_row _long_field">
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
-        <div
-          class="_sb_col"
-          :style="{
-            color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR
-          }"
-        >
+        <div class="_sb_col" :style="{
+          color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR
+        }">
           {{ widgetInput.name }}
         </div>
         <div class="_sb_col middle-column" />
-        <div
-          class="_sb_col _sb_inherit"
-          :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
-        >
+        <div class="_sb_col _sb_inherit" :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }">
           {{ truncateDefaultValue(widgetInput.default) }}
         </div>
         <div class="_sb_col _sb_arrow">&#x25B6;</div>
       </div>
     </div>
-    <div
-      v-if="nodeDef.description"
-      class="_sb_description"
-      :style="{
-        color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
-        backgroundColor: litegraphColors.WIDGET_BGCOLOR
-      }"
-    >
-      {{ nodeDef.description }}
-    </div>
+    <div v-if="renderedDescription" class="_sb_description" :style="{
+      color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
+      backgroundColor: litegraphColors.WIDGET_BGCOLOR
+    }" v-html="renderedDescription" />
   </div>
 </template>
 
@@ -89,6 +63,7 @@ import { computed } from 'vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 const props = defineProps<{
   nodeDef: ComfyNodeDefV2
@@ -100,6 +75,12 @@ const litegraphColors = computed(
 )
 
 const widgetStore = useWidgetStore()
+
+// Always use DOMPurify-sanitized rendering for descriptions
+const renderedDescription = computed(() => {
+  if (!nodeDef.description) return ''
+  return renderMarkdownToHtml(nodeDef.description)
+})
 
 const nodeDef = props.nodeDef
 const allInputDefs = Object.values(nodeDef.inputs)
