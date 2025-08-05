@@ -226,7 +226,7 @@
       "disabled": "Disabled"
     },
     "conflicts": {
-      "title": "Conflicts Detected!",
+      "title": "Node Pack Issues Detected!",
       "description": "We’ve detected conflicts between some of your extensions and the new version of ComfyUI. By updating you risk breaking workflows that rely on those extensions.",
       "info": "If you continue with the update, the conflicting extensions will be disabled automatically. You can review and manage them anytime in the ComfyUI Manager.",
       "extensionAtRisk": "Extension at Risk",
