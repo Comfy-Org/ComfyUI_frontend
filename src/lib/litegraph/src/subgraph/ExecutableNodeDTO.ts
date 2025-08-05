@@ -126,11 +126,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
   /** Returns either the DTO itself, or the DTOs of the inner nodes of the subgraph. */
   getInnerNodes(): ExecutableLGraphNode[] {
-    return this.subgraphNode
-      ? this.subgraphNode.getInnerNodes(
-          this.nodesByExecutionId,
-          this.subgraphNodePath
-        )
+    return this.node.isSubgraphNode()
+      ? this.node.getInnerNodes(this.nodesByExecutionId, this.subgraphNodePath)
       : [this]
   }
 
