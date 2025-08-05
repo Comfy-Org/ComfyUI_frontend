@@ -1,11 +1,5 @@
 # Unit Testing Guidelines
 
-## Quick Test Commands
-
-- `npm run test:unit` - Run all unit tests
-- `npm run test:unit -- tests-ui/tests/example.test.ts` - Run single test file
-- `npm run test:component` - Run component tests with browser environment
-
 ## Testing Approach
 
 - Write tests for new features
