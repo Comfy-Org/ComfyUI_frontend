@@ -12,7 +12,9 @@ import type { IBaseWidget } from "@/lib/litegraph/src/types/widgets"
 import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from "@/lib/litegraph/src/constants"
 import { CustomEventTarget } from "@/lib/litegraph/src/infrastructure/CustomEventTarget"
 import { LLink } from "@/lib/litegraph/src/LLink"
-import { Subgraph } from "@/lib/litegraph/src/litegraph"
+import { Subgraph } from "@/lib/litegraph/src/subgraph/Subgraph"
+import { SubgraphInputNode } from "@/lib/litegraph/src/subgraph/SubgraphInputNode"
+import { SubgraphOutputNode } from "@/lib/litegraph/src/subgraph/SubgraphOutputNode"
 import { LinkDirection } from "@/lib/litegraph/src/types/globalEnums"
 
 import { FloatingRenderLink } from "./FloatingRenderLink"
@@ -308,7 +310,7 @@ export class LinkConnector {
     this.#setLegacyLinks(true)
   }
 
-  dragNewFromSubgraphInput(network: LinkNetwork, inputNode: any, input: SubgraphInput, fromReroute?: Reroute): void {
+  dragNewFromSubgraphInput(network: LinkNetwork, inputNode: SubgraphInputNode, input: SubgraphInput, fromReroute?: Reroute): void {
     if (this.isConnecting) throw new Error("Already dragging links.")
 
     const renderLink = new ToInputFromIoNodeLink(network, inputNode, input, fromReroute)
@@ -319,7 +321,7 @@ export class LinkConnector {
     this.#setLegacyLinks(false)
   }
 
-  dragNewFromSubgraphOutput(network: LinkNetwork, outputNode: any, output: SubgraphOutput, fromReroute?: Reroute): void {
+  dragNewFromSubgraphOutput(network: LinkNetwork, outputNode: SubgraphOutputNode, output: SubgraphOutput, fromReroute?: Reroute): void {
     if (this.isConnecting) throw new Error("Already dragging links.")
 
     const renderLink = new ToOutputFromIoNodeLink(network, outputNode, output, fromReroute)
@@ -497,19 +499,19 @@ export class LinkConnector {
     }
   }
 
-  dropOnIoNode(ioNode: any, event: CanvasPointerEvent): void {
+  dropOnIoNode(ioNode: SubgraphInputNode | SubgraphOutputNode, event: CanvasPointerEvent): void {
     const { renderLinks, state } = this
     const { connectingTo } = state
     const { canvasX, canvasY } = event
 
-    if (connectingTo === "input" && ioNode.id === SUBGRAPH_OUTPUT_ID) {
+    if (connectingTo === "input" && ioNode instanceof SubgraphOutputNode) {
       const output = ioNode.getSlotInPosition(canvasX, canvasY)
       if (!output) throw new Error("No output slot found for link.")
 
       for (const link of renderLinks) {
         link.connectToSubgraphOutput(output, this.events)
       }
-    } else if (connectingTo === "output" && ioNode.id === SUBGRAPH_INPUT_ID) {
+    } else if (connectingTo === "output" && ioNode instanceof SubgraphInputNode) {
       const input = ioNode.getSlotInPosition(canvasX, canvasY)
       if (!input) throw new Error("No input slot found for link.")
 
