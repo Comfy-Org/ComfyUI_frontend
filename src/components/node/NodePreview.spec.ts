@@ -174,7 +174,9 @@ describe('NodePreview', () => {
 
     it('does not render description element when description is undefined', () => {
       const { description, ...nodeDefWithoutDescription } = mockNodeDef
-      const wrapper = mountComponent(nodeDefWithoutDescription as ComfyNodeDefV2)
+      const wrapper = mountComponent(
+        nodeDefWithoutDescription as ComfyNodeDefV2
+      )
       const descriptionElement = wrapper.find('._sb_description')
 
       expect(descriptionElement.exists()).toBe(false)
@@ -183,7 +185,7 @@ describe('NodePreview', () => {
     it('calls renderMarkdownToHtml utility function', () => {
       const spy = vi.spyOn(markdownRendererUtil, 'renderMarkdownToHtml')
       const testDescription = 'Test **markdown** description'
-      
+
       const nodeDefWithDescription: ComfyNodeDefV2 = {
         ...mockNodeDef,
         description: testDescription
