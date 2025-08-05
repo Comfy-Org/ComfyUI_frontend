@@ -21,6 +21,17 @@ interface ConflictAcknowledgmentState {
   warning_banner_dismissed: boolean
 }
 
+// Shared state - initialized once and reused across all composable calls
+const modalDismissed = useStorage(STORAGE_KEYS.CONFLICT_MODAL_DISMISSED, false)
+const redDotDismissed = useStorage(
+  STORAGE_KEYS.CONFLICT_RED_DOT_DISMISSED,
+  false
+)
+const warningBannerDismissed = useStorage(
+  STORAGE_KEYS.CONFLICT_WARNING_BANNER_DISMISSED,
+  false
+)
+
 /**
  * Composable for managing conflict acknowledgment state in localStorage
  *
@@ -32,20 +43,6 @@ interface ConflictAcknowledgmentState {
  */
 export function useConflictAcknowledgment() {
   const conflictDetectionStore = useConflictDetectionStore()
-
-  // Reactive state using VueUse's useStorage for automatic persistence
-  const modalDismissed = useStorage(
-    STORAGE_KEYS.CONFLICT_MODAL_DISMISSED,
-    false
-  )
-  const redDotDismissed = useStorage(
-    STORAGE_KEYS.CONFLICT_RED_DOT_DISMISSED,
-    false
-  )
-  const warningBannerDismissed = useStorage(
-    STORAGE_KEYS.CONFLICT_WARNING_BANNER_DISMISSED,
-    false
-  )
 
   // Create computed state object for backward compatibility
   const state = computed<ConflictAcknowledgmentState>(() => ({
@@ -82,7 +79,8 @@ export function useConflictAcknowledgment() {
   const shouldShowConflictModal = computed(() => !modalDismissed.value)
   const shouldShowRedDot = computed(() => {
     if (!hasConflicts.value) return false
-    return !redDotDismissed.value
+    if (redDotDismissed.value) return false
+    return true
   })
   const shouldShowManagerBanner = computed(() => {
     return hasConflicts.value && !warningBannerDismissed.value
