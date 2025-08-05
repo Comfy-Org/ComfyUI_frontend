@@ -80,13 +80,13 @@ const { isVisible: isHelpCenterVisible } = storeToRefs(helpCenterStore)
 const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 
 const conflictDetection = useConflictDetection()
-const conflictAcknowledgment = useConflictAcknowledgment()
 
 const { showNodeConflictDialog } = useDialogService()
 
-// Use conflict acknowledgment state from composable
+// Use conflict acknowledgment state from composable - call only once
 const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
-  conflictAcknowledgment
+  useConflictAcknowledgment()
+
 // Use either release red dot or conflict red dot
 const shouldShowRedDot = computed(() => {
   const releaseRedDot = showReleaseRedDot
