@@ -454,9 +454,6 @@ export function useConflictDetection() {
     importFailInfo: Record<string, { msg: string; name: string; path: string }>
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
-
-    console.log('@@@', importFailInfo)
-
     if (!importFailInfo || typeof importFailInfo !== 'object') {
       return results
     }
