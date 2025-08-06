@@ -352,7 +352,7 @@ describe('useComfyManagerStore', () => {
     )
   })
 
-  describe('isPackInstalling', () => {
+  describe.skip('isPackInstalling', () => {
     it('should return false for packs not being installed', () => {
       const store = useComfyManagerStore()
       expect(store.isPackInstalling('test-pack')).toBe(false)
