@@ -1,4 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -7,6 +6,8 @@ import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { app } from '@/scripts/app'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+
+import type { LGraphNode } from '../../../src/lib/litegraph/src/litegraph'
 
 // Mock Vue's onMounted to execute immediately for testing
 vi.mock('vue', async () => {

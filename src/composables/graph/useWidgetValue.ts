@@ -81,11 +81,6 @@ export function useWidgetValue<T extends WidgetValue = WidgetValue, U = T>({
 
     // 2. Emit to parent component
     emit('update:modelValue', processedValue)
-
-    // 3. Call LiteGraph callback to update authoritative state
-    if (widget.callback) {
-      widget.callback(processedValue)
-    }
   }
 
   // Watch for external updates from LiteGraph

@@ -4,63 +4,64 @@
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between px-3 py-2 rounded-t cursor-move"
+    class="lg-node-header flex items-center justify-between p-2 rounded-t-lg cursor-move"
+    :data-testid="`node-header-${nodeInfo?.id || ''}`"
     :style="{
       backgroundColor: headerColor,
       color: textColor
     }"
     @dblclick="handleDoubleClick"
   >
+    <!-- Collapse/Expand Button -->
+    <button
+      v-show="!readonly"
+      class="bg-transparent border-transparent flex items-center"
+      data-testid="node-collapse-button"
+      @click.stop="handleCollapse"
+      @dblclick.stop
+    >
+      <i
+        :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+        class="text-xs leading-none relative top-[1px]"
+      ></i>
+    </button>
+
     <!-- Node Title -->
-    <span class="text-sm font-medium truncate flex-1">
-      {{ nodeInfo?.title || 'Untitled' }}
-    </span>
-
-    <!-- Node Controls -->
-    <div class="flex items-center gap-1 ml-2">
-      <!-- Collapse/Expand Button -->
-      <button
-        v-if="!readonly"
-        class="lg-node-header__control p-0.5 rounded hover:bg-white/20 dark-theme:hover:bg-black/20 transition-colors opacity-60 hover:opacity-100"
-        title="Toggle collapse"
-        @click.stop="handleCollapse"
-      >
-        <svg
-          class="w-3 h-3 transition-transform"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-
-      <!-- Additional controls can be added here -->
+    <div class="text-sm font-medium truncate flex-1" data-testid="node-title">
+      <EditableText
+        :model-value="displayTitle"
+        :is-editing="isEditing"
+        :input-attrs="{ 'data-testid': 'node-title-input' }"
+        @edit="handleTitleEdit"
+        @cancel="handleTitleCancel"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, watch } from 'vue'
 
+import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LODLevel } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+
+import type { LGraphNode } from '../../../lib/litegraph/src/litegraph'
 
 interface NodeHeaderProps {
   node?: LGraphNode // For backwards compatibility
   nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
   lodLevel?: LODLevel
+  collapsed?: boolean
 }
 
 const props = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
-  'title-edit': []
+  'update:title': [newTitle: string]
 }>()
 
 // Error boundary implementation
@@ -73,7 +74,23 @@ onErrorCaptured((error) => {
   return false
 })
 
+// Editing state
+const isEditing = ref(false)
+
 const nodeInfo = computed(() => props.nodeData || props.node)
+
+// Local state for title to provide immediate feedback
+const displayTitle = ref(nodeInfo.value?.title || 'Untitled')
+
+// Watch for external changes to the node title
+watch(
+  () => nodeInfo.value?.title,
+  (newTitle) => {
+    if (newTitle && newTitle !== displayTitle.value) {
+      displayTitle.value = newTitle
+    }
+  }
+)
 
 // Compute header color based on node color property or type
 const headerColor = computed(() => {
@@ -110,7 +127,22 @@ const handleCollapse = () => {
 
 const handleDoubleClick = () => {
   if (!props.readonly) {
-    emit('title-edit')
+    isEditing.value = true
   }
+}
+
+const handleTitleEdit = (newTitle: string) => {
+  isEditing.value = false
+  const trimmedTitle = newTitle.trim()
+  if (trimmedTitle && trimmedTitle !== displayTitle.value) {
+    // Emit for litegraph sync
+    emit('update:title', trimmedTitle)
+  }
+}
+
+const handleTitleCancel = () => {
+  isEditing.value = false
+  // Reset displayTitle to the current node title
+  displayTitle.value = nodeInfo.value?.title || 'Untitled'
 }
 </script>

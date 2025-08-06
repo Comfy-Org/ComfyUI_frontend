@@ -1,11 +1,10 @@
+import { useToastStore } from '@/stores/toastStore'
+
 import {
   type LGraphNode,
   type LGraphNodeConstructor,
   LiteGraph
-} from '@comfyorg/litegraph'
-
-import { useToastStore } from '@/stores/toastStore'
-
+} from '../../lib/litegraph/src/litegraph'
 import { type ComfyApp, app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import { ComfyDialog } from '../../scripts/ui/dialog'
@@ -123,7 +122,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   getGroupData() {
     this.groupNodeType = LiteGraph.registered_node_types[
       `${PREFIX}${SEPARATOR}` + this.selectedGroup
-    ] as LGraphNodeConstructor<LGraphNode>
+    ] as unknown as LGraphNodeConstructor<LGraphNode>
     this.groupNodeDef = this.groupNodeType.nodeData
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)
   }

@@ -1,4 +1,3 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
@@ -12,6 +11,7 @@ import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
+import type { LGraph, Subgraph } from '../lib/litegraph/src/litegraph'
 import { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {

@@ -12,6 +12,7 @@ import WidgetGalleria from './WidgetGalleria.vue'
 import WidgetImage from './WidgetImage.vue'
 import WidgetImageCompare from './WidgetImageCompare.vue'
 import WidgetInputText from './WidgetInputText.vue'
+import WidgetMarkdown from './WidgetMarkdown.vue'
 import WidgetMultiSelect from './WidgetMultiSelect.vue'
 import WidgetSelect from './WidgetSelect.vue'
 import WidgetSelectButton from './WidgetSelectButton.vue'
@@ -42,7 +43,8 @@ export enum WidgetType {
   IMAGECOMPARE = 'IMAGECOMPARE',
   GALLERIA = 'GALLERIA',
   FILEUPLOAD = 'FILEUPLOAD',
-  TREESELECT = 'TREESELECT'
+  TREESELECT = 'TREESELECT',
+  MARKDOWN = 'MARKDOWN'
 }
 
 /**
@@ -69,7 +71,8 @@ export const widgetTypeToComponent: Record<string, Component> = {
   [WidgetType.IMAGECOMPARE]: WidgetImageCompare,
   [WidgetType.GALLERIA]: WidgetGalleria,
   [WidgetType.FILEUPLOAD]: WidgetFileUpload,
-  [WidgetType.TREESELECT]: WidgetTreeSelect
+  [WidgetType.TREESELECT]: WidgetTreeSelect,
+  [WidgetType.MARKDOWN]: WidgetMarkdown
 }
 
 /**

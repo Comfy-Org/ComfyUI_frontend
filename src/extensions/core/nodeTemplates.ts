@@ -1,10 +1,9 @@
-import { LGraphCanvas } from '@comfyorg/litegraph'
-
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useToastStore } from '@/stores/toastStore'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
+import { LGraphCanvas } from '../../lib/litegraph/src/litegraph'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'

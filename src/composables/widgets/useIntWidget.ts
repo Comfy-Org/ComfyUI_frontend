@@ -1,6 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   type InputSpec,
@@ -11,6 +8,9 @@ import {
   addValueControlWidget
 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { INumericWidget } from '../../lib/litegraph/src/types/widgets'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step

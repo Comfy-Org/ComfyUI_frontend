@@ -75,12 +75,13 @@
 </template>
 
 <script setup lang="ts">
-import { LGraphNode } from '@comfyorg/litegraph'
 import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 
 import { t } from '@/i18n'
 import { useLoad3dService } from '@/services/load3dService'
+
+import { LGraphNode } from '../../../lib/litegraph/src/litegraph'
 
 const vTooltip = Tooltip
 

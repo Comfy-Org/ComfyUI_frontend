@@ -2,12 +2,12 @@
  * Vue node lifecycle management for LiteGraph integration
  * Provides event-driven reactivity with performance optimizations
  */
-import type { LGraph, LGraphNode } from '@comfyorg/litegraph'
 import { nextTick, reactive, readonly } from 'vue'
 
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
+import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
 import { type Bounds, QuadTree } from '../../utils/spatial/QuadTree'
 
 export interface NodeState {
@@ -53,6 +53,9 @@ export interface VueNodeData {
   widgets?: SafeWidgetData[]
   inputs?: unknown[]
   outputs?: unknown[]
+  flags?: {
+    collapsed?: boolean
+  }
 }
 
 export interface SpatialMetrics {
@@ -201,7 +204,8 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       executing: false, // Will be updated separately based on execution state
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
-      outputs: node.outputs ? [...node.outputs] : undefined
+      outputs: node.outputs ? [...node.outputs] : undefined,
+      flags: node.flags ? { ...node.flags } : undefined
     }
   }
 
@@ -270,29 +274,41 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     originalCallback: ((value: unknown) => void) | undefined,
     nodeId: string
   ) => {
+    let updateInProgress = false
+
     return (value: unknown) => {
-      // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
-      // Validate that the value is of an acceptable type
-      if (
-        value !== null &&
-        value !== undefined &&
-        typeof value !== 'string' &&
-        typeof value !== 'number' &&
-        typeof value !== 'boolean' &&
-        typeof value !== 'object'
-      ) {
-        console.warn(`Invalid widget value type: ${typeof value}`)
-        return
-      }
-      widget.value = value
+      if (updateInProgress) return
+      updateInProgress = true
 
-      // 2. Call the original callback if it exists
-      if (originalCallback) {
-        originalCallback.call(widget, value)
-      }
+      try {
+        // 1. Update the widget value in LiteGraph (critical for LiteGraph state)
+        // Validate that the value is of an acceptable type
+        if (
+          value !== null &&
+          value !== undefined &&
+          typeof value !== 'string' &&
+          typeof value !== 'number' &&
+          typeof value !== 'boolean' &&
+          typeof value !== 'object'
+        ) {
+          console.warn(`Invalid widget value type: ${typeof value}`)
+          updateInProgress = false
+          return
+        }
 
-      // 3. Update Vue state to maintain synchronization
-      updateVueWidgetState(nodeId, widget.name, value)
+        // Always update widget.value to ensure sync
+        widget.value = value
+
+        // 2. Call the original callback if it exists
+        if (originalCallback) {
+          originalCallback.call(widget, value)
+        }
+
+        // 3. Update Vue state to maintain synchronization
+        updateVueWidgetState(nodeId, widget.name, value)
+      } finally {
+        updateInProgress = false
+      }
     }
   }
 
@@ -627,12 +643,14 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
    */
   const createCleanupFunction = (
     originalOnNodeAdded: ((node: LGraphNode) => void) | undefined,
-    originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined
+    originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined,
+    originalOnTrigger: ((action: string, param: unknown) => void) | undefined
   ) => {
     return () => {
       // Restore original callbacks
       graph.onNodeAdded = originalOnNodeAdded || undefined
       graph.onNodeRemoved = originalOnNodeRemoved || undefined
+      graph.onTrigger = originalOnTrigger || undefined
 
       // Clear pending updates
       if (batchTimeoutId !== null) {
@@ -661,6 +679,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     // Store original callbacks
     const originalOnNodeAdded = graph.onNodeAdded
     const originalOnNodeRemoved = graph.onNodeRemoved
+    const originalOnTrigger = graph.onTrigger
 
     // Set up graph event handlers
     graph.onNodeAdded = (node: LGraphNode) => {
@@ -671,13 +690,55 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       handleNodeRemoved(node, originalOnNodeRemoved)
     }
 
+    // Listen for property change events from instrumented nodes
+    graph.onTrigger = (action: string, param: unknown) => {
+      if (
+        action === 'node:property:changed' &&
+        param &&
+        typeof param === 'object'
+      ) {
+        const event = param as {
+          nodeId: string | number
+          property: string
+          oldValue: unknown
+          newValue: unknown
+        }
+
+        const nodeId = String(event.nodeId)
+        const currentData = vueNodeData.get(nodeId)
+
+        if (currentData) {
+          if (event.property === 'title') {
+            vueNodeData.set(nodeId, {
+              ...currentData,
+              title: String(event.newValue)
+            })
+          } else if (event.property === 'flags.collapsed') {
+            vueNodeData.set(nodeId, {
+              ...currentData,
+              flags: {
+                ...currentData.flags,
+                collapsed: Boolean(event.newValue)
+              }
+            })
+          }
+        }
+      }
+
+      // Call original trigger handler if it exists
+      if (originalOnTrigger) {
+        originalOnTrigger(action, param)
+      }
+    }
+
     // Initialize state
     syncWithGraph()
 
     // Return cleanup function
     return createCleanupFunction(
       originalOnNodeAdded || undefined,
-      originalOnNodeRemoved || undefined
+      originalOnNodeRemoved || undefined,
+      originalOnTrigger || undefined
     )
   }
 

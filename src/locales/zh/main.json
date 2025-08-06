@@ -775,20 +775,20 @@
     "Toggle Bottom Panel": "切换底部面板",
     "Toggle Focus Mode": "切换专注模式",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
-    "Toggle Model Library Sidebar": "切换模型库侧边栏",
-    "Toggle Node Library Sidebar": "切换节点库侧边栏",
-    "Toggle Queue Sidebar": "切换队列侧边栏",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
-    "Toggle Workflows Sidebar": "切换工作流侧边栏",
     "Toggle the Custom Nodes Manager": "切换自定义节点管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
     "Ungroup selected group nodes": "解散选中组节点",
     "Workflow": "工作流",
     "Zoom In": "放大画面",
-    "Zoom Out": "缩小画面"
+    "Zoom Out": "缩小画面",
+    "sideToolbar_modelLibrary": "侧边工具栏.模型库",
+    "sideToolbar_nodeLibrary": "侧边工具栏.节点库",
+    "sideToolbar_queue": "侧边工具栏.队列",
+    "sideToolbar_workflows": "侧边工具栏.工作流"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
@@ -1103,6 +1103,7 @@
     "UV": "UV",
     "User": "用户",
     "Validation": "验证",
+    "Vue Nodes": "Vue 节点",
     "Window": "窗口",
     "Workflow": "工作流"
   },

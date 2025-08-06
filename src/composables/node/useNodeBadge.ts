@@ -1,8 +1,3 @@
-import {
-  BadgePosition,
-  LGraphBadge,
-  type LGraphNode
-} from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { computed, onMounted, watch } from 'vue'
 
@@ -15,6 +10,12 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { adjustColor } from '@/utils/colorUtil'
+
+import {
+  BadgePosition,
+  LGraphBadge,
+  type LGraphNode
+} from '../../lib/litegraph/src/litegraph'
 
 /**
  * Add LGraphBadge to LGraphNode based on settings.

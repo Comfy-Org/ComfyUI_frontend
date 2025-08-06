@@ -5,7 +5,7 @@
   <div
     v-else
     :class="[
-      'lg-node absolute border-2 rounded',
+      'lg-node absolute border-2 rounded-lg',
       'contain-layout contain-style contain-paint',
       selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-600',
       executing ? 'animate-pulse' : '',
@@ -15,7 +15,7 @@
       lodCssClass
     ]"
     :style="{
-      transform: `translate(${position?.x ?? 0}px, ${position?.y ?? 0}px)`,
+      transform: `translate(${position?.x ?? 0}px, ${(position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
       width: size ? `${size.width}px` : '200px',
       height: size ? `${size.height}px` : 'auto',
       backgroundColor: '#353535'
@@ -24,15 +24,21 @@
   >
     <!-- Header only updates on title/color changes -->
     <NodeHeader
-      v-memo="[nodeData.title, lodLevel]"
+      v-memo="[nodeData.title, lodLevel, isCollapsed]"
       :node-data="nodeData"
       :readonly="readonly"
       :lod-level="lodLevel"
+      :collapsed="isCollapsed"
       @collapse="handleCollapse"
+      @update:title="handleTitleUpdate"
     />
 
-    <!-- Node Body - rendered based on LOD level -->
-    <div v-if="!isMinimalLOD" class="flex flex-col gap-2 p-2">
+    <!-- Node Body - rendered based on LOD level and collapsed state -->
+    <div
+      v-if="!isMinimalLOD && !isCollapsed"
+      class="flex flex-col gap-2"
+      :data-testid="`node-body-${nodeData.id}`"
+    >
       <!-- Slots only rendered at full detail -->
       <NodeSlots
         v-if="shouldRenderSlots"
@@ -59,14 +65,6 @@
         :readonly="readonly"
         :lod-level="lodLevel"
       />
-
-      <!-- Placeholder if no widgets and in reduced+ mode -->
-      <div
-        v-if="!nodeData.widgets?.length && !hasCustomContent && !isMinimalLOD"
-        class="text-gray-500 text-sm text-center py-4"
-      >
-        No widgets
-      </div>
     </div>
 
     <!-- Progress bar for executing state -->
@@ -79,13 +77,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, toRef } from 'vue'
+import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
 
 // Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { LODLevel, useLOD } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 
+import { LiteGraph } from '../../../lib/litegraph/src/litegraph'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -114,7 +113,8 @@ const emit = defineEmits<{
     slotIndex: number,
     isInput: boolean
   ]
-  collapse: []
+  'update:collapsed': [nodeId: string, collapsed: boolean]
+  'update:title': [nodeId: string, newTitle: string]
 }>()
 
 // LOD (Level of Detail) system based on zoom level
@@ -143,6 +143,19 @@ onErrorCaptured((error) => {
 // Track dragging state for will-change optimization
 const isDragging = ref(false)
 
+// Track collapsed state
+const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
+
+// Watch for external changes to the collapsed state
+watch(
+  () => props.nodeData.flags?.collapsed,
+  (newCollapsed) => {
+    if (newCollapsed !== undefined && newCollapsed !== isCollapsed.value) {
+      isCollapsed.value = newCollapsed
+    }
+  }
+)
+
 // Check if node has custom content
 const hasCustomContent = computed(() => {
   // Currently all content is handled through widgets
@@ -160,7 +173,9 @@ const handlePointerDown = (event: PointerEvent) => {
 }
 
 const handleCollapse = () => {
-  emit('collapse')
+  isCollapsed.value = !isCollapsed.value
+  // Emit event so parent can sync with LiteGraph if needed
+  emit('update:collapsed', props.nodeData.id, isCollapsed.value)
 }
 
 const handleSlotClick = (
@@ -173,6 +188,10 @@ const handleSlotClick = (
     return
   }
   emit('slot-click', event, props.nodeData, slotIndex, isInput)
+}
+
+const handleTitleUpdate = (newTitle: string) => {
+  emit('update:title', props.nodeData.id, newTitle)
 }
 
 // Expose methods for parent to control dragging state
