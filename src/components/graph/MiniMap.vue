@@ -8,6 +8,10 @@
     @mousemove="handleMouseMove"
     @mouseup="handleMouseUp"
     @mouseleave="handleMouseUp"
+    @pointerdown="handlePointerDown"
+    @pointermove="handlePointerMove"
+    @pointerup="handlePointerUp"
+    @pointerleave="handlePointerUp"
     @wheel="handleWheel"
   >
     <canvas
@@ -43,6 +47,9 @@ const {
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
+  handlePointerDown,
+  handlePointerMove,
+  handlePointerUp,
   handleWheel
 } = minimap
 

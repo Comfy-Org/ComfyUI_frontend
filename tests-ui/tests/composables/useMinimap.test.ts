@@ -561,6 +561,104 @@ describe('useMinimap', () => {
     })
   })
 
+  describe('pointer interactions', () => {
+    it('should handle pointer down and start dragging', async () => {
+      const minimap = await createAndInitializeMinimap()
+
+      const pointerEvent = new PointerEvent('pointerdown', {
+        clientX: 150,
+        clientY: 150,
+        pointerType: 'touch'
+      })
+
+      minimap.handlePointerDown(pointerEvent)
+
+      expect(mockContainerElement.getBoundingClientRect).toHaveBeenCalled()
+      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should handle pointer move while dragging (touch)', async () => {
+      const minimap = await createAndInitializeMinimap()
+
+      const pointerDownEvent = new PointerEvent('pointerdown', {
+        clientX: 150,
+        clientY: 150,
+        pointerType: 'touch'
+      })
+      minimap.handlePointerDown(pointerDownEvent)
+
+      const pointerMoveEvent = new PointerEvent('pointermove', {
+        clientX: 200,
+        clientY: 200,
+        pointerType: 'touch'
+      })
+      minimap.handlePointerMove(pointerMoveEvent)
+
+      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(mockCanvas.ds.offset).toBeDefined()
+    })
+
+    it('should handle pointer move while dragging (pen)', async () => {
+      const minimap = await createAndInitializeMinimap()
+
+      const pointerDownEvent = new PointerEvent('pointerdown', {
+        clientX: 150,
+        clientY: 150,
+        pointerType: 'pen'
+      })
+      minimap.handlePointerDown(pointerDownEvent)
+
+      const pointerMoveEvent = new PointerEvent('pointermove', {
+        clientX: 200,
+        clientY: 200,
+        pointerType: 'pen'
+      })
+      minimap.handlePointerMove(pointerMoveEvent)
+
+      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(mockCanvas.ds.offset).toBeDefined()
+    })
+
+    it('should not move when not dragging with pointer', async () => {
+      const minimap = await createAndInitializeMinimap()
+
+      mockCanvas.setDirty.mockClear()
+
+      const pointerMoveEvent = new PointerEvent('pointermove', {
+        clientX: 200,
+        clientY: 200,
+        pointerType: 'touch'
+      })
+      minimap.handlePointerMove(pointerMoveEvent)
+
+      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+    })
+
+    it('should handle pointer up to stop dragging', async () => {
+      const minimap = await createAndInitializeMinimap()
+
+      const pointerDownEvent = new PointerEvent('pointerdown', {
+        clientX: 150,
+        clientY: 150,
+        pointerType: 'touch'
+      })
+      minimap.handlePointerDown(pointerDownEvent)
+
+      minimap.handlePointerUp()
+
+      mockCanvas.setDirty.mockClear()
+
+      const pointerMoveEvent = new PointerEvent('pointermove', {
+        clientX: 200,
+        clientY: 200,
+        pointerType: 'touch'
+      })
+      minimap.handlePointerMove(pointerMoveEvent)
+
+      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+    })
+  })
+
   describe('wheel interactions', () => {
     it('should handle wheel zoom in', async () => {
       const minimap = useMinimap()

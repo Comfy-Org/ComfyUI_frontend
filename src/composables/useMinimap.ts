@@ -459,6 +459,32 @@ export function useMinimap() {
     isDragging.value = false
   }
 
+  // Pointer event handlers for touch screen support
+  const handlePointerDown = (e: PointerEvent) => {
+    isDragging.value = true
+    updateContainerRect()
+    handlePointerMove(e)
+  }
+
+  const handlePointerMove = (e: PointerEvent) => {
+    if (!isDragging.value || !canvasRef.value || !canvas.value) return
+
+    const x = e.clientX - containerRect.value.left
+    const y = e.clientY - containerRect.value.top
+
+    const offsetX = (width - bounds.value.width * scale.value) / 2
+    const offsetY = (height - bounds.value.height * scale.value) / 2
+
+    const worldX = (x - offsetX) / scale.value + bounds.value.minX
+    const worldY = (y - offsetY) / scale.value + bounds.value.minY
+
+    centerViewOn(worldX, worldY)
+  }
+
+  const handlePointerUp = () => {
+    isDragging.value = false
+  }
+
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault()
 
@@ -698,6 +724,9 @@ export function useMinimap() {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
     handleWheel,
     setMinimapRef
   }
