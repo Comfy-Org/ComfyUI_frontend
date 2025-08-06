@@ -1059,7 +1059,11 @@
     "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
     "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
     "Toggle Queue Sidebar": "Toggle Queue Sidebar",
-    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar"
+    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar",
+    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
+    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
+    "sideToolbar_queue": "sideToolbar.queue",
+    "sideToolbar_workflows": "sideToolbar.workflows"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",

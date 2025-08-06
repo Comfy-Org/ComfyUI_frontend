@@ -852,9 +852,6 @@
     "Show Model Selector (Dev)": "Afficher le sélecteur de modèle (Dev)",
     "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
     "Sign Out": "Se déconnecter",
-    "Toggle Essential Bottom Panel": "Basculer le panneau inférieur essentiel",
-    "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
-    "Sign Out": "Se déconnecter",
     "Toggle Bottom Panel": "Basculer le panneau inférieur",
     "Toggle Essential Bottom Panel": "Afficher/Masquer le panneau inférieur essentiel",
     "Toggle Focus Mode": "Basculer le mode focus",
@@ -862,7 +859,6 @@
     "Toggle Search Box": "Basculer la boîte de recherche",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
-    "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
     "Toggle View Controls Bottom Panel": "Afficher/Masquer le panneau inférieur des contrôles de vue",
     "Toggle Workflows Sidebar": "Afficher/Masquer la barre latérale des workflows",
     "Toggle the Custom Nodes Manager": "Basculer le gestionnaire de nœuds personnalisés",
@@ -882,7 +878,11 @@
     "renderErrorState": "Afficher l'état d'erreur",
     "showGroups": "Afficher les cadres/groupes",
     "showLinks": "Afficher les liens",
-    "Zoom Out": "Zoom arrière"
+    "Zoom Out": "Zoom arrière",
+    "sideToolbar_modelLibrary": "Bibliothèque de modèles",
+    "sideToolbar_nodeLibrary": "Bibliothèque de nœuds",
+    "sideToolbar_queue": "File d'attente",
+    "sideToolbar_workflows": "Flux de travail"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
@@ -1212,7 +1212,6 @@
       "node": "Nœud",
       "panelControls": "Contrôles du panneau",
       "queue": "File d’attente",
-      "view": "Vue",
       "view": "Affichage",
       "workflow": "Flux de travail"
     },
