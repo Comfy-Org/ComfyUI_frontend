@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
+import * as semver from 'semver'
 import { computed, ref } from 'vue'
 
 import { type ReleaseNote, useReleaseService } from '@/services/releaseService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
-import { compareVersions, stringToLocale } from '@/utils/formatUtil'
+import { stringToLocale } from '@/utils/formatUtil'
 
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {
@@ -54,16 +55,19 @@ export const useReleaseStore = defineStore('release', () => {
   const isNewVersionAvailable = computed(
     () =>
       !!recentRelease.value &&
-      compareVersions(
-        recentRelease.value.version,
-        currentComfyUIVersion.value
-      ) > 0
+      semver.gt(
+        semver.coerce(recentRelease.value.version) || '0.0.0',
+        semver.coerce(currentComfyUIVersion.value) || '0.0.0'
+      )
   )
 
   const isLatestVersion = computed(
     () =>
       !!recentRelease.value &&
-      !compareVersions(recentRelease.value.version, currentComfyUIVersion.value)
+      semver.eq(
+        semver.coerce(recentRelease.value.version) || '0.0.0',
+        semver.coerce(currentComfyUIVersion.value) || '0.0.0'
+      )
   )
 
   const hasMediumOrHighAttention = computed(() =>

@@ -37,6 +37,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
+import * as semver from 'semver'
 import { computed, ref, watch } from 'vue'
 
 import PackVersionSelectorPopover from '@/components/dialog/content/manager/PackVersionSelectorPopover.vue'
@@ -44,7 +45,6 @@ import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { SelectedVersion } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import { isSemVer } from '@/utils/formatUtil'
 
 const TRUNCATED_HASH_LENGTH = 7
 
@@ -71,7 +71,9 @@ const installedVersion = computed(() => {
     SelectedVersion.NIGHTLY
 
   // If Git hash, truncate to 7 characters
-  return isSemVer(version) ? version : version.slice(0, TRUNCATED_HASH_LENGTH)
+  return semver.valid(version)
+    ? version
+    : version.slice(0, TRUNCATED_HASH_LENGTH)
 })
 
 const toggleVersionSelector = (event: Event) => {

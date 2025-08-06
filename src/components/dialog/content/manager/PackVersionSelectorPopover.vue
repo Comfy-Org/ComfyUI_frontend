@@ -62,6 +62,7 @@ import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
+import * as semver from 'semver'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -75,7 +76,6 @@ import {
   SelectedVersion
 } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import { isSemVer } from '@/utils/formatUtil'
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -97,7 +97,7 @@ onMounted(() => {
   const initialVersion = getInitialSelectedVersion() ?? SelectedVersion.LATEST
   selectedVersion.value =
     // Use NIGHTLY when version is a Git hash
-    isSemVer(initialVersion) ? initialVersion : SelectedVersion.NIGHTLY
+    semver.valid(initialVersion) ? initialVersion : SelectedVersion.NIGHTLY
 })
 
 const getInitialSelectedVersion = () => {
