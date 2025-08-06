@@ -1,8 +1,8 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { describe, expect, it } from 'vitest'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
 // Helper function to create a mock node
 function createMockNode(

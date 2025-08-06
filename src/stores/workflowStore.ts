@@ -1,8 +1,8 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'

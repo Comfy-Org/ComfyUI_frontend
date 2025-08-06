@@ -694,14 +694,7 @@ For detailed instructions on adding and using custom icons, see [src/assets/icon
 
 ### litegraph.js
 
-This repo is using litegraph package hosted on <https://github.com/Comfy-Org/litegraph.js>. Any changes to litegraph should be submitted in that repo instead.
-
-#### Test litegraph.js changes
-
-- Run `npm link` in the local litegraph repo.
-- Run `npm link @comfyorg/litegraph` in this repo.
-
-This will replace the litegraph package in this repo with the local litegraph repo.
+The litegraph library is now included as a git subtree in `src/lib/litegraph`. Any changes to litegraph should be made directly in this location.
 
 ### i18n
 

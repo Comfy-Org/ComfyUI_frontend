@@ -1,6 +1,10 @@
-import type { LGraph, LGraphNode, Subgraph } from '@comfyorg/litegraph'
 import { describe, expect, it, vi } from 'vitest'
 
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   collectAllNodes,
   collectFromNodes,

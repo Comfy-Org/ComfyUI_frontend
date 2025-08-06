@@ -1,13 +1,13 @@
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import {
   LGraphEventMode,
   LGraphNode,
   Positionable,
   Reroute
-} from '@comfyorg/litegraph'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -21,7 +21,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 // Mock the litegraph module
-vi.mock('@comfyorg/litegraph', () => ({
+vi.mock('@/lib/litegraph/src/litegraph', () => ({
   Reroute: class Reroute {
     constructor() {}
   },

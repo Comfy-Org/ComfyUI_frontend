@@ -1,8 +1,8 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useRafFn, useThrottleFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

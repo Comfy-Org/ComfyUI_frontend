@@ -1,11 +1,3 @@
-import {
-  LGraphEventMode,
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
-import { Point } from '@comfyorg/litegraph'
-
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import {
@@ -13,6 +5,13 @@ import {
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
 import { t } from '@/i18n'
+import {
+  LGraphEventMode,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'

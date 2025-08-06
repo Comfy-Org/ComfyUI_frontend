@@ -11,8 +11,8 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
 // Mock the litegraph module
-vi.mock('@comfyorg/litegraph', async () => {
-  const actual = await vi.importActual('@comfyorg/litegraph')
+vi.mock('@/lib/litegraph/src/litegraph', async () => {
+  const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
   return {
     ...actual,
     LGraphCanvas: {

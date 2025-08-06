@@ -1,9 +1,9 @@
 import QuickLRU from '@alloc/quick-lru'
-import type { Subgraph } from '@comfyorg/litegraph'
-import type { DragAndScaleState } from '@comfyorg/litegraph/dist/DragAndScale'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
+import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'

@@ -1,5 +1,6 @@
-import type { LGraphCanvas, Vector2 } from '@comfyorg/litegraph'
 import { useElementBounding } from '@vueuse/core'
+
+import type { LGraphCanvas, Vector2 } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Convert between canvas and client positions
