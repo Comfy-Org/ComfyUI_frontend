@@ -101,15 +101,14 @@ const litegraphColors = computed(
 
 const widgetStore = useWidgetStore()
 
-// Always use DOMPurify-sanitized rendering for descriptions
+const { description } = props.nodeDef
 const renderedDescription = computed(() => {
-  if (!nodeDef.description) return ''
-  return renderMarkdownToHtml(nodeDef.description)
+  if (!description) return ''
+  return renderMarkdownToHtml(description)
 })
 
-const nodeDef = props.nodeDef
-const allInputDefs = Object.values(nodeDef.inputs)
-const allOutputDefs = nodeDef.outputs
+const allInputDefs = Object.values(props.nodeDef.inputs)
+const allOutputDefs = props.nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(
   (input) => !widgetStore.inputIsWidget(input)
 )
