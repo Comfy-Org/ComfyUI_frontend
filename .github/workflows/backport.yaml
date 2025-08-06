@@ -1,7 +1,7 @@
 name: Auto Backport
 
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
     branches: [main]
 
@@ -122,7 +122,8 @@ jobs:
               --base "core/${version}" \
               --head "${branch}" \
               --title "[backport ${version}] ${PR_TITLE}" \
-              --body "Backport of #${PR_NUMBER} to \`core/${version}\`"$'\n\n'"Automatically created by backport workflow."
+              --body "Backport of #${PR_NUMBER} to \`core/${version}\`"$'\n\n'"Automatically created by backport workflow." \
+              --label "backport"
 
             PR_NUM=$(gh pr list --head "${branch}" --json number --jq '.[0].number')
 
