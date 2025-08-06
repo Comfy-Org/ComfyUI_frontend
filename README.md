@@ -524,6 +524,10 @@ Here are some ways to get involved:
 
 Have another idea? Drop into Discord or open an issue, and let's chat!
 
+### Architecture Decision Records
+
+We document significant architectural decisions using ADRs (Architecture Decision Records). See [docs/adr/](docs/adr/) for all ADRs and the template for creating new ones.
+
 ## Development
 
 ### Prerequisites & Technology Stack
@@ -694,7 +698,15 @@ For detailed instructions on adding and using custom icons, see [src/assets/icon
 
 ### litegraph.js
 
-The litegraph library is now included as a git subtree in `src/lib/litegraph`. Any changes to litegraph should be made directly in this location.
+Since Aug 5, 2025, litegraph.js is now integrated directly into this repository. It was merged using git subtree to preserve the complete commit history ([PR #4667](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4667), [ADR](docs/adr/0001-merge-litegraph-into-frontend.md)).
+
+#### Important Notes
+
+- **Issue References**: Commits from the original litegraph repository may contain issue/PR numbers (e.g., #4667) that refer to issues/PRs in the original litegraph.js repository, not this one.
+- **File Paths**: When viewing historical commits, file paths may show the original structure before the subtree merge. In those cases, just consider the paths relative to the new litegraph folder.
+- **Contributing**: All litegraph modifications should now be made directly in this repository.
+
+The original litegraph repository (<https://github.com/Comfy-Org/litegraph.js>) is now archived.
 
 ### i18n
 
