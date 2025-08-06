@@ -1,3 +1,6 @@
+import { merge } from 'lodash'
+import { Component } from 'vue'
+
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
@@ -20,7 +23,11 @@ import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsCo
 import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
+import {
+  type DialogComponentProps,
+  type ShowDialogOptions,
+  useDialogStore
+} from '@/stores/dialogStore'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -424,6 +431,27 @@ export const useDialogService = () => {
     }
   }
 
+  function showLayoutDialog(options: {
+    key: string
+    component: Component
+    props?: Record<string, any>
+    dialogComponentProps?: DialogComponentProps
+  }) {
+    const layoutDefaultProps: DialogComponentProps = {
+      unstyled: true,
+      modal: true
+    }
+
+    return dialogStore.showDialog({
+      ...options,
+      dialogComponentProps: merge(
+        {},
+        layoutDefaultProps,
+        options.dialogComponentProps
+      )
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -443,6 +471,7 @@ export const useDialogService = () => {
     prompt,
     confirm,
     toggleManagerDialog,
-    toggleManagerProgressDialog
+    toggleManagerProgressDialog,
+    showLayoutDialog
   }
 }
