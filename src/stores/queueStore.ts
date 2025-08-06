@@ -481,7 +481,11 @@ export const useQueueStore = defineStore('queue', () => {
       )
       historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
         .slice(0, maxHistoryItems.value)
-        .sort((a, b) => b.queueIndex - a.queueIndex)
+        .sort((a, b) => {
+          const aTime = a.executionStartTimestamp ?? 0
+          const bTime = b.executionStartTimestamp ?? 0
+          return bTime - aTime
+        })
     } finally {
       isLoading.value = false
     }
