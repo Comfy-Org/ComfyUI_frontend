@@ -4,8 +4,6 @@
 
 **Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).**
 
-<!-- Testing automatic backport workflow -->
-
 [![Website][website-shield]][website-url]
 [![Discord][discord-shield]][discord-url]
 [![Matrix][matrix-shield]][matrix-url]
@@ -529,6 +527,43 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Architecture Decision Records
 
 We document significant architectural decisions using ADRs (Architecture Decision Records). See [docs/adr/](docs/adr/) for all ADRs and the template for creating new ones.
+
+### Backporting Changes to Release Branches
+
+When you fix a bug that affects a version in feature freeze, we use an automated backport process to apply the fix to the release candidate branch.
+
+**Real example:**
+- Subgraphs feature was released in v1.24
+- While developing v1.25, we discovered a bug in subgraphs
+- v1.24 is in feature freeze (only accepting bug fixes, no new features)
+- The fix needs to be applied to both main (v1.25) and the v1.24 release candidate
+
+**How to backport your fix:**
+
+1. Create your PR fixing the bug on `main` branch as usual
+2. Before merging, add these labels to your PR:
+   - `needs-backport` - triggers the automated backport workflow
+   - `1.24` - targets the `core/1.24` release candidate branch
+   
+3. Merge your PR normally
+4. The automated workflow will:
+   - Create a new branch from `core/1.24`
+   - Apply your changes to that branch
+   - Open a new PR to `core/1.24`
+   - Comment on your original PR with a link to the backport PR
+
+**When to use backporting:**
+- Bug fixes for features already released
+- Security fixes
+- Critical issues affecting existing functionality
+- Never for new features (these wait for the next release cycle)
+
+**Handling conflicts:**
+If the automated cherry-pick fails due to conflicts, the workflow will comment on your PR with:
+- The list of conflicting files
+- Instructions to manually cherry-pick to the release candidate branch
+
+See [PR #4616](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4616) for the actual subgraph bugfix that was backported from v1.25 to v1.24.
 
 ## Development
 
