@@ -1,4 +1,3 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,6 +5,8 @@ import { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import * as litegraphUtil from '@/utils/litegraphUtil'
+
+import { LGraphNode } from '../../../src/lib/litegraph/src/litegraph'
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isVideoNode: vi.fn()

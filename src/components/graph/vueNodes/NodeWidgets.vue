@@ -2,26 +2,48 @@
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
     ⚠️ Node Widgets Error
   </div>
-  <div v-else class="lg-node-widgets flex flex-col gap-2">
-    <component
-      :is="widget.vueComponent"
+  <div v-else class="lg-node-widgets flex flex-col gap-2 pr-4">
+    <div
       v-for="(widget, index) in processedWidgets"
       :key="`widget-${index}-${widget.name}`"
-      :widget="widget.simplified"
-      :model-value="widget.value"
-      :readonly="readonly"
-      @update:model-value="widget.updateHandler"
-    />
+      class="lg-widget-container relative flex items-center group"
+    >
+      <!-- Widget Input Slot Dot -->
+      <div
+        class="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+      >
+        <InputSlot
+          :slot-data="{
+            name: widget.name,
+            type: widget.type,
+            boundingRect: [0, 0, 0, 0]
+          }"
+          :index="index"
+          :readonly="readonly"
+          :dot-only="true"
+          @slot-click="handleWidgetSlotClick($event, widget)"
+        />
+      </div>
+      <!-- Widget Component -->
+      <component
+        :is="widget.vueComponent"
+        :widget="widget.simplified"
+        :model-value="widget.value"
+        :readonly="readonly"
+        class="flex-1"
+        @update:model-value="widget.updateHandler"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, onUnmounted, ref } from 'vue'
 
 // Import widget components directly
 import WidgetInputText from '@/components/graph/vueWidgets/WidgetInputText.vue'
 import { widgetTypeToComponent } from '@/components/graph/vueWidgets/widgetRegistry'
+import { useEventForwarding } from '@/composables/graph/useEventForwarding'
 import type {
   SafeWidgetData,
   VueNodeData
@@ -34,6 +56,9 @@ import {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
+import type { LGraphNode } from '../../../lib/litegraph/src/litegraph'
+import InputSlot from './InputSlot.vue'
+
 interface NodeWidgetsProps {
   node?: LGraphNode
   nodeData?: VueNodeData
@@ -42,6 +67,9 @@ interface NodeWidgetsProps {
 }
 
 const props = defineProps<NodeWidgetsProps>()
+
+// Set up event forwarding for slot interactions
+const { handleSlotPointerDown, cleanup } = useEventForwarding()
 
 // Use widget renderer composable
 const { getWidgetComponent, shouldRenderAsVue } = useWidgetRenderer()
@@ -61,6 +89,7 @@ const nodeInfo = computed(() => props.nodeData || props.node)
 
 interface ProcessedWidget {
   name: string
+  type: string
   vueComponent: any
   simplified: SimplifiedWidget
   value: WidgetValue
@@ -110,6 +139,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     result.push({
       name: widget.name,
+      type: widget.type,
       vueComponent,
       simplified,
       value: widget.value,
@@ -118,5 +148,19 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   }
 
   return result
+})
+
+// Handle widget slot click
+const handleWidgetSlotClick = (
+  event: PointerEvent,
+  _widget: ProcessedWidget
+) => {
+  // Forward the event to LiteGraph for native slot handling
+  handleSlotPointerDown(event)
+}
+
+// Clean up event listeners on unmount
+onUnmounted(() => {
+  cleanup()
 })
 </script>

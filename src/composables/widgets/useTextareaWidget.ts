@@ -1,11 +1,11 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { ITextareaWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import type {
   InputSpec as InputSpecV2,
   TextareaInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { ITextareaWidget } from '../../lib/litegraph/src/types/widgets'
 
 export const useTextareaWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): ITextareaWidget => {

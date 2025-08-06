@@ -1,5 +1,3 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-import { NodeProperty } from '@comfyorg/litegraph/dist/LGraphNode'
 import { groupBy } from 'lodash'
 import { computed, onMounted } from 'vue'
 
@@ -8,6 +6,9 @@ import { app } from '@/scripts/app'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
+
+import { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import { NodeProperty } from '../../lib/litegraph/src/litegraph'
 
 /**
  * Composable to find missing NodePacks from workflow

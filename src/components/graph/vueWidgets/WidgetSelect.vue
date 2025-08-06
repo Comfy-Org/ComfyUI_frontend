@@ -1,5 +1,8 @@
 <template>
-  <div class="flex items-center justify-between gap-4">
+  <div
+    class="flex items-center justify-between gap-4"
+    :style="{ height: widgetHeight + 'px' }"
+  >
     <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
       widget.name
     }}</label>
@@ -29,6 +32,8 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { COMFY_VUE_NODE_DIMENSIONS } from '../../../lib/litegraph/src/litegraph'
+
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   modelValue: string | number | undefined
@@ -46,6 +51,9 @@ const { localValue, onChange } = useWidgetValue({
   defaultValue: props.widget.options?.values?.[0] || '',
   emit
 })
+
+// Get widget height from litegraph constants
+const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)

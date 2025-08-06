@@ -1,4 +1,3 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 
 import {
@@ -10,6 +9,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseFilePath } from '@/utils/formatUtil'
 import { isVideoNode } from '@/utils/litegraphUtil'
+
+import { LGraphNode } from '../lib/litegraph/src/litegraph'
 
 const createOutputs = (
   filenames: string[],

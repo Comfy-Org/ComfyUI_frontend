@@ -1,10 +1,3 @@
-import { type LGraphNode, isComboWidget } from '@comfyorg/litegraph'
-import type {
-  IBaseWidget,
-  IComboWidget,
-  IStringWidget
-} from '@comfyorg/litegraph/dist/types/widgets'
-
 import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
 import { useChartWidget } from '@/composables/widgets/useChartWidget'
 import { useColorWidget } from '@/composables/widgets/useColorWidget'
@@ -28,6 +21,12 @@ import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/stores/settingStore'
 
+import { type LGraphNode, isComboWidget } from '../lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IComboWidget,
+  IStringWidget
+} from '../lib/litegraph/src/types/widgets'
 import type { ComfyApp } from './app'
 import './domWidget'
 import './errorNodeWidgets'

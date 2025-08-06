@@ -11,7 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
@@ -20,12 +19,17 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
+import { type LGraphNode, LiteGraph } from '../../lib/litegraph/src/litegraph'
+
 const domWidgetStore = useDomWidgetStore()
 const widgetStates = computed(() => domWidgetStore.activeWidgetStates)
 
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
+
+  // Skip updating DOM widgets when Vue nodes mode is enabled
+  if (LiteGraph.vueNodesMode) return
 
   const lowQuality = lgCanvas.low_quality
   for (const widgetState of widgetStates.value) {

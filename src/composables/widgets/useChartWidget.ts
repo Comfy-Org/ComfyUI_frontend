@@ -1,12 +1,12 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IChartWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import {
   type ChartInputSpec,
   type InputSpec as InputSpecV2,
   isChartInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+
+import type { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import type { IChartWidget } from '../../lib/litegraph/src/types/widgets'
 
 export const useChartWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IChartWidget => {

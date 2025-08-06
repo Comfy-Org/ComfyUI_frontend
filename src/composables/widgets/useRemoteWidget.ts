@@ -1,10 +1,11 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-import { IWidget } from '@comfyorg/litegraph'
 import axios from 'axios'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
+
+import { LGraphNode } from '../../lib/litegraph/src/litegraph'
+import { IWidget } from '../../lib/litegraph/src/litegraph'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096

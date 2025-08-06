@@ -92,7 +92,6 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener, whenever } from '@vueuse/core'
 import {
   computed,
@@ -155,6 +154,11 @@ import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+
+import type {
+  LGraphCanvas,
+  LGraphNode
+} from '../../lib/litegraph/src/litegraph'
 
 const emit = defineEmits<{
   ready: []
@@ -649,6 +653,7 @@ onMounted(async () => {
   useCopy()
   usePaste()
   useWorkflowAutoSave()
+  useFeatureFlags() // This will automatically sync Vue nodes flag with LiteGraph
 
   comfyApp.vueAppReady = true
 
