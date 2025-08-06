@@ -46,9 +46,16 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+<<<<<<< HEAD
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+=======
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useToastStore } from '@/stores/toastStore'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+>>>>>>> 1c0c50110 (update api.ts to handle prompt formats)
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -859,6 +866,28 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Parses queue prompt data from array or object format
+   * @param rawPrompt The raw prompt data from the API
+   * @returns Normalized TaskPrompt object
+   */
+  private parseQueuePrompt(rawPrompt: any): TaskPrompt {
+    if (Array.isArray(rawPrompt)) {
+      // Queue format: [priority, prompt_id, workflow, outputs]
+      const [priority, prompt_id, workflow] = rawPrompt
+      return {
+        priority,
+        prompt_id,
+        extra_data: workflow?.extra_data || {
+          client_id: '',
+          extra_pnginfo: workflow
+        }
+      }
+    }
+    // Already in object format
+    return rawPrompt
+  }
+
+  /**
    * Gets the current state of the queue
    * @returns The currently running and queued items
    */
@@ -871,15 +900,23 @@ export class ComfyApi extends EventTarget {
       const data = await res.json()
       return {
         // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: TaskPrompt) => ({
+        Running: data.queue_running.map((prompt: any) => ({
           taskType: 'Running',
+<<<<<<< HEAD
           prompt,
           // prompt[1] is the prompt id
           remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
+=======
+          prompt: this.parseQueuePrompt(prompt),
+          remove: {
+            name: 'Cancel',
+            cb: () => api.interrupt(this.parseQueuePrompt(prompt).prompt_id)
+          }
+>>>>>>> 1c0c50110 (update api.ts to handle prompt formats)
         })),
-        Pending: data.queue_pending.map((prompt: TaskPrompt) => ({
+        Pending: data.queue_pending.map((prompt: any) => ({
           taskType: 'Pending',
-          prompt
+          prompt: this.parseQueuePrompt(prompt)
         }))
       }
     } catch (error) {
