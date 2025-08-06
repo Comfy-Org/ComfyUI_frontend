@@ -1,11 +1,3 @@
-import {
-  LGraphEventMode,
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
-import { Point } from '@comfyorg/litegraph'
-
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
@@ -28,6 +20,14 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+
+import {
+  LGraphEventMode,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '../lib/litegraph/src/litegraph'
+import { Point } from '../lib/litegraph/src/litegraph'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 

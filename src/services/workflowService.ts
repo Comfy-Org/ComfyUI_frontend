@@ -1,5 +1,3 @@
-import { LGraph, LGraphCanvas } from '@comfyorg/litegraph'
-import type { SerialisableGraph, Vector2 } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
@@ -14,6 +12,8 @@ import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
 
+import { LGraph, LGraphCanvas } from '../lib/litegraph/src/litegraph'
+import type { SerialisableGraph, Vector2 } from '../lib/litegraph/src/litegraph'
 import { useDialogService } from './dialogService'
 
 export const useWorkflowService = () => {

@@ -42,12 +42,13 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphCanvas } from '@comfyorg/litegraph'
 import { computed, provide } from 'vue'
 
 import { useTransformState } from '@/composables/element/useTransformState'
 import { useCanvasTransformSync } from '@/composables/graph/useCanvasTransformSync'
 import { useTransformSettling } from '@/composables/graph/useTransformSettling'
+
+import type { LGraphCanvas } from '../../lib/litegraph/src/litegraph'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas

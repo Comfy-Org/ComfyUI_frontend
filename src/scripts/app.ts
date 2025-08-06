@@ -1,12 +1,3 @@
-import {
-  LGraph,
-  LGraphCanvas,
-  LGraphEventMode,
-  LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
-import type { Vector2 } from '@comfyorg/litegraph'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
@@ -72,6 +63,15 @@ import {
 import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '../lib/litegraph/src/litegraph'
+import type { Vector2 } from '../lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '../lib/litegraph/src/types/widgets'
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import {

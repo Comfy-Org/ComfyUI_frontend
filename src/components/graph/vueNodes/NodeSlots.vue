@@ -2,43 +2,48 @@
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
     ⚠️ Node Slots Error
   </div>
-  <div v-else class="lg-node-slots">
-    <!-- For now, render slots info as text to see what's there -->
-    <div v-if="nodeInfo?.inputs?.length" class="mb-2">
-      <div class="text-xs text-gray-400 mb-1">Inputs:</div>
-      <div
-        v-for="(input, index) in nodeInfo.inputs"
+  <div v-else class="lg-node-slots flex justify-between">
+    <div v-if="filteredInputs.length" class="flex flex-col">
+      <InputSlot
+        v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
-        class="text-xs text-gray-300"
-      >
-        {{ getInputName(input, index) }} ({{ getInputType(input) }})
-      </div>
+        :slot-data="input"
+        :index="getActualInputIndex(input, index)"
+        :readonly="readonly"
+        @slot-click="
+          handleInputSlotClick(getActualInputIndex(input, index), $event)
+        "
+      />
     </div>
 
-    <div v-if="nodeInfo?.outputs?.length">
-      <div class="text-xs text-gray-400 mb-1">Outputs:</div>
-      <div
-        v-for="(output, index) in nodeInfo.outputs"
+    <div v-if="filteredOutputs.length" class="flex flex-col ml-auto">
+      <OutputSlot
+        v-for="(output, index) in filteredOutputs"
         :key="`output-${index}`"
-        class="text-xs text-gray-300"
-      >
-        {{ getOutputName(output, index) }} ({{ getOutputType(output) }})
-      </div>
+        :slot-data="output"
+        :index="index"
+        :readonly="readonly"
+        @slot-click="handleOutputSlotClick(index, $event)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, onUnmounted, ref } from 'vue'
 
-// import InputSlot from './InputSlot.vue'
-// import OutputSlot from './OutputSlot.vue'
-
+import { useEventForwarding } from '@/composables/graph/useEventForwarding'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LODLevel } from '@/composables/graph/useLOD'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { isSlotObject } from '@/utils/typeGuardUtil'
+
+import type {
+  INodeSlot,
+  LGraphNode
+} from '../../../lib/litegraph/src/litegraph'
+import InputSlot from './InputSlot.vue'
+import OutputSlot from './OutputSlot.vue'
 
 interface NodeSlotsProps {
   node?: LGraphNode // For backwards compatibility
@@ -51,33 +56,76 @@ const props = defineProps<NodeSlotsProps>()
 
 const nodeInfo = computed(() => props.nodeData || props.node)
 
-const getInputName = (input: unknown, index: number): string => {
-  if (isSlotObject(input) && input.name) {
-    return input.name
-  }
-  return `Input ${index}`
+// Filter out input slots that have corresponding widgets
+const filteredInputs = computed(() => {
+  if (!nodeInfo.value?.inputs) return []
+
+  return nodeInfo.value.inputs
+    .filter((input) => {
+      // Check if this slot has a widget property (indicating it has a corresponding widget)
+      if (isSlotObject(input) && 'widget' in input && input.widget) {
+        // This slot has a widget, so we should not display it separately
+        return false
+      }
+      return true
+    })
+    .map((input) =>
+      isSlotObject(input)
+        ? input
+        : ({
+            name: typeof input === 'string' ? input : '',
+            type: 'any',
+            boundingRect: [0, 0, 0, 0] as [number, number, number, number]
+          } as INodeSlot)
+    )
+})
+
+// Outputs don't have widgets, so we don't need to filter them
+const filteredOutputs = computed(() => {
+  const outputs = nodeInfo.value?.outputs || []
+  return outputs.map((output) =>
+    isSlotObject(output)
+      ? output
+      : ({
+          name: typeof output === 'string' ? output : '',
+          type: 'any',
+          boundingRect: [0, 0, 0, 0] as [number, number, number, number]
+        } as INodeSlot)
+  )
+})
+
+// Get the actual index of an input slot in the node's inputs array
+// (accounting for filtered widget slots)
+const getActualInputIndex = (
+  input: INodeSlot,
+  filteredIndex: number
+): number => {
+  if (!nodeInfo.value?.inputs) return filteredIndex
+
+  // Find the actual index in the unfiltered inputs array
+  const actualIndex = nodeInfo.value.inputs.findIndex((i) => i === input)
+  return actualIndex !== -1 ? actualIndex : filteredIndex
 }
 
-const getInputType = (input: unknown): string => {
-  if (isSlotObject(input) && input.type) {
-    return input.type
-  }
-  return 'any'
+// Set up event forwarding for slot interactions
+const { handleSlotPointerDown, cleanup } = useEventForwarding()
+
+// Handle input slot click
+const handleInputSlotClick = (_index: number, event: PointerEvent) => {
+  // Forward the event to LiteGraph for native slot handling
+  handleSlotPointerDown(event)
 }
 
-const getOutputName = (output: unknown, index: number): string => {
-  if (isSlotObject(output) && output.name) {
-    return output.name
-  }
-  return `Output ${index}`
+// Handle output slot click
+const handleOutputSlotClick = (_index: number, event: PointerEvent) => {
+  // Forward the event to LiteGraph for native slot handling
+  handleSlotPointerDown(event)
 }
 
-const getOutputType = (output: unknown): string => {
-  if (isSlotObject(output) && output.type) {
-    return output.type
-  }
-  return 'any'
-}
+// Clean up event listeners on unmount
+onUnmounted(() => {
+  cleanup()
+})
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)

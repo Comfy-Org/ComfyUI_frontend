@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
 import { formatDate } from '@/utils/formatUtil'
+
+import type { LGraphNode } from '../lib/litegraph/src/litegraph'
 
 export function applyTextReplacements(
   allNodes: LGraphNode[],
