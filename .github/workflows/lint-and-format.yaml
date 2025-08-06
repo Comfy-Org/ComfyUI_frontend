@@ -2,7 +2,7 @@ name: Lint and Format
 
 on:
   pull_request:
-    branches-ignore: [ wip/*, draft/*, temp/* ]
+    branches-ignore: [wip/*, draft/*, temp/*]
 
 permissions:
   contents: write
@@ -52,6 +52,12 @@ jobs:
           git commit -m "[auto-fix] Apply ESLint and Prettier fixes"
           git push
 
+      - name: Final validation
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          npm run lint
+          npm run format:check
+
       - name: Comment on PR
         if: steps.verify-changed-files.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -61,5 +67,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ **Auto-fix Applied**\n\nESLint and Prettier have automatically fixed formatting and linting issues in this PR. The changes have been committed to this branch.'
+              body: '## 🔧 Auto-fixes Applied\n\nThis PR has been automatically updated to fix linting and formatting issues.\n\n**⚠️ Important**: Your local branch is now behind. Run `git pull` before making additional changes to avoid conflicts.\n\n### Changes made:\n- ESLint auto-fixes\n- Prettier formatting'
             })
