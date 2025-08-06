@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { type ReleaseNote, useReleaseService } from '@/services/releaseService'
-import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { isElectron } from '@/utils/envUtil'
 import { compareVersions, stringToLocale } from '@/utils/formatUtil'
 
 // Store for managing release notes
@@ -81,6 +82,11 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
+    // Only show on desktop version
+    if (!isElectron()) {
+      return false
+    }
+
     if (!isNewVersionAvailable.value) {
       return false
     }
@@ -105,6 +111,11 @@ export const useReleaseStore = defineStore('release', () => {
   const shouldShowRedDot = computed(() => {
     // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
+      return false
+    }
+
+    // Only show on desktop version
+    if (!isElectron()) {
       return false
     }
 
