@@ -36,9 +36,15 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   }))
 }))
 
-vi.mock('@vueuse/core', () => ({
-  whenever: vi.fn()
-}))
+vi.mock('@vueuse/core', async () => {
+  const { ref } = await import('vue')
+  return {
+    whenever: vi.fn(),
+    useStorage: vi.fn((_key, defaultValue) => {
+      return ref(defaultValue)
+    })
+  }
+})
 
 vi.mock('@/config', () => ({
   default: {
