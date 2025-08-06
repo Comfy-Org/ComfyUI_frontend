@@ -767,7 +767,6 @@ test.describe('Viewport settings', () => {
     comfyPage,
     comfyMouse
   }) => {
-    // Skipped for 1.24.x: Minimap is disabled by default in this branch
     // Screenshot the canvas element
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
