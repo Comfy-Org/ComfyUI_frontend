@@ -31,17 +31,18 @@ jobs:
         run: |
           # Extract version labels (e.g., "1.24", "1.22")
           VERSIONS=""
-          for label in ${{ join(github.event.pull_request.labels.*.name, ' ') }}; do
+          LABELS='${{ toJSON(github.event.pull_request.labels) }}'
+          for label in $(echo "$LABELS" | jq -r '.[].name'); do
             if [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
               VERSIONS="${VERSIONS}${label} "
             fi
           done
-          
+
           if [ -z "$VERSIONS" ]; then
             echo "::error::No version labels found (e.g., 1.24, 1.22)"
             exit 1
           fi
-          
+
           echo "versions=${VERSIONS}" >> $GITHUB_OUTPUT
           echo "Found version labels: ${VERSIONS}"
 
@@ -54,13 +55,13 @@ jobs:
         run: |
           FAILED=""
           SUCCESS=""
-          
+
           for version in ${{ steps.versions.outputs.versions }}; do
             echo "::group::Backporting to core/${version}"
-            
+
             TARGET_BRANCH="core/${version}"
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${version}"
-            
+
             # Fetch target branch (fail if doesn't exist)
             if ! git fetch origin "${TARGET_BRANCH}"; then
               echo "::error::Target branch ${TARGET_BRANCH} does not exist"
@@ -68,10 +69,10 @@ jobs:
               echo "::endgroup::"
               continue
             fi
-            
+
             # Create backport branch
             git checkout -b "${BACKPORT_BRANCH}" "origin/${TARGET_BRANCH}"
-            
+
             # Try cherry-pick
             if git cherry-pick "${MERGE_COMMIT}"; then
               git push origin "${BACKPORT_BRANCH}"
@@ -81,26 +82,26 @@ jobs:
               # Get conflict info
               CONFLICTS=$(git diff --name-only --diff-filter=U)
               git cherry-pick --abort
-              
+
               echo "::error::Cherry-pick failed due to conflicts"
               FAILED="${FAILED}${version}:conflicts "
-              
+
               # Save conflict info for comment
               echo "CONFLICTS_${version}<<EOF" >> $GITHUB_ENV
               echo "${CONFLICTS}" >> $GITHUB_ENV
               echo "EOF" >> $GITHUB_ENV
             fi
-            
+
             # Return to main
             git checkout main
             git branch -D "${BACKPORT_BRANCH}" 2>/dev/null || true
-            
+
             echo "::endgroup::"
           done
-          
+
           echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
           echo "failed=${FAILED}" >> $GITHUB_OUTPUT
-          
+
           if [ -n "${FAILED}" ]; then
             exit 1
           fi
@@ -110,24 +111,23 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r version branch <<< "${backport}"
-            
-            # Create PR using GitHub CLI
-            PR_URL=$(gh pr create \
+
+            gh pr create \
               --base "core/${version}" \
               --head "${branch}" \
-              --title "[backport ${version}] ${{ github.event.pull_request.title }}" \
-              --body "Backport of #${{ github.event.pull_request.number }} to \`core/${version}\`
+              --title "[backport ${version}] ${PR_TITLE}" \
+              --body "Backport of #${PR_NUMBER} to \`core/${version}\`"$'\n\n'"Automatically created by backport workflow."
 
-Automatically created by backport workflow." \
-              2>&1) || true
-            
-            if [[ "${PR_URL}" =~ pull/[0-9]+ ]]; then
-              PR_NUM=$(echo "${PR_URL}" | grep -o 'pull/[0-9]*' | grep -o '[0-9]*')
-              
-              # Comment on original PR about success
-              gh pr comment ${{ github.event.pull_request.number }} --body "@${{ github.event.pull_request.user.login }} ✅ Successfully backported to #${PR_NUM}"
+            PR_NUM=$(gh pr list --head "${branch}" --json number --jq '.[0].number')
+
+            if [ -n "${PR_NUM}" ]; then
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Successfully backported to #${PR_NUM}"
             fi
           done
 
@@ -136,16 +136,20 @@ Automatically created by backport workflow." \
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          MERGE_COMMIT="${{ github.event.pull_request.merge_commit_sha }}"
+
           for failure in ${{ steps.backport.outputs.failed }}; do
             IFS=':' read -r version reason <<< "${failure}"
-            
+
             if [ "${reason}" = "branch-missing" ]; then
-              gh pr comment ${{ github.event.pull_request.number }} --body "@${{ github.event.pull_request.user.login }} ❌ Backport failed: Branch \`core/${version}\` does not exist"
-            
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport failed: Branch \`core/${version}\` does not exist"
+
             elif [ "${reason}" = "conflicts" ]; then
               CONFLICTS_VAR="CONFLICTS_${version}"
               CONFLICTS="${!CONFLICTS_VAR}"
-              
-              gh pr comment ${{ github.event.pull_request.number }} --body "@${{ github.event.pull_request.user.login }} ❌ Backport to \`core/${version}\` failed: Merge conflicts detected. Please manually cherry-pick commit \`${{ github.event.pull_request.merge_commit_sha }}\` to the \`core/${version}\` branch. Conflicting files: ${CONFLICTS}"
+
+              gh pr comment "${PR_NUMBER}" --body "@${PR_AUTHOR} Backport to \`core/${version}\` failed: Merge conflicts detected. Please manually cherry-pick commit \`${MERGE_COMMIT}\` to the \`core/${version}\` branch. Conflicting files: ${CONFLICTS}"
             fi
           done
