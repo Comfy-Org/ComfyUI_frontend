@@ -4,10 +4,6 @@
     ref="containerRef"
     class="litegraph-minimap absolute bottom-[20px] right-[90px] z-[1000]"
     :style="containerStyles"
-    @mousedown="handleMouseDown"
-    @mousemove="handleMouseMove"
-    @mouseup="handleMouseUp"
-    @mouseleave="handleMouseUp"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
@@ -44,9 +40,6 @@ const {
   height,
   init,
   destroy,
-  handleMouseDown,
-  handleMouseMove,
-  handleMouseUp,
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,

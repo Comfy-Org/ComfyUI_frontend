@@ -434,31 +434,6 @@ export function useMinimap() {
   const { startSync: startViewportSync, stopSync: stopViewportSync } =
     useCanvasTransformSync(updateViewport, { autoStart: false })
 
-  const handleMouseDown = (e: MouseEvent) => {
-    isDragging.value = true
-    updateContainerRect()
-    handleMouseMove(e)
-  }
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging.value || !canvasRef.value || !canvas.value) return
-
-    const x = e.clientX - containerRect.value.left
-    const y = e.clientY - containerRect.value.top
-
-    const offsetX = (width - bounds.value.width * scale.value) / 2
-    const offsetY = (height - bounds.value.height * scale.value) / 2
-
-    const worldX = (x - offsetX) / scale.value + bounds.value.minX
-    const worldY = (y - offsetY) / scale.value + bounds.value.minY
-
-    centerViewOn(worldX, worldY)
-  }
-
-  const handleMouseUp = () => {
-    isDragging.value = false
-  }
-
   // Pointer event handlers for touch screen support
   const handlePointerDown = (e: PointerEvent) => {
     isDragging.value = true
@@ -721,9 +696,6 @@ export function useMinimap() {
     init,
     destroy,
     toggle,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
