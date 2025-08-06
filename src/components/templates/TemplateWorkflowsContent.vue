@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col h-[83vh] w-[90vw] relative pb-6"
+    class="flex flex-col h-[83vh] w-[90vw] relative pb-6 px-8 mx-auto"
     data-testid="template-workflows-content"
   >
     <Button
@@ -12,12 +12,13 @@
       @click="toggleSideNav"
     />
     <Divider
-      class="m-0 [&::before]:border-surface-border/70 [&::before]:border-t-2"
+      class="my-0 w-[90vw] -mx-8 relative [&::before]:border-surface-border/70 [&::before]:border-t-2"
     />
+
     <div class="flex flex-1 relative overflow-hidden">
       <aside
         v-if="isSideNavOpen"
-        class="absolute translate-x-0 top-0 left-0 h-full w-80 shadow-md z-5 transition-transform duration-300 ease-in-out"
+        class="absolute translate-x-0 top-0 left-0 h-full w-60 shadow-md z-5 transition-transform duration-300 ease-in-out"
       >
         <ProgressSpinner
           v-if="!isTemplatesLoaded || !isReady"
@@ -25,27 +26,64 @@
         />
         <TemplateWorkflowsSideNav
           :tabs="allTemplateGroups"
-          :selected-tab="selectedTemplate"
-          @update:selected-tab="handleTabSelection"
+          :selected-subcategory="selectedSubcategory"
+          :selected-view="selectedView"
+          @update:selected-subcategory="handleSubcategory"
+          @update:selected-view="handleViewSelection"
         />
       </aside>
       <div
         class="flex-1 transition-all duration-300"
         :class="{
-          'pl-80': isSideNavOpen || !isSmallScreen,
+          'pl-60': isSideNavOpen || !isSmallScreen,
           'pl-8': !isSideNavOpen && isSmallScreen
         }"
       >
-        <TemplateWorkflowView
-          v-if="isReady && selectedTemplate"
-          class="px-12 py-4"
-          :title="selectedTemplate.title"
-          :source-module="selectedTemplate.moduleName"
-          :templates="selectedTemplate.templates"
-          :loading="loadingTemplateId"
-          :category-title="selectedTemplate.title"
-          @load-workflow="handleLoadWorkflow"
-        />
+        <div
+          v-if="
+            isReady &&
+            (selectedView === 'all' ||
+              selectedView === 'recent' ||
+              selectedSubcategory)
+          "
+          class="flex flex-col h-full"
+        >
+          <div class="px-8 sm:px-12 py-4 border-b border-surface-border/20">
+            <TemplateSearchBar
+              v-model:search-query="searchQuery"
+              v-model:selected-models="selectedModels"
+              v-model:sort-by="sortBy"
+              :filtered-count="filteredCount"
+              :available-models="availableModels"
+              @clear-filters="resetFilters"
+            />
+          </div>
+
+          <TemplateWorkflowView
+            class="px-8 sm:px-12 flex-1"
+            :title="
+              selectedSubcategory
+                ? selectedSubcategory.label
+                : selectedView === 'all'
+                  ? $t('templateWorkflows.view.allTemplates', 'All Templates')
+                  : selectedTemplate?.title || ''
+            "
+            :source-module="selectedTemplate?.moduleName || 'all'"
+            :templates="filteredTemplates"
+            :available-subcategories="availableSubcategories"
+            :selected-subcategory="filterSubcategory"
+            :loading="loadingTemplateId"
+            :category-title="
+              selectedSubcategory
+                ? selectedSubcategory.label
+                : selectedView === 'all'
+                  ? $t('templateWorkflows.view.allTemplates', 'All Templates')
+                  : selectedTemplate?.title || ''
+            "
+            @load-workflow="handleLoadWorkflow"
+            @update:selected-subcategory="filterSubcategory = $event"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -56,13 +94,15 @@ import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
-import { watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
+import TemplateSearchBar from '@/components/templates/TemplateSearchBar.vue'
 import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import TemplateWorkflowsSideNav from '@/components/templates/TemplateWorkflowsSideNav.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
+import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
-import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import type { TemplateSubcategory } from '@/types/workflowTemplateTypes'
 
 const {
   isSmallScreen,
@@ -76,32 +116,76 @@ const {
   isTemplatesLoaded,
   allTemplateGroups,
   loadTemplates,
-  selectFirstTemplateCategory,
-  selectTemplateCategory,
   loadWorkflowTemplate
 } = useTemplateWorkflows()
 
 const { isReady } = useAsyncState(loadTemplates, null)
 
+// State for subcategory selection
+const selectedSubcategory = ref<TemplateSubcategory | null>(null)
+
+// State for view selection (all vs recent)
+const selectedView = ref<'all' | 'recent'>('all')
+
+// Template filtering for the top-level search
+const templatesRef = computed(() => {
+  // If a subcategory is selected, use all templates from that subcategory
+  if (selectedSubcategory.value) {
+    return selectedSubcategory.value.modules.flatMap(
+      (module) => module.templates
+    )
+  }
+
+  // If "All Templates" view is selected and no subcategory, show all templates across all groups
+  if (selectedView.value === 'all') {
+    return allTemplateGroups.value.flatMap((group) =>
+      group.subcategories.flatMap((subcategory) =>
+        subcategory.modules.flatMap((module) => module.templates)
+      )
+    )
+  }
+
+  // Otherwise, use the selected template's templates (for recent view or fallback)
+  return selectedTemplate.value?.templates || []
+})
+
+const {
+  searchQuery,
+  selectedModels,
+  selectedSubcategory: filterSubcategory,
+  sortBy,
+  availableSubcategories,
+  availableModels,
+  filteredTemplates,
+  filteredCount,
+  resetFilters
+} = useTemplateFiltering(templatesRef)
+
 watch(
   isReady,
   () => {
     if (isReady.value) {
-      selectFirstTemplateCategory()
+      // Start with "All Templates" view by default instead of selecting first subcategory
+      selectedView.value = 'all'
+      selectedSubcategory.value = null
     }
   },
   { once: true }
 )
 
-const handleTabSelection = (selection: WorkflowTemplates | null) => {
-  if (selection !== null) {
-    selectTemplateCategory(selection)
+const handleSubcategory = (subcategory: TemplateSubcategory) => {
+  selectedSubcategory.value = subcategory
 
-    // On small screens, close the sidebar when a category is selected
-    if (isSmallScreen.value) {
-      isSideNavOpen.value = false
-    }
+  // On small screens, close the sidebar when a subcategory is selected
+  if (isSmallScreen.value) {
+    isSideNavOpen.value = false
   }
+}
+
+const handleViewSelection = (view: 'all' | 'recent') => {
+  selectedView.value = view
+  // Clear subcategory selection when switching to header views
+  selectedSubcategory.value = null
 }
 
 const handleLoadWorkflow = async (id: string) => {

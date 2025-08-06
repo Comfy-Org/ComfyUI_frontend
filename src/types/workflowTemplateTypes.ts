@@ -12,16 +12,25 @@ export interface TemplateInfo {
   localizedTitle?: string
   localizedDescription?: string
   sourceModule?: string
+  tags?: string[]
+  models?: string[]
+  date?: string
 }
 
 export interface WorkflowTemplates {
   moduleName: string
   templates: TemplateInfo[]
   title: string
+  localizedTitle?: string
+}
+
+export interface TemplateSubcategory {
+  label: string
+  modules: WorkflowTemplates[]
 }
 
 export interface TemplateGroup {
   label: string
   icon?: string
-  modules: WorkflowTemplates[]
+  subcategories: TemplateSubcategory[]
 }

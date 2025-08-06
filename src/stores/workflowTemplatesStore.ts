@@ -1,4 +1,3 @@
-import { groupBy } from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -101,49 +100,6 @@ export const useWorkflowTemplatesStore = defineStore(
       )
     })
 
-    // Create an "All" category that combines all templates
-    const createAllCategory = () => {
-      // First, get core templates with source module added
-      const coreTemplatesWithSourceModule = coreTemplates.value.flatMap(
-        (category) =>
-          // For each template in each category, add the sourceModule and pass through any localized fields
-          category.templates.map((template) => {
-            // Get localized template with its original category title for i18n lookup
-            const localizedTemplate = addLocalizedFieldsToTemplate(
-              template,
-              category.title
-            )
-            return {
-              ...localizedTemplate,
-              sourceModule: category.moduleName
-            }
-          })
-      )
-
-      // Now handle custom templates
-      const customTemplatesWithSourceModule = Object.entries(
-        customTemplates.value
-      ).flatMap(([moduleName, templates]) =>
-        templates.map((name) => ({
-          name,
-          mediaType: 'image',
-          mediaSubtype: 'jpg',
-          description: name,
-          sourceModule: moduleName
-        }))
-      )
-
-      return {
-        moduleName: 'all',
-        title: 'All',
-        localizedTitle: st('templateWorkflows.category.All', 'All Templates'),
-        templates: [
-          ...coreTemplatesWithSourceModule,
-          ...customTemplatesWithSourceModule
-        ]
-      }
-    }
-
     const groupedTemplates = computed<TemplateGroup[]>(() => {
       // Get regular categories
       const allTemplates = [
@@ -168,32 +124,156 @@ export const useWorkflowTemplatesStore = defineStore(
         )
       ]
 
-      // Group templates by their main category
-      const groupedByCategory = Object.entries(
-        groupBy(allTemplates, (template) =>
-          template.moduleName === 'default'
-            ? st(
-                'templateWorkflows.category.ComfyUI Examples',
-                'ComfyUI Examples'
-              )
-            : st('templateWorkflows.category.Custom Nodes', 'Custom Nodes')
-        )
-      ).map(([label, modules]) => ({ label, modules }))
+      // Create subcategories based on template types and content
 
-      // Insert the "All" category at the top of the "ComfyUI Examples" group
-      const comfyExamplesGroupIndex = groupedByCategory.findIndex(
-        (group) =>
-          group.label ===
-          st('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+      // USE CASES SUBCATEGORIES
+      const imageCreationTemplates = allTemplates.filter((template) =>
+        ['Basics', 'Flux', 'Image'].includes(template.title)
       )
 
-      if (comfyExamplesGroupIndex !== -1) {
-        groupedByCategory[comfyExamplesGroupIndex].modules.unshift(
-          createAllCategory()
-        )
+      const videoAnimationTemplates = allTemplates.filter(
+        (template) => template.title === 'Video'
+      )
+
+      const spatialTemplates = allTemplates.filter((template) =>
+        ['3D', 'Area Composition'].includes(template.title)
+      )
+
+      const audioTemplates = allTemplates.filter(
+        (template) => template.title === 'Audio'
+      )
+
+      // TOOLS & BUILDING SUBCATEGORIES
+      const advancedApisTemplates = allTemplates.filter((template) =>
+        ['Image API', 'Video API', '3D API', 'LLM API'].includes(template.title)
+      )
+
+      const postProcessingTemplates = allTemplates.filter((template) =>
+        ['Upscaling', 'ControlNet'].includes(template.title)
+      )
+
+      // CUSTOM & COMMUNITY SUBCATEGORIES
+      const customNodesTemplates = allTemplates.filter(
+        (template) =>
+          template.moduleName !== 'default' &&
+          !advancedApisTemplates.includes(template)
+      )
+
+      const communityPicksTemplates: WorkflowTemplates[] = [] // This could be populated with featured community content
+
+      const groups: TemplateGroup[] = []
+
+      // USE CASES GROUP
+      const useCasesSubcategories = []
+
+      if (imageCreationTemplates.length > 0) {
+        useCasesSubcategories.push({
+          label: st(
+            'templateWorkflows.subcategory.imageCreation',
+            'Image Creation'
+          ),
+          modules: imageCreationTemplates
+        })
       }
 
-      return groupedByCategory
+      if (videoAnimationTemplates.length > 0) {
+        useCasesSubcategories.push({
+          label: st(
+            'templateWorkflows.subcategory.videoAnimation',
+            'Video & Animation'
+          ),
+          modules: videoAnimationTemplates
+        })
+      }
+
+      if (spatialTemplates.length > 0) {
+        useCasesSubcategories.push({
+          label: st('templateWorkflows.subcategory.spatial', '3D & Spatial'),
+          modules: spatialTemplates
+        })
+      }
+
+      if (audioTemplates.length > 0) {
+        useCasesSubcategories.push({
+          label: st('templateWorkflows.subcategory.audio', 'Audio'),
+          modules: audioTemplates
+        })
+      }
+
+      if (useCasesSubcategories.length > 0) {
+        groups.push({
+          label: st('templateWorkflows.group.useCases', 'USE CASES'),
+          subcategories: useCasesSubcategories
+        })
+      }
+
+      // TOOLS & BUILDING GROUP
+      const toolsBuildingSubcategories = []
+
+      if (advancedApisTemplates.length > 0) {
+        toolsBuildingSubcategories.push({
+          label: st(
+            'templateWorkflows.subcategory.advancedApis',
+            'Advanced APIs'
+          ),
+          modules: advancedApisTemplates
+        })
+      }
+
+      if (postProcessingTemplates.length > 0) {
+        toolsBuildingSubcategories.push({
+          label: st(
+            'templateWorkflows.subcategory.postProcessing',
+            'Post-Processing & Utilities'
+          ),
+          modules: postProcessingTemplates
+        })
+      }
+
+      if (toolsBuildingSubcategories.length > 0) {
+        groups.push({
+          label: st(
+            'templateWorkflows.group.toolsBuilding',
+            'TOOLS & BUILDING'
+          ),
+          subcategories: toolsBuildingSubcategories
+        })
+      }
+
+      // CUSTOM & COMMUNITY GROUP
+      const customCommunitySubcategories = []
+
+      if (customNodesTemplates.length > 0) {
+        customCommunitySubcategories.push({
+          label: st(
+            'templateWorkflows.subcategory.customNodes',
+            'Custom Nodes'
+          ),
+          modules: customNodesTemplates
+        })
+      }
+
+      if (communityPicksTemplates.length > 0) {
+        customCommunitySubcategories.push({
+          label: st(
+            'templateWorkflows.subcategory.communityPicks',
+            'Community Picks'
+          ),
+          modules: communityPicksTemplates
+        })
+      }
+
+      if (customCommunitySubcategories.length > 0) {
+        groups.push({
+          label: st(
+            'templateWorkflows.group.customCommunity',
+            'CUSTOM & COMMUNITY'
+          ),
+          subcategories: customCommunitySubcategories
+        })
+      }
+
+      return groups
     })
 
     async function loadWorkflowTemplates() {

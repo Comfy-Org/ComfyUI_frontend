@@ -29,6 +29,15 @@ vi.mock('primevue/selectbutton', () => ({
   }
 }))
 
+vi.mock('primevue/button', () => ({
+  default: {
+    name: 'Button',
+    template: '<button class="p-button"><slot></slot></button>',
+    props: ['severity', 'outlined', 'size', 'class'],
+    emits: ['click']
+  }
+}))
+
 vi.mock('@/components/templates/TemplateWorkflowCard.vue', () => ({
   default: {
     template: `
@@ -57,8 +66,19 @@ vi.mock('@/components/templates/TemplateWorkflowList.vue', () => ({
 vi.mock('@/components/templates/TemplateSearchBar.vue', () => ({
   default: {
     template: '<div class="mock-search-bar"></div>',
-    props: ['searchQuery', 'filteredCount'],
-    emits: ['update:searchQuery', 'clearFilters']
+    props: [
+      'searchQuery',
+      'filteredCount',
+      'availableModels',
+      'selectedModels',
+      'sortBy'
+    ],
+    emits: [
+      'update:searchQuery',
+      'update:selectedModels',
+      'update:sortBy',
+      'clearFilters'
+    ]
   }
 }))
 
@@ -89,8 +109,14 @@ vi.mock('@/composables/useLazyPagination', () => ({
 vi.mock('@/composables/useTemplateFiltering', () => ({
   useTemplateFiltering: (templates: any) => ({
     searchQuery: { value: '' },
+    selectedModels: { value: [] },
+    selectedSubcategory: { value: null },
+    sortBy: { value: 'recommended' },
+    availableSubcategories: { value: [] },
+    availableModels: { value: [] },
     filteredTemplates: templates,
-    filteredCount: { value: templates.value?.length || 0 }
+    filteredCount: { value: templates.value?.length || 0 },
+    resetFilters: vi.fn()
   })
 }))
 
@@ -127,6 +153,8 @@ describe('TemplateWorkflowView', () => {
           createTemplate('template-3')
         ],
         loading: null,
+        availableSubcategories: [],
+        selectedSubcategory: null,
         ...props
       },
       global: {

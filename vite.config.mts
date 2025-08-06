@@ -49,7 +49,7 @@ export default defineConfig({
       },
 
       '/workflow_templates': {
-        target: DEV_SERVER_COMFYUI_URL
+        target: 'http://localhost:1238'
       },
 
       // Proxy extension assets (images/videos) under /extensions to the ComfyUI backend
@@ -67,7 +67,7 @@ export default defineConfig({
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
-              target: DEV_SERVER_COMFYUI_URL
+              target: 'http://localhost:1238'
             }
           }
         : {}),

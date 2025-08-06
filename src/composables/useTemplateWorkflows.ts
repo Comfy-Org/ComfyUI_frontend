@@ -41,8 +41,14 @@ export function useTemplateWorkflows() {
    */
   const selectFirstTemplateCategory = () => {
     if (allTemplateGroups.value.length > 0) {
-      const firstCategory = allTemplateGroups.value[0].modules[0]
-      selectTemplateCategory(firstCategory)
+      const firstGroup = allTemplateGroups.value[0]
+      if (
+        firstGroup.subcategories.length > 0 &&
+        firstGroup.subcategories[0].modules.length > 0
+      ) {
+        const firstCategory = firstGroup.subcategories[0].modules[0]
+        selectTemplateCategory(firstCategory)
+      }
     }
   }
 
@@ -63,9 +69,9 @@ export function useTemplateWorkflows() {
     index = ''
   ) => {
     const basePath =
-      sourceModule === 'default'
-        ? api.fileURL(`/templates/${template.name}`)
-        : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
+      // sourceModule === 'default'
+      api.fileURL(`/templates/${template.name}-1`)
+    // : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
 
     const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
     return `${basePath}${indexSuffix}.${template.mediaSubtype}`
@@ -106,16 +112,21 @@ export function useTemplateWorkflows() {
     try {
       // Handle "All" category as a special case
       if (sourceModule === 'all') {
-        // Find "All" category in the ComfyUI Examples group
-        const comfyExamplesGroup = allTemplateGroups.value.find(
-          (g) =>
-            g.label ===
-            t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+        // Find "All" category in the USE CASES group
+        const useCasesGroup = allTemplateGroups.value.find(
+          (g) => g.label === t('templateWorkflows.group.useCases', 'USE CASES')
         )
-        const allCategory = comfyExamplesGroup?.modules.find(
-          (m) => m.moduleName === 'all'
+        const allSubcategory = useCasesGroup?.subcategories.find(
+          (s) =>
+            s.label ===
+            t('templateWorkflows.subcategory.allTemplates', 'All Templates')
         )
-        const template = allCategory?.templates.find((t) => t.name === id)
+        const allCategory = allSubcategory?.modules.find(
+          (m: WorkflowTemplates) => m.moduleName === 'all'
+        )
+        const template = allCategory?.templates.find(
+          (t: TemplateInfo) => t.name === id
+        )
 
         if (!template || !template.sourceModule) return false
 

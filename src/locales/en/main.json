@@ -552,6 +552,15 @@
     "title": "Get Started with a Template",
     "loadingMore": "Loading more templates...",
     "searchPlaceholder": "Search templates...",
+    "modelFilter": "Model",
+    "sort": "Sort",
+    "sortRecommended": "Recommended",
+    "sortAlphabetical": "Alphabetical",
+    "sortNewest": "Newest",
+    "modelsSelected": "{count} models",
+    "allSubcategories": "All",
+    "tutorial": "Tutorial",
+    "useTemplate": "Use Template",
     "category": {
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
@@ -568,6 +577,26 @@
       "Video API": "Video API",
       "LLM API": "LLM API",
       "All": "All Templates"
+    },
+    "group": {
+      "useCases": "USE CASES",
+      "toolsBuilding": "TOOLS & BUILDING", 
+      "customCommunity": "CUSTOM & COMMUNITY"
+    },
+    "subcategory": {
+      "allTemplates": "All Templates",
+      "imageCreation": "Image Creation",
+      "videoAnimation": "Video & Animation",
+      "spatial": "3D & Spatial",
+      "audio": "Audio",
+      "advancedApis": "Advanced APIs",
+      "postProcessing": "Post-Processing & Utilities",
+      "customNodes": "Custom Nodes",
+      "communityPicks": "Community Picks"
+    },
+    "view": {
+      "allTemplates": "All Templates",
+      "recentItems": "Recent Items"
     },
     "templateDescription": {
       "Basics": {

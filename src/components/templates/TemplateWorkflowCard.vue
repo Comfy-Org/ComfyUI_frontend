@@ -62,14 +62,49 @@
       </div>
     </template>
     <template #content>
-      <div class="flex items-center px-4 py-3">
+      <div class="flex items-center px-4 py-3 relative">
         <div class="flex-1 flex flex-col">
           <h3 class="line-clamp-2 text-lg font-normal mb-0" :title="title">
             {{ title }}
           </h3>
-          <p class="line-clamp-2 text-sm text-muted grow" :title="description">
-            {{ description }}
-          </p>
+
+          <!-- Description / Action Buttons Container -->
+          <div class="relative grow">
+            <!-- Description Text -->
+            <p
+              class="line-clamp-2 text-sm text-muted grow transition-opacity duration-200"
+              :class="{ 'opacity-0': isHovered }"
+              :title="description"
+            >
+              {{ description }}
+            </p>
+
+            <!-- Action Buttons (visible on hover) -->
+            <div
+              v-if="isHovered"
+              class="absolute inset-0 flex items-center gap-2 transition-opacity duration-200"
+            >
+              <Button
+                v-if="template.tutorialUrl"
+                size="small"
+                severity="secondary"
+                outlined
+                class="flex-1 rounded-lg"
+                @click.stop="openTutorial"
+              >
+                {{ $t('templateWorkflows.tutorial') }}
+              </Button>
+              <Button
+                size="small"
+                severity="primary"
+                :class="template.tutorialUrl ? 'flex-1' : 'w-full'"
+                class="rounded-lg"
+                @click.stop="$emit('loadWorkflow', template.name)"
+              >
+                {{ $t('templateWorkflows.useTemplate') }}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -78,6 +113,7 @@
 
 <script setup lang="ts">
 import { useElementHover } from '@vueuse/core'
+import Button from 'primevue/button'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
@@ -132,6 +168,12 @@ const description = computed(() =>
 const title = computed(() =>
   getTemplateTitle(template, effectiveSourceModule.value)
 )
+
+const openTutorial = () => {
+  if (template.tutorialUrl) {
+    window.open(template.tutorialUrl, '_blank', 'noopener,noreferrer')
+  }
+}
 
 defineEmits<{
   loadWorkflow: [name: string]
