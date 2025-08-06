@@ -3,6 +3,7 @@ import type { InjectionKey, Ref } from 'vue'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import type { components as managerComponents } from '@/types/generatedManagerTypes'
 import type { SearchMode } from '@/types/searchServiceTypes'
 
 type WorkflowNodeProperties = ComfyWorkflowJSON['nodes'][0]['properties']
@@ -242,3 +243,13 @@ export interface ManagerState {
   searchMode: SearchMode
   sortField: string
 }
+
+/**
+ * Types for import failure information API
+ */
+export type ImportFailInfoBulkRequest =
+  managerComponents['schemas']['ImportFailInfoBulkRequest']
+export type ImportFailInfoBulkResponse =
+  managerComponents['schemas']['ImportFailInfoBulkResponse']
+export type ImportFailInfoItem =
+  managerComponents['schemas']['ImportFailInfoItem']
