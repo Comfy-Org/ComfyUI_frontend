@@ -1,8 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-
 describe('useConflictAcknowledgment', () => {
   beforeEach(() => {
     // Set up Pinia for each test
@@ -18,7 +16,11 @@ describe('useConflictAcknowledgment', () => {
   })
 
   describe('initial state loading', () => {
-    it('should load empty state when localStorage is empty', () => {
+    it('should load empty state when localStorage is empty', async () => {
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { acknowledgmentState } = useConflictAcknowledgment()
 
       expect(acknowledgmentState.value).toEqual({
@@ -28,12 +30,23 @@ describe('useConflictAcknowledgment', () => {
       })
     })
 
-    it('should load existing state from localStorage', () => {
-      // Pre-populate localStorage
-      localStorage.setItem('Comfy.ConflictModalDismissed', 'true')
-      localStorage.setItem('Comfy.ConflictRedDotDismissed', 'true')
-      localStorage.setItem('Comfy.ConflictWarningBannerDismissed', 'true')
+    it('should load existing state from localStorage', async () => {
+      // Pre-populate localStorage with JSON values (as useStorage expects)
+      localStorage.setItem('Comfy.ConflictModalDismissed', JSON.stringify(true))
+      localStorage.setItem(
+        'Comfy.ConflictRedDotDismissed',
+        JSON.stringify(true)
+      )
+      localStorage.setItem(
+        'Comfy.ConflictWarningBannerDismissed',
+        JSON.stringify(true)
+      )
 
+      // Need to import the module after localStorage is set
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { acknowledgmentState } = useConflictAcknowledgment()
 
       expect(acknowledgmentState.value).toEqual({
@@ -45,7 +58,11 @@ describe('useConflictAcknowledgment', () => {
   })
 
   describe('dismissal functions', () => {
-    it('should mark conflicts as seen with unified function', () => {
+    it('should mark conflicts as seen with unified function', async () => {
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { markConflictsAsSeen, acknowledgmentState } =
         useConflictAcknowledgment()
 
@@ -54,7 +71,11 @@ describe('useConflictAcknowledgment', () => {
       expect(acknowledgmentState.value.modal_dismissed).toBe(true)
     })
 
-    it('should dismiss red dot notification', () => {
+    it('should dismiss red dot notification', async () => {
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { dismissRedDotNotification, acknowledgmentState } =
         useConflictAcknowledgment()
 
@@ -63,7 +84,11 @@ describe('useConflictAcknowledgment', () => {
       expect(acknowledgmentState.value.red_dot_dismissed).toBe(true)
     })
 
-    it('should dismiss warning banner', () => {
+    it('should dismiss warning banner', async () => {
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { dismissWarningBanner, acknowledgmentState } =
         useConflictAcknowledgment()
 
@@ -72,7 +97,11 @@ describe('useConflictAcknowledgment', () => {
       expect(acknowledgmentState.value.warning_banner_dismissed).toBe(true)
     })
 
-    it('should mark all conflicts as seen', () => {
+    it('should mark all conflicts as seen', async () => {
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { markConflictsAsSeen, acknowledgmentState } =
         useConflictAcknowledgment()
 
@@ -85,7 +114,12 @@ describe('useConflictAcknowledgment', () => {
   })
 
   describe('computed properties', () => {
-    it('should calculate shouldShowConflictModal correctly', () => {
+    it('should calculate shouldShowConflictModal correctly', async () => {
+      // Need fresh module import to ensure clean state
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { shouldShowConflictModal, markConflictsAsSeen } =
         useConflictAcknowledgment()
 
@@ -95,7 +129,11 @@ describe('useConflictAcknowledgment', () => {
       expect(shouldShowConflictModal.value).toBe(false)
     })
 
-    it('should calculate shouldShowRedDot correctly based on conflicts', () => {
+    it('should calculate shouldShowRedDot correctly based on conflicts', async () => {
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { shouldShowRedDot, dismissRedDotNotification } =
         useConflictAcknowledgment()
 
@@ -106,7 +144,11 @@ describe('useConflictAcknowledgment', () => {
       expect(shouldShowRedDot.value).toBe(false)
     })
 
-    it('should calculate shouldShowManagerBanner correctly', () => {
+    it('should calculate shouldShowManagerBanner correctly', async () => {
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { shouldShowManagerBanner, dismissWarningBanner } =
         useConflictAcknowledgment()
 
@@ -119,20 +161,26 @@ describe('useConflictAcknowledgment', () => {
   })
 
   describe('localStorage persistence', () => {
-    it('should persist to localStorage automatically', () => {
+    it('should persist to localStorage automatically', async () => {
+      // Need fresh module import to ensure clean state
+      vi.resetModules()
+      const { useConflictAcknowledgment } = await import(
+        '@/composables/useConflictAcknowledgment'
+      )
       const { markConflictsAsSeen, dismissWarningBanner } =
         useConflictAcknowledgment()
 
       markConflictsAsSeen()
       dismissWarningBanner()
 
-      // VueUse useStorage should automatically persist to localStorage
-      expect(
-        localStorage.getItem('Comfy.ConflictModalDismissed')
-      ).not.toBeNull()
-      expect(
-        localStorage.getItem('Comfy.ConflictWarningBannerDismissed')
-      ).not.toBeNull()
+      // Wait a tick for useStorage to sync
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      // VueUse useStorage should automatically persist to localStorage as JSON
+      expect(localStorage.getItem('Comfy.ConflictModalDismissed')).toBe('true')
+      expect(localStorage.getItem('Comfy.ConflictWarningBannerDismissed')).toBe(
+        'true'
+      )
     })
   })
 })
