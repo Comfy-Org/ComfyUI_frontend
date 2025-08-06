@@ -1,17 +1,27 @@
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
-      widget.name
-    }}</label>
     <Galleria
       v-model:activeIndex="activeIndex"
       :value="galleryImages"
       v-bind="filteredProps"
       :disabled="readonly"
       :show-thumbnails="showThumbnails"
-      :show-indicators="showIndicators"
       :show-nav-buttons="showNavButtons"
       class="max-w-full"
+      :pt="{
+        thumbnails: {
+          class: 'overflow-hidden'
+        },
+        thumbnailContent: {
+          class: 'py-4 px-2'
+        },
+        thumbnailPrevButton: {
+          class: 'm-0'
+        },
+        thumbnailNextButton: {
+          class: 'm-0'
+        }
+      }"
     >
       <template #item="{ item }">
         <img
@@ -21,11 +31,13 @@
         />
       </template>
       <template #thumbnail="{ item }">
-        <img
-          :src="item.thumbnailImageSrc || item.src || item"
-          :alt="item.alt || 'Gallery thumbnail'"
-          class="w-16 h-16 object-cover"
-        />
+        <div class="p-1 w-full h-full">
+          <img
+            :src="item.thumbnailImageSrc || item.src || item"
+            :alt="item.alt || 'Gallery thumbnail'"
+            class="w-full h-full object-cover rounded-lg"
+          />
+        </div>
       </template>
     </Galleria>
   </div>
@@ -85,13 +97,6 @@ const showThumbnails = computed(() => {
   )
 })
 
-const showIndicators = computed(() => {
-  return (
-    props.widget.options?.showIndicators !== false &&
-    galleryImages.value.length > 1
-  )
-})
-
 const showNavButtons = computed(() => {
   return (
     props.widget.options?.showNavButtons !== false &&
@@ -99,3 +104,20 @@ const showNavButtons = computed(() => {
   )
 })
 </script>
+
+<style scoped>
+/* Ensure thumbnail container doesn't overflow */
+:deep(.p-galleria-thumbnails) {
+  overflow: hidden;
+}
+
+/* Constrain thumbnail items to prevent overlap */
+:deep(.p-galleria-thumbnail-item) {
+  flex-shrink: 0;
+}
+
+/* Ensure thumbnail wrapper maintains aspect ratio */
+:deep(.p-galleria-thumbnail) {
+  overflow: hidden;
+}
+</style>

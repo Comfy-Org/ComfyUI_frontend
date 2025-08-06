@@ -891,5 +891,26 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Release seen timestamp',
     type: 'hidden',
     defaultValue: 0
+  },
+
+  // Vue Node System Settings
+  {
+    id: 'Comfy.VueNodes.Enabled' as any,
+    category: ['Comfy', 'Vue Nodes'],
+    experimental: true,
+    name: 'Enable Vue node rendering',
+    tooltip:
+      'Render nodes as Vue components instead of canvas elements. Experimental feature.',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
+    id: 'Comfy.VueNodes.Widgets' as any,
+    category: ['Comfy', 'Vue Nodes', 'Widgets'],
+    experimental: true,
+    name: 'Enable Vue widgets',
+    tooltip: 'Render widgets as Vue components within Vue nodes.',
+    type: 'boolean',
+    defaultValue: true
   }
 ]

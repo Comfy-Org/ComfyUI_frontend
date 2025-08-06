@@ -825,7 +825,11 @@
     "Ungroup selected group nodes": "解散选中组节点",
     "Workflow": "工作流",
     "Zoom In": "放大画面",
-    "Zoom Out": "缩小画面"
+    "Zoom Out": "缩小画面",
+    "sideToolbar_modelLibrary": "侧边工具栏.模型库",
+    "sideToolbar_nodeLibrary": "侧边工具栏.节点库",
+    "sideToolbar_queue": "侧边工具栏.队列",
+    "sideToolbar_workflows": "侧边工具栏.工作流"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
@@ -1141,6 +1145,7 @@
     "UV": "UV",
     "User": "用户",
     "Validation": "验证",
+    "Vue Nodes": "Vue 节点",
     "Window": "窗口",
     "Workflow": "工作流"
   },

@@ -240,19 +240,19 @@
     "label": "Toggle Focus Mode"
   },
   "Workspace_ToggleSidebarTab_model-library": {
-    "label": "Toggle Model Library Sidebar",
-    "tooltip": "Model Library"
+    "label": "sideToolbar.modelLibrary",
+    "tooltip": "sideToolbar.modelLibrary"
   },
   "Workspace_ToggleSidebarTab_node-library": {
-    "label": "Toggle Node Library Sidebar",
-    "tooltip": "Node Library"
+    "label": "sideToolbar.nodeLibrary",
+    "tooltip": "sideToolbar.nodeLibrary"
   },
   "Workspace_ToggleSidebarTab_queue": {
-    "label": "Toggle Queue Sidebar",
-    "tooltip": "Queue"
+    "label": "sideToolbar.queue",
+    "tooltip": "sideToolbar.queue"
   },
   "Workspace_ToggleSidebarTab_workflows": {
-    "label": "Toggle Workflows Sidebar",
-    "tooltip": "Workflows"
+    "label": "sideToolbar.workflows",
+    "tooltip": "sideToolbar.workflows"
   }
 }

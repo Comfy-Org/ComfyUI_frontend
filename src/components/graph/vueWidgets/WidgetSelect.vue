@@ -1,9 +1,23 @@
 <template>
-  <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
+  <div
+    class="flex items-center justify-between gap-4"
+    :style="{ height: widgetHeight + 'px' }"
+  >
+    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
       widget.name
     }}</label>
-    <Select v-model="value" v-bind="filteredProps" :disabled="readonly" />
+    <Select
+      v-model="localValue"
+      :options="selectOptions"
+      v-bind="filteredProps"
+      :disabled="readonly"
+      class="flex-grow min-w-[8em] max-w-[20em] text-xs"
+      size="small"
+      :pt="{
+        option: 'text-xs'
+      }"
+      @update:model-value="onChange"
+    />
   </div>
 </template>
 
@@ -11,20 +25,48 @@
 import Select from 'primevue/select'
 import { computed } from 'vue'
 
+import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-const value = defineModel<any>({ required: true })
+import { COMFY_VUE_NODE_DIMENSIONS } from '../../../lib/litegraph/src/litegraph'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<any>
+  widget: SimplifiedWidget<string | number | undefined>
+  modelValue: string | number | undefined
   readonly?: boolean
 }>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string | number | undefined]
+}>()
+
+// Use the composable for consistent widget value handling
+const { localValue, onChange } = useWidgetValue({
+  widget: props.widget,
+  modelValue: props.modelValue,
+  defaultValue: props.widget.options?.values?.[0] || '',
+  emit
+})
+
+// Get widget height from litegraph constants
+const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
 )
+
+// Extract select options from widget options
+const selectOptions = computed(() => {
+  const options = props.widget.options
+
+  if (options?.values && Array.isArray(options.values)) {
+    return options.values
+  }
+
+  return []
+})
 </script>
