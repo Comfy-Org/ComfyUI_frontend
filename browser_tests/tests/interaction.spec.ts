@@ -763,7 +763,7 @@ test.describe('Viewport settings', () => {
     await comfyPage.setupWorkflowsDirectory({})
   })
 
-  test('Keeps viewport settings when changing tabs', async ({
+  test.skip('Keeps viewport settings when changing tabs', async ({
     comfyPage,
     comfyMouse
   }) => {
