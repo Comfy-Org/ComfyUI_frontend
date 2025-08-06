@@ -90,7 +90,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-const props = defineProps<{
+const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefV2
 }>()
 
@@ -101,14 +101,14 @@ const litegraphColors = computed(
 
 const widgetStore = useWidgetStore()
 
-const { description } = props.nodeDef
+const { description } = nodeDef
 const renderedDescription = computed(() => {
   if (!description) return ''
   return renderMarkdownToHtml(description)
 })
 
-const allInputDefs = Object.values(props.nodeDef.inputs)
-const allOutputDefs = props.nodeDef.outputs
+const allInputDefs = Object.values(nodeDef.inputs)
+const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(
   (input) => !widgetStore.inputIsWidget(input)
 )
