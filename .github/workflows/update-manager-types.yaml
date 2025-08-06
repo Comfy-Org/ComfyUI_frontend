@@ -3,6 +3,11 @@ name: Update ComfyUI-Manager API Types
 on:
   # Manual trigger
   workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Target branch for the PR'
+        required: true
+        default: 'main'
 
 jobs:
   update-manager-types:
@@ -85,7 +90,7 @@ jobs:
 
             These types are automatically generated using openapi-typescript.
           branch: update-manager-types-${{ steps.manager-info.outputs.commit }}
-          base: main
+          base: ${{ inputs.target_branch }}
           labels: Manager
           delete-branch: true
           add-paths: |
