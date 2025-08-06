@@ -265,7 +265,12 @@ class ComfyList {
                   : {
                       name: 'Delete',
                       cb: () =>
-                        api.deleteItem(this.#type, item.prompt.prompt_id)
+                        api.deleteItem(
+                          this.#type,
+                          Array.isArray(item.prompt)
+                            ? item.prompt[1]
+                            : item.prompt.prompt_id
+                        )
                     }
               return $el('div', { textContent: item.prompt.priority + ': ' }, [
                 $el('button', {
