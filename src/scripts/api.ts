@@ -922,8 +922,8 @@ export class ComfyApi extends EventTarget {
         }
       }
     }
-    // Already in object format
-    return rawPrompt
+
+    return rawPrompt as TaskPrompt
   }
 
   /**
