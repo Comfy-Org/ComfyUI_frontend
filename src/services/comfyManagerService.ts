@@ -3,6 +3,8 @@ import { ref } from 'vue'
 
 import { api } from '@/scripts/api'
 import {
+  type ImportFailInfoBulkRequest,
+  type ImportFailInfoBulkResponse,
   type InstallPackParams,
   type InstalledPacksResponse,
   type ManagerPackInfo,
@@ -156,12 +158,12 @@ export const useComfyManagerService = () => {
   }
 
   const getImportFailInfoBulk = async (
-    params: { cnr_ids?: string[]; urls?: string[] } = {},
+    params: ImportFailInfoBulkRequest = {},
     signal?: AbortSignal
   ) => {
     const errorContext = 'Fetching bulk import failure information'
 
-    return executeRequest<Record<string, any>>(
+    return executeRequest<ImportFailInfoBulkResponse>(
       () =>
         managerApiClient.post(ManagerRoute.IMPORT_FAIL_INFO_BULK, params, {
           signal
