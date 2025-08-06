@@ -78,7 +78,9 @@ export function useConflictDetection() {
     try {
       // Get system stats from store (primary source of system information)
       const systemStatsStore = useSystemStatsStore()
-      await systemStatsStore.fetchSystemStats()
+      if (!systemStatsStore.systemStats) {
+        await systemStatsStore.fetchSystemStats()
+      }
 
       // Fetch version information from backend (with error resilience)
       const [frontendVersion] = await Promise.allSettled([

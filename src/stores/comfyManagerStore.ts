@@ -5,6 +5,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useManagerQueue } from '@/composables/useManagerQueue'
 import { useServerLogs } from '@/composables/useServerLogs'
 import { useComfyManagerService } from '@/services/comfyManagerService'
@@ -122,6 +123,10 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         return key.split('@')[0]
       })
       installedPacks.value = packsWithCleanedKeys
+      // Run conflict detection for all installed packages
+      // This ensures conflict status is always up-to-date when installed list changes
+      const { performConflictDetection } = useConflictDetection()
+      await performConflictDetection()
     }
     isStale.value = false
   }
