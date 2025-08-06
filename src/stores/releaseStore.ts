@@ -114,6 +114,11 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
+    // Only show on desktop version
+    if (!isElectron()) {
+      return false
+    }
+
     // Already latest → no dot
     if (!isNewVersionAvailable.value) {
       return false
