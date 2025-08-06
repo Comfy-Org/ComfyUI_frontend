@@ -257,4 +257,193 @@ describe('TaskItemImpl', () => {
       })
     })
   })
+
+  describe('execution timestamp properties', () => {
+    it('should extract execution start timestamp from messages', () => {
+      const taskItem = new TaskItemImpl(
+        'History',
+        {
+          priority: 0,
+          prompt_id: 'test-id',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: [
+            [
+              'execution_start',
+              { prompt_id: 'test-id', timestamp: 1234567890 }
+            ],
+            [
+              'execution_success',
+              { prompt_id: 'test-id', timestamp: 1234567900 }
+            ]
+          ]
+        }
+      )
+
+      expect(taskItem.executionStartTimestamp).toBe(1234567890)
+    })
+
+    it('should return undefined when no execution_start message exists', () => {
+      const taskItem = new TaskItemImpl(
+        'History',
+        {
+          priority: 0,
+          prompt_id: 'test-id',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: [
+            [
+              'execution_success',
+              { prompt_id: 'test-id', timestamp: 1234567900 }
+            ]
+          ]
+        }
+      )
+
+      expect(taskItem.executionStartTimestamp).toBeUndefined()
+    })
+
+    it('should return undefined when status has no messages', () => {
+      const taskItem = new TaskItemImpl(
+        'History',
+        {
+          priority: 0,
+          prompt_id: 'test-id',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: []
+        }
+      )
+
+      expect(taskItem.executionStartTimestamp).toBeUndefined()
+    })
+
+    it('should return undefined when status is undefined', () => {
+      const taskItem = new TaskItemImpl('History', {
+        priority: 0,
+        prompt_id: 'test-id',
+        extra_data: { client_id: 'client-id' }
+      })
+
+      expect(taskItem.executionStartTimestamp).toBeUndefined()
+    })
+  })
+
+  describe('sorting by execution start time', () => {
+    it('should sort history tasks by execution start timestamp descending', () => {
+      const task1 = new TaskItemImpl(
+        'History',
+        {
+          priority: 1,
+          prompt_id: 'old-task',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: [
+            ['execution_start', { prompt_id: 'old-task', timestamp: 1000 }]
+          ]
+        }
+      )
+
+      const task2 = new TaskItemImpl(
+        'History',
+        {
+          priority: 2,
+          prompt_id: 'new-task',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: [
+            ['execution_start', { prompt_id: 'new-task', timestamp: 3000 }]
+          ]
+        }
+      )
+
+      const task3 = new TaskItemImpl(
+        'History',
+        {
+          priority: 3,
+          prompt_id: 'middle-task',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: [
+            ['execution_start', { prompt_id: 'middle-task', timestamp: 2000 }]
+          ]
+        }
+      )
+
+      const tasks = [task1, task2, task3]
+
+      // Sort using the same logic as queueStore
+      tasks.sort((a, b) => {
+        const aTime = a.executionStartTimestamp ?? 0
+        const bTime = b.executionStartTimestamp ?? 0
+        return bTime - aTime
+      })
+
+      expect(tasks[0].promptId).toBe('new-task')
+      expect(tasks[1].promptId).toBe('middle-task')
+      expect(tasks[2].promptId).toBe('old-task')
+    })
+
+    it('should place tasks without execution start timestamp at end', () => {
+      const taskWithTime = new TaskItemImpl(
+        'History',
+        {
+          priority: 1,
+          prompt_id: 'with-time',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: [
+            ['execution_start', { prompt_id: 'with-time', timestamp: 2000 }]
+          ]
+        }
+      )
+
+      const taskWithoutTime = new TaskItemImpl(
+        'History',
+        {
+          priority: 2,
+          prompt_id: 'without-time',
+          extra_data: { client_id: 'client-id' }
+        },
+        {
+          status_str: 'success',
+          completed: true,
+          messages: []
+        }
+      )
+
+      const tasks = [taskWithoutTime, taskWithTime]
+
+      // Sort using the same logic as queueStore
+      tasks.sort((a, b) => {
+        const aTime = a.executionStartTimestamp ?? 0
+        const bTime = b.executionStartTimestamp ?? 0
+        return bTime - aTime
+      })
+
+      expect(tasks[0].promptId).toBe('with-time')
+      expect(tasks[1].promptId).toBe('without-time')
+    })
+  })
 })
