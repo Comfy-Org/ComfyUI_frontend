@@ -866,12 +866,12 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l’écran"
+    "Zoom to fit": "Ajuster à l'écran"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",
-    "renderBypassState": "Afficher l’état de contournement",
-    "renderErrorState": "Afficher l’état d’erreur",
+    "renderBypassState": "Afficher l'état de contournement",
+    "renderErrorState": "Afficher l'état d'erreur",
     "showGroups": "Afficher les cadres/groupes",
     "showLinks": "Afficher les liens"
   },
@@ -1190,6 +1190,7 @@
     "UV": "UV",
     "User": "Utilisateur",
     "Validation": "Validation",
+    "Vue Nodes": "Nœuds Vue",
     "Window": "Fenêtre",
     "Workflow": "Flux de Travail"
   },

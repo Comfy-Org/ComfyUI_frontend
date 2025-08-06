@@ -8,7 +8,7 @@ import type { CanvasEventDetail } from './types/events'
 import type { RenderShape, TitleMode } from './types/globalEnums'
 
 // Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
-export { Subgraph } from './subgraph/Subgraph'
+export { Subgraph, type GraphOrSubgraph } from './subgraph/Subgraph'
 
 export const LiteGraph = new LiteGraphGlobal()
 
@@ -134,7 +134,11 @@ export {
 } from './LGraphBadge'
 export { LGraphCanvas, type LGraphCanvasState } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'
-export { LGraphNode, type NodeId } from './LGraphNode'
+export { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
+export {
+  COMFY_VUE_NODE_DIMENSIONS,
+  type ComponentHeightKey
+} from './LiteGraphGlobal'
 export { type LinkId, LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

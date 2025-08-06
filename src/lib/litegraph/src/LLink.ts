@@ -14,7 +14,6 @@ import type {
   LinkSegment,
   ReadonlyLinkNetwork
 } from './interfaces'
-import { Subgraph } from './litegraph'
 import type {
   Serialisable,
   SerialisableLLink,
@@ -463,16 +462,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       }
     }
     network.links.delete(this.id)
-
-    if (this.originIsIoNode && network instanceof Subgraph) {
-      const subgraphInput = network.inputs.at(this.origin_slot)
-      if (!subgraphInput)
-        throw new Error('Invalid link - subgraph input not found')
-
-      subgraphInput.events.dispatch('input-disconnected', {
-        input: subgraphInput
-      })
-    }
   }
 
   /**

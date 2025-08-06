@@ -25,6 +25,32 @@ import {
 import { createUuidv4 } from './utils/uuid'
 
 /**
+ * Vue node dimensions configuration for the contract between LiteGraph and Vue components.
+ * These values ensure both systems can independently calculate node, slot, and widget positions
+ * to place them in identical locations.
+ *
+ * IMPORTANT: These values must match the actual rendered dimensions of Vue components
+ * for the positioning contract to work correctly.
+ */
+export const COMFY_VUE_NODE_DIMENSIONS = {
+  spacing: {
+    BETWEEN_SLOTS_AND_BODY: 8,
+    BETWEEN_WIDGETS: 8
+  },
+  components: {
+    HEADER_HEIGHT: 34, // 18 header + 16 padding
+    SLOT_HEIGHT: 24,
+    STANDARD_WIDGET_HEIGHT: 30
+  }
+} as const
+
+/**
+ * Type for component height keys
+ */
+export type ComponentHeightKey =
+  keyof typeof COMFY_VUE_NODE_DIMENSIONS.components
+
+/**
  * The Global Scope. It contains all the registered node classes.
  */
 export class LiteGraphGlobal {
@@ -74,6 +100,13 @@ export class LiteGraphGlobal {
   WIDGET_TEXT_COLOR = '#DDD'
   WIDGET_SECONDARY_TEXT_COLOR = '#999'
   WIDGET_DISABLED_TEXT_COLOR = '#666'
+
+  /**
+   * Vue node dimensions configuration for the contract between LiteGraph and Vue components.
+   * These values ensure both systems can independently calculate node, slot, and widget positions
+   * to place them in identical locations.
+   */
+  COMFY_VUE_NODE_DIMENSIONS = COMFY_VUE_NODE_DIMENSIONS
 
   LINK_COLOR = '#9A9'
   EVENT_LINK_COLOR = '#A86'
@@ -329,6 +362,18 @@ export class LiteGraphGlobal {
    * @default true
    */
   saveViewportWithGraph: boolean = true
+
+  /**
+   * Enable Vue nodes mode for rendering and positioning.
+   * When true:
+   * - Nodes will calculate slot positions using Vue component dimensions
+   * - LiteGraph will skip rendering node bodies entirely
+   * - Vue components will handle all node rendering
+   * - LiteGraph continues to render connections, links, and graph background
+   * This should be set by the frontend when the Vue nodes feature is enabled.
+   * @default false
+   */
+  vueNodesMode: boolean = false
 
   // TODO: Remove legacy accessors
   LGraph = LGraph
