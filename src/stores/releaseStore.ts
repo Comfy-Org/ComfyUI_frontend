@@ -223,7 +223,9 @@ export const useReleaseStore = defineStore('release', () => {
 
     // Skip fetching if API nodes are disabled via argv
     if (
-      systemStatsStore.systemStats?.system?.argv?.includes('disable-api-nodes')
+      systemStatsStore.systemStats?.system?.argv?.includes(
+        '--disable-api-nodes'
+      )
     ) {
       return
     }
