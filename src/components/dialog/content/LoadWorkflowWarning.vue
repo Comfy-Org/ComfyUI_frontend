@@ -55,6 +55,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
@@ -62,7 +63,6 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
-import PackInstallButton from './manager/button/PackInstallButton.vue'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
