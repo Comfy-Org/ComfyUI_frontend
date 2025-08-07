@@ -10,14 +10,16 @@
     :aria-labelledby="item.key"
   >
     <template #header>
-      <component
-        :is="item.headerComponent"
-        v-if="item.headerComponent"
-        :id="item.key"
-      />
-      <h3 v-else :id="item.key">
-        {{ item.title || ' ' }}
-      </h3>
+      <div v-if="!item.dialogComponentProps?.headless">
+        <component
+          :is="item.headerComponent"
+          v-if="item.headerComponent"
+          :id="item.key"
+        />
+        <h3 v-else :id="item.key">
+          {{ item.title || ' ' }}
+        </h3>
+      </div>
     </template>
 
     <component
