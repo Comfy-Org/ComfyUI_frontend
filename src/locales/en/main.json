@@ -1630,5 +1630,19 @@
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "enterNewName": "Enter new name"
+  },
+  "shortcuts": {
+    "essentials": "Essential",
+    "viewControls": "View Controls",
+    "manageShortcuts": "Manage Shortcuts",
+    "noKeybinding": "No keybinding",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "subcategories": {
+      "workflow": "Workflow",
+      "node": "Node",
+      "queue": "Queue",
+      "view": "View",
+      "panelControls": "Panel Controls"
+    }
   }
 }
