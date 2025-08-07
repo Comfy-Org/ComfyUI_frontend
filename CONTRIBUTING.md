@@ -155,6 +155,55 @@ For ComfyUI_frontend development, you can ask coding assistants to use Playwrigh
 
 After installing dependencies with `npm i`, the Playwright MCP server will be automatically available when you start Claude Code locally.
 
+Here's how Claude Code can use the Playwright MCP server to inspect the interface of the local development server (assuming you're running the dev server at `localhost:5173`):
+
+```
+> navigate to localhost:5173 and take a screenshot.
+   tell me the items in the menubar
+
+● I'll navigate to localhost:5173 and take a
+  screenshot to see the menubar items.
+
+● playwright:playwright_navigate (MCP)(url:       …
+                                      "http://local
+                                      host:5173")
+  ⎿  Navigated to http://localhost:5173
+
+● playwright:playwright_screenshot (MCP)(name: "lo…
+                                        alhost_5173
+                                        _menubar")
+
+  ⎿ Screenshot saved to: ../../../Downloads/localho
+    st_5173_menubar-2025-05-30T17-23-00-942Z.png
+  ⎿  Screenshot also stored in memory with name:
+     'localhost_5173_menubar'
+
+● Read(../../../Downloads/localhost_5173_menubar-2…
+      25-05-30T17-23-00-942Z.png)
+  ⎿  Read image (94.3KB)
+
+● Based on the screenshot, I can see the menubar at
+   the top of the ComfyUI interface contains the
+  following items:
+
+  Main Menubar Items:
+  - Workflow - Menu for workflow-related actions
+  - Edit - Menu for editing operations
+  - Help - Menu for help and documentation
+
+  Additional UI Elements:
+  - ComfyUI Logo - On the far left
+  - Workflow Tab - Shows "Unsaved Workflow" with a
+  dropdown and close button
+  - Layout Controls - On the far right (grid view
+  and hamburger menu icons)
+
+  The interface shows a typical ComfyUI workflow
+  graph with nodes like "Load Checkpoint", "CLIP
+  Text Encode (Prompt)", "KSampler", and "Empty
+  Latent Image" connected with colored cables.
+```
+
 ## Testing
 
 ### Unit Tests
