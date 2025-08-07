@@ -1,35 +1,62 @@
 <template>
   <div
     v-if="visible && initialized"
-    ref="containerRef"
-    class="litegraph-minimap absolute right-[90px] z-[1000]"
+    class="flex absolute bottom-[20px] right-[90px] z-[1000]"
     :class="{
       'bottom-[20px]': !bottomPanelStore.bottomPanelVisible,
       'bottom-[280px]': bottomPanelStore.bottomPanelVisible
     }"
-    :style="containerStyles"
-    @pointerdown="handlePointerDown"
-    @pointermove="handlePointerMove"
-    @pointerup="handlePointerUp"
-    @pointerleave="handlePointerUp"
-    @wheel="handleWheel"
   >
-    <canvas
-      ref="canvasRef"
-      :width="width"
-      :height="height"
-      class="minimap-canvas"
+    <MiniMapPanel
+      v-if="showOptionsPanel"
+      :options-list="optionsList"
+      :panel-styles="panelStyles"
+      @update-option="updateOption"
     />
-    <div class="minimap-viewport" :style="viewportStyles" />
+
+    <div
+      ref="containerRef"
+      class="litegraph-minimap relative"
+      :style="containerStyles"
+    >
+      <Button
+        icon="pi pi-bars"
+        class="absolute top-2 left-2 z-10"
+        size="small"
+        @click.stop="toggleOptionsPanel"
+      >
+      </Button>
+
+      <canvas
+        ref="canvasRef"
+        :width="width"
+        :height="height"
+        class="minimap-canvas"
+      />
+
+      <div class="minimap-viewport" :style="viewportStyles" />
+
+      <div
+        class="absolute inset-0"
+        @pointerdown="handlePointerDown"
+        @pointermove="handlePointerMove"
+        @pointerup="handlePointerUp"
+        @pointerleave="handlePointerUp"
+        @wheel="handleWheel"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import Button from 'primevue/button'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useMinimap } from '@/composables/useMinimap'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+
+import MiniMapPanel from './MiniMapPanel.vue'
 
 const minimap = useMinimap()
 const canvasStore = useCanvasStore()
@@ -44,6 +71,9 @@ const {
   viewportStyles,
   width,
   height,
+  panelStyles,
+  optionsList,
+  updateOption,
   init,
   destroy,
   handlePointerDown,
@@ -51,6 +81,12 @@ const {
   handlePointerUp,
   handleWheel
 } = minimap
+
+const showOptionsPanel = ref(false)
+
+const toggleOptionsPanel = () => {
+  showOptionsPanel.value = !showOptionsPanel.value
+}
 
 watch(
   () => canvasStore.canvas,
