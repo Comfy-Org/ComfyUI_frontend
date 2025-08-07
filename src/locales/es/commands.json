@@ -119,6 +119,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir selección en subgrafo"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Salir de subgrafo"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajustar grupo al contenido"
   },
@@ -235,6 +238,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Alternar Panel Inferior de Registros"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Alternar panel inferior esencial"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Alternar panel inferior de controles de vista"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Mostrar diálogo de atajos de teclado"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Alternar Modo de Enfoque"
