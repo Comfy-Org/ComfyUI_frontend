@@ -44,11 +44,12 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import Message from 'primevue/message'
-import * as semver from 'semver'
+import { rcompare } from 'semver'
 import { computed, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { coerceVersion } from '@/utils/versionUtil'
 
 const props = defineProps<{
   missingCoreNodes: Record<string, LGraphNode[]>
@@ -78,10 +79,10 @@ whenever(
 const sortedMissingCoreNodes = computed(() => {
   return Object.entries(props.missingCoreNodes).sort(([a], [b]) => {
     // Sort by version in descending order (newest first)
-    const versionA = semver.coerce(a)
-    const versionB = semver.coerce(b)
+    const versionA = coerceVersion(a, '')
+    const versionB = coerceVersion(b, '')
     if (!versionA || !versionB) return 0
-    return semver.rcompare(versionA, versionB)
+    return rcompare(versionA, versionB)
   })
 })
 

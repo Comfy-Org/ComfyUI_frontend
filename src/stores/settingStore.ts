@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { defineStore } from 'pinia'
-import * as semver from 'semver'
+import { gte, rcompare, valid } from 'semver'
 import { ref } from 'vue'
 
 import type { Settings } from '@/schemas/apiSchema'
@@ -8,6 +8,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
+import { coerceVersion } from '@/utils/versionUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -133,24 +134,24 @@ export const useSettingStore = defineStore('setting', () => {
       if (installedVersion) {
         const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
           (a, b) => {
-            const versionA = semver.coerce(a)
-            const versionB = semver.coerce(b)
+            const versionA = coerceVersion(a, '')
+            const versionB = coerceVersion(b, '')
             if (!versionA || !versionB) return 0
-            return semver.rcompare(versionA, versionB)
+            return rcompare(versionA, versionB)
           }
         )
 
         for (const version of sortedVersions) {
-          if (!semver.valid(version)) {
+          if (!valid(version)) {
             continue
           }
 
-          const installedSemver = semver.coerce(installedVersion)
-          const targetSemver = semver.coerce(version)
+          const installedSemver = coerceVersion(installedVersion, '')
+          const targetSemver = coerceVersion(version, '')
           if (
             installedSemver &&
             targetSemver &&
-            semver.gte(installedSemver, targetSemver)
+            gte(installedSemver, targetSemver)
           ) {
             const versionedDefault =
               defaultsByInstallVersion[
