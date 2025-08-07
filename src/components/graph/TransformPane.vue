@@ -11,7 +11,7 @@
 
     <!-- DEV ONLY: Viewport bounds visualization -->
     <div
-      v-if="props.showDebugOverlay"
+      v-if="props.showDebugOverlay && false"
       class="viewport-debug-overlay"
       :style="{
         position: 'absolute',
@@ -120,6 +120,10 @@ useCanvasTransformSync(props.canvas, syncWithCanvas, {
   contain: layout style paint;
   transform-origin: 0 0;
   pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .transform-pane--interacting {
