@@ -59,14 +59,10 @@
             <slot name="content"></slot>
           </main>
         </div>
-        <Transition name="slide-panel-right">
-          <aside
-            v-if="hasRightPanel && isRightPanelOpen"
-            class="w-1/4 min-w-40 max-w-80"
-          >
-            <slot name="rightPanel"></slot>
-          </aside>
-        </Transition>
+
+        <!-- <aside v-if="$slots.rightPanel">
+          <slot name="rightPanel"></slot>
+        </aside> -->
       </div>
     </div>
   </div>
