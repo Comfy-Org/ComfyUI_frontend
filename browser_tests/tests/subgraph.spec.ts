@@ -642,4 +642,117 @@ test.describe('Subgraph Operations', () => {
       expect(finalCount).toBe(parentCount)
     })
   })
+
+  test.describe('Configurable Escape Key', () => {
+    test('Escape keybinding can be customized', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('subgraph')
+      await comfyPage.nextFrame()
+
+      const subgraphNode = await comfyPage.getNodeRefById('1')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
+
+      // Verify we're in a subgraph
+      expect(await isInSubgraph(comfyPage)).toBe(true)
+
+      // Open settings dialog
+      await comfyPage.menu.openSettings()
+
+      // Navigate to keybindings
+      await comfyPage.page.click('text=Keybinding')
+
+      // Find the Exit Subgraph keybinding
+      const keybindingRow = comfyPage.page.locator(
+        'tr:has-text("Exit Subgraph")'
+      )
+      await expect(keybindingRow).toBeVisible()
+
+      // Verify default binding is Escape
+      const keyDisplay = keybindingRow.locator('.key-combo-display')
+      await expect(keyDisplay).toHaveText('Escape')
+
+      // Change binding to Alt+Up
+      const editButton = keybindingRow.locator(
+        'button[aria-label="Edit keybinding"]'
+      )
+      await editButton.click()
+
+      // Record new keybinding
+      await comfyPage.page.keyboard.press('Alt+ArrowUp')
+
+      // Save the keybinding
+      const saveButton = keybindingRow.locator(
+        'button[aria-label="Save keybinding"]'
+      )
+      await saveButton.click()
+
+      // Close settings
+      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.nextFrame()
+
+      // Test that Escape no longer exits subgraph
+      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.nextFrame()
+      expect(await isInSubgraph(comfyPage)).toBe(true)
+
+      // Test that Alt+Up now exits subgraph
+      await comfyPage.page.keyboard.press('Alt+ArrowUp')
+      await comfyPage.nextFrame()
+      expect(await isInSubgraph(comfyPage)).toBe(false)
+
+      // Reset keybinding to default
+      await comfyPage.menu.openSettings()
+      await comfyPage.page.click('text=Keybinding')
+
+      const resetButton = keybindingRow.locator(
+        'button[aria-label="Reset to default"]'
+      )
+      await resetButton.click()
+
+      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.nextFrame()
+
+      // Verify Escape works again
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
+      expect(await isInSubgraph(comfyPage)).toBe(true)
+
+      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.nextFrame()
+      expect(await isInSubgraph(comfyPage)).toBe(false)
+    })
+
+    test('Escape prioritizes closing dialogs over exiting subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('subgraph')
+      await comfyPage.nextFrame()
+
+      const subgraphNode = await comfyPage.getNodeRefById('1')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
+
+      // Verify we're in a subgraph
+      expect(await isInSubgraph(comfyPage)).toBe(true)
+
+      // Open a dialog (settings)
+      await comfyPage.menu.openSettings()
+      await expect(comfyPage.page.locator('dialog[open]')).toBeVisible()
+
+      // Press Escape - should close dialog, not exit subgraph
+      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.nextFrame()
+
+      // Dialog should be closed
+      await expect(comfyPage.page.locator('dialog[open]')).not.toBeVisible()
+
+      // Should still be in subgraph
+      expect(await isInSubgraph(comfyPage)).toBe(true)
+
+      // Press Escape again - now should exit subgraph
+      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.nextFrame()
+      expect(await isInSubgraph(comfyPage)).toBe(false)
+    })
+  })
 })
