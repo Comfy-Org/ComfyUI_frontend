@@ -1551,10 +1551,12 @@ export class LGraph
 
     // Create subgraph node object
     const subgraphNode = LiteGraph.createNode(subgraph.id, subgraph.name, {
-      inputs: structuredClone(inputs),
       outputs: structuredClone(outputs)
     })
     if (!subgraphNode) throw new Error('Failed to create subgraph node')
+    for (let i = 0; i < inputs.length; i++) {
+      Object.assign(subgraphNode.inputs[i], inputs[i])
+    }
 
     // Resize to inputs/outputs
     subgraphNode.setSize(subgraphNode.computeSize())
@@ -1656,6 +1658,8 @@ export class LGraph
       }
     }
 
+    subgraphNode._setConcreteSlots()
+    subgraphNode.arrange()
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 
