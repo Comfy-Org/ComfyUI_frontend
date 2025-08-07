@@ -30,6 +30,33 @@
     <template #body>
       <ElectronDownloadItems v-if="isElectron()" />
 
+      <div v-if="!searchQuery" class="model-library-content">
+        <RecentItemsSection
+          :recently-added-items="recentItemsStore.recentlyAddedModels"
+          :recently-used-items="recentItemsStore.recentlyUsedModels"
+          :show-recently-added="showRecentlyAddedModels"
+          :show-recently-used="showRecentlyUsedModels"
+          :recently-added-title="
+            $t('sideToolbar.modelLibraryTab.recentlyAddedModels')
+          "
+          :recently-used-title="
+            $t('sideToolbar.modelLibraryTab.recentlyUsedModels')
+          "
+          :get-item-icon="getModelIcon"
+          :get-item-label="getModelLabel"
+          :get-item-preview-url="getModelPreviewUrl"
+          :on-item-click="handleModelClick"
+          :enable-preview="true"
+          :is-comfy-model-def="(_item: ComfyModelDef) => true"
+          :is-loading-recently-used="!recentItemsStore.areModelsReady"
+          preview-target-id="#model-library-model-preview-container"
+        >
+          <template #preview="{ modelDef, previewRef }">
+            <ModelPreview :ref="previewRef" :model-def="modelDef" />
+          </template>
+        </RecentItemsSection>
+      </div>
+
       <TreeExplorer
         v-model:expandedKeys="expandedKeys"
         class="model-lib-tree-explorer"
@@ -45,11 +72,13 @@
 </template>
 
 <script setup lang="ts">
+import { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import Button from 'primevue/button'
-import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+import { computed, nextTick, ref, toRef, watch, watchEffect } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
+import RecentItemsSection from '@/components/sidebar/tabs/RecentItemsSection.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
@@ -62,6 +91,7 @@ import {
   useModelStore
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useRecentItemsStore } from '@/stores/recentItemsStore'
 import { useSettingStore } from '@/stores/settingStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -70,6 +100,7 @@ import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
+const recentItemsStore = useRecentItemsStore()
 const settingStore = useSettingStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
@@ -145,17 +176,17 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       draggable: node.leaf,
       handleClick(e: MouseEvent) {
         if (this.leaf) {
-          // @ts-expect-error fixme ts strict error
-          const provider = modelToNodeStore.getNodeProvider(model.directory)
+          const provider = modelToNodeStore.getNodeProvider(model!.directory)
           if (provider) {
             const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
-            // @ts-expect-error fixme ts strict error
-            const widget = node.widgets.find(
-              (widget) => widget.name === provider.key
+            recentItemsStore.logModelUsage(model!).catch((error) => {
+              console.error('Error logging model usage:', error)
+            })
+            const widget = node.widgets?.find(
+              (widget: IBaseWidget) => widget.name === provider.key
             )
             if (widget) {
-              // @ts-expect-error fixme ts strict error
-              widget.value = model.file_name
+              widget.value = model!.file_name
             }
           }
         } else {
@@ -167,6 +198,50 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
 
   return fillNodeInfo(root.value)
 })
+
+const showRecentlyAddedModels = computed(() =>
+  settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyAdded')
+)
+const showRecentlyUsedModels = computed(() =>
+  settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyUsed')
+)
+
+const getModelIcon = (model: ComfyModelDef): string => {
+  return model.image ? 'pi pi-image' : 'pi pi-file'
+}
+
+const getModelLabel = (model: ComfyModelDef): string => {
+  const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
+  return nameFormat === 'title' ? model.title : model.simplified_file_name
+}
+
+const getModelPreviewUrl = (model: ComfyModelDef): string | null => {
+  if (model.image) {
+    return model.image
+  }
+  const folder = model.directory
+  const path_index = model.path_index
+  const extension = model.file_name.split('.').pop()
+  const filename = model.file_name.replace(`.${extension}`, '.webp')
+  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
+  return `/api/experiment/models/preview/${folder}/${path_index}/${encodedFilename}`
+}
+
+const handleModelClick = (model: ComfyModelDef): void => {
+  const provider = modelToNodeStore.getNodeProvider(model.directory)
+  if (provider) {
+    const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
+    recentItemsStore.logModelUsage(model).catch((error) => {
+      console.error('Error logging model usage:', error)
+    })
+    const widget = node.widgets?.find(
+      (widget: IBaseWidget) => widget.name === provider.key
+    )
+    if (widget) {
+      widget.value = model.file_name
+    }
+  }
+}
 
 watch(
   toRef(expandedKeys, 'value'),
@@ -184,9 +259,15 @@ watch(
   { deep: true }
 )
 
-onMounted(async () => {
-  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
+watchEffect(async () => {
+  if (
+    settingStore.get('Comfy.ModelLibrary.AutoLoadAll') ||
+    // if we don't load all, we can't filter the recent items
+    settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyAdded') ||
+    settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyUsed')
+  ) {
     await modelStore.loadModels()
+    await recentItemsStore.loadRecentModels()
   }
 })
 </script>

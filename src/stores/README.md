@@ -146,6 +146,28 @@ Located in `stores/workspace/`:
 
 | Store | Description |
 |-------|-------------|
+| aboutPanelStore.ts | Manages the About panel state and badges |
+| apiKeyAuthStore.ts | Handles API key authentication |
+| comfyManagerStore.ts | Manages ComfyUI application state |
+| comfyRegistryStore.ts | Handles extensions registry |
+| commandStore.ts | Manages commands and command execution |
+| dialogStore.ts | Controls dialog/modal display and state |
+| domWidgetStore.ts | Manages DOM widget state |
+| executionStore.ts | Tracks workflow execution state |
+| extensionStore.ts | Manages extension registration and state |
+| firebaseAuthStore.ts | Handles Firebase authentication |
+| graphStore.ts | Manages the graph canvas state |
+| imagePreviewStore.ts | Controls image preview functionality |
+| keybindingStore.ts | Manages keyboard shortcuts |
+| menuItemStore.ts | Handles menu items and their state |
+| modelStore.ts | Manages AI models information |
+| nodeDefStore.ts | Manages node definitions |
+| queueStore.ts | Handles the execution queue |
+| recentItemsStore.ts | Tracks recently used workflows and models |
+| settingStore.ts | Manages application settings |
+| userStore.ts | Manages user data and preferences |
+| workflowStore.ts | Handles workflow data and operations |
+| workspace/* | Stores related to the workspace UI |
 | bottomPanelStore.ts | Controls bottom panel visibility and state |
 | colorPaletteStore.ts | Manages color palette configurations |
 | nodeHelpStore.ts | Handles node help and documentation display |
