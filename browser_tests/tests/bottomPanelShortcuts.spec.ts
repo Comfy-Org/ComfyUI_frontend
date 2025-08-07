@@ -225,7 +225,7 @@ test.describe('Bottom Panel Shortcuts', () => {
       .click()
 
     // Should have 3-column grid layout
-    await expect(comfyPage.page.locator('.grid-cols-3')).toBeVisible()
+    await expect(comfyPage.page.locator('.md\\:grid-cols-3')).toBeVisible()
 
     // Should have multiple subcategory sections
     const subcategoryTitles = comfyPage.page.locator('.subcategory-title')
