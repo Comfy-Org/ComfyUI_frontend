@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Use Node.js
@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Commit changes
-        if: steps.verify-changed-files.outputs.changed == 'true'
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -53,13 +53,12 @@ jobs:
           git push
 
       - name: Final validation
-        if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
           npm run lint
           npm run format:check
 
-      - name: Comment on PR
-        if: steps.verify-changed-files.outputs.changed == 'true'
+      - name: Comment on PR about auto-fix
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
           script: |
@@ -68,4 +67,16 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '## 🔧 Auto-fixes Applied\n\nThis PR has been automatically updated to fix linting and formatting issues.\n\n**⚠️ Important**: Your local branch is now behind. Run `git pull` before making additional changes to avoid conflicts.\n\n### Changes made:\n- ESLint auto-fixes\n- Prettier formatting'
+            })
+
+      - name: Comment on PR about manual fix needed
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## ⚠️ Linting/Formatting Issues Found\n\nThis PR has linting or formatting issues that need to be fixed.\n\n**Since this PR is from a fork, auto-fix cannot be applied automatically.**\n\n### Option 1: Set up pre-commit hooks (recommended)\nRun this once to automatically format code on every commit:\n```bash\nnpm run prepare\n```\n\n### Option 2: Fix manually\nRun these commands and push the changes:\n```bash\nnpm run lint:fix\nnpm run format\n```\n\nSee [CONTRIBUTING.md](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/CONTRIBUTING.md#git-pre-commit-hooks) for more details.'
             })
