@@ -60,46 +60,28 @@ graph TB
 
 ## Feature Flag Structure
 
-Feature flags are organized as nested dictionaries with package/namespace as the top-level key:
-
-```mermaid
-graph LR
-    A[Feature Flags] --> B[Core Features]
-    A --> C[Extension Features]
-    A --> D[Package Features]
-    
-    B --> E["core"]
-    C --> F["extension/manager"]
-    D --> G["package/custom-nodes"]
-    
-    E --> H["{ async_execution: true, version: '0.2.0' }"]
-    F --> I["{ supports_v4: true, version: '3.0.0' }"]
-    G --> J["{ custom_capability: true }"]
-```
+Feature flags are organized as a flat dictionary at the top level, with extensions nested under an `extension` object:
 
 ### Naming Convention
 
-- **Core features**: Use `"core"` namespace
-- **Extensions**: Use `"extension/{name}"` format
-- **Packages**: Use `"package/{name}"` format
+- **Core features**: Top-level keys (e.g., `"async_execution"`, `"supports_batch_queue"`)
+- **Client features**: Top-level keys (e.g., `"supports_preview_metadata"`)
+- **Extensions**: Nested under `"extension"` object (e.g., `extension.manager`)
 
 ### Structure Example
 
 ```json
 {
-  "core": {
-    "async_execution": true,
-    "version": "0.2.0",
-    "supports_batch_queue": false
-  },
-  "extension/manager": {
-    "supports_v4": true,
-    "version": "3.0.0",
-    "supports_ai_search": false
-  },
-  "client": {
-    "supports_preview_metadata": true,
-    "supports_websocket_v2": false
+  "async_execution": true,
+  "supports_batch_queue": false,
+  "supports_preview_metadata": true,
+  "supports_websocket_v2": false,
+  "max_upload_size": 104857600,
+  "extension": {
+    "manager": {
+      "supports_v4": true,
+      "supports_ai_search": false
+    }
   }
 }
 ```
@@ -135,6 +117,8 @@ classDiagram
 
 ### Frontend Implementation
 
+The `useFeatureFlags` composable provides reactive access to feature flags, meaning components will automatically update when feature flags change (e.g., during WebSocket reconnection).
+
 ```mermaid
 classDiagram
     class ComfyApi {
@@ -148,9 +132,7 @@ classDiagram
         +serverSupports(name) boolean
         +getServerFeature(name, default) T
         +createServerFeatureFlag(name) ComputedRef
-        +manager: ManagerFlags
-        +core: CoreFlags
-        +client: ClientFlags
+        +extension: ExtensionFlags
     }
     
     class VueComponent {
@@ -162,7 +144,7 @@ classDiagram
     VueComponent --> useFeatureFlags
 ```
 
-## Current Feature Flag Usage
+## Examples
 
 ### 1. Preview Metadata Support
 
@@ -243,17 +225,17 @@ if (api.serverSupportsFeature('supports_preview_metadata')) {
 const maxSize = api.getServerFeature('max_upload_size', 100 * 1024 * 1024)
 ```
 
-2. **Using the composable (recommended):**
+2. **Using the composable (recommended for reactive components):**
 ```typescript
-const { serverSupports, getServerFeature, manager } = useFeatureFlags()
+const { serverSupports, getServerFeature, extension } = useFeatureFlags()
 
 // Check feature support
 if (serverSupports('supports_preview_metadata')) {
     // Use enhanced previews
 }
 
-// Use convenience properties
-if (manager.supportsV4.value) {
+// Use reactive convenience properties (automatically update if flags change)
+if (extension.manager.supportsV4.value) {
     // Use V4 manager API
 }
 ```
@@ -261,7 +243,7 @@ if (manager.supportsV4.value) {
 3. **Reactive usage in templates:**
 ```vue
 <template>
-  <div v-if="featureFlags.manager.supportsV4">
+  <div v-if="featureFlags.extension.manager.supportsV4">
     <!-- V4-specific UI -->
   </div>
   <div v-else>
@@ -324,17 +306,21 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 }
 ```
 
-2. **For namespaced features**, update the composable to add convenience accessors:
+2. **For extension features**, update the composable to add convenience accessors:
 ```typescript
 // In useFeatureFlags.ts
-const yourNamespace = {
-    supportsNewFeature: computed(() => serverSupports('your_new_feature')),
-    version: computed(() => getServerFeature('your_namespace.version', '1.0.0'))
+const extension = {
+    manager: {
+        supportsV4: computed(() => getServerFeature('extension.manager.supports_v4', false))
+    },
+    yourExtension: {
+        supportsNewFeature: computed(() => getServerFeature('extension.yourExtension.supports_new_feature', false))
+    }
 }
 
 return {
     // ... existing returns
-    yourNamespace
+    extension
 }
 ```
 
