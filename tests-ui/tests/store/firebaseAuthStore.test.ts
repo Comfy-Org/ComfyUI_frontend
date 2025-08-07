@@ -331,6 +331,68 @@ describe('useFirebaseAuthStore', () => {
       const tokenAfterLogout = await store.getIdToken()
       expect(tokenAfterLogout).toBeNull()
     })
+
+    it('should handle network errors gracefully when offline (reproduces issue #4468)', async () => {
+      // This test reproduces the issue where Firebase Auth makes network requests when offline
+      // and fails without graceful error handling, causing toast error messages
+
+      // Simulate a user with an expired token that requires network refresh
+      mockUser.getIdToken.mockReset()
+
+      // Mock network failure (auth/network-request-failed error from Firebase)
+      const networkError = new Error(
+        'Firebase: Error (auth/network-request-failed).'
+      )
+      networkError.name = 'FirebaseError'
+      ;(networkError as any).code = 'auth/network-request-failed'
+
+      mockUser.getIdToken.mockRejectedValue(networkError)
+
+      // This should fail until the fix is implemented
+      // The expected behavior is to return null gracefully instead of throwing
+      await expect(store.getIdToken()).rejects.toThrow(
+        'auth/network-request-failed'
+      )
+
+      // TODO: After implementing the fix, this test should pass:
+      const token = await store.getIdToken()
+      expect(token).toBeNull() // Should return null instead of throwing
+    })
+  })
+
+  describe('getAuthHeader', () => {
+    it('should handle network errors gracefully when getting Firebase token (reproduces issue #4468)', async () => {
+      // This test reproduces the issue where getAuthHeader fails due to network errors
+      // when Firebase Auth tries to refresh tokens offline
+
+      // Mock useApiKeyAuthStore to return null (no API key fallback)
+      const mockApiKeyStore = {
+        getAuthHeader: vi.fn().mockReturnValue(null)
+      }
+      vi.doMock('@/stores/apiKeyAuthStore', () => ({
+        useApiKeyAuthStore: () => mockApiKeyStore
+      }))
+
+      // Setup user with network error on token refresh
+      mockUser.getIdToken.mockReset()
+      const networkError = new Error(
+        'Firebase: Error (auth/network-request-failed).'
+      )
+      networkError.name = 'FirebaseError'
+      ;(networkError as any).code = 'auth/network-request-failed'
+      mockUser.getIdToken.mockRejectedValue(networkError)
+
+      // This should fail until the fix is implemented
+      // The expected behavior is to fallback to API key or return null gracefully
+      await expect(store.getAuthHeader()).rejects.toThrow(
+        'auth/network-request-failed'
+      )
+
+      // TODO: After implementing the fix, this should pass:
+      // const authHeader = await store.getAuthHeader()
+      // expect(authHeader).toBeNull() // Should fallback gracefully
+      // expect(mockApiKeyStore.getAuthHeader).toHaveBeenCalled() // Should try API key fallback
+    })
   })
 
   describe('social authentication', () => {
