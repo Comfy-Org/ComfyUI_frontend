@@ -1,6 +1,6 @@
 <template>
-  <div class="shortcuts-list">
-    <div class="grid gap-8 h-full grid-cols-3">
+  <div class="shortcuts-list flex justify-center">
+    <div class="grid gap-4 md:gap-24 h-full grid-cols-1 md:grid-cols-3 w-[90%]">
       <div
         v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
         :key="subcategory"
