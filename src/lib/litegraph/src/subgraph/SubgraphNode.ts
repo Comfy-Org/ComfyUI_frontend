@@ -125,6 +125,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!input) throw new Error('Subgraph input not found')
 
         input.label = newName
+        if (input._widget) {
+          input._widget.label = newName
+        }
       },
       { signal }
     )
