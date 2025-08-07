@@ -1,7 +1,7 @@
 <template>
   <Button
     outlined
-    class="!m-0 p-0 max-w-[120px] rounded-lg text-gray-900 dark-theme:text-gray-50"
+    class="!m-0 p-0 rounded-lg text-gray-900 dark-theme:text-gray-50"
     :class="[
       variant === 'black'
         ? 'bg-neutral-900 text-white border-neutral-900'
