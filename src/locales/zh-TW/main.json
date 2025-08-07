@@ -298,6 +298,7 @@
     "disabling": "停用中",
     "dismiss": "關閉",
     "download": "下載",
+    "dropYourFileOr": "拖放您的檔案或",
     "edit": "編輯",
     "empty": "空",
     "enableAll": "全部啟用",
@@ -1141,6 +1142,7 @@
     "UV": "UV",
     "User": "使用者",
     "Validation": "驗證",
+    "Vue Nodes": "Vue 節點",
     "Window": "視窗",
     "Workflow": "工作流程"
   },

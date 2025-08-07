@@ -298,6 +298,7 @@
     "disabling": "Отключение",
     "dismiss": "Закрыть",
     "download": "Скачать",
+    "dropYourFileOr": "Перетащите ваш файл или",
     "edit": "Редактировать",
     "empty": "Пусто",
     "enableAll": "Включить все",
@@ -825,11 +826,7 @@
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
-    "Zoom Out": "Уменьшить",
-    "sideToolbar_modelLibrary": "sideToolbar.каталогМоделей",
-    "sideToolbar_nodeLibrary": "sideToolbar.каталогУзлов",
-    "sideToolbar_queue": "sideToolbar.очередь",
-    "sideToolbar_workflows": "sideToolbar.рабочиеПроцессы"
+    "Zoom Out": "Уменьшить"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",

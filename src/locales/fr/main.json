@@ -298,6 +298,7 @@
     "disabling": "Désactivation",
     "dismiss": "Fermer",
     "download": "Télécharger",
+    "dropYourFileOr": "Déposez votre fichier ou",
     "edit": "Modifier",
     "empty": "Vide",
     "enableAll": "Activer tout",
@@ -825,11 +826,7 @@
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
     "Workflow": "Flux de travail",
     "Zoom In": "Zoom avant",
-    "Zoom Out": "Zoom arrière",
-    "sideToolbar_modelLibrary": "Bibliothèque de modèles",
-    "sideToolbar_nodeLibrary": "Bibliothèque de nœuds",
-    "sideToolbar_queue": "File d'attente",
-    "sideToolbar_workflows": "Flux de travail"
+    "Zoom Out": "Zoom arrière"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
