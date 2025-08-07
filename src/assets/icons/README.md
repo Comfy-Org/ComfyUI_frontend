@@ -146,6 +146,12 @@ src/assets/icons/custom/
 </svg>
 ```
 
+**Important:**
+- Use `viewBox` for proper scaling (24x24 is standard)
+- Don't include `width` or `height` attributes
+- Use `currentColor` for theme-aware icons
+- Keep SVGs optimized and simple
+
 ### 3. Use Immediately
 
 ```vue
@@ -262,24 +268,39 @@ Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
 
 ## Troubleshooting
 
-### Icon Not Showing?
+### Icon Not Showing
+1. **Check filename**: Must be kebab-case without special characters
+2. **Restart dev server**: Required after adding new icons
+3. **Verify SVG**: Ensure it's valid SVG syntax
+4. **Check console**: Look for Vue component resolution errors
 
-1. **Check the name**: Typos in collection or icon name
-2. **Restart dev server**: Required after adding custom icons
-3. **Verify format**: `i-[collection]:[name]`
-4. **Check console**: Look for component errors
+### Icon Wrong Color
+- Replace hardcoded colors with `currentColor`
+- Use `stroke="currentColor"` for outlines
+- Use `fill="currentColor"` for filled shapes
 
-### Wrong Size/Color?
+### Icon Wrong Size
+- Remove `width` and `height` from SVG
+- Ensure `viewBox` is present
+- Use CSS classes for sizing: `class="w-6 h-6"`
 
-- Use Tailwind classes: `class="w-6 h-6 text-blue-500"`
-- Ensure SVG uses `currentColor`
-- Remove hardcoded width/height from SVG
+## Best Practices
 
-### Custom Icon Issues?
+1. **Optimize SVGs**: Use tools like [SVGO](https://jakearchibald.github.io/svgomg/) to minimize file size
+2. **Consistent viewBox**: Stick to 24x24 or 16x16 for consistency
+3. **Semantic names**: Use descriptive names like `workflow-duplicate` not `icon1`
+4. **Theme support**: Always use `currentColor` for adaptable icons
+5. **Test both themes**: Verify icons look good in light and dark modes
 
-- Filename must be `kebab-case.svg`
-- Must have valid `viewBox`
-- Should use `currentColor` for fills/strokes
+## Adding Icon Collections
+
+To add an entire icon set from npm:
+
+1. Install the icon package
+2. Configure in `vite.config.mts`
+3. Use with the appropriate prefix
+
+See the [unplugin-icons documentation](https://github.com/unplugin/unplugin-icons) for details.
 
 ## Resources
 
