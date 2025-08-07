@@ -255,11 +255,17 @@ npm run format
 - Add translations to `src/locales/en/main.json`
 - Use translation keys: `const { t } = useI18n(); t('key.path')`
 
-## Custom Icons
+## Icons
 
-The project supports custom SVG icons through the unplugin-icons system. Custom icons are stored in `src/assets/icons/custom/` and can be used as Vue components with the `i-comfy:` prefix.
+The project supports three types of icons, all with automatic imports (no manual imports needed):
 
-For detailed instructions on adding and using custom icons, see [src/assets/icons/README.md](src/assets/icons/README.md).
+1. **PrimeIcons** - Built-in PrimeVue icons using CSS classes: `<i class="pi pi-plus" />`
+2. **Iconify Icons** - 200,000+ icons from various libraries: `<i-lucide:settings />`, `<i-mdi:folder />`
+3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
+
+Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Custom icons are stored in `src/assets/icons/custom/`.
+
+For detailed instructions and code examples, see [src/assets/icons/README.md](src/assets/icons/README.md).
 
 ## Working with litegraph.js
 
