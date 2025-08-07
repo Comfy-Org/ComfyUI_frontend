@@ -11,7 +11,7 @@
 
     <!-- DEV ONLY: Viewport bounds visualization -->
     <div
-      v-if="props.showDebugOverlay && false"
+      v-if="props.showDebugOverlay"
       class="viewport-debug-overlay"
       :style="{
         position: 'absolute',
