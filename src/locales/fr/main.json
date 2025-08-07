@@ -300,6 +300,7 @@
     "disabling": "Désactivation",
     "dismiss": "Fermer",
     "download": "Télécharger",
+    "dropYourFileOr": "Déposez votre fichier ou",
     "duplicate": "Dupliquer",
     "edit": "Modifier",
     "empty": "Vide",
@@ -873,7 +874,8 @@
     "renderBypassState": "Afficher l'état de contournement",
     "renderErrorState": "Afficher l'état d'erreur",
     "showGroups": "Afficher les cadres/groupes",
-    "showLinks": "Afficher les liens"
+    "showLinks": "Afficher les liens",
+    "Zoom Out": "Zoom arrière"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
