@@ -434,18 +434,24 @@ export const useDialogService = () => {
   function showLayoutDialog(options: {
     key: string
     component: Component
-    props?: Record<string, any>
+    props: { onClose: () => void }
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
+      headless: true,
       unstyled: true,
-      modal: true
+      modal: true,
+      closable: false,
+      pt: {
+        mask: {
+          class: 'bg-black bg-opacity-40'
+        }
+      }
     }
 
     return dialogStore.showDialog({
       ...options,
       dialogComponentProps: merge(
-        {},
         layoutDefaultProps,
         options.dialogComponentProps
       )
