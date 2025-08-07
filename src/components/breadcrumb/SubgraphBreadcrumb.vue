@@ -32,7 +32,6 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import Breadcrumb from 'primevue/breadcrumb'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed, onUpdated, ref, watch } from 'vue'
@@ -97,18 +96,6 @@ const home = computed(() => ({
     canvas.setGraph(canvas.graph.rootGraph)
   }
 }))
-
-// Escape exits from the current subgraph.
-useEventListener(document, 'keydown', (event) => {
-  if (event.key === 'Escape') {
-    const canvas = useCanvasStore().getCanvas()
-    if (!canvas.graph) throw new TypeError('Canvas has no graph')
-
-    canvas.setGraph(
-      navigationStore.navigationStack.at(-2) ?? canvas.graph.rootGraph
-    )
-  }
-})
 
 // Check for overflow on breadcrumb items and collapse/expand the breadcrumb to fit
 let overflowObserver: ReturnType<typeof useOverflowObserver> | undefined
