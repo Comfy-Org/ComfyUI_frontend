@@ -4,10 +4,10 @@ We're building this frontend together and would love your help — no matter how
 
 ## Ways to Contribute
 
-- **Pull Requests:** Add features, fix bugs, or improve code health. Browse [issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues) for inspiration.
+- **Pull Requests:** Add features, fix bugs, or improve code health. Browse [issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues) for inspiration. Look for the `Good first issue` label if you're new to the project.
 - **Vote on Features:** Give a 👍 to the feature requests you care about to help us prioritize.
 - **Verify Bugs:** Try reproducing reported issues and share your results (even if the bug doesn't occur!).
-- **Community Support:** Hop into our [Discord](https://www.comfy.org/discord) to answer questions or get help.
+- **Community Support:** Hop into our [Discord](https://discord.com/invite/comfyorg) to answer questions or get help.
 - **Share & Advocate:** Tell your friends, tweet about us, or share tips to support the project.
 
 Have another idea? Drop into Discord or open an issue, and let's chat!
@@ -22,10 +22,10 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
   - A running ComfyUI backend instance
   
 - **Tech Stack**:
-  - [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
+  - [Vue 3.5 Composition API](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
   - [Pinia](https://pinia.vuejs.org/) for state management
   - [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
-  - [litegraph.js](https://github.com/Comfy-Org/litegraph.js) for node editor
+  - litegraph.js (integrated in src/lib) for node editor
   - [zod](https://zod.dev/) for schema validation
   - [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
 
@@ -321,7 +321,7 @@ Add screenshots for UI changes
 
 If you have questions about contributing:
 - Check existing issues and discussions
-- Ask in our [Discord](https://www.comfy.org/discord)
+- Ask in our [Discord](https://discord.com/invite/comfyorg)
 - Open a new issue for clarification
 
 Thank you for contributing to ComfyUI Frontend!
