@@ -1,7 +1,7 @@
 <template>
   <SidebarIcon
     :tooltip="$t('menu.toggleBottomPanel')"
-    :selected="bottomPanelStore.bottomPanelVisible"
+    :selected="bottomPanelStore.activePanel == 'terminal'"
     @click="bottomPanelStore.toggleBottomPanel"
   >
     <template #icon>

@@ -44,6 +44,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       label: labelFunction,
       tooltip: tooltipFunction,
       versionAdded: '1.3.9',
+      category: 'view-controls' as const,
       function: () => {
         toggleSidebarTab(tab.id)
       },
