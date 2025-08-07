@@ -363,6 +363,7 @@ export const useLitegraphService = () => {
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
     // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
+    node.skip_list = true
     node.title = nodeDef.display_name || nodeDef.name
   }
 
