@@ -7,7 +7,8 @@ import { api } from '@/scripts/api'
  */
 export enum ServerFeatureFlag {
   SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
-  MAX_UPLOAD_SIZE = 'max_upload_size'
+  MAX_UPLOAD_SIZE = 'max_upload_size',
+  MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4'
 }
 
 /**
@@ -21,6 +22,9 @@ export function useFeatureFlags() {
     },
     get maxUploadSize() {
       return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)
+    },
+    get supportsManagerV4() {
+      return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     }
   })
 
