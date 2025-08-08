@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useSpatialIndex } from '@/composables/graph/useSpatialIndex'
 import type { Bounds } from '@/utils/spatial/QuadTree'
 
+// CI environments may have slower performance, so we use a multiplier for timing constraints
+const CI_MULTIPLIER = process.env.CI ? 3 : 1
+
 describe('Spatial Index Performance', () => {
   let spatialIndex: ReturnType<typeof useSpatialIndex>
 
@@ -35,8 +38,8 @@ describe('Spatial Index Performance', () => {
 
       const insertTime = performance.now() - startTime
 
-      // Should insert 1000 nodes in under 100ms
-      expect(insertTime).toBeLessThan(100)
+      // Should insert 1000 nodes in under 100ms (300ms in CI)
+      expect(insertTime).toBeLessThan(100 * CI_MULTIPLIER)
       expect(spatialIndex.metrics.value.totalNodes).toBe(1000)
     })
 
@@ -78,9 +81,9 @@ describe('Spatial Index Performance', () => {
       const totalQueryTime = performance.now() - startTime
       const avgQueryTime = totalQueryTime / queryCount
 
-      // Each query should take less than 2ms on average
-      expect(avgQueryTime).toBeLessThan(2)
-      expect(totalQueryTime).toBeLessThan(100) // 100 queries in under 100ms
+      // Each query should take less than 2ms on average (6ms in CI)
+      expect(avgQueryTime).toBeLessThan(2 * CI_MULTIPLIER)
+      expect(totalQueryTime).toBeLessThan(100 * CI_MULTIPLIER) // 100 queries in under 100ms (300ms in CI)
     })
 
     it('should demonstrate performance advantage over linear search', () => {
@@ -191,7 +194,7 @@ describe('Spatial Index Performance', () => {
       const avgFrameTime = updateTime / updateCount
 
       // Should maintain 60fps (16.67ms per frame) with 20 node updates per frame
-      expect(avgFrameTime).toBeLessThan(8) // Conservative target: 8ms per frame
+      expect(avgFrameTime).toBeLessThan(8 * CI_MULTIPLIER) // Conservative target: 8ms per frame (24ms in CI)
     })
 
     it('should handle node additions and removals efficiently', () => {
@@ -223,7 +226,7 @@ describe('Spatial Index Performance', () => {
       const totalTime = performance.now() - startTime
 
       // All operations should complete quickly
-      expect(totalTime).toBeLessThan(50)
+      expect(totalTime).toBeLessThan(50 * CI_MULTIPLIER)
       expect(spatialIndex.metrics.value.totalNodes).toBe(100) // 50 remaining + 50 new
     })
   })
@@ -267,7 +270,7 @@ describe('Spatial Index Performance', () => {
 
       // All query times should be reasonable
       queryTimes.forEach((time) => {
-        expect(time).toBeLessThan(5) // Each query under 5ms
+        expect(time).toBeLessThan(5 * CI_MULTIPLIER) // Each query under 5ms (15ms in CI)
       })
     })
 
@@ -313,7 +316,7 @@ describe('Spatial Index Performance', () => {
       }
       const queryTime = performance.now() - startTime
 
-      expect(queryTime).toBeLessThan(20) // 20 queries in under 20ms
+      expect(queryTime).toBeLessThan(20 * CI_MULTIPLIER) // 20 queries in under 20ms (60ms in CI)
     })
   })
 
@@ -386,9 +389,9 @@ describe('Spatial Index Performance', () => {
       const avgQueryTime = panDuration / (panPositions.length * 10)
 
       // Performance expectations for realistic workflows
-      expect(setupDuration).toBeLessThan(30) // Setup 155 nodes in under 30ms
-      expect(avgQueryTime).toBeLessThan(1.5) // Average query under 1.5ms
-      expect(panDuration).toBeLessThan(50) // All panning queries under 50ms
+      expect(setupDuration).toBeLessThan(30 * CI_MULTIPLIER) // Setup 155 nodes in under 30ms (90ms in CI)
+      expect(avgQueryTime).toBeLessThan(1.5 * CI_MULTIPLIER) // Average query under 1.5ms (4.5ms in CI)
+      expect(panDuration).toBeLessThan(50 * CI_MULTIPLIER) // All panning queries under 50ms (150ms in CI)
 
       // Should have reasonable culling efficiency
       const totalNodes = allNodes.length

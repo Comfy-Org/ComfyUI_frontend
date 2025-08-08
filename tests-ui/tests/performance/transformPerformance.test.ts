@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useTransformState } from '@/composables/element/useTransformState'
 
+// CI environments may have slower performance, so we use a multiplier for timing constraints
+const CI_MULTIPLIER = process.env.CI ? 3 : 1
+
 // Mock canvas context for testing
 const createMockCanvasContext = () => ({
   ds: {
@@ -47,8 +50,8 @@ describe('Transform Performance', () => {
       const screenToCanvasTime = performance.now() - screenToCanvasStart
 
       // Performance expectations
-      expect(canvasToScreenTime).toBeLessThan(20) // 10k conversions in under 20ms
-      expect(screenToCanvasTime).toBeLessThan(20) // 10k conversions in under 20ms
+      expect(canvasToScreenTime).toBeLessThan(20 * CI_MULTIPLIER) // 10k conversions in under 20ms (60ms in CI)
+      expect(screenToCanvasTime).toBeLessThan(20 * CI_MULTIPLIER) // 10k conversions in under 20ms (60ms in CI)
 
       // Verify accuracy of round-trip conversion
       const maxError = points.reduce((max, original, i) => {
@@ -90,8 +93,8 @@ describe('Transform Performance', () => {
       const minTime = Math.min(...performanceResults)
       const variance = (maxTime - minTime) / minTime
 
-      expect(maxTime).toBeLessThan(20) // All zoom levels under 20ms
-      expect(variance).toBeLessThan(3.0) // Less than 300% variance between zoom levels
+      expect(maxTime).toBeLessThan(20 * CI_MULTIPLIER) // All zoom levels under 20ms (60ms in CI)
+      expect(variance).toBeLessThan(3.0 * CI_MULTIPLIER) // Less than 300% variance between zoom levels (900% in CI)
     })
 
     it('should handle extreme coordinate values efficiently', () => {
@@ -124,7 +127,7 @@ describe('Transform Performance', () => {
 
         const duration = performance.now() - startTime
 
-        expect(duration).toBeLessThan(5) // Should handle extremes efficiently
+        expect(duration).toBeLessThan(5 * CI_MULTIPLIER) // Should handle extremes efficiently (15ms in CI)
         expect(
           Number.isFinite(transformState.canvasToScreen(extremePoints[0]).x)
         ).toBe(true)
@@ -171,7 +174,7 @@ describe('Transform Performance', () => {
 
         const cullTime = performance.now() - startTime
 
-        expect(cullTime).toBeLessThan(10) // 1000 nodes culled in under 10ms
+        expect(cullTime).toBeLessThan(10 * CI_MULTIPLIER) // 1000 nodes culled in under 10ms (30ms in CI)
         expect(visibleNodes.length).toBeLessThan(nodeCount) // Some culling should occur
         expect(visibleNodes.length).toBeGreaterThanOrEqual(0) // Sanity check
       })
@@ -214,7 +217,7 @@ describe('Transform Performance', () => {
 
       // All culling operations should be very fast
       timings.forEach((time) => {
-        expect(time).toBeLessThan(0.1) // Individual culling under 0.1ms
+        expect(time).toBeLessThan(0.1 * CI_MULTIPLIER) // Individual culling under 0.1ms (0.3ms in CI)
       })
 
       // Verify adaptive behavior (margins should work as expected)
@@ -250,7 +253,7 @@ describe('Transform Performance', () => {
         )
         const cullTime = performance.now() - startTime
 
-        expect(cullTime).toBeLessThan(0.1) // Size culling under 0.1ms
+        expect(cullTime).toBeLessThan(0.1 * CI_MULTIPLIER) // Size culling under 0.1ms (0.3ms in CI)
 
         // At 0.01 zoom, nodes need to be 400+ pixels to show as 4+ screen pixels
         const screenSize = Math.max(size[0], size[1]) * 0.01
@@ -281,7 +284,7 @@ describe('Transform Performance', () => {
 
       const syncTime = performance.now() - startTime
 
-      expect(syncTime).toBeLessThan(15) // 1000 syncs in under 15ms
+      expect(syncTime).toBeLessThan(15 * CI_MULTIPLIER) // 1000 syncs in under 15ms (45ms in CI)
 
       // Verify final state is correct
       const lastUpdate = transformUpdates[transformUpdates.length - 1]
@@ -312,7 +315,7 @@ describe('Transform Performance', () => {
 
       const accessTime = performance.now() - startTime
 
-      expect(accessTime).toBeLessThan(200) // 10k style accesses in under 200ms
+      expect(accessTime).toBeLessThan(200 * CI_MULTIPLIER) // 10k style accesses in under 200ms (600ms in CI)
     })
   })
 
@@ -340,7 +343,7 @@ describe('Transform Performance', () => {
 
       const calcTime = performance.now() - startTime
 
-      expect(calcTime).toBeLessThan(15) // 1000 bounds calculations in under 15ms
+      expect(calcTime).toBeLessThan(15 * CI_MULTIPLIER) // 1000 bounds calculations in under 15ms (45ms in CI)
       expect(bounds).toHaveLength(nodeCount)
 
       // Verify bounds are reasonable
@@ -378,7 +381,7 @@ describe('Transform Performance', () => {
 
       const calcTime = performance.now() - startTime
 
-      expect(calcTime).toBeLessThan(5) // All viewport calculations in under 5ms
+      expect(calcTime).toBeLessThan(5 * CI_MULTIPLIER) // All viewport calculations in under 5ms (15ms in CI)
       expect(allBounds).toHaveLength(combinations.length)
 
       // Verify bounds are reasonable
@@ -426,14 +429,14 @@ describe('Transform Performance', () => {
         frames.push(frameTime)
 
         // Each frame should be well under 16.67ms for 60fps
-        expect(frameTime).toBeLessThan(1) // Conservative: under 1ms per frame
+        expect(frameTime).toBeLessThan(1 * CI_MULTIPLIER) // Conservative: under 1ms per frame (3ms in CI)
       }
 
       const totalTime = frames.reduce((sum, time) => sum + time, 0)
       const avgFrameTime = totalTime / frameCount
 
-      expect(avgFrameTime).toBeLessThan(0.5) // Average frame time under 0.5ms
-      expect(totalTime).toBeLessThan(60) // Total panning overhead under 60ms
+      expect(avgFrameTime).toBeLessThan(0.5 * CI_MULTIPLIER) // Average frame time under 0.5ms (1.5ms in CI)
+      expect(totalTime).toBeLessThan(60 * CI_MULTIPLIER) // Total panning overhead under 60ms (180ms in CI)
     })
 
     it('should handle zoom performance with viewport updates', () => {
@@ -472,8 +475,8 @@ describe('Transform Performance', () => {
       const avgZoomTime =
         zoomTimes.reduce((sum, time) => sum + time, 0) / zoomSteps
 
-      expect(maxZoomTime).toBeLessThan(2) // No zoom step over 2ms
-      expect(avgZoomTime).toBeLessThan(1) // Average zoom step under 1ms
+      expect(maxZoomTime).toBeLessThan(2 * CI_MULTIPLIER) // No zoom step over 2ms (6ms in CI)
+      expect(avgZoomTime).toBeLessThan(1 * CI_MULTIPLIER) // Average zoom step under 1ms (3ms in CI)
     })
   })
 })
