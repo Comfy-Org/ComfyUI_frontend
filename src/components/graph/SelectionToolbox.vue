@@ -29,7 +29,6 @@
 <script setup lang="ts">
 import Panel from 'primevue/panel'
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import type { Ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -46,6 +45,7 @@ import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
@@ -53,10 +53,7 @@ const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
 // Inject the selection overlay state
-const selectionOverlayState = inject<{
-  visible: Readonly<Ref<boolean>>
-  updateCount: Readonly<Ref<number>>
-}>('selectionOverlayState')
+const selectionOverlayState = inject(SelectionOverlayInjectionKey)
 
 // Animation control
 const shouldAnimate = ref(false)

@@ -20,6 +20,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
+import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 const canvasStore = useCanvasStore()
 const { style, updatePosition } = useAbsolutePosition()
@@ -30,7 +31,7 @@ const showBorder = ref(false)
 // Increment counter to notify child components of position/visibility change
 // This does not include viewport changes.
 const overlayUpdateCount = ref(0)
-provide('selectionOverlayState', {
+provide(SelectionOverlayInjectionKey, {
   visible: readonly(visible),
   updateCount: readonly(overlayUpdateCount)
 })
