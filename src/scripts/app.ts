@@ -727,7 +727,12 @@ export class ComfyApp {
       revokePreviewsByExecutionId(displayNodeId)
       const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
-      setNodePreviewsByExecutionId(displayNodeId, [blobUrl])
+      const nodeParents = displayNodeId.split(':')
+      for (let i = 1; i <= nodeParents.length; i++) {
+        setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
+          blobUrl
+        ])
+      }
     })
 
     api.init()
