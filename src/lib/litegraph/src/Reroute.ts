@@ -538,6 +538,66 @@ export class Reroute
   }
 
   /**
+   * Computes render-time parameters for this reroute without mutating the model.
+   * Returns the bezier end control-point offset and the direction cos/sin.
+   */
+  computeRenderParams(
+    network: ReadonlyLinkNetwork,
+    linkStart: Point
+  ): { cos: number; sin: number; controlPoint: Point } {
+    const thisPos = this.#pos
+    const angles: number[] = []
+    let sum = 0
+
+    // Collect angles of all links passing through this reroute
+    addAngles(this.linkIds, network.links)
+    addAngles(this.floatingLinkIds, network.floatingLinks)
+
+    // Default values when invalid
+    if (!angles.length) {
+      return { cos: 0, sin: 0, controlPoint: [0, 0] }
+    }
+
+    sum /= angles.length
+
+    const originToReroute = Math.atan2(
+      thisPos[1] - linkStart[1],
+      thisPos[0] - linkStart[0]
+    )
+    let diff = (originToReroute - sum) * 0.5
+    if (Math.abs(diff) > Math.PI * 0.5) diff += Math.PI
+    const dist = Math.min(
+      Reroute.maxSplineOffset,
+      distance(linkStart, thisPos) * 0.25
+    )
+
+    const originDiff = originToReroute - diff
+    const cos = Math.cos(originDiff)
+    const sin = Math.sin(originDiff)
+    const controlPoint: Point = [dist * -cos, dist * -sin]
+
+    return { cos, sin, controlPoint }
+
+    function addAngles(
+      linkIds: Iterable<LinkId>,
+      links: ReadonlyMap<LinkId, LLink>
+    ) {
+      for (const linkId of linkIds) {
+        const link = links.get(linkId)
+        const pos = getNextPos(network, link, thisObj.id)
+        if (!pos) continue
+        const angle = getDirection(thisPos, pos)
+        angles.push(angle)
+        sum += angle
+      }
+    }
+
+    // Preserve lexical `this` values inside helper
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const thisObj = this
+  }
+
+  /**
    * Renders the reroute on the canvas.
    * @param ctx Canvas context to draw on
    * @param backgroundPattern The canvas background pattern; used to make floating reroutes appear washed out.
