@@ -61,7 +61,6 @@ whenever(
     requestAnimationFrame(() => {
       positionSelectionOverlay()
       overlayUpdateCount.value++
-      console.log('selectionChanged', overlayUpdateCount.value)
       canvasStore.getCanvas().state.selectionChanged = false
     })
   },
