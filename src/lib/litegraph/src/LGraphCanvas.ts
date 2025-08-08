@@ -11,7 +11,6 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
 import { LLink, type LinkId } from './LLink'
 import { Reroute, type RerouteId } from './Reroute'
-import { RenderedLinkSegment } from './canvas/RenderedLinkSegment'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import type {
@@ -5523,6 +5522,7 @@ export class LGraphCanvas
         const endPos = node.getInputPos(link.target_slot)
         const endDirection = node.inputs[link.target_slot]?.dir
 
+        firstReroute._dragging = true
         this.#renderAllLinkSegments(
           ctx,
           link,
@@ -5542,6 +5542,7 @@ export class LGraphCanvas
         const endPos = reroute.pos
         const startDirection = node.outputs[link.origin_slot]?.dir
 
+        link._dragging = true
         this.#renderAllLinkSegments(
           ctx,
           link,
@@ -5601,10 +5602,6 @@ export class LGraphCanvas
 
     // Has reroutes
     if (reroutes.length) {
-      const lastReroute = reroutes[reroutes.length - 1]
-      const floatingType = lastReroute?.floating?.slotType
-      const skipFirstSegment = floatingType === 'input'
-      const skipLastSegment = floatingType === 'output'
       let startControl: Point | undefined
 
       const l = reroutes.length
@@ -5613,6 +5610,7 @@ export class LGraphCanvas
 
         // Only render once
         if (!renderedPaths.has(reroute)) {
+          renderedPaths.add(reroute)
           visibleReroutes.push(reroute)
           reroute._colour =
             link.color ||
@@ -5621,16 +5619,10 @@ export class LGraphCanvas
 
           const prevReroute = graph.getReroute(reroute.parentId)
           const rerouteStartPos = prevReroute?.pos ?? startPos
-          const params = reroute.computeRenderParams(graph, rerouteStartPos)
+          reroute.calculateAngle(this.last_draw_time, graph, rerouteStartPos)
 
           // Skip the first segment if it is being dragged
-          if (!(skipFirstSegment && j === 0)) {
-            const rendered = new RenderedLinkSegment({
-              id: reroute.id,
-              origin_id: link.origin_id,
-              origin_slot: link.origin_slot,
-              parentId: reroute.parentId
-            })
+          if (!reroute._dragging) {
             this.renderLink(
               ctx,
               rerouteStartPos,
@@ -5643,45 +5635,35 @@ export class LGraphCanvas
               LinkDirection.CENTER,
               {
                 startControl,
-                endControl: params.controlPoint,
-                disabled,
-                renderTarget: rendered
+                endControl: reroute.controlPoint,
+                reroute,
+                disabled
               }
             )
-            renderedPaths.add(rendered)
           }
         }
 
-        if (!startControl && skipFirstSegment) {
+        if (!startControl && reroutes.at(-1)?.floating?.slotType === 'input') {
           // Floating link connected to an input
           startControl = [0, 0]
         } else {
           // Calculate start control for the next iter control point
           const nextPos = reroutes[j + 1]?.pos ?? endPos
-          const prevR = graph.getReroute(reroute.parentId)
-          const startPosForParams = prevR?.pos ?? startPos
-          const params = reroute.computeRenderParams(graph, startPosForParams)
           const dist = Math.min(
             Reroute.maxSplineOffset,
             distance(reroute.pos, nextPos) * 0.25
           )
-          startControl = [dist * params.cos, dist * params.sin]
+          startControl = [dist * reroute.cos, dist * reroute.sin]
         }
       }
 
-      // For floating links from output, skip the last segment
-      if (skipLastSegment) return
+      // Skip the last segment if it is being dragged
+      if (link._dragging) return
 
       // Use runtime fallback; TypeScript cannot evaluate this correctly.
       const segmentStartPos = points.at(-2) ?? startPos
 
       // Render final link segment
-      const rendered = new RenderedLinkSegment({
-        id: link.id,
-        origin_id: link.origin_id,
-        origin_slot: link.origin_slot,
-        parentId: link.parentId
-      })
       this.renderLink(
         ctx,
         segmentStartPos,
@@ -5692,17 +5674,10 @@ export class LGraphCanvas
         null,
         LinkDirection.CENTER,
         end_dir,
-        { startControl, disabled, renderTarget: rendered }
+        { startControl, disabled }
       )
-      renderedPaths.add(rendered)
       // Skip normal render when link is being dragged
     } else if (!link._dragging) {
-      const rendered = new RenderedLinkSegment({
-        id: link.id,
-        origin_id: link.origin_id,
-        origin_slot: link.origin_slot,
-        parentId: link.parentId
-      })
       this.renderLink(
         ctx,
         startPos,
@@ -5712,11 +5687,10 @@ export class LGraphCanvas
         0,
         null,
         start_dir,
-        end_dir,
-        { renderTarget: rendered }
+        end_dir
       )
-      renderedPaths.add(rendered)
     }
+    renderedPaths.add(link)
 
     // event triggered rendered on top
     if (link?._last_time && now - link._last_time < 1000) {
@@ -5765,8 +5739,7 @@ export class LGraphCanvas
       endControl,
       reroute,
       num_sublines = 1,
-      disabled = false,
-      renderTarget
+      disabled = false
     }: {
       /** When defined, render data will be saved to this reroute instead of the {@link link}. */
       reroute?: Reroute
@@ -5778,8 +5751,6 @@ export class LGraphCanvas
       num_sublines?: number
       /** Whether this is a floating link segment */
       disabled?: boolean
-      /** Where to store the drawn path for hit testing if not using a reroute */
-      renderTarget?: RenderedLinkSegment
     } = {}
   ): void {
     const linkColour =
@@ -5810,13 +5781,13 @@ export class LGraphCanvas
     const path = new Path2D()
 
     /** The link or reroute we're currently rendering */
-    const linkSegment = reroute ?? renderTarget
+    const linkSegment = reroute ?? link
     if (linkSegment) linkSegment.path = path
 
     const innerA = LGraphCanvas.#lTempA
     const innerB = LGraphCanvas.#lTempB
 
-    /** Reference to render-time centre point of this segment. */
+    /** Reference to {@link reroute._pos} if present, or {@link link._pos} if present.  Caches the centre point of the link. */
     const pos: Point = linkSegment?._pos ?? [0, 0]
 
     for (let i = 0; i < num_sublines; i++) {
