@@ -192,12 +192,18 @@ const moreMenuItem = computed(() =>
   menuItems.value.find((item) => item.key === 'more')
 )
 
+const hasVisibleMoreItems = computed(() => {
+  // Check if there are any visible items in the more submenu
+  return isElectron() // Since all moreItems depend on isElectron()
+})
+
 const menuItems = computed<MenuItem[]>(() => {
   const moreItems: MenuItem[] = [
     {
       key: 'desktop-guide',
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
+      visible: isElectron(),
       action: () => {
         openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
         emit('close')
@@ -276,6 +282,7 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       icon: '',
       label: t('helpCenter.more'),
+      visible: hasVisibleMoreItems.value,
       action: () => {}, // No action for more item
       items: moreItems
     }
