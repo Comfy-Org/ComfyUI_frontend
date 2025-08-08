@@ -53,10 +53,7 @@ const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
-// Inject the selection overlay state
 const selectionOverlayState = inject(SelectionOverlayInjectionKey)
-
-// Use the reusable animation hook
 const { shouldAnimate } = useRetriggerableAnimation(
   selectionOverlayState?.updateCount,
   { animateOnMount: true }
