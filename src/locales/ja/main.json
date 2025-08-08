@@ -1151,7 +1151,7 @@
   "shortcuts": {
     "essentials": "基本",
     "keyboardShortcuts": "キーボードショートカット",
-    "manageShortcuts": "ショートカット管理",
+    "manageShortcuts": "ショートカットの管理",
     "noKeybinding": "キー割り当てなし",
     "subcategories": {
       "node": "ノード",
