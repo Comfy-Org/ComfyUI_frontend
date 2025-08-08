@@ -3,7 +3,6 @@ name: Tests CI
 on:
   push:
     branches: [main, master, core/*, desktop/*]
-    branches-ignore: [vue-nodes-migration]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*, vue-nodes-migration]
 
