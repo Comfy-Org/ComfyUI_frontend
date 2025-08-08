@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed, inject, onMounted, ref, watch } from 'vue'
+import { computed, inject } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -41,6 +41,7 @@ import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
+import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
@@ -55,26 +56,11 @@ const canvasInteractions = useCanvasInteractions()
 // Inject the selection overlay state
 const selectionOverlayState = inject(SelectionOverlayInjectionKey)
 
-// Animation control
-const shouldAnimate = ref(false)
-
-// Trigger animation on mount
-onMounted(() => {
-  shouldAnimate.value = true
-})
-
-// Watch for update count changes to retrigger animation
-if (selectionOverlayState) {
-  watch(selectionOverlayState.updateCount, () => {
-    // Reset animation by removing and re-adding the class
-    shouldAnimate.value = false
-    // Force browser reflow
-    void document.body.offsetHeight
-    requestAnimationFrame(() => {
-      shouldAnimate.value = true
-    })
-  })
-}
+// Use the reusable animation hook
+const { shouldAnimate } = useRetriggerableAnimation(
+  selectionOverlayState?.updateCount,
+  { animateOnMount: true }
+)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
