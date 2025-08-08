@@ -271,23 +271,45 @@ test.describe('Subgraph Operations', () => {
         return graph.inputs?.[0]?.label || null
       })
 
-      // Get the label position (not the connector position) and double-click there
-      const labelPosition = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+      // Use direct pointer event approach to double-click on label
+      await comfyPage.page.evaluate(() => {
+        const app = window['app']
+        const graph = app.canvas.graph
         const input = graph.inputs?.[0]
-        if (!input?.labelPos) return null
-        // labelPos gives us the text label position, which should be different from pos (connector position)
-        return { x: input.labelPos[0], y: input.labelPos[1] }
+
+        if (!input?.labelPos) {
+          throw new Error('Could not get label position for testing')
+        }
+
+        // Use labelPos for more precise clicking on the text
+        const testX = input.labelPos[0]
+        const testY = input.labelPos[1]
+
+        const leftClickEvent = {
+          canvasX: testX,
+          canvasY: testY,
+          button: 0, // Left mouse button
+          preventDefault: () => {},
+          stopPropagation: () => {}
+        }
+
+        const inputNode = graph.inputNode
+        if (inputNode?.onPointerDown) {
+          inputNode.onPointerDown(
+            leftClickEvent,
+            app.canvas.pointer,
+            app.canvas.linkConnector
+          )
+
+          // Trigger double-click if pointer has the handler
+          if (app.canvas.pointer.onDoubleClick) {
+            app.canvas.pointer.onDoubleClick(leftClickEvent)
+          }
+        }
       })
 
-      if (!labelPosition) {
-        throw new Error('Could not get label position for testing')
-      }
-
-      // Double-click on the label text specifically
-      await comfyPage.canvas.dblclick({
-        position: labelPosition
-      })
+      // Wait for dialog to appear
+      await comfyPage.page.waitForTimeout(200)
       await comfyPage.nextFrame()
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {

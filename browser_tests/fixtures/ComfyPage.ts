@@ -1035,12 +1035,40 @@ export class ComfyPage {
       }
 
       const input = inputsToTry[0]
-      if (!input.pos) {
-        throw new Error('Input slot position not found')
+      if (!input.boundingRect) {
+        throw new Error('Input slot bounding rect not found')
       }
 
-      const testX = input.pos[0]
-      const testY = input.pos[1]
+      // Use center of bounding rect for reliable clicking
+      const rect = input.boundingRect
+      const testX = rect[0] + rect[2] / 2 // x + width/2
+      const testY = rect[1] + rect[3] / 2 // y + height/2
+
+      // Simulate double-click directly through pointer events
+      const leftClickEvent = {
+        canvasX: testX,
+        canvasY: testY,
+        button: 0, // Left mouse button
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      }
+
+      // Trigger the input node's pointer down handler
+      if (inputNode.onPointerDown) {
+        inputNode.onPointerDown(
+          leftClickEvent,
+          app.canvas.pointer,
+          app.canvas.linkConnector
+        )
+
+        // Trigger double-click if pointer has the handler
+        if (app.canvas.pointer.onDoubleClick) {
+          app.canvas.pointer.onDoubleClick(leftClickEvent)
+        }
+      }
+
+      // Wait briefly for dialog to appear
+      await new Promise((resolve) => setTimeout(resolve, 200))
 
       return { success: true, inputName: input.name, x: testX, y: testY }
     }, inputName)
@@ -1053,17 +1081,7 @@ export class ComfyPage {
       )
     }
 
-    // Perform the actual double-click at the slot position
-    await this.canvas.dblclick({
-      position: { x: foundSlot.x, y: foundSlot.y }
-    })
     await this.nextFrame()
-
-    // Wait for the rename dialog to appear
-    await this.page.waitForSelector('.graphdialog input', {
-      state: 'visible',
-      timeout: 5000
-    })
   }
 
   /**
@@ -1112,12 +1130,40 @@ export class ComfyPage {
       }
 
       const output = outputsToTry[0]
-      if (!output.pos) {
-        throw new Error('Output slot position not found')
+      if (!output.boundingRect) {
+        throw new Error('Output slot bounding rect not found')
       }
 
-      const testX = output.pos[0]
-      const testY = output.pos[1]
+      // Use center of bounding rect for reliable clicking
+      const rect = output.boundingRect
+      const testX = rect[0] + rect[2] / 2 // x + width/2
+      const testY = rect[1] + rect[3] / 2 // y + height/2
+
+      // Simulate double-click directly through pointer events
+      const leftClickEvent = {
+        canvasX: testX,
+        canvasY: testY,
+        button: 0, // Left mouse button
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      }
+
+      // Trigger the output node's pointer down handler
+      if (outputNode.onPointerDown) {
+        outputNode.onPointerDown(
+          leftClickEvent,
+          app.canvas.pointer,
+          app.canvas.linkConnector
+        )
+
+        // Trigger double-click if pointer has the handler
+        if (app.canvas.pointer.onDoubleClick) {
+          app.canvas.pointer.onDoubleClick(leftClickEvent)
+        }
+      }
+
+      // Wait briefly for dialog to appear
+      await new Promise((resolve) => setTimeout(resolve, 200))
 
       return { success: true, outputName: output.name, x: testX, y: testY }
     }, outputName)
@@ -1130,17 +1176,7 @@ export class ComfyPage {
       )
     }
 
-    // Perform the actual double-click at the slot position
-    await this.canvas.dblclick({
-      position: { x: foundSlot.x, y: foundSlot.y }
-    })
     await this.nextFrame()
-
-    // Wait for the rename dialog to appear
-    await this.page.waitForSelector('.graphdialog input', {
-      state: 'visible',
-      timeout: 5000
-    })
   }
 
   /**
