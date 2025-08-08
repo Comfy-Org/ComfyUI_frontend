@@ -1,6 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
-import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -8,7 +7,7 @@ import type {
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -60,21 +59,5 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     }
 
     return false
-  }
-
-  override draw(
-    ctx: CanvasRenderingContext2D,
-    options: Omit<IDrawOptions, 'doStroke' | 'labelPosition'>
-  ) {
-    const { textAlign } = ctx
-    ctx.textAlign = 'left'
-
-    super.draw(ctx, {
-      ...options,
-      labelPosition: LabelPosition.Right,
-      doStroke: false
-    })
-
-    ctx.textAlign = textAlign
   }
 }
