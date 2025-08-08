@@ -14,12 +14,13 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { provide, readonly, ref, watch } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
+import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 const canvasStore = useCanvasStore()
 const { style, updatePosition } = useAbsolutePosition()
@@ -27,6 +28,13 @@ const { getSelectableItems } = useSelectedLiteGraphItems()
 
 const visible = ref(false)
 const showBorder = ref(false)
+// Increment counter to notify child components of position/visibility change
+// This does not include viewport changes.
+const overlayUpdateCount = ref(0)
+provide(SelectionOverlayInjectionKey, {
+  visible: readonly(visible),
+  updateCount: readonly(overlayUpdateCount)
+})
 
 const positionSelectionOverlay = () => {
   const selectableItems = getSelectableItems()
@@ -52,6 +60,7 @@ whenever(
   () => {
     requestAnimationFrame(() => {
       positionSelectionOverlay()
+      overlayUpdateCount.value++
       canvasStore.getCanvas().state.selectionChanged = false
     })
   },
@@ -71,6 +80,7 @@ watch(
       requestAnimationFrame(() => {
         visible.value = true
         positionSelectionOverlay()
+        overlayUpdateCount.value++
       })
     } else {
       // Selection change update to visible state is delayed by a frame. Here
@@ -78,6 +88,7 @@ watch(
       // the initial selection and dragging happens at the same time.
       requestAnimationFrame(() => {
         visible.value = false
+        overlayUpdateCount.value++
       })
     }
   }
