@@ -990,6 +990,160 @@ export class ComfyPage {
   }
 
   /**
+   * Double-clicks on a subgraph input slot to rename it.
+   * Must be called when inside a subgraph.
+   *
+   * @param inputName Optional name of the specific input slot to target (e.g., 'text').
+   *                  If not provided, tries the first available input slot.
+   * @returns Promise that resolves when the rename dialog appears
+   */
+  async doubleClickSubgraphInputSlot(inputName?: string): Promise<void> {
+    const foundSlot = await this.page.evaluate(async (targetInputName) => {
+      const app = window['app']
+      const currentGraph = app.canvas.graph
+
+      // Check if we're in a subgraph
+      if (currentGraph.constructor.name !== 'Subgraph') {
+        throw new Error(
+          'Not in a subgraph - this method only works inside subgraphs'
+        )
+      }
+
+      // Get the input node
+      const inputNode = currentGraph.inputNode
+      if (!inputNode) {
+        throw new Error('No input node found in subgraph')
+      }
+
+      // Get available inputs
+      const inputs = currentGraph.inputs
+      if (!inputs || inputs.length === 0) {
+        throw new Error('No input slots found in subgraph')
+      }
+
+      // Filter to specific input if requested, otherwise use first input
+      const inputsToTry = targetInputName
+        ? inputs.filter((inp) => inp.name === targetInputName)
+        : [inputs[0]]
+
+      if (inputsToTry.length === 0) {
+        throw new Error(
+          targetInputName
+            ? `Input slot '${targetInputName}' not found`
+            : 'No input slots available to try'
+        )
+      }
+
+      const input = inputsToTry[0]
+      if (!input.pos) {
+        throw new Error('Input slot position not found')
+      }
+
+      const testX = input.pos[0]
+      const testY = input.pos[1]
+
+      return { success: true, inputName: input.name, x: testX, y: testY }
+    }, inputName)
+
+    if (!foundSlot.success) {
+      throw new Error(
+        inputName
+          ? `Could not double-click input slot '${inputName}'`
+          : 'Could not find any input slot to double-click'
+      )
+    }
+
+    // Perform the actual double-click at the slot position
+    await this.canvas.dblclick({
+      position: { x: foundSlot.x, y: foundSlot.y }
+    })
+    await this.nextFrame()
+
+    // Wait for the rename dialog to appear
+    await this.page.waitForSelector('.graphdialog input', {
+      state: 'visible',
+      timeout: 5000
+    })
+  }
+
+  /**
+   * Double-clicks on a subgraph output slot to rename it.
+   * Must be called when inside a subgraph.
+   *
+   * @param outputName Optional name of the specific output slot to target.
+   *                   If not provided, tries the first available output slot.
+   * @returns Promise that resolves when the rename dialog appears
+   */
+  async doubleClickSubgraphOutputSlot(outputName?: string): Promise<void> {
+    const foundSlot = await this.page.evaluate(async (targetOutputName) => {
+      const app = window['app']
+      const currentGraph = app.canvas.graph
+
+      // Check if we're in a subgraph
+      if (currentGraph.constructor.name !== 'Subgraph') {
+        throw new Error(
+          'Not in a subgraph - this method only works inside subgraphs'
+        )
+      }
+
+      // Get the output node
+      const outputNode = currentGraph.outputNode
+      if (!outputNode) {
+        throw new Error('No output node found in subgraph')
+      }
+
+      // Get available outputs
+      const outputs = currentGraph.outputs
+      if (!outputs || outputs.length === 0) {
+        throw new Error('No output slots found in subgraph')
+      }
+
+      // Filter to specific output if requested, otherwise use first output
+      const outputsToTry = targetOutputName
+        ? outputs.filter((out) => out.name === targetOutputName)
+        : [outputs[0]]
+
+      if (outputsToTry.length === 0) {
+        throw new Error(
+          targetOutputName
+            ? `Output slot '${targetOutputName}' not found`
+            : 'No output slots available to try'
+        )
+      }
+
+      const output = outputsToTry[0]
+      if (!output.pos) {
+        throw new Error('Output slot position not found')
+      }
+
+      const testX = output.pos[0]
+      const testY = output.pos[1]
+
+      return { success: true, outputName: output.name, x: testX, y: testY }
+    }, outputName)
+
+    if (!foundSlot.success) {
+      throw new Error(
+        outputName
+          ? `Could not double-click output slot '${outputName}'`
+          : 'Could not find any output slot to double-click'
+      )
+    }
+
+    // Perform the actual double-click at the slot position
+    await this.canvas.dblclick({
+      position: { x: foundSlot.x, y: foundSlot.y }
+    })
+    await this.nextFrame()
+
+    // Wait for the rename dialog to appear
+    await this.page.waitForSelector('.graphdialog input', {
+      state: 'visible',
+      timeout: 5000
+    })
+  }
+
+  /**
    * Get a reference to a subgraph input slot
    */
   async getSubgraphInputSlot(

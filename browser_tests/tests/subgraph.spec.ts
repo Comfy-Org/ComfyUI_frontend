@@ -155,6 +155,108 @@ test.describe('Subgraph Operations', () => {
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
       expect(newInputName).not.toBe(initialInputLabel)
     })
+
+    test('Can rename input slots via double-click', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      await comfyPage.doubleClickSubgraphInputSlot(initialInputLabel)
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_INPUT_NAME)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newInputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      expect(newInputName).toBe(RENAMED_INPUT_NAME)
+      expect(newInputName).not.toBe(initialInputLabel)
+    })
+
+    test('Can rename output slots via double-click', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialOutputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.outputs?.[0]?.label || null
+      })
+
+      await comfyPage.doubleClickSubgraphOutputSlot(initialOutputLabel)
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const renamedOutputName = 'renamed_output'
+      await comfyPage.page.fill(SELECTORS.promptDialog, renamedOutputName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newOutputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.outputs?.[0]?.label || null
+      })
+
+      expect(newOutputName).toBe(renamedOutputName)
+      expect(newOutputName).not.toBe(initialOutputLabel)
+    })
+
+    test('Right-click context menu still works alongside double-click', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      // Test that right-click still works for renaming
+      await comfyPage.rightClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const rightClickRenamedName = 'right_click_renamed'
+      await comfyPage.page.fill(SELECTORS.promptDialog, rightClickRenamedName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newInputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      expect(newInputName).toBe(rightClickRenamedName)
+      expect(newInputName).not.toBe(initialInputLabel)
+    })
   })
 
   test.describe('Subgraph Creation and Deletion', () => {

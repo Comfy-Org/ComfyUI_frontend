@@ -63,6 +63,9 @@ export class SubgraphInputNode
           pointer.onDragEnd = (eUp) => {
             linkConnector.dropLinks(this.subgraph, eUp)
           }
+          pointer.onDoubleClick = () => {
+            this.handleSlotDoubleClick(slot, e)
+          }
           pointer.finally = () => {
             linkConnector.reset(true)
           }
