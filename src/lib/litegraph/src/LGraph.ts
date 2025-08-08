@@ -1664,6 +1664,117 @@ export class LGraph
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 
+  unpackSubgraph(subgraphNode: SubgraphNode) {
+    if (!(subgraphNode instanceof SubgraphNode))
+      throw new Error('Can only unpack Subgraph Nodes')
+    //Since boundry reroutes are removed, we only care about nodes
+    //interiour reroutes could grow bbox, but this is not a concern
+    //const boundingRect = createBounds(node.subgraph.nodes)
+    //if (!boundingRect)
+    //  throw new Error('Failed to create bounding rect for subgraph')
+    //TODO force calc of item.boundingRect and swap to createBounds?
+    const bounds = [Infinity, Infinity, -Infinity, -Infinity]
+    const center = [0, 0]
+    for (const node of subgraphNode.subgraph.nodes) {
+      bounds[0] = Math.min(bounds[0], node.pos[0])
+      bounds[1] = Math.min(bounds[1], node.pos[1])
+      bounds[2] = Math.max(bounds[2], node.pos[0] + node.size[0])
+      bounds[3] = Math.max(bounds[3], node.pos[1] + node.size[1])
+      center[0] += node.pos[0] + node.size[0] / 2
+      center[1] += node.pos[1] + node.size[1] / 2
+    }
+    center[0] /= subgraphNode.subgraph.nodes.length
+    center[1] /= subgraphNode.subgraph.nodes.length
+
+    //TODO consider weighted center vs bounds here
+    const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
+    const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
+    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
+    const nodeIdMap = new Map<NodeId, NodeId>()
+    for (const n_info of movedNodes) {
+      const node = LiteGraph.createNode(String(n_info.type), n_info.title)
+      if (!node) {
+        throw new Error('Can only unpack Subgraph Nodes')
+      }
+
+      node.pos[0] += offsetX
+      node.pos[1] += offsetY
+      nodeIdMap.set(n_info.id, ++this.last_node_id)
+      node.id = this.last_node_id
+      n_info.id = this.last_node_id
+
+      this.add(node, true)
+      node.configure(n_info)
+      //original impl for reference. Why before links?
+      //// configure nodes afterwards so they can reach each other
+      //for (const [id, nodeData] of nodeDataMap) {
+      //  this.getNodeById(id)?.configure(nodeData)
+      //}
+    }
+
+    //TODO preprocess reroute/boundry link culling?
+    const newLinks = []
+    for (const [, link] of subgraphNode.subgraph._links) {
+      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
+        if (!outerLinkId) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        const outerLink = this.links[outerLinkId]
+        link.origin_id = outerLink.origin_id
+        link.origin_slot = outerLink.origin_slot
+      } else {
+        const origin_id = nodeIdMap.get(link.origin_id)
+        if (!origin_id) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        link.origin_id = origin_id
+      }
+      if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
+          []) {
+          const sublink = this.links[linkId]
+          newLinks.push([
+            link.origin_id,
+            link.origin_slot,
+            sublink.target_id,
+            sublink.target_slot
+          ])
+        }
+        continue
+      } else {
+        const target_id = nodeIdMap.get(link.target_id)
+        if (!target_id) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        link.target_id = target_id
+      }
+      newLinks.push([
+        link.origin_id,
+        link.origin_slot,
+        link.target_id,
+        link.target_slot
+      ])
+    }
+    this.remove(subgraphNode)
+    this.subgraphs.delete(subgraphNode.subgraph.id)
+    for (const newLink of newLinks) {
+      this._nodes_by_id[newLink[0]].connect(
+        newLink[1],
+        this._nodes_by_id[newLink[2]],
+        newLink[3]
+      )
+    }
+    for (const nodeId of nodeIdMap.values()) {
+      const node = this._nodes_by_id[nodeId]
+      node._setConcreteSlots()
+      node.arrange()
+    }
+  }
+
   /**
    * Resolve a path of subgraph node IDs into a list of subgraph nodes.
    * Not intended to be run from subgraphs.
