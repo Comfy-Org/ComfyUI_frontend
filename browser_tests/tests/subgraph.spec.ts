@@ -257,6 +257,58 @@ test.describe('Subgraph Operations', () => {
       expect(newInputName).toBe(rightClickRenamedName)
       expect(newInputName).not.toBe(initialInputLabel)
     })
+
+    test('Can double-click on slot label text to rename', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      // Get the label position (not the connector position) and double-click there
+      const labelPosition = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        const input = graph.inputs?.[0]
+        if (!input?.labelPos) return null
+        // labelPos gives us the text label position, which should be different from pos (connector position)
+        return { x: input.labelPos[0], y: input.labelPos[1] }
+      })
+
+      if (!labelPosition) {
+        throw new Error('Could not get label position for testing')
+      }
+
+      // Double-click on the label text specifically
+      await comfyPage.canvas.dblclick({
+        position: labelPosition
+      })
+      await comfyPage.nextFrame()
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const labelClickRenamedName = 'label_click_renamed'
+      await comfyPage.page.fill(SELECTORS.promptDialog, labelClickRenamedName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newInputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      expect(newInputName).toBe(labelClickRenamedName)
+      expect(newInputName).not.toBe(initialInputLabel)
+    })
   })
 
   test.describe('Subgraph Creation and Deletion', () => {
