@@ -385,8 +385,15 @@ export class ComfyApp {
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
-      const combinedImgSrc =
-        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex].src
+      let combinedImgSrc: string | undefined
+      if (
+        ComfyApp.clipspace.combinedIndex !== undefined &&
+        ComfyApp.clipspace.imgs &&
+        ComfyApp.clipspace.combinedIndex < ComfyApp.clipspace.imgs.length
+      ) {
+        combinedImgSrc =
+          ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
+      }
       if (ComfyApp.clipspace.imgs && node.imgs) {
         if (node.images && ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
