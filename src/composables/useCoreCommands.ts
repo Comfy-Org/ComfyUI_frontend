@@ -687,7 +687,7 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
-      icon: 'pi pi-objects-column',
+      icon: 'pi pi-puzzle',
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {

@@ -1,9 +1,11 @@
 import { whenever } from '@vueuse/core'
+import { mapKeys } from 'lodash'
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useManagerQueue } from '@/composables/useManagerQueue'
 import { useServerLogs } from '@/composables/useServerLogs'
 import { useComfyManagerService } from '@/services/comfyManagerService'
@@ -114,7 +116,18 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const refreshInstalledList = async () => {
     const packs = await managerService.listInstalledPacks()
-    if (packs) installedPacks.value = packs
+    if (packs) {
+      // The keys are 'cleaned' by stripping the version suffix.
+      // The pack object itself (the value) still contains the version info.
+      const packsWithCleanedKeys = mapKeys(packs, (_value, key) => {
+        return key.split('@')[0]
+      })
+      installedPacks.value = packsWithCleanedKeys
+      // Run conflict detection for all installed packages
+      // This ensures conflict status is always up-to-date when installed list changes
+      const { performConflictDetection } = useConflictDetection()
+      await performConflictDetection()
+    }
     isStale.value = false
   }
 
