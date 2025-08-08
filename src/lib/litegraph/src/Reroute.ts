@@ -546,6 +546,7 @@ export class Reroute
     linkStart: Point
   ): { cos: number; sin: number; controlPoint: Point } {
     const thisPos = this.#pos
+    const { id } = this
     const angles: number[] = []
     let sum = 0
 
@@ -584,17 +585,13 @@ export class Reroute
     ) {
       for (const linkId of linkIds) {
         const link = links.get(linkId)
-        const pos = getNextPos(network, link, thisObj.id)
+        const pos = getNextPos(network, link, id)
         if (!pos) continue
         const angle = getDirection(thisPos, pos)
         angles.push(angle)
         sum += angle
       }
     }
-
-    // Preserve lexical `this` values inside helper
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const thisObj = this
   }
 
   /**
