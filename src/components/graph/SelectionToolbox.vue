@@ -1,36 +1,34 @@
 <template>
-  <Transition name="slide-up" appear>
-    <Panel
-      :key="animationKey"
-      class="selection-toolbox absolute left-1/2 rounded-lg"
-      :pt="{
-        header: 'hidden',
-        content: 'p-0 flex flex-row'
-      }"
-      @wheel="canvasInteractions.handleWheel"
-    >
-      <ExecuteButton />
-      <ColorPickerButton />
-      <BypassButton />
-      <PinButton />
-      <EditModelButton />
-      <MaskEditorButton />
-      <ConvertToSubgraphButton />
-      <DeleteButton />
-      <RefreshSelectionButton />
-      <ExtensionCommandButton
-        v-for="command in extensionToolboxCommands"
-        :key="command.id"
-        :command="command"
-      />
-      <HelpButton />
-    </Panel>
-  </Transition>
+  <Panel
+    class="selection-toolbox absolute left-1/2 rounded-lg"
+    :class="{ 'animate-slide-up': shouldAnimate }"
+    :pt="{
+      header: 'hidden',
+      content: 'p-0 flex flex-row'
+    }"
+    @wheel="canvasInteractions.handleWheel"
+  >
+    <ExecuteButton />
+    <ColorPickerButton />
+    <BypassButton />
+    <PinButton />
+    <EditModelButton />
+    <MaskEditorButton />
+    <ConvertToSubgraphButton />
+    <DeleteButton />
+    <RefreshSelectionButton />
+    <ExtensionCommandButton
+      v-for="command in extensionToolboxCommands"
+      :key="command.id"
+      :command="command"
+    />
+    <HelpButton />
+  </Panel>
 </template>
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed, inject } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
@@ -61,9 +59,25 @@ const selectionOverlayState = inject<{
 }>('selectionOverlayState')
 
 // Animation control
-const animationKey = computed(
-  () => selectionOverlayState?.updateCount.value ?? 0
-)
+const shouldAnimate = ref(false)
+
+// Trigger animation on mount
+onMounted(() => {
+  shouldAnimate.value = true
+})
+
+// Watch for update count changes to retrigger animation
+if (selectionOverlayState) {
+  watch(selectionOverlayState.updateCount, () => {
+    // Reset animation by removing and re-adding the class
+    shouldAnimate.value = false
+    // Force browser reflow
+    void document.body.offsetHeight
+    requestAnimationFrame(() => {
+      shouldAnimate.value = true
+    })
+  })
+}
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -87,18 +101,19 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   transform: translateX(-50%) translateY(-120%);
 }
 
-/* Slide up animation */
-.slide-up-enter-active {
-  transition: all 0.3s ease-out;
+/* Slide up animation using CSS animation */
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(-120%);
+    opacity: 1;
+  }
 }
 
-.slide-up-enter-from {
-  transform: translateX(-50%) translateY(-100%);
-  opacity: 0;
-}
-
-.slide-up-enter-to {
-  transform: translateX(-50%) translateY(-120%);
-  opacity: 1;
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
 }
 </style>
