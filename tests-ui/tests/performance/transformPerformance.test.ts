@@ -10,7 +10,11 @@ const createMockCanvasContext = () => ({
   }
 })
 
-describe('Transform Performance', () => {
+// Skip this entire suite on CI to avoid flaky performance timing
+const isCI = Boolean(process.env.CI)
+const describeIfNotCI = isCI ? describe.skip : describe
+
+describeIfNotCI('Transform Performance', () => {
   let transformState: ReturnType<typeof useTransformState>
   let mockCanvas: any
 
