@@ -28,9 +28,8 @@ const { getSelectableItems } = useSelectedLiteGraphItems()
 const visible = ref(false)
 const showBorder = ref(false)
 // Increment counter to notify child components of position/visibility change
+// This does not include viewport changes.
 const overlayUpdateCount = ref(0)
-
-// Provide visibility state and update counter to child components
 provide('selectionOverlayState', {
   visible: readonly(visible),
   updateCount: readonly(overlayUpdateCount)
