@@ -1,33 +1,37 @@
 <template>
-  <Panel
-    class="selection-toolbox absolute left-1/2 rounded-lg"
-    :pt="{
-      header: 'hidden',
-      content: 'p-0 flex flex-row'
-    }"
-    @wheel="canvasInteractions.handleWheel"
-  >
-    <ExecuteButton />
-    <ColorPickerButton />
-    <BypassButton />
-    <PinButton />
-    <EditModelButton />
-    <MaskEditorButton />
-    <ConvertToSubgraphButton />
-    <DeleteButton />
-    <RefreshSelectionButton />
-    <ExtensionCommandButton
-      v-for="command in extensionToolboxCommands"
-      :key="command.id"
-      :command="command"
-    />
-    <HelpButton />
-  </Panel>
+  <Transition name="slide-up" appear>
+    <Panel
+      :key="animationKey"
+      class="selection-toolbox absolute left-1/2 rounded-lg"
+      :pt="{
+        header: 'hidden',
+        content: 'p-0 flex flex-row'
+      }"
+      @wheel="canvasInteractions.handleWheel"
+    >
+      <ExecuteButton />
+      <ColorPickerButton />
+      <BypassButton />
+      <PinButton />
+      <EditModelButton />
+      <MaskEditorButton />
+      <ConvertToSubgraphButton />
+      <DeleteButton />
+      <RefreshSelectionButton />
+      <ExtensionCommandButton
+        v-for="command in extensionToolboxCommands"
+        :key="command.id"
+        :command="command"
+      />
+      <HelpButton />
+    </Panel>
+  </Transition>
 </template>
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
+import type { Ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -50,6 +54,17 @@ const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
+// Inject the selection overlay state
+const selectionOverlayState = inject<{
+  visible: Readonly<Ref<boolean>>
+  updateCount: Readonly<Ref<number>>
+}>('selectionOverlayState')
+
+// Animation control
+const animationKey = computed(
+  () => selectionOverlayState?.updateCount.value ?? 0
+)
+
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
     canvasStore.selectedItems
@@ -70,5 +85,20 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 <style scoped>
 .selection-toolbox {
   transform: translateX(-50%) translateY(-120%);
+}
+
+/* Slide up animation */
+.slide-up-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-up-enter-from {
+  transform: translateX(-50%) translateY(-100%);
+  opacity: 0;
+}
+
+.slide-up-enter-to {
+  transform: translateX(-50%) translateY(-120%);
+  opacity: 1;
 }
 </style>
