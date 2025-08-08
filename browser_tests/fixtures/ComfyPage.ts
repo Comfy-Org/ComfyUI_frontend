@@ -787,6 +787,164 @@ export class ComfyPage {
   }
 
   /**
+   * Core helper method for interacting with subgraph I/O slots.
+   * Handles both input/output slots and both right-click/double-click actions.
+   *
+   * @param slotType - 'input' or 'output'
+   * @param action - 'rightClick' or 'doubleClick'
+   * @param slotName - Optional specific slot name to target
+   * @private
+   */
+  private async interactWithSubgraphSlot(
+    slotType: 'input' | 'output',
+    action: 'rightClick' | 'doubleClick',
+    slotName?: string
+  ): Promise<void> {
+    const foundSlot = await this.page.evaluate(
+      async (params) => {
+        const { slotType, action, targetSlotName } = params
+        const app = window['app']
+        const currentGraph = app.canvas.graph
+
+        // Check if we're in a subgraph
+        if (currentGraph.constructor.name !== 'Subgraph') {
+          throw new Error(
+            'Not in a subgraph - this method only works inside subgraphs'
+          )
+        }
+
+        // Get the appropriate node and slots
+        const node =
+          slotType === 'input'
+            ? currentGraph.inputNode
+            : currentGraph.outputNode
+        const slots =
+          slotType === 'input' ? currentGraph.inputs : currentGraph.outputs
+
+        if (!node) {
+          throw new Error(`No ${slotType} node found in subgraph`)
+        }
+
+        if (!slots || slots.length === 0) {
+          throw new Error(`No ${slotType} slots found in subgraph`)
+        }
+
+        // Filter slots based on target name and action type
+        const slotsToTry = targetSlotName
+          ? slots.filter((slot) => slot.name === targetSlotName)
+          : action === 'rightClick'
+            ? slots
+            : [slots[0]] // Right-click tries all, double-click uses first
+
+        if (slotsToTry.length === 0) {
+          throw new Error(
+            targetSlotName
+              ? `${slotType} slot '${targetSlotName}' not found`
+              : `No ${slotType} slots available to try`
+          )
+        }
+
+        // Handle the interaction based on action type
+        if (action === 'rightClick') {
+          // Right-click: try each slot until one works
+          for (const slot of slotsToTry) {
+            if (!slot.pos) continue
+
+            const event = {
+              canvasX: slot.pos[0],
+              canvasY: slot.pos[1],
+              button: 2, // Right mouse button
+              preventDefault: () => {},
+              stopPropagation: () => {}
+            }
+
+            if (node.onPointerDown) {
+              node.onPointerDown(
+                event,
+                app.canvas.pointer,
+                app.canvas.linkConnector
+              )
+            }
+
+            // Wait briefly for menu to appear
+            await new Promise((resolve) => setTimeout(resolve, 100))
+
+            // Check if context menu appeared
+            const menuExists = document.querySelector('.litemenu-entry')
+            if (menuExists) {
+              return {
+                success: true,
+                slotName: slot.name,
+                x: slot.pos[0],
+                y: slot.pos[1]
+              }
+            }
+          }
+        } else if (action === 'doubleClick') {
+          // Double-click: use first slot with bounding rect center
+          const slot = slotsToTry[0]
+          if (!slot.boundingRect) {
+            throw new Error(`${slotType} slot bounding rect not found`)
+          }
+
+          const rect = slot.boundingRect
+          const testX = rect[0] + rect[2] / 2 // x + width/2
+          const testY = rect[1] + rect[3] / 2 // y + height/2
+
+          const event = {
+            canvasX: testX,
+            canvasY: testY,
+            button: 0, // Left mouse button
+            preventDefault: () => {},
+            stopPropagation: () => {}
+          }
+
+          if (node.onPointerDown) {
+            node.onPointerDown(
+              event,
+              app.canvas.pointer,
+              app.canvas.linkConnector
+            )
+
+            // Trigger double-click
+            if (app.canvas.pointer.onDoubleClick) {
+              app.canvas.pointer.onDoubleClick(event)
+            }
+          }
+
+          // Wait briefly for dialog to appear
+          await new Promise((resolve) => setTimeout(resolve, 200))
+
+          return { success: true, slotName: slot.name, x: testX, y: testY }
+        }
+
+        return { success: false }
+      },
+      { slotType, action, targetSlotName: slotName }
+    )
+
+    if (!foundSlot.success) {
+      const actionText =
+        action === 'rightClick' ? 'open context menu for' : 'double-click'
+      throw new Error(
+        slotName
+          ? `Could not ${actionText} ${slotType} slot '${slotName}'`
+          : `Could not find any ${slotType} slot to ${actionText}`
+      )
+    }
+
+    // Wait for the appropriate UI element to appear
+    if (action === 'rightClick') {
+      await this.page.waitForSelector('.litemenu-entry', {
+        state: 'visible',
+        timeout: 5000
+      })
+    } else {
+      await this.nextFrame()
+    }
+  }
+
+  /**
    * Right-clicks on a subgraph input slot to open the context menu.
    * Must be called when inside a subgraph.
    *
@@ -800,93 +958,7 @@ export class ComfyPage {
    * @returns Promise that resolves when the context menu appears
    */
   async rightClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    const foundSlot = await this.page.evaluate(async (targetInputName) => {
-      const app = window['app']
-      const currentGraph = app.canvas.graph
-
-      // Check if we're in a subgraph
-      if (currentGraph.constructor.name !== 'Subgraph') {
-        throw new Error(
-          'Not in a subgraph - this method only works inside subgraphs'
-        )
-      }
-
-      // Get the input node
-      const inputNode = currentGraph.inputNode
-      if (!inputNode) {
-        throw new Error('No input node found in subgraph')
-      }
-
-      // Get available inputs
-      const inputs = currentGraph.inputs
-      if (!inputs || inputs.length === 0) {
-        throw new Error('No input slots found in subgraph')
-      }
-
-      // Filter to specific input if requested
-      const inputsToTry = targetInputName
-        ? inputs.filter((inp) => inp.name === targetInputName)
-        : inputs
-
-      if (inputsToTry.length === 0) {
-        throw new Error(
-          targetInputName
-            ? `Input slot '${targetInputName}' not found`
-            : 'No input slots available to try'
-        )
-      }
-
-      // Try right-clicking on each input slot position until one works
-      for (const input of inputsToTry) {
-        if (!input.pos) continue
-
-        const testX = input.pos[0]
-        const testY = input.pos[1]
-
-        // Create a right-click event at the input slot position
-        const rightClickEvent = {
-          canvasX: testX,
-          canvasY: testY,
-          button: 2, // Right mouse button
-          preventDefault: () => {},
-          stopPropagation: () => {}
-        }
-
-        // Trigger the input node's right-click handler
-        if (inputNode.onPointerDown) {
-          inputNode.onPointerDown(
-            rightClickEvent,
-            app.canvas.pointer,
-            app.canvas.linkConnector
-          )
-        }
-
-        // Wait briefly for menu to appear
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
-        // Check if litegraph context menu appeared
-        const menuExists = document.querySelector('.litemenu-entry')
-        if (menuExists) {
-          return { success: true, inputName: input.name, x: testX, y: testY }
-        }
-      }
-
-      return { success: false }
-    }, inputName)
-
-    if (!foundSlot.success) {
-      throw new Error(
-        inputName
-          ? `Could not open context menu for input slot '${inputName}'`
-          : 'Could not find any input slot position to right-click'
-      )
-    }
-
-    // Wait for the litegraph context menu to be visible
-    await this.page.waitForSelector('.litemenu-entry', {
-      state: 'visible',
-      timeout: 5000
-    })
+    return this.interactWithSubgraphSlot('input', 'rightClick', inputName)
   }
 
   /**
@@ -900,93 +972,7 @@ export class ComfyPage {
    * @returns Promise that resolves when the context menu appears
    */
   async rightClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    const foundSlot = await this.page.evaluate(async (targetOutputName) => {
-      const app = window['app']
-      const currentGraph = app.canvas.graph
-
-      // Check if we're in a subgraph
-      if (currentGraph.constructor.name !== 'Subgraph') {
-        throw new Error(
-          'Not in a subgraph - this method only works inside subgraphs'
-        )
-      }
-
-      // Get the output node
-      const outputNode = currentGraph.outputNode
-      if (!outputNode) {
-        throw new Error('No output node found in subgraph')
-      }
-
-      // Get available outputs
-      const outputs = currentGraph.outputs
-      if (!outputs || outputs.length === 0) {
-        throw new Error('No output slots found in subgraph')
-      }
-
-      // Filter to specific output if requested
-      const outputsToTry = targetOutputName
-        ? outputs.filter((out) => out.name === targetOutputName)
-        : outputs
-
-      if (outputsToTry.length === 0) {
-        throw new Error(
-          targetOutputName
-            ? `Output slot '${targetOutputName}' not found`
-            : 'No output slots available to try'
-        )
-      }
-
-      // Try right-clicking on each output slot position until one works
-      for (const output of outputsToTry) {
-        if (!output.pos) continue
-
-        const testX = output.pos[0]
-        const testY = output.pos[1]
-
-        // Create a right-click event at the output slot position
-        const rightClickEvent = {
-          canvasX: testX,
-          canvasY: testY,
-          button: 2, // Right mouse button
-          preventDefault: () => {},
-          stopPropagation: () => {}
-        }
-
-        // Trigger the output node's right-click handler
-        if (outputNode.onPointerDown) {
-          outputNode.onPointerDown(
-            rightClickEvent,
-            app.canvas.pointer,
-            app.canvas.linkConnector
-          )
-        }
-
-        // Wait briefly for menu to appear
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
-        // Check if litegraph context menu appeared
-        const menuExists = document.querySelector('.litemenu-entry')
-        if (menuExists) {
-          return { success: true, outputName: output.name, x: testX, y: testY }
-        }
-      }
-
-      return { success: false }
-    }, outputName)
-
-    if (!foundSlot.success) {
-      throw new Error(
-        outputName
-          ? `Could not open context menu for output slot '${outputName}'`
-          : 'Could not find any output slot position to right-click'
-      )
-    }
-
-    // Wait for the litegraph context menu to be visible
-    await this.page.waitForSelector('.litemenu-entry', {
-      state: 'visible',
-      timeout: 5000
-    })
+    return this.interactWithSubgraphSlot('output', 'rightClick', outputName)
   }
 
   /**
@@ -998,90 +984,7 @@ export class ComfyPage {
    * @returns Promise that resolves when the rename dialog appears
    */
   async doubleClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    const foundSlot = await this.page.evaluate(async (targetInputName) => {
-      const app = window['app']
-      const currentGraph = app.canvas.graph
-
-      // Check if we're in a subgraph
-      if (currentGraph.constructor.name !== 'Subgraph') {
-        throw new Error(
-          'Not in a subgraph - this method only works inside subgraphs'
-        )
-      }
-
-      // Get the input node
-      const inputNode = currentGraph.inputNode
-      if (!inputNode) {
-        throw new Error('No input node found in subgraph')
-      }
-
-      // Get available inputs
-      const inputs = currentGraph.inputs
-      if (!inputs || inputs.length === 0) {
-        throw new Error('No input slots found in subgraph')
-      }
-
-      // Filter to specific input if requested, otherwise use first input
-      const inputsToTry = targetInputName
-        ? inputs.filter((inp) => inp.name === targetInputName)
-        : [inputs[0]]
-
-      if (inputsToTry.length === 0) {
-        throw new Error(
-          targetInputName
-            ? `Input slot '${targetInputName}' not found`
-            : 'No input slots available to try'
-        )
-      }
-
-      const input = inputsToTry[0]
-      if (!input.boundingRect) {
-        throw new Error('Input slot bounding rect not found')
-      }
-
-      // Use center of bounding rect for reliable clicking
-      const rect = input.boundingRect
-      const testX = rect[0] + rect[2] / 2 // x + width/2
-      const testY = rect[1] + rect[3] / 2 // y + height/2
-
-      // Simulate double-click directly through pointer events
-      const leftClickEvent = {
-        canvasX: testX,
-        canvasY: testY,
-        button: 0, // Left mouse button
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      }
-
-      // Trigger the input node's pointer down handler
-      if (inputNode.onPointerDown) {
-        inputNode.onPointerDown(
-          leftClickEvent,
-          app.canvas.pointer,
-          app.canvas.linkConnector
-        )
-
-        // Trigger double-click if pointer has the handler
-        if (app.canvas.pointer.onDoubleClick) {
-          app.canvas.pointer.onDoubleClick(leftClickEvent)
-        }
-      }
-
-      // Wait briefly for dialog to appear
-      await new Promise((resolve) => setTimeout(resolve, 200))
-
-      return { success: true, inputName: input.name, x: testX, y: testY }
-    }, inputName)
-
-    if (!foundSlot.success) {
-      throw new Error(
-        inputName
-          ? `Could not double-click input slot '${inputName}'`
-          : 'Could not find any input slot to double-click'
-      )
-    }
-
-    await this.nextFrame()
+    return this.interactWithSubgraphSlot('input', 'doubleClick', inputName)
   }
 
   /**
@@ -1093,90 +996,7 @@ export class ComfyPage {
    * @returns Promise that resolves when the rename dialog appears
    */
   async doubleClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    const foundSlot = await this.page.evaluate(async (targetOutputName) => {
-      const app = window['app']
-      const currentGraph = app.canvas.graph
-
-      // Check if we're in a subgraph
-      if (currentGraph.constructor.name !== 'Subgraph') {
-        throw new Error(
-          'Not in a subgraph - this method only works inside subgraphs'
-        )
-      }
-
-      // Get the output node
-      const outputNode = currentGraph.outputNode
-      if (!outputNode) {
-        throw new Error('No output node found in subgraph')
-      }
-
-      // Get available outputs
-      const outputs = currentGraph.outputs
-      if (!outputs || outputs.length === 0) {
-        throw new Error('No output slots found in subgraph')
-      }
-
-      // Filter to specific output if requested, otherwise use first output
-      const outputsToTry = targetOutputName
-        ? outputs.filter((out) => out.name === targetOutputName)
-        : [outputs[0]]
-
-      if (outputsToTry.length === 0) {
-        throw new Error(
-          targetOutputName
-            ? `Output slot '${targetOutputName}' not found`
-            : 'No output slots available to try'
-        )
-      }
-
-      const output = outputsToTry[0]
-      if (!output.boundingRect) {
-        throw new Error('Output slot bounding rect not found')
-      }
-
-      // Use center of bounding rect for reliable clicking
-      const rect = output.boundingRect
-      const testX = rect[0] + rect[2] / 2 // x + width/2
-      const testY = rect[1] + rect[3] / 2 // y + height/2
-
-      // Simulate double-click directly through pointer events
-      const leftClickEvent = {
-        canvasX: testX,
-        canvasY: testY,
-        button: 0, // Left mouse button
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      }
-
-      // Trigger the output node's pointer down handler
-      if (outputNode.onPointerDown) {
-        outputNode.onPointerDown(
-          leftClickEvent,
-          app.canvas.pointer,
-          app.canvas.linkConnector
-        )
-
-        // Trigger double-click if pointer has the handler
-        if (app.canvas.pointer.onDoubleClick) {
-          app.canvas.pointer.onDoubleClick(leftClickEvent)
-        }
-      }
-
-      // Wait briefly for dialog to appear
-      await new Promise((resolve) => setTimeout(resolve, 200))
-
-      return { success: true, outputName: output.name, x: testX, y: testY }
-    }, outputName)
-
-    if (!foundSlot.success) {
-      throw new Error(
-        outputName
-          ? `Could not double-click output slot '${outputName}'`
-          : 'Could not find any output slot to double-click'
-      )
-    }
-
-    await this.nextFrame()
+    return this.interactWithSubgraphSlot('output', 'doubleClick', outputName)
   }
 
   /**
