@@ -135,4 +135,9 @@ export class ToInputFromIoNodeLink implements RenderLink {
   connectToRerouteOutput() {
     throw new Error('ToInputRenderLink cannot connect to an output.')
   }
+  disconnect(): boolean {
+    if (!this.existingLink) return false
+    this.existingLink.disconnect(this.network, 'input')
+    return true
+  }
 }
