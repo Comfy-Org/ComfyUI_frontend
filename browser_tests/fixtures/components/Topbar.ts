@@ -72,8 +72,8 @@ export class Topbar {
   }
 
   async triggerTopbarCommand(path: string[]) {
-    if (path.length < 2) {
-      throw new Error('Path is too short')
+    if (path.length < 1) {
+      throw new Error('Path cannot be empty')
     }
 
     const menu = await this.openTopbarMenu()
@@ -85,6 +85,13 @@ export class Topbar {
       .locator('.p-tieredmenu-item')
       .filter({ has: topLevelMenuItem })
     await topLevelMenu.waitFor({ state: 'visible' })
+
+    // Handle top-level commands (like "New")
+    if (path.length === 1) {
+      await topLevelMenuItem.click()
+      return
+    }
+
     await topLevelMenu.hover()
 
     let currentMenu = topLevelMenu
