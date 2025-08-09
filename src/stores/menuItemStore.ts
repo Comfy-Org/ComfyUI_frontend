@@ -10,6 +10,7 @@ import { useCommandStore } from './commandStore'
 export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
   const menuItems = ref<MenuItem[]>([])
+  const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
 
   const registerMenuGroup = (path: string[], items: MenuItem[]) => {
     let currentLevel = menuItems.value
@@ -45,6 +46,14 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     }
     // Add the new items to the last level
     currentLevel.push(...items)
+
+    // Store if any of the children have active state as we will hide the icon if they do
+    const parentPath = path.join('.')
+    if (!menuItemHasActiveStateChildren.value[parentPath]) {
+      menuItemHasActiveStateChildren.value[parentPath] = items.some(
+        (item) => item.comfyCommand?.active
+      )
+    }
   }
 
   const registerCommands = (path: string[], commandIds: string[]) => {
@@ -57,7 +66,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
             label: command.menubarLabel,
             icon: command.icon,
             tooltip: command.tooltip,
-            comfyCommand: command
+            comfyCommand: command,
+            parentPath: path.join('.')
           }) as MenuItem
       )
     registerMenuGroup(path, items)
@@ -92,6 +102,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerMenuGroup,
     registerCommands,
     loadExtensionMenuCommands,
-    registerCoreMenuCommands
+    registerCoreMenuCommands,
+    menuItemHasActiveStateChildren
   }
 })

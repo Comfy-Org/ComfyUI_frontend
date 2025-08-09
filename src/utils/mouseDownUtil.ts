@@ -16,12 +16,17 @@ export const whileMouseDown = (
     callback(iteration++)
   }, interval)
 
-  const dispose = useEventListener(element, 'mouseup', () => {
+  const dispose = () => {
     clearInterval(intervalId)
-    dispose()
-  })
+    disposeGlobal()
+    disposeLocal()
+  }
+
+  // Listen for mouseup globally to catch cases where user drags out of element
+  const disposeGlobal = useEventListener(document, 'mouseup', dispose)
+  const disposeLocal = useEventListener(element, 'mouseup', dispose)
 
   return {
-    dispose
+    dispose: dispose
   }
 }

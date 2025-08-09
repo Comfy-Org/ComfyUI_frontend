@@ -21,6 +21,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -70,7 +71,6 @@ export function useCoreCommands(): ComfyCommand[] {
   const commands = [
     {
       id: 'Comfy.NewBlankWorkflow',
-      icon: 'pi pi-plus',
       label: 'New Blank Workflow',
       menubarLabel: 'New',
       category: 'essentials' as const,
@@ -276,6 +276,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.FitView',
       icon: 'pi pi-expand',
       label: 'Fit view to selected nodes',
+      menubarLabel: 'Zoom to fit',
       category: 'view-controls' as const,
       function: () => {
         if (app.canvas.empty) {
@@ -539,21 +540,25 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Workspace.ToggleBottomPanel',
       icon: 'pi pi-list',
       label: 'Toggle Bottom Panel',
+      menubarLabel: 'Bottom Panel',
       versionAdded: '1.3.22',
       category: 'view-controls' as const,
       function: () => {
         bottomPanelStore.toggleBottomPanel()
-      }
+      },
+      active: () => bottomPanelStore.bottomPanelVisible
     },
     {
       id: 'Workspace.ToggleFocusMode',
       icon: 'pi pi-eye',
       label: 'Toggle Focus Mode',
+      menubarLabel: 'Focus Mode',
       versionAdded: '1.3.27',
       category: 'view-controls' as const,
       function: () => {
         useWorkspaceStore().toggleFocusMode()
-      }
+      },
+      active: () => useWorkspaceStore().focusMode
     },
     {
       id: 'Comfy.Graph.FitGroupToContents',
@@ -795,6 +800,34 @@ export function useCoreCommands(): ComfyCommand[] {
         const { node } = res
         canvas.select(node)
       }
+    },
+    {
+      id: 'Comfy.OpenManagerDialog',
+      icon: 'mdi mdi-puzzle-outline',
+      label: 'Manager',
+      function: () => {
+        dialogService.showManagerDialog()
+      }
+    },
+    {
+      id: 'Comfy.ToggleHelpCenter',
+      icon: 'pi pi-question-circle',
+      label: 'Help Center',
+      function: () => {
+        useHelpCenterStore().toggle()
+      },
+      active: () => useHelpCenterStore().isVisible
+    },
+    {
+      id: 'Comfy.ToggleCanvasInfo',
+      icon: 'pi pi-info-circle',
+      label: 'Canvas Performance',
+      function: async () => {
+        const settingStore = useSettingStore()
+        const currentValue = settingStore.get('Comfy.Graph.CanvasInfo')
+        await settingStore.set('Comfy.Graph.CanvasInfo', !currentValue)
+      },
+      active: () => useSettingStore().get('Comfy.Graph.CanvasInfo')
     },
     {
       id: 'Workspace.ToggleBottomPanel.Shortcuts',

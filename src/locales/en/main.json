@@ -537,7 +537,8 @@
     "light": "Light",
     "manageExtensions": "Manage Extensions",
     "settings": "Settings",
-    "help": "Help"
+    "help": "Help",
+    "queue": "Queue Panel"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -931,7 +932,7 @@
     "Image Layer": "Image Layer"
   },
   "menuLabels": {
-    "Workflow": "Workflow",
+    "File": "File",
     "Edit": "Edit",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
@@ -949,7 +950,7 @@
     "Browse Templates": "Browse Templates",
     "Add Edit Model Step": "Add Edit Model Step",
     "Delete Selected Items": "Delete Selected Items",
-    "Fit view to selected nodes": "Fit view to selected nodes",
+    "Zoom to fit": "Zoom to fit",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
@@ -993,6 +994,7 @@
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
     "New": "New",
     "Clipspace": "Clipspace",
+    "Manager": "Manager",
     "Open": "Open",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
@@ -1002,6 +1004,8 @@
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
+    "Canvas Performance": "Canvas Performance",
+    "Help Center": "Help Center",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
@@ -1010,17 +1014,17 @@
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
     "Toggle Search Box": "Toggle Search Box",
-    "Toggle Bottom Panel": "Toggle Bottom Panel",
+    "Bottom Panel": "Bottom Panel",
     "Show Keybindings Dialog": "Show Keybindings Dialog",
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
     "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
     "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
-    "Toggle Focus Mode": "Toggle Focus Mode",
-    "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
-    "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
-    "Toggle Queue Sidebar": "Toggle Queue Sidebar",
-    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar"
+    "Focus Mode": "Focus Mode",
+    "Model Library": "Model Library",
+    "Node Library": "Node Library",
+    "Queue Panel": "Queue Panel",
+    "Workflows": "Workflows"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",

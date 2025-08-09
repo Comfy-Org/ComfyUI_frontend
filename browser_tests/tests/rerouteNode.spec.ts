@@ -18,7 +18,7 @@ test.describe('Reroute Node', () => {
       [workflowName]: workflowName
     })
     await comfyPage.setup()
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
 
     // Insert the workflow
     const workflowsTab = comfyPage.menu.workflowsTab

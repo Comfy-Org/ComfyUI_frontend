@@ -58,11 +58,12 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
+import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -70,8 +71,9 @@ import SidebarIcon from './SidebarIcon.vue'
 
 const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
+const helpCenterStore = useHelpCenterStore()
 const { shouldShowRedDot } = storeToRefs(releaseStore)
-const isHelpCenterVisible = ref(false)
+const { isVisible: isHelpCenterVisible } = storeToRefs(helpCenterStore)
 
 const sidebarLocation = computed(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -80,11 +82,11 @@ const sidebarLocation = computed(() =>
 const sidebarSize = computed(() => settingStore.get('Comfy.Sidebar.Size'))
 
 const toggleHelpCenter = () => {
-  isHelpCenterVisible.value = !isHelpCenterVisible.value
+  helpCenterStore.toggle()
 }
 
 const closeHelpCenter = () => {
-  isHelpCenterVisible.value = false
+  helpCenterStore.hide()
 }
 
 // Initialize release store on mount
@@ -130,6 +132,7 @@ onMounted(async () => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
