@@ -4,7 +4,6 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
   INodeInputSlot,
@@ -51,17 +50,16 @@ export class SubgraphInputNode
     // Left-click handling for dragging connections
     if (e.button === 0) {
       for (const slot of this.allSlots) {
-        const slotBounds = Rectangle.fromCentre(
-          slot.pos,
-          slot.boundingRect.height
-        )
-
-        if (slotBounds.containsXy(e.canvasX, e.canvasY)) {
+        // Check if click is within the full slot area (including label)
+        if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
           pointer.onDragStart = () => {
             linkConnector.dragNewFromSubgraphInput(this.subgraph, this, slot)
           }
           pointer.onDragEnd = (eUp) => {
             linkConnector.dropLinks(this.subgraph, eUp)
+          }
+          pointer.onDoubleClick = () => {
+            this.handleSlotDoubleClick(slot, e)
           }
           pointer.finally = () => {
             linkConnector.reset(true)

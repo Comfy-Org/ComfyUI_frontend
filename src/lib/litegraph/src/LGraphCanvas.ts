@@ -4130,6 +4130,7 @@ export class LGraphCanvas
     const selected = this.selectedItems
     if (!selected.size) return
 
+    const initialSelectionSize = selected.size
     let wasSelected: Positionable | undefined
     for (const sel of selected) {
       if (sel === keepSelected) {
@@ -4170,8 +4171,12 @@ export class LGraphCanvas
       }
     }
 
-    this.state.selectionChanged = true
-    this.onSelectionChange?.(this.selected_nodes)
+    // Only set selectionChanged if selection actually changed
+    const finalSelectionSize = selected.size
+    if (initialSelectionSize !== finalSelectionSize) {
+      this.state.selectionChanged = true
+      this.onSelectionChange?.(this.selected_nodes)
+    }
   }
 
   /** @deprecated See {@link LGraphCanvas.deselectAll} */
