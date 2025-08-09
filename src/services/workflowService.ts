@@ -231,7 +231,6 @@ export const useWorkflowService = () => {
     }
 
     await workflowStore.closeWorkflow(workflow)
-    workflowThumbnail.clearThumbnail(workflow.key)
     return true
   }
 
