@@ -1,7 +1,8 @@
+import { clamp } from 'lodash'
 import { beforeEach, describe, expect, vi } from 'vitest'
 
 import { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
-import { LGraphCanvas, LiteGraph, clamp } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './testExtensions'
 
