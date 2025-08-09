@@ -48,7 +48,9 @@ test.describe('LiteGraph Native Reroute Node', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
   })
 
-  test('Can add reroute by alt clicking on link', async ({ comfyPage }) => {
+  test('@2x @0.5x Can add reroute by alt clicking on link', async ({
+    comfyPage
+  }) => {
     const loadCheckpointNode = (
       await comfyPage.getNodeRefsByTitle('Load Checkpoint')
     )[0]
