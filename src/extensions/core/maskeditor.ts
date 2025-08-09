@@ -3976,13 +3976,19 @@ class UIManager {
     const mainImageFilename =
       new URL(mainImageUrl).searchParams.get('filename') ?? undefined
 
-    const combinedImageFilename =
+    let combinedImageFilename: string | null | undefined
+    if (
       ComfyApp.clipspace?.combinedIndex !== undefined &&
-      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace.combinedIndex]?.src
-        ? new URL(
-            ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
-          ).searchParams.get('filename')
-        : undefined
+      ComfyApp.clipspace?.imgs &&
+      ComfyApp.clipspace.combinedIndex < ComfyApp.clipspace.imgs.length &&
+      ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex]?.src
+    ) {
+      combinedImageFilename = new URL(
+        ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
+      ).searchParams.get('filename')
+    } else {
+      combinedImageFilename = undefined
+    }
 
     const imageLayerFilenames =
       mainImageFilename !== undefined
