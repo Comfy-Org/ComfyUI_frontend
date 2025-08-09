@@ -171,6 +171,21 @@ export abstract class SubgraphIONodeBase<
   }
 
   /**
+   * Handles double-click on an IO slot to rename it.
+   * @param slot The slot that was double-clicked.
+   * @param event The event that triggered the double-click.
+   */
+  protected handleSlotDoubleClick(
+    slot: TSlot,
+    event: CanvasPointerEvent
+  ): void {
+    // Only allow renaming non-empty slots
+    if (slot !== this.emptySlot) {
+      this.#promptForSlotRename(slot, event)
+    }
+  }
+
+  /**
    * Shows the context menu for an IO slot.
    * @param slot The slot to show the context menu for.
    * @param event The event that triggered the context menu.
@@ -239,21 +254,30 @@ export abstract class SubgraphIONodeBase<
       // Rename the slot
       case 'rename':
         if (slot !== this.emptySlot) {
-          this.subgraph.canvasAction((c) =>
-            c.prompt(
-              'Slot name',
-              slot.name,
-              (newName: string) => {
-                if (newName) this.renameSlot(slot, newName)
-              },
-              event
-            )
-          )
+          this.#promptForSlotRename(slot, event)
         }
         break
     }
 
     this.subgraph.setDirtyCanvas(true)
+  }
+
+  /**
+   * Prompts the user to rename a slot.
+   * @param slot The slot to rename.
+   * @param event The event that triggered the rename.
+   */
+  #promptForSlotRename(slot: TSlot, event: CanvasPointerEvent): void {
+    this.subgraph.canvasAction((c) =>
+      c.prompt(
+        'Slot name',
+        slot.name,
+        (newName: string) => {
+          if (newName) this.renameSlot(slot, newName)
+        },
+        event
+      )
+    )
   }
 
   /** Arrange the slots in this node. */
