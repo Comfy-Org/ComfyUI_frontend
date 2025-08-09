@@ -257,6 +257,20 @@ test.describe('Animated image widget', () => {
       dropPosition: { x, y }
     })
 
+    // Wait for the file upload to complete and DOM updates
+    await comfyPage.page.waitForTimeout(1000)
+    
+    // Wait for the widget to be updated with the new filename
+    await comfyPage.page.waitForFunction(
+      () => {
+        const nodes = window['app'].graph.nodes.filter(n => n.type === 'DevToolsLoadAnimatedImageTest')
+        if (nodes.length === 0) return false
+        const widget = nodes[0].widgets?.[0]
+        return widget?.value && widget.value.includes('animated_webp.webp')
+      },
+      { timeout: 5000 }
+    )
+
     // Expect the filename combo value to be updated
     const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)
     const filename = await fileComboWidget.getValue()
