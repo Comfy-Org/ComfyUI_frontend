@@ -61,9 +61,17 @@
         "
         @click="isZoomCommand(item) ? handleZoomClick($event) : undefined"
       >
-        <span v-if="item.icon" class="p-menubar-item-icon" :class="item.icon" />
+        <i
+          v-if="hasActiveStateSiblings(item)"
+          class="p-menubar-item-icon pi pi-check text-sm"
+          :class="{ invisible: !item.comfyCommand?.active?.() }"
+        />
+        <span
+          v-else-if="item.icon"
+          class="p-menubar-item-icon"
+          :class="item.icon"
+        />
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <i v-if="isMenuItemChecked(item)" class="ml-2 pi pi-check text-sm" />
         <span
           v-if="item?.comfyCommand?.keybinding"
           class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
@@ -171,7 +179,7 @@ const extraMenuItems: MenuItem[] = [
   { separator: true },
   {
     key: 'browse-templates',
-    label: t('menuLabels.BrowseTemplates'),
+    label: t('menuLabels.Browse Templates'),
     icon: 'pi pi-folder-open',
     command: () => commandStore.execute('Comfy.BrowseTemplates')
   },
@@ -251,11 +259,6 @@ const onMenuShow = () => {
   })
 }
 
-const isMenuItemChecked = (item: MenuItem) => {
-  if (!item.comfyCommand?.active) return false
-  return item.comfyCommand.active()
-}
-
 const isZoomCommand = (item: MenuItem) => {
   return (
     item.comfyCommand?.id === 'Comfy.Canvas.ZoomIn' ||
@@ -280,6 +283,10 @@ const handleZoomClick = (event: MouseEvent) => {
   event.stopPropagation()
   // Prevent the menu from closing for zoom commands
   return false
+}
+
+const hasActiveStateSiblings = (item: MenuItem): boolean => {
+  return menuItemsStore.menuItemHasActiveStateChildren[item.parentPath]
 }
 </script>
 
