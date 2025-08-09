@@ -27,10 +27,9 @@ enum ManagerRoute {
   UPDATE_ALL = 'manager/queue/update_all',
   UNINSTALL = 'manager/queue/uninstall',
   DISABLE = 'manager/queue/disable',
+  // FIX_NODE is currently unused but kept for potential future implementation
   FIX_NODE = 'manager/queue/fix',
   LIST_INSTALLED = 'customnode/installed',
-  GET_NODES = 'customnode/getmappings',
-  GET_PACKS = 'customnode/getlist',
   IMPORT_FAIL_INFO = 'customnode/import_fail_info',
   REBOOT = 'manager/reboot',
   IS_LEGACY_MANAGER_UI = 'manager/is_legacy_manager_ui'
