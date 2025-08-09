@@ -49,6 +49,13 @@ export default defineConfig({
       grep: /@2x/ // Run all tests tagged with @2x
     },
 
+    {
+      name: 'chromium-0.5x',
+      use: { ...devices['Desktop Chrome'], deviceScaleFactor: 0.5 },
+      timeout: 15000,
+      grep: /@0.5x/ // Run all tests tagged with @0.5x
+    },
+
     // {
     //   name: 'firefox',
     //   use: { ...devices['Desktop Firefox'] },
