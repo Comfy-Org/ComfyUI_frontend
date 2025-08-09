@@ -114,4 +114,31 @@ test.describe('Copy Paste', () => {
     const undoCount = await comfyPage.getGraphNodesCount()
     expect(undoCount).toBe(initialCount)
   })
+
+  /**
+   * Test for https://github.com/Comfy-Org/ComfyUI_frontend/issues/4666
+   * Copying nodes with dynamic inputs should not throw console error
+   */
+  test('Can copy node with dynamic inputs without error', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('dynamically_added_input')
+    
+    // Select the node with dynamic inputs
+    await comfyPage.canvas.click({
+      position: {
+        x: 157, // Center of the KSampler node
+        y: 161
+      }
+    })
+    
+    // Copy the node - this should not throw a NullGraphError
+    await comfyPage.ctrlC()
+    
+    // Paste the node to verify the copy worked
+    await comfyPage.page.mouse.move(300, 300)
+    await comfyPage.ctrlV()
+    
+    // Verify we now have 2 nodes
+    const nodeCount = await comfyPage.getGraphNodesCount()
+    expect(nodeCount).toBe(2)
+  })
 })

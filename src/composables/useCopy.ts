@@ -27,7 +27,7 @@ export const useCopy = () => {
 
     // copy nodes and clear clipboard
     const canvas = canvasStore.canvas
-    if (isTargetInGraph && canvas?.selectedItems) {
+    if (isTargetInGraph && canvas?.selected_nodes) {
       canvas.copyToClipboard()
       // clearData doesn't remove images from clipboard
       e.clipboardData?.setData('text', ' ')
