@@ -1,6 +1,10 @@
-import '@comfyorg/litegraph'
-import type { LLink, Size } from '@comfyorg/litegraph'
-
+import '@/lib/litegraph/src/litegraph'
+import type { LLink, Size } from '@/lib/litegraph/src/litegraph'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId
+} from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
@@ -8,7 +12,7 @@ import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 import type { NodeId } from '../schemas/comfyWorkflowSchema'
 
 /** ComfyUI extensions of litegraph */
-declare module '@comfyorg/litegraph/dist/types/widgets' {
+declare module '@/lib/litegraph/src/types/widgets' {
   interface IWidgetOptions {
     /** Currently used by DOM widgets only.  Declaring here reduces complexity. */
     onHide?: (widget: DOMWidget) => void
@@ -59,7 +63,7 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
 /**
  * ComfyUI extensions of litegraph interfaces
  */
-declare module '@comfyorg/litegraph/dist/interfaces' {
+declare module '@/lib/litegraph/src/interfaces' {
   interface IWidgetLocator {
     [key: symbol]: unknown
   }
@@ -68,10 +72,7 @@ declare module '@comfyorg/litegraph/dist/interfaces' {
 /**
  *  ComfyUI extensions of litegraph
  */
-declare module '@comfyorg/litegraph' {
-  import type { ExecutableLGraphNode, ExecutionId } from '@comfyorg/litegraph'
-  import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
+declare module '@/lib/litegraph/src/litegraph' {
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
     comfyClass: string
@@ -197,7 +198,7 @@ declare module '@comfyorg/litegraph' {
 /**
  * Extended types for litegraph, to be merged upstream once it has stabilized.
  */
-declare module '@comfyorg/litegraph' {
+declare module '@/lib/litegraph/src/litegraph' {
   /**
    * widgets_values is set to LGraphNode by `LGraphNode.configure`, but it is not
    * used by litegraph internally. We should remove the dependency on it later.

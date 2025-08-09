@@ -6,6 +6,9 @@
 - `npm run typecheck`: Type checking
 - `npm run lint`: Linting
 - `npm run format`: Prettier formatting
+- `npm run test:component`: Run component tests with browser environment
+- `npm run test:unit`: Run all unit tests
+- `npm run test:unit -- tests-ui/tests/example.test.ts`: Run single test file
 
 ## Development Workflow
 
@@ -48,3 +51,11 @@ When referencing Comfy-Org repos:
 1. Check for local copy
 2. Use GitHub API for branches/PRs/metadata
 3. Curl GitHub website if needed
+
+## Common Pitfalls
+
+- NEVER use `any` type - use proper TypeScript types
+- NEVER use `as any` type assertions - fix the underlying type issue
+- NEVER use `--no-verify` flag when committing
+- NEVER delete or disable tests to make them pass
+- NEVER circumvent quality checks

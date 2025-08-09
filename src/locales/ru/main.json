@@ -272,6 +272,7 @@
     "category": "Категория",
     "choose_file_to_upload": "выберите файл для загрузки",
     "clear": "Очистить",
+    "clearFilters": "Сбросить фильтры",
     "close": "Закрыть",
     "color": "Цвет",
     "comingSoon": "Скоро будет",
@@ -816,12 +817,18 @@
     "Restart": "Перезапустить",
     "Save": "Сохранить",
     "Save As": "Сохранить как",
+    "Show Keybindings Dialog": "Показать диалог клавиш быстрого доступа",
     "Show Settings Dialog": "Показать диалог настроек",
     "Sign Out": "Выйти",
+    "Toggle Bottom Panel": "Переключить нижнюю панель",
+    "Toggle Essential Bottom Panel": "Показать/скрыть основную нижнюю панель",
+    "Toggle Focus Mode": "Переключить режим фокуса",
     "Toggle Logs Bottom Panel": "Переключение нижней панели журналов",
     "Toggle Search Box": "Переключить поисковую панель",
     "Toggle Terminal Bottom Panel": "Переключение нижней панели терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
+    "Toggle View Controls Bottom Panel": "Показать/скрыть панель управления просмотром",
+    "Toggle Workflows Sidebar": "Показать/скрыть боковую панель рабочих процессов",
     "Toggle the Custom Nodes Manager": "Переключить менеджер пользовательских узлов",
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
@@ -1148,6 +1155,20 @@
     "Window": "Окно",
     "Workflow": "Рабочий процесс"
   },
+  "shortcuts": {
+    "essentials": "Основные",
+    "keyboardShortcuts": "Горячие клавиши",
+    "manageShortcuts": "Управление горячими клавишами",
+    "noKeybinding": "Нет привязки клавиши",
+    "subcategories": {
+      "node": "Узел",
+      "panelControls": "Управление панелью",
+      "queue": "Очередь",
+      "view": "Просмотр",
+      "workflow": "Рабочий процесс"
+    },
+    "viewControls": "Управление просмотром"
+  },
   "sideToolbar": {
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
@@ -1235,6 +1256,8 @@
       "Video": "Видео",
       "Video API": "Video API"
     },
+    "loadingMore": "Загрузка дополнительных шаблонов...",
+    "searchPlaceholder": "Поиск шаблонов...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",

@@ -1,6 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { describe, expect, it } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { filterOutputNodes, isOutputNode } from '@/utils/nodeFilterUtil'
 
 describe('nodeFilterUtil', () => {

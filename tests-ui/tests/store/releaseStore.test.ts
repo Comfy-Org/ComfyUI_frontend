@@ -5,6 +5,7 @@ import { useReleaseStore } from '@/stores/releaseStore'
 
 // Mock the dependencies
 vi.mock('@/utils/formatUtil')
+vi.mock('@/utils/envUtil')
 vi.mock('@/services/releaseService')
 vi.mock('@/stores/settingStore')
 vi.mock('@/stores/systemStatsStore')
@@ -56,10 +57,12 @@ describe('useReleaseStore', () => {
     const { useReleaseService } = await import('@/services/releaseService')
     const { useSettingStore } = await import('@/stores/settingStore')
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
+    const { isElectron } = await import('@/utils/envUtil')
 
     vi.mocked(useReleaseService).mockReturnValue(mockReleaseService)
     vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
+    vi.mocked(isElectron).mockReturnValue(true)
 
     // Default showVersionUpdates to true
     mockSettingStore.get.mockImplementation((key: string) => {
@@ -442,6 +445,120 @@ describe('useReleaseStore', () => {
 
       // Should only call API once due to loading check
       expect(mockReleaseService.getReleases).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('isElectron environment checks', () => {
+    beforeEach(() => {
+      // Set up a new version available
+      store.releases = [mockRelease]
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+    })
+
+    describe('when running in Electron (desktop)', () => {
+      beforeEach(async () => {
+        const { isElectron } = await import('@/utils/envUtil')
+        vi.mocked(isElectron).mockReturnValue(true)
+      })
+
+      it('should show toast when conditions are met', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        // Need multiple releases for hasMediumOrHighAttention
+        const mediumRelease = {
+          ...mockRelease,
+          id: 2,
+          attention: 'medium' as const
+        }
+        store.releases = [mockRelease, mediumRelease]
+
+        expect(store.shouldShowToast).toBe(true)
+      })
+
+      it('should show red dot when new version available', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        expect(store.shouldShowRedDot).toBe(true)
+      })
+
+      it('should show popup for latest version', async () => {
+        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(0)
+
+        expect(store.shouldShowPopup).toBe(true)
+      })
+    })
+
+    describe('when NOT running in Electron (web)', () => {
+      beforeEach(async () => {
+        const { isElectron } = await import('@/utils/envUtil')
+        vi.mocked(isElectron).mockReturnValue(false)
+      })
+
+      it('should NOT show toast even when all other conditions are met', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        // Set up all conditions that would normally show toast
+        const mediumRelease = {
+          ...mockRelease,
+          id: 2,
+          attention: 'medium' as const
+        }
+        store.releases = [mockRelease, mediumRelease]
+
+        expect(store.shouldShowToast).toBe(false)
+      })
+
+      it('should NOT show red dot even when new version available', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        expect(store.shouldShowRedDot).toBe(false)
+      })
+
+      it('should NOT show toast regardless of attention level', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        // Test with high attention releases
+        const highRelease = {
+          ...mockRelease,
+          id: 2,
+          attention: 'high' as const
+        }
+        const mediumRelease = {
+          ...mockRelease,
+          id: 3,
+          attention: 'medium' as const
+        }
+        store.releases = [highRelease, mediumRelease]
+
+        expect(store.shouldShowToast).toBe(false)
+      })
+
+      it('should NOT show red dot even with high attention release', async () => {
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(1)
+
+        store.releases = [{ ...mockRelease, attention: 'high' as const }]
+
+        expect(store.shouldShowRedDot).toBe(false)
+      })
+
+      it('should NOT show popup even for latest version', async () => {
+        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        const { compareVersions } = await import('@/utils/formatUtil')
+        vi.mocked(compareVersions).mockReturnValue(0)
+
+        expect(store.shouldShowPopup).toBe(false)
+      })
     })
   })
 })

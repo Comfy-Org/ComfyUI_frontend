@@ -2,13 +2,11 @@ import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraph
-} from '@comfyorg/litegraph'
+} from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
-  LGraphEventMode,
-  SubgraphNode
-} from '@comfyorg/litegraph'
-
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -63,12 +61,7 @@ export const graphToPrompt = async (
   for (const node of graph.computeExecutionOrder(false)) {
     const dto: ExecutableLGraphNode = isGroupNode(node)
       ? new ExecutableGroupNodeDTO(node, [], nodeDtoMap)
-      : new ExecutableNodeDTO(
-          node,
-          [],
-          nodeDtoMap,
-          node instanceof SubgraphNode ? node : undefined
-        )
+      : new ExecutableNodeDTO(node, [], nodeDtoMap)
 
     for (const innerNode of dto.getInnerNodes()) {
       nodeDtoMap.set(innerNode.id, innerNode)

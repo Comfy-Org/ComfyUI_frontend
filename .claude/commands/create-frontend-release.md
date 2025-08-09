@@ -171,53 +171,7 @@ echo "Last stable release: $LAST_STABLE"
 
 ### Step 7: Analyze Dependency Updates
 
-1. **Check for dependency version changes:**
-   ```bash
-   # Compare package.json between versions to detect dependency updates
-   PREV_PACKAGE_JSON=$(git show ${BASE_TAG}:package.json 2>/dev/null || echo '{}')
-   CURRENT_PACKAGE_JSON=$(cat package.json)
-   
-   # Extract litegraph versions
-   PREV_LITEGRAPH=$(echo "$PREV_PACKAGE_JSON" | grep -o '"@comfyorg/litegraph": "[^"]*"' | grep -o '[0-9][^"]*' || echo "not found")
-   CURRENT_LITEGRAPH=$(echo "$CURRENT_PACKAGE_JSON" | grep -o '"@comfyorg/litegraph": "[^"]*"' | grep -o '[0-9][^"]*' || echo "not found")
-   
-   echo "Litegraph version change: ${PREV_LITEGRAPH} → ${CURRENT_LITEGRAPH}"
-   ```
-
-2. **Generate litegraph changelog if version changed:**
-   ```bash
-   if [ "$PREV_LITEGRAPH" != "$CURRENT_LITEGRAPH" ] && [ "$PREV_LITEGRAPH" != "not found" ]; then
-     echo "📦 Fetching litegraph changes between v${PREV_LITEGRAPH} and v${CURRENT_LITEGRAPH}..."
-     
-     # Clone or update litegraph repo for changelog analysis
-     if [ ! -d ".temp-litegraph" ]; then
-       git clone https://github.com/comfyanonymous/litegraph.js.git .temp-litegraph
-     else
-       cd .temp-litegraph && git fetch --all && cd ..
-     fi
-     
-     # Get litegraph changelog between versions
-     LITEGRAPH_CHANGES=$(cd .temp-litegraph && git log v${PREV_LITEGRAPH}..v${CURRENT_LITEGRAPH} --oneline --no-merges 2>/dev/null || \
-       git log --oneline --no-merges --since="$(git log -1 --format=%ci ${BASE_TAG})" --until="$(git log -1 --format=%ci HEAD)" 2>/dev/null || \
-       echo "Unable to fetch litegraph changes")
-     
-     # Categorize litegraph changes
-     LITEGRAPH_FEATURES=$(echo "$LITEGRAPH_CHANGES" | grep -iE "(feat|feature|add)" || echo "")
-     LITEGRAPH_FIXES=$(echo "$LITEGRAPH_CHANGES" | grep -iE "(fix|bug)" || echo "")
-     LITEGRAPH_BREAKING=$(echo "$LITEGRAPH_CHANGES" | grep -iE "(break|breaking)" || echo "")
-     LITEGRAPH_OTHER=$(echo "$LITEGRAPH_CHANGES" | grep -viE "(feat|feature|add|fix|bug|break|breaking)" || echo "")
-     
-     # Clean up temp directory
-     rm -rf .temp-litegraph
-     
-     echo "✅ Litegraph changelog extracted"
-   else
-     echo "ℹ️  No litegraph version change detected"
-     LITEGRAPH_CHANGES=""
-   fi
-   ```
-
-3. **Check other significant dependency updates:**
+1. **Check significant dependency updates:**
    ```bash
    # Extract all dependency changes for major version bumps
    OTHER_DEP_CHANGES=""
@@ -393,6 +347,14 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```bash
    sleep 10
    gh run list --workflow=release.yaml --limit=1
+   ```
+4. **For Minor/Major Version Releases**: The create-release-candidate-branch workflow will automatically:
+   - Create a `core/x.yy` branch for the PREVIOUS minor version
+   - Apply branch protection rules
+   - Document the feature freeze policy
+   ```bash
+   # Monitor branch creation (for minor/major releases)
+   gh run list --workflow=create-release-candidate-branch.yaml --limit=1
    ```
 4. If workflow didn't trigger due to [skip ci]:
    ```bash

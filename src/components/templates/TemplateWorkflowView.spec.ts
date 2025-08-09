@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import { TemplateInfo } from '@/types/workflowTemplateTypes'
@@ -53,8 +54,44 @@ vi.mock('@/components/templates/TemplateWorkflowList.vue', () => ({
   }
 }))
 
+vi.mock('@/components/templates/TemplateSearchBar.vue', () => ({
+  default: {
+    template: '<div class="mock-search-bar"></div>',
+    props: ['searchQuery', 'filteredCount'],
+    emits: ['update:searchQuery', 'clearFilters']
+  }
+}))
+
+vi.mock('@/components/templates/TemplateWorkflowCardSkeleton.vue', () => ({
+  default: {
+    template: '<div class="mock-skeleton"></div>'
+  }
+}))
+
 vi.mock('@vueuse/core', () => ({
   useLocalStorage: () => 'grid'
+}))
+
+vi.mock('@/composables/useIntersectionObserver', () => ({
+  useIntersectionObserver: vi.fn()
+}))
+
+vi.mock('@/composables/useLazyPagination', () => ({
+  useLazyPagination: (items: any) => ({
+    paginatedItems: items,
+    isLoading: { value: false },
+    hasMoreItems: { value: false },
+    loadNextPage: vi.fn(),
+    reset: vi.fn()
+  })
+}))
+
+vi.mock('@/composables/useTemplateFiltering', () => ({
+  useTemplateFiltering: (templates: any) => ({
+    searchQuery: { value: '' },
+    filteredTemplates: templates,
+    filteredCount: { value: templates.value?.length || 0 }
+  })
 }))
 
 describe('TemplateWorkflowView', () => {
@@ -67,6 +104,18 @@ describe('TemplateWorkflowView', () => {
   })
 
   const mountView = (props = {}) => {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          templateWorkflows: {
+            loadingMore: 'Loading more...'
+          }
+        }
+      }
+    })
+
     return mount(TemplateWorkflowView, {
       props: {
         title: 'Test Templates',
@@ -79,6 +128,9 @@ describe('TemplateWorkflowView', () => {
         ],
         loading: null,
         ...props
+      },
+      global: {
+        plugins: [i18n]
       }
     })
   }

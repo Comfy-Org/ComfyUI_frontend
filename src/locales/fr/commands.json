@@ -245,6 +245,15 @@
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Basculer le panneau inférieur des journaux"
   },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Afficher/Masquer le panneau inférieur essentiel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Afficher/Masquer le panneau inférieur des contrôles de vue"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Afficher la boîte de dialogue des raccourcis clavier"
+  },
   "Workspace_ToggleFocusMode": {
     "label": "Basculer le mode focus"
   },

@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Checks if a node is an output node.

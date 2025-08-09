@@ -1,8 +1,8 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useRafFn, useThrottleFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -434,13 +434,14 @@ export function useMinimap() {
   const { startSync: startViewportSync, stopSync: stopViewportSync } =
     useCanvasTransformSync(updateViewport, { autoStart: false })
 
-  const handleMouseDown = (e: MouseEvent) => {
+  // Pointer event handlers for touch screen support
+  const handlePointerDown = (e: PointerEvent) => {
     isDragging.value = true
     updateContainerRect()
-    handleMouseMove(e)
+    handlePointerMove(e)
   }
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handlePointerMove = (e: PointerEvent) => {
     if (!isDragging.value || !canvasRef.value || !canvas.value) return
 
     const x = e.clientX - containerRect.value.left
@@ -455,7 +456,7 @@ export function useMinimap() {
     centerViewOn(worldX, worldY)
   }
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     isDragging.value = false
   }
 
@@ -695,9 +696,9 @@ export function useMinimap() {
     init,
     destroy,
     toggle,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
     handleWheel,
     setMinimapRef
   }

@@ -245,6 +245,15 @@
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "ログパネル下部の切り替え"
   },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "必須な下部パネルを切り替え"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "表示コントロール下部パネルの切り替え"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "キーバインドダイアログを表示"
+  },
   "Workspace_ToggleFocusMode": {
     "label": "フォーカスモードの切り替え"
   },

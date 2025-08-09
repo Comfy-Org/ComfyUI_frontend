@@ -1,13 +1,12 @@
+import { t } from '@/i18n'
+import { type NodeId } from '@/lib/litegraph/src/LGraphNode'
 import {
   type ExecutableLGraphNode,
   type ExecutionId,
   LGraphNode,
   LiteGraph,
   SubgraphNode
-} from '@comfyorg/litegraph'
-import { type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
-
-import { t } from '@/i18n'
+} from '@/lib/litegraph/src/litegraph'
 import {
   ComfyLink,
   ComfyNode,

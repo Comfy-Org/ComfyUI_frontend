@@ -1,10 +1,10 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DisplayComponentWsMessage,
   ExecutedWsMessage,
