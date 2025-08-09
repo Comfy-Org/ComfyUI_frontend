@@ -198,6 +198,7 @@ const menuItems = computed<MenuItem[]>(() => {
       key: 'desktop-guide',
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
+      visible: isElectron(),
       action: () => {
         openExternalLink(EXTERNAL_LINKS.DESKTOP_GUIDE)
         emit('close')
