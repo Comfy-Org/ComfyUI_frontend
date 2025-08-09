@@ -230,11 +230,20 @@
   "Workspace_ToggleBottomPanel": {
     "label": "Toggle Bottom Panel"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Show Keybindings Dialog"
+  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "Toggle Terminal Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Toggle Logs Bottom Panel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Toggle Essential Bottom Panel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Toggle View Controls Bottom Panel"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"
