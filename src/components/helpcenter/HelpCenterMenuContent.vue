@@ -188,12 +188,8 @@ const showVersionUpdates = computed(() =>
   settingStore.get('Comfy.Notification.ShowVersionUpdates')
 )
 
-const moreMenuItem = computed(() =>
-  menuItems.value.find((item) => item.key === 'more')
-)
-
-const menuItems = computed<MenuItem[]>(() => {
-  const moreItems: MenuItem[] = [
+const moreItems = computed<MenuItem[]>(() => {
+  const allMoreItems: MenuItem[] = [
     {
       key: 'desktop-guide',
       type: 'item',
@@ -231,6 +227,19 @@ const menuItems = computed<MenuItem[]>(() => {
     }
   ]
 
+  // Filter for visible items only
+  return allMoreItems.filter((item) => item.visible !== false)
+})
+
+const hasVisibleMoreItems = computed(() => {
+  return !!moreItems.value.length
+})
+
+const moreMenuItem = computed(() =>
+  menuItems.value.find((item) => item.key === 'more')
+)
+
+const menuItems = computed<MenuItem[]>(() => {
   return [
     {
       key: 'docs',
@@ -277,8 +286,9 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       icon: '',
       label: t('helpCenter.more'),
+      visible: hasVisibleMoreItems.value,
       action: () => {}, // No action for more item
-      items: moreItems
+      items: moreItems.value
     }
   ]
 })
