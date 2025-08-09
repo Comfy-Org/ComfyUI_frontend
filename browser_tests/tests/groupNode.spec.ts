@@ -268,10 +268,7 @@ test.describe('Group Node', () => {
       await comfyPage.setSetting('Comfy.ConfirmClear', false)
 
       // Clear workflow
-      await comfyPage.menu.topbar.triggerTopbarCommand([
-        'Edit',
-        'Clear Workflow'
-      ])
+      await comfyPage.executeCommand('Comfy.ClearWorkflow')
 
       await comfyPage.ctrlV()
       await verifyNodeLoaded(comfyPage, 1)
