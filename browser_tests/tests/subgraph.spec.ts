@@ -372,6 +372,68 @@ test.describe('Subgraph Operations', () => {
       const deletedNode = await comfyPage.getNodeRefById('2')
       expect(await deletedNode.exists()).toBe(false)
     })
+
+    test.describe('Subgraph copy and paste', () => {
+      test('Can copy subgraph node by dragging + alt', async ({
+        comfyPage
+      }) => {
+        await comfyPage.loadWorkflow('basic-subgraph')
+
+        const subgraphNode = await comfyPage.getNodeRefById('2')
+
+        // Get position of subgraph node
+        const subgraphPos = await subgraphNode.getPosition()
+
+        // Alt + Click on the subgraph node
+        await comfyPage.page.mouse.move(subgraphPos.x + 16, subgraphPos.y + 16)
+        await comfyPage.page.keyboard.down('Alt')
+        await comfyPage.page.mouse.down()
+        await comfyPage.nextFrame()
+
+        // Drag slightly to trigger the copy
+        await comfyPage.page.mouse.move(subgraphPos.x + 64, subgraphPos.y + 64)
+        await comfyPage.page.mouse.up()
+        await comfyPage.page.keyboard.up('Alt')
+
+        // Find all subgraph nodes
+        const subgraphNodes =
+          await comfyPage.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
+
+        // Expect a second subgraph node to be created (2 total)
+        expect(subgraphNodes.length).toBe(2)
+      })
+
+      test('Copying subgraph node by dragging + alt creates a new subgraph node with unique type', async ({
+        comfyPage
+      }) => {
+        await comfyPage.loadWorkflow('basic-subgraph')
+
+        const subgraphNode = await comfyPage.getNodeRefById('2')
+
+        // Get position of subgraph node
+        const subgraphPos = await subgraphNode.getPosition()
+
+        // Alt + Click on the subgraph node
+        await comfyPage.page.mouse.move(subgraphPos.x + 16, subgraphPos.y + 16)
+        await comfyPage.page.keyboard.down('Alt')
+        await comfyPage.page.mouse.down()
+        await comfyPage.nextFrame()
+
+        // Drag slightly to trigger the copy
+        await comfyPage.page.mouse.move(subgraphPos.x + 64, subgraphPos.y + 64)
+        await comfyPage.page.mouse.up()
+        await comfyPage.page.keyboard.up('Alt')
+
+        // Find all subgraph nodes and expect all unique IDs
+        const subgraphNodes =
+          await comfyPage.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
+
+        // Expect the second subgraph node to have a unique type
+        const nodeType1 = await subgraphNodes[0].getType()
+        const nodeType2 = await subgraphNodes[1].getType()
+        expect(nodeType1).not.toBe(nodeType2)
+      })
+    })
   })
 
   test.describe('Operations Inside Subgraphs', () => {
