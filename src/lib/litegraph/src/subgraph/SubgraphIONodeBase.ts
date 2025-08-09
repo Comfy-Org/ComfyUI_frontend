@@ -242,7 +242,7 @@ export abstract class SubgraphIONodeBase<
           this.subgraph.canvasAction((c) =>
             c.prompt(
               'Slot name',
-              slot.name,
+              slot.displayName,
               (newName: string) => {
                 if (newName) this.renameSlot(slot, newName)
               },
