@@ -1,0 +1,64 @@
+<template>
+  <BaseWidgetLayout>
+    <template #leftPanel>
+      <LeftSidePanel :nav-items="temp_navigation">
+        <template #header-icon>
+          <i-lucide:puzzle class="text-neutral" />
+        </template>
+        <template #header-title>
+          <span class="text-neutral text-base">{{ t('g.title') }}</span>
+        </template>
+      </LeftSidePanel>
+    </template>
+
+    <template #header>
+      <!-- here -->
+    </template>
+
+    <template #content>
+      <!-- here -->
+    </template>
+
+    <template #rightPanel>
+      <RightSidePanel></RightSidePanel>
+    </template>
+  </BaseWidgetLayout>
+</template>
+
+<script setup lang="ts">
+import { provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
+import { OnCloseKey } from '@/types/custom_components/widgetTypes'
+
+import BaseWidgetLayout from './layout/BaseWidgetLayout.vue'
+import RightSidePanel from './panel/RightSidePanel.vue'
+
+const { t } = useI18n()
+
+const { onClose } = defineProps<{
+  onClose: () => void
+}>()
+
+provide(OnCloseKey, onClose)
+
+const temp_navigation = ref<(NavItemData | NavGroupData)[]>([
+  { id: 'installed', label: 'Installed' },
+  {
+    title: 'TAGS',
+    items: [
+      { id: 'tag-sd15', label: 'SD 1.5' },
+      { id: 'tag-sdxl', label: 'SDXL' },
+      { id: 'tag-utility', label: 'Utility' }
+    ]
+  },
+  {
+    title: 'CATEGORIES',
+    items: [
+      { id: 'cat-models', label: 'Models' },
+      { id: 'cat-nodes', label: 'Nodes' }
+    ]
+  }
+])
+</script>
