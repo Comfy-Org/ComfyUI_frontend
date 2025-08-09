@@ -5559,6 +5559,15 @@ export class LGraphCanvas
       for (let j = 0; j < l; j++) {
         const reroute = reroutes[j]
 
+        // Lazily compute render params only if needed, and reuse for both purposes
+        const prevReroute = graph.getReroute(reroute.parentId)
+        const rerouteStartPos = prevReroute?.pos ?? startPos
+        let params:
+          | { cos: number; sin: number; controlPoint: Point }
+          | undefined
+        const getParams = () =>
+          (params ??= reroute.computeRenderParams(graph, rerouteStartPos))
+
         // Only render once
         if (!renderedPaths.has(reroute)) {
           visibleReroutes.push(reroute)
@@ -5566,10 +5575,6 @@ export class LGraphCanvas
             link.color ||
             LGraphCanvas.link_type_colors[link.type] ||
             this.default_link_color
-
-          const prevReroute = graph.getReroute(reroute.parentId)
-          const rerouteStartPos = prevReroute?.pos ?? startPos
-          const params = reroute.computeRenderParams(graph, rerouteStartPos)
 
           // Skip the first segment if it is being dragged
           if (!(skipFirstSegment && j === 0)) {
@@ -5591,7 +5596,7 @@ export class LGraphCanvas
               LinkDirection.CENTER,
               {
                 startControl,
-                endControl: params.controlPoint,
+                endControl: getParams().controlPoint,
                 disabled,
                 renderTarget: rendered
               }
@@ -5606,14 +5611,12 @@ export class LGraphCanvas
         } else {
           // Calculate start control for the next iter control point
           const nextPos = reroutes[j + 1]?.pos ?? endPos
-          const prevR = graph.getReroute(reroute.parentId)
-          const startPosForParams = prevR?.pos ?? startPos
-          const params = reroute.computeRenderParams(graph, startPosForParams)
           const dist = Math.min(
             Reroute.maxSplineOffset,
             distance(reroute.pos, nextPos) * 0.25
           )
-          startControl = [dist * params.cos, dist * params.sin]
+          const p = getParams()
+          startControl = [dist * p.cos, dist * p.sin]
         }
       }
 
