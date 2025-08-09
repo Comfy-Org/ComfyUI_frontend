@@ -187,12 +187,30 @@ test.describe('Workflows sidebar', () => {
 
   test('Can save workflow as with same name', async ({ comfyPage }) => {
     await comfyPage.menu.topbar.saveWorkflow('workflow5.json')
+    
+    // Wait for the save operation to complete
+    await comfyPage.page.waitForTimeout(500)
+    
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow5.json'
     ])
 
     await comfyPage.menu.topbar.saveWorkflowAs('workflow5.json')
+    
+    // Wait for the confirmation dialog to appear
+    await expect(comfyPage.page.locator('.comfy-modal-content:visible')).toBeVisible({
+      timeout: 5000
+    })
+    
     await comfyPage.confirmDialog.click('overwrite')
+    
+    // Wait for the dialog to close and the operation to complete
+    await expect(comfyPage.page.locator('.comfy-modal-content:visible')).toHaveCount(0, {
+      timeout: 5000
+    })
+    
+    await comfyPage.page.waitForTimeout(500)
+    
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow5.json'
     ])
