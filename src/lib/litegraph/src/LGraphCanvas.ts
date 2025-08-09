@@ -8244,7 +8244,9 @@ export class LGraphCanvas
           if (_slot.removable) {
             menu_info.push(null)
             menu_info.push(
-              _slot.locked ? 'Cannot remove' : { content: 'Remove Slot', slot }
+              _slot.locked
+                ? 'Cannot remove'
+                : { content: 'Remove Slot', slot, className: 'danger' }
             )
           }
 
