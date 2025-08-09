@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import { defineStore } from 'pinia'
+import { gte, rcompare, valid } from 'semver'
 import { ref } from 'vue'
 
 import type { Settings } from '@/schemas/apiSchema'
@@ -7,7 +8,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import { compareVersions, isSemVer } from '@/utils/formatUtil'
+import { coerceVersion } from '@/utils/versionUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -132,17 +133,30 @@ export const useSettingStore = defineStore('setting', () => {
 
       if (installedVersion) {
         const sortedVersions = Object.keys(defaultsByInstallVersion).sort(
-          (a, b) => compareVersions(b, a)
+          (a, b) => {
+            const versionA = coerceVersion(a, '')
+            const versionB = coerceVersion(b, '')
+            if (!versionA || !versionB) return 0
+            return rcompare(versionA, versionB)
+          }
         )
 
         for (const version of sortedVersions) {
-          // Ensure the version is in a valid format before comparing
-          if (!isSemVer(version)) {
+          if (!valid(version)) {
             continue
           }
 
-          if (compareVersions(installedVersion, version) >= 0) {
-            const versionedDefault = defaultsByInstallVersion[version]
+          const installedSemver = coerceVersion(installedVersion, '')
+          const targetSemver = coerceVersion(version, '')
+          if (
+            installedSemver &&
+            targetSemver &&
+            gte(installedSemver, targetSemver)
+          ) {
+            const versionedDefault =
+              defaultsByInstallVersion[
+                version as `${number}.${number}.${number}`
+              ]
             return typeof versionedDefault === 'function'
               ? versionedDefault()
               : versionedDefault
