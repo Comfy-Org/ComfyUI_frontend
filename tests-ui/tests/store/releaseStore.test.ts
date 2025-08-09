@@ -251,6 +251,53 @@ describe('useReleaseStore', () => {
       })
     })
 
+    it('should skip fetching when --disable-api-nodes is present', async () => {
+      mockSystemStatsStore.systemStats.system.argv = ['--disable-api-nodes']
+
+      await store.initialize()
+
+      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should skip fetching when --disable-api-nodes is one of multiple args', async () => {
+      mockSystemStatsStore.systemStats.system.argv = [
+        '--port',
+        '8080',
+        '--disable-api-nodes',
+        '--verbose'
+      ]
+
+      await store.initialize()
+
+      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should fetch normally when --disable-api-nodes is not present', async () => {
+      mockSystemStatsStore.systemStats.system.argv = [
+        '--port',
+        '8080',
+        '--verbose'
+      ]
+      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(store.releases).toEqual([mockRelease])
+    })
+
+    it('should fetch normally when argv is undefined', async () => {
+      mockSystemStatsStore.systemStats.system.argv = undefined
+      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+      expect(store.releases).toEqual([mockRelease])
+    })
+
     it('should handle API errors gracefully', async () => {
       mockReleaseService.getReleases.mockResolvedValue(null)
       mockReleaseService.error.value = 'API Error'
@@ -304,6 +351,63 @@ describe('useReleaseStore', () => {
       await store.initialize()
 
       expect(store.isLoading).toBe(false)
+    })
+  })
+
+  describe('--disable-api-nodes argument handling', () => {
+    it('should skip fetchReleases when --disable-api-nodes is present', async () => {
+      mockSystemStatsStore.systemStats.system.argv = ['--disable-api-nodes']
+
+      await store.fetchReleases()
+
+      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should skip fetchReleases when --disable-api-nodes is among other args', async () => {
+      mockSystemStatsStore.systemStats.system.argv = [
+        '--port',
+        '8080',
+        '--disable-api-nodes',
+        '--verbose'
+      ]
+
+      await store.fetchReleases()
+
+      expect(mockReleaseService.getReleases).not.toHaveBeenCalled()
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should proceed with fetchReleases when --disable-api-nodes is not present', async () => {
+      mockSystemStatsStore.systemStats.system.argv = [
+        '--port',
+        '8080',
+        '--verbose'
+      ]
+      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+
+      await store.fetchReleases()
+
+      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+    })
+
+    it('should proceed with fetchReleases when argv is null', async () => {
+      mockSystemStatsStore.systemStats.system.argv = null
+      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+
+      await store.fetchReleases()
+
+      expect(mockReleaseService.getReleases).toHaveBeenCalled()
+    })
+
+    it('should proceed with fetchReleases when system stats are not available', async () => {
+      mockSystemStatsStore.systemStats = null
+      mockReleaseService.getReleases.mockResolvedValue([mockRelease])
+
+      await store.fetchReleases()
+
+      expect(mockSystemStatsStore.fetchSystemStats).toHaveBeenCalled()
+      expect(mockReleaseService.getReleases).toHaveBeenCalled()
     })
   })
 
