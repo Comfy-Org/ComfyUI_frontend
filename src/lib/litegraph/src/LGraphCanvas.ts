@@ -2384,6 +2384,7 @@ export class LGraphCanvas
       // Set the width of the line for isPointInStroke checks
       const { lineWidth } = this.ctx
       this.ctx.lineWidth = this.connections_width + 7
+      const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
@@ -2393,7 +2394,7 @@ export class LGraphCanvas
         if (
           (e.shiftKey || e.altKey) &&
           linkSegment.path &&
-          this.ctx.isPointInStroke(linkSegment.path, x, y)
+          this.ctx.isPointInStroke(linkSegment.path, x * dpi, y * dpi)
         ) {
           this.ctx.lineWidth = lineWidth
 
