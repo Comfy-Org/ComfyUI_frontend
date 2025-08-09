@@ -1011,8 +1011,11 @@
     "Previous Opened Workflow": "Previous Opened Workflow",
     "Toggle Search Box": "Toggle Search Box",
     "Toggle Bottom Panel": "Toggle Bottom Panel",
+    "Show Keybindings Dialog": "Show Keybindings Dialog",
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
+    "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
+    "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Toggle Focus Mode": "Toggle Focus Mode",
     "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
     "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
@@ -1644,5 +1647,12 @@
       "view": "View",
       "panelControls": "Panel Controls"
     }
+  },
+  "minimap": {
+    "nodeColors": "Node Colors",
+    "showLinks": "Show Links",
+    "showGroups": "Show Frames/Groups",
+    "renderBypassState": "Render Bypass State",
+    "renderErrorState": "Render Error State"
   }
 }
