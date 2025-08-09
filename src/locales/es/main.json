@@ -808,9 +808,11 @@
     "Restart": "Reiniciar",
     "Save": "Guardar",
     "Save As": "Guardar como",
+    "Show Keybindings Dialog": "Mostrar diálogo de combinaciones de teclas",
     "Show Settings Dialog": "Mostrar diálogo de configuración",
     "Sign Out": "Cerrar sesión",
     "Toggle Bottom Panel": "Alternar panel inferior",
+    "Toggle Essential Bottom Panel": "Alternar panel inferior esencial",
     "Toggle Focus Mode": "Alternar modo de enfoque",
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
     "Toggle Model Library Sidebar": "Alternar barra lateral de la biblioteca de modelos",
@@ -819,6 +821,7 @@
     "Toggle Search Box": "Alternar caja de búsqueda",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
+    "Toggle View Controls Bottom Panel": "Alternar panel inferior de controles de vista",
     "Toggle Workflows Sidebar": "Alternar barra lateral de los flujos de trabajo",
     "Toggle the Custom Nodes Manager": "Alternar el Administrador de Nodos Personalizados",
     "Toggle the Custom Nodes Manager Progress Bar": "Alternar la Barra de Progreso del Administrador de Nodos Personalizados",
@@ -1144,6 +1147,20 @@
     "Validation": "Validación",
     "Window": "Ventana",
     "Workflow": "Flujo de Trabajo"
+  },
+  "shortcuts": {
+    "essentials": "Esenciales",
+    "keyboardShortcuts": "Atajos de teclado",
+    "manageShortcuts": "Gestionar atajos",
+    "noKeybinding": "Sin asignación de tecla",
+    "subcategories": {
+      "node": "Nodo",
+      "panelControls": "Controles del panel",
+      "queue": "Cola",
+      "view": "Vista",
+      "workflow": "Flujo de trabajo"
+    },
+    "viewControls": "Controles de vista"
   },
   "sideToolbar": {
     "browseTemplates": "Explorar plantillas de ejemplo",

@@ -808,9 +808,11 @@
     "Restart": "重新啟動",
     "Save": "儲存",
     "Save As": "另存新檔",
+    "Show Keybindings Dialog": "顯示快捷鍵對話框",
     "Show Settings Dialog": "顯示設定對話框",
     "Sign Out": "登出",
     "Toggle Bottom Panel": "切換下方面板",
+    "Toggle Essential Bottom Panel": "切換基本下方面板",
     "Toggle Focus Mode": "切換專注模式",
     "Toggle Logs Bottom Panel": "切換日誌下方面板",
     "Toggle Model Library Sidebar": "切換模型庫側邊欄",
@@ -819,6 +821,7 @@
     "Toggle Search Box": "切換搜尋框",
     "Toggle Terminal Bottom Panel": "切換終端機底部面板",
     "Toggle Theme (Dark/Light)": "切換主題（深色/淺色）",
+    "Toggle View Controls Bottom Panel": "切換檢視控制下方面板",
     "Toggle Workflows Sidebar": "切換工作流程側邊欄",
     "Toggle the Custom Nodes Manager": "切換自訂節點管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切換自訂節點管理器進度條",
@@ -1144,6 +1147,20 @@
     "Validation": "驗證",
     "Window": "視窗",
     "Workflow": "工作流程"
+  },
+  "shortcuts": {
+    "essentials": "基本",
+    "keyboardShortcuts": "鍵盤快捷鍵",
+    "manageShortcuts": "管理快捷鍵",
+    "noKeybinding": "無快捷鍵",
+    "subcategories": {
+      "node": "節點",
+      "panelControls": "面板控制",
+      "queue": "佇列",
+      "view": "檢視",
+      "workflow": "工作流程"
+    },
+    "viewControls": "檢視控制"
   },
   "sideToolbar": {
     "browseTemplates": "瀏覽範例模板",
