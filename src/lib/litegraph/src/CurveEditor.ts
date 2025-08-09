@@ -1,5 +1,7 @@
+import { clamp } from 'lodash'
+
 import type { Point, Rect } from './interfaces'
-import { LGraphCanvas, clamp } from './litegraph'
+import { LGraphCanvas } from './litegraph'
 import { distance } from './measure'
 
 // used by some widgets to render a curve editor
