@@ -1,5 +1,9 @@
 import type { PrimitiveNode } from '@/extensions/core/widgetInputs'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  type INodeSlot,
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { Subgraph } from '@/lib/litegraph/src/litegraph'
 
 export function isPrimitiveNode(
@@ -38,4 +42,38 @@ export const isSubgraphIoNode = (
 } => {
   const nodeClass = node.constructor?.comfyClass
   return nodeClass === 'SubgraphInputNode' || nodeClass === 'SubgraphOutputNode'
+}
+
+/**
+ * Type guard for slot objects (inputs/outputs)
+ */
+export const isSlotObject = (obj: unknown): obj is INodeSlot => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'name' in obj &&
+    'type' in obj &&
+    'boundingRect' in obj
+  )
+}
+
+/**
+ * Type guard for safe number conversion
+ */
+export const isValidNumber = (value: unknown): value is number => {
+  return typeof value === 'number' && !isNaN(value) && isFinite(value)
+}
+
+/**
+ * Type guard for safe string conversion
+ */
+export const isValidString = (value: unknown): value is string => {
+  return typeof value === 'string'
+}
+
+/**
+ * Type guard for arrays with safe bounds checking
+ */
+export const isNonEmptyArray = <T>(value: unknown): value is T[] => {
+  return Array.isArray(value) && value.length > 0
 }
