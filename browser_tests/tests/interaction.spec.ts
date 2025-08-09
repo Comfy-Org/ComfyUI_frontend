@@ -684,7 +684,7 @@ test.describe('Load workflow', () => {
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.menu.topbar.saveWorkflow(workflowB)
 
       // Wait for localStorage to persist the workflow paths before reloading

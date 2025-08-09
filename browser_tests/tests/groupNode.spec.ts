@@ -280,7 +280,7 @@ test.describe('Group Node', () => {
     test('Copies and pastes group node into a newly created blank workflow', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.ctrlV()
       await verifyNodeLoaded(comfyPage, 1)
     })
@@ -296,7 +296,7 @@ test.describe('Group Node', () => {
     test('Serializes group node after copy and paste across workflows', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.ctrlV()
       const currentGraphState = await comfyPage.page.evaluate(() =>
         window['app'].graph.serialize()

@@ -50,7 +50,7 @@ export class Topbar {
     workflowName: string,
     command: 'Save' | 'Save As' | 'Export'
   ) {
-    await this.triggerTopbarCommand(['Workflow', command])
+    await this.triggerTopbarCommand(['File', command])
     await this.getSaveDialog().fill(workflowName)
     await this.page.keyboard.press('Enter')
 
