@@ -184,6 +184,6 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    exclude: ['@comfyorg/litegraph', '@comfyorg/comfyui-electron-types']
+    exclude: ['@comfyorg/comfyui-electron-types']
   }
 }) satisfies UserConfig as UserConfig

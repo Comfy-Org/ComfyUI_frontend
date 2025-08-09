@@ -70,15 +70,14 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       </div>
     </div>
     <div
-      v-if="nodeDef.description"
+      v-if="renderedDescription"
       class="_sb_description"
       :style="{
         color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
         backgroundColor: litegraphColors.WIDGET_BGCOLOR
       }"
-    >
-      {{ nodeDef.description }}
-    </div>
+      v-html="renderedDescription"
+    />
   </div>
 </template>
 
@@ -89,8 +88,9 @@ import { computed } from 'vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-const props = defineProps<{
+const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefV2
 }>()
 
@@ -101,7 +101,12 @@ const litegraphColors = computed(
 
 const widgetStore = useWidgetStore()
 
-const nodeDef = props.nodeDef
+const { description } = nodeDef
+const renderedDescription = computed(() => {
+  if (!description) return ''
+  return renderMarkdownToHtml(description)
+})
+
 const allInputDefs = Object.values(nodeDef.inputs)
 const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(

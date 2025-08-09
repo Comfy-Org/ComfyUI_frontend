@@ -1,6 +1,5 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   type InputSpec,

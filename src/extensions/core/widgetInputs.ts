@@ -1,18 +1,17 @@
-import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import {
+  type CallbackParams,
+  useChainCallback
+} from '@/composables/functional/useChainCallback'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISlotType,
   LLink,
   Vector2
-} from '@comfyorg/litegraph'
-import type { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
-import {
-  type CallbackParams,
-  useChainCallback
-} from '@/composables/functional/useChainCallback'
+} from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
