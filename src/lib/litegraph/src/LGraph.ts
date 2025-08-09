@@ -1768,11 +1768,14 @@ export class LGraph
         newLink[3]
       )
     }
+    const nodes: LGraphNode[] = []
     for (const nodeId of nodeIdMap.values()) {
       const node = this._nodes_by_id[nodeId]
+      nodes.push(node)
       node._setConcreteSlots()
       node.arrange()
     }
+    this.canvasAction((c) => c.selectItems(nodes))
   }
 
   /**
