@@ -805,6 +805,14 @@ export const useLitegraphService = () => {
           })
         }
       }
+      if (this instanceof SubgraphNode) {
+        options.unshift({
+          content: 'Unpack Subgraph',
+          callback: () => {
+            this.graph.unpackSubgraph(this)
+          }
+        })
+      }
 
       return []
     }
