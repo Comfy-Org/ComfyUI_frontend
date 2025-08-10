@@ -17,78 +17,38 @@
     <div class="w-72 flex flex-col">
       <div class="flex-1 overflow-y-auto p-4">
         <div class="space-y-2">
-          <Panel v-model:collapsed="panelStates.scene" toggleable>
-            <template #header>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-image" />
-                <span>{{ t('load3d.viewer.sceneSettings') }}</span>
-              </div>
-            </template>
-            <div class="p-4 space-y-4">
-              <SceneControls
-                v-model:background-color="viewer.backgroundColor.value"
-                v-model:show-grid="viewer.showGrid.value"
-                :has-background-image="viewer.hasBackgroundImage.value"
-                @update-background-image="viewer.handleBackgroundImageUpdate"
-              />
-            </div>
-          </Panel>
+          <div class="p-2 space-y-4">
+            <SceneControls
+              v-model:background-color="viewer.backgroundColor.value"
+              v-model:show-grid="viewer.showGrid.value"
+              :has-background-image="viewer.hasBackgroundImage.value"
+              @update-background-image="viewer.handleBackgroundImageUpdate"
+            />
+          </div>
 
-          <Panel v-model:collapsed="panelStates.model" toggleable>
-            <template #header>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-box" />
-                <span>{{ t('load3d.viewer.modelSettings') }}</span>
-              </div>
-            </template>
-            <div class="p-4 space-y-4">
-              <ModelControls
-                v-model:up-direction="viewer.upDirection.value"
-                v-model:material-mode="viewer.materialMode.value"
-              />
-            </div>
-          </Panel>
+          <div class="p-2 space-y-4">
+            <ModelControls
+              v-model:up-direction="viewer.upDirection.value"
+              v-model:material-mode="viewer.materialMode.value"
+            />
+          </div>
 
-          <Panel v-model:collapsed="panelStates.camera" toggleable>
-            <template #header>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-camera" />
-                <span>{{ t('load3d.viewer.cameraSettings') }}</span>
-              </div>
-            </template>
-            <div class="p-4 space-y-4">
-              <CameraControls
-                v-model:camera-type="viewer.cameraType.value"
-                v-model:fov="viewer.fov.value"
-              />
-            </div>
-          </Panel>
+          <div class="p-2 space-y-4">
+            <CameraControls
+              v-model:camera-type="viewer.cameraType.value"
+              v-model:fov="viewer.fov.value"
+            />
+          </div>
 
-          <Panel v-model:collapsed="panelStates.light" toggleable>
-            <template #header>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-sun" />
-                <span>{{ t('load3d.viewer.lightSettings') }}</span>
-              </div>
-            </template>
-            <div class="p-4 space-y-4">
-              <LightControls
-                v-model:light-intensity="viewer.lightIntensity.value"
-              />
-            </div>
-          </Panel>
+          <div class="p-2 space-y-4">
+            <LightControls
+              v-model:light-intensity="viewer.lightIntensity.value"
+            />
+          </div>
 
-          <Panel v-model:collapsed="panelStates.export" toggleable>
-            <template #header>
-              <div class="flex items-center gap-2">
-                <i class="pi pi-download" />
-                <span>{{ t('load3d.viewer.exportSettings') }}</span>
-              </div>
-            </template>
-            <div class="p-4 space-y-4">
-              <ExportControls @export-model="viewer.exportModel" />
-            </div>
-          </Panel>
+          <div class="p-2 space-y-4">
+            <ExportControls @export-model="viewer.exportModel" />
+          </div>
         </div>
       </div>
 
@@ -108,7 +68,6 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Panel from 'primevue/panel'
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/viewer/CameraControls.vue'
@@ -130,14 +89,6 @@ const containerRef = ref<HTMLDivElement>()
 const mainContentRef = ref<HTMLDivElement>()
 const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
-
-const panelStates = ref({
-  scene: false,
-  model: true,
-  camera: true,
-  light: true,
-  export: true
-})
 
 const viewer = useLoad3dService().getOrCreateViewer(toRaw(props.node))
 
