@@ -34,10 +34,20 @@ const config: KnipConfig = {
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration
   vue: true,
-  // Disable unused enum member checks and exported types
+  // Only check for unused files, disable all other rules
+  // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
   rules: {
+    binaries: 'off',
+    classMembers: 'off',
+    dependencies: 'off',
+    devDependencies: 'off',
+    duplicates: 'off',
     enumMembers: 'off',
-    types: 'off'
+    exports: 'off',
+    nsExports: 'off',
+    nsTypes: 'off',
+    types: 'off',
+    unlisted: 'off'
   },
   // Include dependencies analysis
   includeEntryExports: true,
