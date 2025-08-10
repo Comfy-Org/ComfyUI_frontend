@@ -1117,6 +1117,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "Visor 3D",
     "API Nodes": "Nodos API",
     "About": "Acerca de",
     "Appearance": "Apariencia",

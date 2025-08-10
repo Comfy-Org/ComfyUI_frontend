@@ -119,6 +119,10 @@
       "Straight": "直線"
     }
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "啟用 3D 檢視器（測試版）",
+    "tooltip": "為所選節點啟用 3D 檢視器（測試版）。此功能可讓您在全尺寸 3D 檢視器中直接瀏覽與互動 3D 模型。"
+  },
   "Comfy_Load3D_BackgroundColor": {
     "name": "初始背景顏色",
     "tooltip": "控制 3D 場景的預設背景顏色。此設定決定新建立 3D 元件時的背景外觀，但每個元件在建立後都可單獨調整。"

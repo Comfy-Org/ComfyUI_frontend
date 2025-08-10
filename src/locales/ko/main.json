@@ -1117,6 +1117,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3D뷰어",
     "API Nodes": "API 노드",
     "About": "정보",
     "Appearance": "모양",

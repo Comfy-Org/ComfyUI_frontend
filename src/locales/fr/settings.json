@@ -119,6 +119,10 @@
       "Straight": "Droit"
     }
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "Activer le visualiseur 3D (Bêta)",
+    "tooltip": "Active le visualiseur 3D (Bêta) pour les nœuds sélectionnés. Cette fonctionnalité vous permet de visualiser et d’interagir avec des modèles 3D directement dans le visualiseur 3D en taille réelle."
+  },
   "Comfy_Load3D_BackgroundColor": {
     "name": "Couleur de fond initiale",
     "tooltip": "Contrôle la couleur de fond par défaut de la scène 3D. Ce paramètre détermine l'apparence du fond lors de la création d'un nouveau widget 3D, mais peut être ajusté individuellement pour chaque widget après la création."

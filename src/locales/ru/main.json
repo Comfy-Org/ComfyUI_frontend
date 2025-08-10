@@ -1117,6 +1117,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3D-просмотрщик",
     "API Nodes": "API-узлы",
     "About": "О программе",
     "Appearance": "Внешний вид",

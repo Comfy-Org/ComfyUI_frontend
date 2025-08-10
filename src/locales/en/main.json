@@ -1080,7 +1080,8 @@
     "User": "User",
     "Credits": "Credits",
     "API Nodes": "API Nodes",
-    "Notification Preferences": "Notification Preferences"
+    "Notification Preferences": "Notification Preferences",
+    "3DViewer": "3DViewer"
   },
   "serverConfigItems": {
     "listen": {

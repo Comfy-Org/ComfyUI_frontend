@@ -1117,6 +1117,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3Dビューア",
     "API Nodes": "APIノード",
     "About": "情報",
     "Appearance": "外観",
