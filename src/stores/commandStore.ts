@@ -117,6 +117,13 @@ export const useCommandStore = defineStore('command', () => {
     }
   }
 
+  const formatKeySequence = (command: ComfyCommandImpl): string => {
+    const sequences = command.keybinding?.combo.getKeySequences() || []
+    return sequences
+      .map((seq) => seq.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Shift'))
+      .join(' + ')
+  }
+
   return {
     commands,
     execute,
@@ -124,6 +131,7 @@ export const useCommandStore = defineStore('command', () => {
     registerCommand,
     registerCommands,
     isRegistered,
-    loadExtensionCommands
+    loadExtensionCommands,
+    formatKeySequence
   }
 })
