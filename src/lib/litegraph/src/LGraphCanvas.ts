@@ -2299,6 +2299,8 @@ export class LGraphCanvas
 
       const node_data = node.clone()?.serialize()
       if (node_data?.type != null) {
+        // Ensure the cloned node is configured against the correct type (especially for SubgraphNodes)
+        node_data.type = newType
         const cloned = LiteGraph.createNode(newType)
         if (cloned) {
           cloned.configure(node_data)
