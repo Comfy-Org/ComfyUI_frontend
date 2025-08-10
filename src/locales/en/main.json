@@ -145,7 +145,8 @@
     "stopRecording": "Stop Recording",
     "micPermissionDenied": "Microphone permission denied",
     "noAudioRecorded": "No audio recorded",
-    "nodesRunning": "nodes running"
+    "nodesRunning": "nodes running",
+    "duplicate": "Duplicate"
   },
   "manager": {
     "title": "Custom Nodes Manager",
