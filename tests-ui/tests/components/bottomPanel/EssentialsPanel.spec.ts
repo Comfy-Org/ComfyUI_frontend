@@ -41,7 +41,9 @@ const mockCommands: ComfyCommandImpl[] = [
     icon: 'pi pi-test',
     tooltip: 'Test tooltip',
     menubarLabel: 'Other Command',
-    keybinding: null
+    keybinding: null,
+    getTranslatedLabel: () => 'Other Command',
+    getTranslatedMenubarLabel: () => 'Other Command'
   } as ComfyCommandImpl
 ]
 

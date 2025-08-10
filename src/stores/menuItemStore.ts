@@ -54,7 +54,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
         (command) =>
           ({
             command: () => commandStore.execute(command.id),
-            label: command.menubarLabel,
+            label: command.getTranslatedMenubarLabel(),
             icon: command.icon,
             tooltip: command.tooltip,
             comfyCommand: command

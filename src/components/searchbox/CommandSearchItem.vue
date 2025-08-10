@@ -24,7 +24,7 @@ const { command, currentQuery } = defineProps<{
 }>()
 
 const highlightedLabel = computed(() => {
-  const label = command.label || command.id
+  const label = command.getTranslatedLabel()
   if (!currentQuery) return label
 
   // Simple highlighting logic - case insensitive

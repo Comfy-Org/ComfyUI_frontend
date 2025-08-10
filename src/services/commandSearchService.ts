@@ -14,7 +14,11 @@ export class CommandSearchService {
     this.commands = commands
     this.fuse = new Fuse(commands, {
       keys: [
-        { name: 'label', weight: 2 },
+        {
+          name: 'translatedLabel',
+          weight: 2,
+          getFn: (command: ComfyCommandImpl) => command.getTranslatedLabel()
+        },
         { name: 'id', weight: 1 }
       ],
       includeScore: true,
@@ -28,7 +32,11 @@ export class CommandSearchService {
     this.commands = commands
     const options = {
       keys: [
-        { name: 'label', weight: 2 },
+        {
+          name: 'translatedLabel',
+          weight: 2,
+          getFn: (command: ComfyCommandImpl) => command.getTranslatedLabel()
+        },
         { name: 'id', weight: 1 }
       ],
       includeScore: true,
@@ -46,11 +54,11 @@ export class CommandSearchService {
     // Remove the leading ">" if present
     const searchQuery = query.startsWith('>') ? query.slice(1).trim() : query
 
-    // If empty query, return all commands sorted alphabetically by label
+    // If empty query, return all commands sorted alphabetically by translated label
     if (!searchQuery) {
       const sortedCommands = [...this.commands].sort((a, b) => {
-        const labelA = a.label || a.id
-        const labelB = b.label || b.id
+        const labelA = a.getTranslatedLabel()
+        const labelB = b.getTranslatedLabel()
         return labelA.localeCompare(labelB)
       })
       return options?.limit
