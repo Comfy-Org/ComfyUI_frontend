@@ -26,6 +26,7 @@
           @add-filter="addFilter"
           @remove-filter="removeFilter"
           @add-node="addNode"
+          @execute-command="executeCommand"
         />
       </template>
     </Dialog>
@@ -46,6 +47,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useLitegraphService } from '@/services/litegraphService'
+import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -62,6 +64,7 @@ let disconnectOnReset = false
 
 const settingStore = useSettingStore()
 const litegraphService = useLitegraphService()
+const commandStore = useCommandStore()
 
 const { visible } = storeToRefs(useSearchBoxStore())
 const dismissable = ref(true)
@@ -107,6 +110,14 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   // Notify changeTracker - new step should be added
   useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   window.requestAnimationFrame(closeDialog)
+}
+
+const executeCommand = async (command: ComfyCommandImpl) => {
+  // Close the dialog immediately
+  closeDialog()
+
+  // Execute the command
+  await commandStore.execute(command.id)
 }
 
 const newSearchBoxEnabled = computed(

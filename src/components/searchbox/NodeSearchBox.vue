@@ -3,7 +3,7 @@
     class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96"
   >
     <div
-      v-if="enableNodePreview"
+      v-if="enableNodePreview && !isCommandMode"
       class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
     >
       <NodePreview
@@ -14,6 +14,7 @@
     </div>
 
     <Button
+      v-if="!isCommandMode"
       icon="pi pi-filter"
       severity="secondary"
       class="filter-button z-10"
@@ -49,13 +50,22 @@
       auto-option-focus
       force-selection
       multiple
-      :option-label="'display_name'"
+      :option-label="getOptionLabel"
       @complete="search($event.query)"
-      @option-select="emit('addNode', $event.value)"
+      @option-select="onOptionSelect($event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
     >
       <template #option="{ option }">
-        <NodeSearchItem :node-def="option" :current-query="currentQuery" />
+        <CommandSearchItem
+          v-if="isCommandMode"
+          :command="option"
+          :current-query="currentQuery"
+        />
+        <NodeSearchItem
+          v-else
+          :node-def="option"
+          :current-query="currentQuery"
+        />
       </template>
       <!-- FilterAndValue -->
       <template #chip="{ value }">
@@ -80,13 +90,16 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodePreview from '@/components/node/NodePreview.vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
+import CommandSearchItem from '@/components/searchbox/CommandSearchItem.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
+import { CommandSearchService } from '@/services/commandSearchService'
+import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import {
   ComfyNodeDefImpl,
   useNodeDefStore,
@@ -99,6 +112,7 @@ import SearchFilterChip from '../common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
+const commandStore = useCommandStore()
 
 const enableNodePreview = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
@@ -111,18 +125,50 @@ const { filters, searchLimit = 64 } = defineProps<{
 
 const nodeSearchFilterVisible = ref(false)
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
-const suggestions = ref<ComfyNodeDefImpl[]>([])
+const suggestions = ref<ComfyNodeDefImpl[] | ComfyCommandImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
+const isCommandMode = ref(false)
+
+// Initialize command search service
+const commandSearchService = ref<CommandSearchService | null>(null)
+
 const placeholder = computed(() => {
+  if (isCommandMode.value) {
+    return t('g.searchCommands', 'Search commands') + '...'
+  }
   return filters.length === 0 ? t('g.searchNodes') + '...' : ''
 })
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
+
+// Initialize command search service with commands
+watch(
+  () => commandStore.commands,
+  (commands) => {
+    commandSearchService.value = new CommandSearchService(commands)
+  },
+  { immediate: true }
+)
+
 const search = (query: string) => {
-  const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
+
+  // Check if we're in command mode (query starts with ">")
+  if (query.startsWith('>')) {
+    isCommandMode.value = true
+    if (commandSearchService.value) {
+      suggestions.value = commandSearchService.value.searchCommands(query, {
+        limit: searchLimit
+      })
+    }
+    return
+  }
+
+  // Normal node search mode
+  isCommandMode.value = false
+  const queryIsEmpty = query === '' && filters.length === 0
   suggestions.value = queryIsEmpty
     ? nodeFrequencyStore.topNodeDefs
     : [
@@ -132,7 +178,18 @@ const search = (query: string) => {
       ]
 }
 
-const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
+const emit = defineEmits<{
+  (
+    e: 'addFilter',
+    filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
+  ): void
+  (
+    e: 'removeFilter',
+    filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
+  ): void
+  (e: 'addNode', nodeDef: ComfyNodeDefImpl): void
+  (e: 'executeCommand', command: ComfyCommandImpl): void
+}>()
 
 let inputElement: HTMLInputElement | null = null
 const reFocusInput = async () => {
@@ -160,11 +217,28 @@ const onRemoveFilter = async (
   await reFocusInput()
 }
 const setHoverSuggestion = (index: number) => {
-  if (index === -1) {
+  if (index === -1 || isCommandMode.value) {
     hoveredSuggestion.value = null
     return
   }
-  const value = suggestions.value[index]
+  const value = suggestions.value[index] as ComfyNodeDefImpl
   hoveredSuggestion.value = value
+}
+
+const onOptionSelect = (option: ComfyNodeDefImpl | ComfyCommandImpl) => {
+  if (isCommandMode.value) {
+    emit('executeCommand', option as ComfyCommandImpl)
+  } else {
+    emit('addNode', option as ComfyNodeDefImpl)
+  }
+}
+
+const getOptionLabel = (
+  option: ComfyNodeDefImpl | ComfyCommandImpl
+): string => {
+  if ('display_name' in option) {
+    return option.display_name
+  }
+  return option.label || option.id
 }
 </script>
