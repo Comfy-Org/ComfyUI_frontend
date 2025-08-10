@@ -118,18 +118,15 @@ test.describe('Command search box', () => {
     expect(nodesAfter).toBe(0)
   })
 
-  test.skip('Returns to node search when removing ">"', async ({
-    comfyPage
-  }) => {
+  test('Returns to node search when removing ">"', async ({ comfyPage }) => {
     await comfyPage.doubleClickCanvas()
 
     // Enter command mode
     await comfyPage.searchBox.input.fill('>')
     await expect(comfyPage.page.locator('.filter-button')).not.toBeVisible()
 
-    // Return to node search by clearing input and triggering search
-    await comfyPage.searchBox.input.clear()
-    await comfyPage.searchBox.input.press('Backspace') // Trigger search event
+    // Return to node search by filling with empty string to trigger search
+    await comfyPage.searchBox.input.fill('')
 
     // Small wait for UI update
     await comfyPage.page.waitForTimeout(200)

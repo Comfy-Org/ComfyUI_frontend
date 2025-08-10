@@ -54,6 +54,7 @@
       @complete="search($event.query)"
       @option-select="onOptionSelect($event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
+      @input="handleInput"
     >
       <template #option="{ option }">
         <CommandSearchItem
@@ -240,5 +241,20 @@ const getOptionLabel = (
     return option.display_name
   }
   return option.label || option.id
+}
+
+/**
+ * Handles direct input changes on the AutoCompletePlus component.
+ * This ensures search mode switching works properly when users clear the input
+ * or modify it directly, as the @complete event may not always trigger.
+ *
+ * @param event - The input event from the AutoCompletePlus component
+ */
+const handleInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const inputValue = target.value
+
+  // Trigger search to handle mode switching between node and command search
+  search(inputValue)
 }
 </script>
