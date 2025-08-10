@@ -1,6 +1,6 @@
 <template>
   <div
-    class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-100 dark-theme:bg-neutral-900"
+    class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-100 dark-theme:bg-zinc-800"
   >
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
@@ -33,19 +33,19 @@
       </Transition>
 
       <div class="flex-1 flex bg-zinc-100 dark-theme:bg-neutral-900">
-        <div class="flex-1 flex flex-col">
+        <div class="w-full h-full flex flex-col">
           <header
             v-if="$slots.header"
             class="w-full h-16 px-6 py-4 flex justify-between gap-2"
           >
-            <div>
+            <div class="flex-1 flex gap-2 flex-shrink-0">
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">
                 <i-lucide:panel-left v-if="!showLeftPanel" class="text-sm" />
                 <i-lucide:panel-left-close v-else class="text-sm" />
               </IconButton>
               <slot name="header"></slot>
             </div>
-            <div class="flex gap-2">
+            <div class="flex justify-end gap-2 min-w-20">
               <slot name="header-right-area"></slot>
               <IconButton
                 v-if="isRightPanelOpen && hasRightPanel"
@@ -99,14 +99,16 @@ const mobileMenuOpen = ref<boolean>(false)
 const hasRightPanel = computed(() => !!slots.rightPanel)
 
 watch(notMobile, (isDesktop) => {
-  if (!isDesktop) mobileMenuOpen.value = false
+  if (!isDesktop) {
+    mobileMenuOpen.value = false
+  }
 })
 
 const showLeftPanel = computed(() => {
-  if (notMobile.value) {
-    return isLeftPanelOpen.value
-  }
-  return mobileMenuOpen.value
+  const shouldShow = notMobile.value
+    ? isLeftPanelOpen.value
+    : mobileMenuOpen.value
+  return shouldShow
 })
 
 const toggleLeftPanel = () => {
