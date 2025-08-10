@@ -8242,13 +8242,15 @@ export class LGraphCanvas
               'Both in put and output slots were null when processing context menu.'
             )
 
+          if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
+            menu_info.push({ content: 'Rename Slot', slot })
+          }
+
           if (_slot.removable) {
+            menu_info.push(null)
             menu_info.push(
               _slot.locked ? 'Cannot remove' : { content: 'Remove Slot', slot }
             )
-          }
-          if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
-            menu_info.push({ content: 'Rename Slot', slot })
           }
 
           if (node.getExtraSlotMenuOptions) {
