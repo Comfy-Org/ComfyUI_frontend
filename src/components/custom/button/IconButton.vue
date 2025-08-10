@@ -1,6 +1,7 @@
 <template>
   <button
     class="flex justify-center items-center outline-none border-none p-0 bg-white text-neutral-950 dark-theme:bg-neutral-700 dark-theme:text-white w-8 h-8 rounded-lg cursor-pointer"
+    role="button"
     @click="onClick"
   >
     <slot></slot>
