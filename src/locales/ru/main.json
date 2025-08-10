@@ -1152,7 +1152,7 @@
     "essentials": "Основные",
     "keyboardShortcuts": "Горячие клавиши",
     "manageShortcuts": "Управление горячими клавишами",
-    "noKeybinding": "Нет привязки клавиши",
+    "noKeybinding": "Нет сочетания клавиш",
     "subcategories": {
       "node": "Узел",
       "panelControls": "Управление панелью",

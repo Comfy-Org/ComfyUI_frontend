@@ -808,7 +808,7 @@
     "Restart": "재시작",
     "Save": "저장",
     "Save As": "다른 이름으로 저장",
-    "Show Keybindings Dialog": "단축키 대화상자 표시",
+    "Show Keybindings Dialog": "키 바인딩 대화상자 표시",
     "Show Settings Dialog": "설정 대화상자 표시",
     "Sign Out": "로그아웃",
     "Toggle Bottom Panel": "하단 패널 전환",
@@ -1149,7 +1149,7 @@
     "Workflow": "워크플로"
   },
   "shortcuts": {
-    "essentials": "기본",
+    "essentials": "필수",
     "keyboardShortcuts": "키보드 단축키",
     "manageShortcuts": "단축키 관리",
     "noKeybinding": "단축키 없음",
