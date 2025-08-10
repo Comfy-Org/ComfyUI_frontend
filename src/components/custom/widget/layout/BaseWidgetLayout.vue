@@ -59,7 +59,6 @@
             <slot name="content"></slot>
           </main>
         </div>
-
         <!-- <aside v-if="$slots.rightPanel">
           <slot name="rightPanel"></slot>
         </aside> -->
