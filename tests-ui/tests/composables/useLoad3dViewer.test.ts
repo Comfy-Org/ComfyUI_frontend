@@ -151,7 +151,11 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d)
 
-      expect(Load3d).toHaveBeenCalledWith(containerRef, { node: mockNode })
+      expect(Load3d).toHaveBeenCalledWith(containerRef, {
+        disablePreview: true,
+        isViewerMode: true,
+        node: mockNode
+      })
 
       expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
         mockSourceLoad3d,
