@@ -41,7 +41,6 @@
     "@pinia/testing": "^0.1.5",
     "@playwright/test": "^1.52.0",
     "@storybook/addon-docs": "^9.1.1",
-    "@storybook/addon-onboarding": "^9.1.1",
     "@storybook/vue3-vite": "^9.1.1",
     "@trivago/prettier-plugin-sort-imports": "^5.2.0",
     "@types/dompurify": "^3.0.5",
