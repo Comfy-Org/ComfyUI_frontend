@@ -5,9 +5,35 @@ import * as vuefire from 'vuefire'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
+// Track Firebase network requests without MSW for now
+const firebaseNetworkRequests: string[] = []
+
 // Mock fetch
 const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
+
+// Create a tracking wrapper for fetch
+const createTrackingFetch = (originalMock: typeof mockFetch) => {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input.toString()
+    
+    // Track Firebase-related requests
+    const firebaseDomains = [
+      'googleapis.com',
+      'firebaseapp.com', 
+      'firebaseio.com',
+      'identitytoolkit.googleapis.com',
+      'securetoken.googleapis.com'
+    ]
+    
+    if (firebaseDomains.some(domain => url.includes(domain))) {
+      firebaseNetworkRequests.push(url)
+    }
+    
+    return originalMock(input, init)
+  })
+}
+
+vi.stubGlobal('fetch', createTrackingFetch(mockFetch))
 
 // Mock successful API responses
 const mockCreateCustomerResponse = {
@@ -92,6 +118,9 @@ describe('useFirebaseAuthStore', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+    
+    // Clear network request tracking
+    firebaseNetworkRequests.length = 0
 
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
@@ -108,17 +137,19 @@ describe('useFirebaseAuthStore', () => {
     )
 
     // Mock fetch responses
-    mockFetch.mockImplementation((url: string) => {
-      if (url.endsWith('/customers')) {
+    mockFetch.mockImplementation((url: string | URL | Request) => {
+      const urlString = typeof url === 'string' ? url : url.toString()
+      
+      if (urlString.endsWith('/customers')) {
         return Promise.resolve(mockCreateCustomerResponse)
       }
-      if (url.endsWith('/customers/balance')) {
+      if (urlString.endsWith('/customers/balance')) {
         return Promise.resolve(mockFetchBalanceResponse)
       }
-      if (url.endsWith('/customers/credit')) {
+      if (urlString.endsWith('/customers/credit')) {
         return Promise.resolve(mockAddCreditsResponse)
       }
-      if (url.endsWith('/customers/billing-portal')) {
+      if (urlString.endsWith('/customers/billing')) {
         return Promise.resolve(mockAccessBillingPortalResponse)
       }
       return Promise.reject(new Error('Unexpected API call'))
@@ -412,6 +443,79 @@ describe('useFirebaseAuthStore', () => {
       await Promise.all([googleLoginPromise, githubLoginPromise])
 
       expect(store.loading).toBe(false)
+    })
+  })
+
+  describe('offline network request issues', () => {
+    it('should not make network requests during store initialization when offline', () => {
+      // Reset network request tracking
+      firebaseNetworkRequests.length = 0
+      
+      // Initialize Pinia and store - this should not trigger network requests
+      setActivePinia(createPinia())
+      const offlineStore = useFirebaseAuthStore()
+
+      // Verify no Firebase network requests were made during initialization
+      expect(firebaseNetworkRequests).toEqual([])
+    })
+
+    it('should handle getIdToken gracefully when network is unavailable', async () => {
+      // Set up a user with an expired token that would normally trigger a refresh
+      const expiredTokenUser = {
+        ...mockUser,
+        getIdToken: vi.fn().mockRejectedValue(
+          new Error('Firebase: Error (auth/network-request-failed)')
+        )
+      }
+
+      // Simulate user being set but network being unavailable
+      authStateCallback(expiredTokenUser)
+
+      const token = await store.getIdToken()
+      
+      // Should return null instead of throwing error
+      expect(token).toBeNull()
+      expect(expiredTokenUser.getIdToken).toHaveBeenCalled()
+    })
+
+    it('should not throw errors when getIdToken fails due to network issues', async () => {
+      const networkFailureUser = {
+        ...mockUser,
+        getIdToken: vi.fn().mockRejectedValue({
+          code: 'auth/network-request-failed',
+          message: 'A network error has occurred.'
+        })
+      }
+
+      authStateCallback(networkFailureUser)
+
+      // Should not throw, should return null
+      await expect(store.getIdToken()).resolves.toBeNull()
+    })
+
+    it('should handle multiple consecutive getIdToken calls without accumulating requests', async () => {
+      const failingUser = {
+        ...mockUser,
+        getIdToken: vi.fn().mockRejectedValue({
+          code: 'auth/network-request-failed',
+          message: 'A network error has occurred.'
+        })
+      }
+
+      authStateCallback(failingUser)
+
+      // Make multiple calls
+      const results = await Promise.all([
+        store.getIdToken(),
+        store.getIdToken(),  
+        store.getIdToken()
+      ])
+
+      // All should return null
+      expect(results).toEqual([null, null, null])
+      
+      // Should only have made the actual attempts, not accumulate
+      expect(failingUser.getIdToken).toHaveBeenCalledTimes(3)
     })
   })
 })
