@@ -1,6 +1,6 @@
 <template>
   <div
-    class="base-widget-layout rounded-2xl overflow-hidden relative bg-neutral-50 dark-theme:bg-neutral-900"
+    class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-100 dark-theme:bg-neutral-900"
   >
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
@@ -32,7 +32,7 @@
         </nav>
       </Transition>
 
-      <div class="flex-1 flex bg-neutral-50 dark-theme:bg-neutral-900">
+      <div class="flex-1 flex bg-zinc-100 dark-theme:bg-neutral-900">
         <div class="flex-1 flex flex-col">
           <header
             v-if="$slots.header"
