@@ -23,6 +23,7 @@ export const useModelSelectorDialog = () => {
   }
 
   return {
-    show
+    show,
+    hide
   }
 }
