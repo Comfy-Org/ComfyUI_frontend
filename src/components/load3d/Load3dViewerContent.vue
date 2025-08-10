@@ -107,7 +107,6 @@
 </template>
 
 <script setup lang="ts">
-import { LGraphNode } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import Panel from 'primevue/panel'
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
@@ -118,6 +117,7 @@ import LightControls from '@/components/load3d/controls/viewer/LightControls.vue
 import ModelControls from '@/components/load3d/controls/viewer/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/SceneControls.vue'
 import { t } from '@/i18n'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
