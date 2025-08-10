@@ -6,6 +6,8 @@
         ? 'bg-neutral-100 dark-theme:bg-neutral-600 text-neutral'
         : 'text-neutral hover:bg-neutral-50 hover:dark-theme:bg-neutral-700'
     "
+    role="button"
+    @click="onClick"
   >
     <i-lucide:folder class="text-xs text-neutral" />
     <span>
@@ -15,7 +17,8 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const { active, onClick } = defineProps<{
   active?: boolean
+  onClick: () => void
 }>()
 </script>

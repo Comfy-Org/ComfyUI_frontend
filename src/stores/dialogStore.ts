@@ -29,7 +29,7 @@ interface CustomDialogComponentProps {
   closeOnEscape?: boolean
   dismissableMask?: boolean
   unstyled?: boolean
-  headless?: true
+  headless?: boolean
 }
 
 export type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
