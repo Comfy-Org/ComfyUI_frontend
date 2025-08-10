@@ -35,6 +35,7 @@ const config: KnipConfig = {
     // Test setup files
     'browser_tests/globalSetup.ts',
     'browser_tests/globalTeardown.ts',
+    'browser_tests/utils/**',
     // Scripts
     'scripts/**',
     // Vite config files
