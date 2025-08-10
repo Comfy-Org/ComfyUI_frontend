@@ -249,12 +249,16 @@ const getOptionLabel = (
  * or modify it directly, as the @complete event may not always trigger.
  *
  * @param event - The input event from the AutoCompletePlus component
+ * @note Known issue on empty input complete state:
+ * https://github.com/Comfy-Org/ComfyUI_frontend/issues/4887
  */
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const inputValue = target.value
 
   // Trigger search to handle mode switching between node and command search
-  search(inputValue)
+  if (inputValue === '') {
+    search('')
+  }
 }
 </script>
