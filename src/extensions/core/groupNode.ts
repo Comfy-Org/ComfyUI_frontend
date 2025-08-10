@@ -1173,13 +1173,11 @@ export class GroupNodeHandler {
       getExtraMenuOptions?.apply(this, arguments)
 
       // @ts-expect-error fixme ts strict error
-      let optionIndex = options.findIndex((o) => o.content === 'Outputs')
+      let optionIndex = options.findIndex((o) => o.content === 'Properties')
       if (optionIndex === -1) optionIndex = options.length
-      else optionIndex++
       options.splice(
         optionIndex,
         0,
-        null,
         {
           content: 'Convert to nodes',
           // @ts-expect-error
@@ -1191,7 +1189,8 @@ export class GroupNodeHandler {
         {
           content: 'Manage Group Node',
           callback: () => manageGroupNodes(this.type)
-        }
+        },
+        null
       )
     }
 
