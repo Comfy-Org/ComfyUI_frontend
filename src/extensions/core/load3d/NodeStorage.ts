@@ -1,4 +1,4 @@
-import { LGraphNode } from '@comfyorg/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { NodeStorageInterface } from './interfaces'
 

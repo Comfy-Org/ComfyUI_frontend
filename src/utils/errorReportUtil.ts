@@ -1,5 +1,4 @@
-import type { ISerialisedGraph } from '@comfyorg/litegraph'
-
+import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import type { SystemStats } from '@/schemas/apiSchema'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 

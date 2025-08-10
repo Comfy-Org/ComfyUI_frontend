@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { ref } from 'vue'
 
 import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   ComponentWidgetImpl,

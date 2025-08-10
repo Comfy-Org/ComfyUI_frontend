@@ -1,8 +1,8 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { ref } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   ComboInputSpec,

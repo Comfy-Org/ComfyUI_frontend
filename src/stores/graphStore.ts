@@ -1,8 +1,12 @@
-import type { LGraphCanvas, LGraphGroup, LGraphNode } from '@comfyorg/litegraph'
-import type { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef } from 'vue'
 
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type {
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {

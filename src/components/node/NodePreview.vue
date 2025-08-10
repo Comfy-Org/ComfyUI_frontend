@@ -6,13 +6,14 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
   <div class="_sb_node_preview">
     <div class="_sb_table">
       <div
-        class="node_header"
+        class="node_header overflow-ellipsis mr-4"
+        :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
           color: litegraphColors.NODE_TITLE_COLOR
         }"
       >
-        <div class="_sb_dot headdot" />
+        <div class="_sb_dot headdot pr-3" />
         {{ nodeDef.display_name }}
       </div>
       <div class="_sb_preview_badge">{{ $t('g.preview') }}</div>
@@ -69,15 +70,14 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       </div>
     </div>
     <div
-      v-if="nodeDef.description"
+      v-if="renderedDescription"
       class="_sb_description"
       :style="{
         color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
         backgroundColor: litegraphColors.WIDGET_BGCOLOR
       }"
-    >
-      {{ nodeDef.description }}
-    </div>
+      v-html="renderedDescription"
+    />
   </div>
 </template>
 
@@ -88,8 +88,9 @@ import { computed } from 'vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-const props = defineProps<{
+const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefV2
 }>()
 
@@ -100,7 +101,12 @@ const litegraphColors = computed(
 
 const widgetStore = useWidgetStore()
 
-const nodeDef = props.nodeDef
+const { description } = nodeDef
+const renderedDescription = computed(() => {
+  if (!description) return ''
+  return renderMarkdownToHtml(description)
+})
+
 const allInputDefs = Object.values(nodeDef.inputs)
 const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(

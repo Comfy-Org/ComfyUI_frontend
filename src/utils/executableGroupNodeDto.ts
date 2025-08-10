@@ -4,7 +4,7 @@ import {
   type ISlotType,
   LGraphEventMode,
   type LGraphNode
-} from '@comfyorg/litegraph'
+} from '@/lib/litegraph/src/litegraph'
 
 export const GROUP = Symbol()
 

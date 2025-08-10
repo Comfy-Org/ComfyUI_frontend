@@ -19,11 +19,11 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'

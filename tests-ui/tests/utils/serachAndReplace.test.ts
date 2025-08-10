@@ -1,7 +1,7 @@
-import { LGraph } from '@comfyorg/litegraph'
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { describe, expect, it } from 'vitest'
 
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 describe('applyTextReplacements', () => {

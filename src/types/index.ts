@@ -1,5 +1,4 @@
-import type { LGraph } from '@comfyorg/litegraph'
-
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DeviceStats,
   EmbeddingsResponse,
@@ -41,6 +40,7 @@ export type {
   parseNodeExecutionId,
   createNodeExecutionId
 } from './nodeIdentification'
+export type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 export type {
   EmbeddingsResponse,
   ExtensionsResponse,

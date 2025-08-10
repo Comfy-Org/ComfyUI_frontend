@@ -49,7 +49,6 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener, whenever } from '@vueuse/core'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
@@ -78,6 +77,7 @@ import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'

@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import axios from 'axios'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,

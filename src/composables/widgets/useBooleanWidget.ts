@@ -1,5 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   type InputSpec,
   isBooleanInputSpec

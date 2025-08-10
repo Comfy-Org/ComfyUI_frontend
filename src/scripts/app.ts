@@ -1,12 +1,3 @@
-import {
-  LGraph,
-  LGraphCanvas,
-  LGraphEventMode,
-  LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
-import type { Vector2 } from '@comfyorg/litegraph'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
@@ -14,6 +5,15 @@ import { reactive } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -23,7 +23,8 @@ import {
   ComfyApiWorkflow,
   type ComfyWorkflowJSON,
   type ModelFile,
-  type NodeId
+  type NodeId,
+  isSubgraphDefinition
 } from '@/schemas/comfyWorkflowSchema'
 import {
   type ComfyNodeDef as ComfyNodeDefV1,
@@ -59,6 +60,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { ExtensionManager } from '@/types/extensionTypes'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import {
@@ -127,7 +129,7 @@ export class ComfyApp {
   #queueItems: {
     number: number
     batchCount: number
-    queueNodeIds?: NodeId[]
+    queueNodeIds?: NodeExecutionId[]
   }[] = []
   /**
    * If the queue is currently being processed
@@ -725,7 +727,12 @@ export class ComfyApp {
       revokePreviewsByExecutionId(displayNodeId)
       const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
-      setNodePreviewsByExecutionId(displayNodeId, [blobUrl])
+      const nodeParents = displayNodeId.split(':')
+      for (let i = 1; i <= nodeParents.length; i++) {
+        setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
+          blobUrl
+        ])
+      }
     })
 
     api.init()
@@ -1091,23 +1098,51 @@ export class ComfyApp {
 
     const embeddedModels: ModelFile[] = []
 
-    for (let n of graphData.nodes) {
-      // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
-      if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
-      if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
-      if (n.type == 'SDV_img2vid_Conditioning')
-        n.type = 'SVD_img2vid_Conditioning' //typo fix
+    const collectMissingNodesAndModels = (
+      nodes: ComfyWorkflowJSON['nodes'],
+      path: string = ''
+    ) => {
+      for (let n of nodes) {
+        // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
+        if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
+        if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
+        if (n.type == 'SDV_img2vid_Conditioning')
+          n.type = 'SVD_img2vid_Conditioning' //typo fix
 
-      // Find missing node types
-      if (!(n.type in LiteGraph.registered_node_types)) {
-        missingNodeTypes.push(n.type)
-        n.type = sanitizeNodeName(n.type)
+        // Find missing node types
+        if (!(n.type in LiteGraph.registered_node_types)) {
+          // Include context about subgraph location if applicable
+          if (path) {
+            missingNodeTypes.push({
+              type: n.type,
+              hint: `in subgraph '${path}'`
+            })
+          } else {
+            missingNodeTypes.push(n.type)
+          }
+          n.type = sanitizeNodeName(n.type)
+        }
+
+        // Collect models metadata from node
+        const selectedModels = getSelectedModelsMetadata(n)
+        if (selectedModels?.length) {
+          embeddedModels.push(...selectedModels)
+        }
       }
+    }
 
-      // Collect models metadata from node
-      const selectedModels = getSelectedModelsMetadata(n)
-      if (selectedModels?.length) {
-        embeddedModels.push(...selectedModels)
+    // Process nodes at the top level
+    collectMissingNodesAndModels(graphData.nodes)
+
+    // Process nodes in subgraphs
+    if (graphData.definitions?.subgraphs) {
+      for (const subgraph of graphData.definitions.subgraphs) {
+        if (isSubgraphDefinition(subgraph)) {
+          collectMissingNodesAndModels(
+            subgraph.nodes,
+            subgraph.name || subgraph.id
+          )
+        }
       }
     }
 
@@ -1239,20 +1274,16 @@ export class ComfyApp {
     })
   }
 
-  async graphToPrompt(
-    graph = this.graph,
-    options: { queueNodeIds?: NodeId[] } = {}
-  ) {
+  async graphToPrompt(graph = this.graph) {
     return graphToPrompt(graph, {
-      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave'),
-      queueNodeIds: options.queueNodeIds
+      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
     })
   }
 
   async queuePrompt(
     number: number,
     batchCount: number = 1,
-    queueNodeIds?: NodeId[]
+    queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
     this.#queueItems.push({ number, batchCount, queueNodeIds })
 
@@ -1281,11 +1312,13 @@ export class ComfyApp {
             executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
           }
 
-          const p = await this.graphToPrompt(this.graph, { queueNodeIds })
+          const p = await this.graphToPrompt(this.graph)
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
-            const res = await api.queuePrompt(number, p)
+            const res = await api.queuePrompt(number, p, {
+              partialExecutionTargets: queueNodeIds
+            })
             delete api.authToken
             delete api.apiKey
             executionStore.lastNodeErrors = res.node_errors ?? null

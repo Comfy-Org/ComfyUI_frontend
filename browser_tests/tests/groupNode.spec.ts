@@ -264,10 +264,15 @@ test.describe('Group Node', () => {
     test('Copies and pastes group node after clearing workflow', async ({
       comfyPage
     }) => {
+      // Set setting
+      await comfyPage.setSetting('Comfy.ConfirmClear', false)
+
+      // Clear workflow
       await comfyPage.menu.topbar.triggerTopbarCommand([
         'Edit',
         'Clear Workflow'
       ])
+
       await comfyPage.ctrlV()
       await verifyNodeLoaded(comfyPage, 1)
     })

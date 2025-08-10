@@ -1,10 +1,9 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { useValueTransform } from '@/composables/useValueTransform'
 import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'

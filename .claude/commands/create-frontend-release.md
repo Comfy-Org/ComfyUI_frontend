@@ -169,7 +169,33 @@ echo "Last stable release: $LAST_STABLE"
 3. Generate breaking change summary
 4. **COMPATIBILITY REVIEW**: Breaking changes documented and justified?
 
-### Step 7: Generate Comprehensive Release Notes
+### Step 7: Analyze Dependency Updates
+
+1. **Check significant dependency updates:**
+   ```bash
+   # Extract all dependency changes for major version bumps
+   OTHER_DEP_CHANGES=""
+   
+   # Compare major dependency versions (you can extend this list)
+   MAJOR_DEPS=("vue" "vite" "@vitejs/plugin-vue" "typescript" "pinia")
+   
+   for dep in "${MAJOR_DEPS[@]}"; do
+     PREV_VER=$(echo "$PREV_PACKAGE_JSON" | grep -o "\"$dep\": \"[^\"]*\"" | grep -o '[0-9][^"]*' | head -1 || echo "")
+     CURR_VER=$(echo "$CURRENT_PACKAGE_JSON" | grep -o "\"$dep\": \"[^\"]*\"" | grep -o '[0-9][^"]*' | head -1 || echo "")
+     
+     if [ "$PREV_VER" != "$CURR_VER" ] && [ -n "$PREV_VER" ] && [ -n "$CURR_VER" ]; then
+       # Check if it's a major version change
+       PREV_MAJOR=$(echo "$PREV_VER" | cut -d. -f1 | sed 's/[^0-9]//g')
+       CURR_MAJOR=$(echo "$CURR_VER" | cut -d. -f1 | sed 's/[^0-9]//g')
+       
+       if [ "$PREV_MAJOR" != "$CURR_MAJOR" ]; then
+         OTHER_DEP_CHANGES="${OTHER_DEP_CHANGES}\n- **${dep}**: ${PREV_VER} → ${CURR_VER} (Major version change)"
+       fi
+     fi
+   done
+   ```
+
+### Step 8: Generate Comprehensive Release Notes
 
 1. Extract commit messages since base release:
    ```bash
@@ -193,6 +219,12 @@ echo "Last stable release: $LAST_STABLE"
      - 📚 **Documentation** (docs:)
      - 🔧 **Maintenance** (chore:, refactor:)
      - ⬆️ **Dependencies** (deps:, dependency updates)
+       - **Litegraph Changes** (if version updated):
+         - 🚀 Features: ${LITEGRAPH_FEATURES}
+         - 🐛 Bug Fixes: ${LITEGRAPH_FIXES}
+         - 💥 Breaking Changes: ${LITEGRAPH_BREAKING}
+         - 🔧 Other Changes: ${LITEGRAPH_OTHER}
+       - **Other Major Dependencies**: ${OTHER_DEP_CHANGES}
    - Include PR numbers and links
    - Add issue references (Fixes #123)
 4. **Save release notes:**
@@ -200,9 +232,9 @@ echo "Last stable release: $LAST_STABLE"
    # Save release notes for PR and GitHub release
    echo "$RELEASE_NOTES" > release-notes-${NEW_VERSION}.md
    ```
-5. **CONTENT REVIEW**: Release notes clear and comprehensive?
+5. **CONTENT REVIEW**: Release notes clear and comprehensive with dependency details?
 
-### Step 8: Create Version Bump PR
+### Step 9: Create Version Bump PR
 
 **For standard version bumps (patch/minor/major):**
 ```bash
@@ -274,7 +306,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```
 5. **PR REVIEW**: Version bump PR created and enhanced correctly?
 
-### Step 9: Critical Release PR Verification
+### Step 10: Critical Release PR Verification
 
 1. **CRITICAL**: Verify PR has "Release" label:
    ```bash
@@ -296,7 +328,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```
 7. **FINAL CODE REVIEW**: Release label present and no [skip ci]?
 
-### Step 10: Pre-Merge Validation
+### Step 11: Pre-Merge Validation
 
 1. **Review Requirements**: Release PRs require approval
 2. Monitor CI checks - watch for update-locales
@@ -304,7 +336,7 @@ echo "Workflow triggered. Waiting for PR creation..."
 4. Check no new commits to main since PR creation
 5. **DEPLOYMENT READINESS**: Ready to merge?
 
-### Step 11: Execute Release
+### Step 12: Execute Release
 
 1. **FINAL CONFIRMATION**: Merge PR to trigger release?
 2. Merge the Release PR:
@@ -315,6 +347,14 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```bash
    sleep 10
    gh run list --workflow=release.yaml --limit=1
+   ```
+4. **For Minor/Major Version Releases**: The create-release-candidate-branch workflow will automatically:
+   - Create a `core/x.yy` branch for the PREVIOUS minor version
+   - Apply branch protection rules
+   - Document the feature freeze policy
+   ```bash
+   # Monitor branch creation (for minor/major releases)
+   gh run list --workflow=create-release-candidate-branch.yaml --limit=1
    ```
 4. If workflow didn't trigger due to [skip ci]:
    ```bash
@@ -329,7 +369,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    gh run watch ${WORKFLOW_RUN_ID}
    ```
 
-### Step 12: Enhance GitHub Release
+### Step 13: Enhance GitHub Release
 
 1. Wait for automatic release creation:
    ```bash
@@ -357,7 +397,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    gh release view v${NEW_VERSION}
    ```
 
-### Step 13: Verify Multi-Channel Distribution
+### Step 14: Verify Multi-Channel Distribution
 
 1. **GitHub Release:**
    ```bash
@@ -395,7 +435,7 @@ echo "Workflow triggered. Waiting for PR creation..."
 
 4. **DISTRIBUTION VERIFICATION**: All channels published successfully?
 
-### Step 14: Post-Release Monitoring Setup
+### Step 15: Post-Release Monitoring Setup
 
 1. **Monitor immediate release health:**
    ```bash
@@ -572,6 +612,15 @@ The command implements multiple quality gates:
 gh pr view ${PR_NUMBER} --json baseRefName
 ```
 
+### Issue: Incomplete Dependency Changelog
+**Problem**: Litegraph or other dependency updates only show version bump, not actual changes
+**Solution**: The command now automatically:
+- Detects litegraph version changes between releases
+- Clones the litegraph repository temporarily
+- Extracts and categorizes changes between versions
+- Includes detailed litegraph changelog in release notes
+- Cleans up temporary files after analysis
+
 ### Issue: Release Failed Due to [skip ci]
 **Problem**: Release workflow didn't trigger after merge
 **Prevention**: Always avoid this scenario
@@ -592,4 +641,6 @@ Benefits: Cleaner than creating extra version numbers
 2. **Workflow Speed**: Version bump workflow typically completes in ~20-30 seconds
 3. **Update-locales Behavior**: Inconsistent - sometimes adds [skip ci], sometimes doesn't
 4. **Recovery Options**: Reverting version is cleaner than creating extra versions
+5. **Dependency Tracking**: Command now automatically includes litegraph and major dependency changes in changelogs
+6. **Litegraph Integration**: Temporary cloning of litegraph repo provides detailed change analysis between versions
 

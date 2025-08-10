@@ -2,6 +2,10 @@
   <div class="relative">
     <Button
       v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
+      v-tooltip.top="{
+        value: localizedCurrentColorName ?? t('color.noColor'),
+        showDelay: 512
+      }"
       severity="secondary"
       text
       @click="() => (showColorPicker = !showColorPicker)"
@@ -40,13 +44,17 @@
 </template>
 
 <script setup lang="ts">
-import type { ColorOption as CanvasColorOption } from '@comfyorg/litegraph'
-import { LGraphCanvas, LiteGraph, isColorable } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { ColorOption as CanvasColorOption } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  isColorable
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -122,6 +130,16 @@ const currentColor = computed(() =>
       : currentColorOption.value?.bgcolor
     : null
 )
+
+const localizedCurrentColorName = computed(() => {
+  if (!currentColorOption.value?.bgcolor) return null
+  const colorOption = colorOptions.find(
+    (option) =>
+      option.value.dark === currentColorOption.value?.bgcolor ||
+      option.value.light === currentColorOption.value?.bgcolor
+  )
+  return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
+})
 
 watch(
   () => canvasStore.selectedItems,

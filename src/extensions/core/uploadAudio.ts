@@ -1,8 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type {
-  IBaseWidget,
-  IStringWidget
-} from '@comfyorg/litegraph/dist/types/widgets'
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -10,6 +5,11 @@ import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IStringWidget
+} from '@/lib/litegraph/src/types/widgets'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'

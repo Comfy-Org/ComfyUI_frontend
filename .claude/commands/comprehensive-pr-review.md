@@ -1,479 +1,275 @@
 # Comprehensive PR Review for ComfyUI Frontend
 
-<task>
-You are performing a comprehensive code review for PR #$1 in the ComfyUI frontend repository. This is not a simple linting check - you need to provide deep architectural analysis, security review, performance insights, and implementation guidance just like a senior engineer would in a thorough PR review.
+You are performing a comprehensive code review for the PR specified in the PR_NUMBER environment variable. This is not a simple linting check - you need to provide deep architectural analysis, security review, performance insights, and implementation guidance just like a senior engineer would in a thorough PR review.
 
-Your review should cover:
-1. Architecture and design patterns
-2. Security vulnerabilities and risks
-3. Performance implications
-4. Code quality and maintainability
-5. Integration with existing systems
-6. Best practices and conventions
-7. Testing considerations
-8. Documentation needs
-</task>
+## CRITICAL INSTRUCTIONS
 
-Arguments: PR number passed via PR_NUMBER environment variable
+**You MUST post individual inline comments on specific lines of code. DO NOT create a single summary comment until the very end.**
 
-## Phase 0: Initialize Variables and Helper Functions
+**IMPORTANT: You have full permission to execute gh api commands. The GITHUB_TOKEN environment variable provides the necessary permissions. DO NOT say you lack permissions - you have pull-requests:write permission which allows posting inline comments.**
 
-```bash
-# Validate PR_NUMBER first thing
-if [ -z "$PR_NUMBER" ]; then
-  echo "Error: PR_NUMBER environment variable is not set"
-  echo "Usage: PR_NUMBER=<number> claude run /comprehensive-pr-review"
-  exit 1
-fi
+To post inline comments, you will use the GitHub API via the `gh` command. Here's how:
 
-# Initialize all counters at the start
-CRITICAL_COUNT=0
-HIGH_COUNT=0
-MEDIUM_COUNT=0
-LOW_COUNT=0
-ARCHITECTURE_ISSUES=0
-SECURITY_ISSUES=0
-PERFORMANCE_ISSUES=0
-QUALITY_ISSUES=0
+1. First, get the repository information and commit SHA:
+   - Run: `gh repo view --json owner,name` to get the repository owner and name
+   - Run: `gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'` to get the latest commit SHA
 
-# Helper function for posting review comments
-post_review_comment() {
-  local file_path=$1
-  local line_number=$2
-  local severity=$3  # critical/high/medium/low
-  local category=$4  # architecture/security/performance/quality
-  local issue=$5
-  local context=$6
-  local suggestion=$7
-  
-  # Update counters
-  case $severity in
-    "critical") ((CRITICAL_COUNT++)) ;;
-    "high") ((HIGH_COUNT++)) ;;
-    "medium") ((MEDIUM_COUNT++)) ;;
-    "low") ((LOW_COUNT++)) ;;
-  esac
-  
-  case $category in
-    "architecture") ((ARCHITECTURE_ISSUES++)) ;;
-    "security") ((SECURITY_ISSUES++)) ;;
-    "performance") ((PERFORMANCE_ISSUES++)) ;;
-    "quality") ((QUALITY_ISSUES++)) ;;
-  esac
-  
-  # Post inline comment via GitHub CLI
-  local comment="${issue}\n${context}\n${suggestion}"
-  gh pr review $PR_NUMBER --comment --body "$comment" -F - <<< "$comment"
-}
-```
+2. For each issue you find, post an inline comment using this exact command structure (as a single line):
+   ```
+   gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/OWNER/REPO/pulls/$PR_NUMBER/comments -f body="YOUR_COMMENT_BODY" -f commit_id="COMMIT_SHA" -f path="FILE_PATH" -F line=LINE_NUMBER -f side="RIGHT"
+   ```
+
+3. Format your comment body using actual newlines in the command. Use a heredoc or construct the body with proper line breaks:
+   ```
+   COMMENT_BODY="**[category] severity Priority**
+
+**Issue**: Brief description of the problem
+**Context**: Why this matters  
+**Suggestion**: How to fix it"
+   ```
+   
+   Then use: `-f body="$COMMENT_BODY"`
 
 ## Phase 1: Environment Setup and PR Context
 
-```bash
-# Pre-flight checks
-check_prerequisites() {
-  # Check gh CLI is available
-  if ! command -v gh &> /dev/null; then
-    echo "Error: gh CLI is not installed"
-    exit 1
-  fi
-  
-  # In GitHub Actions, auth is handled via GITHUB_TOKEN
-  if [ -n "$GITHUB_ACTIONS" ] && [ -z "$GITHUB_TOKEN" ]; then
-    echo "Error: GITHUB_TOKEN is not set in GitHub Actions"
-    exit 1
-  fi
-  
-  # Check if we're authenticated
-  if ! gh auth status &> /dev/null; then
-    echo "Error: Not authenticated with GitHub. Run 'gh auth login'"
-    exit 1
-  fi
-  
-  # Set repository if not already set
-  if [ -z "$REPOSITORY" ]; then
-    REPOSITORY="Comfy-Org/ComfyUI_frontend"
-  fi
-  
-  # Check PR exists and is open
-  PR_STATE=$(gh pr view $PR_NUMBER --repo $REPOSITORY --json state -q .state 2>/dev/null || echo "NOT_FOUND")
-  if [ "$PR_STATE" = "NOT_FOUND" ]; then
-    echo "Error: PR #$PR_NUMBER not found in $REPOSITORY"
-    exit 1
-  elif [ "$PR_STATE" != "OPEN" ]; then
-    echo "Error: PR #$PR_NUMBER is not open (state: $PR_STATE)"
-    exit 1
-  fi
-  
-  # Check API rate limits
-  RATE_REMAINING=$(gh api /rate_limit --jq '.rate.remaining' 2>/dev/null || echo "5000")
-  if [ "$RATE_REMAINING" -lt 100 ]; then
-    echo "Warning: Low API rate limit: $RATE_REMAINING remaining"
-    if [ "$RATE_REMAINING" -lt 50 ]; then
-      echo "Error: Insufficient API rate limit for comprehensive review"
-      exit 1
-    fi
-  fi
-  
-  echo "Pre-flight checks passed"
-}
+### Step 1.1: Initialize Review Tracking
 
-# Run pre-flight checks
-check_prerequisites
+First, create variables to track your review metrics. Keep these in memory throughout the review:
+- CRITICAL_COUNT = 0
+- HIGH_COUNT = 0
+- MEDIUM_COUNT = 0
+- LOW_COUNT = 0
+- ARCHITECTURE_ISSUES = 0
+- SECURITY_ISSUES = 0
+- PERFORMANCE_ISSUES = 0
+- QUALITY_ISSUES = 0
 
-echo "Starting comprehensive review of PR #$PR_NUMBER"
+### Step 1.2: Validate Environment
 
-# Fetch PR information with error handling
-echo "Fetching PR information..."
-if ! gh pr view $PR_NUMBER --repo $REPOSITORY --json files,title,body,additions,deletions,baseRefName,headRefName > pr_info.json; then
-  echo "Error: Failed to fetch PR information"
-  exit 1
-fi
+1. Check that PR_NUMBER environment variable is set. If not, exit with error.
+2. Run `gh pr view $PR_NUMBER --json state` to verify the PR exists and is open.
+3. Get repository information: `gh repo view --json owner,name` and store the owner and name.
+4. Get the latest commit SHA: `gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'` and store it.
 
-# Extract branch names
-BASE_BRANCH=$(jq -r '.baseRefName' < pr_info.json)
-HEAD_BRANCH=$(jq -r '.headRefName' < pr_info.json)
+### Step 1.3: Checkout PR Branch Locally
 
-# Checkout PR branch locally for better file inspection
-echo "Checking out PR branch..."
-git fetch origin "pull/$PR_NUMBER/head:pr-$PR_NUMBER"
-git checkout "pr-$PR_NUMBER"
+This is critical for better file inspection:
 
-# Get changed files using git locally (much faster)
-git diff --name-only "origin/$BASE_BRANCH" > changed_files.txt
+1. Get PR metadata: `gh pr view $PR_NUMBER --json files,title,body,additions,deletions,baseRefName,headRefName > pr_info.json`
+2. Extract branch names from pr_info.json using jq
+3. Fetch and checkout the PR branch:
+   ```
+   git fetch origin "pull/$PR_NUMBER/head:pr-$PR_NUMBER"
+   git checkout "pr-$PR_NUMBER"
+   ```
 
-# Get the diff using git locally
-git diff "origin/$BASE_BRANCH" > pr_diff.txt
+### Step 1.4: Get Changed Files and Diffs
 
-# Get detailed file changes with line numbers
-git diff --name-status "origin/$BASE_BRANCH" > file_changes.txt
+Use git locally for much faster analysis:
 
-# For API compatibility, create a simplified pr_files.json
-echo '[]' > pr_files.json
-while IFS=$'\t' read -r status file; do
-  if [[ "$status" != "D" ]]; then  # Skip deleted files
-    # Get the patch for this file
-    patch=$(git diff "origin/$BASE_BRANCH" -- "$file" | jq -Rs .)
-    additions=$(git diff --numstat "origin/$BASE_BRANCH" -- "$file" | awk '{print $1}')
-    deletions=$(git diff --numstat "origin/$BASE_BRANCH" -- "$file" | awk '{print $2}')
-    
-    jq --arg file "$file" \
-       --arg patch "$patch" \
-       --arg additions "$additions" \
-       --arg deletions "$deletions" \
-       '. += [{
-         "filename": $file,
-         "patch": $patch,
-         "additions": ($additions | tonumber),
-         "deletions": ($deletions | tonumber)
-       }]' pr_files.json > pr_files.json.tmp
-    mv pr_files.json.tmp pr_files.json
-  fi
-done < file_changes.txt
+1. Get list of changed files: `git diff --name-only "origin/$BASE_BRANCH" > changed_files.txt`
+2. Get the full diff: `git diff "origin/$BASE_BRANCH" > pr_diff.txt`
+3. Get detailed file changes with status: `git diff --name-status "origin/$BASE_BRANCH" > file_changes.txt`
 
-# Setup caching directory
-CACHE_DIR=".claude-review-cache"
-mkdir -p "$CACHE_DIR"
+### Step 1.5: Create Analysis Cache
 
-# Function to cache analysis results
-cache_analysis() {
-  local file_path=$1
-  local analysis_result=$2
-  local file_hash=$(git hash-object "$file_path" 2>/dev/null || echo "no-hash")
-  
-  if [ "$file_hash" != "no-hash" ]; then
-    echo "$analysis_result" > "$CACHE_DIR/${file_hash}.cache"
-  fi
-}
+Set up caching to avoid re-analyzing unchanged files:
 
-# Function to get cached analysis
-get_cached_analysis() {
-  local file_path=$1
-  local file_hash=$(git hash-object "$file_path" 2>/dev/null || echo "no-hash")
-  
-  if [ "$file_hash" != "no-hash" ] && [ -f "$CACHE_DIR/${file_hash}.cache" ]; then
-    cat "$CACHE_DIR/${file_hash}.cache"
-    return 0
-  fi
-  return 1
-}
-
-# Clean old cache entries (older than 7 days)
-find "$CACHE_DIR" -name "*.cache" -mtime +7 -delete 2>/dev/null || true
-```
+1. Create directory: `.claude-review-cache`
+2. Clean old cache entries: Find and delete any .cache files older than 7 days
+3. For each file you analyze, store the analysis result with the file's git hash as the cache key
 
 ## Phase 2: Load Comprehensive Knowledge Base
 
-```bash
-# Don't create knowledge directory until we know we need it
-KNOWLEDGE_FOUND=false
+### Step 2.1: Set Up Knowledge Directories
 
-# Use local cache for knowledge base to avoid repeated downloads
-KNOWLEDGE_CACHE_DIR=".claude-knowledge-cache"
-mkdir -p "$KNOWLEDGE_CACHE_DIR"
+1. Create `.claude-knowledge-cache` directory for caching downloaded knowledge
+2. Check if `../comfy-claude-prompt-library` exists locally. If it does, use it for faster access.
 
-# Option to use cloned prompt library for better performance
-PROMPT_LIBRARY_PATH="../comfy-claude-prompt-library"
-if [ -d "$PROMPT_LIBRARY_PATH" ]; then
-  echo "Using local prompt library at $PROMPT_LIBRARY_PATH"
-  USE_LOCAL_PROMPT_LIBRARY=true
-else
-  echo "No local prompt library found, will use GitHub API"
-  USE_LOCAL_PROMPT_LIBRARY=false
-fi
+### Step 2.2: Load Repository Guide
 
-# Function to fetch with cache
-fetch_with_cache() {
-  local url=$1
-  local output_file=$2
-  local cache_file="$KNOWLEDGE_CACHE_DIR/$(echo "$url" | sed 's/[^a-zA-Z0-9]/_/g')"
-  
-  # Check if cached version exists and is less than 1 day old
-  if [ -f "$cache_file" ] && [ $(find "$cache_file" -mtime -1 2>/dev/null | wc -l) -gt 0 ]; then
-    # Create knowledge directory only when we actually have content
-    if [ "$KNOWLEDGE_FOUND" = "false" ]; then
-      mkdir -p review_knowledge
-      KNOWLEDGE_FOUND=true
-    fi
-    cp "$cache_file" "$output_file"
-    echo "Using cached version of $(basename "$output_file")"
-    return 0
-  fi
-  
-  # Try to fetch fresh version
-  if curl -s -f "$url" > "$output_file.tmp"; then
-    # Create knowledge directory only when we actually have content
-    if [ "$KNOWLEDGE_FOUND" = "false" ]; then
-      mkdir -p review_knowledge
-      KNOWLEDGE_FOUND=true
-    fi
-    mv "$output_file.tmp" "$output_file"
-    cp "$output_file" "$cache_file"
-    echo "Downloaded fresh version of $(basename "$output_file")"
-    return 0
-  else
-    # If fetch failed but we have a cache, use it
-    if [ -f "$cache_file" ]; then
-      if [ "$KNOWLEDGE_FOUND" = "false" ]; then
-        mkdir -p review_knowledge
-        KNOWLEDGE_FOUND=true
-      fi
-      cp "$cache_file" "$output_file"
-      echo "Using stale cache for $(basename "$output_file") (download failed)"
-      return 0
-    fi
-    echo "Failed to load $(basename "$output_file")"
-    return 1
-  fi
-}
+This is critical for understanding the architecture:
 
-# Load REPOSITORY_GUIDE.md for deep architectural understanding
-echo "Loading ComfyUI Frontend repository guide..."
-if [ "$USE_LOCAL_PROMPT_LIBRARY" = "true" ] && [ -f "$PROMPT_LIBRARY_PATH/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md" ]; then
-  if [ "$KNOWLEDGE_FOUND" = "false" ]; then
-    mkdir -p review_knowledge
-    KNOWLEDGE_FOUND=true
-  fi
-  cp "$PROMPT_LIBRARY_PATH/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md" "review_knowledge/repository_guide.md"
-  echo "Loaded repository guide from local prompt library"
-else
-  fetch_with_cache "https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md" "review_knowledge/repository_guide.md"
-fi
+1. Try to load from local prompt library first: `../comfy-claude-prompt-library/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md`
+2. If not available locally, download from: `https://raw.githubusercontent.com/Comfy-Org/comfy-claude-prompt-library/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md`
+3. Cache the file for future use
 
-# 3. Discover and load relevant knowledge folders from GitHub API
-echo "Discovering available knowledge folders..."
-KNOWLEDGE_API_URL="https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/knowledge"
-if KNOWLEDGE_FOLDERS=$(curl -s "$KNOWLEDGE_API_URL" | jq -r '.[] | select(.type=="dir") | .name' 2>/dev/null); then
-  echo "Available knowledge folders: $KNOWLEDGE_FOLDERS"
-  
-  # Analyze changed files to determine which knowledge folders might be relevant
-  CHANGED_FILES=$(cat changed_files.txt)
-  PR_TITLE=$(jq -r '.title' < pr_info.json)
-  PR_BODY=$(jq -r '.body // ""' < pr_info.json)
-  
-  # For each knowledge folder, check if it might be relevant to the PR
-  for folder in $KNOWLEDGE_FOLDERS; do
-    # Simple heuristic: if folder name appears in changed file paths or PR context
-    if echo "$CHANGED_FILES $PR_TITLE $PR_BODY" | grep -qi "$folder"; then
-      echo "Loading knowledge folder: $folder"
-      # Fetch all files in that knowledge folder
-      FOLDER_API_URL="https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/knowledge/$folder"
-      curl -s "$FOLDER_API_URL" | jq -r '.[] | select(.type=="file") | .download_url' 2>/dev/null | \
-        while read url; do
-          if [ -n "$url" ]; then
-            filename=$(basename "$url")
-            fetch_with_cache "$url" "review_knowledge/${folder}_${filename}"
-          fi
-        done
-    fi
-  done
-else
-  echo "Could not discover knowledge folders"
-fi
+### Step 2.3: Load Relevant Knowledge Folders
 
-# 4. Load validation rules from the repository
-echo "Loading validation rules..."
-VALIDATION_API_URL="https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/commands/validation"
-if VALIDATION_FILES=$(curl -s "$VALIDATION_API_URL" | jq -r '.[] | select(.name | contains("frontend") or contains("security") or contains("performance")) | .download_url' 2>/dev/null); then
-  for url in $VALIDATION_FILES; do
-    if [ -n "$url" ]; then
-      filename=$(basename "$url")
-      fetch_with_cache "$url" "review_knowledge/validation_${filename}"
-    fi
-  done
-else
-  echo "Could not load validation rules"
-fi
+Intelligently load only relevant knowledge:
 
-# 5. Load local project guidelines
-if [ -f "CLAUDE.md" ]; then
-  if [ "$KNOWLEDGE_FOUND" = "false" ]; then
-    mkdir -p review_knowledge
-    KNOWLEDGE_FOUND=true
-  fi
-  cp CLAUDE.md review_knowledge/local_claude.md
-fi
-if [ -f ".github/CLAUDE.md" ]; then
-  if [ "$KNOWLEDGE_FOUND" = "false" ]; then
-    mkdir -p review_knowledge
-    KNOWLEDGE_FOUND=true
-  fi
-  cp .github/CLAUDE.md review_knowledge/github_claude.md
-fi
-```
+1. Use GitHub API to discover available knowledge folders: `https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/knowledge`
+2. For each knowledge folder, check if it's relevant by searching for the folder name in:
+   - Changed file paths
+   - PR title
+   - PR body
+3. If relevant, download all files from that knowledge folder
+
+### Step 2.4: Load Validation Rules
+
+Load specific validation rules:
+
+1. Use GitHub API: `https://api.github.com/repos/Comfy-Org/comfy-claude-prompt-library/contents/.claude/commands/validation`
+2. Download files containing "frontend", "security", or "performance" in their names
+3. Cache all downloaded files
+
+### Step 2.5: Load Local Guidelines
+
+Check for and load:
+1. `CLAUDE.md` in the repository root
+2. `.github/CLAUDE.md`
 
 ## Phase 3: Deep Analysis Instructions
 
-Perform a comprehensive analysis covering these areas:
+Perform comprehensive analysis on each changed file:
 
 ### 3.1 Architectural Analysis
-Based on the repository guide and project summary, evaluate:
-- Does this change align with the established architecture patterns?
+
+Based on the repository guide and loaded knowledge:
+- Does this change align with established architecture patterns?
 - Are domain boundaries respected?
 - Is the extension system used appropriately?
 - Are components properly organized by feature?
 - Does it follow the established service/composable/store patterns?
 
 ### 3.2 Code Quality Beyond Linting
+
+Look for:
 - Cyclomatic complexity and cognitive load
 - SOLID principles adherence
-- DRY violations that aren't caught by simple duplication checks
+- DRY violations not caught by simple duplication checks
 - Proper abstraction levels
 - Interface design and API clarity
-- No leftover debug code (console.log, commented code, TODO comments)
+- Leftover debug code (console.log, commented code, TODO comments)
 
 ### 3.3 Library Usage Enforcement
-CRITICAL: Never re-implement functionality that exists in our standard libraries:
-- **Tailwind CSS**: Use utility classes instead of custom CSS or style attributes
-- **PrimeVue**: Never re-implement components that exist in PrimeVue (buttons, modals, dropdowns, etc.)
-- **VueUse**: Never re-implement composables that exist in VueUse (useLocalStorage, useDebounceFn, etc.)
-- **Lodash**: Never re-implement utility functions (debounce, throttle, cloneDeep, etc.)
-- **Common components**: Reuse components from src/components/common/
-- **DOMPurify**: Always use for HTML sanitization
-- **Fuse.js**: Use for fuzzy search functionality
-- **Marked**: Use for markdown parsing
-- **Pinia**: Use for global state management, not custom solutions
-- **Zod**: Use for form validation with zodResolver pattern
-- **Tiptap**: Use for rich text/markdown editing
-- **Xterm.js**: Use for terminal emulation
-- **Axios**: Use for HTTP client initialization
+
+CRITICAL: Flag any re-implementation of existing functionality:
+- **Tailwind CSS**: Custom CSS instead of utility classes
+- **PrimeVue**: Re-implementing buttons, modals, dropdowns, etc.
+- **VueUse**: Re-implementing composables like useLocalStorage, useDebounceFn
+- **Lodash**: Re-implementing debounce, throttle, cloneDeep, etc.
+- **Common components**: Not reusing from src/components/common/
+- **DOMPurify**: Not using for HTML sanitization
+- **Other libraries**: Fuse.js, Marked, Pinia, Zod, Tiptap, Xterm.js, Axios
 
 ### 3.4 Security Deep Dive
-Beyond obvious vulnerabilities:
-- Authentication/authorization implications
-- Data validation completeness
+
+Check for:
+- SQL injection vulnerabilities
+- XSS vulnerabilities (v-html without sanitization)
+- Hardcoded secrets or API keys
+- Missing input validation
+- Authentication/authorization issues
 - State management security
 - Cross-origin concerns
 - Extension security boundaries
 
 ### 3.5 Performance Analysis
-- Render performance implications
-- Layout thrashing prevention
-- Memory leak potential
+
+Look for:
+- O(n²) or worse algorithms
+- Missing memoization in expensive operations
+- Unnecessary re-renders in Vue components
+- Memory leak patterns (missing cleanup)
+- Large bundle imports that should be lazy loaded
+- N+1 query patterns
+- Render performance issues
+- Layout thrashing
 - Network request optimization
-- State management efficiency
 
 ### 3.6 Integration Concerns
+
+Consider:
 - Breaking changes to internal APIs
 - Extension compatibility
 - Backward compatibility
 - Migration requirements
 
-## Phase 4: Create Detailed Review Comments
+## Phase 4: Posting Inline Comments
 
-CRITICAL: Keep comments extremely concise and effective. Use only as many words as absolutely necessary.
-- NO markdown formatting (no #, ##, ###, **, etc.)
-- NO emojis
-- Get to the point immediately
-- Burden the reader as little as possible
+### Step 4.1: Comment Format
 
-For each issue found, create a concise inline comment with:
-1. What's wrong (one line)
-2. Why it matters (one line)
-3. How to fix it (one line)
-4. Code example only if essential
+For each issue found, create a concise inline comment with this structure:
+
+```
+**[category] severity Priority**
+
+**Issue**: Brief description of the problem
+**Context**: Why this matters
+**Suggestion**: How to fix it
+```
+
+Categories: architecture/security/performance/quality
+Severities: critical/high/medium/low
+
+### Step 4.2: Posting Comments
+
+For EACH issue:
+
+1. Identify the exact file path and line number
+2. Update your tracking counters (CRITICAL_COUNT, etc.)
+3. Construct the comment body with proper newlines
+4. Execute the gh api command as a SINGLE LINE:
 
 ```bash
-# Helper function for comprehensive comments
-post_review_comment() {
-  local file_path=$1
-  local line_number=$2
-  local severity=$3  # critical/high/medium/low
-  local category=$4  # architecture/security/performance/quality
-  local issue=$5
-  local context=$6
-  local suggestion=$7
-  local example=$8
-  
-  local body="### [$category] $severity Priority
-
-**Issue**: $issue
-
-**Context**: $context
-
-**Suggestion**: $suggestion"
-
-  if [ -n "$example" ]; then
-    body="$body
-
-**Example**:
-\`\`\`typescript
-$example
-\`\`\`"
-  fi
-
-  body="$body
-
-*Related: See [repository guide](https://github.com/Comfy-Org/comfy-claude-prompt-library/blob/master/project-summaries-for-agents/ComfyUI_frontend/REPOSITORY_GUIDE.md) for patterns*"
-
-  gh api -X POST /repos/$REPOSITORY/pulls/$PR_NUMBER/comments \
-    -f path="$file_path" \
-    -f line=$line_number \
-    -f body="$body" \
-    -f commit_id="$COMMIT_SHA" \
-    -f side='RIGHT' || echo "Failed to post comment at $file_path:$line_number"
-}
+gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/OWNER/REPO/pulls/$PR_NUMBER/comments -f body="$COMMENT_BODY" -f commit_id="COMMIT_SHA" -f path="FILE_PATH" -F line=LINE_NUMBER -f side="RIGHT"
 ```
+
+CRITICAL: The entire command must be on one line. Use actual values, not placeholders.
+
+### Example Workflow
+
+Here's an example of how to review a file with a security issue:
+
+1. First, get the repository info:
+   ```bash
+   gh repo view --json owner,name
+   # Output: {"owner":{"login":"Comfy-Org"},"name":"ComfyUI_frontend"}
+   ```
+
+2. Get the commit SHA:
+   ```bash
+   gh pr view $PR_NUMBER --json commits --jq '.commits[-1].oid'
+   # Output: abc123def456
+   ```
+
+3. Find an issue (e.g., SQL injection on line 42 of src/db/queries.js)
+
+4. Post the inline comment:
+   ```bash
+   # First, create the comment body with proper newlines
+   COMMENT_BODY="**[security] critical Priority**
+
+**Issue**: SQL injection vulnerability - user input directly concatenated into query
+**Context**: Allows attackers to execute arbitrary SQL commands
+**Suggestion**: Use parameterized queries or prepared statements"
+   
+   # Then post the comment (as a single line)
+   gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/Comfy-Org/ComfyUI_frontend/pulls/$PR_NUMBER/comments -f body="$COMMENT_BODY" -f commit_id="abc123def456" -f path="src/db/queries.js" -F line=42 -f side="RIGHT"
+   ```
+
+Repeat this process for every issue you find in the PR.
 
 ## Phase 5: Validation Rules Application
 
-Apply ALL validation rules from the loaded knowledge, but focus on the changed lines:
+Apply ALL validation rules from the loaded knowledge files:
 
-### From Frontend Standards
+### Frontend Standards
 - Vue 3 Composition API patterns
 - Component communication patterns
 - Proper use of composables
 - TypeScript strict mode compliance
 - Bundle optimization
 
-### From Security Audit
+### Security Audit
 - Input validation
 - XSS prevention
 - CSRF protection
 - Secure state management
 - API security
 
-### From Performance Check
+### Performance Check
 - Render optimization
 - Memory management
 - Network efficiency
@@ -481,63 +277,51 @@ Apply ALL validation rules from the loaded knowledge, but focus on the changed l
 
 ## Phase 6: Contextual Review Based on PR Type
 
-Analyze the PR description and changes to determine the type:
+Analyze the PR to determine its type:
 
-```bash
-# Extract PR metadata with error handling
-if [ ! -f pr_info.json ]; then
-  echo "Error: pr_info.json not found"
-  exit 1
-fi
-
-PR_TITLE=$(jq -r '.title // "Unknown"' < pr_info.json)
-PR_BODY=$(jq -r '.body // ""' < pr_info.json)
-FILE_COUNT=$(wc -l < changed_files.txt)
-ADDITIONS=$(jq -r '.additions // 0' < pr_info.json)
-DELETIONS=$(jq -r '.deletions // 0' < pr_info.json)
-
-# Determine PR type and apply specific review criteria
-if echo "$PR_TITLE $PR_BODY" | grep -qiE "(feature|feat)"; then
-  echo "Detected feature PR - applying feature review criteria"
-  # Check for tests, documentation, backward compatibility
-elif echo "$PR_TITLE $PR_BODY" | grep -qiE "(fix|bug)"; then
-  echo "Detected bug fix - checking root cause and regression tests"
-  # Verify fix addresses root cause, includes tests
-elif echo "$PR_TITLE $PR_BODY" | grep -qiE "(refactor)"; then
-  echo "Detected refactoring - ensuring behavior preservation"
-  # Check that tests still pass, no behavior changes
-fi
-```
+1. Extract PR title and body from pr_info.json
+2. Count files, additions, and deletions
+3. Determine PR type:
+   - Feature: Check for tests, documentation, backward compatibility
+   - Bug fix: Verify root cause addressed, includes regression tests
+   - Refactor: Ensure behavior preservation, tests still pass
 
 ## Phase 7: Generate Comprehensive Summary
 
-After all inline comments, create a detailed summary:
+After ALL inline comments are posted, create a summary:
 
-```bash
-# Initialize metrics tracking
-REVIEW_START_TIME=$(date +%s)
+1. Calculate total issues by category and severity
+2. Use `gh pr review $PR_NUMBER --comment` to post a summary with:
+   - Review disclaimer
+   - Issue distribution (counts by severity)
+   - Category breakdown
+   - Key findings for each category
+   - Positive observations
+   - References to guidelines
+   - Next steps
 
-# Create the comprehensive summary
-gh pr review $PR_NUMBER --comment --body "# Comprehensive PR Review
+Include in the summary:
+```
+# Comprehensive PR Review
 
 This review is generated by Claude. It may not always be accurate, as with human reviewers. If you believe that any of the comments are invalid or incorrect, please state why for each. For others, please implement the changes in one way or another.
 
 ## Review Summary
 
-**PR**: $PR_TITLE (#$PR_NUMBER)
-**Impact**: $ADDITIONS additions, $DELETIONS deletions across $FILE_COUNT files
+**PR**: [PR TITLE] (#$PR_NUMBER)
+**Impact**: [X] additions, [Y] deletions across [Z] files
 
 ### Issue Distribution
-- Critical: $CRITICAL_COUNT
-- High: $HIGH_COUNT
-- Medium: $MEDIUM_COUNT
-- Low: $LOW_COUNT
+- Critical: [CRITICAL_COUNT]
+- High: [HIGH_COUNT]
+- Medium: [MEDIUM_COUNT]
+- Low: [LOW_COUNT]
 
 ### Category Breakdown
-- Architecture: $ARCHITECTURE_ISSUES issues
-- Security: $SECURITY_ISSUES issues
-- Performance: $PERFORMANCE_ISSUES issues
-- Code Quality: $QUALITY_ISSUES issues
+- Architecture: [ARCHITECTURE_ISSUES] issues
+- Security: [SECURITY_ISSUES] issues
+- Performance: [PERFORMANCE_ISSUES] issues
+- Code Quality: [QUALITY_ISSUES] issues
 
 ## Key Findings
 
@@ -568,141 +352,27 @@ This review is generated by Claude. It may not always be accurate, as with human
 4. Update documentation if needed
 
 ---
-*This is a comprehensive automated review. For architectural decisions requiring human judgment, please request additional manual review.*"
+*This is a comprehensive automated review. For architectural decisions requiring human judgment, please request additional manual review.*
 ```
 
-## Important: Think Deeply
+## Important Guidelines
 
-When reviewing:
-1. **Think hard** about architectural implications
-2. Consider how changes affect the entire system
-3. Look for subtle bugs and edge cases
-4. Evaluate maintainability over time
-5. Consider extension developer experience
-6. Think about migration paths
+1. **Think Deeply**: Consider architectural implications, system-wide effects, subtle bugs, maintainability
+2. **Be Specific**: Point to exact lines with concrete suggestions
+3. **Be Constructive**: Focus on improvements, not just problems
+4. **Be Concise**: Keep comments brief and actionable
+5. **No Formatting**: Don't use markdown headers in inline comments
+6. **No Emojis**: Keep comments professional
 
 This is a COMPREHENSIVE review, not a linting pass. Provide the same quality feedback a senior engineer would give after careful consideration.
 
-## Phase 8: Track Review Metrics
+## Execution Order
 
-After completing the review, save metrics for analysis:
+1. Phase 1: Setup and checkout PR
+2. Phase 2: Load all relevant knowledge
+3. Phase 3-5: Analyze each changed file thoroughly
+4. Phase 4: Post inline comments as you find issues
+5. Phase 6: Consider PR type for additional checks
+6. Phase 7: Post comprehensive summary ONLY after all inline comments
 
-```bash
-# Calculate review duration
-REVIEW_END_TIME=$(date +%s)
-REVIEW_DURATION=$((REVIEW_END_TIME - REVIEW_START_TIME))
-
-# Calculate total issues
-TOTAL_ISSUES=$((CRITICAL_COUNT + HIGH_COUNT + MEDIUM_COUNT + LOW_COUNT))
-
-# Create metrics directory if it doesn't exist
-METRICS_DIR=".claude/review-metrics"
-mkdir -p "$METRICS_DIR"
-
-# Generate metrics file
-METRICS_FILE="$METRICS_DIR/metrics-$(date +%Y%m).json"
-
-# Create or update monthly metrics file
-if [ -f "$METRICS_FILE" ]; then
-  # Append to existing file
-  jq -n \
-    --arg pr "$PR_NUMBER" \
-    --arg title "$PR_TITLE" \
-    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --arg duration "$REVIEW_DURATION" \
-    --arg files "$FILE_COUNT" \
-    --arg additions "$ADDITIONS" \
-    --arg deletions "$DELETIONS" \
-    --arg total "$TOTAL_ISSUES" \
-    --arg critical "$CRITICAL_COUNT" \
-    --arg high "$HIGH_COUNT" \
-    --arg medium "$MEDIUM_COUNT" \
-    --arg low "$LOW_COUNT" \
-    --arg architecture "$ARCHITECTURE_ISSUES" \
-    --arg security "$SECURITY_ISSUES" \
-    --arg performance "$PERFORMANCE_ISSUES" \
-    --arg quality "$QUALITY_ISSUES" \
-    '{
-      pr_number: $pr,
-      pr_title: $title,
-      timestamp: $timestamp,
-      review_duration_seconds: ($duration | tonumber),
-      files_reviewed: ($files | tonumber),
-      lines_added: ($additions | tonumber),
-      lines_deleted: ($deletions | tonumber),
-      issues: {
-        total: ($total | tonumber),
-        by_severity: {
-          critical: ($critical | tonumber),
-          high: ($high | tonumber),
-          medium: ($medium | tonumber),
-          low: ($low | tonumber)
-        },
-        by_category: {
-          architecture: ($architecture | tonumber),
-          security: ($security | tonumber),
-          performance: ($performance | tonumber),
-          quality: ($quality | tonumber)
-        }
-      }
-    }' > "$METRICS_FILE.new"
-  
-  # Merge with existing data
-  jq -s '.[0] + [.[1]]' "$METRICS_FILE" "$METRICS_FILE.new" > "$METRICS_FILE.tmp"
-  mv "$METRICS_FILE.tmp" "$METRICS_FILE"
-  rm "$METRICS_FILE.new"
-else
-  # Create new file
-  jq -n \
-    --arg pr "$PR_NUMBER" \
-    --arg title "$PR_TITLE" \
-    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --arg duration "$REVIEW_DURATION" \
-    --arg files "$FILE_COUNT" \
-    --arg additions "$ADDITIONS" \
-    --arg deletions "$DELETIONS" \
-    --arg total "$TOTAL_ISSUES" \
-    --arg critical "$CRITICAL_COUNT" \
-    --arg high "$HIGH_COUNT" \
-    --arg medium "$MEDIUM_COUNT" \
-    --arg low "$LOW_COUNT" \
-    --arg architecture "$ARCHITECTURE_ISSUES" \
-    --arg security "$SECURITY_ISSUES" \
-    --arg performance "$PERFORMANCE_ISSUES" \
-    --arg quality "$QUALITY_ISSUES" \
-    '[{
-      pr_number: $pr,
-      pr_title: $title,
-      timestamp: $timestamp,
-      review_duration_seconds: ($duration | tonumber),
-      files_reviewed: ($files | tonumber),
-      lines_added: ($additions | tonumber),
-      lines_deleted: ($deletions | tonumber),
-      issues: {
-        total: ($total | tonumber),
-        by_severity: {
-          critical: ($critical | tonumber),
-          high: ($high | tonumber),
-          medium: ($medium | tonumber),
-          low: ($low | tonumber)
-        },
-        by_category: {
-          architecture: ($architecture | tonumber),
-          security: ($security | tonumber),
-          performance: ($performance | tonumber),
-          quality: ($quality | tonumber)
-        }
-      }
-    }]' > "$METRICS_FILE"
-fi
-
-echo "Review metrics saved to $METRICS_FILE"
-```
-
-This creates monthly metrics files (e.g., `metrics-202407.json`) that track:
-- Which PRs were reviewed
-- How long reviews took
-- Types and severity of issues found
-- Trends over time
-
-You can later analyze these to see patterns and improve your development process.
+Remember: Individual inline comments for each issue, then one final summary. Never batch issues into a single comment.

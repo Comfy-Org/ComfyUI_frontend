@@ -24,13 +24,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import type { LGraph, LGraphNode, LLink } from '@comfyorg/litegraph'
-import type { NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
-import type { SerialisedLLinkArray } from '@comfyorg/litegraph/dist/LLink'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
   ISerialisedNode
-} from '@comfyorg/litegraph/dist/types/serialisation'
+} from '@/lib/litegraph/src/types/serialisation'
 
 export interface BadLinksData<T = ISerialisedGraph | LGraph> {
   hasBadLinks: boolean

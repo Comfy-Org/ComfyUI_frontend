@@ -1,16 +1,20 @@
-import { ColorOption, LGraph, Reroute } from '@comfyorg/litegraph'
-import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
+import _ from 'lodash'
+
+import { ColorOption, LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  isColorable
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
   ISerialisedGraph
-} from '@comfyorg/litegraph/dist/types/serialisation'
+} from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
   IComboWidget
-} from '@comfyorg/litegraph/dist/types/widgets'
-import _ from 'lodash'
-
+} from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }

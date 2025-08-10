@@ -16,9 +16,7 @@ const typesPackage = {
   homepage: mainPackage.homepage,
   description: `TypeScript definitions for ${mainPackage.name}`,
   license: mainPackage.license,
-  dependencies: {
-    '@comfyorg/litegraph': mainPackage.dependencies['@comfyorg/litegraph']
-  },
+  dependencies: {},
   peerDependencies: {
     vue: mainPackage.dependencies.vue,
     zod: mainPackage.dependencies.zod

@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { computed, ref, watchEffect } from 'vue'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 

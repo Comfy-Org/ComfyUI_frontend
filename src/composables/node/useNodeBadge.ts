@@ -1,13 +1,13 @@
-import {
-  BadgePosition,
-  LGraphBadge,
-  type LGraphNode
-} from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
+import {
+  BadgePosition,
+  LGraphBadge,
+  type LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'

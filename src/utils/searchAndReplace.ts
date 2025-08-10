@@ -1,5 +1,4 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
-
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { formatDate } from '@/utils/formatUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 

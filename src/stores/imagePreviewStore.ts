@@ -1,6 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutedWsMessage,
   ResultItem,
@@ -21,7 +21,10 @@ const createOutputs = (
 ): ExecutedWsMessage['output'] => {
   return {
     images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map((image) => isAnimated && image.endsWith('.webp'))
+    animated: filenames.map(
+      (image) =>
+        isAnimated && (image.endsWith('.webp') || image.endsWith('.png'))
+    )
   }
 }
 

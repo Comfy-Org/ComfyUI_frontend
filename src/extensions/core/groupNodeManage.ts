@@ -2,8 +2,7 @@ import {
   type LGraphNode,
   type LGraphNodeConstructor,
   LiteGraph
-} from '@comfyorg/litegraph'
-
+} from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/stores/toastStore'
 
 import { type ComfyApp, app } from '../../scripts/app'

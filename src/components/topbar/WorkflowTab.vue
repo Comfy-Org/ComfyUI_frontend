@@ -1,13 +1,13 @@
 <template>
-  <div ref="workflowTabRef" class="flex p-2 gap-2 workflow-tab" v-bind="$attrs">
-    <span
-      v-tooltip.bottom="{
-        value: workflowOption.workflow.key,
-        class: 'workflow-tab-tooltip',
-        showDelay: 512
-      }"
-      class="workflow-label text-sm max-w-[150px] min-w-[30px] truncate inline-block"
-    >
+  <div
+    ref="workflowTabRef"
+    class="flex p-2 gap-2 workflow-tab"
+    v-bind="$attrs"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+    @click="handleClick"
+  >
+    <span class="workflow-label text-sm max-w-[150px] truncate inline-block">
       {{ workflowOption.workflow.filename }}
     </span>
     <div class="relative">
@@ -22,22 +22,32 @@
       />
     </div>
   </div>
+
+  <WorkflowTabPopover
+    ref="popoverRef"
+    :workflow-filename="workflowOption.workflow.filename"
+    :thumbnail-url="thumbnailUrl"
+    :is-active-tab="isActiveTab"
+  />
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
+import { useWorkflowThumbnail } from '@/composables/useWorkflowThumbnail'
 import { useWorkflowService } from '@/services/workflowService'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+
+import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
 interface WorkflowOption {
   value: string
@@ -55,6 +65,8 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
+const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
+const workflowThumbnail = useWorkflowThumbnail()
 
 // Use computed refs to cache autosave settings
 const autoSaveSetting = computed(() =>
@@ -89,6 +101,27 @@ const shouldShowStatusIndicator = computed(() => {
   // Default: do not show the status indicator. This should not be reachable.
   return false
 })
+
+const isActiveTab = computed(() => {
+  return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
+})
+
+const thumbnailUrl = computed(() => {
+  return workflowThumbnail.getThumbnail(props.workflowOption.workflow.key)
+})
+
+// Event handlers that delegate to the popover component
+const handleMouseEnter = (event: Event) => {
+  popoverRef.value?.showPopover(event)
+}
+
+const handleMouseLeave = () => {
+  popoverRef.value?.hidePopover()
+}
+
+const handleClick = (event: Event) => {
+  popoverRef.value?.togglePopover(event)
+}
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
@@ -134,6 +167,10 @@ usePragmaticDroppable(tabGetter, {
       workflowStore.reorderWorkflows(fromIndex, toIndex)
     }
   }
+})
+
+onUnmounted(() => {
+  popoverRef.value?.hidePopover()
 })
 </script>
 

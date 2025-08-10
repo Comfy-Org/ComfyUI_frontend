@@ -1,5 +1,9 @@
-import type { IContextMenuValue } from '@comfyorg/litegraph'
-import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'

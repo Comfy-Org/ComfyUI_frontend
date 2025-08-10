@@ -1,3 +1,4 @@
+import type { GroupNodeHandler } from '@/extensions/core/groupNode'
 import {
   type ExecutableLGraphNode,
   ExecutableNodeDTO,
@@ -5,9 +6,7 @@ import {
   type LGraphNode,
   type NodeId,
   type SubgraphNode
-} from '@comfyorg/litegraph'
-
-import type { GroupNodeHandler } from '@/extensions/core/groupNode'
+} from '@/lib/litegraph/src/litegraph'
 
 export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
   groupNodeHandler?: GroupNodeHandler

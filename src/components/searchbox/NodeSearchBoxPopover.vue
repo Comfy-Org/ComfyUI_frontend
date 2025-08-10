@@ -33,18 +33,18 @@
 </template>
 
 <script setup lang="ts">
-import {
-  LGraphNode,
-  LiteGraph,
-  LiteGraphCanvasEvent
-} from '@comfyorg/litegraph'
-import { Point } from '@comfyorg/litegraph/dist/interfaces'
-import type { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
+import { Point } from '@/lib/litegraph/src/interfaces'
+import {
+  LGraphNode,
+  LiteGraph,
+  LiteGraphCanvasEvent
+} from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'

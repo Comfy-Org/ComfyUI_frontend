@@ -1,4 +1,3 @@
-import '@comfyorg/litegraph/style.css'
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import * as Sentry from '@sentry/vue'
@@ -12,11 +11,13 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
-import '@/assets/css/style.css'
 import { FIREBASE_CONFIG } from '@/config/firebase'
+import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 
 import App from './App.vue'
+// Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
+import './assets/css/style.css'
 import { i18n } from './i18n'
 
 const ComfyUIPreset = definePreset(Aura, {

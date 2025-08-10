@@ -25,6 +25,7 @@
     "confirmed": "Confirmed",
     "reset": "Reset",
     "resetAll": "Reset All",
+    "clearFilters": "Clear Filters",
     "resetAllKeybindingsTooltip": "Reset all keybindings to default",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
@@ -549,6 +550,8 @@
   },
   "templateWorkflows": {
     "title": "Get Started with a Template",
+    "loadingMore": "Loading more templates...",
+    "searchPlaceholder": "Search templates...",
     "category": {
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
@@ -1008,8 +1011,11 @@
     "Previous Opened Workflow": "Previous Opened Workflow",
     "Toggle Search Box": "Toggle Search Box",
     "Toggle Bottom Panel": "Toggle Bottom Panel",
+    "Show Keybindings Dialog": "Show Keybindings Dialog",
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
+    "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
+    "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Toggle Focus Mode": "Toggle Focus Mode",
     "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
     "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
@@ -1627,5 +1633,19 @@
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "enterNewName": "Enter new name"
+  },
+  "shortcuts": {
+    "essentials": "Essential",
+    "viewControls": "View Controls",
+    "manageShortcuts": "Manage Shortcuts",
+    "noKeybinding": "No keybinding",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "subcategories": {
+      "workflow": "Workflow",
+      "node": "Node",
+      "queue": "Queue",
+      "view": "View",
+      "panelControls": "Panel Controls"
+    }
   }
 }

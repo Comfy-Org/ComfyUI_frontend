@@ -458,6 +458,24 @@ export type WorkflowJSON10 = z.infer<typeof zComfyWorkflow1>
 export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
+export type SubgraphDefinition = z.infer<typeof zSubgraphDefinition>
+
+/**
+ * Type guard to check if an object is a SubgraphDefinition.
+ * This helps TypeScript understand the type when z.lazy() breaks inference.
+ */
+export function isSubgraphDefinition(obj: any): obj is SubgraphDefinition {
+  return (
+    obj &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'name' in obj &&
+    'nodes' in obj &&
+    Array.isArray(obj.nodes) &&
+    'inputNode' in obj &&
+    'outputNode' in obj
+  )
+}
 
 const zWorkflowVersion = z.object({
   version: z.number()

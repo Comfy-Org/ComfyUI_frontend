@@ -1,6 +1,5 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-
 import { useTextPreviewWidget } from '@/composables/widgets/useProgressTextWidget'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const TEXT_PREVIEW_WIDGET_NAME = '$$node-text-preview'
 

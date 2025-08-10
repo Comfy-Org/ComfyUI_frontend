@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { type ReleaseNote, useReleaseService } from '@/services/releaseService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { isElectron } from '@/utils/envUtil'
 import { compareVersions, stringToLocale } from '@/utils/formatUtil'
 
 // Store for managing release notes
@@ -76,6 +77,11 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
+    // Only show on desktop version
+    if (!isElectron()) {
+      return false
+    }
+
     // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
       return false
@@ -103,6 +109,11 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
+    // Only show on desktop version
+    if (!isElectron()) {
+      return false
+    }
+
     // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
       return false
@@ -145,6 +156,11 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show "What's New" popup
   const shouldShowPopup = computed(() => {
+    // Only show on desktop version
+    if (!isElectron()) {
+      return false
+    }
+
     // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
       return false

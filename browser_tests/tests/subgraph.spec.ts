@@ -155,6 +155,182 @@ test.describe('Subgraph Operations', () => {
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
       expect(newInputName).not.toBe(initialInputLabel)
     })
+
+    test('Can rename input slots via double-click', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      await comfyPage.doubleClickSubgraphInputSlot(initialInputLabel)
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_INPUT_NAME)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newInputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      expect(newInputName).toBe(RENAMED_INPUT_NAME)
+      expect(newInputName).not.toBe(initialInputLabel)
+    })
+
+    test('Can rename output slots via double-click', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialOutputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.outputs?.[0]?.label || null
+      })
+
+      await comfyPage.doubleClickSubgraphOutputSlot(initialOutputLabel)
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const renamedOutputName = 'renamed_output'
+      await comfyPage.page.fill(SELECTORS.promptDialog, renamedOutputName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newOutputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.outputs?.[0]?.label || null
+      })
+
+      expect(newOutputName).toBe(renamedOutputName)
+      expect(newOutputName).not.toBe(initialOutputLabel)
+    })
+
+    test('Right-click context menu still works alongside double-click', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      // Test that right-click still works for renaming
+      await comfyPage.rightClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const rightClickRenamedName = 'right_click_renamed'
+      await comfyPage.page.fill(SELECTORS.promptDialog, rightClickRenamedName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newInputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      expect(newInputName).toBe(rightClickRenamedName)
+      expect(newInputName).not.toBe(initialInputLabel)
+    })
+
+    test('Can double-click on slot label text to rename', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('basic-subgraph')
+
+      const subgraphNode = await comfyPage.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      // Use direct pointer event approach to double-click on label
+      await comfyPage.page.evaluate(() => {
+        const app = window['app']
+        const graph = app.canvas.graph
+        const input = graph.inputs?.[0]
+
+        if (!input?.labelPos) {
+          throw new Error('Could not get label position for testing')
+        }
+
+        // Use labelPos for more precise clicking on the text
+        const testX = input.labelPos[0]
+        const testY = input.labelPos[1]
+
+        const leftClickEvent = {
+          canvasX: testX,
+          canvasY: testY,
+          button: 0, // Left mouse button
+          preventDefault: () => {},
+          stopPropagation: () => {}
+        }
+
+        const inputNode = graph.inputNode
+        if (inputNode?.onPointerDown) {
+          inputNode.onPointerDown(
+            leftClickEvent,
+            app.canvas.pointer,
+            app.canvas.linkConnector
+          )
+
+          // Trigger double-click if pointer has the handler
+          if (app.canvas.pointer.onDoubleClick) {
+            app.canvas.pointer.onDoubleClick(leftClickEvent)
+          }
+        }
+      })
+
+      // Wait for dialog to appear
+      await comfyPage.page.waitForTimeout(200)
+      await comfyPage.nextFrame()
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const labelClickRenamedName = 'label_click_renamed'
+      await comfyPage.page.fill(SELECTORS.promptDialog, labelClickRenamedName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      const newInputName = await comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph.inputs?.[0]?.label || null
+      })
+
+      expect(newInputName).toBe(labelClickRenamedName)
+      expect(newInputName).not.toBe(initialInputLabel)
+    })
   })
 
   test.describe('Subgraph Creation and Deletion', () => {
@@ -195,6 +371,68 @@ test.describe('Subgraph Operations', () => {
 
       const deletedNode = await comfyPage.getNodeRefById('2')
       expect(await deletedNode.exists()).toBe(false)
+    })
+
+    test.describe('Subgraph copy and paste', () => {
+      test('Can copy subgraph node by dragging + alt', async ({
+        comfyPage
+      }) => {
+        await comfyPage.loadWorkflow('basic-subgraph')
+
+        const subgraphNode = await comfyPage.getNodeRefById('2')
+
+        // Get position of subgraph node
+        const subgraphPos = await subgraphNode.getPosition()
+
+        // Alt + Click on the subgraph node
+        await comfyPage.page.mouse.move(subgraphPos.x + 16, subgraphPos.y + 16)
+        await comfyPage.page.keyboard.down('Alt')
+        await comfyPage.page.mouse.down()
+        await comfyPage.nextFrame()
+
+        // Drag slightly to trigger the copy
+        await comfyPage.page.mouse.move(subgraphPos.x + 64, subgraphPos.y + 64)
+        await comfyPage.page.mouse.up()
+        await comfyPage.page.keyboard.up('Alt')
+
+        // Find all subgraph nodes
+        const subgraphNodes =
+          await comfyPage.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
+
+        // Expect a second subgraph node to be created (2 total)
+        expect(subgraphNodes.length).toBe(2)
+      })
+
+      test('Copying subgraph node by dragging + alt creates a new subgraph node with unique type', async ({
+        comfyPage
+      }) => {
+        await comfyPage.loadWorkflow('basic-subgraph')
+
+        const subgraphNode = await comfyPage.getNodeRefById('2')
+
+        // Get position of subgraph node
+        const subgraphPos = await subgraphNode.getPosition()
+
+        // Alt + Click on the subgraph node
+        await comfyPage.page.mouse.move(subgraphPos.x + 16, subgraphPos.y + 16)
+        await comfyPage.page.keyboard.down('Alt')
+        await comfyPage.page.mouse.down()
+        await comfyPage.nextFrame()
+
+        // Drag slightly to trigger the copy
+        await comfyPage.page.mouse.move(subgraphPos.x + 64, subgraphPos.y + 64)
+        await comfyPage.page.mouse.up()
+        await comfyPage.page.keyboard.up('Alt')
+
+        // Find all subgraph nodes and expect all unique IDs
+        const subgraphNodes =
+          await comfyPage.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
+
+        // Expect the second subgraph node to have a unique type
+        const nodeType1 = await subgraphNodes[0].getType()
+        const nodeType2 = await subgraphNodes[1].getType()
+        expect(nodeType1).not.toBe(nodeType2)
+      })
     })
   })
 

@@ -58,7 +58,7 @@ Testing LiteGraph-related functionality:
 
 ```typescript
 // Example from: tests-ui/tests/litegraph.test.ts
-import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph'
 import { describe, expect, it } from 'vitest'
 
 // Create dummy node for testing

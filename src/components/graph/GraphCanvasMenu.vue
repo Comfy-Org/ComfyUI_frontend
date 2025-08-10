@@ -58,7 +58,7 @@
       @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
     />
     <Button
-      v-tooltip.left="t('graphCanvasMenu.toggleMinimap') + ' (Alt + m)'"
+      v-tooltip.left="minimapTooltip"
       severity="secondary"
       :icon="'pi pi-map'"
       :aria-label="$t('graphCanvasMenu.toggleMinimap')"
@@ -70,24 +70,33 @@
 </template>
 
 <script setup lang="ts">
-import { LiteGraph } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const keybindingStore = useKeybindingStore()
 const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
 
 const minimapVisible = computed(() => settingStore.get('Comfy.Minimap.Visible'))
+const minimapTooltip = computed(() => {
+  const baseText = t('graphCanvasMenu.toggleMinimap')
+  const keybinding = keybindingStore.getKeybindingByCommandId(
+    'Comfy.Canvas.ToggleMinimap'
+  )
+  return keybinding ? `${baseText} (${keybinding.combo.toString()})` : baseText
+})
 const linkHidden = computed(
   () => settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK
 )

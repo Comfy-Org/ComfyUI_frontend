@@ -1,5 +1,4 @@
-import { LinkMarkerShape, LiteGraph } from '@comfyorg/litegraph'
-
+import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
