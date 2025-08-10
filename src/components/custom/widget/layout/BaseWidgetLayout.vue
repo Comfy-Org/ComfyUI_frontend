@@ -1,5 +1,7 @@
 <template>
-  <div class="base-widget-layout rounded-2xl overflow-hidden relative">
+  <div
+    class="base-widget-layout rounded-2xl overflow-hidden relative bg-neutral-50 dark-theme:bg-neutral-900"
+  >
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
       class="absolute top-4 right-16 z-10 transition-opacity duration-200"
