@@ -29,7 +29,19 @@ const config: KnipConfig = {
     '.husky/**',
     // Temporary or cache files
     '.vite/**',
-    'coverage/**'
+    'coverage/**',
+    // i18n config
+    '.i18nrc.cjs',
+    // Test setup files
+    'browser_tests/globalSetup.ts',
+    'browser_tests/globalTeardown.ts',
+    // Scripts
+    'scripts/**',
+    // Vite config files
+    'vite.electron.config.mts',
+    'vite.types.config.mts',
+    // Auto generated manager types
+    'src/types/generatedManagerTypes.ts'
   ],
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration
