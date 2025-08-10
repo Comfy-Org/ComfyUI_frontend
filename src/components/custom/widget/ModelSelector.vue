@@ -1,7 +1,7 @@
 <template>
   <BaseWidgetLayout>
     <template #leftPanel>
-      <LeftSidePanel :nav-items="temp_navigation">
+      <LeftSidePanel v-model="selectedNavItem" :nav-items="temp_navigation">
         <template #header-icon>
           <i-lucide:puzzle class="text-neutral" />
         </template>
@@ -26,13 +26,14 @@
 </template>
 
 <script setup lang="ts">
-import { provide, ref } from 'vue'
+import { provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 
 import BaseWidgetLayout from './layout/BaseWidgetLayout.vue'
+import LeftSidePanel from './panel/LeftSidePanel.vue'
 import RightSidePanel from './panel/RightSidePanel.vue'
 
 const { t } = useI18n()
@@ -61,4 +62,10 @@ const temp_navigation = ref<(NavItemData | NavGroupData)[]>([
     ]
   }
 ])
+
+const selectedNavItem = ref<string | null>('installed')
+
+watch(selectedNavItem, (newValue) => {
+  console.log('Selected navigation item changed:', newValue)
+})
 </script>

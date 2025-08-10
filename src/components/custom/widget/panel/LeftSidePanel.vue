@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 
 import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
 
@@ -42,8 +42,13 @@ import NavItem from '../nav/NavItem.vue'
 import NavTitle from '../nav/NavTitle.vue'
 import PanelHeader from './PanelHeader.vue'
 
-const { navItems = [] } = defineProps<{
-  navItems: (NavItemData | NavGroupData)[]
+const { navItems = [], modelValue } = defineProps<{
+  navItems?: (NavItemData | NavGroupData)[]
+  modelValue?: string | null
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string | null]
 }>()
 
 const getFirstItemId = () => {
@@ -60,8 +65,11 @@ const getFirstItemId = () => {
     return firstEntry.id
   }
 
-  return null // 해당하는 아이템이 없는 경우
+  return null
 }
 
-const activeItem = ref(getFirstItemId())
+const activeItem = computed({
+  get: () => modelValue ?? getFirstItemId(),
+  set: (value: string | null) => emit('update:modelValue', value)
+})
 </script>
