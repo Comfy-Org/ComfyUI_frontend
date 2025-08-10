@@ -1,16 +1,13 @@
 <template>
   <div class="flex items-center gap-3 px-3 py-2 w-full">
     <span
-      v-if="command.icon"
-      class="flex-shrink-0 w-5 text-center text-muted"
-      :class="command.icon"
-    />
-    <span
-      v-else
-      class="flex-shrink-0 w-5 text-center text-muted pi pi-chevron-right"
+      class="flex-shrink-0 w-5 text-center text-muted item-icon"
+      :class="command.icon ?? 'pi pi-chevron-right'"
     />
 
-    <span class="flex-grow overflow-hidden text-ellipsis whitespace-nowrap">
+    <span
+      class="flex-grow overflow-hidden text-ellipsis whitespace-nowrap item-label"
+    >
       <span
         v-html="highlightQuery(command.getTranslatedLabel(), currentQuery)"
       />
