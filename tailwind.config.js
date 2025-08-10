@@ -79,7 +79,7 @@ export default {
       colors: {
         zinc: {
           50: '#fafafa',
-          100: '#f4f4f5',
+          100: '#8282821a',
           200: '#e4e4e7',
           300: '#d4d4d8',
           400: '#a1a1aa',
