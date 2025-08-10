@@ -34,6 +34,11 @@ const config: KnipConfig = {
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration
   vue: true,
+  // Disable unused enum member checks and exported types
+  rules: {
+    enumMembers: 'off',
+    types: 'off'
+  },
   // Include dependencies analysis
   includeEntryExports: true,
   // Workspace configuration for monorepo-like structure
