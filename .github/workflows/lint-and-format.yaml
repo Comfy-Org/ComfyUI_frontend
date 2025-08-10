@@ -56,6 +56,7 @@ jobs:
         run: |
           npm run lint
           npm run format:check
+          npm run knip
 
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
