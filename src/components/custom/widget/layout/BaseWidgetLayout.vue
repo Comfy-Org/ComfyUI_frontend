@@ -1,13 +1,30 @@
 <template>
   <div class="base-widget-layout rounded-2xl overflow-hidden relative">
-    <IconButton class="absolute top-4 right-6" @click="closeDialog">
+    <IconButton
+      v-show="!isRightPanelOpen && hasRightPanel"
+      class="absolute top-4 right-16 z-10 transition-opacity duration-200"
+      :class="{
+        'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
+      }"
+      @click="toggleRightPanel"
+    >
+      <i-lucide:panel-right class="text-sm" />
+    </IconButton>
+    <IconButton
+      class="absolute top-4 right-6 z-10 transition-opacity duration-200"
+      @click="closeDialog"
+    >
       <i class="pi pi-times text-sm"></i>
     </IconButton>
     <div class="flex w-full h-full">
       <Transition name="slide-panel">
         <nav
           v-if="$slots.leftPanel && showLeftPanel"
-          :class="`${PANEL_SIZES.width} ${PANEL_SIZES.minWidth} ${PANEL_SIZES.maxWidth}`"
+          :class="[
+            PANEL_SIZES.width,
+            PANEL_SIZES.minWidth,
+            PANEL_SIZES.maxWidth
+          ]"
         >
           <slot name="leftPanel"></slot>
         </nav>
@@ -21,21 +38,18 @@
           >
             <div>
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">
-                <i-lucide:panel-left class="text-sm" />
+                <i-lucide:panel-left v-if="!showLeftPanel" class="text-sm" />
+                <i-lucide:panel-left-close v-else class="text-sm" />
               </IconButton>
               <slot name="header"></slot>
             </div>
-            <div class="flex gap-2 pr-12">
+            <div class="flex gap-2">
               <slot name="header-right-area"></slot>
               <IconButton
-                v-if="notMobile && !hideDesktopToggle"
-                @click="toggleLeftPanel"
+                v-if="isRightPanelOpen && hasRightPanel"
+                @click="toggleRightPanel"
               >
-                <i-lucide:panel-left-close
-                  v-if="showLeftPanel"
-                  class="text-sm"
-                />
-                <i-lucide:panel-left v-else class="text-sm" />
+                <i-lucide:panel-right-close class="text-sm" />
               </IconButton>
             </div>
           </header>
@@ -43,9 +57,14 @@
             <slot name="content"></slot>
           </main>
         </div>
-        <!-- <aside v-if="$slots.rightPanel">
-          <slot name="rightPanel"></slot>
-        </aside> -->
+        <Transition name="slide-panel-right">
+          <aside
+            v-if="hasRightPanel && isRightPanelOpen"
+            class="w-1/4 min-w-40 max-w-80"
+          >
+            <slot name="rightPanel"></slot>
+          </aside>
+        </Transition>
       </div>
     </div>
   </div>
@@ -53,7 +72,7 @@
 
 <script setup lang="ts">
 import { useBreakpoints } from '@vueuse/core'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, ref, useSlots, watch } from 'vue'
 
 import IconButton from '@/components/custom/button/IconButton.vue'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
@@ -65,17 +84,17 @@ const PANEL_SIZES = {
   maxWidth: 'max-w-56'
 }
 
-const { hideDesktopToggle = false } = defineProps<{
-  hideDesktopToggle?: boolean
-}>()
-
+const slots = useSlots()
 const closeDialog = inject(OnCloseKey, () => {})
 
 const breakpoints = useBreakpoints(BREAKPOINTS)
 const notMobile = breakpoints.greater('sm')
 
 const isLeftPanelOpen = ref<boolean>(true)
+const isRightPanelOpen = ref<boolean>(false)
 const mobileMenuOpen = ref<boolean>(false)
+
+const hasRightPanel = computed(() => !!slots.rightPanel)
 
 watch(notMobile, (isDesktop) => {
   if (!isDesktop) mobileMenuOpen.value = false
@@ -95,6 +114,10 @@ const toggleLeftPanel = () => {
     mobileMenuOpen.value = !mobileMenuOpen.value
   }
 }
+
+const toggleRightPanel = () => {
+  isRightPanelOpen.value = !isRightPanelOpen.value
+}
 </script>
 <style scoped>
 .base-widget-layout {
@@ -110,21 +133,40 @@ const toggleLeftPanel = () => {
   }
 }
 
+/* Fade transition for buttons */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* Slide transition for left panel */
 .slide-panel-enter-active,
 .slide-panel-leave-active {
-  transition: all 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .slide-panel-enter-from,
 .slide-panel-leave-to {
-  margin-left: -16rem; /* -256px for w-56 max width */
-  opacity: 0;
+  transform: translateX(-100%);
 }
 
-.slide-panel-enter-to,
-.slide-panel-leave-from {
-  margin-left: 0;
-  opacity: 1;
+/* Slide transition for right panel */
+.slide-panel-right-enter-active,
+.slide-panel-right-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.slide-panel-right-enter-from,
+.slide-panel-right-leave-to {
+  transform: translateX(100%);
 }
 </style>
