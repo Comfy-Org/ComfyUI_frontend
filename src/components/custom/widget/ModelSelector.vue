@@ -13,6 +13,7 @@
 
     <template #header>
       <!-- here -->
+      <SearchBox v-model:="searchQuery" class="max-w-[384px]" />
     </template>
 
     <template #content>
@@ -32,6 +33,7 @@ import { useI18n } from 'vue-i18n'
 import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 
+import SearchBox from '../input/SearchBox.vue'
 import BaseWidgetLayout from './layout/BaseWidgetLayout.vue'
 import LeftSidePanel from './panel/LeftSidePanel.vue'
 import RightSidePanel from './panel/RightSidePanel.vue'
@@ -41,6 +43,7 @@ const { t } = useI18n()
 const { onClose } = defineProps<{
   onClose: () => void
 }>()
+const searchQuery = ref<string>('')
 
 provide(OnCloseKey, onClose)
 
