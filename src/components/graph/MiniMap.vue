@@ -2,11 +2,7 @@
   <div
     v-if="visible && initialized"
     ref="containerRef"
-    class="litegraph-minimap absolute right-[90px] z-[1000]"
-    :class="{
-      'bottom-[20px]': !bottomPanelStore.bottomPanelVisible,
-      'bottom-[280px]': bottomPanelStore.bottomPanelVisible
-    }"
+    class="litegraph-minimap absolute right-[100px] z-[1000] bottom-[50px]"
     :style="containerStyles"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
@@ -29,11 +25,9 @@ import { onMounted, onUnmounted, watch } from 'vue'
 
 import { useMinimap } from '@/composables/useMinimap'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 const minimap = useMinimap()
 const canvasStore = useCanvasStore()
-const bottomPanelStore = useBottomPanelStore()
 
 const {
   initialized,
