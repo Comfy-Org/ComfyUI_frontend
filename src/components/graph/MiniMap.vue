@@ -2,10 +2,6 @@
   <div
     v-if="visible && initialized"
     class="flex absolute bottom-[20px] right-[90px] z-[1000]"
-    :class="{
-      'bottom-[20px]': !bottomPanelStore.bottomPanelVisible,
-      'bottom-[280px]': bottomPanelStore.bottomPanelVisible
-    }"
   >
     <MiniMapPanel
       v-if="showOptionsPanel"
@@ -62,13 +58,11 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useMinimap } from '@/composables/useMinimap'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 
 const minimap = useMinimap()
 const canvasStore = useCanvasStore()
-const bottomPanelStore = useBottomPanelStore()
 
 const {
   initialized,
