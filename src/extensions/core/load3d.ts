@@ -178,6 +178,16 @@ useExtensionService().registerExtension({
       },
       defaultValue: 0.5,
       experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.3DViewerEnable',
+      category: ['3D', '3DViewer', 'Enable'],
+      name: 'Enable 3D Viewer (Beta)',
+      tooltip:
+        'Enables the 3D Viewer (Beta) for selected nodes. This feature allows you to visualize and interact with 3D models directly within the full size 3d viewer.',
+      type: 'boolean',
+      defaultValue: false,
+      experimental: true
     }
   ],
   commands: [

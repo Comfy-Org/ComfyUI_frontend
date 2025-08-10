@@ -58,7 +58,7 @@
       @export-model="handleExportModel"
     />
     <div
-      v-if="showRecordingControls"
+      v-if="enable3DViewer"
       class="absolute top-12 right-2 z-20 pointer-events-auto"
     >
       <ViewerControls :node="node" />
@@ -66,7 +66,11 @@
 
     <div
       v-if="showRecordingControls"
-      class="absolute top-24 right-2 z-20 pointer-events-auto"
+      class="absolute right-2 z-20 pointer-events-auto"
+      :class="{
+        'top-12': !enable3DViewer,
+        'top-24': enable3DViewer
+      }"
     >
       <RecordingControls
         :node="node"
@@ -99,6 +103,7 @@ import {
 } from '@/extensions/core/load3d/interfaces'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 
 const { t } = useI18n()
@@ -129,6 +134,9 @@ const isRecording = ref(false)
 const hasRecording = ref(false)
 const recordingDuration = ref(0)
 const showRecordingControls = ref(!inputSpec.isPreview)
+const enable3DViewer = computed(() =>
+  useSettingStore().get('Comfy.Load3D.3DViewerEnable')
+)
 
 const showPreviewButton = computed(() => {
   return !type.includes('Preview')

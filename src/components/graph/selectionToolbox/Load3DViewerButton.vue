@@ -19,14 +19,17 @@ import { computed } from 'vue'
 import { t } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 
 const is3DNode = computed(() => {
+  const enable3DViewer = useSettingStore().get('Comfy.Load3D.3DViewerEnable')
   const nodes = canvasStore.selectedItems.filter(isLGraphNode)
-  return nodes.length === 1 && nodes.some(isLoad3dNode)
+
+  return nodes.length === 1 && nodes.some(isLoad3dNode) && enable3DViewer
 })
 
 const open3DViewer = () => {
