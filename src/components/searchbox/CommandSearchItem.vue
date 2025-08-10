@@ -1,79 +1,53 @@
 <template>
-  <div class="comfy-command-search-item">
-    <span v-if="command.icon" class="item-icon" :class="command.icon" />
-    <span v-else class="item-icon pi pi-chevron-right" />
+  <div class="flex items-center gap-3 px-3 py-2 w-full">
+    <span
+      v-if="command.icon"
+      class="flex-shrink-0 w-5 text-center text-muted"
+      :class="command.icon"
+    />
+    <span
+      v-else
+      class="flex-shrink-0 w-5 text-center text-muted pi pi-chevron-right"
+    />
 
-    <span class="item-label">
-      <span v-html="highlightedLabel" />
+    <span class="flex-grow overflow-hidden text-ellipsis whitespace-nowrap">
+      <span
+        v-html="highlightQuery(command.getTranslatedLabel(), currentQuery)"
+      />
     </span>
 
-    <span v-if="command.keybinding" class="item-keybinding">
+    <span
+      v-if="command.keybinding"
+      class="flex-shrink-0 text-xs px-1.5 py-0.5 border rounded font-mono keybinding-badge"
+    >
       {{ command.keybinding.combo.toString() }}
     </span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { ComfyCommandImpl } from '@/stores/commandStore'
+import { highlightQuery } from '@/utils/formatUtil'
 
 const { command, currentQuery } = defineProps<{
   command: ComfyCommandImpl
   currentQuery: string
 }>()
-
-const highlightedLabel = computed(() => {
-  const label = command.getTranslatedLabel()
-  if (!currentQuery) return label
-
-  // Simple highlighting logic - case insensitive
-  const regex = new RegExp(
-    `(${currentQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`,
-    'gi'
-  )
-  return label.replace(regex, '<mark>$1</mark>')
-})
 </script>
 
 <style scoped>
-.comfy-command-search-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  width: 100%;
-}
-
-.item-icon {
-  flex-shrink: 0;
-  width: 1.25rem;
-  text-align: center;
-  color: var(--p-text-muted-color);
-}
-
-.item-label {
-  flex-grow: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-label :deep(mark) {
-  background-color: var(--p-highlight-background);
-  color: var(--p-highlight-color);
-  font-weight: 600;
-  padding: 0;
-}
-
-.item-keybinding {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  padding: 0.125rem 0.375rem;
-  border: 1px solid var(--p-content-border-color);
+:deep(.highlight) {
+  background-color: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+  font-weight: bold;
   border-radius: 0.25rem;
-  background: var(--p-content-hover-background);
+  padding: 0 0.125rem;
+  margin: -0.125rem 0.125rem;
+}
+
+.keybinding-badge {
+  border-color: var(--p-content-border-color);
+  background-color: var(--p-content-hover-background);
   color: var(--p-text-muted-color);
-  font-family: monospace;
 }
 </style>
