@@ -107,6 +107,9 @@
   "Comfy_ContactSupport": {
     "label": "聯絡支援"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "顯示模型選擇器（開發）"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "複製目前工作流程"
   },
