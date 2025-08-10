@@ -15,7 +15,7 @@
         </span>
       </template>
       <template #dropdownicon>
-        <i-lucide:chevron-down class="text-lg text-neutral-500" />
+        <i-lucide:chevron-down class="text-lg text-neutral-400" />
       </template>
       <template #option="slotProps">
         <div class="flex items-center gap-2">
@@ -23,8 +23,8 @@
             class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border-2 transition-all duration-200"
             :class="
               slotProps.selected
-                ? 'border-blue-500 bg-blue-500'
-                : 'border-neutral-300 dark-theme:border-zinc-600 bg-neutral-100 dark-theme:bg-zinc-700 hover:border-blue-400'
+                ? 'border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
+                : 'border-neutral-300 dark-theme:border-zinc-600 bg-neutral-100 dark-theme:bg-zinc-700'
             "
           >
             <i-lucide:check
@@ -39,7 +39,7 @@
 
     <div
       v-if="selectedCount > 0"
-      class="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold text-white"
+      class="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 dark-theme:bg-blue-500 text-xs font-semibold text-white"
     >
       {{ selectedCount }}
     </div>
@@ -77,7 +77,9 @@ const pt = computed(() => ({
       'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
       'transition-all duration-200 ease-in-out',
       'border-2.5 border-solid',
-      selectedCount.value > 0 ? 'border-blue-500' : 'border-transparent',
+      selectedCount.value > 0
+        ? 'border-blue-400 dark-theme:border-blue-500'
+        : 'border-transparent',
       { 'opacity-60 cursor-default': props.disabled }
     ]
   }),
