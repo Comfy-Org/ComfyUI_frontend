@@ -107,6 +107,9 @@
   "Comfy_ContactSupport": {
     "label": "지원팀에 문의하기"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "모델 선택기 표시 (개발자용)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "현재 워크플로 복제"
   },

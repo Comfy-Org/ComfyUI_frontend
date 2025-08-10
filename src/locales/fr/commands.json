@@ -107,6 +107,9 @@
   "Comfy_ContactSupport": {
     "label": "Contacter le support"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Afficher le sélecteur de modèle (Dev)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Dupliquer le flux de travail actuel"
   },
