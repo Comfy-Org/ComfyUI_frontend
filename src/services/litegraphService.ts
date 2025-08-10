@@ -809,6 +809,7 @@ export const useLitegraphService = () => {
         options.unshift({
           content: 'Unpack Subgraph',
           callback: () => {
+            useNodeOutputStore().revokeSubgraphPreviews(this)
             this.graph.unpackSubgraph(this)
           }
         })

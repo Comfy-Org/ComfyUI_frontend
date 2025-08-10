@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutedWsMessage,
   ResultItem,
@@ -268,6 +268,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     app.nodePreviewImages = {}
   }
 
+  /**
+   * Revoke all preview of a subgraph node and the graph it contains.
+   * Does not recurse to contents of nested subgraphs.
+   */
+  function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
+    const graphId =
+      subgraphNode.graph == app.graph ? '' : subgraphNode.graph.id + ':'
+    revokePreviewsByExecutionId(graphId + subgraphNode.id)
+    for (const node of subgraphNode.subgraph.nodes) {
+      revokePreviewsByExecutionId(subgraphNode.subgraph.id + node.id)
+    }
+  }
+
   return {
     getNodeOutputs,
     getNodeImageUrls,
@@ -279,6 +292,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setNodePreviewsByNodeId,
     revokePreviewsByExecutionId,
     revokeAllPreviews,
+    revokeSubgraphPreviews,
     getPreviewParam
   }
 })
