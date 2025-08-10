@@ -892,11 +892,7 @@
   "zoomControls": {
     "zoomToFit": "Zoom To Fit",
     "showMinimap": "Show Minimap",
-    "hideMinimap": "Hide Minimap",
-    "zoomInShortcut": "Ctrl +",
-    "zoomOutShortcut": "Ctrl -",
-    "zoomToFitShortcut": ".",
-    "showMinimapShortcut": "Alt+M"
+    "hideMinimap": "Hide Minimap"
   },
   "groupNode": {
     "create": "Create group node",

@@ -30,7 +30,7 @@
               $t('graphCanvasMenu.zoomIn')
             }}</span>
             <span class="text-sm text-gray-500 block">{{
-              $t('zoomControls.zoomInShortcut')
+              zoomInCommandText
             }}</span>
           </template>
         </Button>
@@ -56,7 +56,7 @@
               $t('graphCanvasMenu.zoomOut')
             }}</span>
             <span class="text-sm text-gray-500 block">{{
-              $t('zoomControls.zoomOutShortcut')
+              zoomOutCommandText
             }}</span>
           </template>
         </Button>
@@ -80,7 +80,7 @@
               $t('zoomControls.zoomToFit')
             }}</span>
             <span class="text-sm text-gray-500 block">{{
-              $t('zoomControls.zoomToFitShortcut')
+              zoomToFitCommandText
             }}</span>
           </template>
         </Button>
@@ -104,10 +104,11 @@
               minimapToggleText
             }}</span>
             <span class="text-sm text-gray-500 block">{{
-              $t('zoomControls.showMinimapShortcut')
+              showMinimapCommandText
             }}</span>
           </template>
         </Button>
+        <hr class="border-[#E1DED5] dark-theme:border-[#2E3037]" />
         <div
           class="flex items-center px-2 bg-[#E7E6E6] dark-theme:bg-[#444444] rounded p-2"
         >
@@ -146,6 +147,7 @@ const minimap = useMinimap()
 const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const { formatKeySequence } = useCommandStore()
 
 interface Props {
   visible: boolean
@@ -194,4 +196,16 @@ const filteredMinimapStyles = computed(() => {
     width: undefined
   }
 })
+const zoomInCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ZoomIn'))
+)
+const zoomOutCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ZoomOut'))
+)
+const zoomToFitCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
+)
+const showMinimapCommandText = computed(() =>
+  formatKeySequence(commandStore.getCommand('Comfy.Canvas.ToggleMinimap'))
+)
 </script>
