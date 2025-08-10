@@ -57,10 +57,11 @@
       @input="handleInput"
     >
       <template #option="{ option }">
+        <!-- Command search item, Remove the '>' prefix from the query -->
         <CommandSearchItem
           v-if="isCommandMode"
           :command="option"
-          :current-query="currentQuery"
+          :current-query="currentQuery.substring(1)"
         />
         <NodeSearchItem
           v-else
