@@ -370,6 +370,7 @@
     "resultsCount": "Encontrados {count} resultados",
     "save": "Guardar",
     "saving": "Guardando",
+    "searchCommands": "Buscar comandos",
     "searchExtensions": "Buscar extensiones",
     "searchFailedMessage": "No pudimos encontrar ninguna configuración que coincida con tu búsqueda. Intenta ajustar tus términos de búsqueda.",
     "searchKeybindings": "Buscar combinaciones de teclas",

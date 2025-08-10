@@ -370,6 +370,7 @@
     "resultsCount": "找到 {count} 筆結果",
     "save": "儲存",
     "saving": "儲存中",
+    "searchCommands": "搜尋指令",
     "searchExtensions": "搜尋擴充套件",
     "searchFailedMessage": "找不到符合您搜尋的設定。請嘗試調整搜尋條件。",
     "searchKeybindings": "搜尋快捷鍵",

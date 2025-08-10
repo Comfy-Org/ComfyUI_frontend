@@ -370,6 +370,7 @@
     "resultsCount": "{count} Résultats Trouvés",
     "save": "Enregistrer",
     "saving": "Enregistrement",
+    "searchCommands": "Rechercher des commandes",
     "searchExtensions": "Rechercher des extensions",
     "searchFailedMessage": "Nous n'avons trouvé aucun paramètre correspondant à votre recherche. Essayez d'ajuster vos termes de recherche.",
     "searchKeybindings": "Rechercher des raccourcis clavier",

@@ -370,6 +370,7 @@
     "resultsCount": "{count}件の結果が見つかりました",
     "save": "保存",
     "saving": "保存中",
+    "searchCommands": "コマンドを検索",
     "searchExtensions": "拡張機能を検索",
     "searchFailedMessage": "検索に一致する設定が見つかりませんでした。検索キーワードを調整してみてください。",
     "searchKeybindings": "キーバインディングを検索",
