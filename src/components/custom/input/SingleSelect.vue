@@ -1,6 +1,5 @@
 <template>
   <div class="relative inline-flex items-center">
-    <slot name="label-icon" />
     <Select
       v-model="selectedItem"
       :options="props.options"
@@ -10,15 +9,18 @@
       :pt="pt"
     >
       <template #value="slotProps">
-        <span
-          v-if="slotProps.value"
-          class="text-sm text-zinc-700 dark-theme:text-gray-200"
-        >
-          {{ slotProps.value.name }}
-        </span>
-        <span v-else class="text-sm text-zinc-400 dark-theme:text-gray-500">
-          {{ props.label }}
-        </span>
+        <div class="flex items-center gap-2">
+          <slot name="label-icon" />
+          <span
+            v-if="slotProps.value"
+            class="text-sm text-zinc-700 dark-theme:text-gray-200"
+          >
+            {{ slotProps.value.name }}
+          </span>
+          <span v-else class="text-sm text-zinc-400 dark-theme:text-gray-500">
+            {{ props.label }}
+          </span>
+        </div>
       </template>
       <template #dropdownicon>
         <i-lucide:chevron-down class="text-lg text-neutral-400" />
@@ -51,17 +53,20 @@ const props = withDefaults(defineProps<Props>(), {
 const selectedItem = defineModel<Option | null>({ required: true })
 
 const pt = computed(() => ({
-  root: ({ props }: SelectPassThroughMethodOptions<Option>) => ({
+  root: ({ props, state }: SelectPassThroughMethodOptions<Option>) => ({
     class: [
-      'relative inline-flex cursor-pointer select-none w-full',
+      'relative inline-flex cursor-pointer select-none w-full border border-solid border-transparent',
       'rounded-lg text-neutral dark-theme:text-white',
       'transition-all duration-200 ease-in-out',
-      { 'opacity-60 cursor-default': props.disabled }
+      { 'opacity-60 cursor-default': props.disabled },
+      {
+        'border-zinc-300 dark-theme:border-zinc-800': state.overlayVisible
+      }
     ]
   }),
   label: {
     class:
-      'flex-1 flex items-center cursor-pointer overflow-hidden whitespace-nowrap pl-4 py-2'
+      'flex-1 flex items-center cursor-pointer overflow-hidden whitespace-nowrap pl-3 py-2'
   },
   dropdown: {
     class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
