@@ -190,5 +190,17 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'k'
     },
     commandId: 'Workspace.ToggleBottomPanel.Shortcuts'
+  },
+  {
+    combo: {
+      key: 'v'
+    },
+    commandId: 'Comfy.Canvas.Unlock'
+  },
+  {
+    combo: {
+      key: 'h'
+    },
+    commandId: 'Comfy.Canvas.Lock'
   }
 ]

@@ -881,8 +881,22 @@
     "fitView": "Fit View",
     "selectMode": "Select Mode",
     "panMode": "Pan Mode",
-    "toggleLinkVisibility": "Toggle Link Visibility",
-    "toggleMinimap": "Toggle Minimap"
+    "toggleMinimap": "Toggle Minimap",
+    "select": "Select",
+    "hand": "Hand",
+    "zoomOptions": "Zoom Options",
+    "focusMode":"Focus Mode",
+    "hideLinks": "Hide Links",
+    "showLinks":"Show Links"
+  },
+  "zoomControls": {
+    "zoomToFit": "Zoom To Fit",
+    "showMinimap": "Show Minimap",
+    "hideMinimap": "Hide Minimap",
+    "zoomInShortcut": "Ctrl +",
+    "zoomOutShortcut": "Ctrl -",
+    "zoomToFitShortcut": ".",
+    "showMinimapShortcut": "Alt+M"
   },
   "groupNode": {
     "create": "Create group node",

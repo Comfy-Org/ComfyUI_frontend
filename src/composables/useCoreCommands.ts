@@ -293,8 +293,26 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.ToggleLock',
       icon: 'pi pi-lock',
       label: 'Canvas Toggle Lock',
+      category: 'view-controls' as const,
       function: () => {
         app.canvas['read_only'] = !app.canvas['read_only']
+      }
+    },
+    {
+      id: 'Comfy.Canvas.Lock',
+      icon: 'pi pi-lock',
+      label: 'Lock Canvas',
+      category: 'view-controls' as const,
+      function: () => {
+        app.canvas['read_only'] = true
+      }
+    },
+    {
+      id: 'Comfy.Canvas.Unlock',
+      icon: 'pi pi-lock-open',
+      label: 'Unlock Canvas',
+      function: () => {
+        app.canvas['read_only'] = false
       }
     },
     {
