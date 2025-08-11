@@ -17,6 +17,13 @@ interface GraphCallbacks {
   onConnectionChange?: (node: LGraphNode) => void
 }
 
+export type MinimapOptionKey =
+  | 'Comfy.Minimap.NodeColors'
+  | 'Comfy.Minimap.ShowLinks'
+  | 'Comfy.Minimap.ShowGroups'
+  | 'Comfy.Minimap.RenderBypassState'
+  | 'Comfy.Minimap.RenderErrorState'
+
 export function useMinimap() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
@@ -42,7 +49,7 @@ export function useMinimap() {
     settingStore.get('Comfy.Minimap.RenderErrorState')
   )
 
-  const updateOption = async (key: any, value: boolean) => {
+  const updateOption = async (key: MinimapOptionKey, value: boolean) => {
     await settingStore.set(key, value)
 
     needsFullRedraw.value = true

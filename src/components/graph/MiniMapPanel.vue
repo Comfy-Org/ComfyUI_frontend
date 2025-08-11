@@ -80,6 +80,8 @@
 <script setup lang="ts">
 import Checkbox from 'primevue/checkbox'
 
+import { MinimapOptionKey } from '@/composables/useMinimap'
+
 defineProps<{
   panelStyles: any
   nodeColors: boolean
@@ -90,6 +92,6 @@ defineProps<{
 }>()
 
 defineEmits<{
-  updateOption: [key: any, value: boolean]
+  updateOption: [key: MinimapOptionKey, value: boolean]
 }>()
 </script>
