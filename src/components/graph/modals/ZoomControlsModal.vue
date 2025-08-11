@@ -8,7 +8,7 @@
       :style="filteredMinimapStyles"
       @click.stop
     >
-      <div class="space-y-3">
+      <div>
         <Button
           severity="secondary"
           text
@@ -111,6 +111,7 @@
         </Button>
         <hr class="border-[#E1DED5] dark-theme:border-[#2E3037]" />
         <div
+          ref="zoomInputContainer"
           class="flex items-center px-2 bg-[#E7E6E6] dark-theme:bg-[#444444] rounded p-2"
         >
           <InputNumber
@@ -135,7 +136,7 @@
 
 <script setup lang="ts">
 import { Button, InputNumber, InputNumberInputEvent } from 'primevue'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMinimap } from '@/composables/useMinimap'
@@ -154,7 +155,7 @@ interface Props {
   visible: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const interval = ref<number | null>(null)
 
@@ -208,5 +209,20 @@ const zoomToFitCommandText = computed(() =>
 )
 const showMinimapCommandText = computed(() =>
   formatKeySequence(commandStore.getCommand('Comfy.Canvas.ToggleMinimap'))
+)
+const zoomInput = ref<InstanceType<typeof InputNumber> | null>(null)
+const zoomInputContainer = ref<HTMLDivElement | null>(null)
+
+watch(
+  () => props.visible,
+  async (newVal) => {
+    if (newVal) {
+      await nextTick()
+      const input = zoomInputContainer.value?.querySelector(
+        'input'
+      ) as HTMLInputElement
+      input?.focus()
+    }
+  }
 )
 </script>
