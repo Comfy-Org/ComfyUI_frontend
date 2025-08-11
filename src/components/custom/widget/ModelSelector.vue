@@ -17,17 +17,21 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconButton size="sm" class="bg-orange-500 text-white">
+        <IconButton
+          size="sm"
+          class="!bg-orange-500 text-white"
+          @click="console.log('Hello World!!')"
+        >
           <i-lucide:triangle-alert />
         </IconButton>
         <IconGroup>
-          <IconButton>
+          <IconButton @click="console.log('Hello World!!')">
             <i-lucide:heart />
           </IconButton>
-          <IconButton>
+          <IconButton @click="console.log('Hello World!!')">
             <i-lucide:download />
           </IconButton>
-          <IconButton>
+          <IconButton @click="console.log('Hello World!!')">
             <i-lucide:external-link />
           </IconButton>
         </IconGroup>
@@ -89,6 +93,64 @@
           :options="projectOptions"
         />
       </div>
+
+      <!-- Card Examples -->
+      <div class="grid grid-cols-6 gap-4 px-6 py-4">
+        <!-- Square Card -->
+        <CardContainer ratio="tallPortrait">
+          <template #top>
+            <CardTop ratio="square">
+              <template #default>
+                <div class="w-full h-full bg-blue-500"></div>
+              </template>
+              <template #top-right>
+                <IconButton
+                  class="!bg-white !text-neutral-900"
+                  @click="console.log('Hello World!!')"
+                >
+                  <i-lucide:info />
+                </IconButton>
+              </template>
+              <template #bottom-right>
+                <SquareTag label="png" />
+                <SquareTag label="1.2 MB" />
+                <SquareTag label="LoRA">
+                  <template #icon>
+                    <i-lucide:folder />
+                  </template>
+                </SquareTag>
+              </template>
+            </CardTop>
+          </template>
+          <template #bottom>
+            <CardBottom></CardBottom>
+          </template>
+        </CardContainer>
+
+        <!-- Tall Card -->
+        <CardContainer ratio="portrait">
+          <template #top>
+            <CardTop ratio="square">
+              <div class="w-full h-full bg-red-500"></div>
+            </CardTop>
+          </template>
+          <template #bottom>
+            <CardBottom></CardBottom>
+          </template>
+        </CardContainer>
+
+        <!-- Taller Card -->
+        <CardContainer ratio="square">
+          <template #top>
+            <CardTop ratio="landscape">
+              <div class="w-full h-full bg-red-500"></div>
+            </CardTop>
+          </template>
+          <template #bottom>
+            <CardBottom></CardBottom>
+          </template>
+        </CardContainer>
+      </div>
     </template>
 
     <template #rightPanel>
@@ -104,9 +166,14 @@ import { useI18n } from 'vue-i18n'
 import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 
+import SquareTag from '../SquareTag.vue'
+import IconButton from '../button/IconButton.vue'
 import IconTextButton from '../button/IconTextButton.vue'
 import MoreButton from '../button/MoreButton.vue'
 import TextButton from '../button/TextButton.vue'
+import CardBottom from '../card/CardBottom.vue'
+import CardContainer from '../card/CardContainer.vue'
+import CardTop from '../card/CardTop.vue'
 import MultiSelect from '../input/MultiSelect.vue'
 import SearchBox from '../input/SearchBox.vue'
 import BaseWidgetLayout from './layout/BaseWidgetLayout.vue'

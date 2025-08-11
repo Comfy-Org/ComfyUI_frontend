@@ -1,30 +1,38 @@
 <template>
-  <button :class="buttonStyle" role="button" @click="onClick">
+  <Button unstyled :class="buttonStyle" @click="onClick">
     <slot></slot>
-  </button>
+  </Button>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import { computed } from 'vue'
-import type { HTMLAttributes } from 'vue'
+
+import type { BaseButtonProps } from '@/types/custom_components/buttonTypes'
+import {
+  getBaseButtonClasses,
+  getButtonTypeClasses,
+  getIconButtonSizeClasses
+} from '@/types/custom_components/buttonTypes'
+
+interface IconButtonProps extends BaseButtonProps {
+  onClick: (event: Event) => void
+}
 
 const {
   size = 'md',
+  type = 'secondary',
   class: className,
   onClick
-} = defineProps<{
-  size?: 'sm' | 'md'
-  class?: HTMLAttributes['class']
-  onClick: (event: Event) => void
-}>()
+} = defineProps<IconButtonProps>()
 
 const buttonStyle = computed(() => {
-  const baseClasses =
-    'flex justify-center items-center flex-shrink-0 outline-none border-none p-0 bg-white text-neutral-950 dark-theme:bg-zinc-700 dark-theme:text-white cursor-pointer'
+  const baseClasses = `${getBaseButtonClasses()} p-0`
+  const sizeClasses = getIconButtonSizeClasses(size)
+  const typeClasses = getButtonTypeClasses(type)
 
-  const sizeClasses =
-    size === 'sm' ? 'w-6 h-6 text-xs rounded-md' : 'w-8 h-8 text-sm rounded-lg'
-
-  return [baseClasses, sizeClasses, className].filter(Boolean).join(' ')
+  return [baseClasses, sizeClasses, typeClasses, className]
+    .filter(Boolean)
+    .join(' ')
 })
 </script>

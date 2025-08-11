@@ -1,39 +1,44 @@
 <template>
-  <button :class="buttonStyle" role="button" @click="onClick">
+  <Button unstyled :class="buttonStyle" @click="onClick">
     <slot v-if="iconPosition !== 'right'" name="icon"></slot>
-    <span class="text-sm">{{ label }}</span>
+    <span>{{ label }}</span>
     <slot v-if="iconPosition === 'right'" name="icon"></slot>
-  </button>
+  </Button>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import { computed } from 'vue'
 
-const {
-  type = 'primary',
-  iconPosition = 'left',
-  label,
-  onClick
-} = defineProps<{
-  type?: 'primary' | 'secondary' | 'transparent'
+import type { BaseButtonProps } from '@/types/custom_components/buttonTypes'
+import {
+  getBaseButtonClasses,
+  getButtonSizeClasses,
+  getButtonTypeClasses
+} from '@/types/custom_components/buttonTypes'
+
+interface IconTextButtonProps extends BaseButtonProps {
   iconPosition?: 'left' | 'right'
   label: string
   onClick: () => void
-}>()
+}
+
+const {
+  size = 'md',
+  type = 'primary',
+  class: className,
+  iconPosition = 'left',
+  label,
+  onClick
+} = defineProps<IconTextButtonProps>()
 
 const buttonStyle = computed(() => {
-  const baseClasses =
-    'flex items-center gap-2 flex-shrink-0 outline-none border-none px-2.5 py-2 rounded-lg cursor-pointer transition-all duration-200'
+  const baseClasses = `${getBaseButtonClasses()} !justify-start gap-2`
+  const sizeClasses = getButtonSizeClasses(size)
+  const typeClasses = getButtonTypeClasses(type)
 
-  switch (type) {
-    case 'primary':
-      return `${baseClasses} bg-neutral-900 text-white dark-theme:bg-white dark-theme:text-neutral-900`
-    case 'secondary':
-      return `${baseClasses} bg-white text-neutral dark-theme:bg-zinc-700 dark-theme:text-white`
-    case 'transparent':
-      return `${baseClasses} bg-transparent text-neutral-400 dark-theme:text-neutral-400`
-    default:
-      return `${baseClasses} bg-white text-neutral dark-theme:bg-zinc-700 dark-theme:text-white`
-  }
+  return [baseClasses, sizeClasses, typeClasses, className]
+    .filter(Boolean)
+    .join(' ')
 })
 </script>
