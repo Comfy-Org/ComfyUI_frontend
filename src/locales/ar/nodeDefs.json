@@ -2842,15 +2842,15 @@
     "description": "يستخدم النموذج المقدم، والتوجيه الإيجابي والسلبي لإزالة الضجيج من الصورة الكامنة.",
     "inputs": {
       "model": {
-        "name": "model",
+        "name": "النمودج",
         "tooltip": "النموذج المستخدم لإزالة الضجيج من الصورة الكامنة المدخلة."
       },
       "seed": {
-        "name": "seed",
+        "name": "بذرة",
         "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضجيج."
       },
       "steps": {
-        "name": "steps",
+        "name": "الخطوات",
         "tooltip": "عدد الخطوات المستخدمة في عملية إزالة الضجيج."
       },
       "cfg": {
@@ -2858,27 +2858,27 @@
         "tooltip": "مقياس التوجيه بدون مصنف يوازن بين الإبداع والالتزام بالتوجيه. القيم الأعلى تؤدي إلى صور أقرب للنص، لكن القيم العالية جدًا تؤثر سلبًا على الجودة."
       },
       "sampler_name": {
-        "name": "sampler_name",
+        "name": "اسم المقطع",
         "tooltip": "الخوارزمية المستخدمة أثناء أخذ العينات، قد تؤثر على الجودة، السرعة، وأسلوب الناتج."
       },
       "scheduler": {
-        "name": "scheduler",
+        "name": "المجدول",
         "tooltip": "الجدول الزمني يتحكم في كيفية إزالة الضجيج تدريجيًا لتشكيل الصورة."
       },
       "positive": {
-        "name": "positive",
+        "name": "إيجابي",
         "tooltip": "التوجيه الذي يصف الخصائص التي تريد تضمينها في الصورة."
       },
       "negative": {
-        "name": "negative",
+        "name": "سلبي",
         "tooltip": "التوجيه الذي يصف الخصائص التي تريد استبعادها من الصورة."
       },
       "latent_image": {
-        "name": "latent_image",
+        "name": "الصوره الكامنه",
         "tooltip": "الصورة الكامنة التي سيتم إزالة الضجيج منها."
       },
       "denoise": {
-        "name": "denoise",
+        "name": "ازاله الضجيج",
         "tooltip": "مقدار إزالة الضجيج المطبق، القيم الأقل تحافظ على هيكل الصورة الأصلية مما يسمح بأخذ العينات من صورة إلى أخرى."
       },
       "control_after_generate": {
@@ -2895,43 +2895,43 @@
     "display_name": "KSampler (متقدم)",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "النموذج"
       },
       "add_noise": {
-        "name": "add_noise"
+        "name": "اضافة ضجيج"
       },
       "noise_seed": {
-        "name": "noise_seed"
+        "name": "بذرة الضجيج"
       },
       "steps": {
-        "name": "steps"
+        "name": "الخطوات"
       },
       "cfg": {
         "name": "cfg"
       },
       "sampler_name": {
-        "name": "sampler_name"
+        "name": "اسم المقطع"
       },
       "scheduler": {
-        "name": "scheduler"
+        "name": "المجدول"
       },
       "positive": {
-        "name": "positive"
+        "name": "إيجابي"
       },
       "negative": {
-        "name": "negative"
+        "name": "سلبي"
       },
       "latent_image": {
-        "name": "latent_image"
+        "name": "الصوره الكامنة"
       },
       "start_at_step": {
-        "name": "start_at_step"
+        "name": "ابدأ بالخطوة"
       },
       "end_at_step": {
-        "name": "end_at_step"
+        "name": "توقف عند الخطوة"
       },
       "return_with_leftover_noise": {
-        "name": "return_with_leftover_noise"
+        "name": "أخرج بالضجيج المتبقي"
       },
       "control_after_generate": {
         "name": "التحكم بعد الإنشاء"
@@ -2950,7 +2950,7 @@
     "display_name": "جدول لاپلاس",
     "inputs": {
       "steps": {
-        "name": "steps"
+        "name": "الخطوات"
       },
       "sigma_max": {
         "name": "sigma_max"
