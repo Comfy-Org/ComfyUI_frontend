@@ -97,7 +97,8 @@ const customFlag = featureFlag('extension.custom.feature', defaultValue)
 
 | Flag | Type | Description |
 |------|------|-------------|
-| `extension.manager.supports_v4` | boolean | ComfyUI-Manager supports v4 API |
+| `extension.manager.supports_v4` | boolean | ComfyUI-Manager supports v4 features |
+| `extension.manager.api_version` | string | Manager API version ('v1' or 'v2') |
 
 ## Usage Examples
 
@@ -133,6 +134,41 @@ const { featureFlag } = useFeatureFlags()
 const supportsWebGL = featureFlag('client.rendering.webgl', false)
 const maxNodes = featureFlag('limits.max_nodes', 1000)
 const theme = featureFlag('ui.theme', 'dark')
+```
+
+### Manager Integration Pattern
+
+The manager uses both command line configuration and feature flags:
+
+```typescript
+// Command line args determine user configuration:
+// --disable-manager → Manager is disabled
+// --enable-manager-legacy-ui → Use legacy UI
+
+// Feature flags determine capabilities:
+// api_version: 'v1' | 'v2'
+// supports_v4: true | false
+
+async function openManager() {
+  const { flags } = useFeatureFlags()
+  const managerService = useComfyManagerService()
+  
+  // Check command line configuration first
+  const config = await managerService.isLegacyManagerUI()
+  
+  if (config?.is_legacy_manager_ui) {
+    // User explicitly requested legacy UI
+    await openLegacyManager()
+    return
+  }
+  
+  // Use capabilities to determine best UI
+  if (flags.managerApiVersion === 'v2' && flags.supportsManagerV4) {
+    await openNewManager()
+  } else {
+    await openLegacyManager()
+  }
+}
 ```
 
 ### Service Integration

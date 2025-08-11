@@ -4,6 +4,8 @@
     <h3>Manager Feature Flag Example</h3>
 
     <div class="feature-status">
+      <h4>Feature Flags</h4>
+      <p>Manager API Version: {{ flags.managerApiVersion || 'Not available' }}</p>
       <p>Manager V4 Support: {{ flags.supportsManagerV4 ? 'Yes' : 'No' }}</p>
       <p>
         Preview Metadata Support:
@@ -18,19 +20,23 @@
       <p>Manager Config: {{ JSON.stringify(managerConfig) }}</p>
     </div>
 
-    <div v-if="flags.supportsManagerV4" class="v4-features">
-      <h4>Manager V4 Features Available</h4>
-      <ul>
-        <li>Enhanced pack management</li>
-        <li>Improved dependency resolution</li>
-        <li>Better error handling</li>
-      </ul>
-    </div>
-    <div v-else class="legacy-notice">
-      <p>
-        Using legacy manager features. Update ComfyUI-Manager to access v4
-        features.
-      </p>
+    <div class="manager-info">
+      <h4>Manager Status</h4>
+      <div v-if="flags.managerApiVersion === 'v2' && flags.supportsManagerV4" class="v4-features">
+        <p>✅ New Manager UI Available</p>
+        <ul>
+          <li>Enhanced pack management</li>
+          <li>Improved dependency resolution</li>
+          <li>Better error handling</li>
+        </ul>
+      </div>
+      <div v-else-if="flags.managerApiVersion === 'v1'" class="legacy-notice">
+        <p>⚠️ Legacy Manager API (v1)</p>
+        <p>Update ComfyUI-Manager to access new features.</p>
+      </div>
+      <div v-else class="unavailable-notice">
+        <p>❌ Manager not available</p>
+      </div>
     </div>
   </div>
 </template>
@@ -82,11 +88,22 @@ function formatBytes(bytes: number | undefined): string {
   color: var(--p-green-800);
 }
 
+.manager-info {
+  margin-top: 20px;
+}
+
 .legacy-notice {
   background-color: var(--p-yellow-50);
   padding: 15px;
   border-radius: 8px;
   color: var(--p-yellow-800);
+}
+
+.unavailable-notice {
+  background-color: var(--p-red-50);
+  padding: 15px;
+  border-radius: 8px;
+  color: var(--p-red-800);
 }
 
 h3,
