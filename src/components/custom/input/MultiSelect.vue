@@ -20,7 +20,7 @@
       <template #option="slotProps">
         <div class="flex items-center gap-2">
           <div
-            class="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border-2 transition-all duration-200"
+            class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded border-2 transition-all duration-200"
             :class="
               slotProps.selected
                 ? 'border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
