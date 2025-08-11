@@ -406,12 +406,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "適合視窗",
+    "focusMode": "專注模式",
+    "hand": "拖曳",
+    "hideLinks": "隱藏連結",
     "panMode": "平移模式",
     "resetView": "重設視圖",
+    "select": "選取",
     "selectMode": "選取模式",
-    "toggleLinkVisibility": "切換連結顯示",
+    "showLinks": "顯示連結",
     "toggleMinimap": "切換小地圖",
     "zoomIn": "放大",
+    "zoomOptions": "縮放選項",
     "zoomOut": "縮小"
   },
   "groupNode": {
@@ -775,6 +780,7 @@
     "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大筆刷大小",
     "Interrupt": "中斷",
     "Load Default Workflow": "載入預設工作流程",
+    "Lock Canvas": "鎖定畫布",
     "Manage group nodes": "管理群組節點",
     "Move Selected Nodes Down": "選取節點下移",
     "Move Selected Nodes Left": "選取節點左移",
@@ -824,6 +830,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "切換自訂節點管理器進度條",
     "Undo": "復原",
     "Ungroup selected group nodes": "取消群組選取的群組節點",
+    "Unlock Canvas": "解除鎖定畫布",
     "Workflow": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小"
@@ -1630,5 +1637,10 @@
     "enterFilename": "輸入檔案名稱",
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程"
+  },
+  "zoomControls": {
+    "hideMinimap": "隱藏小地圖",
+    "showMinimap": "顯示小地圖",
+    "zoomToFit": "縮放至適合大小"
   }
 }

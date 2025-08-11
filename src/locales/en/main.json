@@ -885,9 +885,9 @@
     "select": "Select",
     "hand": "Hand",
     "zoomOptions": "Zoom Options",
-    "focusMode":"Focus Mode",
+    "focusMode": "Focus Mode",
     "hideLinks": "Hide Links",
-    "showLinks":"Show Links"
+    "showLinks": "Show Links"
   },
   "zoomControls": {
     "zoomToFit": "Zoom To Fit",
@@ -960,6 +960,7 @@
     "Add Edit Model Step": "Add Edit Model Step",
     "Delete Selected Items": "Delete Selected Items",
     "Fit view to selected nodes": "Fit view to selected nodes",
+    "Lock Canvas": "Lock Canvas",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
@@ -974,6 +975,7 @@
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
     "Mute/Unmute Selected Nodes": "Mute/Unmute Selected Nodes",
     "Pin/Unpin Selected Nodes": "Pin/Unpin Selected Nodes",
+    "Unlock Canvas": "Unlock Canvas",
     "Zoom In": "Zoom In",
     "Zoom Out": "Zoom Out",
     "Clear Pending Tasks": "Clear Pending Tasks",

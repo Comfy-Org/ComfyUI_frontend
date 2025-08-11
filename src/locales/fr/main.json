@@ -406,12 +406,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "Adapter la vue",
+    "focusMode": "Mode focus",
+    "hand": "Main",
+    "hideLinks": "Masquer les liens",
     "panMode": "Mode panoramique",
     "resetView": "Réinitialiser la vue",
+    "select": "Sélectionner",
     "selectMode": "Mode sélection",
-    "toggleLinkVisibility": "Basculer la visibilité des liens",
+    "showLinks": "Afficher les liens",
     "toggleMinimap": "Afficher/Masquer la mini-carte",
     "zoomIn": "Zoom avant",
+    "zoomOptions": "Options de zoom",
     "zoomOut": "Zoom arrière"
   },
   "groupNode": {
@@ -775,6 +780,7 @@
     "Increase Brush Size in MaskEditor": "Augmenter la taille du pinceau dans MaskEditor",
     "Interrupt": "Interrompre",
     "Load Default Workflow": "Charger le flux de travail par défaut",
+    "Lock Canvas": "Verrouiller le canevas",
     "Manage group nodes": "Gérer les nœuds de groupe",
     "Move Selected Nodes Down": "Déplacer les nœuds sélectionnés vers le bas",
     "Move Selected Nodes Left": "Déplacer les nœuds sélectionnés vers la gauche",
@@ -824,6 +830,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Basculer la barre de progression du gestionnaire de nœuds personnalisés",
     "Undo": "Annuler",
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
+    "Unlock Canvas": "Déverrouiller le canevas",
     "Workflow": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière"
@@ -1630,5 +1637,10 @@
     "enterFilename": "Entrez le nom du fichier",
     "exportWorkflow": "Exporter le flux de travail",
     "saveWorkflow": "Enregistrer le flux de travail"
+  },
+  "zoomControls": {
+    "hideMinimap": "Masquer la mini-carte",
+    "showMinimap": "Afficher la mini-carte",
+    "zoomToFit": "Ajuster à l’écran"
   }
 }

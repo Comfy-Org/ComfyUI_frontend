@@ -406,12 +406,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "Ajustar vista",
+    "focusMode": "Modo de enfoque",
+    "hand": "Mano",
+    "hideLinks": "Ocultar enlaces",
     "panMode": "Modo de desplazamiento",
     "resetView": "Restablecer vista",
+    "select": "Seleccionar",
     "selectMode": "Modo de selección",
-    "toggleLinkVisibility": "Alternar visibilidad de enlace",
+    "showLinks": "Mostrar enlaces",
     "toggleMinimap": "Alternar minimapa",
     "zoomIn": "Acercar",
+    "zoomOptions": "Opciones de zoom",
     "zoomOut": "Alejar"
   },
   "groupNode": {
@@ -775,6 +780,7 @@
     "Increase Brush Size in MaskEditor": "Aumentar tamaño del pincel en MaskEditor",
     "Interrupt": "Interrumpir",
     "Load Default Workflow": "Cargar flujo de trabajo predeterminado",
+    "Lock Canvas": "Bloquear lienzo",
     "Manage group nodes": "Gestionar nodos de grupo",
     "Move Selected Nodes Down": "Mover nodos seleccionados hacia abajo",
     "Move Selected Nodes Left": "Mover nodos seleccionados hacia la izquierda",
@@ -824,6 +830,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Alternar la Barra de Progreso del Administrador de Nodos Personalizados",
     "Undo": "Deshacer",
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
+    "Unlock Canvas": "Desbloquear lienzo",
     "Workflow": "Flujo de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar"
@@ -1630,5 +1637,10 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo"
+  },
+  "zoomControls": {
+    "hideMinimap": "Ocultar minimapa",
+    "showMinimap": "Mostrar minimapa",
+    "zoomToFit": "Ajustar al zoom"
   }
 }
