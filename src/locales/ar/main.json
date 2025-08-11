@@ -25,6 +25,7 @@
     "confirmed": "تم التأكيد",
     "reset": "إعادة تعيين",
     "resetAll": "إعادة تعيين الكل",
+    "clearFilters": "مسح الفلاتر",
     "resetAllKeybindingsTooltip": "إعادة تعيين جميع اختصارات لوحة المفاتيح إلى الوضع الافتراضي",
     "customizeFolder": "تخصيص المجلد",
     "icon": "أيقونة",
@@ -549,6 +550,8 @@
   },
   "templateWorkflows": {
     "title": "ابدأ باستخدام قالب",
+    "loadingMore": "تحميل المزيد من القوالب...",
+    "searchPlaceholder": "ابحث في القوالب...",
     "category": {
       "ComfyUI Examples": "أمثلة ComfyUI",
       "Custom Nodes": "عُقد مخصصة",
@@ -943,6 +946,7 @@
     "Quit": "خروج",
     "Reinstall": "إعادة التثبيت",
     "Restart": "إعادة التشغيل",
+    "Open 3D Viewer (Beta) for Selected Node": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة",
     "Browse Templates": "تصفح القوالب",
     "Add Edit Model Step": "إضافة خطوة تعديل النموذج",
     "Delete Selected Items": "حذف العناصر المحددة",
@@ -1008,8 +1012,11 @@
     "Previous Opened Workflow": "سير العمل السابق المفتوح",
     "Toggle Search Box": "تبديل مربع البحث",
     "Toggle Bottom Panel": "تبديل اللوحة السفلية",
+    "Show Keybindings Dialog": "عرض مربع حوار اختصارات لوحة المفاتيح",
     "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Logs Bottom Panel": "تبديل لوحة السجلات السفلية",
+    "Toggle Essential Bottom Panel": "تبديل اللوحة السفلية الأساسية",
+    "Toggle View Controls Bottom Panel": "تبديل لوحة التحكم في العرض السفلية",
     "Toggle Focus Mode": "تبديل وضع التركيز",
     "Toggle Model Library Sidebar": "تبديل الشريط الجانبي لمكتبة النماذج",
     "Toggle Node Library Sidebar": "تبديل الشريط الجانبي لمكتبة العقد",
@@ -1073,7 +1080,8 @@
     "User": "المستخدم",
     "Credits": "الشكر",
     "API Nodes": "عقد API",
-    "Notification Preferences": "تفضيلات الإشعارات"
+    "Notification Preferences": "تفضيلات الإشعارات",
+    "3DViewer": "عارض ثلاثي الأبعاد"
   },
   "serverConfigItems": {
     "listen": {
@@ -1207,7 +1215,7 @@
   "nodeCategories": {
     "_for_testing": "_للاختبار",
     "custom_sampling": "تجميع مخصص",
-    "noise": "ضوضاء",
+    "noise": "ضجيج",
     "sampling": "التجميع",
     "schedulers": "الجدولة",
     "guiders": "الموجهات",
@@ -1309,7 +1317,7 @@
     "MASK": "قناع",
     "MESH": "شبكة",
     "MODEL": "نموذج",
-    "NOISE": "ضوضاء",
+    "NOISE": "ضجيج",
     "PHOTOMAKER": "صانع الصور",
     "PIXVERSE_TEMPLATE": "قالب PixVerse",
     "RECRAFT_COLOR": "لون Recraft",
@@ -1425,12 +1433,31 @@
       "depth": "العمق",
       "lineart": "رسم الخطوط"
     },
+    "upDirections": {
+      "original": "الأصلي"
+    },
     "startRecording": "بدء التسجيل",
     "stopRecording": "إيقاف التسجيل",
     "exportRecording": "تصدير التسجيل",
     "clearRecording": "مسح التسجيل",
     "resizeNodeMatchOutput": "تغيير حجم العقدة لتتناسب مع المخرج",
-    "loadingBackgroundImage": "جارٍ تحميل صورة الخلفية"
+    "loadingBackgroundImage": "جارٍ تحميل صورة الخلفية",
+    "cameraType": {
+      "perspective": "منظور",
+      "orthographic": "أرثوغرافي"
+    },
+    "viewer": {
+      "title": "عارض ثلاثي الأبعاد (بيتا)",
+      "apply": "تطبيق",
+      "cancel": "إلغاء",
+      "cameraType": "نوع الكاميرا",
+      "sceneSettings": "إعدادات المشهد",
+      "cameraSettings": "إعدادات الكاميرا",
+      "lightSettings": "إعدادات الإضاءة",
+      "exportSettings": "إعدادات التصدير",
+      "modelSettings": "إعدادات النموذج"
+    },
+    "openIn3DViewer": "افتح في عارض ثلاثي الأبعاد"
   },
   "toastMessages": {
     "nothingToQueue": "لا يوجد شيء للإضافة إلى الطابور",
@@ -1468,7 +1495,8 @@
     "useApiKeyTip": "نصيحة: لا يمكنك الدخول عبر تسجيل الدخول العادي؟ استخدم خيار مفتاح API الخاص بـ Comfy.",
     "nothingSelected": "لم يتم تحديد شيء",
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
-    "failedToConvertToSubgraph": "فشل في تحويل العناصر إلى مخطط فرعي"
+    "failedToConvertToSubgraph": "فشل في تحويل العناصر إلى مخطط فرعي",
+    "failedToInitializeLoad3dViewer": "فشل في تهيئة عارض ثلاثي الأبعاد"
   },
   "auth": {
     "apiKey": {
@@ -1627,5 +1655,19 @@
     "clearWorkflow": "مسح سير العمل",
     "deleteWorkflow": "حذف سير العمل",
     "enterNewName": "أدخل اسمًا جديدًا"
+  },
+  "shortcuts": {
+    "essentials": "أساسي",
+    "viewControls": "عناصر تحكم العرض",
+    "manageShortcuts": "إدارة الاختصارات",
+    "noKeybinding": "لا يوجد ارتباط مفتاح",
+    "keyboardShortcuts": "اختصارات لوحة المفاتيح",
+    "subcategories": {
+      "workflow": "سير العمل",
+      "node": "العقدة",
+      "queue": "قائمة الانتظار",
+      "view": "العرض",
+      "panelControls": "عناصر تحكم اللوحة"
+    }
   }
 }

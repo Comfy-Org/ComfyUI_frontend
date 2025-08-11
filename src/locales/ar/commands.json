@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "إعادة التشغيل"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
+  },
   "Comfy_BrowseTemplates": {
     "label": "تصفح القوالب"
   },
@@ -230,11 +233,20 @@
   "Workspace_ToggleBottomPanel": {
     "label": "تبديل اللوحة السفلية"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "عرض مربع حوار اختصارات لوحة المفاتيح"
+  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "تبديل لوحة الطرفية السفلية"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "تبديل لوحة السجلات السفلية"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "تبديل اللوحة السفلية الأساسية"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "تبديل لوحة تحكم العرض السفلية"
   },
   "Workspace_ToggleFocusMode": {
     "label": "تبديل وضع التركيز"
