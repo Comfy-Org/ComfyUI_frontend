@@ -1667,6 +1667,7 @@ export class LGraph
   unpackSubgraph(subgraphNode: SubgraphNode) {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+    this.beforeChange()
     //Since boundry reroutes are removed, we only care about nodes
     //interiour reroutes could grow bbox, but this is not a concern
     //const boundingRect = createBounds(node.subgraph.nodes)
@@ -1694,7 +1695,7 @@ export class LGraph
     for (const n_info of movedNodes) {
       const node = LiteGraph.createNode(String(n_info.type), n_info.title)
       if (!node) {
-        throw new Error('Can only unpack Subgraph Nodes')
+        throw new Error('Node not found')
       }
 
       node.pos[0] += offsetX
@@ -1713,7 +1714,7 @@ export class LGraph
     }
 
     //TODO preprocess reroute/boundry link culling?
-    const newLinks = []
+    const newLinks: [NodeId, number, NodeId, number, LinkId][] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
         const outerLinkId = subgraphNode.inputs[link.origin_slot].link
@@ -1740,7 +1741,8 @@ export class LGraph
             link.origin_id,
             link.origin_slot,
             sublink.target_id,
-            sublink.target_slot
+            sublink.target_slot,
+            link.id
           ])
         }
         continue
@@ -1756,17 +1758,55 @@ export class LGraph
         link.origin_id,
         link.origin_slot,
         link.target_id,
-        link.target_slot
+        link.target_slot,
+        link.id
       ])
     }
     this.remove(subgraphNode)
     this.subgraphs.delete(subgraphNode.subgraph.id)
+    const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of newLinks) {
-      this._nodes_by_id[newLink[0]].connect(
+      const created = this._nodes_by_id[newLink[0]].connect(
         newLink[1],
         this._nodes_by_id[newLink[2]],
         newLink[3]
       )
+      if (!created) {
+        console.error('Failed to create link')
+        continue
+      }
+      //This is a little unwieldy since Map.has isn't a type guard
+      const linkIds = linkIdMap.get(newLink[4]) ?? []
+      linkIds.push(created.id)
+      if (!linkIdMap.has(newLink[4])) {
+        linkIdMap.set(newLink[4], linkIds)
+      }
+    }
+    const reroutes = [...subgraphNode.subgraph.reroutes.values()].sort(
+      (a, b) => (b.parentId ?? -1) - (a.parentId ?? -1)
+    )
+    const rerouteIdMap = new Map<RerouteId, RerouteId>()
+    for (const reroute of reroutes) {
+      const linkIds = []
+      for (const oldId of reroute.linkIds) {
+        for (const newId of linkIdMap.get(oldId) ?? []) {
+          linkIds.push(newId)
+        }
+      }
+      if (
+        reroute.parentId !== undefined &&
+        rerouteIdMap.get(reroute.parentId) === undefined
+      ) {
+        console.error('Missing Parent ID')
+      }
+      const migratedReroute = new Reroute(
+        ++this.state.lastRerouteId,
+        this,
+        reroute.pos,
+        reroute.parentId ? rerouteIdMap.get(reroute.parentId) : undefined,
+        linkIds
+      )
+      this.reroutes.set(migratedReroute.id, migratedReroute)
     }
     const nodes: LGraphNode[] = []
     for (const nodeId of nodeIdMap.values()) {
@@ -1776,6 +1816,7 @@ export class LGraph
       node.arrange()
     }
     this.canvasAction((c) => c.selectItems(nodes))
+    this.afterChange()
   }
 
   /**
