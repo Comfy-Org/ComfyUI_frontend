@@ -1,33 +1,40 @@
 <template>
-  <button :class="buttonStyle" role="button" @click="onClick">
-    <span class="text-sm">{{ label }}</span>
-  </button>
+  <Button unstyled :class="buttonStyle" role="button" @click="onClick">
+    <span>{{ label }}</span>
+  </Button>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import { computed } from 'vue'
 
-const {
-  type = 'primary',
-  label,
-  onClick
-} = defineProps<{
-  type?: 'primary' | 'secondary'
+import type { BaseButtonProps } from '@/types/custom_components/buttonTypes'
+import {
+  getBaseButtonClasses,
+  getButtonSizeClasses,
+  getButtonTypeClasses
+} from '@/types/custom_components/buttonTypes'
+
+interface TextButtonProps extends BaseButtonProps {
   label: string
   onClick: () => void
-}>()
+}
+
+const {
+  size = 'md',
+  type = 'primary',
+  class: className,
+  label,
+  onClick
+} = defineProps<TextButtonProps>()
 
 const buttonStyle = computed(() => {
-  const baseClasses =
-    'flex justify-center items-center flex-shrink-0 outline-none border-none px-2.5 py-2 rounded-lg cursor-pointer transition-all duration-200'
+  const baseClasses = getBaseButtonClasses()
+  const sizeClasses = getButtonSizeClasses(size)
+  const typeClasses = getButtonTypeClasses(type)
 
-  switch (type) {
-    case 'primary':
-      return `${baseClasses} bg-neutral-900 text-white dark-theme:bg-white dark-theme:text-neutral-900`
-    case 'secondary':
-      return `${baseClasses} bg-white text-neutral dark-theme:bg-zinc-700`
-    default:
-      return `${baseClasses} bg-white text-neutral dark-theme:bg-zinc-700`
-  }
+  return [baseClasses, sizeClasses, typeClasses, className]
+    .filter(Boolean)
+    .join(' ')
 })
 </script>
