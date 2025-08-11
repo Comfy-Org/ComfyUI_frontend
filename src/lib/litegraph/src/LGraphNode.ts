@@ -769,12 +769,7 @@ export class LGraphNode
       this.graph._version++
     }
     for (const j in info) {
-      if (j == 'properties') {
-        // i don't want to clone properties, I want to reuse the old container
-        for (const k in info.properties) {
-          this.properties[k] = info.properties[k]
-          this.onPropertyChanged?.(k, info.properties[k])
-        }
+      if (j === 'properties' || j === 'inputs' || j === 'outputs') {
         continue
       }
 
@@ -798,14 +793,28 @@ export class LGraphNode
       }
     }
 
+    if (info.properties) {
+      for (const k in info.properties) {
+        this.properties[k] = info.properties[k]
+        this.onPropertyChanged?.(k, info.properties[k])
+      }
+    }
+
     if (!info.title) {
       this.title = this.constructor.title
     }
 
-    this.inputs ??= []
-    this.inputs = this.inputs.map((input) =>
-      toClass(NodeInputSlot, input, this)
-    )
+    if (info.inputs) {
+      this.inputs = info.inputs.map((input) =>
+        toClass(NodeInputSlot, input, this)
+      )
+    } else {
+      this.inputs ??= []
+      this.inputs = this.inputs.map((input) =>
+        toClass(NodeInputSlot, input, this)
+      )
+    }
+
     for (const [i, input] of this.inputs.entries()) {
       const link =
         this.graph && input.link != null
@@ -815,10 +824,17 @@ export class LGraphNode
       this.onInputAdded?.(input)
     }
 
-    this.outputs ??= []
-    this.outputs = this.outputs.map((output) =>
-      toClass(NodeOutputSlot, output, this)
-    )
+    if (info.outputs) {
+      this.outputs = info.outputs.map((output) =>
+        toClass(NodeOutputSlot, output, this)
+      )
+    } else {
+      this.outputs ??= []
+      this.outputs = this.outputs.map((output) =>
+        toClass(NodeOutputSlot, output, this)
+      )
+    }
+
     for (const [i, output] of this.outputs.entries()) {
       if (!output.links) continue
 

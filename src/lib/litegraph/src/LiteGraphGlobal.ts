@@ -1,3 +1,5 @@
+import _ from 'lodash'
+
 import { ContextMenu } from './ContextMenu'
 import { CurveEditor } from './CurveEditor'
 import { DragAndScale } from './DragAndScale'
@@ -641,7 +643,7 @@ export class LiteGraphGlobal {
   ): WhenNullish<T, null> {
     if (obj == null) return null as WhenNullish<T, null>
 
-    const r = JSON.parse(JSON.stringify(obj))
+    const r = _.cloneDeep(obj)
     if (!target) return r
 
     for (const i in r) {
