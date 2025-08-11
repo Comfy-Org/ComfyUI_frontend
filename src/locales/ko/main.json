@@ -829,6 +829,13 @@
     "Zoom In": "확대",
     "Zoom Out": "축소"
   },
+  "minimap": {
+    "nodeColors": "노드 색상",
+    "renderBypassState": "바이패스 상태 렌더링",
+    "renderErrorState": "에러 상태 렌더링",
+    "showGroups": "프레임/그룹 표시",
+    "showLinks": "링크 표시"
+  },
   "missingModelsDialog": {
     "doNotAskAgain": "다시 보지 않기",
     "missingModels": "모델이 없습니다",
