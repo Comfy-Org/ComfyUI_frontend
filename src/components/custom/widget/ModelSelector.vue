@@ -15,6 +15,21 @@
       <SearchBox v-model:="searchQuery" class="max-w-[384px]" />
     </template>
 
+    <template #header-right-area>
+      <div class="flex gap-2">
+        <TextButton
+          label="Action"
+          type="primary"
+          @click="console.log('Hello World!!')"
+        />
+        <TextButton
+          label="Action"
+          type="secondary"
+          @click="console.log('Hello World!!')"
+        />
+      </div>
+    </template>
+
     <template #content>
       <div class="px-6 pt-2 pb-4 flex gap-2">
         <MultiSelect
@@ -43,6 +58,7 @@ import { useI18n } from 'vue-i18n'
 import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 
+import TextButton from '../button/TextButton.vue'
 import MultiSelect from '../input/MultiSelect.vue'
 import SearchBox from '../input/SearchBox.vue'
 import BaseWidgetLayout from './layout/BaseWidgetLayout.vue'
