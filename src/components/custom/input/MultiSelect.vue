@@ -2,16 +2,16 @@
   <div class="relative inline-block">
     <MultiSelect
       v-model="selectedItems"
-      :options="props.options"
+      :options="options"
       option-label="name"
       unstyled
-      :placeholder="props.label"
+      :placeholder="label"
       :max-selected-labels="0"
       :pt="pt"
     >
       <template #value>
         <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
-          {{ props.label }}
+          {{ label }}
         </span>
       </template>
       <template #dropdownicon>
@@ -52,21 +52,20 @@ import MultiSelect, {
 } from 'primevue/multiselect'
 import { computed } from 'vue'
 
-interface Option {
-  name: string
-  value: string
-}
-
-interface Props {
+const { label, options } = defineProps<{
   label?: string
-  options: Option[]
-}
+  options: {
+    name: string
+    value: string
+  }[]
+}>()
 
-const props = withDefaults(defineProps<Props>(), {
-  label: 'Category Label'
-})
-
-const selectedItems = defineModel<Option[]>({ required: true })
+const selectedItems = defineModel<
+  {
+    name: string
+    value: string
+  }[]
+>({ required: true })
 
 const selectedCount = computed(() => selectedItems.value.length)
 

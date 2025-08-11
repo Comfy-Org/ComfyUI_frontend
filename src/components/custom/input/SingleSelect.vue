@@ -2,10 +2,10 @@
   <div class="relative inline-flex items-center">
     <Select
       v-model="selectedItem"
-      :options="props.options"
+      :options="options"
       option-label="name"
       unstyled
-      :placeholder="props.label"
+      :placeholder="label"
       :pt="pt"
     >
       <template #value="slotProps">
@@ -18,7 +18,7 @@
             {{ slotProps.value.name }}
           </span>
           <span v-else class="text-sm text-zinc-400 dark-theme:text-gray-500">
-            {{ props.label }}
+            {{ label }}
           </span>
         </div>
       </template>
@@ -36,24 +36,27 @@
 import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
 import { computed } from 'vue'
 
-interface Option {
+const { label, options } = defineProps<{
+  label?: string
+  options: {
+    name: string
+    value: string
+  }[]
+}>()
+
+const selectedItem = defineModel<{
   name: string
   value: string
-}
-
-interface Props {
-  label?: string
-  options: Option[]
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  label: 'Select an option'
-})
-
-const selectedItem = defineModel<Option | null>({ required: true })
+} | null>({ required: true })
 
 const pt = computed(() => ({
-  root: ({ props, state }: SelectPassThroughMethodOptions<Option>) => ({
+  root: ({
+    props,
+    state
+  }: SelectPassThroughMethodOptions<{
+    name: string
+    value: string
+  }>) => ({
     class: [
       'relative inline-flex cursor-pointer select-none w-full border border-solid border-transparent',
       'rounded-lg text-neutral dark-theme:text-white',

@@ -45,8 +45,13 @@
               </IconButton>
               <slot name="header"></slot>
             </div>
-            <div class="flex justify-end gap-2 min-w-20">
-              <slot name="header-right-area"></slot>
+            <slot name="header-right-area"></slot>
+            <div
+              class="flex justify-end gap-2 w-0"
+              :class="
+                isRightPanelOpen && hasRightPanel ? 'min-w-8' : 'min-w-18'
+              "
+            >
               <IconButton
                 v-if="isRightPanelOpen && hasRightPanel"
                 @click="toggleRightPanel"
@@ -55,18 +60,17 @@
               </IconButton>
             </div>
           </header>
+
           <main class="flex-1">
             <slot name="content"></slot>
           </main>
         </div>
-        <Transition name="slide-panel-right">
-          <aside
-            v-if="hasRightPanel && isRightPanelOpen"
-            class="w-1/4 min-w-40 max-w-80"
-          >
-            <slot name="rightPanel"></slot>
-          </aside>
-        </Transition>
+        <aside
+          v-if="hasRightPanel && isRightPanelOpen"
+          class="w-1/4 min-w-40 max-w-80"
+        >
+          <slot name="rightPanel"></slot>
+        </aside>
       </div>
     </div>
   </div>
@@ -159,18 +163,5 @@ const toggleRightPanel = () => {
 .slide-panel-enter-from,
 .slide-panel-leave-to {
   transform: translateX(-100%);
-}
-
-/* Slide transition for right panel */
-.slide-panel-right-enter-active,
-.slide-panel-right-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-  backface-visibility: hidden;
-}
-
-.slide-panel-right-enter-from,
-.slide-panel-right-leave-to {
-  transform: translateX(100%);
 }
 </style>
