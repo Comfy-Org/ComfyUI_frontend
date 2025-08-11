@@ -119,6 +119,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Преобразовать выделенное в подграф"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Выйти из подграфа"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Подогнать группу к содержимому"
   },

@@ -190,5 +190,11 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'k'
     },
     commandId: 'Workspace.ToggleBottomPanel.Shortcuts'
+  },
+  {
+    combo: {
+      key: 'Escape'
+    },
+    commandId: 'Comfy.Graph.ExitSubgraph'
   }
 ]
