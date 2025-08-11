@@ -17,7 +17,6 @@ import { useColorPaletteStore } from '../src/stores/workspace/colorPaletteStore'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error fixme ts strict error
     primary: Aura['primitive'].blue
   }
 })
