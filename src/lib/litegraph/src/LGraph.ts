@@ -1686,14 +1686,14 @@ export class LGraph
         throw new Error('Node not found')
       }
 
-      node.pos[0] += offsetX
-      node.pos[1] += offsetY
       nodeIdMap.set(n_info.id, ++this.last_node_id)
       node.id = this.last_node_id
       n_info.id = this.last_node_id
 
       this.add(node, true)
       node.configure(n_info)
+      node.pos[0] += offsetX
+      node.pos[1] += offsetY
     }
 
     const newLinks: [NodeId, number, NodeId, number, LinkId][] = []
@@ -1784,7 +1784,7 @@ export class LGraph
       const migratedReroute = new Reroute(
         ++this.state.lastRerouteId,
         this,
-        reroute.pos,
+        [reroute.pos[0] + offsetX, reroute.pos[1] + offsetY],
         reroute.parentId ? rerouteIdMap.get(reroute.parentId) : undefined,
         linkIds
       )
