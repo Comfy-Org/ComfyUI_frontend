@@ -17,6 +17,17 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
+        <IconGroup>
+          <IconButton>
+            <i-lucide:heart />
+          </IconButton>
+          <IconButton>
+            <i-lucide:download />
+          </IconButton>
+          <IconButton>
+            <i-lucide:external-link />
+          </IconButton>
+        </IconGroup>
         <TextButton
           label="Action"
           type="primary"
@@ -30,7 +41,7 @@
         <MoreButton>
           <template #default="{ close }">
             <IconTextButton
-              type="primary"
+              type="secondary"
               label="Settings"
               @click="
                 () => {
