@@ -2299,6 +2299,8 @@ export class LGraphCanvas
 
       const node_data = node.clone()?.serialize()
       if (node_data?.type != null) {
+        // Ensure the cloned node is configured against the correct type (especially for SubgraphNodes)
+        node_data.type = newType
         const cloned = LiteGraph.createNode(newType)
         if (cloned) {
           cloned.configure(node_data)
@@ -2384,7 +2386,7 @@ export class LGraphCanvas
       // Set the width of the line for isPointInStroke checks
       const { lineWidth } = this.ctx
       this.ctx.lineWidth = this.connections_width + 7
-      const dpi = window?.devicePixelRatio || 1
+      const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
@@ -4130,6 +4132,7 @@ export class LGraphCanvas
     const selected = this.selectedItems
     if (!selected.size) return
 
+    const initialSelectionSize = selected.size
     let wasSelected: Positionable | undefined
     for (const sel of selected) {
       if (sel === keepSelected) {
@@ -4170,8 +4173,12 @@ export class LGraphCanvas
       }
     }
 
-    this.state.selectionChanged = true
-    this.onSelectionChange?.(this.selected_nodes)
+    // Only set selectionChanged if selection actually changed
+    const finalSelectionSize = selected.size
+    if (initialSelectionSize !== finalSelectionSize) {
+      this.state.selectionChanged = true
+      this.onSelectionChange?.(this.selected_nodes)
+    }
   }
 
   /** @deprecated See {@link LGraphCanvas.deselectAll} */
@@ -8064,18 +8071,6 @@ export class LGraphCanvas
     } else {
       options = [
         {
-          content: 'Inputs',
-          has_submenu: true,
-          disabled: true
-        },
-        {
-          content: 'Outputs',
-          has_submenu: true,
-          disabled: true,
-          callback: LGraphCanvas.showMenuNodeOptionalOutputs
-        },
-        null,
-        {
           content: 'Convert to Subgraph 🆕',
           callback: () => {
             if (!this.selectedItems.size)
@@ -8242,13 +8237,15 @@ export class LGraphCanvas
               'Both in put and output slots were null when processing context menu.'
             )
 
+          if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
+            menu_info.push({ content: 'Rename Slot', slot })
+          }
+
           if (_slot.removable) {
+            menu_info.push(null)
             menu_info.push(
               _slot.locked ? 'Cannot remove' : { content: 'Remove Slot', slot }
             )
-          }
-          if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
-            menu_info.push({ content: 'Rename Slot', slot })
           }
 
           if (node.getExtraSlotMenuOptions) {

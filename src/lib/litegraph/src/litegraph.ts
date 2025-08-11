@@ -134,7 +134,7 @@ export { LGraphCanvas, type LGraphCanvasState } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'
 export { LGraphNode, type NodeId } from './LGraphNode'
 export { type LinkId, LLink } from './LLink'
-export { clamp, createBounds } from './measure'
+export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'
 export {
   type ExecutableLGraphNode,

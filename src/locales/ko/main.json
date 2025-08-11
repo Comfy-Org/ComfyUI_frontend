@@ -814,9 +814,11 @@
     "Restart": "재시작",
     "Save": "저장",
     "Save As": "다른 이름으로 저장",
+    "Show Keybindings Dialog": "키 바인딩 대화상자 표시",
     "Show Settings Dialog": "설정 대화상자 표시",
     "Sign Out": "로그아웃",
     "Toggle Bottom Panel": "하단 패널 전환",
+    "Toggle Essential Bottom Panel": "필수 하단 패널 전환",
     "Toggle Focus Mode": "포커스 모드 전환",
     "Toggle Logs Bottom Panel": "로그 하단 패널 전환",
     "Toggle Model Library Sidebar": "모델 라이브러리 사이드바 전환",
@@ -825,6 +827,7 @@
     "Toggle Search Box": "검색 상자 전환",
     "Toggle Terminal Bottom Panel": "터미널 하단 패널 전환",
     "Toggle Theme (Dark/Light)": "테마 전환 (어두운/밝은)",
+    "Toggle View Controls Bottom Panel": "뷰 컨트롤 하단 패널 전환",
     "Toggle Workflows Sidebar": "워크플로 사이드바 전환",
     "Toggle the Custom Nodes Manager": "커스텀 노드 매니저 전환",
     "Toggle the Custom Nodes Manager Progress Bar": "커스텀 노드 매니저 진행률 표시줄 전환",
@@ -1151,6 +1154,20 @@
     "Validation": "검증",
     "Window": "창",
     "Workflow": "워크플로"
+  },
+  "shortcuts": {
+    "essentials": "필수",
+    "keyboardShortcuts": "키보드 단축키",
+    "manageShortcuts": "단축키 관리",
+    "noKeybinding": "단축키 없음",
+    "subcategories": {
+      "node": "노드",
+      "panelControls": "패널 컨트롤",
+      "queue": "대기열",
+      "view": "보기",
+      "workflow": "워크플로우"
+    },
+    "viewControls": "보기 컨트롤"
   },
   "sideToolbar": {
     "browseTemplates": "예제 템플릿 탐색",

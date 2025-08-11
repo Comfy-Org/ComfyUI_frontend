@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test'
+import { Locator, expect } from '@playwright/test'
 import { Position } from '@vueuse/core'
 
 import {
@@ -767,6 +767,17 @@ test.describe('Viewport settings', () => {
     comfyPage,
     comfyMouse
   }) => {
+    const changeTab = async (tab: Locator) => {
+      await tab.click()
+      await comfyPage.nextFrame()
+      await comfyMouse.move(comfyPage.emptySpace)
+
+      // If tooltip is visible, wait for it to hide
+      await expect(
+        comfyPage.page.locator('.workflow-popover-fade')
+      ).toHaveCount(0)
+    }
+
     // Screenshot the canvas element
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
@@ -794,15 +805,13 @@ test.describe('Viewport settings', () => {
     const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
 
     // Go back to Workflow A
-    await tabA.click()
-    await comfyPage.nextFrame()
+    await changeTab(tabA)
     expect((await comfyPage.canvas.screenshot()).toString('base64')).toBe(
       screenshotA
     )
 
     // And back to Workflow B
-    await tabB.click()
-    await comfyPage.nextFrame()
+    await changeTab(tabB)
     expect((await comfyPage.canvas.screenshot()).toString('base64')).toBe(
       screenshotB
     )

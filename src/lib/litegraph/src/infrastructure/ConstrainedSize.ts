@@ -1,9 +1,10 @@
+import { clamp } from 'lodash'
+
 import type {
   ReadOnlyRect,
   ReadOnlySize,
   Size
 } from '@/lib/litegraph/src/interfaces'
-import { clamp } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Basic width and height, with min/max constraints.
