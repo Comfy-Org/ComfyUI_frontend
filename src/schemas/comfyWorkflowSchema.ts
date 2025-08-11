@@ -4,49 +4,98 @@ import { fromZodError } from 'zod-validation-error'
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
 // Remove it after GroupNode is redesigned.
-export const zNodeId = z.union([z.number().int(), z.string()])
-export const zNodeInputName = z.string()
+/** 
+ * Node identifier that can be either a number or string.
+ * Numeric IDs are standard, string IDs are used for GroupNodes.
+ */
+export const zNodeId = z
+  .union([z.number().int(), z.string()])
+  .describe('Unique identifier for a node in the workflow')
+
+/** Name of a node input slot */
+export const zNodeInputName = z
+  .string()
+  .describe('The name of a node input parameter')
+
 export type NodeId = z.infer<typeof zNodeId>
-export const zSlotIndex = z.union([
-  z.number().int(),
-  z
-    .string()
-    .transform((val) => parseInt(val))
-    .refine((val) => !isNaN(val), {
-      message: 'Invalid number'
-    })
-])
+
+/** 
+ * Index of a slot on a node (input or output).
+ * Can be number or string that parses to a number.
+ */
+export const zSlotIndex = z
+  .union([
+    z.number().int(),
+    z
+      .string()
+      .transform((val) => parseInt(val))
+      .refine((val) => !isNaN(val), {
+        message: 'Invalid number'
+      })
+  ])
+  .describe('Index of an input or output slot on a node')
 
 // TODO: Investigate usage of array and number as data type usage in custom nodes.
 // Known usage:
 // - https://github.com/rgthree/rgthree-comfy Context Big node is using array as type.
-export const zDataType = z.union([z.string(), z.array(z.string()), z.number()])
+/** 
+ * Data type for node inputs/outputs. Can be string, array of strings, or number.
+ * Most common types are strings like 'IMAGE', 'LATENT', 'MODEL', etc.
+ */
+export const zDataType = z
+  .union([z.string(), z.array(z.string()), z.number()])
+  .describe('Data type specification for node connections')
 
-const zVector2 = z.union([
-  z
-    .object({ 0: z.number(), 1: z.number() })
-    .passthrough()
-    .transform((v) => [v[0], v[1]] as [number, number]),
-  z.tuple([z.number(), z.number()])
-])
+/** 
+ * 2D position or size vector [x, y].
+ * Can be array tuple or object with numeric indices.
+ */
+const zVector2 = z
+  .union([
+    z
+      .object({ 0: z.number(), 1: z.number() })
+      .passthrough()
+      .transform((v) => [v[0], v[1]] as [number, number]),
+    z.tuple([z.number(), z.number()])
+  ])
+  .describe('2D coordinate or size vector')
 
-// Definition of an AI model file used in the workflow.
-const zModelFile = z.object({
-  name: z.string(),
-  url: z.string().url(),
-  hash: z.string().optional(),
-  hash_type: z.string().optional(),
-  directory: z.string()
-})
+/**
+ * AI model file definition used in the workflow.
+ * Contains metadata for downloading and verifying model files.
+ */
+const zModelFile = z
+  .object({
+    /** Model file name */
+    name: z.string().describe('Model file name'),
+    /** Download URL for the model */
+    url: z.string().url().describe('Download URL for the model'),
+    /** File hash for integrity verification */
+    hash: z.string().optional().describe('File hash for integrity verification'),
+    /** Hash algorithm type (e.g., 'sha256') */
+    hash_type: z.string().optional().describe('Hash algorithm type'),
+    /** Directory where model should be stored */
+    directory: z.string().describe('Directory where model should be stored')
+  })
+  .describe('AI model file metadata')
 
+/**
+ * Graph state tracking for ID generation in schema version 1.
+ * Maintains counters for generating unique IDs for new elements.
+ */
 const zGraphState = z
   .object({
-    lastGroupId: z.number(),
-    lastNodeId: z.number(),
-    lastLinkId: z.number(),
-    lastRerouteId: z.number()
+    /** Last assigned group ID */
+    lastGroupId: z.number().describe('Last assigned group ID'),
+    /** Last assigned node ID */
+    lastNodeId: z.number().describe('Last assigned node ID'),
+    /** Last assigned link ID */
+    lastLinkId: z.number().describe('Last assigned link ID'),
+    /** Last assigned reroute ID */
+    lastRerouteId: z.number().describe('Last assigned reroute ID')
   })
   .passthrough()
+  .describe('Graph state tracking for ID generation')
 
 const zComfyLink = z.tuple([
   z.number(), // Link id
@@ -287,30 +336,47 @@ export const zBaseExportableGraph = z.object({
   subgraphs: z.array(zSubgraphInstance).optional()
 })
 
-/** Schema version 0.4 */
+/** 
+ * ComfyUI Workflow JSON Schema version 0.4 (legacy).
+ * This is the original workflow format used by ComfyUI.
+ */
 export const zComfyWorkflow = zBaseExportableGraph
   .extend({
-    id: z.string().uuid().optional(),
-    revision: z.number().optional(),
-    last_node_id: zNodeId,
-    last_link_id: z.number(),
-    nodes: z.array(zComfyNode),
-    links: z.array(zComfyLink),
-    floatingLinks: z.array(zComfyLinkObject).optional(),
-    groups: z.array(zGroup).optional(),
-    config: zConfig.optional().nullable(),
-    extra: zExtra.optional().nullable(),
-    version: z.number(),
-    models: z.array(zModelFile).optional(),
-    definitions: zGraphDefinitions.optional()
+    /** Unique workflow identifier */
+    id: z.string().uuid().optional().describe('Unique workflow identifier'),
+    /** Workflow revision number */
+    revision: z.number().optional().describe('Workflow revision number'),
+    /** Highest node ID used in this workflow */
+    last_node_id: zNodeId.describe('Highest node ID used in this workflow'),
+    /** Highest link ID used in this workflow */
+    last_link_id: z.number().describe('Highest link ID used in this workflow'),
+    /** All nodes in the workflow */
+    nodes: z.array(zComfyNode).describe('All nodes in the workflow'),
+    /** Node connections (legacy tuple format) */
+    links: z.array(zComfyLink).describe('Node connections in legacy tuple format'),
+    /** Floating links (unconnected endpoints) */
+    floatingLinks: z.array(zComfyLinkObject).optional().describe('Floating links with unconnected endpoints'),
+    /** Visual groupings of nodes */
+    groups: z.array(zGroup).optional().describe('Visual groupings of nodes'),
+    /** Workflow configuration settings */
+    config: zConfig.optional().nullable().describe('Workflow configuration settings'),
+    /** Extra metadata and extensions */
+    extra: zExtra.optional().nullable().describe('Extra metadata and extensions'),
+    /** Schema version number */
+    version: z.number().describe('Schema version number (0.4)'),
+    /** Required model files */
+    models: z.array(zModelFile).optional().describe('Required AI model files'),
+    /** Subgraph definitions */
+    definitions: zGraphDefinitions.optional().describe('Subgraph definitions')
   })
   .passthrough()
+  .describe('ComfyUI Workflow JSON Schema v0.4')
 
 /** Required for recursive definition of subgraphs. */
 interface ComfyWorkflow1BaseType {
   id?: string
   revision?: number
-  version: 1
+  version: 2
   models?: z.infer<typeof zModelFile>[]
   state: z.infer<typeof zGraphState>
 }
@@ -339,23 +405,40 @@ interface ComfyWorkflow1BaseOutput extends ComfyWorkflow1BaseType {
   }
 }
 
-/** Schema version 1 */
+/** 
+ * ComfyUI Workflow JSON Schema version 2 (current).
+ * This is the modern workflow format with improved structure and features.
+ */
 export const zComfyWorkflow1 = zBaseExportableGraph
   .extend({
-    id: z.string().uuid().optional(),
-    revision: z.number().optional(),
-    version: z.literal(1),
-    config: zConfig.optional().nullable(),
-    state: zGraphState,
-    groups: z.array(zGroup).optional(),
-    nodes: z.array(zComfyNode),
-    links: z.array(zComfyLinkObject).optional(),
-    floatingLinks: z.array(zComfyLinkObject).optional(),
-    reroutes: z.array(zReroute).optional(),
-    extra: zExtra.optional().nullable(),
-    models: z.array(zModelFile).optional(),
+    /** Unique workflow identifier */
+    id: z.string().uuid().optional().describe('Unique workflow identifier'),
+    /** Workflow revision number for tracking changes */
+    revision: z.number().optional().describe('Workflow revision number for tracking changes'),
+    /** Schema version (always 2 for this format) */
+    version: z.literal(2).describe('Schema version number (2)'),
+    /** Workflow configuration settings */
+    config: zConfig.optional().nullable().describe('Workflow configuration settings'),
+    /** Graph state for ID tracking and generation */
+    state: zGraphState.describe('Graph state for ID tracking and generation'),
+    /** Visual groupings of nodes */
+    groups: z.array(zGroup).optional().describe('Visual groupings of nodes'),
+    /** All nodes in the workflow */
+    nodes: z.array(zComfyNode).describe('All nodes in the workflow'),
+    /** Node connections (modern object format) */
+    links: z.array(zComfyLinkObject).optional().describe('Node connections in modern object format'),
+    /** Floating links (unconnected endpoints) */
+    floatingLinks: z.array(zComfyLinkObject).optional().describe('Floating links with unconnected endpoints'),
+    /** Reroute nodes for organizing connections */
+    reroutes: z.array(zReroute).optional().describe('Reroute nodes for organizing connections'),
+    /** Extra metadata and extensions */
+    extra: zExtra.optional().nullable().describe('Extra metadata and extensions'),
+    /** Required AI model files */
+    models: z.array(zModelFile).optional().describe('Required AI model files'),
+    /** Subgraph definitions */
     definitions: z
       .object({
+        /** Nested subgraph definitions */
         subgraphs: z.lazy(
           (): z.ZodArray<
             z.ZodType<
@@ -365,11 +448,13 @@ export const zComfyWorkflow1 = zBaseExportableGraph
             >,
             'many'
           > => z.array(zSubgraphDefinition)
-        )
+        ).describe('Nested subgraph definitions')
       })
       .optional()
+      .describe('Subgraph definitions')
   })
   .passthrough()
+  .describe('ComfyUI Workflow JSON Schema v2')
 
 export const zExportedSubgraphIONode = z.object({
   id: zNodeId,
@@ -481,6 +566,14 @@ const zWorkflowVersion = z.object({
   version: z.number()
 })
 
+/**
+ * Validates a ComfyUI workflow JSON against the appropriate schema version.
+ * Supports both legacy (v0.4) and modern (v2) workflow formats.
+ * 
+ * @param data - The workflow data to validate
+ * @param onError - Error callback function for validation failures
+ * @returns Parsed and validated workflow data or null if invalid
+ */
 export async function validateComfyWorkflow(
   data: unknown,
   onError: (error: string) => void = console.warn
@@ -489,17 +582,18 @@ export async function validateComfyWorkflow(
 
   let result: SafeParseReturnType<unknown, ComfyWorkflowJSON>
   if (!versionResult.success) {
-    // Invalid workflow
+    // Invalid workflow - missing or invalid version
     const error = fromZodError(versionResult.error)
     onError(`Workflow does not contain a valid version.  Zod error:\n${error}`)
     return null
-  } else if (versionResult.data.version === 1) {
-    // Schema version 1
+  } else if (versionResult.data.version === 1 || versionResult.data.version === 2) {
+    // Modern schema versions 1 or 2 (v2 is current)
     result = await zComfyWorkflow1.safeParseAsync(data)
   } else {
-    // Unknown or old version: 0.4
+    // Legacy or unknown version: defaults to 0.4 format
     result = await zComfyWorkflow.safeParseAsync(data)
   }
+  
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
