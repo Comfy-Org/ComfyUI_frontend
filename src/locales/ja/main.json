@@ -829,6 +829,13 @@
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト"
   },
+  "minimap": {
+    "nodeColors": "ノードの色",
+    "renderBypassState": "バイパス状態を表示",
+    "renderErrorState": "エラー状態を表示",
+    "showGroups": "フレーム／グループを表示",
+    "showLinks": "リンクを表示"
+  },
   "missingModelsDialog": {
     "doNotAskAgain": "再度表示しない",
     "missingModels": "モデルが見つかりません",

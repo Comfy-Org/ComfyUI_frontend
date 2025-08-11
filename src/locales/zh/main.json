@@ -829,6 +829,13 @@
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面"
   },
+  "minimap": {
+    "nodeColors": "節點顏色",
+    "renderBypassState": "顯示繞過狀態",
+    "renderErrorState": "顯示錯誤狀態",
+    "showGroups": "顯示框架／群組",
+    "showLinks": "顯示連結"
+  },
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
     "missingModels": "缺少模型",
