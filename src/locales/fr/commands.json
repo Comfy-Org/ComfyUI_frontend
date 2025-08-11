@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Redémarrer"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },

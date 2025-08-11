@@ -946,6 +946,7 @@
     "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
+    "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Browse Templates": "Browse Templates",
     "Add Edit Model Step": "Add Edit Model Step",
     "Delete Selected Items": "Delete Selected Items",
@@ -1079,7 +1080,8 @@
     "User": "User",
     "Credits": "Credits",
     "API Nodes": "API Nodes",
-    "Notification Preferences": "Notification Preferences"
+    "Notification Preferences": "Notification Preferences",
+    "3DViewer": "3DViewer"
   },
   "serverConfigItems": {
     "listen": {
@@ -1431,12 +1433,31 @@
       "depth": "Depth",
       "lineart": "Lineart"
     },
+    "upDirections": {
+      "original": "Original"
+    },
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "exportRecording": "Export Recording",
     "clearRecording": "Clear Recording",
     "resizeNodeMatchOutput": "Resize Node to match output",
-    "loadingBackgroundImage": "Loading Background Image"
+    "loadingBackgroundImage": "Loading Background Image",
+    "cameraType": {
+      "perspective": "Perspective",
+      "orthographic": "Orthographic"
+    },
+    "viewer": {
+      "title": "3D Viewer (Beta)",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "cameraType": "Camera Type",
+      "sceneSettings": "Scene Settings",
+      "cameraSettings": "Camera Settings",
+      "lightSettings": "Light Settings",
+      "exportSettings": "Export Settings",
+      "modelSettings": "Model Settings"
+    },
+    "openIn3DViewer": "Open in 3D Viewer"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -1474,7 +1495,8 @@
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
-    "failedToConvertToSubgraph": "Failed to convert items to subgraph"
+    "failedToConvertToSubgraph": "Failed to convert items to subgraph",
+    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer"
   },
   "auth": {
     "apiKey": {

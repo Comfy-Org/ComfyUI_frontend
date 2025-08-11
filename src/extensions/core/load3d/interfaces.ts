@@ -37,6 +37,8 @@ export interface EventCallback {
 export interface Load3DOptions {
   node?: LGraphNode
   inputSpec?: CustomInputSpec
+  disablePreview?: boolean
+  isViewerMode?: boolean
 }
 
 export interface CaptureResult {
@@ -159,6 +161,7 @@ export interface ModelManagerInterface {
   clearModel(): void
   reset(): void
   setupModel(model: THREE.Object3D): Promise<void>
+  addModelToScene(model: THREE.Object3D): void
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
   setUpDirection(direction: UpDirection): void
   materialMode: MaterialMode
