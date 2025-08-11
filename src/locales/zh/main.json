@@ -1687,6 +1687,7 @@
   },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",
+    "label": "縮放控制",
     "showMinimap": "顯示小地圖",
     "zoomToFit": "適合畫面"
   }

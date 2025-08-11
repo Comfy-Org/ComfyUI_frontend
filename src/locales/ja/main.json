@@ -1687,6 +1687,7 @@
   },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",
+    "label": "ズームコントロール",
     "showMinimap": "ミニマップを表示",
     "zoomToFit": "全体表示にズーム"
   }

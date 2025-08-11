@@ -1687,6 +1687,7 @@
   },
   "zoomControls": {
     "hideMinimap": "Masquer la mini-carte",
+    "label": "Contrôles de zoom",
     "showMinimap": "Afficher la mini-carte",
     "zoomToFit": "Ajuster à l’écran"
   }

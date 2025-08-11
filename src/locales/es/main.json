@@ -1687,6 +1687,7 @@
   },
   "zoomControls": {
     "hideMinimap": "Ocultar minimapa",
+    "label": "Controles de zoom",
     "showMinimap": "Mostrar minimapa",
     "zoomToFit": "Ajustar al zoom"
   }
