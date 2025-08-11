@@ -21,6 +21,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -795,6 +796,22 @@ export function useCoreCommands(): ComfyCommand[] {
         }
         const { node } = res
         canvas.select(node)
+      }
+    },
+    {
+      id: 'Comfy.Graph.UnpackSubgraph',
+      icon: 'pi pi-sitemap',
+      label: 'Unpack the selected Subgraph',
+      versionAdded: '1.20.1',
+      category: 'essentials' as const,
+      function: () => {
+        const canvas = canvasStore.getCanvas()
+        const graph = canvas.subgraph ?? canvas.graph
+        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
+
+        const subgraphNode = app.canvas.selectedItems.values().next().value
+        useNodeOutputStore().revokeSubgraphPreviews(subgraphNode)
+        graph.unpackSubgraph(subgraphNode)
       }
     },
     {
