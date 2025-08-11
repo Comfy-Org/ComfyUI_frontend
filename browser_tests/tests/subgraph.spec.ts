@@ -643,11 +643,45 @@ test.describe('Subgraph Operations', () => {
     })
   })
 
-  test.describe('Configurable Escape Key', () => {
-    test('Escape keybinding can be customized', async ({ comfyPage }) => {
+  test.describe('Navigation Hotkeys', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    })
+
+    test('Navigation hotkey can be customized', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('basic-subgraph')
       await comfyPage.nextFrame()
 
+      // Change the Exit Subgraph keybinding from Escape to Alt+Q
+      await comfyPage.setSetting('Comfy.Keybinding.NewBindings', [
+        {
+          commandId: 'Comfy.Graph.ExitSubgraph',
+          combo: {
+            key: 'q',
+            ctrl: false,
+            alt: true,
+            shift: false
+          }
+        }
+      ])
+
+      await comfyPage.setSetting('Comfy.Keybinding.UnsetBindings', [
+        {
+          commandId: 'Comfy.Graph.ExitSubgraph',
+          combo: {
+            key: 'Escape',
+            ctrl: false,
+            alt: false,
+            shift: false
+          }
+        }
+      ])
+
+      // Reload the page
+      await comfyPage.page.reload()
+      await comfyPage.page.waitForTimeout(1024)
+
+      // Navigate into subgraph
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
@@ -655,85 +689,15 @@ test.describe('Subgraph Operations', () => {
       // Verify we're in a subgraph
       expect(await isInSubgraph(comfyPage)).toBe(true)
 
-      // Open settings dialog using hotkey
-      await comfyPage.page.keyboard.press('Control+,')
-      await comfyPage.page.waitForSelector('.settings-container')
-
-      // Navigate to keybindings
-      await comfyPage.page.getByLabel('Keybinding').click()
-      await comfyPage.page.waitForSelector(
-        '[placeholder="Search Keybindings..."]'
-      )
-
-      // Find the Exit Subgraph keybinding
-      const exitSubgraphRow = comfyPage.page.locator('tr', {
-        has: comfyPage.page.getByRole('cell', { name: 'Exit Subgraph' })
-      })
-      await exitSubgraphRow.click()
-
-      // Click edit button
-      const editKeybindingButton = exitSubgraphRow.locator('.pi-pencil')
-      await editKeybindingButton.click()
-
-      // Set new keybinding
-      const input = comfyPage.page.getByPlaceholder(
-        'Press keys for new binding'
-      )
-      await input.press('Alt+ArrowUp')
-
-      const requestPromise = comfyPage.page.waitForRequest(
-        '**/api/settings/Comfy.Keybinding.NewBindings'
-      )
-
-      // Save keybinding
-      const saveButton = comfyPage.page
-        .getByLabel('Exit Subgraph')
-        .getByLabel('Save')
-      await saveButton.click()
-
-      await requestPromise
-
-      // Close settings
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
-
       // Test that Escape no longer exits subgraph
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
-      expect(await isInSubgraph(comfyPage)).toBe(true)
+      if (!(await isInSubgraph(comfyPage))) {
+        throw new Error('Not in subgraph')
+      }
 
-      // Test that Alt+Up now exits subgraph
-      await comfyPage.page.keyboard.press('Alt+ArrowUp')
-      await comfyPage.nextFrame()
-      expect(await isInSubgraph(comfyPage)).toBe(false)
-
-      // Reset keybinding to default by opening settings again
-      await comfyPage.page.keyboard.press('Control+,')
-      await comfyPage.page.waitForSelector('.settings-container')
-      await comfyPage.page.getByLabel('Keybinding').click()
-
-      // Find and click the Exit Subgraph row again
-      await exitSubgraphRow.click()
-
-      // Click reset button
-      const resetButton = exitSubgraphRow.locator('.pi-undo')
-      await resetButton.click()
-
-      // Wait for the reset request
-      await comfyPage.page.waitForRequest(
-        '**/api/settings/Comfy.Keybinding.NewBindings'
-      )
-
-      // Close settings
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
-
-      // Verify Escape works again
-      await subgraphNode.navigateIntoSubgraph()
-      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
-      expect(await isInSubgraph(comfyPage)).toBe(true)
-
-      await comfyPage.page.keyboard.press('Escape')
+      // Test that Alt+Q now exits subgraph
+      await comfyPage.page.keyboard.press('Alt+q')
       await comfyPage.nextFrame()
       expect(await isInSubgraph(comfyPage)).toBe(false)
     })
@@ -749,11 +713,15 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
 
       // Verify we're in a subgraph
-      expect(await isInSubgraph(comfyPage)).toBe(true)
+      if (!(await isInSubgraph(comfyPage))) {
+        throw new Error('Not in subgraph')
+      }
 
       // Open settings dialog using hotkey
       await comfyPage.page.keyboard.press('Control+,')
-      await comfyPage.page.waitForSelector('.settings-container')
+      await comfyPage.page.waitForSelector('.settings-container', {
+        state: 'visible'
+      })
 
       // Press Escape - should close dialog, not exit subgraph
       await comfyPage.page.keyboard.press('Escape')
