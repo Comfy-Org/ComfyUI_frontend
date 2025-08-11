@@ -273,11 +273,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * Does not recurse to contents of nested subgraphs.
    */
   function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
-    const graphId =
-      subgraphNode.graph == app.graph ? '' : subgraphNode.graph.id + ':'
-    revokePreviewsByExecutionId(graphId + subgraphNode.id)
+    const graphId = subgraphNode.graph.isRootGraph
+      ? ''
+      : subgraphNode.graph.id + ':'
+    revokePreviewsByLocatorId(graphId + subgraphNode.id)
     for (const node of subgraphNode.subgraph.nodes) {
-      revokePreviewsByExecutionId(subgraphNode.subgraph.id + node.id)
+      revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
     }
   }
 
