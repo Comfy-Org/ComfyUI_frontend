@@ -255,10 +255,6 @@ export function useMinimap() {
     const g = graph.value
     if (!g || !g._nodes || g._nodes.length === 0) return
 
-    const renderBypass = settingStore.get('Comfy.Minimap.RenderBypassState')
-    const renderError = settingStore.get('Comfy.Minimap.RenderErrorState')
-    const nodeColors = settingStore.get('Comfy.Minimap.NodeColors')
-
     for (const node of g._nodes) {
       const x = (node.pos[0] - bounds.value.minX) * scale.value + offsetX
       const y = (node.pos[1] - bounds.value.minY) * scale.value + offsetY
@@ -267,9 +263,9 @@ export function useMinimap() {
 
       let color = nodeColor.value
 
-      if (renderBypass && node.mode === LGraphEventMode.BYPASS) {
+      if (renderBypass.value && node.mode === LGraphEventMode.BYPASS) {
         color = bypassColor.value
-      } else if (nodeColors) {
+      } else if (nodeColors.value) {
         color = nodeColorDefault.value
 
         if (node.bgcolor) {
@@ -283,7 +279,7 @@ export function useMinimap() {
       ctx.fillStyle = color
       ctx.fillRect(x, y, w, h)
 
-      if (renderError && node.has_errors) {
+      if (renderError.value && node.has_errors) {
         ctx.strokeStyle = '#FF0000'
         ctx.lineWidth = 0.3
         ctx.strokeRect(x, y, w, h)
@@ -386,11 +382,11 @@ export function useMinimap() {
       const offsetX = (width - bounds.value.width * scale.value) / 2
       const offsetY = (height - bounds.value.height * scale.value) / 2
 
-      if (settingStore.get('Comfy.Minimap.ShowGroups')) {
+      if (showGroups.value) {
         renderGroups(ctx, offsetX, offsetY)
       }
 
-      if (settingStore.get('Comfy.Minimap.ShowLinks')) {
+      if (showLinks.value) {
         renderConnections(ctx, offsetX, offsetY)
       }
 
