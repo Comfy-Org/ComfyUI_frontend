@@ -119,6 +119,10 @@
       "Hidden": "Hidden"
     }
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "Enable 3D Viewer (Beta)",
+    "tooltip": "Enables the 3D Viewer (Beta) for selected nodes. This feature allows you to visualize and interact with 3D models directly within the full size 3d viewer."
+  },
   "Comfy_Load3D_BackgroundColor": {
     "name": "Initial Background Color",
     "tooltip": "Controls the default background color of the 3D scene. This setting determines the background appearance when a new 3D widget is created, but can be adjusted individually for each widget after creation."

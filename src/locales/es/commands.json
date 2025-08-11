@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Reiniciar"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Abrir visor 3D (Beta) para el nodo seleccionado"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Explorar plantillas"
   },
@@ -124,6 +127,9 @@
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir selección en subgrafo"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Salir de subgrafo"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajustar grupo al contenido"

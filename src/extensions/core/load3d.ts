@@ -2,6 +2,7 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DAnimation from '@/components/load3d/Load3DAnimation.vue'
+import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -9,10 +10,13 @@ import { t } from '@/i18n'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
+import { ComfyApp, app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useToastStore } from '@/stores/toastStore'
+import { isLoad3dNode } from '@/utils/litegraphUtil'
 
 async function handleModelUpload(files: FileList, node: any) {
   if (!files?.length) return
@@ -174,6 +178,51 @@ useExtensionService().registerExtension({
       },
       defaultValue: 0.5,
       experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.3DViewerEnable',
+      category: ['3D', '3DViewer', 'Enable'],
+      name: 'Enable 3D Viewer (Beta)',
+      tooltip:
+        'Enables the 3D Viewer (Beta) for selected nodes. This feature allows you to visualize and interact with 3D models directly within the full size 3d viewer.',
+      type: 'boolean',
+      defaultValue: false,
+      experimental: true
+    }
+  ],
+  commands: [
+    {
+      id: 'Comfy.3DViewer.Open3DViewer',
+      icon: 'pi pi-pencil',
+      label: 'Open 3D Viewer (Beta) for Selected Node',
+      function: () => {
+        const selectedNodes = app.canvas.selected_nodes
+        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+
+        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
+
+        if (!isLoad3dNode(selectedNode)) return
+
+        ComfyApp.copyToClipspace(selectedNode)
+        // @ts-expect-error clipspace_return_node is an extension property added at runtime
+        ComfyApp.clipspace_return_node = selectedNode
+
+        const props = { node: selectedNode }
+
+        useDialogStore().showDialog({
+          key: 'global-load3d-viewer',
+          title: t('load3d.viewer.title'),
+          component: Load3DViewerContent,
+          props: props,
+          dialogComponentProps: {
+            style: 'width: 80vw; height: 80vh;',
+            maximizable: true,
+            onClose: async () => {
+              await useLoad3dService().handleViewerClose(props.node)
+            }
+          }
+        })
+      }
     }
   ],
   getCustomWidgets() {

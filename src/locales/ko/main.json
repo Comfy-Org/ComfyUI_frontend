@@ -574,6 +574,10 @@
     "applyingTexture": "텍스처 적용 중...",
     "backgroundColor": "배경색",
     "camera": "카메라",
+    "cameraType": {
+      "orthographic": "직교",
+      "perspective": "원근"
+    },
     "clearRecording": "녹화 지우기",
     "edgeThreshold": "엣지 임계값",
     "export": "내보내기",
@@ -594,6 +598,7 @@
       "wireframe": "와이어프레임"
     },
     "model": "모델",
+    "openIn3DViewer": "3D 뷰어에서 열기",
     "previewOutput": "출력 미리보기",
     "removeBackgroundImage": "배경 이미지 제거",
     "resizeNodeMatchOutput": "노드 크기를 출력에 맞추기",
@@ -604,8 +609,22 @@
     "switchCamera": "카메라 전환",
     "switchingMaterialMode": "재질 모드 전환 중...",
     "upDirection": "위 방향",
+    "upDirections": {
+      "original": "원본"
+    },
     "uploadBackgroundImage": "배경 이미지 업로드",
-    "uploadTexture": "텍스처 업로드"
+    "uploadTexture": "텍스처 업로드",
+    "viewer": {
+      "apply": "적용",
+      "cameraSettings": "카메라 설정",
+      "cameraType": "카메라 유형",
+      "cancel": "취소",
+      "exportSettings": "내보내기 설정",
+      "lightSettings": "조명 설정",
+      "modelSettings": "모델 설정",
+      "sceneSettings": "씬 설정",
+      "title": "3D 뷰어 (베타)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} 이상 필요:",
@@ -770,6 +789,7 @@
     "Desktop User Guide": "데스크톱 사용자 가이드",
     "Duplicate Current Workflow": "현재 워크플로 복제",
     "Edit": "편집",
+    "Exit Subgraph": "서브그래프 종료",
     "Export": "내보내기",
     "Export (API)": "내보내기 (API)",
     "Fit Group To Contents": "그룹을 내용에 맞게 조정",
@@ -790,6 +810,7 @@
     "New": "새로 만들기",
     "Next Opened Workflow": "다음 열린 워크플로",
     "Open": "열기",
+    "Open 3D Viewer (Beta) for Selected Node": "선택한 노드에 대해 3D 뷰어(베타) 열기",
     "Open Custom Nodes Folder": "사용자 정의 노드 폴더 열기",
     "Open DevTools": "개발자 도구 열기",
     "Open Inputs Folder": "입력 폴더 열기",
@@ -837,6 +858,13 @@
     "Workflow": "워크플로",
     "Zoom In": "확대",
     "Zoom Out": "축소"
+  },
+  "minimap": {
+    "nodeColors": "노드 색상",
+    "renderBypassState": "바이패스 상태 렌더링",
+    "renderErrorState": "에러 상태 렌더링",
+    "showGroups": "프레임/그룹 표시",
+    "showLinks": "링크 표시"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "다시 보지 않기",
@@ -1104,6 +1132,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3D뷰어",
     "API Nodes": "API 노드",
     "About": "정보",
     "Appearance": "모양",
@@ -1580,6 +1609,7 @@
     "failedToExportModel": "{format} 형식으로 모델 내보내기에 실패했습니다",
     "failedToFetchBalance": "잔액을 가져오지 못했습니다: {error}",
     "failedToFetchLogs": "서버 로그를 가져오는 데 실패했습니다",
+    "failedToInitializeLoad3dViewer": "3D 뷰어 초기화에 실패했습니다",
     "failedToInitiateCreditPurchase": "크레딧 구매를 시작하지 못했습니다: {error}",
     "failedToPurchaseCredits": "크레딧 구매에 실패했습니다: {error}",
     "fileLoadError": "{fileName}에서 워크플로를 찾을 수 없습니다",

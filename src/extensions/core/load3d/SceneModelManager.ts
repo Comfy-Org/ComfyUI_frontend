@@ -18,7 +18,7 @@ import {
   UpDirection
 } from './interfaces'
 
-export class ModelManager implements ModelManagerInterface {
+export class SceneModelManager implements ModelManagerInterface {
   currentModel: THREE.Object3D | null = null
   originalModel:
     | THREE.Object3D
@@ -661,6 +661,12 @@ export class ModelManager implements ModelManagerInterface {
     }
 
     this.originalMaterials = new WeakMap()
+  }
+
+  addModelToScene(model: THREE.Object3D): void {
+    this.currentModel = model
+
+    this.scene.add(this.currentModel)
   }
 
   async setupModel(model: THREE.Object3D): Promise<void> {
