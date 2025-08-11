@@ -29,7 +29,7 @@
         />
         <MoreButton>
           <template #default="{ close }">
-            <TextButton
+            <IconTextButton
               type="primary"
               label="Settings"
               @click="
@@ -38,8 +38,12 @@
                   close()
                 }
               "
-            />
-            <TextButton
+            >
+              <template #icon>
+                <i-lucide:download />
+              </template>
+            </IconTextButton>
+            <IconTextButton
               type="primary"
               label="Profile"
               @click="
@@ -48,7 +52,11 @@
                   close()
                 }
               "
-            />
+            >
+              <template #icon>
+                <i-lucide:scroll />
+              </template>
+            </IconTextButton>
           </template>
         </MoreButton>
       </div>
@@ -82,6 +90,7 @@ import { useI18n } from 'vue-i18n'
 import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 
+import IconTextButton from '../button/IconTextButton.vue'
 import MoreButton from '../button/MoreButton.vue'
 import TextButton from '../button/TextButton.vue'
 import MultiSelect from '../input/MultiSelect.vue'
