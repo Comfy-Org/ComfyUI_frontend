@@ -197,7 +197,13 @@ const { shouldRenderVueNodes, isDevModeEnabled } = useFeatureFlags()
 
 // TransformPane enabled when Vue nodes are enabled OR debug override
 const debugOverrideVueNodes = ref(false)
-const debugPanelVisible = ref(false)
+// Persist debug panel visibility in settings so core commands can toggle it
+const debugPanelVisible = computed({
+  get: () => settingStore.get('Comfy.VueNodes.DebugPanel.Visible') ?? false,
+  set: (v: boolean) => {
+    void settingStore.set('Comfy.VueNodes.DebugPanel.Visible', v)
+  }
+})
 const transformPaneEnabled = computed(
   () => shouldRenderVueNodes.value || debugOverrideVueNodes.value
 )
@@ -735,30 +741,6 @@ onMounted(async () => {
   // Restore workflow and workflow tabs state from storage
   await workflowPersistence.restorePreviousWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
-
-  // Register experimental commands (unbound by default)
-  const commandStore = useCommandStore()
-  if (!commandStore.isRegistered('Experimental.ToggleVueNodes')) {
-    commandStore.registerCommand({
-      id: 'Experimental.ToggleVueNodes',
-      label: () =>
-        `Experimental: ${shouldRenderVueNodes.value ? 'Disable' : 'Enable'} Vue Nodes`,
-      function: async () => {
-        const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
-        await settingStore.set('Comfy.VueNodes.Enabled', !current)
-      }
-    })
-  }
-  if (!commandStore.isRegistered('Experimental.ToggleVueNodeDebugPanel')) {
-    commandStore.registerCommand({
-      id: 'Experimental.ToggleVueNodeDebugPanel',
-      label: () =>
-        `Experimental: ${debugPanelVisible.value ? 'Hide' : 'Show'} Vue Node Debug Panel`,
-      function: () => {
-        debugPanelVisible.value = !debugPanelVisible.value
-      }
-    })
-  }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } = await import('@/stores/releaseStore')
