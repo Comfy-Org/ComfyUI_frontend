@@ -17,21 +17,10 @@ export const useFeatureFlags = () => {
    */
   const isVueNodesEnabled = computed(() => {
     try {
-      return settingStore.get('Comfy.VueNodes.Enabled' as any) ?? true // Default to true for development
+      // Off by default: ensure Vue nodes are disabled unless explicitly enabled
+      return settingStore.get('Comfy.VueNodes.Enabled') ?? false
     } catch {
-      return true // Default to true for development
-    }
-  })
-
-  /**
-   * Enable Vue widget rendering within Vue nodes
-   * When disabled, Vue nodes render without widgets (structure only)
-   */
-  const isVueWidgetsEnabled = computed(() => {
-    try {
-      return settingStore.get('Comfy.VueNodes.Widgets' as any) ?? true
-    } catch {
-      return true
+      return false
     }
   })
 
@@ -74,7 +63,6 @@ export const useFeatureFlags = () => {
 
   return {
     isVueNodesEnabled,
-    isVueWidgetsEnabled,
     isDevModeEnabled,
     shouldRenderVueNodes,
     syncVueNodesFlag

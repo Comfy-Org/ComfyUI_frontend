@@ -893,24 +893,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 0
   },
 
-  // Vue Node System Settings
+  /**
+   * Vue Node System Settings
+   */
   {
-    id: 'Comfy.VueNodes.Enabled' as any,
-    category: ['Comfy', 'Vue Nodes'],
-    experimental: true,
-    name: 'Enable Vue node rendering',
+    id: 'Comfy.VueNodes.Enabled',
+    name: 'Enable Vue node rendering (hidden)',
+    type: 'hidden',
     tooltip:
-      'Render nodes as Vue components instead of canvas elements. Experimental feature.',
-    type: 'boolean',
-    defaultValue: false
-  },
-  {
-    id: 'Comfy.VueNodes.Widgets' as any,
-    category: ['Comfy', 'Vue Nodes', 'Widgets'],
-    experimental: true,
-    name: 'Enable Vue widgets',
-    tooltip: 'Render widgets as Vue components within Vue nodes.',
-    type: 'boolean',
-    defaultValue: true
+      'Render nodes as Vue components instead of canvas. Hidden; toggle via Experimental keybinding.',
+    defaultValue: false,
+    experimental: true
   }
 ]
