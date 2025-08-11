@@ -95,8 +95,9 @@
       </div>
 
       <!-- Card Examples -->
-      <div class="grid grid-cols-6 gap-4 px-6 py-4">
-        <!-- Square Card -->
+      <div
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 px-6 py-4"
+      >
         <CardContainer ratio="tallPortrait">
           <template #top>
             <CardTop ratio="square">
@@ -127,7 +128,6 @@
           </template>
         </CardContainer>
 
-        <!-- Tall Card -->
         <CardContainer ratio="portrait">
           <template #top>
             <CardTop ratio="square">
@@ -139,7 +139,6 @@
           </template>
         </CardContainer>
 
-        <!-- Taller Card -->
         <CardContainer ratio="square">
           <template #top>
             <CardTop ratio="landscape">
@@ -147,7 +146,12 @@
             </CardTop>
           </template>
           <template #bottom>
-            <CardBottom></CardBottom>
+            <CardBottom class="p-2 flex flex-col gap-2">
+              <CardTitle>{{ t('manager.nodePack') }}</CardTitle>
+              <CardDescription>{{
+                t('manager.noNodesFoundDescription')
+              }}</CardDescription>
+            </CardBottom>
           </template>
         </CardContainer>
       </div>
@@ -173,6 +177,7 @@ import MoreButton from '../button/MoreButton.vue'
 import TextButton from '../button/TextButton.vue'
 import CardBottom from '../card/CardBottom.vue'
 import CardContainer from '../card/CardContainer.vue'
+import CardDescription from '../card/CardDescription.vue'
 import CardTop from '../card/CardTop.vue'
 import MultiSelect from '../input/MultiSelect.vue'
 import SearchBox from '../input/SearchBox.vue'
