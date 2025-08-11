@@ -1668,26 +1668,14 @@ export class LGraph
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
     this.beforeChange()
-    //Since boundry reroutes are removed, we only care about nodes
-    //interiour reroutes could grow bbox, but this is not a concern
-    //const boundingRect = createBounds(node.subgraph.nodes)
-    //if (!boundingRect)
-    //  throw new Error('Failed to create bounding rect for subgraph')
-    //TODO force calc of item.boundingRect and swap to createBounds?
-    const bounds = [Infinity, Infinity, -Infinity, -Infinity]
     const center = [0, 0]
     for (const node of subgraphNode.subgraph.nodes) {
-      bounds[0] = Math.min(bounds[0], node.pos[0])
-      bounds[1] = Math.min(bounds[1], node.pos[1])
-      bounds[2] = Math.max(bounds[2], node.pos[0] + node.size[0])
-      bounds[3] = Math.max(bounds[3], node.pos[1] + node.size[1])
       center[0] += node.pos[0] + node.size[0] / 2
       center[1] += node.pos[1] + node.size[1] / 2
     }
     center[0] /= subgraphNode.subgraph.nodes.length
     center[1] /= subgraphNode.subgraph.nodes.length
 
-    //TODO consider weighted center vs bounds here
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
     const movedNodes = multiClone(subgraphNode.subgraph.nodes)
@@ -1706,14 +1694,8 @@ export class LGraph
 
       this.add(node, true)
       node.configure(n_info)
-      //original impl for reference. Why before links?
-      //// configure nodes afterwards so they can reach each other
-      //for (const [id, nodeData] of nodeDataMap) {
-      //  this.getNodeById(id)?.configure(nodeData)
-      //}
     }
 
-    //TODO preprocess reroute/boundry link culling?
     const newLinks: [NodeId, number, NodeId, number, LinkId][] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
@@ -1783,7 +1765,7 @@ export class LGraph
       }
     }
     const reroutes = [...subgraphNode.subgraph.reroutes.values()].sort(
-      (a, b) => (b.parentId ?? -1) - (a.parentId ?? -1)
+      (a, b) => (a.parentId ?? -1) - (b.parentId ?? -1)
     )
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     for (const reroute of reroutes) {
@@ -1806,7 +1788,16 @@ export class LGraph
         reroute.parentId ? rerouteIdMap.get(reroute.parentId) : undefined,
         linkIds
       )
+      rerouteIdMap.set(reroute.id, migratedReroute.id)
       this.reroutes.set(migratedReroute.id, migratedReroute)
+      for (const linkId of linkIds) {
+        const link = this.links.get(linkId)
+        if (!link) {
+          console.error('Missing Parent Link ID')
+          continue
+        }
+        link.parentId = migratedReroute.id
+      }
     }
     const nodes: LGraphNode[] = []
     for (const nodeId of nodeIdMap.values()) {
