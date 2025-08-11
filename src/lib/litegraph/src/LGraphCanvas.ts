@@ -1,3 +1,5 @@
+import { toString } from 'lodash'
+
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -55,7 +57,6 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { stringOrEmpty } from './strings'
 import { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -1244,7 +1245,7 @@ export class LGraphCanvas
         value = LGraphCanvas.getPropertyPrintableValue(value, info.values)
 
       // value could contain invalid html characters, clean that
-      value = LGraphCanvas.decodeHTML(stringOrEmpty(value))
+      value = LGraphCanvas.decodeHTML(toString(value))
       entries.push({
         content:
           `<span class='property_name'>${info.label || i}</span>` +
@@ -6065,7 +6066,7 @@ export class LGraphCanvas
       }
       ctx.fillStyle = '#FFF'
       ctx.fillText(
-        stringOrEmpty(node.order),
+        toString(node.order),
         node.pos[0] + LiteGraph.NODE_TITLE_HEIGHT * -0.5,
         node.pos[1] - 6
       )
