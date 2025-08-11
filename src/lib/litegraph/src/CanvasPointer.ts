@@ -43,6 +43,19 @@ export class CanvasPointer {
   /** {@link maxClickDrift} squared.  Used to calculate click drift without `sqrt`. */
   static #maxClickDrift2 = this.#maxClickDrift ** 2
 
+  /** Assume that "wheel" events with both deltaX and deltaY less than this value are trackpad gestures. */
+  static trackpadThreshold = 60
+
+  /**
+   * The minimum time between "wheel" events to allow switching between trackpad
+   * and mouse modes.
+   *
+   * This prevents trackpad "flick" panning from registering as regular mouse wheel.
+   * After a flick gesture is complete, the automatic wheel events are sent with
+   * reduced frequency, but much higher deltaX and deltaY values.
+   */
+  static trackpadMaxGap = 200
+
   /** The element this PointerState should capture input against when dragging. */
   element: Element
   /** Pointer ID used by drag capture. */
@@ -76,6 +89,9 @@ export class CanvasPointer {
   eMove?: CanvasPointerEvent
   /** The last pointerup event for the primary button */
   eUp?: CanvasPointerEvent
+
+  /** The last pointermove event that was treated as a trackpad gesture. */
+  lastTrackpadEvent?: WheelEvent
 
   /**
    * If set, as soon as the mouse moves outside the click drift threshold, this action is run once.
@@ -255,6 +271,35 @@ export class CanvasPointer {
     this.dragStarted = true
     this.onDragStart?.(this, eMove)
     delete this.onDragStart
+  }
+
+  /**
+   * Checks if the given wheel event is part of a continued trackpad gesture.
+   * @param e The wheel event to check
+   * @returns `true` if the event is part of a continued trackpad gesture, otherwise `false`
+   */
+  #isContinuationOfGesture(e: WheelEvent): boolean {
+    const { lastTrackpadEvent } = this
+    if (!lastTrackpadEvent) return false
+
+    return (
+      e.timeStamp - lastTrackpadEvent.timeStamp < CanvasPointer.trackpadMaxGap
+    )
+  }
+
+  /**
+   * Checks if the given wheel event is part of a trackpad gesture.
+   * @param e The wheel event to check
+   * @returns `true` if the event is part of a trackpad gesture, otherwise `false`
+   */
+  isTrackpadGesture(e: WheelEvent): boolean {
+    if (this.#isContinuationOfGesture(e)) {
+      this.lastTrackpadEvent = e
+      return true
+    }
+
+    const threshold = CanvasPointer.trackpadThreshold
+    return Math.abs(e.deltaX) < threshold && Math.abs(e.deltaY) < threshold
   }
 
   /**
