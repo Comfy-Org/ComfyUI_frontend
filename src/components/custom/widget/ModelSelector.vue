@@ -17,6 +17,9 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
+        <IconButton size="sm" class="bg-orange-500 text-white">
+          <i-lucide:triangle-alert />
+        </IconButton>
         <IconGroup>
           <IconButton>
             <i-lucide:heart />
