@@ -191,7 +191,7 @@ export abstract class SubgraphIONodeBase<
    * @param event The event that triggered the context menu.
    */
   protected showSlotContextMenu(slot: TSlot, event: CanvasPointerEvent): void {
-    const options: IContextMenuValue[] = this.#getSlotMenuOptions(slot)
+    const options = this.#getSlotMenuOptions(slot)
     if (!(options.length > 0)) return
 
     new LiteGraph.ContextMenu(options, {
@@ -208,8 +208,8 @@ export abstract class SubgraphIONodeBase<
    * @param slot The slot to get the context menu options for.
    * @returns The context menu options.
    */
-  #getSlotMenuOptions(slot: TSlot): IContextMenuValue[] {
-    const options: IContextMenuValue[] = []
+  #getSlotMenuOptions(slot: TSlot): (IContextMenuValue | null)[] {
+    const options: (IContextMenuValue | null)[] = []
 
     // Disconnect option if slot has connections
     if (slot !== this.emptySlot && slot.linkIds.length > 0) {
@@ -218,10 +218,10 @@ export abstract class SubgraphIONodeBase<
 
     // Remove / rename slot option (except for the empty slot)
     if (slot !== this.emptySlot) {
-      options.push(
-        { content: 'Remove Slot', value: 'remove' },
-        { content: 'Rename Slot', value: 'rename' }
-      )
+      options.push({ content: 'Rename Slot', value: 'rename' }, null, {
+        content: 'Remove Slot',
+        value: 'remove'
+      })
     }
 
     return options
