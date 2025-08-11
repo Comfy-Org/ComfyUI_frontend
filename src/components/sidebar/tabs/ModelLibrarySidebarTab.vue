@@ -72,7 +72,6 @@
 </template>
 
 <script setup lang="ts">
-import { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import Button from 'primevue/button'
 import { computed, nextTick, ref, toRef, watch, watchEffect } from 'vue'
 
@@ -83,6 +82,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   ComfyModelDef,
