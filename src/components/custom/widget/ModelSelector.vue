@@ -27,6 +27,30 @@
           type="secondary"
           @click="console.log('Hello World!!')"
         />
+        <MoreButton>
+          <template #default="{ close }">
+            <TextButton
+              type="primary"
+              label="Settings"
+              @click="
+                () => {
+                  console.log('Settings')
+                  close()
+                }
+              "
+            />
+            <TextButton
+              type="primary"
+              label="Profile"
+              @click="
+                () => {
+                  console.log('Profile')
+                  close()
+                }
+              "
+            />
+          </template>
+        </MoreButton>
       </div>
     </template>
 
@@ -58,6 +82,7 @@ import { useI18n } from 'vue-i18n'
 import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 
+import MoreButton from '../button/MoreButton.vue'
 import TextButton from '../button/TextButton.vue'
 import MultiSelect from '../input/MultiSelect.vue'
 import SearchBox from '../input/SearchBox.vue'

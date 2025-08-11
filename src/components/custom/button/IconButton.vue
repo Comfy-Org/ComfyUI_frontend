@@ -10,6 +10,6 @@
 
 <script setup lang="ts">
 const { onClick } = defineProps<{
-  onClick: () => void
+  onClick: (event: Event) => void
 }>()
 </script>
