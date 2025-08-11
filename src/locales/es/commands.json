@@ -122,6 +122,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir selección en subgrafo"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Salir de subgrafo"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajustar grupo al contenido"
   },
