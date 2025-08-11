@@ -69,7 +69,7 @@ const pt = computed(() => ({
   }),
   label: {
     class:
-      'flex-1 flex items-center cursor-pointer overflow-hidden whitespace-nowrap pl-3 py-2'
+      'flex-1 flex items-center cursor-pointer overflow-hidden whitespace-nowrap pl-3 py-2 outline-none border-none'
   },
   dropdown: {
     class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
