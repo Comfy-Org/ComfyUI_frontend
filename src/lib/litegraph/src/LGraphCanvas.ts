@@ -3485,8 +3485,12 @@ export class LGraphCanvas
       // Trackpads and mice work on significantly different scales
       const factor = isTrackpad ? 0.18 : 0.008_333
 
-      this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
-      this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
+      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
+        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
+      } else {
+        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
+      }
     }
 
     this.graph.change()
