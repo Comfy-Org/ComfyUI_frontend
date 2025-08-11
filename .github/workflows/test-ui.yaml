@@ -60,7 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, chromium-2x, mobile-chrome]
+        browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
     steps:
       - name: Wait for cache propagation
         run: sleep 10

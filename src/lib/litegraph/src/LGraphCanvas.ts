@@ -1,3 +1,5 @@
+import { toString } from 'lodash'
+
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -55,7 +57,6 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { stringOrEmpty } from './strings'
 import { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -1244,7 +1245,7 @@ export class LGraphCanvas
         value = LGraphCanvas.getPropertyPrintableValue(value, info.values)
 
       // value could contain invalid html characters, clean that
-      value = LGraphCanvas.decodeHTML(stringOrEmpty(value))
+      value = LGraphCanvas.decodeHTML(toString(value))
       entries.push({
         content:
           `<span class='property_name'>${info.label || i}</span>` +
@@ -2299,6 +2300,8 @@ export class LGraphCanvas
 
       const node_data = node.clone()?.serialize()
       if (node_data?.type != null) {
+        // Ensure the cloned node is configured against the correct type (especially for SubgraphNodes)
+        node_data.type = newType
         const cloned = LiteGraph.createNode(newType)
         if (cloned) {
           cloned.configure(node_data)
@@ -2384,7 +2387,7 @@ export class LGraphCanvas
       // Set the width of the line for isPointInStroke checks
       const { lineWidth } = this.ctx
       this.ctx.lineWidth = this.connections_width + 7
-      const dpi = window?.devicePixelRatio || 1
+      const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
@@ -6063,7 +6066,7 @@ export class LGraphCanvas
       }
       ctx.fillStyle = '#FFF'
       ctx.fillText(
-        stringOrEmpty(node.order),
+        toString(node.order),
         node.pos[0] + LiteGraph.NODE_TITLE_HEIGHT * -0.5,
         node.pos[1] - 6
       )
@@ -8069,18 +8072,6 @@ export class LGraphCanvas
     } else {
       options = [
         {
-          content: 'Inputs',
-          has_submenu: true,
-          disabled: true
-        },
-        {
-          content: 'Outputs',
-          has_submenu: true,
-          disabled: true,
-          callback: LGraphCanvas.showMenuNodeOptionalOutputs
-        },
-        null,
-        {
           content: 'Convert to Subgraph 🆕',
           callback: () => {
             if (!this.selectedItems.size)
@@ -8247,13 +8238,17 @@ export class LGraphCanvas
               'Both in put and output slots were null when processing context menu.'
             )
 
-          if (_slot.removable) {
-            menu_info.push(
-              _slot.locked ? 'Cannot remove' : { content: 'Remove Slot', slot }
-            )
-          }
           if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
             menu_info.push({ content: 'Rename Slot', slot })
+          }
+
+          if (_slot.removable) {
+            menu_info.push(null)
+            menu_info.push(
+              _slot.locked
+                ? 'Cannot remove'
+                : { content: 'Remove Slot', slot, className: 'danger' }
+            )
           }
 
           if (node.getExtraSlotMenuOptions) {

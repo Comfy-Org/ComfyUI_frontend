@@ -9,7 +9,7 @@ import type {
   CallbackReturn,
   ISlotType
 } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { Subgraph } from './Subgraph'
 import type { SubgraphNode } from './SubgraphNode'
@@ -263,13 +263,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
     // Upstreamed: Bypass nodes are bypassed using the first input with matching type
     if (this.mode === LGraphEventMode.BYPASS) {
-      const { inputs } = this
-
       // Bypass nodes by finding first input with matching type
-      const parentInputIndexes = Object.keys(inputs).map(Number)
-      // Prioritise exact slot index
-      const indexes = [slot, ...parentInputIndexes]
-      const matchingIndex = indexes.find((i) => inputs[i]?.type === type)
+      const matchingIndex = this.#getBypassSlotIndex(slot, type)
 
       // No input types match
       if (matchingIndex === undefined) {
@@ -324,6 +319,44 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       origin_id: this.id,
       origin_slot: slot
     }
+  }
+
+  /**
+   * Finds the index of the input slot on this node that matches the given output {@link slot} index.
+   * Used when bypassing nodes.
+   * @param slot The output slot index on this node
+   * @param type The type of the final target input (so type list matches are accurate)
+   * @returns The index of the input slot on this node, otherwise `undefined`.
+   */
+  #getBypassSlotIndex(slot: number, type: ISlotType) {
+    const { inputs } = this
+    const oppositeInput = inputs[slot]
+    const outputType = this.node.outputs[slot].type
+
+    // Any type short circuit - match slot ID, fallback to first slot
+    if (type === '*' || type === '') {
+      return inputs.length > slot ? slot : 0
+    }
+
+    // Prefer input with the same slot ID
+    if (
+      oppositeInput &&
+      LiteGraph.isValidConnection(oppositeInput.type, outputType) &&
+      LiteGraph.isValidConnection(oppositeInput.type, type)
+    ) {
+      return slot
+    }
+
+    // Find first matching slot - prefer exact type
+    return (
+      // Preserve legacy behaviour; use exact match first.
+      inputs.findIndex((input) => input.type === type) ??
+      inputs.findIndex(
+        (input) =>
+          LiteGraph.isValidConnection(input.type, outputType) &&
+          LiteGraph.isValidConnection(input.type, type)
+      )
+    )
   }
 
   /**

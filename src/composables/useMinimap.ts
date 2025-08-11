@@ -696,6 +696,7 @@ export function useMinimap() {
     init,
     destroy,
     toggle,
+    renderMinimap,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

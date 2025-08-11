@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "重启"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "為所選節點開啟 3D 檢視器（Beta 版）"
+  },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
   },
@@ -118,6 +121,9 @@
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "将选区转换为子图"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "退出子圖"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"

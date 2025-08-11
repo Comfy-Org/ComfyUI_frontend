@@ -569,6 +569,10 @@
     "applyingTexture": "Application de la texture...",
     "backgroundColor": "Couleur de fond",
     "camera": "Caméra",
+    "cameraType": {
+      "orthographic": "Orthographique",
+      "perspective": "Perspective"
+    },
     "clearRecording": "Effacer l'enregistrement",
     "edgeThreshold": "Seuil de Bordure",
     "export": "Exportation",
@@ -589,6 +593,7 @@
       "wireframe": "Fil de fer"
     },
     "model": "Modèle",
+    "openIn3DViewer": "Ouvrir dans la visionneuse 3D",
     "previewOutput": "Aperçu de la sortie",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "resizeNodeMatchOutput": "Redimensionner le nœud pour correspondre à la sortie",
@@ -599,8 +604,22 @@
     "switchCamera": "Changer de caméra",
     "switchingMaterialMode": "Changement de mode de matériau...",
     "upDirection": "Direction Haut",
+    "upDirections": {
+      "original": "Original"
+    },
     "uploadBackgroundImage": "Télécharger l'image de fond",
-    "uploadTexture": "Télécharger Texture"
+    "uploadTexture": "Télécharger Texture",
+    "viewer": {
+      "apply": "Appliquer",
+      "cameraSettings": "Paramètres de la caméra",
+      "cameraType": "Type de caméra",
+      "cancel": "Annuler",
+      "exportSettings": "Paramètres d’exportation",
+      "lightSettings": "Paramètres de l’éclairage",
+      "modelSettings": "Paramètres du modèle",
+      "sceneSettings": "Paramètres de la scène",
+      "title": "Visionneuse 3D (Bêta)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nécessite ComfyUI {version} :",
@@ -768,6 +787,7 @@
     "Desktop User Guide": "Guide de l'utilisateur de bureau",
     "Duplicate Current Workflow": "Dupliquer le flux de travail actuel",
     "Edit": "Éditer",
+    "Exit Subgraph": "Quitter le sous-graphe",
     "Export": "Exporter",
     "Export (API)": "Exporter (API)",
     "File": "Fichier",
@@ -792,6 +812,7 @@
     "Next Opened Workflow": "Prochain flux de travail ouvert",
     "Node Library": "Bibliothèque de nœuds",
     "Open": "Ouvrir",
+    "Open 3D Viewer (Beta) for Selected Node": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné",
     "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
     "Open DevTools": "Ouvrir DevTools",
     "Open Inputs Folder": "Ouvrir le dossier des entrées",
@@ -1101,6 +1122,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "Visionneuse 3D",
     "API Nodes": "Nœuds API",
     "About": "À Propos",
     "Appearance": "Apparence",
@@ -1161,7 +1183,7 @@
       "node": "Nœud",
       "panelControls": "Contrôles du panneau",
       "queue": "File d’attente",
-      "view": "Affichage",
+      "view": "Vue",
       "workflow": "Flux de travail"
     },
     "viewControls": "Contrôles d’affichage"
@@ -1577,6 +1599,7 @@
     "failedToExportModel": "Échec de l'exportation du modèle en {format}",
     "failedToFetchBalance": "Échec de la récupération du solde : {error}",
     "failedToFetchLogs": "Échec de la récupération des journaux du serveur",
+    "failedToInitializeLoad3dViewer": "Échec de l'initialisation du visualiseur 3D",
     "failedToInitiateCreditPurchase": "Échec de l'initiation de l'achat de crédits : {error}",
     "failedToPurchaseCredits": "Échec de l'achat de crédits : {error}",
     "fileLoadError": "Impossible de trouver le flux de travail dans {fileName}",

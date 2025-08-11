@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "재시작"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "선택한 노드에 대해 3D 뷰어(베타) 열기"
+  },
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
@@ -118,6 +121,9 @@
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "선택 영역을 서브그래프로 변환"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "서브그래프 종료"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"

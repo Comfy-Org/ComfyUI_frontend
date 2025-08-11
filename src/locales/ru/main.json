@@ -569,6 +569,10 @@
     "applyingTexture": "Применение текстуры...",
     "backgroundColor": "Цвет фона",
     "camera": "Камера",
+    "cameraType": {
+      "orthographic": "Ортографическая",
+      "perspective": "Перспективная"
+    },
     "clearRecording": "Очистить запись",
     "edgeThreshold": "Пороговое значение края",
     "export": "Экспорт",
@@ -589,6 +593,7 @@
       "wireframe": "Каркас"
     },
     "model": "Модель",
+    "openIn3DViewer": "Открыть в 3D просмотрщике",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
@@ -599,8 +604,22 @@
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
     "upDirection": "Направление Вверх",
+    "upDirections": {
+      "original": "Оригинал"
+    },
     "uploadBackgroundImage": "Загрузить фоновое изображение",
-    "uploadTexture": "Загрузить текстуру"
+    "uploadTexture": "Загрузить текстуру",
+    "viewer": {
+      "apply": "Применить",
+      "cameraSettings": "Настройки камеры",
+      "cameraType": "Тип камеры",
+      "cancel": "Отмена",
+      "exportSettings": "Настройки экспорта",
+      "lightSettings": "Настройки освещения",
+      "modelSettings": "Настройки модели",
+      "sceneSettings": "Настройки сцены",
+      "title": "3D Просмотрщик (Бета)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Требуется ComfyUI {version}:",
@@ -768,6 +787,7 @@
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
+    "Exit Subgraph": "Выйти из подграфа",
     "Export": "Экспортировать",
     "Export (API)": "Экспорт (API)",
     "File": "Файл",
@@ -792,6 +812,7 @@
     "Next Opened Workflow": "Следующий открытый рабочий процесс",
     "Node Library": "Библиотека узлов",
     "Open": "Открыть",
+    "Open 3D Viewer (Beta) for Selected Node": "Открыть 3D-просмотрщик (бета) для выбранного узла",
     "Open Custom Nodes Folder": "Открыть папку пользовательских нод",
     "Open DevTools": "Открыть инструменты разработчика",
     "Open Inputs Folder": "Открыть папку входных данных",
@@ -1101,6 +1122,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3D-просмотрщик",
     "API Nodes": "API-узлы",
     "About": "О программе",
     "Appearance": "Внешний вид",
@@ -1156,7 +1178,7 @@
     "essentials": "Основные",
     "keyboardShortcuts": "Горячие клавиши",
     "manageShortcuts": "Управление горячими клавишами",
-    "noKeybinding": "Нет привязки клавиши",
+    "noKeybinding": "Нет сочетания клавиш",
     "subcategories": {
       "node": "Узел",
       "panelControls": "Управление панелью",
@@ -1577,6 +1599,7 @@
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
     "failedToFetchBalance": "Не удалось получить баланс: {error}",
     "failedToFetchLogs": "Не удалось получить серверные логи",
+    "failedToInitializeLoad3dViewer": "Не удалось инициализировать 3D просмотрщик",
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",

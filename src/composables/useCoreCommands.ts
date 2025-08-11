@@ -24,6 +24,7 @@ import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useToastStore } from '@/stores/toastStore'
 import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -837,6 +838,21 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         bottomPanelStore.togglePanel('shortcuts')
+      }
+    },
+    {
+      id: 'Comfy.Graph.ExitSubgraph',
+      icon: 'pi pi-arrow-up',
+      label: 'Exit Subgraph',
+      versionAdded: '1.20.1',
+      function: () => {
+        const canvas = useCanvasStore().getCanvas()
+        const navigationStore = useSubgraphNavigationStore()
+        if (!canvas.graph) return
+
+        canvas.setGraph(
+          navigationStore.navigationStack.at(-2) ?? canvas.graph.rootGraph
+        )
       }
     }
   ]

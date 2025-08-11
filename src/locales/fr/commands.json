@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Redémarrer"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },
@@ -118,6 +121,9 @@
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir la sélection en sous-graphe"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Quitter le sous-graphe"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajuster le groupe au contenu"

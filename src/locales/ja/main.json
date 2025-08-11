@@ -569,6 +569,10 @@
     "applyingTexture": "テクスチャを適用中...",
     "backgroundColor": "背景色",
     "camera": "カメラ",
+    "cameraType": {
+      "orthographic": "オルソグラフィック",
+      "perspective": "パースペクティブ"
+    },
     "clearRecording": "録画をクリア",
     "edgeThreshold": "エッジ閾値",
     "export": "エクスポート",
@@ -589,6 +593,7 @@
       "wireframe": "ワイヤーフレーム"
     },
     "model": "モデル",
+    "openIn3DViewer": "3Dビューアで開く",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
@@ -599,8 +604,22 @@
     "switchCamera": "カメラを切り替える",
     "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "upDirection": "上方向",
+    "upDirections": {
+      "original": "オリジナル"
+    },
     "uploadBackgroundImage": "背景画像をアップロード",
-    "uploadTexture": "テクスチャをアップロード"
+    "uploadTexture": "テクスチャをアップロード",
+    "viewer": {
+      "apply": "適用",
+      "cameraSettings": "カメラ設定",
+      "cameraType": "カメラタイプ",
+      "cancel": "キャンセル",
+      "exportSettings": "エクスポート設定",
+      "lightSettings": "ライト設定",
+      "modelSettings": "モデル設定",
+      "sceneSettings": "シーン設定",
+      "title": "3Dビューア（ベータ）"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} が必要です：",
@@ -768,6 +787,7 @@
     "Desktop User Guide": "デスクトップユーザーガイド",
     "Duplicate Current Workflow": "現在のワークフローを複製",
     "Edit": "編集",
+    "Exit Subgraph": "サブグラフを終了",
     "Export": "エクスポート",
     "Export (API)": "エクスポート (API)",
     "File": "ファイル",
@@ -792,6 +812,7 @@
     "Next Opened Workflow": "次に開いたワークフロー",
     "Node Library": "ノードライブラリ",
     "Open": "開く",
+    "Open 3D Viewer (Beta) for Selected Node": "選択したノードの3Dビューアー（ベータ）を開く",
     "Open Custom Nodes Folder": "カスタムノードフォルダを開く",
     "Open DevTools": "DevToolsを開く",
     "Open Inputs Folder": "入力フォルダを開く",
@@ -1101,6 +1122,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3Dビューア",
     "API Nodes": "APIノード",
     "About": "情報",
     "Appearance": "外観",
@@ -1155,7 +1177,7 @@
   "shortcuts": {
     "essentials": "基本",
     "keyboardShortcuts": "キーボードショートカット",
-    "manageShortcuts": "ショートカット管理",
+    "manageShortcuts": "ショートカットの管理",
     "noKeybinding": "キー割り当てなし",
     "subcategories": {
       "node": "ノード",
@@ -1577,6 +1599,7 @@
     "failedToExportModel": "{format}としてモデルのエクスポートに失敗しました",
     "failedToFetchBalance": "残高の取得に失敗しました: {error}",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
+    "failedToInitializeLoad3dViewer": "3Dビューアの初期化に失敗しました",
     "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
     "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "fileLoadError": "{fileName}でワークフローが見つかりません",
