@@ -852,6 +852,13 @@
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить"
   },
+  "minimap": {
+    "nodeColors": "Цвета узлов",
+    "renderBypassState": "Отображать состояние обхода",
+    "renderErrorState": "Отображать состояние ошибки",
+    "showGroups": "Показать фреймы/группы",
+    "showLinks": "Показать связи"
+  },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
     "missingModels": "Отсутствующие модели",
