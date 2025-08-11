@@ -64,7 +64,7 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated Comfy Registry API types..."
-          npx eslint --no-ignore ./src/types/comfyRegistryTypes.ts
+          npx eslint --no-ignore --fix ./src/types/comfyRegistryTypes.ts
 
       - name: Check for changes
         id: check-changes
