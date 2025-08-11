@@ -88,6 +88,7 @@
         <Button
           severity="secondary"
           text
+          data-testid="toggle-minimap-button"
           :pt="{
             root: {
               class:

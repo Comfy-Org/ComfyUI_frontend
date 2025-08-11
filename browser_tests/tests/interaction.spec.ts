@@ -780,9 +780,17 @@ test.describe('Viewport settings', () => {
 
     // Screenshot the canvas element
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
-    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
 
+    // Open zoom controls dropdown first
+    const zoomControlsButton = comfyPage.page.getByTestId(
+      'zoom-controls-button'
+    )
+    await zoomControlsButton.click()
+
+    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
     await toggleButton.click()
+    // close zoom menu
+    await zoomControlsButton.click()
 
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
     await comfyPage.nextFrame()

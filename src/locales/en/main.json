@@ -890,6 +890,7 @@
     "showLinks": "Show Links"
   },
   "zoomControls": {
+    "label": "Zoom Controls",
     "zoomToFit": "Zoom To Fit",
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"

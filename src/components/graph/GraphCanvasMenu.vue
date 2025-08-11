@@ -59,11 +59,12 @@
 
       <Button
         ref="zoomButton"
-        v-tooltip.top="'Zoom Controls'"
+        v-tooltip.top="t('zoomControls.label')"
         severity="secondary"
         label="Profile"
         :class="zoomButtonClass"
-        :aria-label="'Zoom Controls'"
+        :aria-label="t('zoomControls.label')"
+        data-testid="zoom-controls-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="toggleZoomPopup"
       >
