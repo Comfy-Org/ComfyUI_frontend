@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="visible && initialized"
-    class="flex absolute bottom-[20px] right-[90px] z-[1000]"
+    class="minimap-main-container flex absolute bottom-[20px] right-[90px] z-[1000]"
   >
     <MiniMapPanel
       v-if="showOptionsPanel"

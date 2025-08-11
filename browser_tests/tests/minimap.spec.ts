@@ -24,8 +24,14 @@ test.describe('Minimap', () => {
     const minimapViewport = minimapContainer.locator('.minimap-viewport')
     await expect(minimapViewport).toBeVisible()
 
-    await expect(minimapContainer).toHaveCSS('position', 'absolute')
-    await expect(minimapContainer).toHaveCSS('z-index', '1000')
+    await expect(minimapContainer).toHaveCSS('position', 'relative')
+
+    // position and z-index validation moved to the parent container of the minimap
+    const minimapMainContainer = comfyPage.page.locator(
+      '.minimap-main-container'
+    )
+    await expect(minimapMainContainer).toHaveCSS('position', 'absolute')
+    await expect(minimapMainContainer).toHaveCSS('z-index', '1000')
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
