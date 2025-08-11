@@ -210,29 +210,52 @@ echo "Last stable release: $LAST_STABLE"
        echo "WARNING: PR #$PR not on main branch!"
    done
    ```
-3. Create comprehensive release notes including:
-   - **Version Change**: Show version bump details
-   - **Changelog** grouped by type:
-     - 🚀 **Features** (feat:)
-     - 🐛 **Bug Fixes** (fix:)
-     - 💥 **Breaking Changes** (BREAKING CHANGE)
-     - 📚 **Documentation** (docs:)
-     - 🔧 **Maintenance** (chore:, refactor:)
-     - ⬆️ **Dependencies** (deps:, dependency updates)
-       - **Litegraph Changes** (if version updated):
-         - 🚀 Features: ${LITEGRAPH_FEATURES}
-         - 🐛 Bug Fixes: ${LITEGRAPH_FIXES}
-         - 💥 Breaking Changes: ${LITEGRAPH_BREAKING}
-         - 🔧 Other Changes: ${LITEGRAPH_OTHER}
-       - **Other Major Dependencies**: ${OTHER_DEP_CHANGES}
-   - Include PR numbers and links
-   - Add issue references (Fixes #123)
-4. **Save release notes:**
+3. Create standardized release notes using this exact template:
    ```bash
-   # Save release notes for PR and GitHub release
-   echo "$RELEASE_NOTES" > release-notes-${NEW_VERSION}.md
+   cat > release-notes-${NEW_VERSION}.md << 'EOF'
+   ## ⚠️ Breaking Changes
+   <!-- List breaking changes if any, otherwise remove this entire section -->
+   - Breaking change description (#PR_NUMBER)
+
+   ---
+
+   ## What's Changed
+
+   ### 🚀 Features
+   <!-- List features here, one per line with PR reference -->
+   - Feature description (#PR_NUMBER)
+
+   ### 🐛 Bug Fixes
+   <!-- List bug fixes here, one per line with PR reference -->
+   - Bug fix description (#PR_NUMBER)
+
+   ### 🔧 Maintenance
+   <!-- List refactoring, chore, and other maintenance items -->
+   - Maintenance item description (#PR_NUMBER)
+
+   ### 📚 Documentation
+   <!-- List documentation changes if any, remove section if empty -->
+   - Documentation update description (#PR_NUMBER)
+
+   ### ⬆️ Dependencies
+   <!-- List dependency updates -->
+   - Updated dependency from vX.X.X to vY.Y.Y (#PR_NUMBER)
+
+   **Full Changelog**: https://github.com/Comfy-Org/ComfyUI_frontend/compare/${BASE_TAG}...v${NEW_VERSION}
+   EOF
    ```
-5. **CONTENT REVIEW**: Release notes clear and comprehensive with dependency details?
+4. **Parse commits and populate template:**
+   - Group commits by conventional commit type (feat:, fix:, chore:, etc.)
+   - Extract PR numbers from commit messages
+   - For breaking changes, analyze if changes affect:
+     - Public APIs (app object, api module)
+     - Extension/workspace manager APIs
+     - Node schema, workflow schema, or other public schemas
+     - Any other public-facing interfaces
+   - For dependency updates, list version changes with PR numbers
+   - Remove empty sections (e.g., if no documentation changes)
+   - Ensure consistent bullet format: `- Description (#PR_NUMBER)`
+5. **CONTENT REVIEW**: Release notes follow standard format?
 
 ### Step 9: Create Version Bump PR
 
@@ -273,38 +296,12 @@ echo "Workflow triggered. Waiting for PR creation..."
      --body-file release-notes-${NEW_VERSION}.md \
      --label "Release"
    ```
-3. **Add required sections to PR body:**
+3. **Update PR with release notes:**
    ```bash
-   # Create PR body with release notes plus required sections
-   cat > pr-body.md << EOF
-   ${RELEASE_NOTES}
-
-   ## Breaking Changes
-   ${BREAKING_CHANGES:-None}
-
-   ## Testing Performed
-   - ✅ Full test suite (unit, component)
-   - ✅ TypeScript compilation
-   - ✅ Linting checks
-   - ✅ Build verification
-   - ✅ Security audit
-
-   ## Distribution Channels
-   - GitHub Release (with dist.zip)
-   - PyPI Package (comfyui-frontend-package)
-   - npm Package (@comfyorg/comfyui-frontend-types)
-
-   ## Post-Release Tasks
-   - [ ] Verify all distribution channels
-   - [ ] Update external documentation
-   - [ ] Monitor for issues
-   EOF
+   # For workflow-created PRs, update the body with our release notes
+   gh pr edit ${PR_NUMBER} --body-file release-notes-${NEW_VERSION}.md
    ```
-4. Update PR with enhanced description:
-   ```bash
-   gh pr edit ${PR_NUMBER} --body-file pr-body.md
-   ```
-5. **PR REVIEW**: Version bump PR created and enhanced correctly?
+4. **PR REVIEW**: Version bump PR created with standardized release notes?
 
 ### Step 10: Critical Release PR Verification
 
@@ -592,55 +589,46 @@ The command implements multiple quality gates:
 - Draft release status
 - Python package specs require that prereleases use alpha/beta/rc as the preid
 
-## Common Issues and Solutions
+## Critical Implementation Notes
 
-### Issue: Pre-release Version Confusion
-**Problem**: Not sure whether to promote pre-release or create new version
-**Solution**: 
-- Follow semver standards: a prerelease version is followed by a normal release.  It should have the same major, minor, and patch versions as the prerelease.
+When executing this release process, pay attention to these key aspects:
 
-### Issue: Wrong Commit Count
-**Problem**: Changelog includes commits from other branches
-**Solution**: Always use `--first-parent` flag with git log
+### Version Handling
+- For pre-release versions (e.g., 1.24.0-rc.1), the next stable release should be the same version without the suffix (1.24.0)
+- Never skip version numbers - follow semantic versioning strictly
 
-**Update**: Sometimes update-locales doesn't add [skip ci] - always verify!
+### Commit History Analysis
+- **ALWAYS** use `--first-parent` flag with git log to avoid including commits from merged feature branches
+- Verify PR merge targets before including them in changelogs:
+  ```bash
+  gh pr view ${PR_NUMBER} --json baseRefName
+  ```
 
-### Issue: Missing PRs in Changelog
-**Problem**: PR was merged to different branch
-**Solution**: Verify PR merge target with:
-```bash
-gh pr view ${PR_NUMBER} --json baseRefName
-```
+### Release Workflow Triggers
+- The "Release" label on the PR is **CRITICAL** - without it, PyPI/npm publishing won't occur
+- Check for `[skip ci]` in commit messages before merging - this blocks the release workflow
+- If you encounter `[skip ci]`, push an empty commit to override it:
+  ```bash
+  git commit --allow-empty -m "Trigger release workflow"
+  ```
 
-### Issue: Incomplete Dependency Changelog
-**Problem**: Litegraph or other dependency updates only show version bump, not actual changes
-**Solution**: The command now automatically:
-- Detects litegraph version changes between releases
-- Clones the litegraph repository temporarily
-- Extracts and categorizes changes between versions
-- Includes detailed litegraph changelog in release notes
-- Cleans up temporary files after analysis
+### PR Creation Details
+- Version bump PRs come from `comfy-pr-bot`, not `github-actions`
+- The workflow typically completes in 20-30 seconds
+- Always wait for the PR to be created before trying to edit it
 
-### Issue: Release Failed Due to [skip ci]
-**Problem**: Release workflow didn't trigger after merge
-**Prevention**: Always avoid this scenario
-- Ensure that `[skip ci]` or similar flags are NOT in the `HEAD` commit message of the PR
-  - Push a new, empty commit to the PR
-- Always double-check this immediately before merging
+### Breaking Changes Detection
+- Analyze changes to public-facing APIs:
+  - The `app` object and its methods
+  - The `api` module exports
+  - Extension and workspace manager interfaces
+  - Node schema, workflow schema, and other public schemas
+- Any modifications to these require marking as breaking changes
 
-**Recovery Strategy**:
-1. Revert version in a new PR (e.g., 1.24.0 → 1.24.0-1)
-2. Merge the revert PR
-3. Run version bump workflow again
-4. This creates a fresh PR without [skip ci]
-Benefits: Cleaner than creating extra version numbers
-
-## Key Learnings & Notes
-
-1. **PR Author**: Version bump PRs are created by `comfy-pr-bot`, not `github-actions`
-2. **Workflow Speed**: Version bump workflow typically completes in ~20-30 seconds
-3. **Update-locales Behavior**: Inconsistent - sometimes adds [skip ci], sometimes doesn't
-4. **Recovery Options**: Reverting version is cleaner than creating extra versions
-5. **Dependency Tracking**: Command now automatically includes litegraph and major dependency changes in changelogs
-6. **Litegraph Integration**: Temporary cloning of litegraph repo provides detailed change analysis between versions
+### Recovery Procedures
+If the release workflow fails to trigger:
+1. Create a revert PR to restore the previous version
+2. Merge the revert
+3. Re-run the version bump workflow
+4. This approach is cleaner than creating extra version numbers
 

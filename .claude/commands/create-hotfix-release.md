@@ -138,14 +138,50 @@ For each commit:
    ```bash
    gh pr create --base core/X.Y --head release/1.23.5 \
      --title "[Release] v1.23.5" \
-     --body "..." \
+     --body "Release notes will be added shortly..." \
      --label "Release"
    ```
 3. **CRITICAL**: Verify "Release" label is added
-4. PR description should include:
-   - Version: `1.23.4` → `1.23.5`
-   - Included fixes (link to previous PR)
-   - Release notes for users
+4. Create standardized release notes:
+   ```bash
+   cat > release-notes-${NEW_VERSION}.md << 'EOF'
+   ## ⚠️ Breaking Changes
+   <!-- List breaking changes if any, otherwise remove this entire section -->
+   - Breaking change description (#PR_NUMBER)
+
+   ---
+
+   ## What's Changed
+
+   ### 🚀 Features
+   <!-- List features here, one per line with PR reference -->
+   - Feature description (#PR_NUMBER)
+
+   ### 🐛 Bug Fixes
+   <!-- List bug fixes here, one per line with PR reference -->
+   - Bug fix description (#PR_NUMBER)
+
+   ### 🔧 Maintenance
+   <!-- List refactoring, chore, and other maintenance items -->
+   - Maintenance item description (#PR_NUMBER)
+
+   ### 📚 Documentation
+   <!-- List documentation changes if any, remove section if empty -->
+   - Documentation update description (#PR_NUMBER)
+
+   ### ⬆️ Dependencies
+   <!-- List dependency updates -->
+   - Updated dependency from vX.X.X to vY.Y.Y (#PR_NUMBER)
+
+   **Full Changelog**: https://github.com/Comfy-Org/ComfyUI_frontend/compare/v${CURRENT_VERSION}...v${NEW_VERSION}
+   EOF
+   ```
+   - For hotfixes, typically only populate the "Bug Fixes" section
+   - Include links to the cherry-picked PRs/commits
+   - Update the PR body with the release notes:
+     ```bash
+     gh pr edit ${PR_NUMBER} --body-file release-notes-${NEW_VERSION}.md
+     ```
 5. **CONFIRMATION REQUIRED**: Release PR has "Release" label?
 
 ### Step 11: Monitor Release Process
