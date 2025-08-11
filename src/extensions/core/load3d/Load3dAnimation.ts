@@ -1,5 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import * as THREE from 'three'
+
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { AnimationManager } from './AnimationManager'
 import Load3d from './Load3d'

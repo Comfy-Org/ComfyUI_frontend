@@ -3,12 +3,11 @@ import {
   type CanvasPointer,
   type LGraphNode,
   LiteGraph
-} from '@comfyorg/litegraph'
+} from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
-} from '@comfyorg/litegraph/dist/types/widgets'
-
+} from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'

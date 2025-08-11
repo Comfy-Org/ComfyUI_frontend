@@ -1,8 +1,8 @@
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import * as jsondiffpatch from 'jsondiffpatch'
 import _ from 'lodash'
 import log from 'loglevel'
 
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'

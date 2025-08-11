@@ -11,6 +11,15 @@ vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
   }
 }))
 
+vi.mock('@/components/common/LazyImage.vue', () => ({
+  default: {
+    name: 'LazyImage',
+    template:
+      '<img :src="src" :alt="alt" :class="imageClass" :style="imageStyle" draggable="false" />',
+    props: ['src', 'alt', 'imageClass', 'imageStyle']
+  }
+}))
+
 describe('DefaultThumbnail', () => {
   const mountThumbnail = (props = {}) => {
     return mount(DefaultThumbnail, {
@@ -25,9 +34,9 @@ describe('DefaultThumbnail', () => {
 
   it('renders image with correct src and alt', () => {
     const wrapper = mountThumbnail()
-    const img = wrapper.find('img')
-    expect(img.attributes('src')).toBe('/test-image.jpg')
-    expect(img.attributes('alt')).toBe('Test Image')
+    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
+    expect(lazyImage.props('src')).toBe('/test-image.jpg')
+    expect(lazyImage.props('alt')).toBe('Test Image')
   })
 
   it('applies scale transform when hovered', () => {
@@ -35,35 +44,43 @@ describe('DefaultThumbnail', () => {
       isHovered: true,
       hoverZoom: 10
     })
-    const img = wrapper.find('img')
-    expect(img.attributes('style')).toContain('scale(1.1)')
+    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
+    expect(lazyImage.props('imageStyle')).toEqual({ transform: 'scale(1.1)' })
   })
 
   it('does not apply scale transform when not hovered', () => {
     const wrapper = mountThumbnail({
       isHovered: false
     })
-    const img = wrapper.find('img')
-    expect(img.attributes('style')).toBeUndefined()
+    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
+    expect(lazyImage.props('imageStyle')).toBeUndefined()
   })
 
   it('applies video styling for video type', () => {
     const wrapper = mountThumbnail({
       isVideo: true
     })
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('w-full')
-    expect(img.classes()).toContain('h-full')
-    expect(img.classes()).toContain('object-cover')
+    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
+    const imageClass = lazyImage.props('imageClass')
+    const classString = Array.isArray(imageClass)
+      ? imageClass.join(' ')
+      : imageClass
+    expect(classString).toContain('w-full')
+    expect(classString).toContain('h-full')
+    expect(classString).toContain('object-cover')
   })
 
   it('applies image styling for non-video type', () => {
     const wrapper = mountThumbnail({
       isVideo: false
     })
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('max-w-full')
-    expect(img.classes()).toContain('object-contain')
+    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
+    const imageClass = lazyImage.props('imageClass')
+    const classString = Array.isArray(imageClass)
+      ? imageClass.join(' ')
+      : imageClass
+    expect(classString).toContain('max-w-full')
+    expect(classString).toContain('object-contain')
   })
 
   it('applies correct styling for webp images', () => {
@@ -71,8 +88,12 @@ describe('DefaultThumbnail', () => {
       src: '/test-video.webp',
       isVideo: true
     })
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('object-cover')
+    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
+    const imageClass = lazyImage.props('imageClass')
+    const classString = Array.isArray(imageClass)
+      ? imageClass.join(' ')
+      : imageClass
+    expect(classString).toContain('object-cover')
   })
 
   it('image is not draggable', () => {
@@ -83,11 +104,15 @@ describe('DefaultThumbnail', () => {
 
   it('applies transition classes', () => {
     const wrapper = mountThumbnail()
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('transform-gpu')
-    expect(img.classes()).toContain('transition-transform')
-    expect(img.classes()).toContain('duration-300')
-    expect(img.classes()).toContain('ease-out')
+    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
+    const imageClass = lazyImage.props('imageClass')
+    const classString = Array.isArray(imageClass)
+      ? imageClass.join(' ')
+      : imageClass
+    expect(classString).toContain('transform-gpu')
+    expect(classString).toContain('transition-transform')
+    expect(classString).toContain('duration-300')
+    expect(classString).toContain('ease-out')
   })
 
   it('passes correct props to BaseThumbnail', () => {

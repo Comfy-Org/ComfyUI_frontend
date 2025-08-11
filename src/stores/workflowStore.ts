@@ -1,8 +1,9 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
+import { useWorkflowThumbnail } from '@/composables/useWorkflowThumbnail'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
@@ -341,6 +342,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       (path) => path !== workflow.path
     )
     if (workflow.isTemporary) {
+      // Clear thumbnail when temporary workflow is closed
+      clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
@@ -402,12 +405,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** A filesystem operation is currently in progress (e.g. save, rename, delete) */
   const isBusy = ref<boolean>(false)
+  const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     isBusy.value = true
     try {
       // Capture all needed values upfront
       const oldPath = workflow.path
+      const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
 
       const openIndex = detachWorkflow(workflow)
@@ -418,6 +423,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
         attachWorkflow(workflow, openIndex)
       }
 
+      // Move thumbnail from old key to new key (using workflow keys, not full paths)
+      const newKey = workflow.key
+      moveWorkflowThumbnail(oldKey, newKey)
       // Update bookmarks
       if (wasBookmarked) {
         await bookmarkStore.setBookmarked(oldPath, false)
@@ -435,6 +443,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
+      // Clear thumbnail when workflow is deleted
+      clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
     } finally {
       isBusy.value = false

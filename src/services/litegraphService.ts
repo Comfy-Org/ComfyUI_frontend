@@ -1,3 +1,9 @@
+import _ from 'lodash'
+
+import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
+import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
+import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { st, t } from '@/i18n'
 import {
   type IContextMenuValue,
   LGraphBadge,
@@ -10,19 +16,13 @@ import {
   SubgraphNode,
   type Vector2,
   createBounds
-} from '@comfyorg/litegraph'
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
-} from '@comfyorg/litegraph/dist/types/serialisation'
-import _ from 'lodash'
-
-import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
-import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
-import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { st, t } from '@/i18n'
+} from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
@@ -363,6 +363,7 @@ export const useLitegraphService = () => {
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
     // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
+    node.skip_list = true
     node.title = nodeDef.display_name || nodeDef.name
   }
 

@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type PasteHandler<T> = (files: File[]) => Promise<T>
 

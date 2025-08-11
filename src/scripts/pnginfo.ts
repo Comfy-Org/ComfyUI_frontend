@@ -1,4 +1,4 @@
-import { LiteGraph } from '@comfyorg/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'

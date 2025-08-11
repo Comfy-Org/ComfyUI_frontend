@@ -1,6 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { describe, expect, test, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
 // Mock dependencies

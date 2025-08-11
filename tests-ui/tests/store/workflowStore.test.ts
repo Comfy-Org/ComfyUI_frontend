@@ -1,8 +1,8 @@
-import type { Subgraph } from '@comfyorg/litegraph'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'

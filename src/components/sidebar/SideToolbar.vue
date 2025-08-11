@@ -16,6 +16,7 @@
         <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
         <SidebarHelpCenterIcon />
         <SidebarBottomPanelToggleButton />
+        <SidebarShortcutsToggleButton />
       </div>
     </nav>
   </teleport>
@@ -32,6 +33,7 @@ import { computed } from 'vue'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
+import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useUserStore } from '@/stores/userStore'

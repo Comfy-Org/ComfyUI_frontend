@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

@@ -1,9 +1,9 @@
-import { LGraphCanvas } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   Colors,
   type Palette,

@@ -17,6 +17,7 @@ export interface ComfyCommand {
   versionAdded?: string
   confirmation?: string // If non-nullish, this command will prompt for confirmation
   source?: string
+  category?: 'essentials' | 'view-controls' // For shortcuts panel organization
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
@@ -29,6 +30,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   versionAdded?: string
   confirmation?: string
   source?: string
+  category?: 'essentials' | 'view-controls'
 
   constructor(command: ComfyCommand) {
     this.id = command.id
@@ -40,6 +42,7 @@ export class ComfyCommandImpl implements ComfyCommand {
     this.versionAdded = command.versionAdded
     this.confirmation = command.confirmation
     this.source = command.source
+    this.category = command.category
   }
 
   get label() {

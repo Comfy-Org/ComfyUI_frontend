@@ -1,4 +1,3 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { Editor as TiptapEditor } from '@tiptap/core'
 import TiptapLink from '@tiptap/extension-link'
 import TiptapTable from '@tiptap/extension-table'
@@ -8,6 +7,7 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { type InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
