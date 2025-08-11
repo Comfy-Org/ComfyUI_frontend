@@ -83,7 +83,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import IconButton from '@/components/custom/button/IconButton.vue'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 
-const BREAKPOINTS = { sm: 480 }
+const BREAKPOINTS = { md: 880 }
 const PANEL_SIZES = {
   width: 'w-1/3',
   minWidth: 'min-w-40',
@@ -94,7 +94,7 @@ const slots = useSlots()
 const closeDialog = inject(OnCloseKey, () => {})
 
 const breakpoints = useBreakpoints(BREAKPOINTS)
-const notMobile = breakpoints.greater('sm')
+const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
 const isRightPanelOpen = ref<boolean>(false)
