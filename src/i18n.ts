@@ -32,6 +32,10 @@ import zhCommands from './locales/zh/commands.json'
 import zh from './locales/zh/main.json'
 import zhNodes from './locales/zh/nodeDefs.json'
 import zhSettings from './locales/zh/settings.json'
+import arCommands from './locales/ar/commands.json'
+import ar from './locales/ar/main.json'
+import arNodes from './locales/ar/nodeDefs.json'
+import arSettings from './locales/ar/settings.json'
 
 function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
   return {
@@ -50,7 +54,8 @@ const messages = {
   ja: buildLocale(ja, jaNodes, jaCommands, jaSettings),
   ko: buildLocale(ko, koNodes, koCommands, koSettings),
   fr: buildLocale(fr, frNodes, frCommands, frSettings),
-  es: buildLocale(es, esNodes, esCommands, esSettings)
+  es: buildLocale(es, esNodes, esCommands, esSettings),
+  ar: buildLocale(ar, arNodes, arCommands, arSettings)
 }
 
 export const i18n = createI18n({

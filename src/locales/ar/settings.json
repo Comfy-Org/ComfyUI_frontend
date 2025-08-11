@@ -1,0 +1,271 @@
+{
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "التحقق التلقائي من التحديثات"
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "إرسال إحصائيات الاستخدام المجهولة"
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "مرآة تثبيت Pypi",
+    "tooltip": "مرآة التثبيت الافتراضية لـ pip"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "مرآة تثبيت Python",
+    "tooltip": "يتم تحميل تثبيتات Python المدارة من مشروع Astral python-build-standalone. يمكن تعيين هذا المتغير إلى عنوان URL لمرآة مختلفة لاستخدام مصدر مختلف لتثبيتات Python. سيحل عنوان URL المقدم محل https://github.com/astral-sh/python-build-standalone/releases/download في مثال https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. يمكن قراءة التوزيعات من دليل محلي باستخدام نظام URL file://."
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "مرآة تثبيت Torch",
+    "tooltip": "مرآة تثبيت pip لـ pytorch"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "نمط النافذة",
+    "tooltip": "مخصص: استبدال شريط عنوان النظام بقائمة ComfyUI العلوية",
+    "options": {
+      "default": "افتراضي",
+      "custom": "مخصص"
+    }
+  },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "صورة خلفية اللوحة",
+    "tooltip": "رابط صورة لخلفية اللوحة. يمكنك النقر بزر الفأرة الأيمن على صورة في لوحة المخرجات واختيار \"تعيين كخلفية\" لاستخدامها، أو تحميل صورتك الخاصة باستخدام زر التحميل."
+  },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "وضع التنقل في اللوحة",
+    "options": {
+      "Standard (New)": "قياسي (جديد)",
+      "Left-Click Pan (Legacy)": "سحب بالنقر الأيسر (قديم)"
+    }
+  },
+  "Comfy_Canvas_SelectionToolbox": {
+    "name": "عرض صندوق أدوات التحديد"
+  },
+  "Comfy_ConfirmClear": {
+    "name": "طلب تأكيد عند مسح سير العمل"
+  },
+  "Comfy_DevMode": {
+    "name": "تمكين خيارات وضع المطور (حفظ API، إلخ)"
+  },
+  "Comfy_DisableFloatRounding": {
+    "name": "تعطيل تقريب أدوات القيم العشرية الافتراضي.",
+    "tooltip": "(يتطلب إعادة تحميل الصفحة) لا يمكن تعطيل التقريب عندما يتم تعيينه من العقدة في الخلفية."
+  },
+  "Comfy_DisableSliders": {
+    "name": "تعطيل منزلقات أدوات العقد"
+  },
+  "Comfy_DOMClippingEnabled": {
+    "name": "تمكين قص عناصر DOM (قد يقلل الأداء)"
+  },
+  "Comfy_EditAttention_Delta": {
+    "name": "دقة Ctrl+سهم لأعلى/أسفل"
+  },
+  "Comfy_EnableTooltips": {
+    "name": "تمكين تلميحات الأدوات"
+  },
+  "Comfy_EnableWorkflowViewRestore": {
+    "name": "حفظ واستعادة موقع اللوحة ومستوى التكبير في سير العمل"
+  },
+  "Comfy_FloatRoundingPrecision": {
+    "name": "عدد أرقام التقريب العشرية لأدوات القيم العشرية [0 = تلقائي].",
+    "tooltip": "(يتطلب إعادة تحميل الصفحة)"
+  },
+  "Comfy_Graph_CanvasInfo": {
+    "name": "عرض معلومات اللوحة في الزاوية السفلية اليسرى (الإطارات في الثانية، إلخ)"
+  },
+  "Comfy_Graph_CanvasMenu": {
+    "name": "عرض قائمة لوحة الرسم"
+  },
+  "Comfy_Graph_CtrlShiftZoom": {
+    "name": "تمكين اختصار التكبير السريع (Ctrl + Shift + سحب)"
+  },
+  "Comfy_Graph_LinkMarkers": {
+    "name": "علامات منتصف الرابط",
+    "options": {
+      "None": "لا شيء",
+      "Circle": "دائرة",
+      "Arrow": "سهم"
+    }
+  },
+  "Comfy_Graph_ZoomSpeed": {
+    "name": "سرعة تكبير اللوحة"
+  },
+  "Comfy_Group_DoubleClickTitleToEdit": {
+    "name": "النقر المزدوج على عنوان المجموعة للتحرير"
+  },
+  "Comfy_GroupSelectedNodes_Padding": {
+    "name": "توسيط العقد المحددة في المجموعة"
+  },
+  "Comfy_LinkRelease_Action": {
+    "name": "الإجراء عند تحرير الرابط (بدون تعديل)",
+    "options": {
+      "context menu": "قائمة السياق",
+      "search box": "مربع البحث",
+      "no action": "لا إجراء"
+    }
+  },
+  "Comfy_LinkRelease_ActionShift": {
+    "name": "الإجراء عند تحرير الرابط (مع Shift)",
+    "options": {
+      "context menu": "قائمة السياق",
+      "search box": "مربع البحث",
+      "no action": "لا إجراء"
+    }
+  },
+  "Comfy_LinkRenderMode": {
+    "name": "وضع عرض الرابط",
+    "options": {
+      "Straight": "مستقيم",
+      "Linear": "خطي",
+      "Spline": "منحنى",
+      "Hidden": "مخفي"
+    }
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "لون الخلفية الابتدائي",
+    "tooltip": "يتحكم في لون خلفية المشهد ثلاثي الأبعاد الافتراضي. هذا الإعداد يحدد مظهر الخلفية عند إنشاء أداة ثلاثية الأبعاد جديدة، ويمكن تعديله لكل أداة بشكل فردي بعد الإنشاء."
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "نوع الكاميرا الابتدائي",
+    "tooltip": "يتحكم في ما إذا كانت الكاميرا منظورًا أو متعامدة بشكل افتراضي عند إنشاء أداة ثلاثية الأبعاد جديدة. يمكن تغييره أيضًا لكل أداة بشكل فردي بعد الإنشاء.",
+    "options": {
+      "perspective": "منظور",
+      "orthographic": "متعامد"
+    }
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "زيادة تعديل الإضاءة",
+    "tooltip": "يتحكم في حجم الخطوة عند تعديل شدة الضوء في المشاهد ثلاثية الأبعاد. قيمة أصغر تسمح بتحكم أدق، وقيمة أكبر تؤدي إلى تغييرات ملحوظة أكثر لكل تعديل."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "شدة الضوء الابتدائية",
+    "tooltip": "يحدد مستوى سطوع الإضاءة الافتراضي في المشهد ثلاثي الأبعاد عند إنشاء أداة جديدة، ويمكن تعديله لكل أداة بشكل فردي."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "الحد الأقصى لشدة الضوء",
+    "tooltip": "يحدد الحد الأعلى لشدة الإضاءة الممكن تعيينها في المشاهد ثلاثية الأبعاد."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "الحد الأدنى لشدة الضوء",
+    "tooltip": "يحدد الحد الأدنى لشدة الإضاءة الممكن تعيينها في المشاهد ثلاثية الأبعاد."
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "رؤية الشبكة الابتدائية",
+    "tooltip": "يتحكم في ما إذا كانت الشبكة مرئية افتراضيًا عند إنشاء أداة ثلاثية الأبعاد جديدة، ويمكن تغييره لكل أداة بشكل فردي."
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "رؤية المعاينة الابتدائية",
+    "tooltip": "يتحكم في ما إذا كانت شاشة المعاينة مرئية افتراضيًا عند إنشاء أداة ثلاثية الأبعاد جديدة، ويمكن تغييره لكل أداة بشكل فردي."
+  },
+  "Comfy_Locale": {
+    "name": "اللغة"
+  },
+  "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+    "name": "مضاعف سرعة تعديل الفرشاة",
+    "tooltip": "يتحكم في سرعة تغيير حجم وصرامة الفرشاة عند التعديل. القيم الأعلى تعني تغييرات أسرع."
+  },
+  "Comfy_MaskEditor_UseDominantAxis": {
+    "name": "تقييد تعديل الفرشاة إلى المحور السائد",
+    "tooltip": "عند التمكين، ستؤثر تعديلات الفرشاة على الحجم أو الصرامة فقط بناءً على الاتجاه الأكثر حركة."
+  },
+  "Comfy_MaskEditor_UseNewEditor": {
+    "name": "استخدام محرر القناع الجديد",
+    "tooltip": "التحويل إلى واجهة محرر القناع الجديد"
+  },
+  "Comfy_ModelLibrary_AutoLoadAll": {
+    "name": "تحميل جميع مجلدات النماذج تلقائيًا",
+    "tooltip": "إذا كانت true، يتم تحميل جميع مجلدات النماذج الفرعية تلقائيًا في المكتبة. إذا كانت false، يجب تحديد مجلد محدد يدويًا."
+  },
+  "Comfy_ModelLibrary_LoadUnpacked": {
+    "name": "تحميل النماذج غير المضغوطة",
+    "tooltip": "عند التمكين، يتم تضمين النماذج غير المضغوطة في المكتبة."
+  },
+  "Comfy_NodeGraph_ExportAddonEnable": {
+    "name": "تمكين إضافة التصدير"
+  },
+  "Comfy_NodeGraph_ExportAddonFormat": {
+    "name": "تنسيق التصدير"
+  },
+  "Comfy_NodeGraph_ExportAddonSplitGroups": {
+    "name": "تقسيم التصدير حسب المجموعات"
+  },
+  "Comfy_NodeGraph_ExportAddonShowDescription": {
+    "name": "إظهار وصف التصدير"
+  },
+  "Comfy_NodeGraph_ExportAddonShowGroupTitle": {
+    "name": "إظهار عنوان المجموعة في التصدير"
+  },
+  "Comfy_NodeGraph_ExportAddonShowParameters": {
+    "name": "إظهار معلمات التصدير"
+  },
+  "Comfy_NodeGraph_ExportAddonTitle": {
+    "name": "عنوان إضافة التصدير"
+  },
+  "Comfy_NodeGraph_FreezeNodes": {
+    "name": "تجميد العقد"
+  },
+  "Comfy_NodeGraph_HighlightOnMouseHover": {
+    "name": "تمييز العقد عند المرور عليها"
+  },
+  "Comfy_NodeGraph_UseGridSnapping": {
+    "name": "تمكين محاذاة الشبكة عند سحب العقد"
+  },
+  "Comfy_NodeGraph_UseZoomOnMouseWheel": {
+    "name": "تمكين التكبير باستخدام عجلة الماوس"
+  },
+  "Comfy_NodeGraph_ZoomSensitivity": {
+    "name": "حساسية التكبير"
+  },
+  "Comfy_Nodes_AlwaysShowDefault": {
+    "name": "عرض القيمة الافتراضية دائمًا"
+  },
+  "Comfy_Nodes_ColorAlpha": {
+    "name": "مقدار شفافية ألوان العقد"
+  },
+  "Comfy_Nodes_ColorHsv": {
+    "name": "تعديل تدرج ألوان العقد (HSV)"
+  },
+  "Comfy_Nodes_DefaultValues": {
+    "name": "القيم الافتراضية للعقد"
+  },
+  "Comfy_Nodes_DisableNodeColoring": {
+    "name": "تعطيل تلوين العقد"
+  },
+  "Comfy_Nodes_ExpandNewNodes": {
+    "name": "توسيع العقد الجديدة تلقائيًا"
+  },
+  "Comfy_Nodes_FontSize": {
+    "name": "حجم خط نص العقد"
+  },
+  "Comfy_Nodes_Opacity": {
+    "name": "عتامة خلفية العقد"
+  },
+  "Comfy_Nodes_Style": {
+    "name": "نمط العقد"
+  },
+  "Comfy_Performance_BatchSize": {
+    "name": "حجم الدُفعة"
+  },
+  "Comfy_Performance_EnableGpu": {
+    "name": "تمكين استخدام GPU"
+  },
+  "Comfy_Performance_MaxThreads": {
+    "name": "الحد الأقصى لعدد الخيوط"
+  },
+  "Comfy_Saving_ConfirmBeforeOverwrite": {
+    "name": "تأكيد قبل الكتابة فوق الملفات"
+  },
+  "Comfy_Saving_DefaultSavePath": {
+    "name": "مسار الحفظ الافتراضي"
+  },
+  "Comfy_Saving_UseRelativePaths": {
+    "name": "استخدام المسارات النسبية"
+  },
+  "Comfy_UI_Theme": {
+    "name": "ثيم واجهة المستخدم"
+  },
+  "Comfy_Update_AutoCheck": {
+    "name": "التحقق التلقائي من التحديثات"
+  },
+  "Comfy_Update_NotifyOnUpdate": {
+    "name": "إعلام عند توفر تحديث"
+  }
+}
