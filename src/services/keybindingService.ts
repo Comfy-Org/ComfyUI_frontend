@@ -1,5 +1,6 @@
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import {
   KeyComboImpl,
   KeybindingImpl,
@@ -11,6 +12,7 @@ export const useKeybindingService = () => {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
   const settingStore = useSettingStore()
+  const dialogStore = useDialogStore()
 
   const keybindHandler = async function (event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -32,6 +34,19 @@ export const useKeybindingService = () => {
 
     const keybinding = keybindingStore.getKeybinding(keyCombo)
     if (keybinding && keybinding.targetElementId !== 'graph-canvas') {
+      // Special handling for Escape key - let dialogs handle it first
+      if (
+        event.key === 'Escape' &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey
+      ) {
+        // If dialogs are open, don't execute the keybinding - let the dialog handle it
+        if (dialogStore.dialogStack.length > 0) {
+          return
+        }
+      }
+
       // Prevent default browser behavior first, then execute the command
       event.preventDefault()
       await commandStore.execute(keybinding.commandId)

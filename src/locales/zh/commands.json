@@ -119,6 +119,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "将选区转换为子图"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "退出子圖"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
   },
