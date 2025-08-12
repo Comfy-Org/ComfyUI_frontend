@@ -324,7 +324,9 @@ export function useCoreCommands(): ComfyCommand[] {
             )
           }
         }
-      })()
+      })(),
+      active: () =>
+        useSettingStore().get('Comfy.LinkRenderMode') !== LiteGraph.HIDDEN_LINK
     },
     {
       id: 'Comfy.Canvas.ToggleMinimap',
@@ -337,7 +339,8 @@ export function useCoreCommands(): ComfyCommand[] {
           'Comfy.Minimap.Visible',
           !settingStore.get('Comfy.Minimap.Visible')
         )
-      }
+      },
+      active: () => useSettingStore().get('Comfy.Minimap.Visible')
     },
     {
       id: 'Comfy.QueuePrompt',

@@ -98,22 +98,12 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     menuStore.registerCommands(
       ['View'],
       [
-        'Workspace.ToggleSidebarTab.queue',
-        'Workspace.ToggleSidebarTab.node-library',
-        'Workspace.ToggleSidebarTab.model-library',
-        'Workspace.ToggleSidebarTab.workflows'
-      ]
-    )
-
-    menuStore.registerCommands(
-      ['View'],
-      [
         'Workspace.ToggleBottomPanel',
         'Comfy.BrowseTemplates',
-        'Comfy.OpenManagerDialog',
         'Workspace.ToggleFocusMode',
-        'Comfy.ToggleHelpCenter',
-        'Comfy.ToggleCanvasInfo'
+        'Comfy.ToggleCanvasInfo',
+        'Comfy.Canvas.ToggleMinimap',
+        'Comfy.Canvas.ToggleLinkVisibility'
       ]
     )
 
