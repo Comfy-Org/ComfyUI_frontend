@@ -11,7 +11,6 @@ import type {
   INodeOutputSlot,
   ISlotType,
   LinkNetwork,
-  LinkSegment,
   ReadonlyLinkNetwork
 } from './interfaces'
 import { Subgraph } from './litegraph'
@@ -87,7 +86,7 @@ type BasicReadonlyNetwork = Pick<
 >
 
 // this is the class in charge of storing link information
-export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
+export class LLink implements Serialisable<SerialisableLLink> {
   static _drawDebug = false
 
   /** Link ID */
@@ -105,17 +104,11 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   data?: number | string | boolean | { toToolTip?(): string }
   _data?: unknown
-  /** Centre point of the link, calculated during render only - can be inaccurate */
-  _pos: Float32Array
   /** @todo Clean up - never implemented in comfy. */
   _last_time?: number
-  /** The last canvas 2D path that was used to render this link */
-  path?: Path2D
-  /** @inheritdoc */
-  _centreAngle?: number
 
   /** @inheritdoc */
-  _dragging?: boolean
+  // Note: Render-time dragging state is tracked externally (LinkConnector), not on the model.
 
   #color?: CanvasColour | null
   /** Custom colour for this link only */
@@ -167,8 +160,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     this.parentId = parentId
 
     this._data = null
-    // center
-    this._pos = new Float32Array(2)
   }
 
   /** @deprecated Use {@link LLink.create} */
@@ -200,7 +191,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   static getReroutes(
     network: Pick<ReadonlyLinkNetwork, 'reroutes'>,
-    linkSegment: LinkSegment
+    linkSegment: { parentId?: RerouteId }
   ): Reroute[] {
     if (!linkSegment.parentId) return []
     return network.reroutes.get(linkSegment.parentId)?.getReroutes() ?? []
@@ -208,7 +199,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   static getFirstReroute(
     network: Pick<ReadonlyLinkNetwork, 'reroutes'>,
-    linkSegment: LinkSegment
+    linkSegment: { parentId?: RerouteId }
   ): Reroute | undefined {
     return LLink.getReroutes(network, linkSegment).at(0)
   }
@@ -223,7 +214,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   static findNextReroute(
     network: Pick<ReadonlyLinkNetwork, 'reroutes'>,
-    linkSegment: LinkSegment,
+    linkSegment: { parentId?: RerouteId },
     rerouteId: RerouteId
   ): Reroute | null | undefined {
     if (!linkSegment.parentId) return

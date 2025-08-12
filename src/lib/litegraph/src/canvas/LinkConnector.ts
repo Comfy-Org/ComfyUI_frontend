@@ -108,6 +108,8 @@ export class LinkConnector {
   readonly floatingLinks: LLink[] = []
 
   readonly hiddenReroutes: Set<Reroute> = new Set()
+  /** IDs of existing links currently being dragged (for render suppression). */
+  readonly draggingLinkIds: Set<number> = new Set()
 
   /** The widget beneath the pointer, if it is a valid connection target. */
   overWidget?: IBaseWidget
@@ -129,6 +131,11 @@ export class LinkConnector {
 
   get draggingExistingLinks() {
     return this.state.draggingExistingLinks
+  }
+
+  /** Returns true if the given link id is being dragged (existing link relocation). */
+  isLinkBeingDragged(id: number | null | undefined): boolean {
+    return id != null && this.draggingLinkIds.has(id)
   }
 
   /** Drag an existing link to a different input. */
@@ -171,7 +178,8 @@ export class LinkConnector {
         )
       }
 
-      floatingLink._dragging = true
+      // Track floating link being dragged (existing link relocation)
+      this.draggingLinkIds.add(floatingLink.id)
       this.floatingLinks.push(floatingLink)
     } else {
       const link = network.links.get(linkId)
@@ -217,7 +225,7 @@ export class LinkConnector {
           return
         }
 
-        link._dragging = true
+        this.draggingLinkIds.add(link.id)
         inputLinks.push(link)
       } else {
         // Regular node links
@@ -247,7 +255,7 @@ export class LinkConnector {
           return
         }
 
-        link._dragging = true
+        this.draggingLinkIds.add(link.id)
         inputLinks.push(link)
       }
     }
@@ -288,6 +296,7 @@ export class LinkConnector {
 
           renderLinks.push(renderLink)
           this.floatingLinks.push(floatingLink)
+          this.draggingLinkIds.add(floatingLink.id)
         } catch (error) {
           console.warn(
             `Could not create render link for link id: [${floatingLink.id}].`,
@@ -306,10 +315,9 @@ export class LinkConnector {
 
         const firstReroute = LLink.getFirstReroute(network, link)
         if (firstReroute) {
-          firstReroute._dragging = true
           this.hiddenReroutes.add(firstReroute)
         } else {
-          link._dragging = true
+          this.draggingLinkIds.add(link.id)
         }
         this.outputLinks.push(link)
 
@@ -1053,10 +1061,10 @@ export class LinkConnector {
     if (!force && state.connectingTo === undefined) return
     state.connectingTo = undefined
 
-    for (const link of outputLinks) delete link._dragging
-    for (const link of inputLinks) delete link._dragging
-    for (const link of floatingLinks) delete link._dragging
-    for (const reroute of hiddenReroutes) delete reroute._dragging
+    // Clear tracked dragging links
+    this.draggingLinkIds.clear()
+    // Clear tracked reroutes hidden during drag
+    hiddenReroutes.clear()
 
     renderLinks.length = 0
     inputLinks.length = 0

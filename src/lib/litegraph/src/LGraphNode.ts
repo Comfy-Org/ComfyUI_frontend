@@ -34,9 +34,12 @@ import type {
 } from './interfaces'
 import {
   type LGraphNodeConstructor,
+  LabelPosition,
   LiteGraph,
   type Subgraph,
-  type SubgraphNode
+  type SubgraphNode,
+  drawCollapsedSlot,
+  drawSlot
 } from './litegraph'
 import {
   createBounds,
@@ -2819,7 +2822,6 @@ export class LGraphNode
     for (const reroute of reroutes) {
       reroute.linkIds.add(link.id)
       if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
     }
 
     // If this is the terminus of a floating link, remove it
@@ -3798,13 +3800,13 @@ export class LGraphNode
     // Render the first connected slot only.
     for (const slot of this.#concreteInputs) {
       if (slot.link != null) {
-        slot.drawCollapsed(ctx)
+        drawCollapsedSlot(ctx, slot, slot.collapsedPos)
         break
       }
     }
     for (const slot of this.#concreteOutputs) {
       if (slot.links?.length) {
-        slot.drawCollapsed(ctx)
+        drawCollapsedSlot(ctx, slot, slot.collapsedPos)
         break
       }
     }
@@ -3917,11 +3919,32 @@ export class LGraphNode
         slot.isConnected
       ) {
         ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
-        slot.draw(ctx, {
-          colorContext,
-          lowQuality,
-          highlight
-        })
+
+        // - Inputs: label on the right, no stroke, left textAlign
+        // - Outputs: label on the left, black stroke, right textAlign
+        const isInput = slot instanceof NodeInputSlot
+        const labelPosition = isInput ? LabelPosition.Right : LabelPosition.Left
+
+        const { strokeStyle, textAlign } = ctx
+        if (isInput) {
+          ctx.textAlign = 'left'
+        } else {
+          ctx.textAlign = 'right'
+          ctx.strokeStyle = 'black'
+        }
+
+        try {
+          drawSlot(ctx, slot as any, {
+            colorContext,
+            lowQuality,
+            highlight,
+            labelPosition,
+            doStroke: !isInput
+          })
+        } finally {
+          ctx.strokeStyle = strokeStyle
+          ctx.textAlign = textAlign
+        }
       }
     }
   }

@@ -6,7 +6,6 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  LinkSegment,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -31,7 +30,7 @@ export interface FloatingRerouteSlot {
  * and a `WeakRef` to a {@link LinkNetwork} to resolve them.
  */
 export class Reroute
-  implements Positionable, LinkSegment, Serialisable<SerialisableReroute>
+  implements Positionable, Serialisable<SerialisableReroute>
 {
   static radius: number = 10
   /** Maximum distance from reroutes to their bezier curve control points. */
@@ -123,24 +122,6 @@ export class Reroute
   /** Bezier curve control point for the "target" (input) side of the link */
   controlPoint: Point = this.#malloc.subarray(4, 6)
 
-  /** @inheritdoc */
-  path?: Path2D
-  /** @inheritdoc */
-  _centreAngle?: number
-  /** @inheritdoc */
-  _pos: Float32Array = this.#malloc.subarray(6, 8)
-
-  /** @inheritdoc */
-  _dragging?: boolean
-
-  /** Colour of the first link that rendered this reroute */
-  _colour?: CanvasColour
-
-  /** Colour of the first link that rendered this reroute */
-  get colour(): CanvasColour {
-    return this._colour ?? '#18184d'
-  }
-
   /**
    * Used to ensure reroute angles are only executed once per frame.
    * @todo Calculate on change instead.
@@ -149,18 +130,6 @@ export class Reroute
 
   #inputSlot = new RerouteSlot(this, true)
   #outputSlot = new RerouteSlot(this, false)
-
-  get isSlotHovered(): boolean {
-    return this.isInputHovered || this.isOutputHovered
-  }
-
-  get isInputHovered(): boolean {
-    return this.#inputSlot.hovering
-  }
-
-  get isOutputHovered(): boolean {
-    return this.#outputSlot.hovering
-  }
 
   get firstLink(): LLink | undefined {
     const linkId = this.linkIds.values().next().value
@@ -538,12 +507,74 @@ export class Reroute
   }
 
   /**
+   * Computes render-time parameters for this reroute without mutating the model.
+   * Returns the bezier end control-point offset and the direction cos/sin.
+   */
+  computeRenderParams(
+    network: ReadonlyLinkNetwork,
+    linkStart: Point
+  ): { cos: number; sin: number; controlPoint: Point } {
+    const thisPos = this.#pos
+    const { id } = this
+    const angles: number[] = []
+    let sum = 0
+
+    // Collect angles of all links passing through this reroute
+    addAngles(this.linkIds, network.links)
+    addAngles(this.floatingLinkIds, network.floatingLinks)
+
+    // Default values when invalid
+    if (!angles.length) {
+      return { cos: 0, sin: 0, controlPoint: [0, 0] }
+    }
+
+    sum /= angles.length
+
+    const originToReroute = Math.atan2(
+      thisPos[1] - linkStart[1],
+      thisPos[0] - linkStart[0]
+    )
+    let diff = (originToReroute - sum) * 0.5
+    if (Math.abs(diff) > Math.PI * 0.5) diff += Math.PI
+    const dist = Math.min(
+      Reroute.maxSplineOffset,
+      distance(linkStart, thisPos) * 0.25
+    )
+
+    const originDiff = originToReroute - diff
+    const cos = Math.cos(originDiff)
+    const sin = Math.sin(originDiff)
+    const controlPoint: Point = [dist * -cos, dist * -sin]
+
+    return { cos, sin, controlPoint }
+
+    function addAngles(
+      linkIds: Iterable<LinkId>,
+      links: ReadonlyMap<LinkId, LLink>
+    ) {
+      for (const linkId of linkIds) {
+        const link = links.get(linkId)
+        const pos = getNextPos(network, link, id)
+        if (!pos) continue
+        const angle = getDirection(thisPos, pos)
+        angles.push(angle)
+        sum += angle
+      }
+    }
+  }
+
+  /**
    * Renders the reroute on the canvas.
-   * @param ctx Canvas context to draw on
-   * @param backgroundPattern The canvas background pattern; used to make floating reroutes appear washed out.
+   * @param ctx Canvas context to draw on.
+   * @param backgroundPattern Canvas background pattern; used to wash out floating reroutes.
+   * @param colour Fill/stroke colour to use for this reroute (provided by renderer per-frame).
    * @remarks Leaves {@link ctx}.fillStyle, strokeStyle, and lineWidth dirty (perf.).
    */
-  draw(ctx: CanvasRenderingContext2D, backgroundPattern?: CanvasPattern): void {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    backgroundPattern: CanvasPattern | undefined,
+    colour: CanvasColour
+  ): void {
     const { globalAlpha } = ctx
     const { pos } = this
 
@@ -556,7 +587,7 @@ export class Reroute
       ctx.globalAlpha = globalAlpha * 0.33
     }
 
-    ctx.fillStyle = this.colour
+    ctx.fillStyle = colour
     ctx.lineWidth = Reroute.radius * 0.1
     ctx.strokeStyle = 'rgb(0,0,0,0.5)'
     ctx.fill()
@@ -587,64 +618,23 @@ export class Reroute
   }
 
   /**
-   * Draws the input and output slots on the canvas, if the slots are visible.
-   * @param ctx The canvas context to draw on.
+   * Draws the input and output slots for this reroute.
+   * @param ctx Canvas context to draw on.
+   * @param state Ephemeral UI state for this frame: slot hover/outline flags.
+   * @param colour Colour to use when a slot is hovered (renderer-provided).
    */
-  drawSlots(ctx: CanvasRenderingContext2D): void {
-    this.#inputSlot.draw(ctx)
-    this.#outputSlot.draw(ctx)
-  }
-
-  drawHighlight(ctx: CanvasRenderingContext2D, colour: CanvasColour): void {
-    const { pos } = this
-
-    const { strokeStyle, lineWidth } = ctx
-    ctx.strokeStyle = colour
-    ctx.lineWidth = 1
-
-    ctx.beginPath()
-    ctx.arc(pos[0], pos[1], Reroute.radius * 1.5, 0, 2 * Math.PI)
-    ctx.stroke()
-
-    ctx.strokeStyle = strokeStyle
-    ctx.lineWidth = lineWidth
-  }
-
-  /**
-   * Updates visibility of the input and output slots, based on the position of the pointer.
-   * @param pos The position of the pointer.
-   * @returns `true` if any changes require a redraw.
-   */
-  updateVisibility(pos: Point): boolean {
-    const input = this.#inputSlot
-    const output = this.#outputSlot
-    input.dirty = false
-    output.dirty = false
-
-    const { firstFloatingLink } = this
-    const hasLink = !!this.firstLink
-
-    const showInput = hasLink || firstFloatingLink?.isFloatingOutput
-    const showOutput = hasLink || firstFloatingLink?.isFloatingInput
-    const showEither = showInput || showOutput
-
-    // Check if even in the vicinity
-    if (showEither && isPointInRect(pos, this.#hoverArea)) {
-      const outlineOnly = this.#contains(pos)
-
-      if (showInput) input.update(pos, outlineOnly)
-      if (showOutput) output.update(pos, outlineOnly)
-    } else {
-      this.hideSlots()
-    }
-
-    return input.dirty || output.dirty
-  }
-
-  /** Prevents rendering of the input and output slots. */
-  hideSlots() {
-    this.#inputSlot.hide()
-    this.#outputSlot.hide()
+  drawSlots(
+    ctx: CanvasRenderingContext2D,
+    state: {
+      inputHover: boolean
+      inputOutline: boolean
+      outputHover: boolean
+      outputOutline: boolean
+    },
+    colour: CanvasColour
+  ): void {
+    this.#inputSlot.draw(ctx, state.inputOutline, state.inputHover, colour)
+    this.#outputSlot.draw(ctx, state.outputOutline, state.outputHover, colour)
   }
 
   /**
@@ -688,77 +678,30 @@ class RerouteSlot {
     return [x + Reroute.slotOffset * this.#offsetMultiplier, y]
   }
 
-  /** Whether any changes require a redraw. */
-  dirty: boolean = false
-
-  #hovering = false
-  /** Whether the pointer is hovering over the slot itself. */
-  get hovering() {
-    return this.#hovering
-  }
-
-  set hovering(value) {
-    if (!Object.is(this.#hovering, value)) {
-      this.#hovering = value
-      this.dirty = true
-    }
-  }
-
-  #showOutline = false
-  /** Whether the slot outline / faint background is visible. */
-  get showOutline() {
-    return this.#showOutline
-  }
-
-  set showOutline(value) {
-    if (!Object.is(this.#showOutline, value)) {
-      this.#showOutline = value
-      this.dirty = true
-    }
-  }
-
   constructor(reroute: Reroute, isInput: boolean) {
     this.#reroute = reroute
     this.#offsetMultiplier = isInput ? -1 : 1
   }
 
   /**
-   * Updates the slot's visibility based on the position of the pointer.
-   * @param pos The position of the pointer.
-   * @param outlineOnly If `true`, slot will display with the faded outline only ({@link showOutline}).
-   */
-  update(pos: Point, outlineOnly?: boolean) {
-    if (outlineOnly) {
-      this.hovering = false
-      this.showOutline = true
-    } else {
-      const dist = distance(this.pos, pos)
-      this.hovering = dist <= 2 * Reroute.slotRadius
-      this.showOutline = dist <= 5 * Reroute.slotRadius
-    }
-  }
-
-  /** Hides the slot. */
-  hide() {
-    this.hovering = false
-    this.showOutline = false
-  }
-
-  /**
    * Draws the slot on the canvas.
-   * @param ctx The canvas context to draw on.
+   * @param ctx Canvas 2D context to draw on.
+   * @param showOutline Whether to render the faint slot outline/background.
+   * @param hovering Whether the pointer is close enough to treat the slot as hovered.
+   * @param colour The colour to use when hovered (provided by the renderer per-frame).
    */
-  draw(ctx: CanvasRenderingContext2D): void {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    showOutline: boolean,
+    hovering: boolean,
+    colour: CanvasColour
+  ): void {
     const { fillStyle, strokeStyle, lineWidth } = ctx
-    const {
-      showOutline,
-      hovering,
-      pos: [x, y]
-    } = this
+    const [x, y] = this.pos
     if (!showOutline) return
 
     try {
-      ctx.fillStyle = hovering ? this.#reroute.colour : 'rgba(127,127,127,0.3)'
+      ctx.fillStyle = hovering ? colour : 'rgba(127,127,127,0.3)'
       ctx.strokeStyle = 'rgb(0,0,0,0.5)'
       ctx.lineWidth = 1
 

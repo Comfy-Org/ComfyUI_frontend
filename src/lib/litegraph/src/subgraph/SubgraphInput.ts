@@ -116,7 +116,6 @@ export class SubgraphInput extends SubgraphSlot {
     for (const reroute of reroutes) {
       reroute.linkIds.add(link.id)
       if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
     }
 
     // If this is the terminus of a floating link, remove it

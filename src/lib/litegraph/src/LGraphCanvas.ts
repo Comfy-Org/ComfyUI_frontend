@@ -10,6 +10,13 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
 import { LLink, type LinkId } from './LLink'
 import { Reroute, type RerouteId } from './Reroute'
+import { RenderedLinkSegment } from './canvas/RenderedLinkSegment'
+import { computeRerouteHoverState } from './canvas/RerouteHover'
+import {
+  drawReroute,
+  drawRerouteHighlight,
+  drawRerouteSlots
+} from './canvas/RerouteRenderer'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import type {
@@ -286,6 +293,12 @@ export class LGraphCanvas
     shouldSetCursor: true,
     selectionChanged: false
   }
+
+  /** Ephemeral per-frame colours for reroutes */
+  // Render state kept per-frame; no persistent caches here.
+
+  /** Ephemeral hover/outline UI state for reroute slots. */
+  // Hover state computed on-demand; no persistent caches here.
 
   #subgraph?: Subgraph
   get subgraph(): Subgraph | undefined {
@@ -2356,7 +2369,9 @@ export class LGraphCanvas
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         for (const reroute of this.#visibleReroutes) {
           const overReroute = reroute.containsPoint([x, y])
-          if (!reroute.isSlotHovered && !overReroute) continue
+          const hover = computeRerouteHoverState(reroute, [x, y])
+          const anySlotHovered = hover.inputHover || hover.outputHover
+          if (!anySlotHovered && !overReroute) continue
 
           if (overReroute) {
             pointer.onClick = () => this.processSelect(reroute, e)
@@ -2367,17 +2382,16 @@ export class LGraphCanvas
             }
           }
 
-          if (reroute.isOutputHovered || (overReroute && e.shiftKey)) {
+          if (hover.outputHover || (overReroute && e.shiftKey)) {
             linkConnector.dragFromReroute(graph, reroute)
             this.#linkConnectorDrop()
           }
 
-          if (reroute.isInputHovered) {
+          if (hover.inputHover) {
             linkConnector.dragFromRerouteToOutput(graph, reroute)
             this.#linkConnectorDrop()
           }
 
-          reroute.hideSlots()
           this.dirty_bgcanvas = true
           return
         }
@@ -3105,10 +3119,8 @@ export class LGraphCanvas
           this.node_over = node
           this.dirty_canvas = true
 
-          for (const reroute of this.#visibleReroutes) {
-            reroute.hideSlots()
-            this.dirty_bgcanvas = true
-          }
+          // invalidate background to ensure slot outlines update
+          this.dirty_bgcanvas = true
           node.onMouseEnter?.(e)
         }
 
@@ -3283,13 +3295,19 @@ export class LGraphCanvas
     const { graph, pointer, linkConnector } = this
     if (!graph) throw new NullGraphError()
 
-    // Update reroute hover state
+    // Update reroute hover state without caching
     if (!pointer.isDown) {
       let anyChanges = false
       for (const reroute of this.#visibleReroutes) {
-        anyChanges ||= reroute.updateVisibility(this.graph_mouse)
-
-        if (reroute.isSlotHovered) underPointer |= CanvasItem.RerouteSlot
+        const next = computeRerouteHoverState(reroute, this.graph_mouse)
+        if (next.inputHover || next.outputHover)
+          underPointer |= CanvasItem.RerouteSlot
+        // pointer movement can change outlines/hover; mark dirty if any visible
+        anyChanges ||=
+          next.inputOutline ||
+          next.outputOutline ||
+          next.inputHover ||
+          next.outputHover
       }
       if (anyChanges) this.dirty_bgcanvas = true
     } else if (linkConnector.isConnecting) {
@@ -4682,7 +4700,7 @@ export class LGraphCanvas
       return
 
     // Reroute highlight
-    overReroute?.drawHighlight(ctx, '#ffcc00aa')
+    if (overReroute) drawRerouteHighlight(ctx, overReroute, '#ffcc00aa')
 
     // Ensure we're mousing over a node and connecting a link
     const node = this.node_over
@@ -5312,6 +5330,10 @@ export class LGraphCanvas
     if (!graph) throw new NullGraphError()
 
     const visibleReroutes: Reroute[] = []
+    const visibleRerouteIds = new Set<RerouteId>()
+    // Per-frame reroute colours computed while building segments
+    const rerouteColours = new Map<RerouteId, CanvasColour>()
+    // Colours are computed per render pass (stored in rerouteColours)
 
     const now = LiteGraph.getTime()
     const { visible_area } = this
@@ -5363,7 +5385,9 @@ export class LGraphCanvas
           visibleReroutes,
           now,
           output.dir,
-          input.dir
+          input.dir,
+          visibleRerouteIds,
+          rerouteColours
         )
       }
     }
@@ -5390,7 +5414,9 @@ export class LGraphCanvas
             visibleReroutes,
             now,
             input.dir,
-            input.dir
+            input.dir,
+            visibleRerouteIds,
+            rerouteColours
           )
         }
       }
@@ -5415,13 +5441,22 @@ export class LGraphCanvas
           visibleReroutes,
           now,
           output.dir,
-          input.dir
+          input.dir,
+          visibleRerouteIds,
+          rerouteColours
         )
       }
     }
 
     if (graph.floatingLinks.size > 0) {
-      this.#renderFloatingLinks(ctx, graph, visibleReroutes, now)
+      this.#renderFloatingLinks(
+        ctx,
+        graph,
+        visibleReroutes,
+        now,
+        visibleRerouteIds,
+        rerouteColours
+      )
     }
 
     const rerouteSet = this.#visibleReroutes
@@ -5430,6 +5465,8 @@ export class LGraphCanvas
     // Render reroutes, ordered by number of non-floating links
     visibleReroutes.sort((a, b) => a.linkIds.size - b.linkIds.size)
     for (const reroute of visibleReroutes) {
+      // Respect hidden reroutes while dragging existing links
+      if (this.linkConnector?.hiddenReroutes.has(reroute)) continue
       rerouteSet.add(reroute)
 
       if (
@@ -5439,10 +5476,16 @@ export class LGraphCanvas
       ) {
         this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
       }
-      reroute.draw(ctx, this._pattern)
+      {
+        const colour = rerouteColours.get(reroute.id) ?? this.default_link_color
+        drawReroute(ctx, reroute, this._pattern, colour)
 
-      // Never draw slots when the pointer is down
-      if (!this.pointer.isDown) reroute.drawSlots(ctx)
+        // Never draw slots when the pointer is down
+        if (!this.pointer.isDown) {
+          const state = computeRerouteHoverState(reroute, this.graph_mouse)
+          drawRerouteSlots(ctx, reroute, state, colour)
+        }
+      }
     }
     ctx.globalAlpha = 1
   }
@@ -5451,7 +5494,9 @@ export class LGraphCanvas
     ctx: CanvasRenderingContext2D,
     graph: LGraph,
     visibleReroutes: Reroute[],
-    now: number
+    now: number,
+    visibleRerouteIds: Set<RerouteId>,
+    rerouteColours: Map<RerouteId, CanvasColour>
   ) {
     // Render floating links with 3/4 current alpha
     const { globalAlpha } = ctx
@@ -5473,7 +5518,6 @@ export class LGraphCanvas
         const endPos = node.getInputPos(link.target_slot)
         const endDirection = node.inputs[link.target_slot]?.dir
 
-        firstReroute._dragging = true
         this.#renderAllLinkSegments(
           ctx,
           link,
@@ -5483,6 +5527,8 @@ export class LGraphCanvas
           now,
           LinkDirection.CENTER,
           endDirection,
+          visibleRerouteIds,
+          rerouteColours,
           true
         )
       } else {
@@ -5493,7 +5539,6 @@ export class LGraphCanvas
         const endPos = reroute.pos
         const startDirection = node.outputs[link.origin_slot]?.dir
 
-        link._dragging = true
         this.#renderAllLinkSegments(
           ctx,
           link,
@@ -5503,6 +5548,8 @@ export class LGraphCanvas
           now,
           startDirection,
           LinkDirection.CENTER,
+          visibleRerouteIds,
+          rerouteColours,
           true
         )
       }
@@ -5519,6 +5566,8 @@ export class LGraphCanvas
     now: number,
     startDirection?: LinkDirection,
     endDirection?: LinkDirection,
+    seenRerouteIds?: Set<RerouteId>,
+    rerouteColours?: Map<RerouteId, CanvasColour>,
     disabled: boolean = false
   ) {
     const { graph, renderedPaths } = this
@@ -5551,29 +5600,48 @@ export class LGraphCanvas
     const start_dir = startDirection || LinkDirection.RIGHT
     const end_dir = endDirection || LinkDirection.LEFT
 
+    const baseColour =
+      link.color ||
+      LGraphCanvas.link_type_colors[link.type] ||
+      this.default_link_color
+
     // Has reroutes
     if (reroutes.length) {
+      const lastReroute = reroutes[reroutes.length - 1]
+      const floatingType = lastReroute?.floating?.slotType
+      const skipFirstSegment = floatingType === 'input'
+      const skipLastSegment = floatingType === 'output'
       let startControl: Point | undefined
 
       const l = reroutes.length
       for (let j = 0; j < l; j++) {
         const reroute = reroutes[j]
 
-        // Only render once
-        if (!renderedPaths.has(reroute)) {
-          renderedPaths.add(reroute)
-          visibleReroutes.push(reroute)
-          reroute._colour =
-            link.color ||
-            LGraphCanvas.link_type_colors[link.type] ||
-            this.default_link_color
+        // Lazily compute render params only if needed, and reuse for both purposes
+        const prevReroute = graph.getReroute(reroute.parentId)
+        const rerouteStartPos = prevReroute?.pos ?? startPos
+        let params:
+          | { cos: number; sin: number; controlPoint: Point }
+          | undefined
+        const getParams = () =>
+          (params ??= reroute.computeRenderParams(graph, rerouteStartPos))
 
-          const prevReroute = graph.getReroute(reroute.parentId)
-          const rerouteStartPos = prevReroute?.pos ?? startPos
-          reroute.calculateAngle(this.last_draw_time, graph, rerouteStartPos)
+        // Only render once per reroute
+        if (!seenRerouteIds?.has(reroute.id)) {
+          visibleReroutes.push(reroute)
+          seenRerouteIds?.add(reroute.id)
+          if (rerouteColours && !rerouteColours.has(reroute.id))
+            rerouteColours.set(reroute.id, baseColour)
 
           // Skip the first segment if it is being dragged
-          if (!reroute._dragging) {
+          if (!(skipFirstSegment && j === 0)) {
+            const rendered = new RenderedLinkSegment({
+              id: reroute.id,
+              origin_id: link.origin_id,
+              origin_slot: link.origin_slot,
+              parentId: reroute.parentId
+            })
+            rendered.colour = baseColour
             this.renderLink(
               ctx,
               rerouteStartPos,
@@ -5586,15 +5654,16 @@ export class LGraphCanvas
               LinkDirection.CENTER,
               {
                 startControl,
-                endControl: reroute.controlPoint,
-                reroute,
-                disabled
+                endControl: getParams().controlPoint,
+                disabled,
+                renderTarget: rendered
               }
             )
+            renderedPaths.add(rendered)
           }
         }
 
-        if (!startControl && reroutes.at(-1)?.floating?.slotType === 'input') {
+        if (!startControl && skipFirstSegment) {
           // Floating link connected to an input
           startControl = [0, 0]
         } else {
@@ -5604,17 +5673,25 @@ export class LGraphCanvas
             Reroute.maxSplineOffset,
             distance(reroute.pos, nextPos) * 0.25
           )
-          startControl = [dist * reroute.cos, dist * reroute.sin]
+          const p = getParams()
+          startControl = [dist * p.cos, dist * p.sin]
         }
       }
 
-      // Skip the last segment if it is being dragged
-      if (link._dragging) return
+      // For floating links from output, skip the last segment
+      if (skipLastSegment) return
 
       // Use runtime fallback; TypeScript cannot evaluate this correctly.
       const segmentStartPos = points.at(-2) ?? startPos
 
       // Render final link segment
+      const rendered = new RenderedLinkSegment({
+        id: link.id,
+        origin_id: link.origin_id,
+        origin_slot: link.origin_slot,
+        parentId: link.parentId
+      })
+      rendered.colour = baseColour
       this.renderLink(
         ctx,
         segmentStartPos,
@@ -5625,10 +5702,18 @@ export class LGraphCanvas
         null,
         LinkDirection.CENTER,
         end_dir,
-        { startControl, disabled }
+        { startControl, disabled, renderTarget: rendered }
       )
+      renderedPaths.add(rendered)
       // Skip normal render when link is being dragged
-    } else if (!link._dragging) {
+    } else if (!this.linkConnector?.isLinkBeingDragged(link.id)) {
+      const rendered = new RenderedLinkSegment({
+        id: link.id,
+        origin_id: link.origin_id,
+        origin_slot: link.origin_slot,
+        parentId: link.parentId
+      })
+      rendered.colour = baseColour
       this.renderLink(
         ctx,
         startPos,
@@ -5638,10 +5723,11 @@ export class LGraphCanvas
         0,
         null,
         start_dir,
-        end_dir
+        end_dir,
+        { renderTarget: rendered }
       )
+      renderedPaths.add(rendered)
     }
-    renderedPaths.add(link)
 
     // event triggered rendered on top
     if (link?._last_time && now - link._last_time < 1000) {
@@ -5688,12 +5774,10 @@ export class LGraphCanvas
     {
       startControl,
       endControl,
-      reroute,
       num_sublines = 1,
-      disabled = false
+      disabled = false,
+      renderTarget
     }: {
-      /** When defined, render data will be saved to this reroute instead of the {@link link}. */
-      reroute?: Reroute
       /** Offset of the bezier curve control point from {@link a point a} (output side) */
       startControl?: ReadOnlyPoint
       /** Offset of the bezier curve control point from {@link b point b} (input side) */
@@ -5702,6 +5786,8 @@ export class LGraphCanvas
       num_sublines?: number
       /** Whether this is a floating link segment */
       disabled?: boolean
+      /** Where to store the drawn path for hit testing */
+      renderTarget?: RenderedLinkSegment
     } = {}
   ): void {
     const linkColour =
@@ -5731,14 +5817,14 @@ export class LGraphCanvas
     // begin line shape
     const path = new Path2D()
 
-    /** The link or reroute we're currently rendering */
-    const linkSegment = reroute ?? link
+    /** The segment we're currently rendering */
+    const linkSegment = renderTarget
     if (linkSegment) linkSegment.path = path
 
     const innerA = LGraphCanvas.#lTempA
     const innerB = LGraphCanvas.#lTempB
 
-    /** Reference to {@link reroute._pos} if present, or {@link link._pos} if present.  Caches the centre point of the link. */
+    /** Reference to render-time centre point of this segment. */
     const pos: Point = linkSegment?._pos ?? [0, 0]
 
     for (let i = 0; i < num_sublines; i++) {
