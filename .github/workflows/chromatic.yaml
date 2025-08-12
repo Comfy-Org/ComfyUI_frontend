@@ -2,7 +2,7 @@ name: 'Chromatic'
 
 on:
   push:
-    branches: [main, sno-storybook]
+    branches: [main]
   pull_request:
     branches: [main]
 
