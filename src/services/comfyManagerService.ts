@@ -39,7 +39,7 @@ enum ManagerRoute {
 }
 
 const managerApiClient = axios.create({
-  baseURL: api.apiURL('v2/'),
+  baseURL: api.apiURL('/v2/'),
   headers: {
     'Content-Type': 'application/json'
   }
