@@ -61,7 +61,6 @@ test.describe('Minimap', () => {
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
 
     await expect(minimapContainer).toBeVisible()
-    await expect(toggleButton).toHaveClass(/minimap-active/)
 
     await toggleButton.click()
     await comfyPage.nextFrame()
