@@ -403,8 +403,7 @@
     "versionMismatchWarning": "Advertencia de compatibilidad de versión",
     "versionMismatchWarningMessage": "{warning}: {detail} Visita https://docs.comfy.org/installation/update_comfyui#common-update-issues para obtener instrucciones de actualización.",
     "videoFailedToLoad": "Falló la carga del video",
-    "workflow": "Flujo de trabajo",
-    "duplicate": "Duplicar"
+    "workflow": "Flujo de trabajo"
   },
   "graphCanvasMenu": {
     "fitView": "Ajustar vista",
