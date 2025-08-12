@@ -265,6 +265,14 @@ const renderTreeNode = (
                 const workflow = node.data
                 await workflowService.insertWorkflow(workflow)
               }
+            },
+            {
+              label: t('g.duplicate'),
+              icon: 'pi pi-file-export',
+              command: async () => {
+                const workflow = node.data
+                await workflowService.duplicateWorkflow(workflow)
+              }
             }
           ]
         },
