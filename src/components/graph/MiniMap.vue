@@ -30,6 +30,17 @@
           <i-lucide:settings-2 />
         </template>
       </Button>
+      <Button
+        class="absolute z-10 right-0"
+        size="small"
+        text
+        severity="secondary"
+        @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
+      >
+        <template #icon>
+          <i-lucide:x />
+        </template>
+      </Button>
 
       <canvas
         ref="canvasRef"
@@ -57,12 +68,14 @@ import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useMinimap } from '@/composables/useMinimap'
+import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 
 const minimap = useMinimap()
 const canvasStore = useCanvasStore()
+const commandStore = useCommandStore()
 
 const {
   initialized,
