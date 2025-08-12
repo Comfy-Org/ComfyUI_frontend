@@ -84,7 +84,7 @@
             }}</span>
           </template>
         </Button>
-        <hr class="border-[#E1DED5] dark-theme:border-[#2E3037]" />
+        <hr class="border-[#E1DED5] mb-1 dark-theme:border-[#2E3037]" />
         <Button
           severity="secondary"
           text
@@ -109,10 +109,10 @@
             }}</span>
           </template>
         </Button>
-        <hr class="border-[#E1DED5] dark-theme:border-[#2E3037]" />
+        <hr class="border-[#E1DED5] mt-1 dark-theme:border-[#2E3037]" />
         <div
           ref="zoomInputContainer"
-          class="flex items-center px-2 bg-[#E7E6E6] dark-theme:bg-[#444444] rounded p-2"
+          class="flex items-center px-2 bg-[#E7E6E6] focus-within:bg-[#F3F3F3] dark-theme:bg-[#8282821A] rounded p-2 zoomInputContainer"
         >
           <InputNumber
             ref="zoomInput"
@@ -122,7 +122,7 @@
             :show-buttons="false"
             :use-grouping="false"
             :unstyled="true"
-            input-class="flex-1 bg-transparent border-none outline-none text-sm shadow-none my-0"
+            input-class="flex-1 bg-transparent border-none outline-none text-sm shadow-none my-0 "
             fluid
             @input="applyZoom"
             @keyup.enter="applyZoom"
@@ -226,3 +226,12 @@ watch(
   }
 )
 </script>
+<style>
+.zoomInputContainer:focus-within {
+  border: 1px solid rgb(204, 204, 204);
+}
+
+.dark-theme .zoomInputContainer:focus-within {
+  border: 1px solid rgb(204, 204, 204);
+}
+</style>

@@ -95,11 +95,11 @@
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
         :style="stringifiedMinimapStyles.buttonStyles"
-        :class="linkButtonClass"
         @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       >
         <template #icon>
-          <i-lucide:cable />
+          <i-lucide:route v-if="!linkHidden" />
+          <i-lucide:route-off v-else />
         </template>
       </Button>
     </ButtonGroup>
@@ -208,12 +208,6 @@ const zoomButtonClass = computed(() => [
 
 const focusButtonClass = computed(
   () => 'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]'
-)
-
-const linkButtonClass = computed(() =>
-  linkHidden.value
-    ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
-    : ''
 )
 
 // Computed properties for tooltip and aria-label texts
