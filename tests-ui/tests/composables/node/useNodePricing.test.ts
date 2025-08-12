@@ -1437,11 +1437,19 @@ describe('useNodePricing', () => {
         const testCases = [
           {
             model: 'gemini-2.5-pro-preview-05-06',
-            expected: '$0.00016/$0.0006 per 1K tokens'
+            expected: '$0.00125/$0.01 per 1K tokens'
+          },
+          {
+            model: 'gemini-2.5-pro',
+            expected: '$0.00125/$0.01 per 1K tokens'
           },
           {
             model: 'gemini-2.5-flash-preview-04-17',
-            expected: '$0.00125/$0.01 per 1K tokens'
+            expected: '$0.0003/$0.0025 per 1K tokens'
+          },
+          {
+            model: 'gemini-2.5-flash',
+            expected: '$0.0003/$0.0025 per 1K tokens'
           },
           { model: 'unknown-gemini-model', expected: 'Token-based' }
         ]
