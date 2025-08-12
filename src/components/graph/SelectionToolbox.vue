@@ -1,30 +1,33 @@
 <template>
-  <Panel
-    class="selection-toolbox absolute left-1/2 rounded-lg"
-    :class="{ 'animate-slide-up': shouldAnimate }"
-    :pt="{
-      header: 'hidden',
-      content: 'p-0 flex flex-row'
-    }"
-    @wheel="canvasInteractions.handleWheel"
-  >
-    <ExecuteButton />
-    <ColorPickerButton />
-    <BypassButton />
-    <PinButton />
-    <EditModelButton />
-    <Load3DViewerButton />
-    <MaskEditorButton />
-    <ConvertToSubgraphButton />
-    <DeleteButton />
-    <RefreshSelectionButton />
-    <ExtensionCommandButton
-      v-for="command in extensionToolboxCommands"
-      :key="command.id"
-      :command="command"
-    />
-    <HelpButton />
-  </Panel>
+  <Transition name="slide-up" appear>
+    <Panel
+      v-if="selectionOverlayState?.visible.value"
+      :key="selectionOverlayState?.updateCount.value"
+      class="selection-toolbox absolute left-1/2 rounded-lg"
+      :pt="{
+        header: 'hidden',
+        content: 'p-0 flex flex-row'
+      }"
+      @wheel="canvasInteractions.handleWheel"
+    >
+      <ExecuteButton />
+      <ColorPickerButton />
+      <BypassButton />
+      <PinButton />
+      <EditModelButton />
+      <Load3DViewerButton />
+      <MaskEditorButton />
+      <ConvertToSubgraphButton />
+      <DeleteButton />
+      <RefreshSelectionButton />
+      <ExtensionCommandButton
+        v-for="command in extensionToolboxCommands"
+        :key="command.id"
+        :command="command"
+      />
+      <HelpButton />
+    </Panel>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -43,7 +46,6 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
-import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
@@ -56,19 +58,14 @@ const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
 const selectionOverlayState = inject(SelectionOverlayInjectionKey)
-const { shouldAnimate } = useRetriggerableAnimation(
-  selectionOverlayState?.updateCount,
-  { animateOnMount: true }
-)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
     canvasStore.selectedItems
-      .map(
-        (item) =>
-          extensionService
-            .invokeExtensions('getSelectionToolboxCommands', item)
-            .flat() as string[]
+      .map((item) =>
+        extensionService
+          .invokeExtensions('getSelectionToolboxCommands', item)
+          .flat()
       )
       .flat()
   )
@@ -80,13 +77,13 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 
 <style scoped>
 .selection-toolbox {
-  transform: translateX(-50%) translateY(-120%);
+  bottom: 10%;
+  transform: translateX(-50%) translateY(-100%);
 }
 
-/* Slide up animation using CSS animation */
 @keyframes slideUp {
   from {
-    transform: translateX(-50%) translateY(-100%);
+    transform: translateX(-50%) translateY(-80%);
     opacity: 0;
   }
   to {
@@ -95,7 +92,12 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   }
 }
 
-.animate-slide-up {
+.slide-up-enter-active {
   animation: slideUp 0.3s ease-out;
+}
+
+.slide-up-leave-active {
+  animation: slideUp 0.2s ease-in reverse;
+  opacity: 0;
 }
 </style>
