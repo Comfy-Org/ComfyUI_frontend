@@ -66,13 +66,13 @@ test.describe('Minimap', () => {
     await comfyPage.nextFrame()
 
     await expect(minimapContainer).not.toBeVisible()
-    await expect(toggleButton).not.toHaveClass(/minimap-active/)
+    await expect(toggleButton).toContainText('Show Minimap')
 
     await toggleButton.click()
     await comfyPage.nextFrame()
 
     await expect(minimapContainer).toBeVisible()
-    await expect(toggleButton).toHaveClass(/minimap-active/)
+    await expect(toggleButton).toContainText('Hide Minimap')
   })
 
   test('Validate minimap keyboard shortcut Alt+M', async ({ comfyPage }) => {

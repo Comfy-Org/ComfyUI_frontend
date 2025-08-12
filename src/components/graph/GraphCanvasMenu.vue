@@ -267,15 +267,4 @@ onMounted(() => {
   margin: 0;
   border-radius: 0;
 }
-
-.p-button.minimap-active {
-  background-color: var(--p-button-primary-background);
-  border-color: var(--p-button-primary-border-color);
-  color: var(--p-button-primary-color);
-}
-
-.p-button.minimap-active:hover {
-  background-color: var(--p-button-primary-hover-background);
-  border-color: var(--p-button-primary-hover-border-color);
-}
 </style>
