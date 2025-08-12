@@ -1,29 +1,32 @@
 <template>
-  <Panel
-    class="selection-toolbox absolute left-1/2 rounded-lg"
-    :class="{ 'animate-slide-up': shouldAnimate }"
-    :pt="{
-      header: 'hidden',
-      content: 'p-0 flex flex-row'
-    }"
-    @wheel="canvasInteractions.handleWheel"
-  >
-    <ExecuteButton />
-    <ColorPickerButton />
-    <BypassButton />
-    <PinButton />
-    <EditModelButton />
-    <MaskEditorButton />
-    <ConvertToSubgraphButton />
-    <DeleteButton />
-    <RefreshSelectionButton />
-    <ExtensionCommandButton
-      v-for="command in extensionToolboxCommands"
-      :key="command.id"
-      :command="command"
-    />
-    <HelpButton />
-  </Panel>
+  <Transition name="slide-up" appear>
+    <Panel
+      v-if="selectionOverlayState?.visible.value"
+      :key="selectionOverlayState?.updateCount.value"
+      class="selection-toolbox absolute left-1/2 rounded-lg"
+      :pt="{
+        header: 'hidden',
+        content: 'p-0 flex flex-row'
+      }"
+      @wheel="canvasInteractions.handleWheel"
+    >
+      <ExecuteButton />
+      <ColorPickerButton />
+      <BypassButton />
+      <PinButton />
+      <EditModelButton />
+      <MaskEditorButton />
+      <ConvertToSubgraphButton />
+      <DeleteButton />
+      <RefreshSelectionButton />
+      <ExtensionCommandButton
+        v-for="command in extensionToolboxCommands"
+        :key="command.id"
+        :command="command"
+      />
+      <HelpButton />
+    </Panel>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -41,7 +44,6 @@ import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
-import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
@@ -54,10 +56,6 @@ const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
 const selectionOverlayState = inject(SelectionOverlayInjectionKey)
-const { shouldAnimate } = useRetriggerableAnimation(
-  selectionOverlayState?.updateCount,
-  { animateOnMount: true }
-)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -93,7 +91,12 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   }
 }
 
-.animate-slide-up {
+.slide-up-enter-active {
   animation: slideUp 0.3s ease-out;
+}
+
+.slide-up-leave-active {
+  animation: slideUp 0.2s ease-in reverse;
+  opacity: 0;
 }
 </style>
