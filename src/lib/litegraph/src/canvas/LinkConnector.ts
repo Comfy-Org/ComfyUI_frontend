@@ -640,7 +640,10 @@ export class LinkConnector {
 
     if (connectingTo === 'input' && ioNode instanceof SubgraphOutputNode) {
       const output = ioNode.getSlotInPosition(canvasX, canvasY)
-      if (!output) throw new Error('No output slot found for link.')
+      if (!output) {
+        this.dropOnNothing(event)
+        return
+      }
 
       // Track the actual slot to use for all connections
       let targetSlot = output
@@ -669,7 +672,10 @@ export class LinkConnector {
       ioNode instanceof SubgraphInputNode
     ) {
       const input = ioNode.getSlotInPosition(canvasX, canvasY)
-      if (!input) throw new Error('No input slot found for link.')
+      if (!input) {
+        this.dropOnNothing(event)
+        return
+      }
 
       // Same logic for SubgraphInputNode if needed
       let targetSlot = input
