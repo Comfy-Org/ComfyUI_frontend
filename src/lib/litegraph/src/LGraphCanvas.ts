@@ -1,4 +1,4 @@
-import { toString } from 'lodash'
+import { toString } from 'es-toolkit/compat'
 
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 

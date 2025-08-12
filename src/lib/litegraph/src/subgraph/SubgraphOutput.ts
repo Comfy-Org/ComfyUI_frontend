@@ -1,4 +1,4 @@
-import { pull } from 'lodash'
+import { pull } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'

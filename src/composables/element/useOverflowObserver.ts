@@ -1,5 +1,5 @@
 import { useMutationObserver, useResizeObserver } from '@vueuse/core'
-import { debounce } from 'lodash'
+import { debounce } from 'es-toolkit/compat'
 import { readonly, ref } from 'vue'
 
 /**

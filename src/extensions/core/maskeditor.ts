@@ -1,5 +1,5 @@
-import { debounce } from 'lodash'
-import _ from 'lodash'
+import { debounce } from 'es-toolkit/compat'
+import _ from 'es-toolkit/compat'
 
 import { t } from '@/i18n'
 
