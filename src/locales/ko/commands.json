@@ -137,6 +137,9 @@
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "선택한 노드 그룹화"
   },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "선택한 서브그래프 풀기"
+  },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "선택한 노드를 그룹 노드로 변환"
   },
