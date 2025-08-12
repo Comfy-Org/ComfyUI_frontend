@@ -418,7 +418,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Pricing matrix from CSV data based on mode string content
-        if (modeValue.includes('v2-master')) {
+        if (modeValue.includes('v2-1-master')) {
+          if (modeValue.includes('10s')) {
+            return '$2.80/Run' // price is the same as for v2-master model
+          }
+          return '$1.40/Run' // price is the same as for v2-master model
+        } else if (modeValue.includes('v2-master')) {
           if (modeValue.includes('10s')) {
             return '$2.80/Run'
           }
@@ -557,6 +562,32 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     MinimaxTextToVideoNode: {
       displayPrice: '$0.43/Run'
+    },
+    MinimaxHailuoVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!resolutionWidget || !durationWidget) {
+          return '$0.28-0.56/Run (varies with resolution & duration)'
+        }
+
+        const resolution = String(resolutionWidget.value)
+        const duration = String(durationWidget.value)
+
+        if (resolution.includes('768P')) {
+          if (duration.includes('6')) return '$0.28/Run'
+          if (duration.includes('10')) return '$0.56/Run'
+        } else if (resolution.includes('1080P')) {
+          if (duration.includes('6')) return '$0.49/Run'
+        }
+
+        return '$0.43/Run' // default median
+      }
     },
     OpenAIDalle2: {
       displayPrice: (node: LGraphNode): string => {
@@ -1358,6 +1389,7 @@ export const useNodePricing = () => {
       KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
       KlingSingleImageVideoEffectNode: ['effect_scene'],
       KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
+      MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
       OpenAIGPTImage1: ['quality', 'n'],
