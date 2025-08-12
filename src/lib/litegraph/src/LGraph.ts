@@ -1748,11 +1748,34 @@ export class LGraph
     this.subgraphs.delete(subgraphNode.subgraph.id)
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of newLinks) {
-      const created = this._nodes_by_id[newLink[0]].connect(
-        newLink[1],
-        this._nodes_by_id[newLink[2]],
-        newLink[3]
-      )
+      let created: LLink | null | undefined
+      if (newLink[0] == SUBGRAPH_INPUT_ID) {
+        if (!(this instanceof Subgraph)) {
+          console.error('Ignoring link to subgraph outside subgraph')
+          continue
+        }
+        const tnode = this._nodes_by_id[newLink[2]]
+        created = this.inputNode.slots[newLink[1]].connect(
+          tnode.inputs[newLink[3]],
+          tnode
+        )
+      } else if (newLink[2] == SUBGRAPH_OUTPUT_ID) {
+        if (!(this instanceof Subgraph)) {
+          console.error('Ignoring link to subgraph outside subgraph')
+          continue
+        }
+        const tnode = this._nodes_by_id[newLink[0]]
+        created = this.outputNode.slots[newLink[3]].connect(
+          tnode.outputs[newLink[1]],
+          tnode
+        )
+      } else {
+        created = this._nodes_by_id[newLink[0]].connect(
+          newLink[1],
+          this._nodes_by_id[newLink[2]],
+          newLink[3]
+        )
+      }
       if (!created) {
         console.error('Failed to create link')
         continue
