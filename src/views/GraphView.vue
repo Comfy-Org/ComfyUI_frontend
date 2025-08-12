@@ -189,6 +189,10 @@ const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   await queueStore.update()
 }
 
+const onExecutionSuccess = async () => {
+  await queueStore.update()
+}
+
 const reconnectingMessage: ToastMessageOptions = {
   severity: 'error',
   summary: t('g.reconnecting')
@@ -214,6 +218,7 @@ const onReconnected = () => {
 
 onMounted(() => {
   api.addEventListener('status', onStatus)
+  api.addEventListener('execution_success', onExecutionSuccess)
   api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   executionStore.bindExecutionEvents()
@@ -227,6 +232,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   api.removeEventListener('status', onStatus)
+  api.removeEventListener('execution_success', onExecutionSuccess)
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
