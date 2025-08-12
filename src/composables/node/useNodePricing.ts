@@ -1309,9 +1309,13 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         // Google Veo video generation
         if (model.includes('veo-2.0')) {
           return '$0.5/second'
-        } else if (model.includes('gemini-2.5-pro-preview-05-06')) {
-          return '$0.00016/$0.0006 per 1K tokens'
         } else if (model.includes('gemini-2.5-flash-preview-04-17')) {
+          return '$0.0003/$0.0025 per 1K tokens'
+        } else if (model.includes('gemini-2.5-flash')) {
+          return '$0.0003/$0.0025 per 1K tokens'
+        } else if (model.includes('gemini-2.5-pro-preview-05-06')) {
+          return '$0.00125/$0.01 per 1K tokens'
+        } else if (model.includes('gemini-2.5-pro')) {
           return '$0.00125/$0.01 per 1K tokens'
         }
         // For other Gemini models, show token-based pricing info
