@@ -77,9 +77,6 @@
   "Comfy_Canvas_ToggleMinimap": {
     "label": "تبديل الخريطة المصغرة في اللوحة"
   },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "تثبيت/إلغاء تثبيت العناصر المحددة"
-  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "تجاوز/إلغاء تجاوز العقد المحددة"
   },
@@ -91,6 +88,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "تثبيت/إلغاء تثبيت العقد المحددة"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "تثبيت/إلغاء تثبيت العناصر المحددة"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "تكبير"
@@ -121,6 +121,9 @@
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "تحويل التحديد إلى رسم فرعي"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "الخروج من الرسم البياني الفرعي"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "ضبط المجموعة على المحتويات"
@@ -233,9 +236,6 @@
   "Workspace_ToggleBottomPanel": {
     "label": "تبديل اللوحة السفلية"
   },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "عرض مربع حوار اختصارات لوحة المفاتيح"
-  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "تبديل لوحة الطرفية السفلية"
   },
@@ -247,6 +247,9 @@
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
     "label": "تبديل لوحة تحكم العرض السفلية"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "عرض مربع حوار اختصارات لوحة المفاتيح"
   },
   "Workspace_ToggleFocusMode": {
     "label": "تبديل وضع التركيز"
