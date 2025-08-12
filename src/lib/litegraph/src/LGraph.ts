@@ -1694,6 +1694,9 @@ export class LGraph
       node.configure(n_info)
       node.pos[0] += offsetX
       node.pos[1] += offsetY
+      for (const input of node.inputs) {
+        input.link = null
+      }
     }
     //cleanup reoute.linkIds now, but leave link.parentIds dangling
     for (const islot of subgraphNode.inputs) {
