@@ -173,7 +173,7 @@ const initialState = persistedState.loadStoredState()
 
 const GRID_STYLE = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(19rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(17rem, 1fr))',
   padding: '0.5rem',
   gap: '1.5rem'
 } as const
