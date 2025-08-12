@@ -39,6 +39,19 @@ function createNode(
   graph.add(node)
   return node
 }
+function log_state(graph: LGraph) {
+  console.log([
+    ...[...graph.links.values()].map((l) => [
+      l.id,
+      l.origin_id,
+      l.origin_slot,
+      l.target_id,
+      l.target_slot
+    ])
+  ])
+  console.log([...[...graph.reroutes.values()].map((r) => [r.id, r.linkIds])])
+  console.log([...graph.nodes.map((n) => [n.id, n.type])])
+}
 
 describe('SubgraphConversion', () => {
   describe('Subgraph Unpacking Functionality', () => {
@@ -110,8 +123,8 @@ describe('SubgraphConversion', () => {
     it('Should map reroutes onto split outputs', () => {
       const subgraph = createTestSubgraph({
         outputs: [
-          { name: 'value', type: 'number' },
-          { name: 'value copy', type: 'number' }
+          { name: 'value1', type: 'number' },
+          { name: 'value2', type: 'number' }
         ]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
@@ -127,13 +140,11 @@ describe('SubgraphConversion', () => {
         inner.outputs[1],
         inner
       )
-      assert(innerLink1)
-      assert(innerLink2)
       const outer1 = createNode(graph, ['number'])
       const outer2 = createNode(graph, ['number'])
       const outer3 = createNode(graph, ['number'])
       const outerLink1 = subgraphNode.connect(0, outer1, 0)
-      assert(outerLink1)
+      assert(innerLink1 && innerLink2 && outerLink1)
       subgraphNode.connect(0, outer2, 0)
       subgraphNode.connect(1, outer3, 0)
 
@@ -144,6 +155,60 @@ describe('SubgraphConversion', () => {
       graph.unpackSubgraph(subgraphNode)
 
       expect(graph.reroutes.size).toBe(3)
+      expect(graph.links.size).toBe(3)
+      let linkRefCount = 0
+      for (const reroute of graph.reroutes.values()) {
+        linkRefCount += reroute.linkIds.size
+      }
+      expect(linkRefCount).toBe(4)
+    })
+    it('Should map reroutes onto split inputs', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'value1', type: 'number' },
+          { name: 'value2', type: 'number' }
+        ]
+      })
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph
+      graph.add(subgraphNode)
+
+      const inner1 = createNode(subgraph, ['number', 'number'])
+      const inner2 = createNode(subgraph, ['number'])
+      const innerLink1 = subgraph.inputNode.slots[0].connect(
+        inner1.inputs[0],
+        inner1
+      )
+      const innerLink2 = subgraph.inputNode.slots[1].connect(
+        inner1.inputs[1],
+        inner1
+      )
+      const innerLink3 = subgraph.inputNode.slots[1].connect(
+        inner2.inputs[0],
+        inner2
+      )
+      assert(innerLink1 && innerLink2 && innerLink3)
+      const outer = createNode(graph, [], ['number'])
+      const outerLink1 = outer.connect(0, subgraphNode, 0)
+      const outerLink2 = outer.connect(0, subgraphNode, 1)
+      assert(outerLink1 && outerLink2)
+
+      subgraph.createReroute([10, 10], outerLink1)
+      subgraph.createReroute([10, 20], outerLink2)
+      graph.createReroute([10, 10], innerLink1)
+
+      log_state(subgraph)
+      log_state(graph)
+      graph.unpackSubgraph(subgraphNode)
+      log_state(graph)
+
+      expect(graph.reroutes.size).toBe(3)
+      expect(graph.links.size).toBe(3)
+      let linkRefCount = 0
+      for (const reroute of graph.reroutes.values()) {
+        linkRefCount += reroute.linkIds.size
+      }
+      expect(linkRefCount).toBe(4)
     })
   })
 })
