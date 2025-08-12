@@ -72,6 +72,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const commands = [
     {
       id: 'Comfy.NewBlankWorkflow',
+      icon: 'pi pi-plus',
       label: 'New Blank Workflow',
       menubarLabel: 'New',
       category: 'essentials' as const,

@@ -67,11 +67,18 @@
           :class="{ invisible: !item.comfyCommand?.active?.() }"
         />
         <span
-          v-else-if="item.icon"
+          v-else-if="
+            item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
+          "
           class="p-menubar-item-icon"
           :class="item.icon"
         />
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <i
+          v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
+          class="ml-auto"
+          :class="item.icon"
+        />
         <span
           v-if="item?.comfyCommand?.keybinding"
           class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
