@@ -6316,14 +6316,16 @@ export class LGraphCanvas
         }
 
         case 'Delete': {
-          // segment can be a Reroute object, in which case segment.id is the reroute id
-          const linkId =
-            segment instanceof Reroute
-              ? segment.linkIds.values().next().value
-              : segment.id
-          if (linkId !== undefined) {
-            graph.removeLink(linkId)
+          let linkId: LinkId | undefined
+          if (segment instanceof Reroute) {
+            linkId = segment.linkIds.values().next().value
+          } else {
+            const maybeReroute = graph.getReroute(Number(segment.id))
+            linkId = maybeReroute
+              ? maybeReroute.linkIds.values().next().value
+              : (segment.id as LinkId)
           }
+          if (linkId !== undefined) graph.removeLink(linkId)
           break
         }
         default:
