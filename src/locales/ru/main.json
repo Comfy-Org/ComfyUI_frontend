@@ -299,6 +299,7 @@
     "disabling": "Отключение",
     "dismiss": "Закрыть",
     "download": "Скачать",
+    "duplicate": "Дублировать",
     "edit": "Редактировать",
     "empty": "Пусто",
     "enableAll": "Включить все",
@@ -402,8 +403,7 @@
     "versionMismatchWarning": "Предупреждение о несовместимости версий",
     "versionMismatchWarningMessage": "{warning}: {detail} Посетите https://docs.comfy.org/installation/update_comfyui#common-update-issues для инструкций по обновлению.",
     "videoFailedToLoad": "Не удалось загрузить видео",
-    "workflow": "Рабочий процесс",
-    "duplicate": "Дублировать"
+    "workflow": "Рабочий процесс"
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",

@@ -299,6 +299,7 @@
     "disabling": "無効化",
     "dismiss": "閉じる",
     "download": "ダウンロード",
+    "duplicate": "複製",
     "edit": "編集",
     "empty": "空",
     "enableAll": "すべて有効にする",
@@ -402,8 +403,7 @@
     "versionMismatchWarning": "バージョン互換性の警告",
     "versionMismatchWarningMessage": "{warning}: {detail} 更新手順については https://docs.comfy.org/installation/update_comfyui#common-update-issues をご覧ください。",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
-    "workflow": "ワークフロー",
-    "duplicate": "複製"
+    "workflow": "ワークフロー"
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",

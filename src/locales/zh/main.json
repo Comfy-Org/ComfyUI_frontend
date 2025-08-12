@@ -299,6 +299,7 @@
     "disabling": "禁用中",
     "dismiss": "關閉",
     "download": "下载",
+    "duplicate": "复制",
     "edit": "编辑",
     "empty": "空",
     "enableAll": "启用全部",
@@ -402,8 +403,7 @@
     "versionMismatchWarning": "版本相容性警告",
     "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
     "videoFailedToLoad": "视频加载失败",
-    "workflow": "工作流",
-    "duplicate": "复制"
+    "workflow": "工作流"
   },
   "graphCanvasMenu": {
     "fitView": "适应视图",
