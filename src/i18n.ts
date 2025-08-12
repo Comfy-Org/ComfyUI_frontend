@@ -1,5 +1,9 @@
 import { createI18n } from 'vue-i18n'
 
+import arCommands from './locales/ar/commands.json'
+import ar from './locales/ar/main.json'
+import arNodes from './locales/ar/nodeDefs.json'
+import arSettings from './locales/ar/settings.json'
 import enCommands from './locales/en/commands.json'
 import en from './locales/en/main.json'
 import enNodes from './locales/en/nodeDefs.json'
@@ -32,10 +36,6 @@ import zhCommands from './locales/zh/commands.json'
 import zh from './locales/zh/main.json'
 import zhNodes from './locales/zh/nodeDefs.json'
 import zhSettings from './locales/zh/settings.json'
-import arCommands from './locales/ar/commands.json'
-import ar from './locales/ar/main.json'
-import arNodes from './locales/ar/nodeDefs.json'
-import arSettings from './locales/ar/settings.json'
 
 function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
   return {
