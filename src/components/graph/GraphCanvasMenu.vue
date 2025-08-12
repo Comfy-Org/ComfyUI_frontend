@@ -43,6 +43,9 @@
         </template>
       </Button>
 
+      <!-- vertical line with bg E1DED5 -->
+      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
+
       <Button
         v-tooltip.top="fitViewTooltip"
         severity="secondary"
@@ -73,6 +76,8 @@
           <i-lucide:chevron-down />
         </span>
       </Button>
+
+      <div class="w-px my-1 bg-[#E1DED5] dark-theme:bg-[#2E3037] mx-2" />
 
       <Button
         ref="focusButton"
