@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 

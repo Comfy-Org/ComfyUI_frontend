@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 

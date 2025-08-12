@@ -412,9 +412,10 @@
     "hideLinks": "إخفاء الروابط",
     "panMode": "وضع التحريك",
     "resetView": "إعادة تعيين العرض",
+    "showLinks": "إظهار الروابط",
     "select": "تحديد",
     "selectMode": "وضع التحديد",
-    "showLinks": "إظهار الروابط",
+    "toggleLinkVisibility": "تبديل ظهور الروابط",
     "toggleMinimap": "تبديل الخريطة المصغرة",
     "zoomIn": "تكبير",
     "zoomOptions": "خيارات التكبير",
@@ -1692,5 +1693,6 @@
     "label": "عناصر التحكم في التكبير",
     "showMinimap": "إظهار الخريطة المصغرة",
     "zoomToFit": "تكبير لتناسب الشاشة"
+
   }
 }

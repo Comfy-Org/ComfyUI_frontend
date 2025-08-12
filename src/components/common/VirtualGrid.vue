@@ -16,7 +16,7 @@
 
 <script setup lang="ts" generic="T">
 import { useElementSize, useScroll, whenever } from '@vueuse/core'
-import { clamp, debounce } from 'lodash'
+import { clamp, debounce } from 'es-toolkit/compat'
 import { type CSSProperties, computed, onBeforeUnmount, ref, watch } from 'vue'
 
 type GridState = {

@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
@@ -804,6 +804,15 @@ export const useLitegraphService = () => {
             }
           })
         }
+      }
+      if (this instanceof SubgraphNode) {
+        options.unshift({
+          content: 'Unpack Subgraph',
+          callback: () => {
+            useNodeOutputStore().revokeSubgraphPreviews(this)
+            this.graph.unpackSubgraph(this)
+          }
+        })
       }
 
       return []

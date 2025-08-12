@@ -299,6 +299,7 @@
     "disabling": "Désactivation",
     "dismiss": "Fermer",
     "download": "Télécharger",
+    "duplicate": "Dupliquer",
     "edit": "Modifier",
     "empty": "Vide",
     "enableAll": "Activer tout",
@@ -402,7 +403,8 @@
     "versionMismatchWarning": "Avertissement de compatibilité de version",
     "versionMismatchWarningMessage": "{warning} : {detail} Consultez https://docs.comfy.org/installation/update_comfyui#common-update-issues pour les instructions de mise à jour.",
     "videoFailedToLoad": "Échec du chargement de la vidéo",
-    "workflow": "Flux de travail"
+    "workflow": "Flux de travail",
+    "duplicate": "Dupliquer"
   },
   "graphCanvasMenu": {
     "fitView": "Adapter la vue",

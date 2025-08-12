@@ -299,6 +299,7 @@
     "disabling": "비활성화 중",
     "dismiss": "닫기",
     "download": "다운로드",
+    "duplicate": "복제",
     "edit": "편집",
     "empty": "비어 있음",
     "enableAll": "모두 활성화",
@@ -402,7 +403,8 @@
     "versionMismatchWarning": "버전 호환성 경고",
     "versionMismatchWarningMessage": "{warning}: {detail} 업데이트 지침은 https://docs.comfy.org/installation/update_comfyui#common-update-issues 를 방문하세요.",
     "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
-    "workflow": "워크플로"
+    "workflow": "워크플로",
+    "duplicate": "복제"
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",

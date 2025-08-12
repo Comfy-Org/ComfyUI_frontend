@@ -317,6 +317,25 @@ test.describe('Workflows sidebar', () => {
     ])
   })
 
+  test('Can duplicate workflow from context menu', async ({ comfyPage }) => {
+    await comfyPage.setupWorkflowsDirectory({
+      'workflow1.json': 'default.json'
+    })
+
+    const { workflowsTab } = comfyPage.menu
+    await workflowsTab.open()
+
+    await workflowsTab
+      .getPersistedItem('workflow1.json')
+      .click({ button: 'right' })
+    await comfyPage.clickContextMenuItem('Duplicate')
+
+    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
+      '*Unsaved Workflow.json',
+      '*workflow1 (Copy).json'
+    ])
+  })
+
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
     await comfyPage.setupWorkflowsDirectory({
       'workflow1.json': 'default.json'

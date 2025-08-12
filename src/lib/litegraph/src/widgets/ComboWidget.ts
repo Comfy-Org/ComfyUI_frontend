@@ -1,4 +1,4 @@
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'

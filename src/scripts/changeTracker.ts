@@ -1,5 +1,5 @@
+import _ from 'es-toolkit/compat'
 import * as jsondiffpatch from 'jsondiffpatch'
-import _ from 'lodash'
 import log from 'loglevel'
 
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
