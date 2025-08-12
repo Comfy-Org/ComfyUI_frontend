@@ -4999,6 +4999,19 @@ export class LGraphCanvas
   drawNode(node: LGraphNode, ctx: CanvasRenderingContext2D): void {
     this.current_node = node
 
+    // When Vue nodes mode is enabled, LiteGraph should not draw node chrome or widgets.
+    // We still need to keep slot metrics and layout in sync for hit-testing and links.
+    // Interaction system changes coming later, chances are vue nodes mode will be mostly broken on land
+    if (LiteGraph.vueNodesMode) {
+      // Prepare concrete slots and compute layout measures without rendering visuals.
+      node._setConcreteSlots()
+      if (!node.collapsed) {
+        node.arrange()
+      }
+      // Skip all node body/widget/title rendering. Vue overlay handles visuals.
+      return
+    }
+
     const color = node.renderingColor
     const bgcolor = node.renderingBgColor
 

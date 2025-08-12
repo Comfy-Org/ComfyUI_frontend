@@ -16,7 +16,6 @@ import { computed } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -27,9 +26,6 @@ const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
-
-  // Skip updating DOM widgets when Vue nodes mode is enabled
-  if (LiteGraph.vueNodesMode) return
 
   const lowQuality = lgCanvas.low_quality
   const currentGraph = lgCanvas.graph

@@ -65,6 +65,7 @@
 
   <!-- Debug Panel (Development Only) -->
   <VueNodeDebugPanel
+    v-if="debugPanelVisible"
     v-model:debug-override-vue-nodes="debugOverrideVueNodes"
     v-model:show-performance-overlay="showPerformanceOverlay"
     :canvas-viewport="canvasViewport"
@@ -86,8 +87,11 @@
   canvasStore.canvas to be initialized. -->
   <template v-if="comfyAppReady">
     <TitleEditor />
-    <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <DomWidgets />
+    <SelectionOverlay v-if="selectionToolboxEnabled">
+      <SelectionToolbox />
+    </SelectionOverlay>
+    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
+    <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
 </template>
 
@@ -110,6 +114,7 @@ import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import TransformPane from '@/components/graph/TransformPane.vue'
@@ -189,7 +194,14 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 const { shouldRenderVueNodes, isDevModeEnabled } = useFeatureFlags()
 
 // TransformPane enabled when Vue nodes are enabled OR debug override
-const debugOverrideVueNodes = ref(true) // Default to true for development
+const debugOverrideVueNodes = ref(false)
+// Persist debug panel visibility in settings so core commands can toggle it
+const debugPanelVisible = computed({
+  get: () => settingStore.get('Comfy.VueNodes.DebugPanel.Visible') ?? false,
+  set: (v: boolean) => {
+    void settingStore.set('Comfy.VueNodes.DebugPanel.Visible', v)
+  }
+})
 const transformPaneEnabled = computed(
   () => shouldRenderVueNodes.value || debugOverrideVueNodes.value
 )
@@ -269,6 +281,7 @@ watch(canvasRef, () => {
 
 // Vue node lifecycle management - initialize after graph is ready
 let nodeManager: ReturnType<typeof useGraphNodeManager> | null = null
+let cleanupNodeManager: (() => void) | null = null
 const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
 const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
 const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
@@ -291,31 +304,49 @@ const performanceMetrics = reactive({
 const nodeDataTrigger = ref(0)
 
 const initializeNodeManager = () => {
-  if (!comfyApp.graph || nodeManager) {
-    return
-  }
-
+  if (!comfyApp.graph || nodeManager) return
   nodeManager = useGraphNodeManager(comfyApp.graph)
-
+  cleanupNodeManager = nodeManager.cleanup
   // Use the manager's reactive maps directly
   vueNodeData.value = nodeManager.vueNodeData
   nodeState.value = nodeManager.nodeState
   nodePositions.value = nodeManager.nodePositions
   nodeSizes.value = nodeManager.nodeSizes
-
   detectChangesInRAF = nodeManager.detectChangesInRAF
   Object.assign(performanceMetrics, nodeManager.performanceMetrics)
-
   // Force computed properties to re-evaluate
   nodeDataTrigger.value++
 }
 
-// Watch for graph availability
+const disposeNodeManager = () => {
+  if (!nodeManager) return
+  try {
+    cleanupNodeManager?.()
+  } catch {
+    /* empty */
+  }
+  nodeManager = null
+  cleanupNodeManager = null
+  // Reset reactive maps to inert defaults
+  vueNodeData.value = new Map()
+  nodeState.value = new Map()
+  nodePositions.value = new Map()
+  nodeSizes.value = new Map()
+  // Reset metrics
+  performanceMetrics.frameTime = 0
+  performanceMetrics.updateTime = 0
+  performanceMetrics.nodeCount = 0
+  performanceMetrics.culledCount = 0
+}
+
+// Watch for transformPaneEnabled to gate the node manager lifecycle
 watch(
-  () => comfyApp.graph,
-  (graph) => {
-    if (graph) {
+  () => transformPaneEnabled.value && Boolean(comfyApp.graph),
+  (enabled) => {
+    if (enabled) {
       initializeNodeManager()
+    } else {
+      disposeNodeManager()
     }
   },
   { immediate: true }
@@ -695,11 +726,6 @@ onMounted(async () => {
   window.graph = comfyApp.graph
 
   comfyAppReady.value = true
-
-  // Initialize node manager after setup is complete
-  if (comfyApp.graph) {
-    initializeNodeManager()
-  }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
