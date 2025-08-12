@@ -17,6 +17,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
+import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
@@ -638,20 +640,64 @@ export class LinkConnector {
 
     if (connectingTo === 'input' && ioNode instanceof SubgraphOutputNode) {
       const output = ioNode.getSlotInPosition(canvasX, canvasY)
-      if (!output) throw new Error('No output slot found for link.')
+      if (!output) {
+        this.dropOnNothing(event)
+        return
+      }
+
+      // Track the actual slot to use for all connections
+      let targetSlot = output
 
       for (const link of renderLinks) {
-        link.connectToSubgraphOutput(output, this.events)
+        link.connectToSubgraphOutput(targetSlot, this.events)
+
+        // If we just connected to an EmptySubgraphOutput, check if we should reuse the slot
+        if (output instanceof EmptySubgraphOutput && ioNode.slots.length > 0) {
+          // Get the last created slot (newest one)
+          const createdSlot = ioNode.slots[ioNode.slots.length - 1]
+
+          // Only reuse the slot if the next link's type would be compatible
+          // Otherwise, keep using EmptySubgraphOutput to create a new slot
+          const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
+          if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
+            targetSlot = createdSlot
+          } else {
+            // Reset to EmptySubgraphOutput for different types
+            targetSlot = output
+          }
+        }
       }
     } else if (
       connectingTo === 'output' &&
       ioNode instanceof SubgraphInputNode
     ) {
       const input = ioNode.getSlotInPosition(canvasX, canvasY)
-      if (!input) throw new Error('No input slot found for link.')
+      if (!input) {
+        this.dropOnNothing(event)
+        return
+      }
+
+      // Same logic for SubgraphInputNode if needed
+      let targetSlot = input
 
       for (const link of renderLinks) {
-        link.connectToSubgraphInput(input, this.events)
+        link.connectToSubgraphInput(targetSlot, this.events)
+
+        // If we just connected to an EmptySubgraphInput, check if we should reuse the slot
+        if (input instanceof EmptySubgraphInput && ioNode.slots.length > 0) {
+          // Get the last created slot (newest one)
+          const createdSlot = ioNode.slots[ioNode.slots.length - 1]
+
+          // Only reuse the slot if the next link's type would be compatible
+          // Otherwise, keep using EmptySubgraphInput to create a new slot
+          const nextLink = renderLinks[renderLinks.indexOf(link) + 1]
+          if (nextLink && link.fromSlot.type === nextLink.fromSlot.type) {
+            targetSlot = createdSlot
+          } else {
+            // Reset to EmptySubgraphInput for different types
+            targetSlot = input
+          }
+        }
       }
     } else {
       console.error(

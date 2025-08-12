@@ -784,6 +784,7 @@
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
+    "Exit Subgraph": "Выйти из подграфа",
     "Export": "Экспортировать",
     "Export (API)": "Экспорт (API)",
     "Fit Group To Contents": "Подогнать группу под содержимое",
@@ -850,6 +851,13 @@
     "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить"
+  },
+  "minimap": {
+    "nodeColors": "Цвета узлов",
+    "renderBypassState": "Отображать состояние обхода",
+    "renderErrorState": "Отображать состояние ошибки",
+    "showGroups": "Показать фреймы/группы",
+    "showLinks": "Показать связи"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",

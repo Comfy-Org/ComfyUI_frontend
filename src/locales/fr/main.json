@@ -784,6 +784,7 @@
     "Desktop User Guide": "Guide de l'utilisateur de bureau",
     "Duplicate Current Workflow": "Dupliquer le flux de travail actuel",
     "Edit": "Éditer",
+    "Exit Subgraph": "Quitter le sous-graphe",
     "Export": "Exporter",
     "Export (API)": "Exporter (API)",
     "Fit Group To Contents": "Ajuster le groupe au contenu",
@@ -850,6 +851,13 @@
     "Workflow": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière"
+  },
+  "minimap": {
+    "nodeColors": "Couleurs des nœuds",
+    "renderBypassState": "Afficher l’état de contournement",
+    "renderErrorState": "Afficher l’état d’erreur",
+    "showGroups": "Afficher les cadres/groupes",
+    "showLinks": "Afficher les liens"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",

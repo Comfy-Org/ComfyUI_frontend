@@ -784,6 +784,7 @@
     "Desktop User Guide": "デスクトップユーザーガイド",
     "Duplicate Current Workflow": "現在のワークフローを複製",
     "Edit": "編集",
+    "Exit Subgraph": "サブグラフを終了",
     "Export": "エクスポート",
     "Export (API)": "エクスポート (API)",
     "Fit Group To Contents": "グループを内容に合わせる",
@@ -850,6 +851,13 @@
     "Workflow": "ワークフロー",
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト"
+  },
+  "minimap": {
+    "nodeColors": "ノードの色",
+    "renderBypassState": "バイパス状態を表示",
+    "renderErrorState": "エラー状態を表示",
+    "showGroups": "フレーム／グループを表示",
+    "showLinks": "リンクを表示"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "再度表示しない",

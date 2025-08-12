@@ -122,6 +122,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "選択範囲をサブグラフに変換"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "サブグラフを終了"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "グループを内容に合わせて調整"
   },

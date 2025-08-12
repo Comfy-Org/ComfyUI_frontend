@@ -1,3 +1,5 @@
+import { toString } from 'lodash'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -34,7 +36,6 @@ import {
   alignToContainer,
   createBounds
 } from './measure'
-import { stringOrEmpty } from './strings'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -2027,7 +2028,7 @@ export class LGraph
     if (url instanceof Blob || url instanceof File) {
       const reader = new FileReader()
       reader.addEventListener('load', (event) => {
-        const result = stringOrEmpty(event.target?.result)
+        const result = toString(event.target?.result)
         const data = JSON.parse(result)
         this.configure(data)
         callback?.()
@@ -2331,6 +2332,9 @@ export class Subgraph
       nodes: this.nodes.map((node) => node.serialize()),
       groups: this.groups.map((group) => group.serialize()),
       links: [...this.links.values()].map((x) => x.asSerialisable()),
+      reroutes: this.reroutes.size
+        ? [...this.reroutes.values()].map((x) => x.asSerialisable())
+        : undefined,
       extra: this.extra
     }
   }

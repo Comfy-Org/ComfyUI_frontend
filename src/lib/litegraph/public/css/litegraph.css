@@ -495,6 +495,16 @@
   padding-left: 12px;
 }
 
+.graphmenu-entry.danger,
+.litemenu-entry.danger {
+  color: var(--error-text) !important;
+}
+
+.litegraph .litemenu-entry.danger:hover:not(.disabled) {
+  color: var(--error-text) !important;
+  opacity: 0.8;
+}
+
 .graphmenu-entry.disabled {
   opacity: 0.3;
 }

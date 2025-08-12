@@ -122,6 +122,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "將選取內容轉換為子圖"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "離開子圖"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "調整群組以符合內容"
   },
