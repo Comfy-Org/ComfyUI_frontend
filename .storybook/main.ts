@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/vue3-vite'
-import { type InlineConfig, mergeConfig } from 'vite'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { type InlineConfig, mergeConfig } from 'vite'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -31,7 +31,10 @@ const config: StorybookConfig = {
           },
           onwarn: (warning, warn) => {
             // Suppress specific warnings
-            if (warning.code === 'UNUSED_EXTERNAL_IMPORT' && warning.message?.includes('resolveComponent')) {
+            if (
+              warning.code === 'UNUSED_EXTERNAL_IMPORT' &&
+              warning.message?.includes('resolveComponent')
+            ) {
               return
             }
             warn(warning)
@@ -39,9 +42,9 @@ const config: StorybookConfig = {
           output: {
             manualChunks: {
               'vue-vendor': ['vue', 'vue-router'],
-              'primevue': ['primevue/config', 'primevue'],
+              primevue: ['primevue/config', 'primevue'],
               'storybook-docs': ['@storybook/docs-tools'],
-              'litegraph': ['./src/lib/litegraph']
+              litegraph: ['./src/lib/litegraph']
             }
           }
         },
