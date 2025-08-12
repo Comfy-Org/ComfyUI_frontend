@@ -51,7 +51,7 @@ const template = await fetch('/templates/default.json')
 
 ## General Guidelines
 
-- Use lodash for utility functions
+- Use es-toolkit for utility functions
 - Implement proper TypeScript types
 - Follow Vue 3 composition API style guide
 - Use vue-i18n for ALL user-facing strings in `src/locales/en/main.json`

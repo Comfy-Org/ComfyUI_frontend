@@ -1,5 +1,5 @@
 import axios from 'axios'
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 

@@ -1,4 +1,4 @@
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 
 import type { IKnobWidget } from '@/lib/litegraph/src/types/widgets'
 import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'

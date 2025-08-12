@@ -93,7 +93,7 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import { merge } from 'lodash'
+import { merge } from 'es-toolkit/compat'
 import Button from 'primevue/button'
 import {
   computed,

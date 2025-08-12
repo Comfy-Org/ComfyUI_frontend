@@ -1,5 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
-import { orderBy } from 'lodash'
+import { orderBy } from 'es-toolkit/compat'
 import { computed, ref, watch } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
