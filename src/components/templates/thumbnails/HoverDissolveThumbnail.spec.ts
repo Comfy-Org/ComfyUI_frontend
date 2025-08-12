@@ -11,6 +11,15 @@ vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
   }
 }))
 
+vi.mock('@/components/common/LazyImage.vue', () => ({
+  default: {
+    name: 'LazyImage',
+    template:
+      '<img :src="src" :alt="alt" :class="imageClass" :style="imageStyle" draggable="false" />',
+    props: ['src', 'alt', 'imageClass', 'imageStyle']
+  }
+}))
+
 describe('HoverDissolveThumbnail', () => {
   const mountThumbnail = (props = {}) => {
     return mount(HoverDissolveThumbnail, {
@@ -27,31 +36,39 @@ describe('HoverDissolveThumbnail', () => {
 
   it('renders both base and overlay images', () => {
     const wrapper = mountThumbnail()
-    const images = wrapper.findAll('img')
-    expect(images.length).toBe(2)
-    expect(images[0].attributes('src')).toBe('/base-image.jpg')
-    expect(images[1].attributes('src')).toBe('/overlay-image.jpg')
+    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
+    expect(lazyImages.length).toBe(2)
+    expect(lazyImages[0].props('src')).toBe('/base-image.jpg')
+    expect(lazyImages[1].props('src')).toBe('/overlay-image.jpg')
   })
 
   it('applies correct alt text to both images', () => {
     const wrapper = mountThumbnail({ alt: 'Custom Alt Text' })
-    const images = wrapper.findAll('img')
-    expect(images[0].attributes('alt')).toBe('Custom Alt Text')
-    expect(images[1].attributes('alt')).toBe('Custom Alt Text')
+    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
+    expect(lazyImages[0].props('alt')).toBe('Custom Alt Text')
+    expect(lazyImages[1].props('alt')).toBe('Custom Alt Text')
   })
 
   it('makes overlay image visible when hovered', () => {
     const wrapper = mountThumbnail({ isHovered: true })
-    const overlayImage = wrapper.findAll('img')[1]
-    expect(overlayImage.classes()).toContain('opacity-100')
-    expect(overlayImage.classes()).not.toContain('opacity-0')
+    const overlayLazyImage = wrapper.findAllComponents({ name: 'LazyImage' })[1]
+    const imageClass = overlayLazyImage.props('imageClass')
+    const classString = Array.isArray(imageClass)
+      ? imageClass.join(' ')
+      : imageClass
+    expect(classString).toContain('opacity-100')
+    expect(classString).not.toContain('opacity-0')
   })
 
   it('makes overlay image hidden when not hovered', () => {
     const wrapper = mountThumbnail({ isHovered: false })
-    const overlayImage = wrapper.findAll('img')[1]
-    expect(overlayImage.classes()).toContain('opacity-0')
-    expect(overlayImage.classes()).not.toContain('opacity-100')
+    const overlayLazyImage = wrapper.findAllComponents({ name: 'LazyImage' })[1]
+    const imageClass = overlayLazyImage.props('imageClass')
+    const classString = Array.isArray(imageClass)
+      ? imageClass.join(' ')
+      : imageClass
+    expect(classString).toContain('opacity-0')
+    expect(classString).not.toContain('opacity-100')
   })
 
   it('passes isHovered prop to BaseThumbnail', () => {
@@ -62,21 +79,33 @@ describe('HoverDissolveThumbnail', () => {
 
   it('applies transition classes to overlay image', () => {
     const wrapper = mountThumbnail()
-    const overlayImage = wrapper.findAll('img')[1]
-    expect(overlayImage.classes()).toContain('transition-opacity')
-    expect(overlayImage.classes()).toContain('duration-300')
+    const overlayLazyImage = wrapper.findAllComponents({ name: 'LazyImage' })[1]
+    const imageClass = overlayLazyImage.props('imageClass')
+    const classString = Array.isArray(imageClass)
+      ? imageClass.join(' ')
+      : imageClass
+    expect(classString).toContain('transition-opacity')
+    expect(classString).toContain('duration-300')
   })
 
   it('applies correct positioning to both images', () => {
     const wrapper = mountThumbnail()
-    const images = wrapper.findAll('img')
+    const lazyImages = wrapper.findAllComponents({ name: 'LazyImage' })
 
     // Check base image
-    expect(images[0].classes()).toContain('absolute')
-    expect(images[0].classes()).toContain('inset-0')
+    const baseImageClass = lazyImages[0].props('imageClass')
+    const baseClassString = Array.isArray(baseImageClass)
+      ? baseImageClass.join(' ')
+      : baseImageClass
+    expect(baseClassString).toContain('absolute')
+    expect(baseClassString).toContain('inset-0')
 
     // Check overlay image
-    expect(images[1].classes()).toContain('absolute')
-    expect(images[1].classes()).toContain('inset-0')
+    const overlayImageClass = lazyImages[1].props('imageClass')
+    const overlayClassString = Array.isArray(overlayImageClass)
+      ? overlayImageClass.join(' ')
+      : overlayImageClass
+    expect(overlayClassString).toContain('absolute')
+    expect(overlayClassString).toContain('inset-0')
   })
 })

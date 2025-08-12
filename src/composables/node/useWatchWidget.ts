@@ -1,8 +1,8 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { computedWithControl } from '@vueuse/core'
 import { type ComputedRef, ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 export interface UseComputedWithWidgetWatchOptions {
   /**

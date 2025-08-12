@@ -1,10 +1,10 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DisplayComponentWsMessage,
   ExecutedWsMessage,
@@ -12,6 +12,8 @@ import type {
   ExecutionErrorWsMessage,
   ExecutionStartWsMessage,
   NodeError,
+  NodeProgressState,
+  ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
@@ -21,6 +23,10 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
@@ -46,7 +52,97 @@ export const useExecutionStore = defineStore('execution', () => {
   const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
-  const executingNodeId = ref<NodeId | null>(null)
+  // This is the progress of all nodes in the currently executing workflow
+  const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
+
+  /**
+   * Convert execution context node IDs to NodeLocatorIds
+   * @param nodeId The node ID from execution context (could be execution ID)
+   * @returns The NodeLocatorId
+   */
+  const executionIdToNodeLocatorId = (
+    nodeId: string | number
+  ): NodeLocatorId => {
+    const nodeIdStr = String(nodeId)
+
+    if (!nodeIdStr.includes(':')) {
+      // It's a top-level node ID
+      return nodeIdStr
+    }
+
+    // It's an execution node ID
+    const parts = nodeIdStr.split(':')
+    const localNodeId = parts[parts.length - 1]
+    const subgraphs = getSubgraphsFromInstanceIds(app.graph, parts)
+    const nodeLocatorId = createNodeLocatorId(subgraphs.at(-1)!.id, localNodeId)
+    return nodeLocatorId
+  }
+
+  const mergeExecutionProgressStates = (
+    currentState: NodeProgressState | undefined,
+    newState: NodeProgressState
+  ): NodeProgressState => {
+    if (currentState === undefined) {
+      return newState
+    }
+
+    const mergedState = { ...currentState }
+    if (mergedState.state === 'error') {
+      return mergedState
+    } else if (newState.state === 'running') {
+      const newPerc = newState.max > 0 ? newState.value / newState.max : 0.0
+      const oldPerc =
+        mergedState.max > 0 ? mergedState.value / mergedState.max : 0.0
+      if (
+        mergedState.state !== 'running' ||
+        oldPerc === 0.0 ||
+        newPerc < oldPerc
+      ) {
+        mergedState.value = newState.value
+        mergedState.max = newState.max
+      }
+      mergedState.state = 'running'
+    }
+
+    return mergedState
+  }
+
+  const nodeLocationProgressStates = computed<
+    Record<NodeLocatorId, NodeProgressState>
+  >(() => {
+    const result: Record<NodeLocatorId, NodeProgressState> = {}
+
+    const states = nodeProgressStates.value // Apparently doing this inside `Object.entries` causes issues
+    for (const state of Object.values(states)) {
+      const parts = String(state.display_node_id).split(':')
+      for (let i = 0; i < parts.length; i++) {
+        const executionId = parts.slice(0, i + 1).join(':')
+        const locatorId = executionIdToNodeLocatorId(executionId)
+        if (!locatorId) continue
+
+        result[locatorId] = mergeExecutionProgressStates(
+          result[locatorId],
+          state
+        )
+      }
+    }
+
+    return result
+  })
+
+  // Easily access all currently executing node IDs
+  const executingNodeIds = computed<NodeId[]>(() => {
+    return Object.entries(nodeProgressStates)
+      .filter(([_, state]) => state.state === 'running')
+      .map(([nodeId, _]) => nodeId)
+  })
+
+  // @deprecated For backward compatibility - stores the primary executing node ID
+  const executingNodeId = computed<NodeId | null>(() => {
+    return executingNodeIds.value.length > 0 ? executingNodeIds.value[0] : null
+  })
+
+  // For backward compatibility - returns the primary executing node
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
 
@@ -93,30 +189,7 @@ export const useExecutionStore = defineStore('execution', () => {
     return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
   }
 
-  const executionIdToCurrentId = (id: string) => {
-    const subgraph = workflowStore.activeSubgraph
-
-    // Short-circuit: ID belongs to the parent workflow / no active subgraph
-    if (!id.includes(':')) {
-      return !subgraph ? id : undefined
-    } else if (!subgraph) {
-      return
-    }
-
-    // Parse the hierarchical ID (e.g., "123:456:789")
-    const subgraphNodeIds = id.split(':')
-
-    // If the last subgraph is the active subgraph, return the node ID
-    const subgraphs = getSubgraphsFromInstanceIds(
-      subgraph.rootGraph,
-      subgraphNodeIds
-    )
-    if (subgraphs.at(-1) === subgraph) {
-      return subgraphNodeIds.at(-1)
-    }
-  }
-
-  // This is the progress of the currently executing node, if any
+  // This is the progress of the currently executing node (for backward compatibility)
   const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
   const executingNodeProgress = computed(() =>
     _executingNodeProgress.value
@@ -150,24 +223,29 @@ export const useExecutionStore = defineStore('execution', () => {
   function bindExecutionEvents() {
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
+    api.addEventListener('execution_interrupted', handleExecutionInterrupted)
     api.addEventListener('executed', handleExecuted)
     api.addEventListener('executing', handleExecuting)
     api.addEventListener('progress', handleProgress)
+    api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
+    api.addEventListener('progress_text', handleProgressText)
+    api.addEventListener('display_component', handleDisplayComponent)
   }
-  api.addEventListener('progress_text', handleProgressText)
-  api.addEventListener('display_component', handleDisplayComponent)
 
   function unbindExecutionEvents() {
     api.removeEventListener('execution_start', handleExecutionStart)
     api.removeEventListener('execution_cached', handleExecutionCached)
+    api.removeEventListener('execution_interrupted', handleExecutionInterrupted)
     api.removeEventListener('executed', handleExecuted)
     api.removeEventListener('executing', handleExecuting)
     api.removeEventListener('progress', handleProgress)
+    api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
+    api.removeEventListener('display_component', handleDisplayComponent)
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -183,6 +261,10 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  function handleExecutionInterrupted() {
+    nodeProgressStates.value = {}
+  }
+
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activePrompt.value) return
     activePrompt.value.nodes[e.detail.node] = true
@@ -194,19 +276,42 @@ export const useExecutionStore = defineStore('execution', () => {
 
     if (!activePrompt.value) return
 
-    if (executingNodeId.value && activePrompt.value) {
-      // Seems sometimes nodes that are cached fire executing but not executed
-      activePrompt.value.nodes[executingNodeId.value] = true
+    // Update the executing nodes list
+    if (typeof e.detail !== 'string') {
+      if (activePromptId.value) {
+        delete queuedPrompts.value[activePromptId.value]
+      }
+      activePromptId.value = null
     }
-    if (typeof e.detail === 'string') {
-      executingNodeId.value = executionIdToCurrentId(e.detail) ?? null
-    } else {
-      executingNodeId.value = e.detail
-      if (executingNodeId.value === null) {
-        if (activePromptId.value) {
-          delete queuedPrompts.value[activePromptId.value]
-        }
-        activePromptId.value = null
+  }
+
+  function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
+    const { nodes } = e.detail
+
+    // Revoke previews for nodes that are starting to execute
+    for (const nodeId in nodes) {
+      const nodeState = nodes[nodeId]
+      if (nodeState.state === 'running' && !nodeProgressStates.value[nodeId]) {
+        // This node just started executing, revoke its previews
+        // Note that we're doing the *actual* node id instead of the display node id
+        // here intentionally. That way, we don't clear the preview every time a new node
+        // within an expanded graph starts executing.
+        const { revokePreviewsByExecutionId } = useNodeOutputStore()
+        revokePreviewsByExecutionId(nodeId)
+      }
+    }
+
+    // Update the progress states for all nodes
+    nodeProgressStates.value = nodes
+
+    // If we have progress for the currently executing node, update it for backwards compatibility
+    if (executingNodeId.value && nodes[executingNodeId.value]) {
+      const nodeState = nodes[executingNodeId.value]
+      _executingNodeProgress.value = {
+        value: nodeState.value,
+        max: nodeState.max,
+        prompt_id: nodeState.prompt_id,
+        node: nodeState.display_node_id || nodeState.node_id
       }
     }
   }
@@ -239,7 +344,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodeId, text } = e.detail
     if (!text || !nodeId) return
 
-    // Handle hierarchical node IDs for subgraphs
+    // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
@@ -250,7 +355,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleDisplayComponent(e: CustomEvent<DisplayComponentWsMessage>) {
     const { node_id: nodeId, component, props = {} } = e.detail
 
-    // Handle hierarchical node IDs for subgraphs
+    // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
@@ -290,6 +395,18 @@ export const useExecutionStore = defineStore('execution', () => {
     )
   }
 
+  /**
+   * Convert a NodeLocatorId to an execution context ID
+   * @param locatorId The NodeLocatorId
+   * @returns The execution ID or null if conversion fails
+   */
+  const nodeLocatorIdToExecutionId = (
+    locatorId: NodeLocatorId | string
+  ): string | null => {
+    const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
+    return executionId
+  }
+
   return {
     isIdle,
     clientId,
@@ -310,9 +427,13 @@ export const useExecutionStore = defineStore('execution', () => {
      */
     lastExecutionError,
     /**
-     * The id of the node that is currently being executed
+     * The id of the node that is currently being executed (backward compatibility)
      */
     executingNodeId,
+    /**
+     * The list of all nodes that are currently executing
+     */
+    executingNodeIds,
     /**
      * The prompt that is currently being executed
      */
@@ -330,17 +451,25 @@ export const useExecutionStore = defineStore('execution', () => {
      */
     executionProgress,
     /**
-     * The node that is currently being executed
+     * The node that is currently being executed (backward compatibility)
      */
     executingNode,
     /**
-     * The progress of the executing node (if the node reports progress)
+     * The progress of the executing node (backward compatibility)
      */
     executingNodeProgress,
+    /**
+     * All node progress states from progress_state events
+     */
+    nodeProgressStates,
+    nodeLocationProgressStates,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
     // Raw executing progress data for backward compatibility in ComfyApp.
-    _executingNodeProgress
+    _executingNodeProgress,
+    // NodeLocatorId conversion helpers
+    executionIdToNodeLocatorId,
+    nodeLocatorIdToExecutionId
   }
 })

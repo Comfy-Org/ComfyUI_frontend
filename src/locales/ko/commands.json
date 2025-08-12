@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "재시작"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "선택한 노드에 대해 3D 뷰어(베타) 열기"
+  },
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
   },
@@ -71,6 +74,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "캔버스 잠금 토글"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "캔버스 미니맵 전환"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "선택한 노드 우회/우회 해제"
   },
@@ -96,13 +102,13 @@
     "label": "보류 중인 작업 지우기"
   },
   "Comfy_ClearWorkflow": {
-    "label": "워크플로 지우기"
+    "label": "워크플로 내용 지우기"
   },
   "Comfy_ContactSupport": {
     "label": "지원팀에 문의하기"
   },
   "Comfy_DuplicateWorkflow": {
-    "label": "현재 워크플로우 복제"
+    "label": "현재 워크플로 복제"
   },
   "Comfy_ExportWorkflow": {
     "label": "워크플로 내보내기"
@@ -115,6 +121,9 @@
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "선택 영역을 서브그래프로 변환"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "서브그래프 종료"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"
@@ -157,6 +166,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "진행 상황 대화 상자 전환"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "마스크 편집기에서 브러시 크기 줄이기"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "마스크 편집기에서 브러시 크기 늘리기"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "선택한 노드 마스크 편집기 열기"
@@ -207,7 +222,7 @@
     "label": "로그아웃"
   },
   "Workspace_CloseWorkflow": {
-    "label": "현재 워크플로우 닫기"
+    "label": "현재 워크플로 닫기"
   },
   "Workspace_NextOpenedWorkflow": {
     "label": "다음 열린 워크플로"
@@ -226,6 +241,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "로그 하단 패널 토글"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "필수 하단 패널 전환"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "보기 컨트롤 하단 패널 전환"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "키 바인딩 대화상자 표시"
   },
   "Workspace_ToggleFocusMode": {
     "label": "포커스 모드 토글"

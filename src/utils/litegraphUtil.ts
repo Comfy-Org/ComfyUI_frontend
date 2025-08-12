@@ -1,16 +1,20 @@
-import { ColorOption, LGraph, Reroute } from '@comfyorg/litegraph'
-import { LGraphGroup, LGraphNode, isColorable } from '@comfyorg/litegraph'
+import _ from 'lodash'
+
+import { ColorOption, LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  isColorable
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
   ISerialisedGraph
-} from '@comfyorg/litegraph/dist/types/serialisation'
+} from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
   IComboWidget
-} from '@comfyorg/litegraph/dist/types/widgets'
-import _ from 'lodash'
-
+} from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
@@ -153,7 +157,10 @@ export function migrateWidgetsValues<TWidgetValue>(
  * @param graph - The graph to fix links for.
  */
 export function fixLinkInputSlots(graph: LGraph) {
+  // Note: We can't use forEachNode here because we need access to the graph's
+  // links map at each level. Links are stored in their respective graph/subgraph.
   for (const node of graph.nodes) {
+    // Fix links for the current node
     for (const [inputIndex, input] of node.inputs.entries()) {
       const linkId = input.link
       if (!linkId) continue
@@ -162,6 +169,11 @@ export function fixLinkInputSlots(graph: LGraph) {
       if (!link) continue
 
       link.target_slot = inputIndex
+    }
+
+    // Recursively fix links in subgraphs
+    if (node.isSubgraphNode?.() && node.subgraph) {
+      fixLinkInputSlots(node.subgraph)
     }
   }
 }
@@ -226,4 +238,12 @@ function compressSubgraphWidgetInputSlots(
 
     compressSubgraphWidgetInputSlots(subgraph.definitions?.subgraphs, visited)
   }
+}
+
+export function isLoad3dNode(node: LGraphNode) {
+  return (
+    node &&
+    node.type &&
+    (node.type === 'Load3D' || node.type === 'Load3DAnimation')
+  )
 }

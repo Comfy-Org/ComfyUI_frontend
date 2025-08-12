@@ -17,6 +17,7 @@ import type {
   LogsRawResponse,
   LogsWsMessage,
   PendingTaskItem,
+  ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
@@ -33,15 +34,14 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
+  partial_execution_targets?: NodeExecutionId[]
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -82,6 +82,18 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
+/**
+ * Options for queuePrompt method
+ */
+interface QueuePromptOptions {
+  /**
+   * Optional list of node execution IDs to execute (partial execution).
+   * Each ID represents a node's position in nested subgraphs.
+   * Format: Colon-separated path of node IDs (e.g., "123:456:789")
+   */
+  partialExecutionTargets?: NodeExecutionId[]
+}
+
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
   graphChanged: ComfyWorkflowJSON
@@ -105,7 +117,17 @@ interface BackendApiCalls {
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
+  /** Binary preview with metadata (node_id, prompt_id) */
+  b_preview_with_metadata: {
+    blob: Blob
+    nodeId: string
+    parentNodeId: string
+    displayNodeId: string
+    realNodeId: string
+    promptId: string
+  }
   progress_text: ProgressTextWsMessage
+  progress_state: ProgressStateWsMessage
   display_component: DisplayComponentWsMessage
   feature_flags: FeatureFlagsWsMessage
 }
@@ -457,6 +479,33 @@ export class ComfyApi extends EventTarget {
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
               break
+            case 4:
+              // PREVIEW_IMAGE_WITH_METADATA
+              const decoder4 = new TextDecoder()
+              const metadataLength = view.getUint32(4)
+              const metadataBytes = event.data.slice(8, 8 + metadataLength)
+              const metadata = JSON.parse(decoder4.decode(metadataBytes))
+              const imageData4 = event.data.slice(8 + metadataLength)
+
+              let imageMime4 = metadata.image_type
+
+              const imageBlob4 = new Blob([imageData4], {
+                type: imageMime4
+              })
+
+              // Dispatch enhanced preview event with metadata
+              this.dispatchCustomEvent('b_preview_with_metadata', {
+                blob: imageBlob4,
+                nodeId: metadata.node_id,
+                displayNodeId: metadata.display_node_id,
+                parentNodeId: metadata.parent_node_id,
+                realNodeId: metadata.real_node_id,
+                promptId: metadata.prompt_id
+              })
+
+              // Also dispatch legacy b_preview for backward compatibility
+              this.dispatchCustomEvent('b_preview', imageBlob4)
+              break
             default:
               throw new Error(
                 `Unknown binary websocket message of type ${eventType}`
@@ -486,6 +535,7 @@ export class ComfyApi extends EventTarget {
             case 'execution_cached':
             case 'execution_success':
             case 'progress':
+            case 'progress_state':
             case 'executed':
             case 'graphChanged':
             case 'promptQueued':
@@ -566,48 +616,31 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
-  async getNodeDefs({ validate = false }: { validate?: boolean } = {}): Promise<
-    Record<string, ComfyNodeDef>
-  > {
+  async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
-    const objectInfoUnsafe = await resp.json()
-    if (!validate) {
-      return objectInfoUnsafe
-    }
-    // Validate node definitions against zod schema. (slow)
-    const objectInfo: Record<string, ComfyNodeDef> = {}
-    for (const key in objectInfoUnsafe) {
-      const validatedDef = validateComfyNodeDef(
-        objectInfoUnsafe[key],
-        /* onError=*/ (errorMessage: string) => {
-          console.warn(
-            `Skipping invalid node definition: ${key}. See debug log for more information.`
-          )
-          console.debug(errorMessage)
-        }
-      )
-      if (validatedDef !== null) {
-        objectInfo[key] = validatedDef
-      }
-    }
-    return objectInfo
+    return await resp.json()
   }
 
   /**
    * Queues a prompt to be executed
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
-   * @param {object} prompt The prompt data to queue
+   * @param {object} data The prompt data to queue
+   * @param {QueuePromptOptions} options Optional execution options
    * @throws {PromptExecutionError} If the prompt fails to execute
    */
   async queuePrompt(
     number: number,
-    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON }
+    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON },
+    options?: QueuePromptOptions
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
 
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
       prompt,
+      ...(options?.partialExecutionTargets && {
+        partial_execution_targets: options.partialExecutionTargets
+      }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,

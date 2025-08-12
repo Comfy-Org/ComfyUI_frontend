@@ -1,3 +1,5 @@
+import _ from 'lodash'
+
 import {
   type INodeOutputSlot,
   type LGraph,
@@ -5,10 +7,8 @@ import {
   LLink,
   LiteGraph,
   type Point
-} from '@comfyorg/litegraph'
-import type { IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import _ from 'lodash'
-
+} from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { parseFilePath } from '@/utils/formatUtil'
 
 import { app } from './app'

@@ -1,7 +1,7 @@
-import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflowSchema'
 import { zKeybinding } from '@/schemas/keyBindingSchema'
@@ -46,6 +46,22 @@ const zProgressWsMessage = z.object({
   max: z.number().int(),
   prompt_id: zPromptId,
   node: zNodeId
+})
+
+const zNodeProgressState = z.object({
+  value: z.number(),
+  max: z.number(),
+  state: z.enum(['pending', 'running', 'finished', 'error']),
+  node_id: zNodeId,
+  prompt_id: zPromptId,
+  display_node_id: zNodeId.optional(),
+  parent_node_id: zNodeId.optional(),
+  real_node_id: zNodeId.optional()
+})
+
+const zProgressStateWsMessage = z.object({
+  prompt_id: zPromptId,
+  nodes: z.record(zNodeId, zNodeProgressState)
 })
 
 const zExecutingWsMessage = z.object({
@@ -134,6 +150,8 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type DisplayComponentWsMessage = z.infer<
   typeof zDisplayComponentWsMessage
 >
+export type NodeProgressState = z.infer<typeof zNodeProgressState>
+export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
 // End of ws messages
 
@@ -320,6 +338,7 @@ export const zSystemStats = z.object({
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
     pytorch_version: z.string(),
+    required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
     ram_total: z.number(),
     ram_free: z.number()
@@ -375,9 +394,7 @@ const zSettings = z.object({
   'Comfy.Graph.ZoomSpeed': z.number(),
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.GroupSelectedNodes.Padding': z.number(),
-  'Comfy.InvertMenuScrolling': z.boolean(),
   'Comfy.Locale': z.string(),
-  'Comfy.Logging.Enabled': z.boolean(),
   'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
   'Comfy.NodeLibrary.Bookmarks.V2': z.array(z.string()),
   'Comfy.NodeLibrary.BookmarksCustomization': z.record(
@@ -407,14 +424,12 @@ const zSettings = z.object({
   'Comfy.Sidebar.Location': z.enum(['left', 'right']),
   'Comfy.Sidebar.Size': z.enum(['small', 'normal']),
   'Comfy.Sidebar.UnifiedWidth': z.boolean(),
-  'Comfy.SwitchUser': z.any(),
   'Comfy.SnapToGrid.GridSize': z.number(),
   'Comfy.TextareaWidget.FontSize': z.number(),
   'Comfy.TextareaWidget.Spellcheck': z.boolean(),
   'Comfy.UseNewMenu': z.enum(['Disabled', 'Top', 'Bottom']),
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
-  'Comfy.Validation.NodeDefs': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
   'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
   'Comfy.Workflow.WorkflowTabsPosition': z.enum([
@@ -435,7 +450,6 @@ const zSettings = z.object({
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Extension.Disabled': z.array(z.string()),
-  'Comfy.Settings.ExtensionPanel': z.boolean(),
   'Comfy.LinkRenderMode': z.number(),
   'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
   'Comfy.Node.SnapHighlightsNode': z.boolean(),
@@ -449,7 +463,6 @@ const zSettings = z.object({
   'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
   'Comfy.Canvas.SelectionToolbox': z.boolean(),
   'LiteGraph.Node.TooltipDelay': z.number(),
-  'Comfy.ComfirmClear': z.boolean(),
   'LiteGraph.ContextMenu.Scaling': z.boolean(),
   'LiteGraph.Reroute.SplineOffset': z.number(),
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),
@@ -457,6 +470,13 @@ const zSettings = z.object({
   'Comfy.TutorialCompleted': z.boolean(),
   'Comfy.InstalledVersion': z.string().nullable(),
   'Comfy.Node.AllowImageSizeDraw': z.boolean(),
+  'Comfy.Minimap.Visible': z.boolean(),
+  'Comfy.Minimap.NodeColors': z.boolean(),
+  'Comfy.Minimap.ShowLinks': z.boolean(),
+  'Comfy.Minimap.ShowGroups': z.boolean(),
+  'Comfy.Minimap.RenderBypassState': z.boolean(),
+  'Comfy.Minimap.RenderErrorState': z.boolean(),
+  'Comfy.Canvas.NavigationMode': z.string(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
@@ -474,6 +494,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightIntensityMinimum': z.number(),
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
+  'Comfy.Load3D.3DViewerEnable': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
   'VHS.AdvancedPreviews': z.string(),

@@ -29,6 +29,13 @@
     "name": "Image de fond du canevas",
     "tooltip": "URL de l'image pour le fond du canevas. Vous pouvez faire un clic droit sur une image dans le panneau de sortie et sélectionner « Définir comme fond » pour l'utiliser."
   },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "Mode de navigation sur le canvas",
+    "options": {
+      "Left-Click Pan (Legacy)": "Panoramique clic gauche (Hérité)",
+      "Standard (New)": "Standard (Nouveau)"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Afficher la boîte à outils de sélection"
   },
@@ -111,6 +118,10 @@
       "Spline": "Spline",
       "Straight": "Droit"
     }
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "Activer le visualiseur 3D (Bêta)",
+    "tooltip": "Active le visualiseur 3D (Bêta) pour les nœuds sélectionnés. Cette fonctionnalité vous permet de visualiser et d’interagir avec des modèles 3D directement dans le visualiseur 3D en taille réelle."
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "Couleur de fond initiale",
@@ -329,10 +340,6 @@
     },
     "tooltip": "Position de la barre de menu. Sur les appareils mobiles, le menu est toujours affiché en haut."
   },
-  "Comfy_Validation_NodeDefs": {
-    "name": "Valider les définitions de nœuds (lent)",
-    "tooltip": "Recommandé pour les développeurs de nœuds. Cela validera toutes les définitions de nœuds au démarrage."
-  },
   "Comfy_Validation_Workflows": {
     "name": "Valider les flux de travail"
   },
@@ -398,10 +405,6 @@
   },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Délai d'infobulle"
-  },
-  "LiteGraph_Pointer_TrackpadGestures": {
-    "name": "Activer les gestes du trackpad",
-    "tooltip": "Ce paramètre active le mode trackpad pour le canevas, permettant le zoom par pincement et le déplacement à deux doigts."
   },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Réacheminement décalage de spline",

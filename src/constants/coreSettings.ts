@@ -1,5 +1,4 @@
-import { LinkMarkerShape, LiteGraph } from '@comfyorg/litegraph'
-
+import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -35,7 +34,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (No modifier)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
+    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU,
+    defaultsByInstallVersion: {
+      '1.24.1': LinkReleaseTriggerAction.SEARCH_BOX
+    }
   },
   {
     id: 'Comfy.LinkRelease.ActionShift',
@@ -43,7 +45,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (Shift)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.SEARCH_BOX
+    defaultValue: LinkReleaseTriggerAction.SEARCH_BOX,
+    defaultsByInstallVersion: {
+      '1.24.1': LinkReleaseTriggerAction.CONTEXT_MENU
+    }
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.NodePreview',
@@ -506,15 +511,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
-    id: 'Comfy.Validation.NodeDefs',
-    name: 'Validate node definitions (slow)',
-    type: 'boolean',
-    tooltip:
-      'Recommended for node developers. This will validate all node definitions on startup.',
-    defaultValue: false,
-    versionAdded: '1.3.14'
-  },
-  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
@@ -786,6 +782,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.9.1'
   },
   {
+    id: 'Comfy.Canvas.NavigationMode',
+    category: ['LiteGraph', 'Canvas', 'CanvasNavigationMode'],
+    name: 'Canvas Navigation Mode',
+    defaultValue: 'legacy',
+    type: 'combo',
+    options: [
+      { value: 'standard', text: 'Standard (New)' },
+      { value: 'legacy', text: 'Left-Click Pan (Legacy)' }
+    ],
+    versionAdded: '1.25.0',
+    defaultsByInstallVersion: {
+      '1.25.0': 'standard'
+    }
+  },
+  {
     id: 'Comfy.Canvas.SelectionToolbox',
     category: ['LiteGraph', 'Canvas', 'SelectionToolbox'],
     name: 'Show selection toolbox',
@@ -811,6 +822,48 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.15.12'
+  },
+  {
+    id: 'Comfy.Minimap.Visible',
+    name: 'Display minimap on canvas',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.25.0'
+  },
+  {
+    id: 'Comfy.Minimap.NodeColors',
+    name: 'Display node with its original color on minimap',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.ShowLinks',
+    name: 'Display links on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.ShowGroups',
+    name: 'Display node groups on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.RenderBypassState',
+    name: 'Render bypass state on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.RenderErrorState',
+    name: 'Render error state on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
   },
   {
     id: 'Comfy.Workflow.AutoSaveDelay',
@@ -854,17 +907,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: '',
     versionAdded: '1.20.4',
     versionModified: '1.20.5'
-  },
-  {
-    id: 'LiteGraph.Pointer.TrackpadGestures',
-    category: ['LiteGraph', 'Pointer', 'Trackpad Gestures'],
-    experimental: true,
-    name: 'Enable trackpad gestures',
-    tooltip:
-      'This setting enables trackpad mode for the canvas, allowing pinch-to-zoom and panning with two fingers.',
-    type: 'boolean',
-    defaultValue: false,
-    versionAdded: '1.19.1'
   },
   // Release data stored in settings
   {

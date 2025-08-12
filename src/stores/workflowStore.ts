@@ -1,13 +1,22 @@
-import type { LGraph, Subgraph } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
+import { useWorkflowThumbnail } from '@/composables/useWorkflowThumbnail'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId,
+  parseNodeExecutionId,
+  parseNodeLocatorId
+} from '@/types/nodeIdentification'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -163,6 +172,15 @@ export interface WorkflowStore {
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
   executionIdToCurrentId: (id: string) => any
+  nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
+  nodeExecutionIdToNodeLocatorId: (
+    nodeExecutionId: NodeExecutionId | string
+  ) => NodeLocatorId | null
+  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId | string) => NodeId | null
+  nodeLocatorIdToNodeExecutionId: (
+    locatorId: NodeLocatorId | string,
+    targetSubgraph?: Subgraph
+  ) => NodeExecutionId | null
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -310,6 +328,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       (path) => path !== workflow.path
     )
     if (workflow.isTemporary) {
+      // Clear thumbnail when temporary workflow is closed
+      clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
@@ -370,12 +390,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** A filesystem operation is currently in progress (e.g. save, rename, delete) */
   const isBusy = ref<boolean>(false)
+  const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     isBusy.value = true
     try {
       // Capture all needed values upfront
       const oldPath = workflow.path
+      const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
 
       const openIndex = detachWorkflow(workflow)
@@ -386,6 +408,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
         attachWorkflow(workflow, openIndex)
       }
 
+      // Move thumbnail from old key to new key (using workflow keys, not full paths)
+      const newKey = workflow.key
+      moveWorkflowThumbnail(oldKey, newKey)
       // Update bookmarks
       if (wasBookmarked) {
         await bookmarkStore.setBookmarked(oldPath, false)
@@ -403,6 +428,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
+      // Clear thumbnail when workflow is deleted
+      clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
     } finally {
       isBusy.value = false
@@ -473,7 +500,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return
     }
 
-    // Parse the hierarchical ID (e.g., "123:456:789")
+    // Parse the execution ID (e.g., "123:456:789")
     const subgraphNodeIds = id.split(':')
 
     // Start from the root graph
@@ -487,6 +514,136 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   watch(activeWorkflow, updateActiveGraph)
+
+  /**
+   * Convert a node ID to a NodeLocatorId
+   * @param nodeId The local node ID
+   * @param subgraph The subgraph containing the node (defaults to active subgraph)
+   * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
+   */
+  const nodeIdToNodeLocatorId = (
+    nodeId: NodeId,
+    subgraph?: Subgraph
+  ): NodeLocatorId => {
+    const targetSubgraph = subgraph ?? activeSubgraph.value
+    if (!targetSubgraph) {
+      // Node is in the root graph, return the node ID as-is
+      return String(nodeId)
+    }
+
+    return createNodeLocatorId(targetSubgraph.id, nodeId)
+  }
+
+  /**
+   * Convert an execution ID to a NodeLocatorId
+   * @param nodeExecutionId The execution node ID (e.g., "123:456:789")
+   * @returns The NodeLocatorId or null if conversion fails
+   */
+  const nodeExecutionIdToNodeLocatorId = (
+    nodeExecutionId: NodeExecutionId | string
+  ): NodeLocatorId | null => {
+    // Handle simple node IDs (root graph - no colons)
+    if (!nodeExecutionId.includes(':')) {
+      return nodeExecutionId
+    }
+
+    const parts = parseNodeExecutionId(nodeExecutionId)
+    if (!parts || parts.length === 0) return null
+
+    const nodeId = parts[parts.length - 1]
+    const subgraphNodeIds = parts.slice(0, -1)
+
+    if (subgraphNodeIds.length === 0) {
+      // Node is in root graph, return the node ID as-is
+      return String(nodeId)
+    }
+
+    try {
+      const subgraphs = getSubgraphsFromInstanceIds(
+        comfyApp.graph,
+        subgraphNodeIds.map((id) => String(id))
+      )
+      const immediateSubgraph = subgraphs[subgraphs.length - 1]
+      return createNodeLocatorId(immediateSubgraph.id, nodeId)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Extract the node ID from a NodeLocatorId
+   * @param locatorId The NodeLocatorId
+   * @returns The local node ID or null if invalid
+   */
+  const nodeLocatorIdToNodeId = (
+    locatorId: NodeLocatorId | string
+  ): NodeId | null => {
+    const parsed = parseNodeLocatorId(locatorId)
+    return parsed?.localNodeId ?? null
+  }
+
+  /**
+   * Convert a NodeLocatorId to an execution ID for a specific context
+   * @param locatorId The NodeLocatorId
+   * @param targetSubgraph The subgraph context (defaults to active subgraph)
+   * @returns The execution ID or null if the node is not accessible from the target context
+   */
+  const nodeLocatorIdToNodeExecutionId = (
+    locatorId: NodeLocatorId | string,
+    targetSubgraph?: Subgraph
+  ): NodeExecutionId | null => {
+    const parsed = parseNodeLocatorId(locatorId)
+    if (!parsed) return null
+
+    const { subgraphUuid, localNodeId } = parsed
+
+    // If no subgraph UUID, this is a root graph node
+    if (!subgraphUuid) {
+      return String(localNodeId)
+    }
+
+    // Find the path from root to the subgraph with this UUID
+    const findSubgraphPath = (
+      graph: LGraph | Subgraph,
+      targetUuid: string,
+      path: NodeId[] = []
+    ): NodeId[] | null => {
+      if (isSubgraph(graph) && graph.id === targetUuid) {
+        return path
+      }
+
+      for (const node of graph._nodes) {
+        if (node.isSubgraphNode() && node.subgraph) {
+          const result = findSubgraphPath(node.subgraph, targetUuid, [
+            ...path,
+            node.id
+          ])
+          if (result) return result
+        }
+      }
+
+      return null
+    }
+
+    const path = findSubgraphPath(comfyApp.graph, subgraphUuid)
+    if (!path) return null
+
+    // If we have a target subgraph, check if the path goes through it
+    if (
+      targetSubgraph &&
+      !path.some((_, idx) => {
+        const subgraphs = getSubgraphsFromInstanceIds(
+          comfyApp.graph,
+          path.slice(0, idx + 1).map((id) => String(id))
+        )
+        return subgraphs[subgraphs.length - 1] === targetSubgraph
+      })
+    ) {
+      return null
+    }
+
+    return createNodeExecutionId([...path, localNodeId])
+  }
 
   return {
     activeWorkflow,
@@ -514,7 +671,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSubgraphActive,
     activeSubgraph,
     updateActiveGraph,
-    executionIdToCurrentId
+    executionIdToCurrentId,
+    nodeIdToNodeLocatorId,
+    nodeExecutionIdToNodeLocatorId,
+    nodeLocatorIdToNodeId,
+    nodeLocatorIdToNodeExecutionId
   }
 }) satisfies () => WorkflowStore
 

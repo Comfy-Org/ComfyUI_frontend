@@ -1,7 +1,7 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { computed, onUnmounted, ref } from 'vue'
 
 import { useNodePacks } from '@/composables/nodePack/useNodePacks'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
@@ -9,6 +9,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { SelectedVersion, UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 type WorkflowPack = {
   id:
@@ -109,11 +110,13 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   }
 
   /**
-   * Get the node packs for all nodes in the workflow.
+   * Get the node packs for all nodes in the workflow (including subgraphs).
    */
   const getWorkflowPacks = async () => {
-    if (!app.graph?.nodes?.length) return []
-    const packs = await Promise.all(app.graph.nodes.map(workflowNodeToPack))
+    if (!app.graph) return []
+    const allNodes = collectAllNodes(app.graph)
+    if (!allNodes.length) return []
+    const packs = await Promise.all(allNodes.map(workflowNodeToPack))
     workflowPacks.value = packs.filter((pack) => pack !== undefined)
   }
 

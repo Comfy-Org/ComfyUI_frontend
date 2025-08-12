@@ -82,6 +82,12 @@
       "title": "创建一个账户"
     }
   },
+  "breadcrumbsMenu": {
+    "clearWorkflow": "清除工作流程",
+    "deleteWorkflow": "刪除工作流程",
+    "duplicate": "複製",
+    "enterNewName": "輸入新名稱"
+  },
   "chatHistory": {
     "cancelEdit": "取消",
     "cancelEditTooltip": "取消编辑",
@@ -266,6 +272,7 @@
     "category": "类别",
     "choose_file_to_upload": "选择要上传的文件",
     "clear": "清除",
+    "clearFilters": "清除篩選",
     "close": "关闭",
     "color": "颜色",
     "comingSoon": "即将推出",
@@ -290,6 +297,7 @@
     "devices": "设备",
     "disableAll": "禁用全部",
     "disabling": "禁用中",
+    "dismiss": "關閉",
     "download": "下载",
     "edit": "编辑",
     "empty": "空",
@@ -304,6 +312,8 @@
     "filter": "过滤",
     "findIssues": "查找问题",
     "firstTimeUIMessage": "这是您第一次使用新界面。选择 \"菜单 > 使用新菜单 > 禁用\" 来恢复旧界面。",
+    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
+    "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 或更高版本。",
     "goToNode": "转到节点",
     "help": "帮助",
     "icon": "图标",
@@ -325,17 +335,20 @@
     "loadingPanel": "正在加载{panel}面板...",
     "login": "登录",
     "logs": "日志",
+    "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
     "missing": "缺失",
     "name": "名称",
     "newFolder": "新文件夹",
     "next": "下一个",
     "no": "否",
+    "noAudioRecorded": "未录制音频",
     "noResultsFound": "未找到结果",
     "noTasksFound": "未找到任务",
     "noTasksFoundMessage": "队列中没有任务。",
     "noWorkflowsFound": "未找到工作流。",
     "nodes": "节点",
+    "nodesRunning": "节点正在运行",
     "ok": "确定",
     "openNewIssue": "打开新问题",
     "overwrite": "覆盖",
@@ -369,7 +382,9 @@
     "showReport": "显示报告",
     "sort": "排序",
     "source": "来源",
+    "startRecording": "开始录音",
     "status": "状态",
+    "stopRecording": "停止录音",
     "success": "成功",
     "systemInfo": "系统信息",
     "terminal": "终端",
@@ -378,11 +393,14 @@
     "unknownError": "未知错误",
     "update": "更新",
     "updateAvailable": "有更新可用",
+    "updateFrontend": "更新前端",
     "updated": "已更新",
     "updating": "更新中",
     "upload": "上传",
     "usageHint": "使用提示",
     "user": "用户",
+    "versionMismatchWarning": "版本相容性警告",
+    "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
     "videoFailedToLoad": "视频加载失败",
     "workflow": "工作流"
   },
@@ -392,6 +410,7 @@
     "resetView": "重置视图",
     "selectMode": "选择模式",
     "toggleLinkVisibility": "切换连线可见性",
+    "toggleMinimap": "切換小地圖",
     "zoomIn": "放大",
     "zoomOut": "缩小"
   },
@@ -550,6 +569,10 @@
     "applyingTexture": "应用纹理中...",
     "backgroundColor": "背景颜色",
     "camera": "摄影机",
+    "cameraType": {
+      "orthographic": "正交",
+      "perspective": "透视"
+    },
     "clearRecording": "清除录制",
     "edgeThreshold": "边缘阈值",
     "export": "导出",
@@ -570,6 +593,7 @@
       "wireframe": "线框"
     },
     "model": "模型",
+    "openIn3DViewer": "在 3D 檢視器中開啟",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
     "resizeNodeMatchOutput": "调整节点以匹配输出",
@@ -580,8 +604,22 @@
     "switchCamera": "切换摄影机类型",
     "switchingMaterialMode": "切换材质模式中...",
     "upDirection": "上方向",
+    "upDirections": {
+      "original": "原始"
+    },
     "uploadBackgroundImage": "上传背景图片",
-    "uploadTexture": "上传纹理"
+    "uploadTexture": "上传纹理",
+    "viewer": {
+      "apply": "套用",
+      "cameraSettings": "相機設定",
+      "cameraType": "相機類型",
+      "cancel": "取消",
+      "exportSettings": "匯出設定",
+      "lightSettings": "燈光設定",
+      "modelSettings": "模型設定",
+      "sceneSettings": "場景設定",
+      "title": "3D 檢視器（測試版）"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "需要 ComfyUI {version}：",
@@ -697,13 +735,17 @@
     "batchCountTooltip": "工作流生成次数",
     "clear": "清空工作流",
     "clipspace": "打开剪贴板",
+    "dark": "深色",
     "disabled": "禁用",
     "disabledTooltip": "工作流将不会自动执行",
     "execute": "执行",
+    "help": "說明",
     "hideMenu": "隐藏菜单",
     "instant": "实时",
     "instantTooltip": "工作流将会在生成完成后立即执行",
     "interrupt": "取消当前任务",
+    "light": "淺色",
+    "manageExtensions": "管理擴充功能",
     "onChange": "更改时",
     "onChangeTooltip": "一旦进行更改，工作流将添加到执行队列",
     "refresh": "刷新节点",
@@ -711,7 +753,9 @@
     "run": "运行",
     "runWorkflow": "运行工作流程（Shift排在前面）",
     "runWorkflowFront": "运行工作流程（排在前面）",
+    "settings": "設定",
     "showMenu": "显示菜单",
+    "theme": "主題",
     "toggleBottomPanel": "底部面板"
   },
   "menuLabels": {
@@ -721,6 +765,7 @@
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
     "Canvas Toggle Link Visibility": "切换连线可见性",
     "Canvas Toggle Lock": "切换视图锁定",
+    "Canvas Toggle Minimap": "畫布切換小地圖",
     "Check for Updates": "检查更新",
     "Clear Pending Tasks": "清除待处理任务",
     "Clear Workflow": "清除工作流",
@@ -734,10 +779,12 @@
     "Contact Support": "联系支持",
     "Convert Selection to Subgraph": "将选中内容转换为子图",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
+    "Decrease Brush Size in MaskEditor": "在 MaskEditor 中減小筆刷大小",
     "Delete Selected Items": "删除选定的项目",
     "Desktop User Guide": "桌面端用户指南",
     "Duplicate Current Workflow": "复制当前工作流",
     "Edit": "编辑",
+    "Exit Subgraph": "退出子圖",
     "Export": "导出",
     "Export (API)": "导出 (API)",
     "Fit Group To Contents": "适应组内容",
@@ -745,6 +792,7 @@
     "Give Feedback": "提供反馈",
     "Group Selected Nodes": "将选中节点转换为组节点",
     "Help": "帮助",
+    "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大筆刷大小",
     "Interrupt": "中断",
     "Load Default Workflow": "加载默认工作流",
     "Manage group nodes": "管理组节点",
@@ -756,6 +804,7 @@
     "New": "新建",
     "Next Opened Workflow": "下一个打开的工作流",
     "Open": "打开",
+    "Open 3D Viewer (Beta) for Selected Node": "為所選節點開啟 3D 檢視器（Beta 版）",
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",
@@ -780,18 +829,21 @@
     "Restart": "重启",
     "Save": "保存",
     "Save As": "另存为",
+    "Show Keybindings Dialog": "顯示快捷鍵對話框",
     "Show Settings Dialog": "显示设置对话框",
     "Sign Out": "退出登录",
     "Toggle Bottom Panel": "切换底部面板",
+    "Toggle Essential Bottom Panel": "切換基本下方面板",
     "Toggle Focus Mode": "切换专注模式",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
-    "Toggle Model Library Sidebar": "切换模型库侧边栏",
-    "Toggle Node Library Sidebar": "切换节点库侧边栏",
-    "Toggle Queue Sidebar": "切换队列侧边栏",
+    "Toggle Model Library Sidebar": "切換模型庫側邊欄",
+    "Toggle Node Library Sidebar": "切換節點庫側邊欄",
+    "Toggle Queue Sidebar": "切換佇列側邊欄",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
-    "Toggle Workflows Sidebar": "切换工作流侧边栏",
+    "Toggle View Controls Bottom Panel": "切換檢視控制下方面板",
+    "Toggle Workflows Sidebar": "切換工作流程側邊欄",
     "Toggle the Custom Nodes Manager": "切换自定义节点管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
@@ -799,6 +851,13 @@
     "Workflow": "工作流",
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面"
+  },
+  "minimap": {
+    "nodeColors": "節點顏色",
+    "renderBypassState": "顯示繞過狀態",
+    "renderErrorState": "顯示錯誤狀態",
+    "showGroups": "顯示框架／群組",
+    "showLinks": "顯示連結"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
@@ -1066,6 +1125,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3D 檢視器",
     "API Nodes": "API 节点",
     "About": "关于",
     "Appearance": "外观",
@@ -1117,6 +1177,20 @@
     "Window": "窗口",
     "Workflow": "工作流"
   },
+  "shortcuts": {
+    "essentials": "基本功能",
+    "keyboardShortcuts": "鍵盤快捷鍵",
+    "manageShortcuts": "管理快捷鍵",
+    "noKeybinding": "無快捷鍵",
+    "subcategories": {
+      "node": "節點",
+      "panelControls": "面板控制",
+      "queue": "佇列",
+      "view": "檢視",
+      "workflow": "工作流程"
+    },
+    "viewControls": "檢視控制"
+  },
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",
     "downloads": "下载",
@@ -1158,7 +1232,6 @@
       },
       "showFlatList": "平铺结果"
     },
-    "themeToggle": "主题切换",
     "workflowTab": {
       "confirmDelete": "您确定要删除此工作流吗？",
       "confirmDeleteTitle": "删除工作流？",
@@ -1205,6 +1278,8 @@
       "Video": "视频生成",
       "Video API": "视频 API"
     },
+    "loadingMore": "正在載入更多範本...",
+    "searchPlaceholder": "搜尋範本...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "混元3D 2.0 图生模型",
@@ -1527,6 +1602,7 @@
     "failedToExportModel": "无法将模型导出为 {format}",
     "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
+    "failedToInitializeLoad3dViewer": "初始化 3D 檢視器失敗",
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
     "failedToPurchaseCredits": "购买积分失败：{error}",
     "fileLoadError": "无法在 {fileName} 中找到工作流",
@@ -1581,6 +1657,13 @@
     "personalDataConsentRequired": "您必须同意处理您的个人数据。",
     "prefix": "必须以 {prefix} 开头",
     "required": "必填"
+  },
+  "versionMismatchWarning": {
+    "dismiss": "關閉",
+    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
+    "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 版或更高版本。",
+    "title": "版本相容性警告",
+    "updateFrontend": "更新前端"
   },
   "welcome": {
     "getStarted": "开始使用",

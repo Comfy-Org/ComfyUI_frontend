@@ -1,5 +1,4 @@
-import type { LGraph } from '@comfyorg/litegraph'
-
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DeviceStats,
   EmbeddingsResponse,
@@ -31,6 +30,17 @@ export type { ComfyApi } from '@/scripts/api'
 export type { ComfyApp } from '@/scripts/app'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 export type { InputSpec } from '@/schemas/nodeDefSchema'
+export type {
+  NodeLocatorId,
+  NodeExecutionId,
+  isNodeLocatorId,
+  isNodeExecutionId,
+  parseNodeLocatorId,
+  createNodeLocatorId,
+  parseNodeExecutionId,
+  createNodeExecutionId
+} from './nodeIdentification'
+export type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 export type {
   EmbeddingsResponse,
   ExtensionsResponse,

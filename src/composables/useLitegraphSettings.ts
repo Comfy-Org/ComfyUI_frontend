@@ -1,6 +1,10 @@
-import { CanvasPointer, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { watchEffect } from 'vue'
 
+import {
+  CanvasPointer,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -124,9 +128,12 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    LiteGraph.macTrackpadGestures = settingStore.get(
-      'LiteGraph.Pointer.TrackpadGestures'
-    )
+    const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode') as
+      | 'standard'
+      | 'legacy'
+
+    LiteGraph.canvasNavigationMode = navigationMode
+    LiteGraph.macTrackpadGestures = navigationMode === 'standard'
   })
 
   watchEffect(() => {

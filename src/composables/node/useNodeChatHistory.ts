@@ -1,7 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
 import { useChatHistoryWidget } from '@/composables/widgets/useChatHistoryWidget'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const CHAT_HISTORY_WIDGET_NAME = '$$node-chat-history'
 

@@ -1,16 +1,25 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { ref } from 'vue'
 
 import ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
+import {
+  ComponentWidgetImpl,
+  type ComponentWidgetStandardProps,
+  addWidget
+} from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+
+type ChatHistoryCustomProps = Omit<
+  InstanceType<typeof ChatHistoryWidget>['$props'],
+  ComponentWidgetStandardProps
+>
 
 const PADDING = 16
 
 export const useChatHistoryWidget = (
   options: {
-    props?: Omit<InstanceType<typeof ChatHistoryWidget>['$props'], 'widget'>
+    props?: ChatHistoryCustomProps
   } = {}
 ) => {
   const widgetConstructor: ComfyWidgetConstructorV2 = (
@@ -20,7 +29,7 @@ export const useChatHistoryWidget = (
     const widgetValue = ref<string>('')
     const widget = new ComponentWidgetImpl<
       string | object,
-      InstanceType<typeof ChatHistoryWidget>['$props']
+      ChatHistoryCustomProps
     >({
       node,
       name: inputSpec.name,

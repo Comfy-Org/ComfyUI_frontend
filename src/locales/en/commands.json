@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Restart"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Open 3D Viewer (Beta) for Selected Node"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
   },
@@ -70,6 +73,9 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Canvas Toggle Lock"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Canvas Toggle Minimap"
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Pin/Unpin Selected Items"
@@ -116,6 +122,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Exit Subgraph"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Fit Group To Contents"
   },
@@ -157,6 +166,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle the Custom Nodes Manager Progress Bar"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Decrease Brush Size in MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Increase Brush Size in MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
@@ -221,11 +236,20 @@
   "Workspace_ToggleBottomPanel": {
     "label": "Toggle Bottom Panel"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Show Keybindings Dialog"
+  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "Toggle Terminal Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Toggle Logs Bottom Panel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Toggle Essential Bottom Panel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Toggle View Controls Bottom Panel"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"

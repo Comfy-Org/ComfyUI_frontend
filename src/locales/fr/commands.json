@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Redémarrer"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
   },
@@ -70,6 +73,9 @@
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Basculer le verrouillage du canevas"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Basculer la mini-carte du canevas"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Contourner/Ne pas contourner les nœuds sélectionnés"
@@ -116,6 +122,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir la sélection en sous-graphe"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Quitter le sous-graphe"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajuster le groupe au contenu"
   },
@@ -157,6 +166,12 @@
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Basculer la boîte de dialogue de progression"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Réduire la taille du pinceau dans MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Augmenter la taille du pinceau dans MaskEditor"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
@@ -226,6 +241,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Basculer le panneau inférieur des journaux"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Afficher/Masquer le panneau inférieur essentiel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Afficher/Masquer le panneau inférieur des contrôles de vue"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Afficher la boîte de dialogue des raccourcis clavier"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Basculer le mode focus"
