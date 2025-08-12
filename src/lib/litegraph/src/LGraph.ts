@@ -1663,6 +1663,254 @@ export class LGraph
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 
+  unpackSubgraph(subgraphNode: SubgraphNode) {
+    if (!(subgraphNode instanceof SubgraphNode))
+      throw new Error('Can only unpack Subgraph Nodes')
+    this.beforeChange()
+    const center = [0, 0]
+    for (const node of subgraphNode.subgraph.nodes) {
+      center[0] += node.pos[0] + node.size[0] / 2
+      center[1] += node.pos[1] + node.size[1] / 2
+    }
+    center[0] /= subgraphNode.subgraph.nodes.length
+    center[1] /= subgraphNode.subgraph.nodes.length
+
+    const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
+    const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
+    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
+    const nodeIdMap = new Map<NodeId, NodeId>()
+    for (const n_info of movedNodes) {
+      const node = LiteGraph.createNode(String(n_info.type), n_info.title)
+      if (!node) {
+        throw new Error('Node not found')
+      }
+
+      nodeIdMap.set(n_info.id, ++this.last_node_id)
+      node.id = this.last_node_id
+      n_info.id = this.last_node_id
+
+      this.add(node, true)
+      node.configure(n_info)
+      node.pos[0] += offsetX
+      node.pos[1] += offsetY
+      for (const input of node.inputs) {
+        input.link = null
+      }
+    }
+    //cleanup reoute.linkIds now, but leave link.parentIds dangling
+    for (const islot of subgraphNode.inputs) {
+      if (!islot.link) continue
+      const link = this.links.get(islot.link)
+      if (!link) {
+        console.warn('Broken link', islot, islot.link)
+        continue
+      }
+      for (const reroute of LLink.getReroutes(this, link)) {
+        reroute.linkIds.delete(link.id)
+      }
+    }
+    for (const oslot of subgraphNode.outputs) {
+      for (const linkId of oslot.links ?? []) {
+        const link = this.links.get(linkId)
+        if (!link) {
+          console.warn('Broken link', oslot, linkId)
+          continue
+        }
+        for (const reroute of LLink.getReroutes(this, link)) {
+          reroute.linkIds.delete(link.id)
+        }
+      }
+    }
+
+    const newLinks: [
+      NodeId,
+      number,
+      NodeId,
+      number,
+      LinkId,
+      RerouteId | undefined,
+      RerouteId | undefined,
+      boolean
+    ][] = []
+    for (const [, link] of subgraphNode.subgraph._links) {
+      let externalParentId: RerouteId | undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
+        if (!outerLinkId) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        const outerLink = this.links[outerLinkId]
+        link.origin_id = outerLink.origin_id
+        link.origin_slot = outerLink.origin_slot
+        externalParentId = outerLink.parentId
+      } else {
+        const origin_id = nodeIdMap.get(link.origin_id)
+        if (!origin_id) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        link.origin_id = origin_id
+      }
+      if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
+          []) {
+          const sublink = this.links[linkId]
+          newLinks.push([
+            link.origin_id,
+            link.origin_slot,
+            sublink.target_id,
+            sublink.target_slot,
+            link.id,
+            link.parentId,
+            sublink.parentId,
+            true
+          ])
+          sublink.parentId = undefined
+        }
+        continue
+      } else {
+        const target_id = nodeIdMap.get(link.target_id)
+        if (!target_id) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        link.target_id = target_id
+      }
+      newLinks.push([
+        link.origin_id,
+        link.origin_slot,
+        link.target_id,
+        link.target_slot,
+        link.id,
+        link.parentId,
+        externalParentId,
+        false
+      ])
+    }
+    this.remove(subgraphNode)
+    this.subgraphs.delete(subgraphNode.subgraph.id)
+    const linkIdMap = new Map<LinkId, LinkId[]>()
+    for (const newLink of newLinks) {
+      let created: LLink | null | undefined
+      if (newLink[0] == SUBGRAPH_INPUT_ID) {
+        if (!(this instanceof Subgraph)) {
+          console.error('Ignoring link to subgraph outside subgraph')
+          continue
+        }
+        const tnode = this._nodes_by_id[newLink[2]]
+        created = this.inputNode.slots[newLink[1]].connect(
+          tnode.inputs[newLink[3]],
+          tnode
+        )
+      } else if (newLink[2] == SUBGRAPH_OUTPUT_ID) {
+        if (!(this instanceof Subgraph)) {
+          console.error('Ignoring link to subgraph outside subgraph')
+          continue
+        }
+        const tnode = this._nodes_by_id[newLink[0]]
+        created = this.outputNode.slots[newLink[3]].connect(
+          tnode.outputs[newLink[1]],
+          tnode
+        )
+      } else {
+        created = this._nodes_by_id[newLink[0]].connect(
+          newLink[1],
+          this._nodes_by_id[newLink[2]],
+          newLink[3]
+        )
+      }
+      if (!created) {
+        console.error('Failed to create link')
+        continue
+      }
+      //This is a little unwieldy since Map.has isn't a type guard
+      const linkIds = linkIdMap.get(newLink[4]) ?? []
+      linkIds.push(created.id)
+      if (!linkIdMap.has(newLink[4])) {
+        linkIdMap.set(newLink[4], linkIds)
+      }
+      newLink[4] = created.id
+    }
+    const rerouteIdMap = new Map<RerouteId, RerouteId>()
+    for (const reroute of subgraphNode.subgraph.reroutes.values()) {
+      if (
+        reroute.parentId !== undefined &&
+        rerouteIdMap.get(reroute.parentId) === undefined
+      ) {
+        console.error('Missing Parent ID')
+      }
+      const migratedReroute = new Reroute(++this.state.lastRerouteId, this, [
+        reroute.pos[0] + offsetX,
+        reroute.pos[1] + offsetY
+      ])
+      rerouteIdMap.set(reroute.id, migratedReroute.id)
+      this.reroutes.set(migratedReroute.id, migratedReroute)
+    }
+    //iterate over newly created links to update reroute parentIds
+    for (const newLink of newLinks) {
+      const linkInstance = this.links.get(newLink[4])
+      if (!linkInstance) {
+        continue
+      }
+      let instance: Reroute | LLink | undefined = linkInstance
+      let parentId: RerouteId | undefined = newLink[6]
+      if (newLink[7]) {
+        parentId = newLink[6]
+        //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
+        while (parentId) {
+          instance.parentId = parentId
+          instance = this.reroutes.get(parentId)
+          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (instance.linkIds.has(linkInstance.id))
+            throw new Error('Infinite parentId loop')
+          instance.linkIds.add(linkInstance.id)
+          parentId = instance.parentId
+        }
+      }
+      parentId = newLink[5]
+      while (parentId) {
+        const migratedId = rerouteIdMap.get(parentId)
+        if (!migratedId) throw new Error('Broken Id link when unpacking')
+        instance.parentId = migratedId
+        instance = this.reroutes.get(migratedId)
+        if (!instance) throw new Error('Broken Id link when unpacking')
+        if (instance.linkIds.has(linkInstance.id))
+          throw new Error('Infinite parentId loop')
+        instance.linkIds.add(linkInstance.id)
+        const oldReroute = subgraphNode.subgraph.reroutes.get(parentId)
+        if (!oldReroute) throw new Error('Broken Id link when unpacking')
+        parentId = oldReroute.parentId
+      }
+      if (!newLink[7]) {
+        parentId = newLink[6]
+        while (parentId) {
+          instance.parentId = parentId
+          instance = this.reroutes.get(parentId)
+          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (instance.linkIds.has(linkInstance.id))
+            throw new Error('Infinite parentId loop')
+          instance.linkIds.add(linkInstance.id)
+          parentId = instance.parentId
+        }
+      }
+    }
+
+    const nodes: LGraphNode[] = []
+    for (const nodeId of nodeIdMap.values()) {
+      const node = this._nodes_by_id[nodeId]
+      nodes.push(node)
+      node._setConcreteSlots()
+      node.arrange()
+    }
+    const reroutes = [...rerouteIdMap.values()]
+      .map((i) => this.reroutes.get(i))
+      .filter((x): x is Reroute => !!x)
+
+    this.canvasAction((c) => c.selectItems([...nodes, ...reroutes]))
+    this.afterChange()
+  }
+
   /**
    * Resolve a path of subgraph node IDs into a list of subgraph nodes.
    * Not intended to be run from subgraphs.

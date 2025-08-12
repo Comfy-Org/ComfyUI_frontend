@@ -122,6 +122,9 @@
   "Comfy_Graph_ExitSubgraph": {
     "label": "Exit Subgraph"
   },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Unpack the selected Subgraph"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Fit Group To Contents"
   },
