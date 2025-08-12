@@ -1,6 +1,6 @@
 <template>
   <div
-    class="base-widget-layout rounded-2xl overflow-hidden relative bg-neutral-50 dark-theme:bg-zinc-800"
+    class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-50 dark-theme:bg-zinc-800"
   >
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
@@ -49,7 +49,7 @@
             <div
               class="flex justify-end gap-2 w-0"
               :class="
-                isRightPanelOpen && hasRightPanel ? 'min-w-8' : 'min-w-18'
+                hasRightPanel && !isRightPanelOpen ? 'min-w-18' : 'min-w-8'
               "
             >
               <IconButton
