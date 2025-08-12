@@ -304,6 +304,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.ToggleLinkVisibility',
       icon: 'pi pi-eye',
       label: 'Canvas Toggle Link Visibility',
+      menubarLabel: 'Node Links',
       versionAdded: '1.3.6',
 
       function: (() => {
@@ -333,6 +334,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.ToggleMinimap',
       icon: 'pi pi-map',
       label: 'Canvas Toggle Minimap',
+      menubarLabel: 'Minimap',
       versionAdded: '1.24.1',
       function: async () => {
         const settingStore = useSettingStore()
