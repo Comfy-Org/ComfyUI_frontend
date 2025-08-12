@@ -64,6 +64,16 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - KlingTextToVideoNode', () => {
+    it('should return high price for kling-v2-1-master model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingTextToVideoNode', [
+        { name: 'mode', value: 'standard / 5s / v2-1-master' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.40/Run')
+    })
+
     it('should return high price for kling-v2-master model', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('KlingTextToVideoNode', [
@@ -216,6 +226,49 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('$0.04-0.12/Run (varies with size & quality)')
+    })
+  })
+
+  describe('dynamic pricing - MinimaxHailuoVideoNode', () => {
+    it('should return $0.28 for 6s duration and 768P resolution', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('MinimaxHailuoVideoNode', [
+        { name: 'duration', value: '6' },
+        { name: 'resolution', value: '768P' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.28/Run')
+    })
+
+    it('should return $0.60 for 10s duration and 768P resolution', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('MinimaxHailuoVideoNode', [
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '768P' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.56/Run')
+    })
+
+    it('should return $0.49 for 6s duration and 1080P resolution', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('MinimaxHailuoVideoNode', [
+        { name: 'duration', value: '6' },
+        { name: 'resolution', value: '1080P' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.49/Run')
+    })
+
+    it('should return range when duration widget is missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('MinimaxHailuoVideoNode', [])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.28-0.56/Run (varies with resolution & duration)')
     })
   })
 
