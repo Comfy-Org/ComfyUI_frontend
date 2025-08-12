@@ -1,5 +1,7 @@
 import { FirebaseOptions } from 'firebase/app'
 
+import { isProductionEnvironment } from './environment'
+
 const DEV_CONFIG: FirebaseOptions = {
   apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
   authDomain: 'dreamboothy-dev.firebaseapp.com',
@@ -23,6 +25,6 @@ const PROD_CONFIG: FirebaseOptions = {
 }
 
 // To test with prod config while using dev server, set USE_PROD_CONFIG=true in .env
-export const FIREBASE_CONFIG: FirebaseOptions = __USE_PROD_CONFIG__
+export const FIREBASE_CONFIG: FirebaseOptions = isProductionEnvironment()
   ? PROD_CONFIG
   : DEV_CONFIG
