@@ -20,8 +20,6 @@
 
 ## Git Conventions
 
-
-
 - Use [prefix] format: [feat], [bugfix], [docs]
 - Add "Fixes #n" to PR descriptions
 - Never mention Claude/AI in commits
