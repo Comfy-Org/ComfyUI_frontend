@@ -1195,6 +1195,13 @@
     "browseTemplates": "浏览示例模板",
     "downloads": "下载",
     "helpCenter": "帮助中心",
+    "labels": {
+      "models": "模型",
+      "nodes": "節點",
+      "queue": "佇列",
+      "templates": "範本",
+      "workflows": "工作流程"
+    },
     "logout": "登出",
     "modelLibrary": "模型库",
     "newBlankWorkflow": "创建空白工作流",
@@ -1232,6 +1239,7 @@
       },
       "showFlatList": "平铺结果"
     },
+    "templates": "範本",
     "workflowTab": {
       "confirmDelete": "您确定要删除此工作流吗？",
       "confirmDeleteTitle": "删除工作流？",
