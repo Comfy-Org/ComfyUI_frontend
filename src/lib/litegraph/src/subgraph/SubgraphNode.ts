@@ -288,6 +288,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         break
       }
     }
+
+    // Enable widget serialization if we have any promoted widgets
+    // This ensures that nested subgraph input values are persisted on save
+    if (this.widgets.length > 0) {
+      this.serialize_widgets = true
+    }
   }
 
   #setWidget(
@@ -345,6 +351,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     })
 
     this.widgets.push(promotedWidget)
+
+    // Enable widget serialization since we now have promoted widgets
+    this.serialize_widgets = true
 
     // Dispatch widget-promoted event
     this.subgraph.events.dispatch('widget-promoted', {
@@ -493,6 +502,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       })
     }
     super.removeWidgetByName(name)
+
+    // Disable widget serialization if we no longer have any widgets
+    if (this.widgets.length === 0) {
+      this.serialize_widgets = false
+    }
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
