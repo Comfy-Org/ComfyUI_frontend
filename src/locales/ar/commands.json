@@ -107,6 +107,9 @@
   "Comfy_ContactSupport": {
     "label": "الاتصال بالدعم"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "إظهار منتقي النماذج (للمطورين)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "تكرار سير العمل الحالي"
   },
