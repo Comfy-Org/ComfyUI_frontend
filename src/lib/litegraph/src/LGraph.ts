@@ -1846,7 +1846,6 @@ export class LGraph
         reroute.pos[1] + offsetY
       ])
       rerouteIdMap.set(reroute.id, migratedReroute.id)
-      //TODO: check if needed?
       this.reroutes.set(migratedReroute.id, migratedReroute)
     }
     //iterate over newly created links to update reroute parentIds
@@ -1859,7 +1858,7 @@ export class LGraph
       let parentId: RerouteId | undefined = newLink[6]
       if (newLink[7]) {
         parentId = newLink[6]
-        //TODO: recursion check/helper method? probably already exists somewhere
+        //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)

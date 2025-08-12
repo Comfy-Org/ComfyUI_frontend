@@ -39,20 +39,6 @@ function createNode(
   graph.add(node)
   return node
 }
-function log_state(graph: LGraph) {
-  console.log([
-    ...[...graph.links.values()].map((l) => [
-      l.id,
-      l.origin_id,
-      l.origin_slot,
-      l.target_id,
-      l.target_slot
-    ])
-  ])
-  console.log([...[...graph.reroutes.values()].map((r) => [r.id, r.linkIds])])
-  console.log([...graph.nodes.map((n) => [n.id, n.type])])
-}
-
 describe('SubgraphConversion', () => {
   describe('Subgraph Unpacking Functionality', () => {
     it('Should keep interior nodes and links', () => {
@@ -193,14 +179,11 @@ describe('SubgraphConversion', () => {
       const outerLink2 = outer.connect(0, subgraphNode, 1)
       assert(outerLink1 && outerLink2)
 
-      subgraph.createReroute([10, 10], outerLink1)
-      subgraph.createReroute([10, 20], outerLink2)
-      graph.createReroute([10, 10], innerLink1)
+      graph.createReroute([10, 10], outerLink1)
+      graph.createReroute([10, 20], outerLink2)
+      subgraph.createReroute([10, 10], innerLink1)
 
-      log_state(subgraph)
-      log_state(graph)
       graph.unpackSubgraph(subgraphNode)
-      log_state(graph)
 
       expect(graph.reroutes.size).toBe(3)
       expect(graph.links.size).toBe(3)
