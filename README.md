@@ -75,7 +75,7 @@ The development of successive minor versions overlaps. For example, while versio
   <summary>v1.5: Native translation (i18n)</summary>
 
   ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language
-  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, or Korean. This native
+  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, Korean, or Arabic. This native
   implementation offers better performance, reliability, and maintainability compared to previous solutions.<br>
 
   More details available here: https://blog.comfy.org/p/native-localization-support-i18n
