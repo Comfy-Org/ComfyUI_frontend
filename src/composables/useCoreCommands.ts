@@ -795,6 +795,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
         const { node } = res
         canvas.select(node)
+        canvasStore.updateSelectedItems()
       }
     },
     {
