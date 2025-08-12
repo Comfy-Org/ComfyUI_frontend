@@ -89,6 +89,7 @@ export const WithVariant: Story = {
 - **TypeScript**: Full TypeScript support with proper type checking
 - **CSS/SCSS**: Component styling support
 - **Auto-documentation**: Automatic prop tables and component documentation
+- **Chromatic Integration**: Automated visual regression testing for component stories
 
 ## Development Tips
 
@@ -134,6 +135,30 @@ export const WithLongText: Story = {
 - **`main.ts`**: Core Storybook configuration and Vite integration
 - **`preview.ts`**: Global decorators, parameters, and Vue app setup
 - **`manager.ts`**: Storybook UI customization (if needed)
+
+## Chromatic Visual Testing
+
+This project uses [Chromatic](https://chromatic.com) for automated visual regression testing of Storybook components.
+
+### How It Works
+
+- **Automated Testing**: Every push to `main` and `sno-storybook` branches triggers Chromatic builds
+- **Pull Request Reviews**: PRs against `main` branch include visual diffs for component changes
+- **Baseline Management**: Changes on `main` branch are automatically accepted as new baselines
+- **Cross-browser Testing**: Tests across multiple browsers and viewports
+
+### Viewing Results
+
+1. Check the GitHub Actions tab for Chromatic workflow status
+2. Click on the Chromatic build link in PR comments to review visual changes
+3. Accept or reject visual changes directly in the Chromatic UI
+
+### Best Practices for Visual Testing
+
+- **Consistent Stories**: Ensure stories render consistently across different environments
+- **Meaningful Names**: Use descriptive story names that clearly indicate the component state
+- **Edge Cases**: Include stories for loading, error, and empty states
+- **Realistic Data**: Use data that closely resembles production usage
 
 ## Integration with ComfyUI
 
