@@ -34,7 +34,7 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -48,7 +48,25 @@ const isUnpackVisible = computed(() => {
     canvasStore.selectedItems[0] instanceof SubgraphNode
   )
 })
+
 const isConvertVisible = computed(() => {
+  const items = canvasStore.selectedItems
+  if (!items || items.length === 0) {
+    return false
+  }
+
+  // Unpack button takes precedence for single subgraph node
+  if (items.length === 1 && items[0] instanceof SubgraphNode) {
+    return false
+  }
+
+  // Hide if ALL selected items are groups
+  const allAreGroups = items.every((item) => item instanceof LGraphGroup)
+  if (allAreGroups) {
+    return false
+  }
+
+  // Otherwise, show it, assuming there's some selection
   return (
     canvasStore.groupSelected ||
     canvasStore.rerouteSelected ||
