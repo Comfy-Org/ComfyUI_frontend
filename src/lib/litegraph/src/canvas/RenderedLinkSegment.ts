@@ -12,6 +12,8 @@ export class RenderedLinkSegment implements LinkSegment {
   readonly origin_id: NodeId
   readonly origin_slot: number
   readonly parentId?: RerouteId
+  /** Source link id for resolving runtime data/tooltips. */
+  readonly linkId?: LinkId
 
   path?: Path2D
   readonly _pos: Float32Array = new Float32Array(2)
@@ -24,10 +26,12 @@ export class RenderedLinkSegment implements LinkSegment {
     origin_id: NodeId
     origin_slot: number
     parentId?: RerouteId
+    linkId?: LinkId
   }) {
     this.id = args.id
     this.origin_id = args.origin_id
     this.origin_slot = args.origin_slot
     this.parentId = args.parentId
+    this.linkId = args.linkId
   }
 }

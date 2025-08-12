@@ -188,6 +188,8 @@ export interface LinkSegment {
   readonly id: LinkId | RerouteId
   /** The {@link id} of the reroute that this segment starts from (output side), otherwise `undefined`.  */
   readonly parentId?: RerouteId
+  /** The source link id (if this segment belongs to a link). */
+  readonly linkId?: LinkId
 
   /** The last canvas 2D path that was used to render this segment */
   path?: Path2D

@@ -5108,12 +5108,13 @@ export class LGraphCanvas
     }
     ctx.fill()
 
-    // @ts-expect-error TODO: Better value typing
-    const { data } = link
+    // Resolve the underlying model link for data/overrides
+    const modelLink = this.graph?.getLink(
+      (link.linkId ?? (link.id as unknown)) as LinkId
+    )
+    const data = modelLink?.data
+    if (this.onDrawLinkTooltip?.(ctx, modelLink ?? null, this) === true) return
     if (data == null) return
-
-    // @ts-expect-error TODO: Better value typing
-    if (this.onDrawLinkTooltip?.(ctx, link, this) == true) return
 
     let text: string | null = null
 
@@ -5639,7 +5640,8 @@ export class LGraphCanvas
               id: reroute.id,
               origin_id: link.origin_id,
               origin_slot: link.origin_slot,
-              parentId: reroute.parentId
+              parentId: reroute.parentId,
+              linkId: link.id
             })
             rendered.colour = baseColour
             this.renderLink(
@@ -5689,7 +5691,8 @@ export class LGraphCanvas
         id: link.id,
         origin_id: link.origin_id,
         origin_slot: link.origin_slot,
-        parentId: link.parentId
+        parentId: link.parentId,
+        linkId: link.id
       })
       rendered.colour = baseColour
       this.renderLink(
@@ -5711,7 +5714,8 @@ export class LGraphCanvas
         id: link.id,
         origin_id: link.origin_id,
         origin_slot: link.origin_slot,
-        parentId: link.parentId
+        parentId: link.parentId,
+        linkId: link.id
       })
       rendered.colour = baseColour
       this.renderLink(
