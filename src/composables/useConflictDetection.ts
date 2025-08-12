@@ -246,25 +246,25 @@ export function useConflictDetection() {
       // Step 5: Combine local installation data with Registry version data
       const requirements: NodePackRequirements[] = []
 
-      // Create a map for quick access to version info
-      const versionInfoMap = new Map(
-        installedPacksWithVersions.value.map((pack) => [pack.id, pack.version])
-      )
-
-      for (const pack of installedPacks.value) {
-        const packageId = pack.id || ''
+      // IMPORTANT: Use installedPacksWithVersions to check ALL installed packages
+      // not just the ones that exist in Registry (installedPacks)
+      for (const installedPack of installedPacksWithVersions.value) {
+        const packageId = installedPack.id
         const versionData = versionDataMap.get(packageId)
-        const installedVersion = versionInfoMap.get(packageId) || 'unknown'
+        const installedVersion = installedPack.version || 'unknown'
 
         // Check if package is enabled using store method
         const isEnabled = managerStore.isPackEnabled(packageId)
+
+        // Find the pack info from Registry if available
+        const packInfo = installedPacks.value.find((p) => p.id === packageId)
 
         if (versionData) {
           // Combine local installation data with version-specific Registry data
           const requirement: NodePackRequirements = {
             // Basic package info
-            id: pack.id,
-            name: pack.name,
+            id: packageId,
+            name: packInfo?.name || packageId,
             installed_version: installedVersion,
             is_enabled: isEnabled,
 
@@ -289,8 +289,8 @@ export function useConflictDetection() {
 
           // Create fallback requirement without Registry data
           const fallbackRequirement: NodePackRequirements = {
-            id: pack.id,
-            name: pack.name,
+            id: packageId,
+            name: packInfo?.name || packageId,
             installed_version: installedVersion,
             is_enabled: isEnabled,
             is_banned: false,
@@ -400,19 +400,19 @@ export function useConflictDetection() {
     try {
       const comfyManagerService = useComfyManagerService()
 
-      // Use installed packs from useInstalledPacks composable
+      // Use installedPacksWithVersions to match what versions bulk API uses
+      // This ensures both APIs check the same set of packages
       if (
-        !installedPacksReady.value ||
-        !installedPacks.value ||
-        installedPacks.value.length === 0
+        !installedPacksWithVersions.value ||
+        installedPacksWithVersions.value.length === 0
       ) {
         console.warn(
-          '[ConflictDetection] No installed packages available from useInstalledPacks'
+          '[ConflictDetection] No installed packages available for import failure check'
         )
         return {}
       }
 
-      const packageIds = installedPacks.value.map((pack) => pack.id || '')
+      const packageIds = installedPacksWithVersions.value.map((pack) => pack.id)
 
       // Use bulk API to get import failure info for all packages at once
       const bulkResult = await comfyManagerService.getImportFailInfoBulk(
@@ -544,10 +544,6 @@ export function useConflictDetection() {
       // 4. Detect Python import failures
       const importFailInfo = await fetchImportFailInfo()
       const importFailResults = detectImportFailConflicts(importFailInfo)
-      console.log(
-        '[ConflictDetection] Python import failures detected:',
-        importFailResults
-      )
 
       // 5. Combine all results
       const allResults = [...packageResults, ...importFailResults]
@@ -636,9 +632,12 @@ export function useConflictDetection() {
   /**
    * Error-resilient initialization (called on app mount).
    * Async function that doesn't block UI setup.
+   * Ensures proper order: installed -> system_stats -> versions bulk -> import_fail_info_bulk
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
+      // Simply perform conflict detection
+      // The useInstalledPacks will handle fetching installed list if needed
       await performConflictDetection()
     } catch (error) {
       console.warn(
