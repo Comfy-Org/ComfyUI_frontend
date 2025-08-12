@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
+import { eq, gt } from 'semver'
 import { computed, ref } from 'vue'
 
 import { type ReleaseNote, useReleaseService } from '@/services/releaseService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
-import { compareVersions, stringToLocale } from '@/utils/formatUtil'
+import { stringToLocale } from '@/utils/formatUtil'
+import { coerceVersion } from '@/utils/versionUtil'
 
 // Store for managing release notes
 export const useReleaseStore = defineStore('release', () => {
@@ -19,9 +21,16 @@ export const useReleaseStore = defineStore('release', () => {
   const systemStatsStore = useSystemStatsStore()
   const settingStore = useSettingStore()
 
-  // Current ComfyUI version
   const currentComfyUIVersion = computed(
     () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+  )
+
+  const coercedCurrentVersion = computed(() =>
+    coerceVersion(currentComfyUIVersion.value)
+  )
+
+  const coercedRecentReleaseVersion = computed(() =>
+    recentRelease.value ? coerceVersion(recentRelease.value.version) : '0.0.0'
   )
 
   // Release data from settings
@@ -54,16 +63,13 @@ export const useReleaseStore = defineStore('release', () => {
   const isNewVersionAvailable = computed(
     () =>
       !!recentRelease.value &&
-      compareVersions(
-        recentRelease.value.version,
-        currentComfyUIVersion.value
-      ) > 0
+      gt(coercedRecentReleaseVersion.value, coercedCurrentVersion.value)
   )
 
   const isLatestVersion = computed(
     () =>
       !!recentRelease.value &&
-      !compareVersions(recentRelease.value.version, currentComfyUIVersion.value)
+      eq(coercedRecentReleaseVersion.value, coercedCurrentVersion.value)
   )
 
   const hasMediumOrHighAttention = computed(() =>
