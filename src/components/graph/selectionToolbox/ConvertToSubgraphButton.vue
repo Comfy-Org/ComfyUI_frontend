@@ -34,7 +34,12 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  Positionable,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -48,11 +53,21 @@ const isUnpackVisible = computed(() => {
     canvasStore.selectedItems[0] instanceof SubgraphNode
   )
 })
+
 const isConvertVisible = computed(() => {
-  return (
-    canvasStore.groupSelected ||
-    canvasStore.rerouteSelected ||
-    canvasStore.nodeSelected
-  )
+  const selectableItems = canvasStore.selectedItems ?? []
+  
+  // Don't show if no items are selected
+  if (selectableItems.length === 0) return false
+  
+  // Only show if at least one item is selected that is not a SubgraphNode
+  // and not a group.
+  const isNotGroupOrSubgraphNode = (item: Positionable) =>
+    !(
+      item instanceof LGraphGroup ||
+      (item instanceof LGraphNode && item.isSubgraphNode?.())
+    )
+
+  return Array.from(selectableItems).some(isNotGroupOrSubgraphNode)
 })
 </script>
