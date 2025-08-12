@@ -791,6 +791,7 @@ test.describe('Viewport settings', () => {
     await toggleButton.click()
     // close zoom menu
     await zoomControlsButton.click()
+    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', false)
 
     await comfyPage.menu.topbar.saveWorkflow('Workflow A')
     await comfyPage.nextFrame()
