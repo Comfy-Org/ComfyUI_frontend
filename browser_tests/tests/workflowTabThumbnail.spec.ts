@@ -63,7 +63,7 @@ test.describe('Workflow Tab Thumbnails', () => {
   test('Should show thumbnail when hovering over a non-active tab', async ({
     comfyPage
   }) => {
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     const thumbnailImg = await getTabThumbnailImage(
       comfyPage,
       0,
@@ -73,7 +73,7 @@ test.describe('Workflow Tab Thumbnails', () => {
   })
 
   test('Should not show thumbnail for active tab', async ({ comfyPage }) => {
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     const thumbnailImg = await getTabThumbnailImage(
       comfyPage,
       1,
@@ -105,7 +105,7 @@ test.describe('Workflow Tab Thumbnails', () => {
     await comfyPage.nextFrame()
 
     // Create a new workflow (tab 1) which will be empty
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.nextFrame()
 
     // Now we have two tabs: tab 0 (default workflow with nodes) and tab 1 (empty)
