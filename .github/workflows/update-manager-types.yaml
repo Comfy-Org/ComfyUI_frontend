@@ -64,7 +64,7 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated ComfyUI-Manager API types..."
-          npx eslint --no-ignore --fix ./src/types/generatedManagerTypes.ts
+          npm run lint:no-cache -- --fix ./src/types/generatedManagerTypes.ts
 
       - name: Check for changes
         id: check-changes
