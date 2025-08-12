@@ -1,6 +1,26 @@
 <template>
-  <div class="flex items-center">
+  <div class="flex items-center gap-2">
+    <div
+      v-if="hasConflict"
+      v-tooltip="{
+        value: $t('manager.conflicts.warningTooltip'),
+        showDelay: 300
+      }"
+      class="flex items-center justify-center w-6 h-6 cursor-pointer"
+      @click="showConflictModal(true)"
+    >
+      <i class="pi pi-exclamation-triangle text-yellow-500 text-xl"></i>
+    </div>
     <ToggleSwitch
+      v-if="!canToggleDirectly"
+      :model-value="isEnabled"
+      :disabled="isLoading"
+      :readonly="!canToggleDirectly"
+      aria-label="Enable or disable pack"
+      @focus="handleToggleInteraction"
+    />
+    <ToggleSwitch
+      v-else
       :model-value="isEnabled"
       :disabled="isLoading"
       aria-label="Enable or disable pack"
@@ -8,13 +28,16 @@
     />
   </div>
 </template>
-
 <script setup lang="ts">
 import { debounce } from 'lodash'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
+import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import {
   InstallPackParams,
   ManagerChannel,
@@ -24,12 +47,17 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 
-const { nodePack } = defineProps<{
+const { nodePack, hasConflict } = defineProps<{
   nodePack: components['schemas']['Node']
+  hasConflict?: boolean
 }>()
 
+const { t } = useI18n()
 const { isPackEnabled, enablePack, disablePack, installedPacks } =
   useComfyManagerStore()
+const { getConflictsForPackageByID } = useConflictDetectionStore()
+const { showNodeConflictDialog } = useDialogService()
+const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
 
 const isLoading = ref(false)
 
@@ -44,21 +72,64 @@ const version = computed(() => {
   )
 })
 
-const handleEnable = () =>
-  enablePack.call({
+const packageConflict = computed(() =>
+  getConflictsForPackageByID(nodePack.id || '')
+)
+const canToggleDirectly = computed(() => {
+  return !(
+    hasConflict &&
+    !acknowledgmentState.value.modal_dismissed &&
+    packageConflict.value
+  )
+})
+
+const showConflictModal = (skipModalDismissed: boolean) => {
+  let modal_dismissed = acknowledgmentState.value.modal_dismissed
+  if (skipModalDismissed) modal_dismissed = false
+  if (packageConflict.value && !modal_dismissed) {
+    showNodeConflictDialog({
+      conflictedPackages: [packageConflict.value],
+      buttonText: !isEnabled.value
+        ? t('manager.conflicts.enableAnyway')
+        : t('manager.conflicts.understood'),
+      onButtonClick: async () => {
+        if (!isEnabled.value) {
+          await handleEnable()
+        }
+      },
+      dialogComponentProps: {
+        onClose: () => {
+          markConflictsAsSeen()
+        }
+      }
+    })
+  }
+}
+
+const handleEnable = () => {
+  if (!nodePack.id) {
+    throw new Error('Node ID is required for enabling')
+  }
+  return enablePack.call({
     id: nodePack.id,
-    version: version.value,
-    selected_version: version.value,
+    version: version.value ?? SelectedVersion.LATEST,
+    selected_version: version.value ?? SelectedVersion.LATEST,
     repository: nodePack.repository ?? '',
     channel: ManagerChannel.DEFAULT,
-    mode: 'default' as InstallPackParams['mode']
+    mode: 'default' as InstallPackParams['mode'],
+    skip_post_install: false
   })
+}
 
-const handleDisable = () =>
-  disablePack({
+const handleDisable = () => {
+  if (!nodePack.id) {
+    throw new Error('Node ID is required for disabling')
+  }
+  return disablePack({
     id: nodePack.id,
-    version: version.value
+    version: version.value ?? SelectedVersion.LATEST
   })
+}
 
 const handleToggle = async (enable: boolean) => {
   if (isLoading.value) return
@@ -67,10 +138,22 @@ const handleToggle = async (enable: boolean) => {
   if (enable) {
     await handleEnable()
   } else {
-    handleDisable()
+    await handleDisable()
   }
   isLoading.value = false
 }
 
-const onToggle = debounce(handleToggle, TOGGLE_DEBOUNCE_MS, { trailing: true })
+const onToggle = debounce(
+  (enable: boolean) => {
+    void handleToggle(enable)
+  },
+  TOGGLE_DEBOUNCE_MS,
+  { trailing: true }
+)
+const handleToggleInteraction = async (event: Event) => {
+  if (!canToggleDirectly.value) {
+    event.preventDefault()
+    showConflictModal(false)
+  }
+}
 </script>
