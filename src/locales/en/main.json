@@ -1674,5 +1674,12 @@
       "view": "View",
       "panelControls": "Panel Controls"
     }
+  },
+  "minimap": {
+    "nodeColors": "Node Colors",
+    "showLinks": "Show Links",
+    "showGroups": "Show Frames/Groups",
+    "renderBypassState": "Render Bypass State",
+    "renderErrorState": "Render Error State"
   }
 }

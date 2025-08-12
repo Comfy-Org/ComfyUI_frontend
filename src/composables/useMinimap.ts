@@ -2,19 +2,27 @@ import { useRafFn, useThrottleFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { adjustColor } from '@/utils/colorUtil'
 
 interface GraphCallbacks {
   onNodeAdded?: (node: LGraphNode) => void
   onNodeRemoved?: (node: LGraphNode) => void
   onConnectionChange?: (node: LGraphNode) => void
 }
+
+export type MinimapOptionKey =
+  | 'Comfy.Minimap.NodeColors'
+  | 'Comfy.Minimap.ShowLinks'
+  | 'Comfy.Minimap.ShowGroups'
+  | 'Comfy.Minimap.RenderBypassState'
+  | 'Comfy.Minimap.RenderErrorState'
 
 export function useMinimap() {
   const settingStore = useSettingStore()
@@ -26,6 +34,27 @@ export function useMinimap() {
   const minimapRef = ref<any>(null)
 
   const visible = ref(true)
+
+  const nodeColors = computed(() =>
+    settingStore.get('Comfy.Minimap.NodeColors')
+  )
+  const showLinks = computed(() => settingStore.get('Comfy.Minimap.ShowLinks'))
+  const showGroups = computed(() =>
+    settingStore.get('Comfy.Minimap.ShowGroups')
+  )
+  const renderBypass = computed(() =>
+    settingStore.get('Comfy.Minimap.RenderBypassState')
+  )
+  const renderError = computed(() =>
+    settingStore.get('Comfy.Minimap.RenderErrorState')
+  )
+
+  const updateOption = async (key: MinimapOptionKey, value: boolean) => {
+    await settingStore.set(key, value)
+
+    needsFullRedraw.value = true
+    updateMinimap()
+  }
 
   const initialized = ref(false)
   const bounds = ref({
@@ -63,10 +92,19 @@ export function useMinimap() {
   const nodeColor = computed(
     () => (isLightTheme.value ? '#3DA8E099' : '#0B8CE999') // lighter blue for light theme
   )
+  const nodeColorDefault = computed(
+    () => (isLightTheme.value ? '#D9D9D9' : '#353535') // this is the default node color when using nodeColors setting
+  )
   const linkColor = computed(
-    () => (isLightTheme.value ? '#FFB347' : '#F99614') // lighter orange for light theme
+    () => (isLightTheme.value ? '#616161' : '#B3B3B3') // lighter orange for light theme
   )
   const slotColor = computed(() => linkColor.value)
+  const groupColor = computed(() =>
+    isLightTheme.value ? '#A2D3EC' : '#1F547A'
+  )
+  const bypassColor = computed(() =>
+    isLightTheme.value ? '#DBDBDB' : '#4B184B'
+  )
 
   const containerRect = ref({
     left: 0,
@@ -110,6 +148,14 @@ export function useMinimap() {
 
   const containerStyles = computed(() => ({
     width: `${width}px`,
+    height: `${height}px`,
+    backgroundColor: isLightTheme.value ? '#FAF9F5' : '#15161C',
+    border: `1px solid ${isLightTheme.value ? '#ccc' : '#333'}`,
+    borderRadius: '8px'
+  }))
+
+  const panelStyles = computed(() => ({
+    width: `210px`,
     height: `${height}px`,
     backgroundColor: isLightTheme.value ? '#FAF9F5' : '#15161C',
     border: `1px solid ${isLightTheme.value ? '#ccc' : '#333'}`,
@@ -189,6 +235,25 @@ export function useMinimap() {
     return Math.min(scaleX, scaleY) * 0.9
   }
 
+  const renderGroups = (
+    ctx: CanvasRenderingContext2D,
+    offsetX: number,
+    offsetY: number
+  ) => {
+    const g = graph.value
+    if (!g || !g._groups || g._groups.length === 0) return
+
+    for (const group of g._groups) {
+      const x = (group.pos[0] - bounds.value.minX) * scale.value + offsetX
+      const y = (group.pos[1] - bounds.value.minY) * scale.value + offsetY
+      const w = group.size[0] * scale.value
+      const h = group.size[1] * scale.value
+
+      ctx.fillStyle = groupColor.value
+      ctx.fillRect(x, y, w, h)
+    }
+  }
+
   const renderNodes = (
     ctx: CanvasRenderingContext2D,
     offsetX: number,
@@ -203,9 +268,29 @@ export function useMinimap() {
       const w = node.size[0] * scale.value
       const h = node.size[1] * scale.value
 
+      let color = nodeColor.value
+
+      if (renderBypass.value && node.mode === LGraphEventMode.BYPASS) {
+        color = bypassColor.value
+      } else if (nodeColors.value) {
+        color = nodeColorDefault.value
+
+        if (node.bgcolor) {
+          color = isLightTheme.value
+            ? adjustColor(node.bgcolor, { lightness: 0.5 })
+            : node.bgcolor
+        }
+      }
+
       // Render solid node blocks
-      ctx.fillStyle = nodeColor.value
+      ctx.fillStyle = color
       ctx.fillRect(x, y, w, h)
+
+      if (renderError.value && node.has_errors) {
+        ctx.strokeStyle = '#FF0000'
+        ctx.lineWidth = 0.3
+        ctx.strokeRect(x, y, w, h)
+      }
     }
   }
 
@@ -218,9 +303,9 @@ export function useMinimap() {
     if (!g) return
 
     ctx.strokeStyle = linkColor.value
-    ctx.lineWidth = 1.4
+    ctx.lineWidth = 0.3
 
-    const slotRadius = 3.7 * Math.max(scale.value, 0.5) // Larger slots that scale
+    const slotRadius = Math.max(scale.value, 0.5) // Larger slots that scale
     const connections: Array<{
       x1: number
       y1: number
@@ -304,8 +389,15 @@ export function useMinimap() {
       const offsetX = (width - bounds.value.width * scale.value) / 2
       const offsetY = (height - bounds.value.height * scale.value) / 2
 
+      if (showGroups.value) {
+        renderGroups(ctx, offsetX, offsetY)
+      }
+
+      if (showLinks.value) {
+        renderConnections(ctx, offsetX, offsetY)
+      }
+
       renderNodes(ctx, offsetX, offsetY)
-      renderConnections(ctx, offsetX, offsetY)
 
       needsFullRedraw.value = false
       updateFlags.value.nodes = false
@@ -690,8 +782,15 @@ export function useMinimap() {
     canvasRef,
     containerStyles,
     viewportStyles,
+    panelStyles,
     width,
     height,
+
+    nodeColors,
+    showLinks,
+    showGroups,
+    renderBypass,
+    renderError,
 
     init,
     destroy,
@@ -701,6 +800,7 @@ export function useMinimap() {
     handlePointerMove,
     handlePointerUp,
     handleWheel,
-    setMinimapRef
+    setMinimapRef,
+    updateOption
   }
 }

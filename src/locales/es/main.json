@@ -856,6 +856,13 @@
     "Zoom Out": "Alejar",
     "Zoom to fit": "Ajustar al tamaño"
   },
+  "minimap": {
+    "nodeColors": "Colores de nodos",
+    "renderBypassState": "Mostrar estado de omisión",
+    "renderErrorState": "Mostrar estado de error",
+    "showGroups": "Mostrar marcos/grupos",
+    "showLinks": "Mostrar enlaces"
+  },
   "missingModelsDialog": {
     "doNotAskAgain": "No mostrar esto de nuevo",
     "missingModels": "Modelos faltantes",
