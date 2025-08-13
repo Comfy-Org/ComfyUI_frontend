@@ -140,8 +140,13 @@ const setupDOMEventListeners = () => {
   for (const evt of widget.options.selectOn ?? ['focus', 'click']) {
     useEventListener(widget.element, evt, () => {
       const lgCanvas = canvasStore.canvas
-      lgCanvas?.selectNode(widget.node)
-      lgCanvas?.bringToFront(widget.node)
+      if (!lgCanvas) return
+
+      const node = widget.node
+      if (!node.is_selected) {
+        lgCanvas.selectItems([node])
+      }
+      lgCanvas.bringToFront(node)
     })
   }
 }
