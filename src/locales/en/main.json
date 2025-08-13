@@ -437,6 +437,14 @@
     "queue": "Queue",
     "nodeLibrary": "Node Library",
     "workflows": "Workflows",
+    "templates": "Templates",
+    "labels": {
+      "queue": "Queue",
+      "nodes": "Nodes",
+      "models": "Models",
+      "workflows": "Workflows",
+      "templates": "Templates"
+    },
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",

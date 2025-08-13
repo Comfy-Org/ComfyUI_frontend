@@ -1197,6 +1197,13 @@
     "browseTemplates": "Parcourir les modèles d'exemple",
     "downloads": "Téléchargements",
     "helpCenter": "Centre d'aide",
+    "labels": {
+      "models": "Modèles",
+      "nodes": "Nœuds",
+      "queue": "File d’attente",
+      "templates": "Modèles",
+      "workflows": "Flux de travail"
+    },
     "logout": "Déconnexion",
     "modelLibrary": "Bibliothèque de modèles",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
@@ -1234,6 +1241,7 @@
       },
       "showFlatList": "Afficher la liste plate"
     },
+    "templates": "Modèles",
     "workflowTab": {
       "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce flux de travail ?",
       "confirmDeleteTitle": "Supprimer le flux de travail ?",
