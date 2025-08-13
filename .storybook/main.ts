@@ -1,5 +1,9 @@
 import type { StorybookConfig } from '@storybook/vue3-vite'
 import path from 'path'
+import { FileSystemIconLoader } from 'unplugin-icons/loaders'
+import IconsResolver from 'unplugin-icons/resolver'
+import Icons from 'unplugin-icons/vite'
+import Components from 'unplugin-vue-components/vite'
 import { fileURLToPath } from 'url'
 import { type InlineConfig, mergeConfig } from 'vite'
 
@@ -15,6 +19,31 @@ const config: StorybookConfig = {
   },
   async viteFinal(config) {
     return mergeConfig(config, {
+      plugins: [
+        Icons({
+          compiler: 'vue3',
+          customCollections: {
+            comfy: FileSystemIconLoader(
+              __dirname + '/../src/assets/icons/custom'
+            )
+          }
+        }),
+        Components({
+          dts: false, // Disable dts generation in Storybook
+          resolvers: [
+            IconsResolver({
+              customCollections: ['comfy']
+            })
+          ],
+          dirs: [
+            __dirname + '/../src/components',
+            __dirname + '/../src/layout',
+            __dirname + '/../src/views'
+          ],
+          deep: true,
+          extensions: ['vue']
+        })
+      ],
       server: {
         allowedHosts: true
       },
@@ -39,14 +68,7 @@ const config: StorybookConfig = {
             }
             warn(warning)
           },
-          output: {
-            manualChunks: {
-              'vue-vendor': ['vue', 'vue-router'],
-              primevue: ['primevue/config', 'primevue'],
-              'storybook-docs': ['@storybook/docs-tools'],
-              litegraph: ['./src/lib/litegraph']
-            }
-          }
+          output: {}
         },
         chunkSizeWarningLimit: 1000
       }

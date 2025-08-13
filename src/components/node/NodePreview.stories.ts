@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import NodePreview from './NodePreview.vue'
 
 // Mock node definition data for a typical ComfyUI node
-const mockNodeDef: ComfyNodeDef = {
+const mockNodeDef: ComfyNodeDefV2 = {
   name: 'KSampler',
   display_name: 'KSampler',
   description:
@@ -113,7 +113,7 @@ const mockNodeDef: ComfyNodeDef = {
 }
 
 // Simpler text node for comparison
-const mockTextNodeDef: ComfyNodeDef = {
+const mockTextNodeDef: ComfyNodeDefV2 = {
   name: 'CLIPTextEncode',
   display_name: 'CLIP Text Encode',
   description:
@@ -146,7 +146,7 @@ const mockTextNodeDef: ComfyNodeDef = {
 }
 
 // Image processing node with multiple outputs
-const mockImageNodeDef: ComfyNodeDef = {
+const mockImageNodeDef: ComfyNodeDefV2 = {
   name: 'VAEDecode',
   display_name: 'VAE Decode',
   description:
