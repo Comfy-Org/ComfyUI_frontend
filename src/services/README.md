@@ -1,155 +1,277 @@
-# Reactive Layout Services
+# Services
 
-This directory contains the core implementations of the reactive layout system that bridges Vue node interactions with LiteGraph.
+This directory contains the service layer for the ComfyUI frontend application. Services encapsulate application logic and functionality into organized, reusable modules.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Service Architecture](#service-architecture)
+- [Core Services](#core-services)
+- [Service Development Guidelines](#service-development-guidelines)
+- [Common Design Patterns](#common-design-patterns)
+
+## Overview
+
+Services in ComfyUI provide organized modules that implement the application's functionality and logic. They handle operations such as API communication, workflow management, user settings, and other essential features. 
+
+The term "business logic" in this context refers to the code that implements the core functionality and behavior of the application - the rules, processes, and operations that make ComfyUI work as expected, separate from the UI display code.
+
+Services help organize related functionality into cohesive units, making the codebase more maintainable and testable. By centralizing related operations in services, the application achieves better separation of concerns, with UI components focusing on presentation and services handling functional operations.
 
 ## Service Architecture
 
-```mermaid
-graph LR
-    subgraph "Services"
-        RLT[ReactiveLayoutTree<br/>- Position/Bounds State<br/>- Selection State]
-        RHT[ReactiveHitTester<br/>- Spatial Queries<br/>- QuadTree Integration]
-    end
+The service layer in ComfyUI follows these architectural principles:
 
-    subgraph "Renderers"
-        Canvas[Canvas Renderer<br/>(LiteGraph)]
-        Vue[Vue Renderer<br/>(DOM Nodes)]
-    end
+1. **Domain-driven**: Each service focuses on a specific domain of the application
+2. **Stateless when possible**: Services generally avoid maintaining internal state
+3. **Reusable**: Services can be used across multiple components
+4. **Testable**: Services are designed for easy unit testing
+5. **Isolated**: Services have clear boundaries and dependencies
 
-    subgraph "Spatial Index"
-        QT[QuadTree<br/>Spatial Index]
-    end
+While services can interact with both UI components and stores (centralized state), they primarily focus on implementing functionality rather than managing state. The following diagram illustrates how services fit into the application architecture:
 
-    Canvas -->|Write| RLT
-    Vue -->|Write| RLT
-    RLT -->|Reactive Updates| Canvas
-    RLT -->|Reactive Updates| Vue
-    
-    RHT -->|Query| QT
-    RLT -->|Sync Bounds| RHT
-    RHT -->|Hit Testing| Vue
-</mermaid>
-
-## ReactiveLayoutTree Implementation
-
-```mermaid
-classDiagram
-    class ReactiveLayoutTree {
-        -_nodePositions: Ref~Map~
-        -_nodeBounds: Ref~Map~
-        -_selectedNodes: Ref~Set~
-        +nodePositions: ComputedRef~Map~
-        +nodeBounds: ComputedRef~Map~
-        +selectedNodes: Ref~Set~
-        +updateNodePosition(nodeId, position)
-        +updateNodeBounds(nodeId, bounds)
-        +selectNodes(nodeIds, addToSelection)
-        +clearSelection()
-    }
-
-    class customRef {
-        <<Vue Reactivity>>
-        +track()
-        +trigger()
-    }
-
-    ReactiveLayoutTree --> customRef : uses for shared write access
+```
+┌─────────────────────────────────────────────────────────┐
+│                    UI Components                         │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│                     Composables                          │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│                      Services                            │
+│                                                         │
+│              (Application Functionality)                 │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                 ┌───────────┴───────────┐
+                 ▼                       ▼
+┌───────────────────────────┐ ┌─────────────────────────┐
+│         Stores            │ │       External APIs      │
+│    (Centralized State)    │ │                         │
+└───────────────────────────┘ └─────────────────────────┘
 ```
 
-### Key Features
-- Uses Vue's `customRef` to allow both renderers to write
-- Provides reactive computed properties for automatic updates
-- Maintains immutable update pattern (creates new Maps on change)
-- Supports both single and bulk updates
+## Core Services
 
-## ReactiveHitTester Implementation
+The following table lists ALL services in the system as of 2025-01-30:
 
-```mermaid
-flowchart TB
-    subgraph "Hit Testing Flow"
-        Query[Spatial Query]
-        QT[QuadTree Index]
-        Candidates[Candidate Nodes]
-        Precise[Precise Bounds Check]
-        Result[Hit Test Result]
-    end
+### Main Services
 
-    Query -->|Viewport Bounds| QT
-    QT -->|Fast Filter| Candidates
-    Candidates -->|Intersection Test| Precise
-    Precise --> Result
+| Service | Description | Category |
+|---------|-------------|----------|
+| autoQueueService.ts | Manages automatic queue execution | Execution |
+| colorPaletteService.ts | Handles color palette management and customization | UI |
+| comfyManagerService.ts | Manages ComfyUI application packages and updates | Manager |
+| comfyRegistryService.ts | Handles registration and discovery of ComfyUI extensions | Registry |
+| dialogService.ts | Provides dialog and modal management | UI |
+| extensionService.ts | Manages extension registration and lifecycle | Extensions |
+| keybindingService.ts | Handles keyboard shortcuts and keybindings | Input |
+| litegraphService.ts | Provides utilities for working with the LiteGraph library | Graph |
+| load3dService.ts | Manages 3D model loading and visualization | 3D |
+| nodeHelpService.ts | Provides node documentation and help | Nodes |
+| nodeOrganizationService.ts | Handles node organization and categorization | Nodes |
+| nodeSearchService.ts | Implements node search functionality | Search |
+| releaseService.ts | Manages application release information and updates | System |
+| subgraphService.ts | Handles subgraph operations and navigation | Graph |
+| workflowService.ts | Handles workflow operations (save, load, execute) | Workflows |
 
-    subgraph "Reactive Queries"
-        RP[Reactive Point Query]
-        RB[Reactive Bounds Query]
-        Auto[Auto-update on Layout Change]
-    end
+### Gateway Services
+Located in `services/gateway/`:
 
-    RP --> Query
-    RB --> Query
-    Auto -.->|Triggers| RP
-    Auto -.->|Triggers| RB
-```
+| Service | Description |
+|---------|-------------|
+| registrySearchGateway.ts | Gateway for registry search operations |
 
-### Performance Optimizations
-- Integrates with existing QuadTree spatial indexing
-- Two-phase hit testing: spatial index filter + precise bounds check
-- Reactive queries use Vue's computed for efficient caching
-- Direct queries available for immediate results during interactions
+### Provider Services
+Located in `services/providers/`:
 
-## Data Synchronization
+| Service | Description |
+|---------|-------------|
+| algoliaSearchProvider.ts | Implements search functionality using Algolia |
+| registrySearchProvider.ts | Provides registry search capabilities |
 
-```mermaid
-sequenceDiagram
-    participant LG as LiteGraph
-    participant LT as LayoutTree
-    participant HT as HitTester
-    participant SI as Spatial Index
-    participant VN as Vue Node
+## Service Development Guidelines
 
-    Note over LG,VN: Initial Sync
-    LG->>LT: Bulk position update
-    LT->>HT: Bounds changed (reactive)
-    HT->>SI: Batch update spatial index
+In ComfyUI, services can be implemented using two approaches:
 
-    Note over LG,VN: Vue Node Drag
-    VN->>VN: CSS transform (visual)
-    VN->>LT: updateNodePosition (on drag end)
-    LT->>LG: Position changed (reactive watch)
-    LT->>HT: Bounds changed (reactive)
-    HT->>SI: Update node in index
-    LG->>LG: Redraw canvas
+### 1. Class-based Services
 
-    Note over LG,VN: Canvas Drag
-    LG->>LG: Update node.pos
-    LG->>LT: Sync position (RAF)
-    LT->>HT: Bounds changed (reactive)
-    HT->>SI: Update node in index
-    LT->>VN: Position changed (reactive)
-```
-
-## Usage Example
+For complex services with state management and multiple methods, class-based services are used:
 
 ```typescript
-// In Vue component
-const { layoutTree, hitTester } = useReactiveLayout()
+export class NodeSearchService {
+  // Service state
+  private readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
+  private readonly filters: Record<string, FuseFilter<ComfyNodeDefImpl, string>>
 
-// Initialize layout tree sync
-const { initializeSync } = useLiteGraphSync()
-initializeSync()
+  constructor(data: ComfyNodeDefImpl[]) {
+    // Initialize state
+    this.nodeFuseSearch = new FuseSearch(data, { /* options */ })
+    
+    // Setup filters
+    this.filters = {
+      inputType: new FuseFilter<ComfyNodeDefImpl, string>(/* options */),
+      category: new FuseFilter<ComfyNodeDefImpl, string>(/* options */)
+    }
+  }
 
-// In Vue node component
-const { 
-  isDragging,
-  startDrag,
-  handleDrag,
-  endDrag,
-  dragStyle 
-} = useVueNodeInteraction(nodeId)
-
-// Reactive position tracking
-const nodePos = hitTester.getNodePosition(nodeId)
-watch(nodePos, (newPos) => {
-  console.log('Node moved to:', newPos)
-})
+  public searchNode(query: string, filters: FuseFilterWithValue[] = []): ComfyNodeDefImpl[] {
+    // Implementation
+    return results
+  }
+}
 ```
+
+### 2. Composable-style Services
+
+For simpler services or those that need to integrate with Vue's reactivity system, we prefer using composable-style services:
+
+```typescript
+export function useNodeSearchService(initialData: ComfyNodeDefImpl[]) {
+  // State (reactive if needed)
+  const data = ref(initialData)
+  
+  // Search functionality
+  function searchNodes(query: string) {
+    // Implementation
+    return results
+  }
+  
+  // Additional methods
+  function refreshData(newData: ComfyNodeDefImpl[]) {
+    data.value = newData
+  }
+  
+  // Return public API
+  return {
+    searchNodes,
+    refreshData
+  }
+}
+```
+
+When deciding between these approaches, consider:
+
+1. **Stateful vs. Stateless**: For stateful services, classes often provide clearer encapsulation
+2. **Reactivity needs**: If the service needs to be reactive, composable-style services integrate better with Vue's reactivity system
+3. **Complexity**: For complex services with many methods and internal state, classes can provide better organization
+4. **Testing**: Both approaches can be tested effectively, but composables may be simpler to test with Vue Test Utils
+
+### Service Template
+
+Here's a template for creating a new composable-style service:
+
+```typescript
+/**
+ * Service for managing [domain/functionality]
+ */
+export function useExampleService() {
+  // Private state/functionality
+  const cache = new Map()
+  
+  /**
+   * Description of what this method does
+   * @param param1 Description of parameter
+   * @returns Description of return value
+   */
+  async function performOperation(param1: string) {
+    try {
+      // Implementation
+      return result
+    } catch (error) {
+      // Error handling
+      console.error(`Operation failed: ${error.message}`)
+      throw error
+    }
+  }
+  
+  // Return public API
+  return {
+    performOperation
+  }
+}
+```
+
+## Common Design Patterns
+
+Services in ComfyUI frequently use the following design patterns:
+
+### Caching and Request Deduplication
+
+```typescript
+export function useCachedService() {
+  const cache = new Map()
+  const pendingRequests = new Map()
+  
+  async function fetchData(key: string) {
+    // Check cache first
+    if (cache.has(key)) return cache.get(key)
+    
+    // Check if request is already in progress
+    if (pendingRequests.has(key)) {
+      return pendingRequests.get(key)
+    }
+    
+    // Perform new request
+    const requestPromise = fetch(`/api/${key}`)
+      .then(response => response.json())
+      .then(data => {
+        cache.set(key, data)
+        pendingRequests.delete(key)
+        return data
+      })
+    
+    pendingRequests.set(key, requestPromise)
+    return requestPromise
+  }
+  
+  return { fetchData }
+}
+```
+
+### Factory Pattern
+
+```typescript
+export function useNodeFactory() {
+  function createNode(type: string, config: Record<string, any>) {
+    // Create node based on type and configuration
+    switch (type) {
+      case 'basic':
+        return { /* basic node implementation */ }
+      case 'complex':
+        return { /* complex node implementation */ }
+      default:
+        throw new Error(`Unknown node type: ${type}`)
+    }
+  }
+  
+  return { createNode }
+}
+```
+
+### Facade Pattern
+
+```typescript
+export function useWorkflowService(
+  apiService,
+  graphService,
+  storageService
+) {
+  // Provides a simple interface to complex subsystems
+  async function saveWorkflow(name: string) {
+    const graphData = graphService.serializeGraph()
+    const storagePath = await storageService.getPath(name)
+    return apiService.saveData(storagePath, graphData)
+  }
+  
+  return { saveWorkflow }
+}
+```
+
+For more detailed information about the service layer pattern and its applications, refer to:
+- [Service Layer Pattern](https://en.wikipedia.org/wiki/Service_layer_pattern)
+- [Service-Orientation](https://en.wikipedia.org/wiki/Service-orientation)
