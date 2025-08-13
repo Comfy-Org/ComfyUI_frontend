@@ -1352,6 +1352,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           return '$0.0004/$0.0016 per 1K tokens'
         } else if (model.includes('gpt-4.1')) {
           return '$0.002/$0.008 per 1K tokens'
+        } else if (model.includes('gpt-5-nano')) {
+          return '$0.00005/$0.0004 per 1K tokens'
+        } else if (model.includes('gpt-5-mini')) {
+          return '$0.00025/$0.002 per 1K tokens'
+        } else if (model.includes('gpt-5')) {
+          return '$0.00125/$0.01 per 1K tokens'
         }
         return 'Token-based'
       }
