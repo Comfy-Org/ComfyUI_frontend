@@ -1735,17 +1735,16 @@ export class LGraph
         }
       }
     }
-
-    const newLinks: [
-      NodeId,
-      number,
-      NodeId,
-      number,
-      LinkId,
-      RerouteId | undefined,
-      RerouteId | undefined,
-      boolean
-    ][] = []
+    const newLinks: {
+      oid: NodeId
+      oslot: number
+      tid: NodeId
+      tslot: number
+      id: LinkId
+      iparent?: RerouteId
+      eparent?: RerouteId
+      externalFirst: boolean
+    }[] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
@@ -1770,16 +1769,16 @@ export class LGraph
         for (const linkId of subgraphNode.outputs[link.target_slot].links ??
           []) {
           const sublink = this.links[linkId]
-          newLinks.push([
-            link.origin_id,
-            link.origin_slot,
-            sublink.target_id,
-            sublink.target_slot,
-            link.id,
-            link.parentId,
-            sublink.parentId,
-            true
-          ])
+          newLinks.push({
+            oid: link.origin_id,
+            oslot: link.origin_slot,
+            tid: sublink.target_id,
+            tslot: sublink.target_slot,
+            id: link.id,
+            iparent: link.parentId,
+            eparent: sublink.parentId,
+            externalFirst: true
+          })
           sublink.parentId = undefined
         }
         continue
@@ -1791,47 +1790,47 @@ export class LGraph
         }
         link.target_id = target_id
       }
-      newLinks.push([
-        link.origin_id,
-        link.origin_slot,
-        link.target_id,
-        link.target_slot,
-        link.id,
-        link.parentId,
-        externalParentId,
-        false
-      ])
+      newLinks.push({
+        oid: link.origin_id,
+        oslot: link.origin_slot,
+        tid: link.target_id,
+        tslot: link.target_slot,
+        id: link.id,
+        iparent: link.parentId,
+        eparent: externalParentId,
+        externalFirst: false
+      })
     }
     this.remove(subgraphNode)
     this.subgraphs.delete(subgraphNode.subgraph.id)
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of newLinks) {
       let created: LLink | null | undefined
-      if (newLink[0] == SUBGRAPH_INPUT_ID) {
+      if (newLink.oid == SUBGRAPH_INPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink[2]]
-        created = this.inputNode.slots[newLink[1]].connect(
-          tnode.inputs[newLink[3]],
+        const tnode = this._nodes_by_id[newLink.tid]
+        created = this.inputNode.slots[newLink.oslot].connect(
+          tnode.inputs[newLink.tslot],
           tnode
         )
-      } else if (newLink[2] == SUBGRAPH_OUTPUT_ID) {
+      } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink[0]]
-        created = this.outputNode.slots[newLink[3]].connect(
-          tnode.outputs[newLink[1]],
+        const tnode = this._nodes_by_id[newLink.oid]
+        created = this.outputNode.slots[newLink.tslot].connect(
+          tnode.outputs[newLink.oslot],
           tnode
         )
       } else {
-        created = this._nodes_by_id[newLink[0]].connect(
-          newLink[1],
-          this._nodes_by_id[newLink[2]],
-          newLink[3]
+        created = this._nodes_by_id[newLink.oid].connect(
+          newLink.oslot,
+          this._nodes_by_id[newLink.tid],
+          newLink.tslot
         )
       }
       if (!created) {
@@ -1839,12 +1838,12 @@ export class LGraph
         continue
       }
       //This is a little unwieldy since Map.has isn't a type guard
-      const linkIds = linkIdMap.get(newLink[4]) ?? []
+      const linkIds = linkIdMap.get(newLink.id) ?? []
       linkIds.push(created.id)
-      if (!linkIdMap.has(newLink[4])) {
-        linkIdMap.set(newLink[4], linkIds)
+      if (!linkIdMap.has(newLink.id)) {
+        linkIdMap.set(newLink.id, linkIds)
       }
-      newLink[4] = created.id
+      newLink.id = created.id
     }
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     for (const reroute of subgraphNode.subgraph.reroutes.values()) {
@@ -1864,14 +1863,14 @@ export class LGraph
     }
     //iterate over newly created links to update reroute parentIds
     for (const newLink of newLinks) {
-      const linkInstance = this.links.get(newLink[4])
+      const linkInstance = this.links.get(newLink.id)
       if (!linkInstance) {
         continue
       }
       let instance: Reroute | LLink | undefined = linkInstance
-      let parentId: RerouteId | undefined = newLink[6]
-      if (newLink[7]) {
-        parentId = newLink[6]
+      let parentId: RerouteId | undefined = undefined
+      if (newLink.externalFirst) {
+        parentId = newLink.eparent
         //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
         while (parentId) {
           instance.parentId = parentId
@@ -1883,7 +1882,7 @@ export class LGraph
           parentId = instance.parentId
         }
       }
-      parentId = newLink[5]
+      parentId = newLink.iparent
       while (parentId) {
         const migratedId = rerouteIdMap.get(parentId)
         if (!migratedId) throw new Error('Broken Id link when unpacking')
@@ -1897,8 +1896,8 @@ export class LGraph
         if (!oldReroute) throw new Error('Broken Id link when unpacking')
         parentId = oldReroute.parentId
       }
-      if (!newLink[7]) {
-        parentId = newLink[6]
+      if (!newLink.externalFirst) {
+        parentId = newLink.eparent
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)
