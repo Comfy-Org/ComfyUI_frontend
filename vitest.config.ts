@@ -1,8 +1,18 @@
 import vue from '@vitejs/plugin-vue'
+import { FileSystemIconLoader } from 'unplugin-icons/loaders'
+import Icons from 'unplugin-icons/vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    Icons({
+      compiler: 'vue3',
+      customCollections: {
+        comfy: FileSystemIconLoader('src/assets/icons/custom')
+      }
+    })
+  ],
   test: {
     globals: true,
     environment: 'happy-dom',

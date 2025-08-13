@@ -1164,6 +1164,13 @@
     "browseTemplates": "瀏覽範例模板",
     "downloads": "下載",
     "helpCenter": "說明中心",
+    "labels": {
+      "models": "模型",
+      "nodes": "節點",
+      "queue": "佇列",
+      "templates": "範本",
+      "workflows": "工作流程"
+    },
     "logout": "登出",
     "modelLibrary": "模型庫",
     "newBlankWorkflow": "建立新的空白工作流程",
@@ -1201,6 +1208,7 @@
       },
       "showFlatList": "顯示平面清單"
     },
+    "templates": "範本",
     "workflowTab": {
       "confirmDelete": "您確定要刪除這個工作流程嗎？",
       "confirmDeleteTitle": "刪除工作流程？",

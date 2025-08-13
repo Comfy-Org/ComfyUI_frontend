@@ -1164,6 +1164,13 @@
     "browseTemplates": "예제 템플릿 탐색",
     "downloads": "다운로드",
     "helpCenter": "도움말 센터",
+    "labels": {
+      "models": "모델",
+      "nodes": "노드",
+      "queue": "대기열",
+      "templates": "템플릿",
+      "workflows": "워크플로우"
+    },
     "logout": "로그아웃",
     "modelLibrary": "모델 라이브러리",
     "newBlankWorkflow": "새 빈 워크플로 만들기",
@@ -1201,6 +1208,7 @@
       },
       "showFlatList": "평면 목록 표시"
     },
+    "templates": "템플릿",
     "workflowTab": {
       "confirmDelete": "정말로 이 워크플로를 삭제하시겠습니까?",
       "confirmDeleteTitle": "워크플로 삭제",
