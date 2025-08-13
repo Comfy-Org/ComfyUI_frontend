@@ -154,13 +154,13 @@ describe('layoutStore CRDT operations', () => {
     })
 
     // Wait for async notification
-    await new Promise(resolve => setTimeout(resolve, 50))
-    
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
     expect(changes.length).toBeGreaterThanOrEqual(1)
     const lastChange = changes[changes.length - 1]
     expect(lastChange.source).toBe('vue')
     expect(lastChange.operation.actor).toBe('user-123')
-    
+
     unsubscribe()
   })
 
@@ -229,6 +229,7 @@ describe('layoutStore CRDT operations', () => {
       type: 'moveNode',
       nodeId,
       position: { x: 150, y: 150 },
+      previousPosition: { x: 100, y: 100 },
       timestamp: startTime + 100,
       source: 'vue',
       actor: 'test-actor'

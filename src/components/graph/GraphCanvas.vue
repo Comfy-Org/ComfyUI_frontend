@@ -131,7 +131,8 @@ import type {
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
-import { useLayout, useLayoutSync } from '@/composables/graph/useLayout'
+import { useLayout } from '@/composables/graph/useLayout'
+import { useLayoutSync } from '@/composables/graph/useLayoutSync'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'

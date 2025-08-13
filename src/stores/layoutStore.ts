@@ -9,7 +9,14 @@ import { type ComputedRef, type Ref, computed, customRef } from 'vue'
 import * as Y from 'yjs'
 
 import type {
-  AnyLayoutOperation,
+  CreateNodeOperation,
+  DeleteNodeOperation,
+  LayoutOperation,
+  MoveNodeOperation,
+  ResizeNodeOperation,
+  SetNodeZIndexOperation
+} from '@/types/layoutOperations'
+import type {
   Bounds,
   LayoutChange,
   LayoutStore,
@@ -17,6 +24,7 @@ import type {
   NodeLayout,
   Point
 } from '@/types/layoutTypes'
+import { QuadTree } from '@/utils/spatial/QuadTree'
 
 // Create logger for layout store
 const logger = log.getLogger('layout-store')
@@ -29,7 +37,7 @@ class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<Y.Map<unknown>> // Maps nodeId -> Y.Map containing NodeLayout data
-  private yoperations: Y.Array<AnyLayoutOperation> // Operation log
+  private yoperations: Y.Array<LayoutOperation> // Operation log
 
   // Vue reactivity layer
   private version = 0
@@ -43,13 +51,20 @@ class LayoutStoreImpl implements LayoutStore {
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
 
-  // Spatial index cache
+  // Spatial index using existing QuadTree infrastructure
+  private spatialIndex: QuadTree<NodeId>
   private spatialQueryCache = new Map<string, NodeId[]>()
 
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
     this.yoperations = this.ydoc.getArray('operations')
+
+    // Initialize QuadTree with reasonable bounds
+    this.spatialIndex = new QuadTree<NodeId>(
+      { x: -10000, y: -10000, width: 20000, height: 20000 },
+      { maxDepth: 6, maxItemsPerNode: 4 }
+    )
 
     // Listen for Yjs changes and trigger Vue reactivity
     this.ynodes.observe((event) => {
@@ -69,11 +84,11 @@ class LayoutStoreImpl implements LayoutStore {
     // Debug: Log layout operations
     if (localStorage.getItem('layout-debug') === 'true') {
       this.yoperations.observe((event) => {
-        const operations: AnyLayoutOperation[] = []
+        const operations: LayoutOperation[] = []
         event.changes.added.forEach((item) => {
           const content = item.content.getContent()
           if (Array.isArray(content) && content.length > 0) {
-            operations.push(content[0] as AnyLayoutOperation)
+            operations.push(content[0] as LayoutOperation)
           }
         })
         console.log('Layout Operation:', operations)
@@ -278,16 +293,8 @@ class LayoutStoreImpl implements LayoutStore {
     const cached = this.spatialQueryCache.get(cacheKey)
     if (cached) return cached
 
-    const result: NodeId[] = []
-    for (const [nodeId] of this.ynodes) {
-      const ynode = this.ynodes.get(nodeId)
-      if (ynode) {
-        const layout = this.yNodeToLayout(ynode)
-        if (layout && this.boundsIntersect(layout.bounds, bounds)) {
-          result.push(nodeId)
-        }
-      }
-    }
+    // Use QuadTree for efficient spatial query
+    const result = this.spatialIndex.query(bounds)
 
     // Cache result
     this.spatialQueryCache.set(cacheKey, result)
@@ -297,7 +304,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Apply a layout operation using Yjs transactions
    */
-  applyOperation(operation: AnyLayoutOperation): void {
+  applyOperation(operation: LayoutOperation): void {
     logger.debug(`applyOperation called:`, {
       type: operation.type,
       nodeId: operation.nodeId,
@@ -318,29 +325,44 @@ class LayoutStoreImpl implements LayoutStore {
       // Add operation to log
       this.yoperations.push([operation])
 
-      switch (operation.type) {
-        case 'moveNode':
-          this.handleMoveNode(operation, change)
-          break
+      // Apply the operation
+      this.applyOperationInTransaction(operation, change)
+    }, this.currentActor)
 
-        case 'resizeNode':
-          this.handleResizeNode(operation, change)
-          break
+    // Post-transaction updates
+    this.finalizeOperation(change)
+  }
 
-        case 'setNodeZIndex':
-          this.handleSetNodeZIndex(operation, change)
-          break
+  /**
+   * Apply operation within a transaction
+   */
+  private applyOperationInTransaction(
+    operation: LayoutOperation,
+    change: LayoutChange
+  ): void {
+    switch (operation.type) {
+      case 'moveNode':
+        this.handleMoveNode(operation as MoveNodeOperation, change)
+        break
+      case 'resizeNode':
+        this.handleResizeNode(operation as ResizeNodeOperation, change)
+        break
+      case 'setNodeZIndex':
+        this.handleSetNodeZIndex(operation as SetNodeZIndexOperation, change)
+        break
+      case 'createNode':
+        this.handleCreateNode(operation as CreateNodeOperation, change)
+        break
+      case 'deleteNode':
+        this.handleDeleteNode(operation as DeleteNodeOperation, change)
+        break
+    }
+  }
 
-        case 'createNode':
-          this.handleCreateNode(operation, change)
-          break
-
-        case 'deleteNode':
-          this.handleDeleteNode(operation, change)
-          break
-      }
-    }, this.currentActor) // Use actor as transaction origin
-
+  /**
+   * Finalize operation after transaction
+   */
+  private finalizeOperation(change: LayoutChange): void {
     // Update version and clear cache
     this.version++
     this.spatialQueryCache.clear()
@@ -412,6 +434,7 @@ class LayoutStoreImpl implements LayoutStore {
       this.ynodes.clear()
       this.nodeRefs.clear()
       this.nodeTriggers.clear()
+      this.spatialIndex.clear()
 
       nodes.forEach((node, index) => {
         const layout: NodeLayout = {
@@ -429,6 +452,10 @@ class LayoutStoreImpl implements LayoutStore {
         }
 
         this.ynodes.set(layout.id, this.layoutToYNode(layout))
+
+        // Add to spatial index
+        this.spatialIndex.insert(layout.id, layout.bounds, layout.id)
+
         logger.debug(
           `Initialized node ${layout.id} at position:`,
           layout.position
@@ -443,30 +470,23 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Operation handlers
   private handleMoveNode(
-    operation: AnyLayoutOperation,
+    operation: MoveNodeOperation,
     change: LayoutChange
   ): void {
-    if (operation.type !== 'moveNode') return
-
-    logger.debug(`handleMoveNode called for ${operation.nodeId}`, {
-      newPosition: operation.position
-    })
-
     const ynode = this.ynodes.get(operation.nodeId)
     if (!ynode) {
       logger.warn(`No ynode found for ${operation.nodeId}`)
       return
     }
 
-    // Update position in Yjs map
-    ynode.set('position', {
-      x: operation.position.x,
-      y: operation.position.y
-    })
+    logger.debug(`Moving node ${operation.nodeId}`, operation.position)
 
-    // Update bounds
     const size = ynode.get('size') as { width: number; height: number }
-    ynode.set('bounds', {
+    ynode.set('position', operation.position)
+    this.updateNodeBounds(ynode, operation.position, size)
+
+    // Update spatial index
+    this.spatialIndex.update(operation.nodeId, {
       x: operation.position.x,
       y: operation.position.y,
       width: size.width,
@@ -477,23 +497,18 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   private handleResizeNode(
-    operation: AnyLayoutOperation,
+    operation: ResizeNodeOperation,
     change: LayoutChange
   ): void {
-    if (operation.type !== 'resizeNode') return
-
     const ynode = this.ynodes.get(operation.nodeId)
     if (!ynode) return
 
-    // Update size in Yjs map
-    ynode.set('size', {
-      width: operation.size.width,
-      height: operation.size.height
-    })
-
-    // Update bounds
     const position = ynode.get('position') as Point
-    ynode.set('bounds', {
+    ynode.set('size', operation.size)
+    this.updateNodeBounds(ynode, position, operation.size)
+
+    // Update spatial index
+    this.spatialIndex.update(operation.nodeId, {
       x: position.x,
       y: position.y,
       width: operation.size.width,
@@ -504,11 +519,9 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   private handleSetNodeZIndex(
-    operation: AnyLayoutOperation,
+    operation: SetNodeZIndexOperation,
     change: LayoutChange
   ): void {
-    if (operation.type !== 'setNodeZIndex') return
-
     const ynode = this.ynodes.get(operation.nodeId)
     if (!ynode) return
 
@@ -517,33 +530,54 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   private handleCreateNode(
-    operation: AnyLayoutOperation,
+    operation: CreateNodeOperation,
     change: LayoutChange
   ): void {
-    if (operation.type !== 'createNode') return
-
     const ynode = this.layoutToYNode(operation.layout)
     this.ynodes.set(operation.nodeId, ynode)
+
+    // Add to spatial index
+    this.spatialIndex.insert(
+      operation.nodeId,
+      operation.layout.bounds,
+      operation.nodeId
+    )
 
     change.type = 'create'
     change.nodeIds.push(operation.nodeId)
   }
 
   private handleDeleteNode(
-    operation: AnyLayoutOperation,
+    operation: DeleteNodeOperation,
     change: LayoutChange
   ): void {
-    if (operation.type !== 'deleteNode') return
+    if (!this.ynodes.has(operation.nodeId)) return
 
-    const hadNode = this.ynodes.has(operation.nodeId)
     this.ynodes.delete(operation.nodeId)
+    this.nodeRefs.delete(operation.nodeId)
+    this.nodeTriggers.delete(operation.nodeId)
 
-    if (hadNode) {
-      this.nodeRefs.delete(operation.nodeId)
-      this.nodeTriggers.delete(operation.nodeId)
-      change.type = 'delete'
-      change.nodeIds.push(operation.nodeId)
-    }
+    // Remove from spatial index
+    this.spatialIndex.remove(operation.nodeId)
+
+    change.type = 'delete'
+    change.nodeIds.push(operation.nodeId)
+  }
+
+  /**
+   * Update node bounds helper
+   */
+  private updateNodeBounds(
+    ynode: Y.Map<unknown>,
+    position: Point,
+    size: { width: number; height: number }
+  ): void {
+    ynode.set('bounds', {
+      x: position.x,
+      y: position.y,
+      width: size.width,
+      height: size.height
+    })
   }
 
   // Helper methods
@@ -598,21 +632,21 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   // CRDT-specific methods
-  getOperationsSince(timestamp: number): AnyLayoutOperation[] {
-    const operations: AnyLayoutOperation[] = []
+  getOperationsSince(timestamp: number): LayoutOperation[] {
+    const operations: LayoutOperation[] = []
     this.yoperations.forEach((op) => {
-      if (op && (op as AnyLayoutOperation).timestamp > timestamp) {
-        operations.push(op as AnyLayoutOperation)
+      if (op && op.timestamp > timestamp) {
+        operations.push(op)
       }
     })
     return operations
   }
 
-  getOperationsByActor(actor: string): AnyLayoutOperation[] {
-    const operations: AnyLayoutOperation[] = []
+  getOperationsByActor(actor: string): LayoutOperation[] {
+    const operations: LayoutOperation[] = []
     this.yoperations.forEach((op) => {
-      if (op && (op as AnyLayoutOperation).actor === actor) {
-        operations.push(op as AnyLayoutOperation)
+      if (op && op.actor === actor) {
+        operations.push(op)
       }
     })
     return operations

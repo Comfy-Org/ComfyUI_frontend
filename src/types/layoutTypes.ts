@@ -6,6 +6,8 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
+import type { LayoutOperation } from './layoutOperations'
+
 // Basic geometric types
 export interface Point {
   x: number
@@ -124,7 +126,7 @@ export interface LayoutChange {
   nodeIds: NodeId[]
   timestamp: number
   source: 'canvas' | 'vue' | 'external'
-  operation: AnyLayoutOperation
+  operation: LayoutOperation
 }
 
 // Store interfaces
@@ -140,7 +142,7 @@ export interface LayoutStore {
   queryNodesInBounds(bounds: Bounds): NodeId[]
 
   // Direct mutation API (CRDT-ready)
-  applyOperation(operation: AnyLayoutOperation): void
+  applyOperation(operation: LayoutOperation): void
 
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
@@ -157,54 +159,22 @@ export interface LayoutStore {
   getCurrentActor(): string
 }
 
-// Operation tracking for CRDT compatibility
-export interface LayoutOperation {
-  type: LayoutMutationType
-  nodeId?: NodeId
-  timestamp: number
-  source: 'canvas' | 'vue' | 'external'
-  actor?: string // For CRDT - identifies who made the change
-}
-
-export interface MoveOperation extends LayoutOperation {
-  type: 'moveNode'
-  nodeId: NodeId
-  position: Point
-  previousPosition?: Point
-}
-
-export interface ResizeOperation extends LayoutOperation {
-  type: 'resizeNode'
-  nodeId: NodeId
-  size: Size
-  previousSize?: Size
-}
-
-export interface CreateOperation extends LayoutOperation {
-  type: 'createNode'
-  nodeId: NodeId
-  layout: NodeLayout
-}
-
-export interface DeleteOperation extends LayoutOperation {
-  type: 'deleteNode'
-  nodeId: NodeId
-  previousLayout?: NodeLayout
-}
-
-export interface ZIndexOperation extends LayoutOperation {
-  type: 'setNodeZIndex'
-  nodeId: NodeId
-  zIndex: number
-  previousZIndex?: number
-}
-
-export type AnyLayoutOperation =
-  | MoveOperation
-  | ResizeOperation
-  | CreateOperation
-  | DeleteOperation
-  | ZIndexOperation
+// Re-export operation types from dedicated operations file
+export type {
+  LayoutOperation as AnyLayoutOperation,
+  BaseOperation,
+  MoveNodeOperation,
+  ResizeNodeOperation,
+  SetNodeZIndexOperation,
+  CreateNodeOperation,
+  DeleteNodeOperation,
+  SetNodeVisibilityOperation,
+  BatchUpdateOperation,
+  OperationType,
+  OperationApplicator,
+  OperationSerializer,
+  ConflictResolver
+} from './layoutOperations'
 
 // Simplified mutation API
 export interface LayoutMutations {
@@ -227,8 +197,8 @@ export interface LayoutMutations {
 
 // CRDT-ready operation log (for future CRDT integration)
 export interface OperationLog {
-  operations: AnyLayoutOperation[]
-  addOperation(operation: AnyLayoutOperation): void
-  getOperationsSince(timestamp: number): AnyLayoutOperation[]
-  getOperationsByActor(actor: string): AnyLayoutOperation[]
+  operations: LayoutOperation[]
+  addOperation(operation: LayoutOperation): void
+  getOperationsSince(timestamp: number): LayoutOperation[]
+  getOperationsByActor(actor: string): LayoutOperation[]
 }
