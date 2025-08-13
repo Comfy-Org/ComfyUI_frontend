@@ -1,4 +1,4 @@
-import { memoize } from 'lodash'
+import { memoize } from 'es-toolkit/compat'
 
 type RGB = { r: number; g: number; b: number }
 type HSL = { h: number; s: number; l: number }

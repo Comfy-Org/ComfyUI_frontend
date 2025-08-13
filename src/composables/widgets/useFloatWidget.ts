@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'

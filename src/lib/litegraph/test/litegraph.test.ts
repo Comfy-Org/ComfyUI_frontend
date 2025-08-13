@@ -1,4 +1,4 @@
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 import { beforeEach, describe, expect, vi } from 'vitest'
 
 import { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'

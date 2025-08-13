@@ -49,7 +49,7 @@ DO NOT use deprecated PrimeVue components. Use these replacements instead:
 
 ## Development Guidelines
 1. Leverage VueUse functions for performance-enhancing styles
-2. Use lodash for utility functions
+2. Use es-toolkit for utility functions
 3. Use TypeScript for type safety
 4. Implement proper props and emits definitions
 5. Utilize Vue 3's Teleport component when needed

@@ -1,4 +1,4 @@
-import { toString } from 'lodash'
+import { toString } from 'es-toolkit/compat'
 
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 
@@ -3456,10 +3456,6 @@ export class LGraphCanvas
   processMouseWheel(e: WheelEvent): void {
     if (!this.graph || !this.allow_dragcanvas) return
 
-    // TODO: Mouse wheel zoom rewrite
-    // @ts-expect-error wheelDeltaY is non-standard property on WheelEvent
-    const delta = e.wheelDeltaY ?? e.detail * -60
-
     this.adjustMouseEvent(e)
 
     const pos: Point = [e.clientX, e.clientY]
@@ -3467,35 +3463,34 @@ export class LGraphCanvas
 
     let { scale } = this.ds
 
-    if (
-      LiteGraph.canvasNavigationMode === 'legacy' ||
-      (LiteGraph.canvasNavigationMode === 'standard' && e.ctrlKey)
-    ) {
-      if (delta > 0) {
-        scale *= this.zoom_speed
-      } else if (delta < 0) {
-        scale *= 1 / this.zoom_speed
-      }
-      this.ds.changeScale(scale, [e.clientX, e.clientY])
-    } else if (
-      LiteGraph.macTrackpadGestures &&
-      (!LiteGraph.macGesturesRequireMac || navigator.userAgent.includes('Mac'))
-    ) {
-      if (e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-        if (e.deltaY > 0) {
-          scale *= 1 / this.zoom_speed
-        } else if (e.deltaY < 0) {
-          scale *= this.zoom_speed
-        }
-        this.ds.changeScale(scale, [e.clientX, e.clientY])
-      } else if (e.ctrlKey) {
+    // Detect if this is a trackpad gesture or mouse wheel
+    const isTrackpad = this.pointer.isTrackpadGesture(e)
+
+    if (e.ctrlKey || LiteGraph.canvasNavigationMode === 'legacy') {
+      // Legacy mode or standard mode with ctrl - use wheel for zoom
+      if (isTrackpad) {
+        // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
         this.ds.changeScale(scale, [e.clientX, e.clientY], false)
-      } else if (e.shiftKey) {
-        this.ds.offset[0] -= e.deltaY * 1.18 * (1 / scale)
       } else {
-        this.ds.offset[0] -= e.deltaX * 1.18 * (1 / scale)
-        this.ds.offset[1] -= e.deltaY * 1.18 * (1 / scale)
+        // Mouse wheel - use stepped scaling
+        if (e.deltaY < 0) {
+          scale *= this.zoom_speed
+        } else if (e.deltaY > 0) {
+          scale *= 1 / this.zoom_speed
+        }
+        this.ds.changeScale(scale, [e.clientX, e.clientY])
+      }
+    } else {
+      // Standard mode without ctrl - use wheel / gestures to pan
+      // Trackpads and mice work on significantly different scales
+      const factor = isTrackpad ? 0.18 : 0.008_333
+
+      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
+        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
+      } else {
+        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
       }
     }
 
