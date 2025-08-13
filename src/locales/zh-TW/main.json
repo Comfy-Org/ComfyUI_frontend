@@ -849,6 +849,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "切換自訂節點管理器進度條",
     "Undo": "復原",
     "Ungroup selected group nodes": "取消群組選取的群組節點",
+    "Unpack the selected Subgraph": "解包所選子圖",
     "Workflow": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小"

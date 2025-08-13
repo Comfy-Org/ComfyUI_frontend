@@ -849,6 +849,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "커스텀 노드 매니저 진행률 표시줄 전환",
     "Undo": "실행 취소",
     "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
+    "Unpack the selected Subgraph": "선택한 서브그래프 풀기",
     "Workflow": "워크플로",
     "Zoom In": "확대",
     "Zoom Out": "축소"
