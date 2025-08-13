@@ -20,8 +20,7 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
-const ComfyUIPreset = definePreset(
-  Aura, {
+const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fixme ts strict error
     primary: Aura['primitive'].blue
