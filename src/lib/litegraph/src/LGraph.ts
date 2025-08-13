@@ -20,6 +20,7 @@ import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
   DefaultConnectionColors,
   Dictionary,
+  HasBoundingRect,
   IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
@@ -28,7 +29,8 @@ import type {
   MethodNames,
   OptionalProps,
   Point,
-  Positionable
+  Positionable,
+  Size
 } from './interfaces'
 import { LiteGraph, SubgraphNode } from './litegraph'
 import {
@@ -1671,13 +1673,19 @@ export class LGraph
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
     this.beforeChange()
-    const center = [0, 0]
-    for (const node of subgraphNode.subgraph.nodes) {
-      center[0] += node.pos[0] + node.size[0] / 2
-      center[1] += node.pos[1] + node.size[1] / 2
-    }
-    center[0] /= subgraphNode.subgraph.nodes.length
-    center[1] /= subgraphNode.subgraph.nodes.length
+    //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
+    //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
+    const positionables = [
+      ...subgraphNode.subgraph.nodes,
+      ...subgraphNode.subgraph.reroutes.values(),
+      ...subgraphNode.subgraph.groups
+    ].map((p: { pos: Point; size?: Size }): HasBoundingRect => {
+      return {
+        boundingRect: [p.pos[0], p.pos[1], p.size?.[0] ?? 0, p.size?.[1] ?? 0]
+      }
+    })
+    const bounds = createBounds(positionables) ?? [0, 0, 0, 0]
+    const center = [bounds[0] + bounds[2] / 2, bounds[1] + bounds[3] / 2]
 
     const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
