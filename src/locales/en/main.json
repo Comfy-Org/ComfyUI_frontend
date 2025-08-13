@@ -882,8 +882,19 @@
     "fitView": "Fit View",
     "selectMode": "Select Mode",
     "panMode": "Pan Mode",
-    "toggleLinkVisibility": "Toggle Link Visibility",
-    "toggleMinimap": "Toggle Minimap"
+    "toggleMinimap": "Toggle Minimap",
+    "select": "Select",
+    "hand": "Hand",
+    "zoomOptions": "Zoom Options",
+    "focusMode": "Focus Mode",
+    "hideLinks": "Hide Links",
+    "showLinks": "Show Links"
+  },
+  "zoomControls": {
+    "label": "Zoom Controls",
+    "zoomToFit": "Zoom To Fit",
+    "showMinimap": "Show Minimap",
+    "hideMinimap": "Hide Minimap"
   },
   "groupNode": {
     "create": "Create group node",
@@ -952,6 +963,7 @@
     "Add Edit Model Step": "Add Edit Model Step",
     "Delete Selected Items": "Delete Selected Items",
     "Fit view to selected nodes": "Fit view to selected nodes",
+    "Lock Canvas": "Lock Canvas",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
@@ -966,6 +978,7 @@
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
     "Mute/Unmute Selected Nodes": "Mute/Unmute Selected Nodes",
     "Pin/Unpin Selected Nodes": "Pin/Unpin Selected Nodes",
+    "Unlock Canvas": "Unlock Canvas",
     "Zoom In": "Zoom In",
     "Zoom Out": "Zoom Out",
     "Clear Pending Tasks": "Clear Pending Tasks",
@@ -979,6 +992,7 @@
     "Exit Subgraph": "Exit Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
+    "Unpack the selected Subgraph": "Unpack the selected Subgraph",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
     "Manage group nodes": "Manage group nodes",
     "Ungroup selected group nodes": "Ungroup selected group nodes",

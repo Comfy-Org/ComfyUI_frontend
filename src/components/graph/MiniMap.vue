@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="visible && initialized"
-    class="minimap-main-container flex absolute bottom-[20px] right-[90px] z-[1000]"
+    class="minimap-main-container flex absolute bottom-[60px] right-[100px] z-[1000]"
   >
     <MiniMapPanel
       v-if="showOptionsPanel"
@@ -30,6 +30,24 @@
           <i-lucide:settings-2 />
         </template>
       </Button>
+      <Button
+        class="absolute z-10 right-0"
+        size="small"
+        text
+        severity="secondary"
+        @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
+      >
+        <template #icon>
+          <i-lucide:x />
+        </template>
+      </Button>
+
+      <hr
+        class="absolute top-5 bg-[#E1DED5] dark-theme:bg-[#262729] h-[1px] border-0"
+        :style="{
+          width: containerStyles.width
+        }"
+      />
 
       <canvas
         ref="canvasRef"
@@ -57,12 +75,14 @@ import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useMinimap } from '@/composables/useMinimap'
+import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 
 const minimap = useMinimap()
 const canvasStore = useCanvasStore()
+const commandStore = useCommandStore()
 
 const {
   initialized,

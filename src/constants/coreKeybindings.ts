@@ -193,6 +193,18 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      key: 'v'
+    },
+    commandId: 'Comfy.Canvas.Unlock'
+  },
+  {
+    combo: {
+      key: 'h'
+    },
+    commandId: 'Comfy.Canvas.Lock'
+  },
+  {
+    combo: {
       key: 'Escape'
     },
     commandId: 'Comfy.Graph.ExitSubgraph'

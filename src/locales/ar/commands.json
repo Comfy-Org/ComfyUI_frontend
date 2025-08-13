@@ -50,6 +50,9 @@
   "Comfy_Canvas_FitView": {
     "label": "تعديل العرض ليناسب العقد المحددة"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "قفل اللوحة"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "تحريك العقد المحددة للأسفل"
   },
@@ -92,6 +95,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "تثبيت/إلغاء تثبيت العناصر المحددة"
   },
+  "Comfy_Canvas_Unlock": {
+    "label": "فتح اللوحة"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "تكبير"
   },
@@ -130,6 +136,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "تجميع العقد المحددة"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "فك التفرع الفرعي المحدد"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "تحويل العقد المحددة إلى عقدة مجموعة"

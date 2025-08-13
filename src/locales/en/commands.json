@@ -50,6 +50,9 @@
   "Comfy_Canvas_FitView": {
     "label": "Fit view to selected nodes"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "Lock Canvas"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Move Selected Nodes Down"
   },
@@ -92,6 +95,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "Pin/Unpin Selected Nodes"
   },
+  "Comfy_Canvas_Unlock": {
+    "label": "Unlock Canvas"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom In"
   },
@@ -125,14 +131,14 @@
   "Comfy_Graph_ExitSubgraph": {
     "label": "Exit Subgraph"
   },
-  "Comfy_Graph_UnpackSubgraph": {
-    "label": "Unpack the selected Subgraph"
-  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Fit Group To Contents"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Group Selected Nodes"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Unpack the selected Subgraph"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Convert selected nodes to group node"
