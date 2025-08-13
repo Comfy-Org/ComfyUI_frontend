@@ -131,6 +131,9 @@
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Grouper les nœuds sélectionnés"
   },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Décompresser le sous-graphe sélectionné"
+  },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Convertir les nœuds sélectionnés en nœud de groupe"
   },

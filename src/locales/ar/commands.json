@@ -131,6 +131,9 @@
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "تجميع العقد المحددة"
   },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "فك تجميع الرسم الفرعي المحدد"
+  },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "تحويل العقد المحددة إلى عقدة مجموعة"
   },
