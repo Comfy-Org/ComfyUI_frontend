@@ -20,6 +20,7 @@ import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
   DefaultConnectionColors,
   Dictionary,
+  HasBoundingRect,
   IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
@@ -28,7 +29,8 @@ import type {
   MethodNames,
   OptionalProps,
   Point,
-  Positionable
+  Positionable,
+  Size
 } from './interfaces'
 import { LiteGraph, SubgraphNode } from './litegraph'
 import {
@@ -1569,6 +1571,9 @@ export class LGraph
       boundingRect
     )
 
+    //Correct for title height. It's included in bounding box, but not _posSize
+    subgraphNode.pos[1] += LiteGraph.NODE_TITLE_HEIGHT / 2
+
     // Add the subgraph node to the graph
     this.add(subgraphNode)
 
@@ -1668,14 +1673,21 @@ export class LGraph
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
     this.beforeChange()
-    const center = [0, 0]
-    for (const node of subgraphNode.subgraph.nodes) {
-      center[0] += node.pos[0] + node.size[0] / 2
-      center[1] += node.pos[1] + node.size[1] / 2
-    }
-    center[0] /= subgraphNode.subgraph.nodes.length
-    center[1] /= subgraphNode.subgraph.nodes.length
+    //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
+    //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
+    const positionables = [
+      ...subgraphNode.subgraph.nodes,
+      ...subgraphNode.subgraph.reroutes.values(),
+      ...subgraphNode.subgraph.groups
+    ].map((p: { pos: Point; size?: Size }): HasBoundingRect => {
+      return {
+        boundingRect: [p.pos[0], p.pos[1], p.size?.[0] ?? 0, p.size?.[1] ?? 0]
+      }
+    })
+    const bounds = createBounds(positionables) ?? [0, 0, 0, 0]
+    const center = [bounds[0] + bounds[2] / 2, bounds[1] + bounds[3] / 2]
 
+    const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
     const movedNodes = multiClone(subgraphNode.subgraph.nodes)
@@ -1697,6 +1709,21 @@ export class LGraph
       for (const input of node.inputs) {
         input.link = null
       }
+      for (const output of node.outputs) {
+        output.links = []
+      }
+      toSelect.push(node)
+    }
+    const groups = structuredClone(
+      [...subgraphNode.subgraph.groups].map((g) => g.serialize())
+    )
+    for (const g_info of groups) {
+      const group = new LGraphGroup(g_info.title, g_info.id)
+      this.add(group, true)
+      group.configure(g_info)
+      group.pos[0] += offsetX
+      group.pos[1] += offsetY
+      toSelect.push(group)
     }
     //cleanup reoute.linkIds now, but leave link.parentIds dangling
     for (const islot of subgraphNode.inputs) {
@@ -1722,17 +1749,16 @@ export class LGraph
         }
       }
     }
-
-    const newLinks: [
-      NodeId,
-      number,
-      NodeId,
-      number,
-      LinkId,
-      RerouteId | undefined,
-      RerouteId | undefined,
-      boolean
-    ][] = []
+    const newLinks: {
+      oid: NodeId
+      oslot: number
+      tid: NodeId
+      tslot: number
+      id: LinkId
+      iparent?: RerouteId
+      eparent?: RerouteId
+      externalFirst: boolean
+    }[] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
@@ -1757,16 +1783,16 @@ export class LGraph
         for (const linkId of subgraphNode.outputs[link.target_slot].links ??
           []) {
           const sublink = this.links[linkId]
-          newLinks.push([
-            link.origin_id,
-            link.origin_slot,
-            sublink.target_id,
-            sublink.target_slot,
-            link.id,
-            link.parentId,
-            sublink.parentId,
-            true
-          ])
+          newLinks.push({
+            oid: link.origin_id,
+            oslot: link.origin_slot,
+            tid: sublink.target_id,
+            tslot: sublink.target_slot,
+            id: link.id,
+            iparent: link.parentId,
+            eparent: sublink.parentId,
+            externalFirst: true
+          })
           sublink.parentId = undefined
         }
         continue
@@ -1778,47 +1804,47 @@ export class LGraph
         }
         link.target_id = target_id
       }
-      newLinks.push([
-        link.origin_id,
-        link.origin_slot,
-        link.target_id,
-        link.target_slot,
-        link.id,
-        link.parentId,
-        externalParentId,
-        false
-      ])
+      newLinks.push({
+        oid: link.origin_id,
+        oslot: link.origin_slot,
+        tid: link.target_id,
+        tslot: link.target_slot,
+        id: link.id,
+        iparent: link.parentId,
+        eparent: externalParentId,
+        externalFirst: false
+      })
     }
     this.remove(subgraphNode)
     this.subgraphs.delete(subgraphNode.subgraph.id)
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of newLinks) {
       let created: LLink | null | undefined
-      if (newLink[0] == SUBGRAPH_INPUT_ID) {
+      if (newLink.oid == SUBGRAPH_INPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink[2]]
-        created = this.inputNode.slots[newLink[1]].connect(
-          tnode.inputs[newLink[3]],
+        const tnode = this._nodes_by_id[newLink.tid]
+        created = this.inputNode.slots[newLink.oslot].connect(
+          tnode.inputs[newLink.tslot],
           tnode
         )
-      } else if (newLink[2] == SUBGRAPH_OUTPUT_ID) {
+      } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink[0]]
-        created = this.outputNode.slots[newLink[3]].connect(
-          tnode.outputs[newLink[1]],
+        const tnode = this._nodes_by_id[newLink.oid]
+        created = this.outputNode.slots[newLink.tslot].connect(
+          tnode.outputs[newLink.oslot],
           tnode
         )
       } else {
-        created = this._nodes_by_id[newLink[0]].connect(
-          newLink[1],
-          this._nodes_by_id[newLink[2]],
-          newLink[3]
+        created = this._nodes_by_id[newLink.oid].connect(
+          newLink.oslot,
+          this._nodes_by_id[newLink.tid],
+          newLink.tslot
         )
       }
       if (!created) {
@@ -1826,12 +1852,12 @@ export class LGraph
         continue
       }
       //This is a little unwieldy since Map.has isn't a type guard
-      const linkIds = linkIdMap.get(newLink[4]) ?? []
+      const linkIds = linkIdMap.get(newLink.id) ?? []
       linkIds.push(created.id)
-      if (!linkIdMap.has(newLink[4])) {
-        linkIdMap.set(newLink[4], linkIds)
+      if (!linkIdMap.has(newLink.id)) {
+        linkIdMap.set(newLink.id, linkIds)
       }
-      newLink[4] = created.id
+      newLink.id = created.id
     }
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     for (const reroute of subgraphNode.subgraph.reroutes.values()) {
@@ -1847,17 +1873,18 @@ export class LGraph
       ])
       rerouteIdMap.set(reroute.id, migratedReroute.id)
       this.reroutes.set(migratedReroute.id, migratedReroute)
+      toSelect.push(migratedReroute)
     }
     //iterate over newly created links to update reroute parentIds
     for (const newLink of newLinks) {
-      const linkInstance = this.links.get(newLink[4])
+      const linkInstance = this.links.get(newLink.id)
       if (!linkInstance) {
         continue
       }
       let instance: Reroute | LLink | undefined = linkInstance
-      let parentId: RerouteId | undefined = newLink[6]
-      if (newLink[7]) {
-        parentId = newLink[6]
+      let parentId: RerouteId | undefined = undefined
+      if (newLink.externalFirst) {
+        parentId = newLink.eparent
         //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
         while (parentId) {
           instance.parentId = parentId
@@ -1869,7 +1896,7 @@ export class LGraph
           parentId = instance.parentId
         }
       }
-      parentId = newLink[5]
+      parentId = newLink.iparent
       while (parentId) {
         const migratedId = rerouteIdMap.get(parentId)
         if (!migratedId) throw new Error('Broken Id link when unpacking')
@@ -1883,8 +1910,8 @@ export class LGraph
         if (!oldReroute) throw new Error('Broken Id link when unpacking')
         parentId = oldReroute.parentId
       }
-      if (!newLink[7]) {
-        parentId = newLink[6]
+      if (!newLink.externalFirst) {
+        parentId = newLink.eparent
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)
@@ -1897,18 +1924,13 @@ export class LGraph
       }
     }
 
-    const nodes: LGraphNode[] = []
     for (const nodeId of nodeIdMap.values()) {
       const node = this._nodes_by_id[nodeId]
-      nodes.push(node)
       node._setConcreteSlots()
       node.arrange()
     }
-    const reroutes = [...rerouteIdMap.values()]
-      .map((i) => this.reroutes.get(i))
-      .filter((x): x is Reroute => !!x)
 
-    this.canvasAction((c) => c.selectItems([...nodes, ...reroutes]))
+    this.canvasAction((c) => c.selectItems(toSelect))
     this.afterChange()
   }
 
