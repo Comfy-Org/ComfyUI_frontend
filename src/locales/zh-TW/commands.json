@@ -131,6 +131,9 @@
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "群組所選節點"
   },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "解開所選子圖"
+  },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "將選取的節點轉換為群組節點"
   },
