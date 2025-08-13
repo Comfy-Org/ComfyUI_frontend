@@ -49,7 +49,7 @@ jobs:
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: '[auto-fix] Apply ESLint and Prettier fixe'
+          commit_message: '[auto-fix] Apply ESLint and Prettier fix'
 
       - name: Final validation
         run: |

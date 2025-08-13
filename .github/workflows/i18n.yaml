@@ -1,7 +1,7 @@
 name: Update Locales
 
 on:
-  pull_request:
+  push:
     branches: [ main, master, dev* ]
     paths-ignore:
       - '.github/**'
@@ -12,8 +12,6 @@ on:
 
 jobs:
   update-locales:
-    # Don't run on fork PRs
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
@@ -39,13 +37,7 @@ jobs:
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
-        git fetch origin ${{ github.head_ref }}
-        # Stash any local changes before checkout
-        git stash -u
-        git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
-        # Apply the stashed changes if any
-        git stash pop || true
         git add src/locales/
         git diff --staged --quiet || git commit -m "Update locales [skip ci]"
-        git push origin HEAD:${{ github.head_ref }}
+        git push origin HEAD
       working-directory: ComfyUI_frontend
