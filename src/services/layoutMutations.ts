@@ -134,13 +134,13 @@ class LayoutMutationsImpl implements LayoutMutations {
     // Get all nodes to find the highest z-index
     const allNodes = layoutStore.getAllNodes().value
     let maxZIndex = 0
-    
-    for (const [_, layout] of allNodes) {
+
+    for (const [, layout] of allNodes) {
       if (layout.zIndex > maxZIndex) {
         maxZIndex = layout.zIndex
       }
     }
-    
+
     // Set this node's z-index to be one higher than the current max
     this.setNodeZIndex(nodeId, maxZIndex + 1)
   }

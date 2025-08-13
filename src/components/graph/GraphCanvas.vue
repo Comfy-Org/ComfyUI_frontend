@@ -131,7 +131,7 @@ import type {
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
-import { useLayoutSync } from '@/composables/graph/useLayout'
+import { useLayout, useLayoutSync } from '@/composables/graph/useLayout'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -174,6 +174,7 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
+const { mutations: layoutMutations } = useLayout()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -479,13 +480,12 @@ const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
   }
 
   canvasStore.canvas.selectNode(node)
-  
+
   // Bring node to front when clicked (similar to LiteGraph behavior)
   // Skip if node is pinned
   if (!node.flags?.pinned) {
-    const { mutations } = useLayout()
-    mutations.setSource('vue')
-    mutations.bringNodeToFront(nodeData.id)
+    layoutMutations.setSource('vue')
+    layoutMutations.bringNodeToFront(nodeData.id)
   }
   node.selected = true
 
