@@ -102,6 +102,9 @@ export function useMinimap() {
   const groupColor = computed(() =>
     isLightTheme.value ? '#A2D3EC' : '#1F547A'
   )
+  const groupColorDefault = computed(
+    () => (isLightTheme.value ? '#283640' : '#B3C1CB') // this is the default group color when using nodeColors setting
+  )
   const bypassColor = computed(() =>
     isLightTheme.value ? '#DBDBDB' : '#4B184B'
   )
@@ -249,7 +252,17 @@ export function useMinimap() {
       const w = group.size[0] * scale.value
       const h = group.size[1] * scale.value
 
-      ctx.fillStyle = groupColor.value
+      let color = groupColor.value
+
+      if (nodeColors.value) {
+        color = group.color ?? groupColorDefault.value
+
+        if (isLightTheme.value) {
+          color = adjustColor(color, { opacity: 0.5 })
+        }
+      }
+
+      ctx.fillStyle = color
       ctx.fillRect(x, y, w, h)
     }
   }
