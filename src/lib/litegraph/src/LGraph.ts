@@ -1709,6 +1709,9 @@ export class LGraph
       for (const input of node.inputs) {
         input.link = null
       }
+      for (const output of node.outputs) {
+        output.links = []
+      }
       toSelect.push(node)
     }
     const groups = structuredClone(
