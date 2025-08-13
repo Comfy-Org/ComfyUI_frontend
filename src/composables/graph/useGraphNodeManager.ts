@@ -4,6 +4,7 @@
  */
 import { nextTick, reactive, readonly } from 'vue'
 
+import { layoutMutations } from '@/services/layoutMutations'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
@@ -482,6 +483,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       currentPos.y !== node.pos[1]
     ) {
       nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
+
+      // Push position change to layout store
+      // Source is already set to 'canvas' in detectChangesInRAF
+      void layoutMutations.moveNode(id, { x: node.pos[0], y: node.pos[1] })
+
       return true
     }
     return false
@@ -499,6 +505,14 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       currentSize.height !== node.size[1]
     ) {
       nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
+
+      // Push size change to layout store
+      // Source is already set to 'canvas' in detectChangesInRAF
+      void layoutMutations.resizeNode(id, {
+        width: node.size[0],
+        height: node.size[1]
+      })
+
       return true
     }
     return false
@@ -548,6 +562,9 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
     let positionUpdates = 0
     let sizeUpdates = 0
+
+    // Set source for all canvas-driven updates
+    layoutMutations.setSource('canvas')
 
     // Process each node for changes
     for (const node of graph._nodes) {
@@ -606,6 +623,15 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     }
     spatialIndex.insert(id, bounds, id)
 
+    // Add node to layout store
+    layoutMutations.setSource('canvas')
+    void layoutMutations.createNode(id, {
+      position: { x: node.pos[0], y: node.pos[1] },
+      size: { width: node.size[0], height: node.size[1] },
+      zIndex: node.order || 0,
+      visible: true
+    })
+
     // Call original callback if provided
     if (originalCallback) {
       void originalCallback(node)
@@ -623,6 +649,10 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
     // Remove from spatial index
     spatialIndex.remove(id)
+
+    // Remove node from layout store
+    layoutMutations.setSource('canvas')
+    void layoutMutations.deleteNode(id)
 
     // Clean up all tracking references
     nodeRefs.delete(id)

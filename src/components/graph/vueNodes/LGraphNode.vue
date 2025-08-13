@@ -5,6 +5,7 @@
   </div>
   <div
     v-else
+    :data-node-id="nodeData.id"
     :class="[
       'lg-node absolute border-2 rounded-lg',
       'contain-layout contain-style contain-paint',
@@ -13,15 +14,22 @@
       nodeData.mode === 4 ? 'opacity-50' : '', // bypassed
       error ? 'border-red-500 bg-red-50' : '',
       isDragging ? 'will-change-transform' : '',
-      lodCssClass
+      lodCssClass,
+      'hover:border-green-500' // Debug: visual feedback on hover
     ]"
-    :style="{
-      transform: `translate(${position?.x ?? 0}px, ${(position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-      width: size ? `${size.width}px` : '200px',
-      height: size ? `${size.height}px` : 'auto',
-      backgroundColor: '#353535'
-    }"
+    :style="[
+      {
+        transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+        width: size ? `${size.width}px` : '200px',
+        height: size ? `${size.height}px` : 'auto',
+        backgroundColor: '#353535',
+        pointerEvents: 'auto'
+      },
+      dragStyle
+    ]"
     @pointerdown="handlePointerDown"
+    @pointermove="handlePointerMove"
+    @pointerup="handlePointerUp"
   >
     <!-- Header only updates on title/color changes -->
     <NodeHeader
@@ -78,11 +86,13 @@
 </template>
 
 <script setup lang="ts">
+import log from 'loglevel'
 import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
 
 // Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { LODLevel, useLOD } from '@/composables/graph/useLOD'
+import { useNodeLayout } from '@/composables/graph/useLayout'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import { LiteGraph } from '../../../lib/litegraph/src/litegraph'
@@ -90,6 +100,13 @@ import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
+
+// Create logger for vue nodes
+const logger = log.getLogger('vue-nodes')
+// In dev mode, always show debug logs
+if (import.meta.env.DEV) {
+  logger.setLevel('debug')
+}
 
 // Extended props for main node component
 interface LGraphNodeProps {
@@ -141,8 +158,38 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-// Track dragging state for will-change optimization
+// Use layout system for node position and dragging
+const {
+  position: layoutPosition,
+  startDrag,
+  handleDrag: handleLayoutDrag,
+  endDrag
+} = useNodeLayout(props.nodeData.id)
+
+// Debug layout position
+watch(
+  layoutPosition,
+  (newPos, oldPos) => {
+    logger.debug(`Layout position changed for node ${props.nodeData.id}:`, {
+      newPos,
+      oldPos,
+      layoutPositionValue: layoutPosition.value
+    })
+  },
+  { immediate: true, deep: true }
+)
+
+logger.debug(`LGraphNode mounted for ${props.nodeData.id}`, {
+  layoutPosition: layoutPosition.value,
+  propsPosition: props.position,
+  nodeDataId: props.nodeData.id
+})
+
+// Drag state for styling
 const isDragging = ref(false)
+const dragStyle = computed(() => ({
+  cursor: isDragging.value ? 'grabbing' : 'grab'
+}))
 
 // Track collapsed state
 const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
@@ -170,7 +217,26 @@ const handlePointerDown = (event: PointerEvent) => {
     console.warn('LGraphNode: nodeData is null/undefined in handlePointerDown')
     return
   }
+
+  // Start drag using layout system
+  isDragging.value = true
+  startDrag(event)
+
+  // Emit node-click for selection handling in GraphCanvas
   emit('node-click', event, props.nodeData)
+}
+
+const handlePointerMove = (event: PointerEvent) => {
+  if (isDragging.value) {
+    void handleLayoutDrag(event)
+  }
+}
+
+const handlePointerUp = (event: PointerEvent) => {
+  if (isDragging.value) {
+    isDragging.value = false
+    void endDrag(event)
+  }
 }
 
 const handleCollapse = () => {
@@ -194,11 +260,4 @@ const handleSlotClick = (
 const handleTitleUpdate = (newTitle: string) => {
   emit('update:title', props.nodeData.id, newTitle)
 }
-
-// Expose methods for parent to control dragging state
-defineExpose({
-  setDragging(dragging: boolean) {
-    isDragging.value = dragging
-  }
-})
 </script>
