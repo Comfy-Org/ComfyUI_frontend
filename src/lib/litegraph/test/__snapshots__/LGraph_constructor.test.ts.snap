@@ -252,7 +252,16 @@ LGraph {
   "config": {},
   "elapsed_time": 0.01,
   "errors_in_execution": undefined,
-  "events": CustomEventTarget {},
+  "events": CustomEventTarget {
+    Symbol(listeners): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+    Symbol(listenerOptions): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+  },
   "execution_time": undefined,
   "execution_timer_id": undefined,
   "extra": {},
@@ -299,7 +308,16 @@ LGraph {
   "config": {},
   "elapsed_time": 0.01,
   "errors_in_execution": undefined,
-  "events": CustomEventTarget {},
+  "events": CustomEventTarget {
+    Symbol(listeners): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+    Symbol(listenerOptions): {
+      "bubbling": Map {},
+      "capturing": Map {},
+    },
+  },
   "execution_time": undefined,
   "execution_timer_id": undefined,
   "extra": {},
