@@ -1569,6 +1569,9 @@ export class LGraph
       boundingRect
     )
 
+    //Correct for title height. It's included in bounding box, but not _posSize
+    subgraphNode.pos[1] += LiteGraph.NODE_TITLE_HEIGHT / 2
+
     // Add the subgraph node to the graph
     this.add(subgraphNode)
 
