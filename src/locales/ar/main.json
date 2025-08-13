@@ -1197,6 +1197,13 @@
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
     "helpCenter": "مركز المساعدة",
+    "labels": {
+      "models": "النماذج",
+      "nodes": "العُقَد",
+      "queue": "قائمة الانتظار",
+      "templates": "القوالب",
+      "workflows": "سير العمل"
+    },
     "logout": "تسجيل الخروج",
     "modelLibrary": "مكتبة النماذج",
     "newBlankWorkflow": "إنشاء سير عمل جديد فارغ",
@@ -1234,6 +1241,7 @@
       },
       "showFlatList": "عرض القائمة المسطحة"
     },
+    "templates": "القوالب",
     "workflowTab": {
       "confirmDelete": "هل أنت متأكد من رغبتك في حذف هذا السير؟",
       "confirmDeleteTitle": "حذف سير العمل؟",
