@@ -1676,6 +1676,7 @@ export class LGraph
     center[0] /= subgraphNode.subgraph.nodes.length
     center[1] /= subgraphNode.subgraph.nodes.length
 
+    const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
     const movedNodes = multiClone(subgraphNode.subgraph.nodes)
@@ -1697,6 +1698,18 @@ export class LGraph
       for (const input of node.inputs) {
         input.link = null
       }
+      toSelect.push(node)
+    }
+    const groups = structuredClone(
+      [...subgraphNode.subgraph.groups].map((g) => g.serialize())
+    )
+    for (const g_info of groups) {
+      const group = new LGraphGroup(g_info.title, g_info.id)
+      this.add(group, true)
+      group.configure(g_info)
+      group.pos[0] += offsetX
+      group.pos[1] += offsetY
+      toSelect.push(group)
     }
     //cleanup reoute.linkIds now, but leave link.parentIds dangling
     for (const islot of subgraphNode.inputs) {
@@ -1847,6 +1860,7 @@ export class LGraph
       ])
       rerouteIdMap.set(reroute.id, migratedReroute.id)
       this.reroutes.set(migratedReroute.id, migratedReroute)
+      toSelect.push(migratedReroute)
     }
     //iterate over newly created links to update reroute parentIds
     for (const newLink of newLinks) {
@@ -1897,18 +1911,13 @@ export class LGraph
       }
     }
 
-    const nodes: LGraphNode[] = []
     for (const nodeId of nodeIdMap.values()) {
       const node = this._nodes_by_id[nodeId]
-      nodes.push(node)
       node._setConcreteSlots()
       node.arrange()
     }
-    const reroutes = [...rerouteIdMap.values()]
-      .map((i) => this.reroutes.get(i))
-      .filter((x): x is Reroute => !!x)
 
-    this.canvasAction((c) => c.selectItems([...nodes, ...reroutes]))
+    this.canvasAction((c) => c.selectItems(toSelect))
     this.afterChange()
   }
 
