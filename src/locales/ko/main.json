@@ -403,8 +403,7 @@
     "versionMismatchWarning": "버전 호환성 경고",
     "versionMismatchWarningMessage": "{warning}: {detail} 업데이트 지침은 https://docs.comfy.org/installation/update_comfyui#common-update-issues 를 방문하세요.",
     "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
-    "workflow": "워크플로",
-    "duplicate": "복제"
+    "workflow": "워크플로"
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",
