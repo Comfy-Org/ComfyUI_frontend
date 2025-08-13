@@ -99,7 +99,7 @@ describe('SubgraphConversion', () => {
       const outer = createNode(graph, ['number'])
       const outerLink = subgraphNode.connect(0, outer, 0)
       assert(outerLink)
-      graph.add(new LGraphGroup())
+      subgraph.add(new LGraphGroup())
 
       subgraph.createReroute([10, 10], innerLink)
       graph.createReroute([10, 10], outerLink)
