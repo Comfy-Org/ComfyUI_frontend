@@ -8,6 +8,8 @@ import log from 'loglevel'
 import { type ComputedRef, type Ref, computed, customRef } from 'vue'
 import * as Y from 'yjs'
 
+import { ACTOR_CONFIG, DEBUG_CONFIG } from '@/constants/layout'
+import { SpatialIndexManager } from '@/services/spatialIndexManager'
 import type {
   CreateNodeOperation,
   DeleteNodeOperation,
@@ -24,10 +26,9 @@ import type {
   NodeLayout,
   Point
 } from '@/types/layoutTypes'
-import { QuadTree } from '@/utils/spatial/QuadTree'
 
 // Create logger for layout store
-const logger = log.getLogger('layout-store')
+const logger = log.getLogger(DEBUG_CONFIG.STORE_LOGGER_NAME)
 // In dev mode, always show debug logs
 if (import.meta.env.DEV) {
   logger.setLevel('debug')
@@ -41,8 +42,11 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue reactivity layer
   private version = 0
-  private currentSource: 'canvas' | 'vue' | 'external' = 'external'
-  private currentActor = `user-${Math.random().toString(36).substr(2, 9)}` // Random actor ID
+  private currentSource: 'canvas' | 'vue' | 'external' =
+    ACTOR_CONFIG.DEFAULT_SOURCE
+  private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
+    .toString(36)
+    .substr(2, ACTOR_CONFIG.ID_LENGTH)}`
 
   // Change listeners
   private changeListeners = new Set<(change: LayoutChange) => void>()
@@ -51,25 +55,20 @@ class LayoutStoreImpl implements LayoutStore {
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
 
-  // Spatial index using existing QuadTree infrastructure
-  private spatialIndex: QuadTree<NodeId>
-  private spatialQueryCache = new Map<string, NodeId[]>()
+  // Spatial index manager
+  private spatialIndex: SpatialIndexManager
 
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
     this.yoperations = this.ydoc.getArray('operations')
 
-    // Initialize QuadTree with reasonable bounds
-    this.spatialIndex = new QuadTree<NodeId>(
-      { x: -10000, y: -10000, width: 20000, height: 20000 },
-      { maxDepth: 6, maxItemsPerNode: 4 }
-    )
+    // Initialize spatial index manager
+    this.spatialIndex = new SpatialIndexManager()
 
     // Listen for Yjs changes and trigger Vue reactivity
     this.ynodes.observe((event) => {
       this.version++
-      this.spatialQueryCache.clear()
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change, key) => {
@@ -82,7 +81,7 @@ class LayoutStoreImpl implements LayoutStore {
     })
 
     // Debug: Log layout operations
-    if (localStorage.getItem('layout-debug') === 'true') {
+    if (localStorage.getItem(DEBUG_CONFIG.LAYOUT_DEBUG_KEY) === 'true') {
       this.yoperations.observe((event) => {
         const operations: LayoutOperation[] = []
         event.changes.added.forEach((item) => {
@@ -288,17 +287,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Query nodes in bounds (non-reactive for performance)
    */
   queryNodesInBounds(bounds: Bounds): NodeId[] {
-    // Check cache first
-    const cacheKey = `${bounds.x},${bounds.y},${bounds.width},${bounds.height}`
-    const cached = this.spatialQueryCache.get(cacheKey)
-    if (cached) return cached
-
-    // Use QuadTree for efficient spatial query
-    const result = this.spatialIndex.query(bounds)
-
-    // Cache result
-    this.spatialQueryCache.set(cacheKey, result)
-    return result
+    return this.spatialIndex.query(bounds)
   }
 
   /**
@@ -363,9 +352,8 @@ class LayoutStoreImpl implements LayoutStore {
    * Finalize operation after transaction
    */
   private finalizeOperation(change: LayoutChange): void {
-    // Update version and clear cache
+    // Update version
     this.version++
-    this.spatialQueryCache.clear()
 
     // Manually trigger affected node refs after transaction
     // This is needed because Yjs observers don't fire for property changes
@@ -454,7 +442,7 @@ class LayoutStoreImpl implements LayoutStore {
         this.ynodes.set(layout.id, this.layoutToYNode(layout))
 
         // Add to spatial index
-        this.spatialIndex.insert(layout.id, layout.bounds, layout.id)
+        this.spatialIndex.insert(layout.id, layout.bounds)
 
         logger.debug(
           `Initialized node ${layout.id} at position:`,
@@ -537,11 +525,7 @@ class LayoutStoreImpl implements LayoutStore {
     this.ynodes.set(operation.nodeId, ynode)
 
     // Add to spatial index
-    this.spatialIndex.insert(
-      operation.nodeId,
-      operation.layout.bounds,
-      operation.nodeId
-    )
+    this.spatialIndex.insert(operation.nodeId, operation.layout.bounds)
 
     change.type = 'create'
     change.nodeIds.push(operation.nodeId)
