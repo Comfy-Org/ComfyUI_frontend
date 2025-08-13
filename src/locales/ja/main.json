@@ -1197,6 +1197,13 @@
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
     "helpCenter": "ヘルプセンター",
+    "labels": {
+      "models": "モデル",
+      "nodes": "ノード",
+      "queue": "キュー",
+      "templates": "テンプレート",
+      "workflows": "ワークフロー"
+    },
     "logout": "ログアウト",
     "modelLibrary": "モデルライブラリ",
     "newBlankWorkflow": "新しい空のワークフローを作成",
@@ -1234,6 +1241,7 @@
       },
       "showFlatList": "フラットリストを表示"
     },
+    "templates": "テンプレート",
     "workflowTab": {
       "confirmDelete": "このワークフローを削除してもよろしいですか？",
       "confirmDeleteTitle": "ワークフローを削除しますか？",
