@@ -186,6 +186,40 @@ describe('SubgraphNode Lifecycle', () => {
     expect(subgraphNode.widgets).toHaveLength(0)
   })
 
+  it('should handle missing _listenerController on inputs without errors', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input1', type: 'number' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    // Simulate deserialized input without _listenerController
+    const input = subgraphNode.inputs[0]
+    delete (input as any)._listenerController
+
+    // This should not throw an error when configure is called
+    expect(() => {
+      subgraphNode.configure({
+        id: subgraphNode.id,
+        type: subgraph.id,
+        pos: subgraphNode.pos,
+        size: subgraphNode.size,
+        flags: {},
+        order: 0,
+        mode: 0
+      } as any)
+    }).not.toThrow()
+
+    // Adding input listeners should also not throw
+    expect(() => {
+      subgraph.addInput('input2', 'string')
+    }).not.toThrow()
+
+    // Cleanup should also not throw
+    expect(() => {
+      subgraphNode.onRemoved()
+    }).not.toThrow()
+  })
+
   it('should handle reconfiguration', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'input1', type: 'number' }],
