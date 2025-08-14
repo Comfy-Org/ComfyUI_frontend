@@ -15,28 +15,17 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup ComfyUI Frontend and Backend
+        uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
 
       # Step 1: Run lint and format fixes
       - name: Run ESLint with auto-fix
         run: npm run lint:fix
+        working-directory: ComfyUI_frontend
 
       - name: Run Prettier with auto-format
         run: npm run format
+        working-directory: ComfyUI_frontend
 
       # Step 2: Update locales (only if there are relevant changes)
       - name: Check if locale updates needed
@@ -48,26 +37,31 @@ jobs:
           else
             echo "locale_updates_needed=false" >> $GITHUB_OUTPUT
           fi
+        working-directory: ComfyUI_frontend
 
       - name: Install Playwright Browsers
         if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
         run: npx playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
 
       - name: Start dev server
         if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
         run: npm run dev:electron &
+        working-directory: ComfyUI_frontend
 
       - name: Update en.json
         if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
         run: npm run collect-i18n -- scripts/collect-i18n-general.ts
         env:
           PLAYWRIGHT_TEST_URL: http://localhost:5173
+        working-directory: ComfyUI_frontend
 
       - name: Update translations
         if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
         run: npm run locale
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        working-directory: ComfyUI_frontend
 
       # Step 3: Check for any changes from both lint-format and locale updates
       - name: Check for changes
@@ -81,14 +75,24 @@ jobs:
           else
             echo "changed=false" >> $GITHUB_OUTPUT  
           fi
+        working-directory: ComfyUI_frontend
 
       # Step 4: Commit all changes in a single commit
       - name: Commit auto-fixes and locale updates
         if: steps.verify-changed-files.outputs.changed == 'true'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: '[auto-fix] Apply ESLint, Prettier fixes and update locales'
-          file_pattern: '.'
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git fetch origin ${{ github.head_ref }}
+          # Stash any local changes before checkout
+          git stash -u
+          git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
+          # Apply the stashed changes if any
+          git stash pop || true
+          git add .
+          git diff --staged --quiet || git commit -m "[auto-fix] Apply ESLint, Prettier fixes and update locales"
+          git push origin HEAD:${{ github.head_ref }}
+        working-directory: ComfyUI_frontend
 
       # Step 5: Run final validation
       - name: Final validation
@@ -96,6 +100,7 @@ jobs:
           npm run lint
           npm run format:check
           npm run knip
+        working-directory: ComfyUI_frontend
 
       # Step 6: Comment on PR about what was fixed
       - name: Comment on PR about auto-fixes

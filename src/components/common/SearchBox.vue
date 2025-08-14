@@ -1,9 +1,5 @@
 <template>
   <div>
-    <!-- Test i18n workflow - this should trigger locale updates -->
-    <div v-if="false" class="search-test-message">
-      {{ $t('testWorkflowMessage') }}
-    </div>
     <IconField>
       <Button
         v-if="filterIcon"
