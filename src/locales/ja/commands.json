@@ -131,6 +131,9 @@
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "選択したノードをグループ化"
   },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "選択したサブグラフを展開"
+  },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "選択したノードをグループノードに変換"
   },

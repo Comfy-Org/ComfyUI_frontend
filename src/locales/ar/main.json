@@ -299,6 +299,7 @@
     "disabling": "جارٍ التعطيل",
     "dismiss": "تجاهل",
     "download": "تنزيل",
+    "duplicate": "تكرار",
     "edit": "تعديل",
     "empty": "فارغ",
     "enableAll": "تمكين الكل",
@@ -852,6 +853,8 @@
     "Undo": "تراجع",
     "Ungroup selected group nodes": "فك تجميع عقد المجموعة المحددة",
     "Workflows": "سير العمل",
+    "Unpack the selected Subgraph": "فك تجميع الرسم البياني الفرعي المحدد",
+    "Workflow": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
     "Zoom to fit": "تكبير لتناسب"
@@ -1199,6 +1202,13 @@
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
     "helpCenter": "مركز المساعدة",
+    "labels": {
+      "models": "النماذج",
+      "nodes": "العُقَد",
+      "queue": "قائمة الانتظار",
+      "templates": "القوالب",
+      "workflows": "سير العمل"
+    },
     "logout": "تسجيل الخروج",
     "modelLibrary": "مكتبة النماذج",
     "newBlankWorkflow": "إنشاء سير عمل جديد فارغ",
@@ -1236,6 +1246,7 @@
       },
       "showFlatList": "عرض القائمة المسطحة"
     },
+    "templates": "القوالب",
     "workflowTab": {
       "confirmDelete": "هل أنت متأكد من رغبتك في حذف هذا السير؟",
       "confirmDeleteTitle": "حذف سير العمل؟",

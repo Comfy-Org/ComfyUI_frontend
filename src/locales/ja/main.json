@@ -299,6 +299,7 @@
     "disabling": "無効化",
     "dismiss": "閉じる",
     "download": "ダウンロード",
+    "duplicate": "複製",
     "edit": "編集",
     "empty": "空",
     "enableAll": "すべて有効にする",
@@ -852,6 +853,8 @@
     "Undo": "元に戻す",
     "Ungroup selected group nodes": "選択したグループノードのグループ解除",
     "Workflows": "ワークフロー",
+    "Unpack the selected Subgraph": "選択したサブグラフを展開",
+    "Workflow": "ワークフロー",
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト",
     "Zoom to fit": "全体表示にズーム"
@@ -1199,6 +1202,13 @@
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
     "helpCenter": "ヘルプセンター",
+    "labels": {
+      "models": "モデル",
+      "nodes": "ノード",
+      "queue": "キュー",
+      "templates": "テンプレート",
+      "workflows": "ワークフロー"
+    },
     "logout": "ログアウト",
     "modelLibrary": "モデルライブラリ",
     "newBlankWorkflow": "新しい空のワークフローを作成",
@@ -1236,6 +1246,7 @@
       },
       "showFlatList": "フラットリストを表示"
     },
+    "templates": "テンプレート",
     "workflowTab": {
       "confirmDelete": "このワークフローを削除してもよろしいですか？",
       "confirmDeleteTitle": "ワークフローを削除しますか？",

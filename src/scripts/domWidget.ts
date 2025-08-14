@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'

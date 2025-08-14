@@ -1,4 +1,4 @@
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 
 import type { Point, Rect } from './interfaces'
 import { LGraphCanvas } from './litegraph'

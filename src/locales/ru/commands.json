@@ -131,6 +131,9 @@
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Группировать выбранные ноды"
   },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Распаковать выбранный подграф"
+  },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Преобразовать выбранные ноды в групповую ноду"
   },

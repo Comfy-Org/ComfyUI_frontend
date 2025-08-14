@@ -299,6 +299,7 @@
     "disabling": "Deshabilitando",
     "dismiss": "Descartar",
     "download": "Descargar",
+    "duplicate": "Duplicar",
     "edit": "Editar",
     "empty": "Vacío",
     "enableAll": "Habilitar todo",
@@ -852,6 +853,8 @@
     "Undo": "Deshacer",
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
     "Workflows": "Flujos de trabajo",
+    "Unpack the selected Subgraph": "Desempaquetar el Subgrafo seleccionado",
+    "Workflow": "Flujo de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
     "Zoom to fit": "Ajustar al tamaño"
@@ -1199,6 +1202,13 @@
     "browseTemplates": "Explorar plantillas de ejemplo",
     "downloads": "Descargas",
     "helpCenter": "Centro de ayuda",
+    "labels": {
+      "models": "Modelos",
+      "nodes": "Nodos",
+      "queue": "Cola",
+      "templates": "Plantillas",
+      "workflows": "Flujos de trabajo"
+    },
     "logout": "Cerrar sesión",
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
@@ -1236,6 +1246,7 @@
       },
       "showFlatList": "Mostrar lista plana"
     },
+    "templates": "Plantillas",
     "workflowTab": {
       "confirmDelete": "¿Estás seguro de que quieres eliminar este flujo de trabajo?",
       "confirmDeleteTitle": "¿Eliminar flujo de trabajo?",
