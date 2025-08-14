@@ -19,6 +19,7 @@ export const useLitegraphSettings = () => {
     const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
     if (canvasStore.canvas) {
       canvasStore.canvas.show_info = canvasInfoEnabled
+      canvasStore.canvas.draw(false, true)
     }
   })
 

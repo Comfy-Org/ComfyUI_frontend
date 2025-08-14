@@ -179,6 +179,9 @@
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "مدير"
+  },
   "Comfy_OpenWorkflow": {
     "label": "فتح سير عمل"
   },
@@ -205,6 +208,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "عرض نافذة الإعدادات"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "أداء اللوحة"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "مركز المساعدة"
   },
   "Comfy_ToggleTheme": {
     "label": "تبديل النمط (فاتح/داكن)"
