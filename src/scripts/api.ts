@@ -1275,6 +1275,28 @@ export class ComfyApi extends EventTarget {
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
   }
+
+  /**
+   * Posts analytics event to cloud analytics service
+   * @param eventName The name of the analytics event
+   * @param eventData The event data (any JSON-serializable object)
+   * @returns Promise resolving to the response
+   */
+  async postCloudAnalytics(
+    eventName: string,
+    eventData: any
+  ): Promise<Response> {
+    return this.fetchApi(this.internalURL('/cloud_analytics'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        event_name: eventName,
+        event_data: eventData
+      })
+    })
+  }
 }
 
 export const api = new ComfyApi()

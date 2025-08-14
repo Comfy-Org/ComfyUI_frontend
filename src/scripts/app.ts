@@ -997,6 +997,10 @@ export class ComfyApp {
     if (!templateData?.templates) {
       return
     }
+    api.postCloudAnalytics('load_workflow', {
+      source: 'template',
+      sourceData: { templateData }
+    })
 
     const old = localStorage.getItem('litegrapheditor_clipboard')
 
@@ -1277,6 +1281,12 @@ export class ComfyApp {
       const paths = await api.getFolderPaths()
       this.#showMissingModelsError(missingModels, paths)
     }
+    api.postCloudAnalytics('load_workflow', {
+      source: 'graph',
+      graph: this.graph.asSerialisable(),
+      missingNodeTypes,
+      missingModels
+    })
     await useExtensionService().invokeExtensionsAsync(
       'afterConfigureGraph',
       missingNodeTypes
@@ -1585,6 +1595,11 @@ export class ComfyApp {
     const missingNodeTypes = Object.values(apiData).filter(
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
+    api.postCloudAnalytics('load_workflow', {
+      source: 'api_json',
+      missingNodeTypes,
+      apiJson: apiData
+    })
     if (missingNodeTypes.length) {
       this.#showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
       return
