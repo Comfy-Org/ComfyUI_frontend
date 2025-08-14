@@ -3,6 +3,7 @@ import { computed, ref, watchEffect } from 'vue'
 
 import type { User as UserConfig } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { CSSLoader } from '@/utils/cssLoader'
 
 export interface User {
   userId: string
@@ -37,11 +38,32 @@ export const useUserStore = defineStore('user', () => {
   const initialized = computed(() => userConfig.value !== null)
 
   /**
+   * Loads user-specific CSS based on the current user context
+   */
+  async function loadUserCSS() {
+    try {
+      if (isMultiUserServer.value && currentUserId.value) {
+        // Multi-user mode: load user-specific CSS
+        await CSSLoader.loadUserCSS(currentUserId.value)
+      } else {
+        // Single-user mode: load default user.css
+        await CSSLoader.loadUserCSS()
+      }
+    } catch (error) {
+      // CSS loading failure should not break the app
+      console.warn('Failed to load user CSS:', error)
+    }
+  }
+
+  /**
    * Initialize the user store.
    */
   async function initialize() {
     userConfig.value = await api.getUserConfig()
     currentUserId.value = localStorage['Comfy.userId']
+
+    // Load user-specific CSS after initialization
+    await loadUserCSS()
   }
 
   /**
@@ -80,6 +102,9 @@ export const useUserStore = defineStore('user', () => {
     currentUserId.value = userId
     localStorage['Comfy.userId'] = userId
     localStorage['Comfy.userName'] = username
+
+    // Load CSS for the newly logged in user
+    await loadUserCSS()
   }
 
   watchEffect(() => {
@@ -92,8 +117,19 @@ export const useUserStore = defineStore('user', () => {
    * Logout the current user.
    */
   async function logout() {
+    // Clean up user-specific CSS
+    CSSLoader.removeUserCSS()
+
     delete localStorage['Comfy.userId']
     delete localStorage['Comfy.userName']
+
+    // Reset current user
+    currentUserId.value = null
+
+    // Load default CSS if still in multi-user mode
+    if (isMultiUserServer.value) {
+      await loadUserCSS()
+    }
   }
 
   return {
@@ -105,6 +141,7 @@ export const useUserStore = defineStore('user', () => {
     initialize,
     createUser,
     login,
-    logout
+    logout,
+    loadUserCSS
   }
 })
