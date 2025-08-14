@@ -7,7 +7,7 @@
       <slot name="header-title"></slot>
     </PanelHeader>
 
-    <nav class="flex-1 px-3 py-4 flex flex-col gap-2">
+    <nav class="flex-1 px-3 py-4 flex flex-col gap-1">
       <template v-for="(item, index) in navItems" :key="index">
         <div v-if="'items' in item" class="flex flex-col gap-2">
           <NavTitle :title="item.title" />

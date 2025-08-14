@@ -8,6 +8,7 @@ export default {
 
   theme: {
     fontSize: {
+      xxs: '0.625rem',
       xs: '0.75rem',
       sm: '0.875rem',
       base: '1rem',
