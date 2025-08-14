@@ -20,7 +20,7 @@
           >
             <div class="shortcut-info flex-grow pr-4">
               <div class="shortcut-name text-sm font-medium">
-                {{ command.label || command.id }}
+                {{ command.getTranslatedLabel() }}
               </div>
             </div>
 

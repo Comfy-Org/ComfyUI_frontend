@@ -2,7 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import type { ComfyExtension } from '@/types/comfy'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 
@@ -65,6 +67,19 @@ export class ComfyCommandImpl implements ComfyCommand {
 
   get keybinding(): KeybindingImpl | null {
     return useKeybindingStore().getKeybindingByCommandId(this.id)
+  }
+
+  getTranslatedLabel(): string {
+    // Use the same pattern as KeybindingPanel to get translated labels
+    return t(`commands.${normalizeI18nKey(this.id)}.label`, this.label ?? '')
+  }
+
+  getTranslatedMenubarLabel(): string {
+    // Use the same pattern but for menubar labels
+    return t(
+      `commands.${normalizeI18nKey(this.id)}.menubarLabel`,
+      this.menubarLabel ?? this.getTranslatedLabel()
+    )
   }
 }
 

@@ -139,7 +139,6 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref, watchEffect } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useKeybindingService } from '@/services/keybindingService'
@@ -149,7 +148,6 @@ import {
   KeybindingImpl,
   useKeybindingStore
 } from '@/stores/keybindingStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
@@ -161,7 +159,6 @@ const filters = ref({
 const keybindingStore = useKeybindingStore()
 const keybindingService = useKeybindingService()
 const commandStore = useCommandStore()
-const { t } = useI18n()
 
 interface ICommandData {
   id: string
@@ -173,10 +170,7 @@ interface ICommandData {
 const commandsData = computed<ICommandData[]>(() => {
   return Object.values(commandStore.commands).map((command) => ({
     id: command.id,
-    label: t(
-      `commands.${normalizeI18nKey(command.id)}.label`,
-      command.label ?? ''
-    ),
+    label: command.getTranslatedLabel(),
     keybinding: keybindingStore.getKeybindingByCommandId(command.id),
     source: command.source
   }))

@@ -32,7 +32,8 @@ describe('ShortcutsList', () => {
         combo: {
           getKeySequences: () => ['Control', 'n']
         }
-      }
+      },
+      getTranslatedLabel: () => 'New Workflow'
     } as ComfyCommandImpl,
     {
       id: 'Node.Add',
@@ -42,7 +43,8 @@ describe('ShortcutsList', () => {
         combo: {
           getKeySequences: () => ['Shift', 'a']
         }
-      }
+      },
+      getTranslatedLabel: () => 'Add Node'
     } as ComfyCommandImpl,
     {
       id: 'Queue.Clear',
@@ -52,7 +54,8 @@ describe('ShortcutsList', () => {
         combo: {
           getKeySequences: () => ['Control', 'Shift', 'c']
         }
-      }
+      },
+      getTranslatedLabel: () => 'Clear Queue'
     } as ComfyCommandImpl
   ]
 
@@ -104,7 +107,8 @@ describe('ShortcutsList', () => {
         id: 'No.Keybinding',
         label: 'No Keybinding',
         category: 'essentials',
-        keybinding: null
+        keybinding: null,
+        getTranslatedLabel: () => 'No Keybinding'
       } as ComfyCommandImpl
     ]
 
@@ -130,7 +134,8 @@ describe('ShortcutsList', () => {
         combo: {
           getKeySequences: () => ['Meta', 'ArrowUp', 'Enter', 'Escape', ' ']
         }
-      }
+      },
+      getTranslatedLabel: () => 'Special Keys'
     } as ComfyCommandImpl
 
     const wrapper = mount(ShortcutsList, {
