@@ -266,10 +266,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const subgraphInput = this.subgraph.inputNode.slots.find(
         (slot) => slot.name === input.name
       )
-      if (!subgraphInput)
-        throw new Error(
-          `[SubgraphNode.configure] No subgraph input found for input ${input.name}`
+      if (!subgraphInput) {
+        // Skip inputs that don't exist in the subgraph definition
+        // This can happen when loading workflows with dynamically added inputs
+        console.warn(
+          `[SubgraphNode.configure] No subgraph input found for input ${input.name}, skipping`
         )
+        continue
+      }
 
       this.#addSubgraphInputListeners(subgraphInput, input)
 
