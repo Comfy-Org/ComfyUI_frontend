@@ -114,6 +114,16 @@ describe('useNodePricing', () => {
       expect(price).toBe('$1.40/Run')
     })
 
+    it('should return high price for kling-v2-1-master model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingImage2VideoNode', [
+        { name: 'model_name', value: 'v2-1-master' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.40/Run')
+    })
+
     it('should return standard price for kling-v1-6 model', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('KlingImage2VideoNode', [
