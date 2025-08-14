@@ -18,7 +18,16 @@ jobs:
       - name: Setup ComfyUI Frontend and Backend
         uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
 
-      # Step 1: Run lint and format fixes
+      # Step 1: Cache ESLint for better performance
+      - name: Cache ESLint
+        uses: actions/cache@v4
+        with:
+          path: ComfyUI_frontend/.eslintcache
+          key: ${{ runner.os }}-eslint-${{ hashFiles('ComfyUI_frontend/eslint.config.js', 'ComfyUI_frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint-
+
+      # Step 2: Run lint and format fixes
       - name: Run ESLint with auto-fix
         run: npm run lint:fix
         working-directory: ComfyUI_frontend
@@ -27,7 +36,7 @@ jobs:
         run: npm run format
         working-directory: ComfyUI_frontend
 
-      # Step 2: Update locales (only if there are relevant changes)
+      # Step 3: Update locales (only if there are relevant changes)
       - name: Check if locale updates needed
         id: check-locale-changes
         run: |
@@ -63,7 +72,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         working-directory: ComfyUI_frontend
 
-      # Step 3: Check for any changes from both lint-format and locale updates
+      # Step 4: Check for any changes from both lint-format and locale updates
       - name: Check for changes
         id: verify-changed-files
         run: |
@@ -77,7 +86,7 @@ jobs:
           fi
         working-directory: ComfyUI_frontend
 
-      # Step 4: Commit all changes in a single commit
+      # Step 5: Commit all changes in a single commit
       - name: Commit auto-fixes and locale updates
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
@@ -94,7 +103,7 @@ jobs:
           git push origin HEAD:${{ github.head_ref }}
         working-directory: ComfyUI_frontend
 
-      # Step 5: Run final validation
+      # Step 6: Run final validation
       - name: Final validation
         run: |
           npm run lint
@@ -102,7 +111,7 @@ jobs:
           npm run knip
         working-directory: ComfyUI_frontend
 
-      # Step 6: Comment on PR about what was fixed
+      # Step 7: Comment on PR about what was fixed
       - name: Comment on PR about auto-fixes
         if: steps.verify-changed-files.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -148,6 +157,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Cache ESLint
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: ${{ runner.os }}-eslint-fork-${{ hashFiles('eslint.config.js', 'package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint-fork-
 
       - name: Check linting and formatting
         id: check-lint-format

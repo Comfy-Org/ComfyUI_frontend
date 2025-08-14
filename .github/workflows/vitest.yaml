@@ -17,9 +17,18 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 'lts/*'
+        cache: 'npm'
 
     - name: Install dependencies
       run: npm ci
+
+    - name: Cache Vite
+      uses: actions/cache@v4
+      with:
+        path: node_modules/.vite
+        key: ${{ runner.os }}-vite-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-vite-
 
     - name: Run Vitest tests
       run: |
