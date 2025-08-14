@@ -20,6 +20,11 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
+// Test formatting and linting issues
+const unused_variable = "This should trigger lint issues"; // Should trigger unused-var
+const badly_formatted_object={foo:"bar",baz:"qux"} // Missing spaces, should trigger format
+console.log("Test workflow auto-fix", unused_variable, badly_formatted_object) // Should trigger console-log rule
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fixme ts strict error

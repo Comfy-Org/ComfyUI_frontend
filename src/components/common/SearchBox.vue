@@ -1,5 +1,9 @@
 <template>
   <div>
+    <!-- Test i18n workflow - this should trigger locale updates -->
+    <div class="search-test-message">
+      Test Workflow Auto-Fix Message
+    </div>
     <IconField>
       <Button
         v-if="filterIcon"
