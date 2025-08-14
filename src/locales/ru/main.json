@@ -849,6 +849,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
+    "Unpack the selected Subgraph": "Распаковать выбранный подграф",
     "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить"
@@ -1196,6 +1197,13 @@
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
     "helpCenter": "Центр поддержки",
+    "labels": {
+      "models": "Модели",
+      "nodes": "Узлы",
+      "queue": "Очередь",
+      "templates": "Шаблоны",
+      "workflows": "Воркфлоу"
+    },
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
@@ -1233,6 +1241,7 @@
       },
       "showFlatList": "Показать плоский список"
     },
+    "templates": "Шаблоны",
     "workflowTab": {
       "confirmDelete": "Вы уверены, что хотите удалить этот рабочий процесс?",
       "confirmDeleteTitle": "Удалить рабочий процесс?",

@@ -40,7 +40,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
     useCommandStore().registerCommand({
       id: `Workspace.ToggleSidebarTab.${tab.id}`,
-      icon: tab.icon,
+      icon: typeof tab.icon === 'string' ? tab.icon : undefined,
       label: labelFunction,
       tooltip: tooltipFunction,
       versionAdded: '1.3.9',

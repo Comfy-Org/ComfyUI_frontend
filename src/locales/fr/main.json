@@ -849,6 +849,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Basculer la barre de progression du gestionnaire de nœuds personnalisés",
     "Undo": "Annuler",
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
+    "Unpack the selected Subgraph": "Décompresser le Subgraph sélectionné",
     "Workflow": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière"
@@ -1196,6 +1197,13 @@
     "browseTemplates": "Parcourir les modèles d'exemple",
     "downloads": "Téléchargements",
     "helpCenter": "Centre d'aide",
+    "labels": {
+      "models": "Modèles",
+      "nodes": "Nœuds",
+      "queue": "File d’attente",
+      "templates": "Modèles",
+      "workflows": "Flux de travail"
+    },
     "logout": "Déconnexion",
     "modelLibrary": "Bibliothèque de modèles",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
@@ -1233,6 +1241,7 @@
       },
       "showFlatList": "Afficher la liste plate"
     },
+    "templates": "Modèles",
     "workflowTab": {
       "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce flux de travail ?",
       "confirmDeleteTitle": "Supprimer le flux de travail ?",

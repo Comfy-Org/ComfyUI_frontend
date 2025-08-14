@@ -437,6 +437,14 @@
     "queue": "Queue",
     "nodeLibrary": "Node Library",
     "workflows": "Workflows",
+    "templates": "Templates",
+    "labels": {
+      "queue": "Queue",
+      "nodes": "Nodes",
+      "models": "Models",
+      "workflows": "Workflows",
+      "templates": "Templates"
+    },
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
@@ -979,6 +987,7 @@
     "Exit Subgraph": "Exit Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
+    "Unpack the selected Subgraph": "Unpack the selected Subgraph",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
     "Manage group nodes": "Manage group nodes",
     "Ungroup selected group nodes": "Ungroup selected group nodes",
