@@ -20,7 +20,8 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const DISABLE_VUE_PLUGINS = false // Always enable Vue DevTools for development
 
 // Hardcoded to staging cloud for testing frontend changes against cloud backend
-const DEV_SERVER_COMFYUI_URL = 'https://stagingcloud.comfy.org'
+const DEV_SERVER_COMFYUI_URL =
+  process.env.DEV_SERVER_COMFYUI_URL || 'https://stagingcloud.comfy.org'
 // To use local backend, change to: 'http://127.0.0.1:8188'
 
 // Optional: Add API key to .env as STAGING_API_KEY if needed for authentication
