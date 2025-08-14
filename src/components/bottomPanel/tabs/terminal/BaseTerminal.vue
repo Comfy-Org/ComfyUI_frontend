@@ -17,7 +17,8 @@ const emit = defineEmits<{
 }>()
 const terminalEl = ref<HTMLElement | undefined>()
 const rootEl = ref<HTMLElement | undefined>()
-emit('created', useTerminal(terminalEl), rootEl.value)
+// eslint-disable-next-line vue/no-ref-as-operand
+emit('created', useTerminal(terminalEl), rootEl)
 
 onUnmounted(() => emit('unmounted'))
 </script>
