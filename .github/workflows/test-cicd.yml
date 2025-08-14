@@ -1,0 +1,13 @@
+name: Test CI/CD Validation
+on:
+  pull_request:
+    types: [opened, synchronize]
+    
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate CI/CD
+        run: echo "CI/CD pipeline validation successful"
