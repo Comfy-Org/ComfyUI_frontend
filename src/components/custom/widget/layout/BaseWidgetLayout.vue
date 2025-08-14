@@ -61,7 +61,8 @@
             </div>
           </header>
 
-          <main class="flex-1">
+          <main class="flex flex-col flex-1 min-h-0">
+            <slot name="contentFilter"></slot>
             <slot name="content"></slot>
           </main>
         </div>
