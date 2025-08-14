@@ -93,6 +93,9 @@ export class CanvasPointer {
   /** The last pointermove event that was treated as a trackpad gesture. */
   lastTrackpadEvent?: WheelEvent
 
+  /** Last integer deltaY value seen (potential mouse wheel detent) */
+  lastIntegerDelta: number | null = null
+
   /**
    * If set, as soon as the mouse moves outside the click drift threshold, this action is run once.
    * @param pointer [DEPRECATED] This parameter will be removed in a future release.
@@ -293,13 +296,65 @@ export class CanvasPointer {
    * @returns `true` if the event is part of a trackpad gesture, otherwise `false`
    */
   isTrackpadGesture(e: WheelEvent): boolean {
+    const absY = Math.abs(e.deltaY)
+    const absX = Math.abs(e.deltaX)
+    const threshold = CanvasPointer.trackpadThreshold
+
+    // Quick trackpad heuristics
+    // 1. Horizontal scrolling (2D) = trackpad
+    if (absX > 0 && absX < threshold) {
+      this.lastTrackpadEvent = e
+      return true
+    }
+
+    // 2. Fractional values = trackpad
+    if (!Number.isInteger(e.deltaY) && absY < threshold) {
+      this.lastTrackpadEvent = e
+      return true
+    }
+
+    // 3. For integer values under threshold, check if it's a mouse wheel pattern
+    // Track integer values for potential mouse wheel detection
+    if (Number.isInteger(e.deltaY) && absY > 0 && absY < threshold) {
+      // If we have a previous integer delta, check if this is a multiple
+      if (this.lastIntegerDelta !== null && this.lastIntegerDelta > 0) {
+        // Use the smaller value as the potential detent
+        const potentialDetent = Math.min(absY, this.lastIntegerDelta)
+        // Check if both values are multiples of the potential detent
+        // Only consider it a mouse wheel if the detent is >= 5 (common mouse wheel values)
+        if (
+          potentialDetent >= 5 &&
+          absY % potentialDetent === 0 &&
+          this.lastIntegerDelta % potentialDetent === 0
+        ) {
+          // Update to the smaller detent value
+          this.lastIntegerDelta = potentialDetent
+          // Clear lastTrackpadEvent since this is a mouse wheel
+          this.lastTrackpadEvent = undefined
+          return false // Mouse wheel detected
+        }
+      } else {
+        // Store this as potential detent for next time (only if we don't have one yet)
+        this.lastIntegerDelta = absY
+      }
+    }
+
+    // 4. Check if this is a continuation of a trackpad gesture
+    // Do this AFTER checking for mouse wheel pattern to avoid false continuations
     if (this.#isContinuationOfGesture(e)) {
       this.lastTrackpadEvent = e
       return true
     }
 
-    const threshold = CanvasPointer.trackpadThreshold
-    return Math.abs(e.deltaX) < threshold && Math.abs(e.deltaY) < threshold
+    // Threshold check
+    const isTrackpad = absX < threshold && absY < threshold
+
+    // Save as trackpad event if detected as trackpad
+    if (isTrackpad) {
+      this.lastTrackpadEvent = e
+    }
+
+    return isTrackpad
   }
 
   /**
