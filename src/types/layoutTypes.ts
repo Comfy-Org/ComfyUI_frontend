@@ -131,23 +131,15 @@ export interface LayoutChange {
 
 // Store interfaces
 export interface LayoutStore {
-  // Node accessors
+  // CustomRef accessors for shared write access
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
-
-  // Slot accessors
-  getSlotLayoutRef(slotId: SlotId): Ref<SlotLayout | null>
-  getNodeSlots(nodeId: NodeId): ComputedRef<SlotLayout[]>
-  getAllSlots(): ComputedRef<ReadonlyMap<SlotId, SlotLayout>>
-
-  // Version tracking
   getVersion(): ComputedRef<number>
 
   // Spatial queries (non-reactive)
   queryNodeAtPoint(point: Point): NodeId | null
   queryNodesInBounds(bounds: Bounds): NodeId[]
-  querySlotAtPoint(point: Point): SlotId | null
 
   // Direct mutation API (CRDT-ready)
   applyOperation(operation: LayoutOperation): void
@@ -171,7 +163,6 @@ export interface LayoutStore {
 export type {
   LayoutOperation as AnyLayoutOperation,
   BaseOperation,
-  BaseSlotOperation,
   MoveNodeOperation,
   ResizeNodeOperation,
   SetNodeZIndexOperation,
@@ -179,10 +170,6 @@ export type {
   DeleteNodeOperation,
   SetNodeVisibilityOperation,
   BatchUpdateOperation,
-  CreateSlotOperation,
-  UpdateSlotOperation,
-  DeleteSlotOperation,
-  BatchUpdateSlotsOperation,
   OperationType,
   OperationApplicator,
   OperationSerializer,
