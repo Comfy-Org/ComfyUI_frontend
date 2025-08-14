@@ -150,7 +150,7 @@ jobs:
 
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: npx playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        run: pnpx playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
         working-directory: ComfyUI_frontend
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ../blob-report
@@ -232,7 +232,7 @@ jobs:
         run: |
           # Run tests with both HTML and JSON reporters
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          npx playwright test --project=${{ matrix.browser }} \
+          pnpx playwright test --project=${{ matrix.browser }} \
             --reporter=list \
             --reporter=html \
             --reporter=json
@@ -283,10 +283,10 @@ jobs:
       - name: Merge into HTML Report
         run: |
           # Generate HTML report
-          npx playwright merge-reports --reporter=html ./all-blob-reports
+          pnpx playwright merge-reports --reporter=html ./all-blob-reports
           # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          npx playwright merge-reports --reporter=json ./all-blob-reports
+          pnpx playwright merge-reports --reporter=json ./all-blob-reports
         working-directory: ComfyUI_frontend
 
       - name: Upload HTML report

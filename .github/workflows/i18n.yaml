@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
-    
+
     - name: Cache tool outputs
       uses: actions/cache@v4
       with:
@@ -33,7 +33,8 @@ jobs:
         restore-keys: |
           playwright-browsers-${{ runner.os }}-
     - name: Install Playwright Browsers
-      run: npx playwright install chromium --with-deps
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: pnpx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
