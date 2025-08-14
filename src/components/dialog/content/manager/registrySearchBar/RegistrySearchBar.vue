@@ -37,12 +37,12 @@
     <div class="flex mt-3 text-sm">
       <div class="flex gap-6 ml-1">
         <SearchFilterDropdown
-          v-model:modelValue="searchMode"
+          v-model:model-value="searchMode"
           :options="filterOptions"
           :label="$t('g.filter')"
         />
         <SearchFilterDropdown
-          v-model:modelValue="sortField"
+          v-model:model-value="sortField"
           :options="availableSortOptions"
           :label="$t('g.sort')"
         />

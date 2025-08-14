@@ -86,7 +86,7 @@
   <ConfirmPopup />
   <ContextMenu ref="menu" :model="menuItems" />
   <ResultGallery
-    v-model:activeIndex="galleryActiveIndex"
+    v-model:active-index="galleryActiveIndex"
     :all-gallery-items="allGalleryItems"
   />
 </template>

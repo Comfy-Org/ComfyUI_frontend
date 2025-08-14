@@ -71,7 +71,7 @@
       <template #header>
         <div>
           <SearchBox
-            v-model:modelValue="searchQuery"
+            v-model:model-value="searchQuery"
             class="node-lib-search-box p-2 2xl:p-4"
             :placeholder="$t('g.searchNodes') + '...'"
             filter-icon="pi pi-filter"
@@ -99,7 +99,7 @@
             class="m-2"
           />
           <TreeExplorer
-            v-model:expandedKeys="expandedKeys"
+            v-model:expanded-keys="expandedKeys"
             class="node-lib-tree-explorer"
             :root="renderedRoot"
           >

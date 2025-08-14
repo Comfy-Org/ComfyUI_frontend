@@ -2,7 +2,7 @@
   <div class="settings-container">
     <ScrollPanel class="settings-sidebar flex-shrink-0 p-2 w-48 2xl:w-64">
       <SearchBox
-        v-model:modelValue="searchQuery"
+        v-model:model-value="searchQuery"
         class="settings-search-box w-full mb-2"
         :placeholder="$t('g.searchSettings') + '...'"
         :debounce-time="128"
@@ -130,7 +130,7 @@ const searchResults = computed<ISettingGroup[]>(() =>
 )
 
 const tabValue = computed<string>(() =>
-  inSearch.value ? 'Search Results' : activeCategory.value?.label ?? ''
+  inSearch.value ? 'Search Results' : (activeCategory.value?.label ?? '')
 )
 
 // Don't allow null category to be set outside of search.

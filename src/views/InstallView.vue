@@ -37,8 +37,8 @@
         </StepPanel>
         <StepPanel v-slot="{ activateCallback }" value="1">
           <InstallLocationPicker
-            v-model:installPath="installPath"
-            v-model:pathError="pathError"
+            v-model:install-path="installPath"
+            v-model:path-error="pathError"
           />
           <div class="flex pt-6 justify-between">
             <Button
@@ -58,8 +58,8 @@
         </StepPanel>
         <StepPanel v-slot="{ activateCallback }" value="2">
           <MigrationPicker
-            v-model:sourcePath="migrationSourcePath"
-            v-model:migrationItemIds="migrationItemIds"
+            v-model:source-path="migrationSourcePath"
+            v-model:migration-item-ids="migrationItemIds"
           />
           <div class="flex pt-6 justify-between">
             <Button
@@ -78,13 +78,13 @@
         </StepPanel>
         <StepPanel v-slot="{ activateCallback }" value="3">
           <DesktopSettingsConfiguration
-            v-model:autoUpdate="autoUpdate"
-            v-model:allowMetrics="allowMetrics"
+            v-model:auto-update="autoUpdate"
+            v-model:allow-metrics="allowMetrics"
           />
           <MirrorsConfiguration
-            v-model:pythonMirror="pythonMirror"
-            v-model:pypiMirror="pypiMirror"
-            v-model:torchMirror="torchMirror"
+            v-model:python-mirror="pythonMirror"
+            v-model:pypi-mirror="pypiMirror"
+            v-model:torch-mirror="torchMirror"
             :device="device"
             class="mt-6"
           />

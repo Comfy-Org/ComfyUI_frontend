@@ -17,7 +17,7 @@ const emit = defineEmits<{
 }>()
 const terminalEl = ref<HTMLElement | undefined>()
 const rootEl = ref<HTMLElement | undefined>()
-emit('created', useTerminal(terminalEl), rootEl)
+emit('created', useTerminal(terminalEl), rootEl.value)
 
 onUnmounted(() => emit('unmounted'))
 </script>

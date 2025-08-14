@@ -54,7 +54,7 @@
       <div v-for="item in items" :key="item.name" class="mb-4">
         <FormItem
           :id="item.id"
-          v-model:formValue="item.value"
+          v-model:form-value="item.value"
           :item="translateItem(item)"
           :label-class="{
             'text-highlight': item.initialValue !== item.value

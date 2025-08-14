@@ -14,7 +14,7 @@
     </template>
     <template #header>
       <SearchBox
-        v-model:modelValue="searchQuery"
+        v-model:model-value="searchQuery"
         class="workflows-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchWorkflows') + '...'"
         @search="handleSearch"
@@ -32,7 +32,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expandedKeys="dummyExpandedKeys"
+            v-model:expanded-keys="dummyExpandedKeys"
             :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
             :selection-keys="selectionKeys"
           >
@@ -74,7 +74,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expandedKeys="dummyExpandedKeys"
+            v-model:expanded-keys="dummyExpandedKeys"
             :root="
               renderTreeNode(
                 bookmarkedWorkflowsTree,
@@ -96,7 +96,7 @@
           />
           <TreeExplorer
             v-if="workflowStore.persistedWorkflows.length > 0"
-            v-model:expandedKeys="expandedKeys"
+            v-model:expanded-keys="expandedKeys"
             :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
             :selection-keys="selectionKeys"
           >
@@ -114,7 +114,7 @@
       </div>
       <div v-else class="comfyui-workflows-search-panel">
         <TreeExplorer
-          v-model:expandedKeys="expandedKeys"
+          v-model:expanded-keys="expandedKeys"
           :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
         >
           <template #node="{ node }">

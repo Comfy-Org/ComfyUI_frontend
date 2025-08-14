@@ -21,7 +21,7 @@
     </template>
     <template #header>
       <SearchBox
-        v-model:modelValue="searchQuery"
+        v-model:model-value="searchQuery"
         class="model-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchModels') + '...'"
         @search="handleSearch"
@@ -31,7 +31,7 @@
       <ElectronDownloadItems v-if="isElectron()" />
 
       <TreeExplorer
-        v-model:expandedKeys="expandedKeys"
+        v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
         :root="renderedRoot"
       >

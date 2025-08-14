@@ -73,7 +73,7 @@ defineEmits<{
 // Bindings
 const description = computed(() =>
   runner.value.state === 'error'
-    ? props.task.errorDescription ?? props.task.shortDescription
+    ? (props.task.errorDescription ?? props.task.shortDescription)
     : props.task.shortDescription
 )
 

@@ -308,7 +308,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     const inputNode =
       this.target_id === -1
         ? undefined
-        : network.getNodeById(this.target_id) ?? undefined
+        : (network.getNodeById(this.target_id) ?? undefined)
     const input = inputNode?.inputs[this.target_slot]
     const subgraphInput = this.originIsIoNode
       ? network.inputNode?.slots[this.origin_slot]
@@ -320,7 +320,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     const outputNode =
       this.origin_id === -1
         ? undefined
-        : network.getNodeById(this.origin_id) ?? undefined
+        : (network.getNodeById(this.origin_id) ?? undefined)
     const output = outputNode?.outputs[this.origin_slot]
     const subgraphOutput = this.targetIsIoNode
       ? network.outputNode?.slots[this.target_slot]

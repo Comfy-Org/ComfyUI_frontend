@@ -47,7 +47,7 @@ const createPayload = (installItem: NodePack) => {
   const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
   const versionToInstall = isUnclaimedPack
     ? SelectedVersion.NIGHTLY
-    : installItem.latest_version?.version ?? SelectedVersion.LATEST
+    : (installItem.latest_version?.version ?? SelectedVersion.LATEST)
 
   return {
     id: installItem.id,
