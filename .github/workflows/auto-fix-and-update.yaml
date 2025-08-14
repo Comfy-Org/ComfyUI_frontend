@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   auto-fix-and-update:
-    # Only run on PRs from the same repository (not forks) to avoid permission issues
+    # Only run on PRs from the same repository (not forks) to avoid permission issues, auto fix any lint and formats, update locales, and commit the changes back
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
@@ -109,9 +109,9 @@ jobs:
             }
             // Always include lint/format as we ran them
             changes.push('ESLint auto-fixes', 'Prettier formatting');
-            
+
             const changesText = changes.join('\n- ');
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -125,7 +125,7 @@ jobs:
             **⚠️ Important**: Your local branch is now behind. Run \`git pull\` before making additional changes to avoid conflicts.`
             });
 
-  # Separate job for fork PRs that can't auto-commit
+  # Separate job for fork PRs that can't auto-commit, we only check lint and formats, and do not commit back
   fork-pr-check:
     if: github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
