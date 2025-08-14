@@ -8,7 +8,13 @@
  * - Conflict resolution (CRDT)
  * - Debugging (actor, timestamp, source)
  */
-import type { NodeId, NodeLayout, Point } from './layoutTypes'
+import type {
+  NodeId,
+  NodeLayout,
+  Point,
+  SlotId,
+  SlotLayout
+} from './layoutTypes'
 
 /**
  * Base operation interface that all operations extend
@@ -37,6 +43,10 @@ export type OperationType =
   | 'deleteNode'
   | 'setNodeVisibility'
   | 'batchUpdate'
+  | 'createSlot'
+  | 'updateSlot'
+  | 'deleteSlot'
+  | 'batchUpdateSlots'
 
 /**
  * Move node operation
@@ -100,6 +110,56 @@ export interface BatchUpdateOperation extends BaseOperation {
 }
 
 /**
+ * Base slot operation interface
+ */
+export interface BaseSlotOperation {
+  /** Unique operation ID for deduplication */
+  id?: string
+  /** Timestamp for ordering operations */
+  timestamp: number
+  /** Actor who performed the operation (for CRDT) */
+  actor: string
+  /** Source system that initiated the operation */
+  source: 'canvas' | 'vue' | 'external'
+  /** Slot this operation affects */
+  slotId: SlotId
+}
+
+/**
+ * Create slot operation
+ */
+export interface CreateSlotOperation extends BaseSlotOperation {
+  type: 'createSlot'
+  layout: SlotLayout
+}
+
+/**
+ * Update slot position operation
+ */
+export interface UpdateSlotOperation extends BaseSlotOperation {
+  type: 'updateSlot'
+  position: Point
+  previousPosition: Point
+}
+
+/**
+ * Delete slot operation
+ */
+export interface DeleteSlotOperation extends BaseSlotOperation {
+  type: 'deleteSlot'
+  previousLayout: SlotLayout
+}
+
+/**
+ * Batch update slots operation for a node
+ */
+export interface BatchUpdateSlotsOperation extends BaseOperation {
+  type: 'batchUpdateSlots'
+  slots: SlotLayout[]
+  previousSlots: SlotLayout[]
+}
+
+/**
  * Union of all operation types
  */
 export type LayoutOperation =
@@ -110,6 +170,10 @@ export type LayoutOperation =
   | DeleteNodeOperation
   | SetNodeVisibilityOperation
   | BatchUpdateOperation
+  | CreateSlotOperation
+  | UpdateSlotOperation
+  | DeleteSlotOperation
+  | BatchUpdateSlotsOperation
 
 /**
  * Type guards for operations
@@ -140,6 +204,22 @@ export const isCreateNodeOperation = (
 export const isDeleteNodeOperation = (
   op: LayoutOperation
 ): op is DeleteNodeOperation => op.type === 'deleteNode'
+
+export const isCreateSlotOperation = (
+  op: LayoutOperation
+): op is CreateSlotOperation => op.type === 'createSlot'
+
+export const isUpdateSlotOperation = (
+  op: LayoutOperation
+): op is UpdateSlotOperation => op.type === 'updateSlot'
+
+export const isDeleteSlotOperation = (
+  op: LayoutOperation
+): op is DeleteSlotOperation => op.type === 'deleteSlot'
+
+export const isBatchUpdateSlotsOperation = (
+  op: LayoutOperation
+): op is BatchUpdateSlotsOperation => op.type === 'batchUpdateSlots'
 
 /**
  * Operation application interface
