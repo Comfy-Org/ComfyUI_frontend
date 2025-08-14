@@ -1,3 +1,11 @@
+<i18n>
+{
+  "en": {
+    "Checkpoints": "Checkpoints"
+  }
+}
+</i18n>
+
 <template>
   <BaseWidgetLayout>
     <template #leftPanel>
@@ -17,7 +25,20 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconButton
+        <IconTextButton
+          type="primary"
+          label="Upload Model"
+          @click="
+            () => {
+              console.log('Upload Model')
+            }
+          "
+        >
+          <template #icon>
+            <i-lucide:upload />
+          </template>
+        </IconTextButton>
+        <!-- <IconButton
           size="sm"
           class="!bg-orange-500 text-white"
           @click="console.log('Hello World!!')"
@@ -76,12 +97,12 @@
               </template>
             </IconTextButton>
           </template>
-        </MoreButton>
+        </MoreButton> -->
       </div>
     </template>
 
-    <template #content>
-      <div class="px-6 pt-2 pb-4 flex gap-2">
+    <template #contentFilter>
+      <div class="relative px-6 pt-2 pb-4 flex gap-2">
         <MultiSelect
           v-model="selectedFrameworks"
           label="Select Frameworks"
@@ -93,42 +114,51 @@
           :options="projectOptions"
         />
       </div>
+    </template>
 
+    <template #content>
       <!-- Card Examples -->
-      <div
-        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 px-6 py-4"
-      >
-        <CardContainer ratio="tallPortrait">
-          <template #top>
-            <CardTop ratio="square">
-              <template #default>
-                <div class="w-full h-full bg-blue-500"></div>
-              </template>
-              <template #top-right>
-                <IconButton
-                  class="!bg-white !text-neutral-900"
-                  @click="console.log('Hello World!!')"
-                >
-                  <i-lucide:info />
-                </IconButton>
-              </template>
-              <template #bottom-right>
-                <SquareTag label="png" />
-                <SquareTag label="1.2 MB" />
-                <SquareTag label="LoRA">
-                  <template #icon>
-                    <i-lucide:folder />
-                  </template>
-                </SquareTag>
-              </template>
-            </CardTop>
-          </template>
-          <template #bottom>
-            <CardBottom></CardBottom>
-          </template>
-        </CardContainer>
+      <div class="min-h-0 px-6 py-4 overflow-y-auto scrollbar-hide">
+        <h2 class="text-xxl py-4 pt-0 m-0">{{ $t('Checkpoints') }}</h2>
+        <div class="flex flex-wrap gap-2">
+          <CardContainer
+            v-for="i in 100"
+            :key="i"
+            ratio="square"
+            :max-width="480"
+            :min-width="230"
+          >
+            <template #top>
+              <CardTop ratio="landscape">
+                <template #default>
+                  <div class="w-full h-full bg-blue-500"></div>
+                </template>
+                <template #top-right>
+                  <IconButton
+                    class="!bg-white !text-neutral-900"
+                    @click="console.log('Hello World!!')"
+                  >
+                    <i-lucide:info />
+                  </IconButton>
+                </template>
+                <template #bottom-right>
+                  <SquareTag label="png" />
+                  <SquareTag label="1.2 MB" />
+                  <SquareTag label="LoRA">
+                    <template #icon>
+                      <i-lucide:folder />
+                    </template>
+                  </SquareTag>
+                </template>
+              </CardTop>
+            </template>
+            <template #bottom>
+              <CardBottom></CardBottom>
+            </template>
+          </CardContainer>
+        </div>
 
-        <CardContainer ratio="portrait">
+        <!-- <CardContainer ratio="portrait" :max-width="320" :min-width="200">
           <template #top>
             <CardTop ratio="square">
               <div class="w-full h-full bg-red-500"></div>
@@ -139,10 +169,10 @@
           </template>
         </CardContainer>
 
-        <CardContainer ratio="square">
+        <CardContainer ratio="square" :max-width="320" :min-width="200">
           <template #top>
             <CardTop ratio="landscape">
-              <div class="w-full h-full bg-red-500"></div>
+              <div class="w-full h-full bg-blue-500"></div>
             </CardTop>
           </template>
           <template #bottom>
@@ -150,10 +180,10 @@
               <CardTitle>{{ t('manager.nodePack') }}</CardTitle>
               <CardDescription>{{
                 t('manager.noNodesFoundDescription')
-              }}</CardDescription>
+                }}</CardDescription>
             </CardBottom>
           </template>
-        </CardContainer>
+        </CardContainer> -->
       </div>
     </template>
 
@@ -173,11 +203,8 @@ import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 import SquareTag from '../SquareTag.vue'
 import IconButton from '../button/IconButton.vue'
 import IconTextButton from '../button/IconTextButton.vue'
-import MoreButton from '../button/MoreButton.vue'
-import TextButton from '../button/TextButton.vue'
 import CardBottom from '../card/CardBottom.vue'
 import CardContainer from '../card/CardContainer.vue'
-import CardDescription from '../card/CardDescription.vue'
 import CardTop from '../card/CardTop.vue'
 import MultiSelect from '../input/MultiSelect.vue'
 import SearchBox from '../input/SearchBox.vue'
