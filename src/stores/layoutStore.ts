@@ -11,16 +11,12 @@ import * as Y from 'yjs'
 import { ACTOR_CONFIG, DEBUG_CONFIG } from '@/constants/layout'
 import { SpatialIndexManager } from '@/services/spatialIndexManager'
 import type {
-  BatchUpdateSlotsOperation,
   CreateNodeOperation,
-  CreateSlotOperation,
   DeleteNodeOperation,
-  DeleteSlotOperation,
   LayoutOperation,
   MoveNodeOperation,
   ResizeNodeOperation,
-  SetNodeZIndexOperation,
-  UpdateSlotOperation
+  SetNodeZIndexOperation
 } from '@/types/layoutOperations'
 import type {
   Bounds,
@@ -28,9 +24,7 @@ import type {
   LayoutStore,
   NodeId,
   NodeLayout,
-  Point,
-  SlotId,
-  SlotLayout
+  Point
 } from '@/types/layoutTypes'
 
 // Create logger for layout store
@@ -44,7 +38,6 @@ class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<Y.Map<unknown>> // Maps nodeId -> Y.Map containing NodeLayout data
-  private yslots: Y.Map<Y.Map<unknown>> // Maps slotId -> Y.Map containing SlotLayout data
   private yoperations: Y.Array<LayoutOperation> // Operation log
 
   // Vue reactivity layer
@@ -61,8 +54,6 @@ class LayoutStoreImpl implements LayoutStore {
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
-  private slotRefs = new Map<SlotId, Ref<SlotLayout | null>>()
-  private slotTriggers = new Map<SlotId, () => void>()
 
   // Spatial index manager
   private spatialIndex: SpatialIndexManager
@@ -70,7 +61,6 @@ class LayoutStoreImpl implements LayoutStore {
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
-    this.yslots = this.ydoc.getMap('slots')
     this.yoperations = this.ydoc.getArray('operations')
 
     // Initialize spatial index manager
@@ -85,20 +75,6 @@ class LayoutStoreImpl implements LayoutStore {
         const trigger = this.nodeTriggers.get(key)
         if (trigger) {
           logger.debug(`Yjs change detected for node ${key}, triggering ref`)
-          trigger()
-        }
-      })
-    })
-
-    // Listen for slot changes
-    this.yslots.observe((event) => {
-      this.version++
-
-      // Trigger all affected slot refs
-      event.changes.keys.forEach((_change, key) => {
-        const trigger = this.slotTriggers.get(key)
-        if (trigger) {
-          logger.debug(`Yjs change detected for slot ${key}, triggering ref`)
           trigger()
         }
       })
@@ -273,140 +249,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Get or create a customRef for a slot layout
-   */
-  getSlotLayoutRef(slotId: SlotId): Ref<SlotLayout | null> {
-    let slotRef = this.slotRefs.get(slotId)
-
-    if (!slotRef) {
-      logger.debug(`Creating new layout ref for slot ${slotId}`)
-
-      slotRef = customRef<SlotLayout | null>((track, trigger) => {
-        // Store the trigger so we can call it when Yjs changes
-        this.slotTriggers.set(slotId, trigger)
-
-        return {
-          get: () => {
-            track()
-            const yslot = this.yslots.get(slotId)
-            const layout = yslot ? this.ySlotToLayout(yslot) : null
-            logger.debug(`Layout ref GET for slot ${slotId}:`, {
-              position: layout?.position,
-              hasYslot: !!yslot,
-              version: this.version
-            })
-            return layout
-          },
-          set: (newLayout: SlotLayout | null) => {
-            if (newLayout === null) {
-              // Delete operation
-              const existing = this.yslots.get(slotId)
-              if (existing) {
-                this.applyOperation({
-                  type: 'deleteSlot',
-                  slotId,
-                  timestamp: Date.now(),
-                  source: this.currentSource,
-                  actor: this.currentActor,
-                  previousLayout: this.ySlotToLayout(existing)
-                })
-              }
-            } else {
-              // Update or create operation
-              const existing = this.yslots.get(slotId)
-              if (!existing) {
-                // Create operation
-                this.applyOperation({
-                  type: 'createSlot',
-                  slotId,
-                  layout: newLayout,
-                  timestamp: Date.now(),
-                  source: this.currentSource,
-                  actor: this.currentActor
-                })
-              } else {
-                const existingLayout = this.ySlotToLayout(existing)
-                // Update position if changed
-                if (
-                  existingLayout.position.x !== newLayout.position.x ||
-                  existingLayout.position.y !== newLayout.position.y
-                ) {
-                  this.applyOperation({
-                    type: 'updateSlot',
-                    slotId,
-                    position: newLayout.position,
-                    previousPosition: existingLayout.position,
-                    timestamp: Date.now(),
-                    source: this.currentSource,
-                    actor: this.currentActor
-                  })
-                }
-              }
-            }
-            logger.debug(`Layout ref SET triggering for slot ${slotId}`)
-            trigger()
-          }
-        }
-      })
-
-      this.slotRefs.set(slotId, slotRef)
-    }
-
-    return slotRef
-  }
-
-  /**
-   * Get slots for a specific node (reactive)
-   */
-  getNodeSlots(nodeId: NodeId): ComputedRef<SlotLayout[]> {
-    return computed(() => {
-      // Touch version for reactivity
-      void this.version
-
-      const result: SlotLayout[] = []
-      for (const [slotId] of this.yslots) {
-        const yslot = this.yslots.get(slotId)
-        if (yslot) {
-          const layout = this.ySlotToLayout(yslot)
-          if (layout && layout.nodeId === nodeId) {
-            result.push(layout)
-          }
-        }
-      }
-      // Sort by type and index
-      result.sort((a, b) => {
-        if (a.type !== b.type) {
-          return a.type === 'input' ? -1 : 1
-        }
-        return a.index - b.index
-      })
-      return result
-    })
-  }
-
-  /**
-   * Get all slots as a reactive map
-   */
-  getAllSlots(): ComputedRef<ReadonlyMap<SlotId, SlotLayout>> {
-    return computed(() => {
-      // Touch version for reactivity
-      void this.version
-
-      const result = new Map<SlotId, SlotLayout>()
-      for (const [slotId] of this.yslots) {
-        const yslot = this.yslots.get(slotId)
-        if (yslot) {
-          const layout = this.ySlotToLayout(yslot)
-          if (layout) {
-            result.set(slotId, layout)
-          }
-        }
-      }
-      return result
-    })
-  }
-
-  /**
    * Get current version for change detection
    */
   getVersion(): ComputedRef<number> {
@@ -449,53 +291,12 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
-   * Query slot at point (non-reactive for performance)
-   */
-  querySlotAtPoint(point: Point): SlotId | null {
-    // First find the node at the point
-    const nodeId = this.queryNodeAtPoint(point)
-    if (!nodeId) return null
-
-    // Then check slots for that node
-    for (const [slotId] of this.yslots) {
-      const yslot = this.yslots.get(slotId)
-      if (yslot) {
-        const slot = this.ySlotToLayout(yslot)
-        if (slot && slot.nodeId === nodeId) {
-          const ynode = this.ynodes.get(nodeId)
-          if (ynode) {
-            const node = this.yNodeToLayout(ynode)
-            // Convert slot relative position to absolute
-            const absoluteX = node.position.x + slot.position.x
-            const absoluteY = node.position.y + slot.position.y
-            // Check if point is within slot radius (typically 10-15 pixels)
-            const slotRadius = 15
-            const dx = point.x - absoluteX
-            const dy = point.y - absoluteY
-            if (dx * dx + dy * dy <= slotRadius * slotRadius) {
-              return slotId
-            }
-          }
-        }
-      }
-    }
-    return null
-  }
-
-  /**
    * Apply a layout operation using Yjs transactions
    */
   applyOperation(operation: LayoutOperation): void {
-    const entityId =
-      'nodeId' in operation
-        ? operation.nodeId
-        : 'slotId' in operation
-          ? (operation as any).slotId
-          : 'unknown'
-
     logger.debug(`applyOperation called:`, {
       type: operation.type,
-      entityId,
+      nodeId: operation.nodeId,
       operation
     })
 
@@ -543,21 +344,6 @@ class LayoutStoreImpl implements LayoutStore {
         break
       case 'deleteNode':
         this.handleDeleteNode(operation as DeleteNodeOperation, change)
-        break
-      case 'createSlot':
-        this.handleCreateSlot(operation as CreateSlotOperation, change)
-        break
-      case 'updateSlot':
-        this.handleUpdateSlot(operation as UpdateSlotOperation, change)
-        break
-      case 'deleteSlot':
-        this.handleDeleteSlot(operation as DeleteSlotOperation, change)
-        break
-      case 'batchUpdateSlots':
-        this.handleBatchUpdateSlots(
-          operation as BatchUpdateSlotsOperation,
-          change
-        )
         break
     }
   }
@@ -762,87 +548,6 @@ class LayoutStoreImpl implements LayoutStore {
     change.nodeIds.push(operation.nodeId)
   }
 
-  // Slot operation handlers
-  private handleCreateSlot(
-    operation: CreateSlotOperation,
-    change: LayoutChange
-  ): void {
-    const yslot = this.layoutToYSlot(operation.layout)
-    this.yslots.set(operation.slotId, yslot)
-
-    change.type = 'create'
-    // Track the affected node
-    change.nodeIds.push(operation.layout.nodeId)
-  }
-
-  private handleUpdateSlot(
-    operation: UpdateSlotOperation,
-    change: LayoutChange
-  ): void {
-    const yslot = this.yslots.get(operation.slotId)
-    if (!yslot) {
-      logger.warn(`No yslot found for ${operation.slotId}`)
-      return
-    }
-
-    logger.debug(`Updating slot ${operation.slotId}`, operation.position)
-    yslot.set('position', operation.position)
-
-    // Track the affected node
-    const nodeId = yslot.get('nodeId') as string
-    if (nodeId) {
-      change.nodeIds.push(nodeId)
-    }
-  }
-
-  private handleDeleteSlot(
-    operation: DeleteSlotOperation,
-    change: LayoutChange
-  ): void {
-    const yslot = this.yslots.get(operation.slotId)
-    if (!yslot) return
-
-    // Track the affected node before deletion
-    const nodeId = yslot.get('nodeId') as string
-
-    this.yslots.delete(operation.slotId)
-    this.slotRefs.delete(operation.slotId)
-    this.slotTriggers.delete(operation.slotId)
-
-    change.type = 'delete'
-    if (nodeId) {
-      change.nodeIds.push(nodeId)
-    }
-  }
-
-  private handleBatchUpdateSlots(
-    operation: BatchUpdateSlotsOperation,
-    change: LayoutChange
-  ): void {
-    // Delete all existing slots for this node
-    const slotsToDelete: string[] = []
-    for (const [slotId] of this.yslots) {
-      const yslot = this.yslots.get(slotId)
-      if (yslot && yslot.get('nodeId') === operation.nodeId) {
-        slotsToDelete.push(slotId)
-      }
-    }
-
-    slotsToDelete.forEach((slotId) => {
-      this.yslots.delete(slotId)
-      this.slotRefs.delete(slotId)
-      this.slotTriggers.delete(slotId)
-    })
-
-    // Add new slots
-    operation.slots.forEach((slotLayout) => {
-      const yslot = this.layoutToYSlot(slotLayout)
-      this.yslots.set(slotLayout.id, yslot)
-    })
-
-    change.nodeIds.push(operation.nodeId)
-  }
-
   /**
    * Update node bounds helper
    */
@@ -879,26 +584,6 @@ class LayoutStoreImpl implements LayoutStore {
       zIndex: ynode.get('zIndex') as number,
       visible: ynode.get('visible') as boolean,
       bounds: ynode.get('bounds') as Bounds
-    }
-  }
-
-  private layoutToYSlot(layout: SlotLayout): Y.Map<unknown> {
-    const yslot = new Y.Map<unknown>()
-    yslot.set('id', layout.id)
-    yslot.set('nodeId', layout.nodeId)
-    yslot.set('position', layout.position)
-    yslot.set('type', layout.type)
-    yslot.set('index', layout.index)
-    return yslot
-  }
-
-  private ySlotToLayout(yslot: Y.Map<unknown>): SlotLayout {
-    return {
-      id: yslot.get('id') as string,
-      nodeId: yslot.get('nodeId') as string,
-      position: yslot.get('position') as Point,
-      type: yslot.get('type') as 'input' | 'output',
-      index: yslot.get('index') as number
     }
   }
 
