@@ -773,7 +773,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
     name: 'Low quality rendering zoom threshold',
     tooltip:
-      'Controls when simplified rendering activates based on zoom level. Lower values (closer to 0.1) keep high quality rendering even when zoomed far out. Higher values (closer to 1.0) switch to simplified rendering even at normal zoom levels, improving performance but reducing visual quality. Simplified rendering removes shadows, rounded corners, and connection borders.',
+      'Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details.',
     type: 'slider',
     attrs: {
       min: 0.1,
