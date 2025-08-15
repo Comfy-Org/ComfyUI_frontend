@@ -17,6 +17,7 @@ import { useColorPaletteStore } from '../src/stores/workspace/colorPaletteStore'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
+    // @ts-expect-error fix me
     primary: Aura['primitive'].blue
   }
 })
@@ -28,8 +29,8 @@ setup((app) => {
   app.use(pinia)
 
   // Initialize stores
-  const colorPaletteStore = useColorPaletteStore(pinia)
-  const widgetStore = useWidgetStore(pinia)
+  useColorPaletteStore(pinia)
+  useWidgetStore(pinia)
 
   app.use(i18n)
   app.use(PrimeVue, {
