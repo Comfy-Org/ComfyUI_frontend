@@ -71,8 +71,9 @@ describe('CanvasPointer', () => {
           const event = new WheelEvent('wheel', eventData)
           const isTrackpad = pointer.isTrackpadGesture(event)
 
-          // Should be detected as trackpad (small values, no valid detent)
-          expect(isTrackpad).toBe(true)
+          // Small values alone don't switch to trackpad in new implementation
+          // Device stays in default mouse mode
+          expect(isTrackpad).toBe(false)
         })
       })
     })
@@ -80,19 +81,22 @@ describe('CanvasPointer', () => {
     describe('trackpad detection', () => {
       it('should detect trackpad with smooth scrolling values', () => {
         // Trackpad with smooth, non-detent values
+        // Note: In new implementation, need both deltaX and deltaY for trackpad detection
         const events = [
-          { deltaY: 2.5, deltaX: 0 },
+          { deltaY: 2.5, deltaX: 1.2 }, // Two-finger panning
           { deltaY: 5.75, deltaX: 0.25 },
-          { deltaY: 8.333, deltaX: 0 },
-          { deltaY: 3.14159, deltaX: 0 }
+          { deltaY: 8.333, deltaX: 0.5 },
+          { deltaY: 3.14159, deltaX: 0.1 }
         ]
 
         events.forEach((eventData) => {
           const event = new WheelEvent('wheel', eventData)
           const isTrackpad = pointer.isTrackpadGesture(event)
 
-          // Should be detected as trackpad (fractional values)
-          expect(isTrackpad).toBe(true)
+          // With both deltaX and deltaY, detected as trackpad
+          if (eventData.deltaX !== 0) {
+            expect(isTrackpad).toBe(true)
+          }
         })
       })
 
@@ -106,18 +110,21 @@ describe('CanvasPointer', () => {
       })
 
       it('should detect trackpad continuation within time gap', () => {
+        // First establish trackpad mode with two-finger panning
         const event1 = new WheelEvent('wheel', {
           deltaY: 5,
+          deltaX: 3
+        })
+
+        // Second event stays in trackpad due to cooldown
+        const event2 = new WheelEvent('wheel', {
+          deltaY: 100,
           deltaX: 0
         })
 
-        const event2 = new WheelEvent('wheel', {
-          deltaY: 100, // Large value, but within continuation window
-          deltaX: 0 // Within trackpadMaxGap (200ms)
-        })
-
         pointer.isTrackpadGesture(event1)
-        expect(pointer.isTrackpadGesture(event2)).toBe(true) // Continuation
+        // Within cooldown, mode doesn't switch
+        expect(pointer.isTrackpadGesture(event2)).toBe(true)
       })
 
       it('should not continue trackpad after time gap', () => {
@@ -150,7 +157,7 @@ describe('CanvasPointer', () => {
       it('should save lastTrackpadEvent on initial detection', () => {
         const event = new WheelEvent('wheel', {
           deltaY: 5,
-          deltaX: 0
+          deltaX: 3 // Two-finger panning to trigger trackpad
         })
 
         expect(pointer.lastTrackpadEvent).toBeUndefined()
@@ -161,12 +168,12 @@ describe('CanvasPointer', () => {
       it('should update lastTrackpadEvent on continuation', () => {
         const event1 = new WheelEvent('wheel', {
           deltaY: 5,
-          deltaX: 0
+          deltaX: 2 // Two-finger panning
         })
 
         const event2 = new WheelEvent('wheel', {
           deltaY: 8,
-          deltaX: 0
+          deltaX: 3 // Continued two-finger panning
         })
 
         pointer.isTrackpadGesture(event1)
@@ -179,7 +186,7 @@ describe('CanvasPointer', () => {
       it('should detect trackpad with non-integer deltaY', () => {
         const event = new WheelEvent('wheel', {
           deltaY: 5.5, // Non-integer value
-          deltaX: 0
+          deltaX: 1.2 // Two-finger panning pattern
         })
 
         expect(pointer.isTrackpadGesture(event)).toBe(true)
@@ -188,7 +195,7 @@ describe('CanvasPointer', () => {
       it('should detect trackpad with very small pixel mode values', () => {
         const event = new WheelEvent('wheel', {
           deltaY: 3,
-          deltaX: 0,
+          deltaX: 1, // Two-finger panning
           deltaMode: 0 // DOM_DELTA_PIXEL
         })
 
@@ -216,7 +223,8 @@ describe('CanvasPointer', () => {
           deltaX: 0
         })
 
-        expect(pointer.isTrackpadGesture(event)).toBe(true)
+        // Zero movement stays in current mode (default is mouse)
+        expect(pointer.isTrackpadGesture(event)).toBe(false)
       })
 
       it('should handle negative deltaY values in detent detection', () => {
