@@ -4,9 +4,9 @@ name: 'Chromatic'
 
 on:
   push:
-    branches: [main]
+    branches: [main, sno-storybook]
   pull_request:
-    branches: [main]
+    branches: [main, sno-storybook]
 
 jobs:
   chromatic-deployment:
@@ -58,7 +58,7 @@ jobs:
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
-          autoAcceptChanges: 'main' # Auto-accept changes on main branch
+          autoAcceptChanges: 'main,sno-storybook' # Auto-accept changes on main and sno-storybook branches
           exitOnceUploaded: true # Don't wait for UI tests to complete
 
       - name: Get completion time
