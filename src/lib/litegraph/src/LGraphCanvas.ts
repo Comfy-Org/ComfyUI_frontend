@@ -8061,18 +8061,6 @@ export class LGraphCanvas
     } else {
       options = [
         {
-          content: 'Inputs',
-          has_submenu: true,
-          disabled: true
-        },
-        {
-          content: 'Outputs',
-          has_submenu: true,
-          disabled: true,
-          callback: LGraphCanvas.showMenuNodeOptionalOutputs
-        },
-        null,
-        {
           content: 'Convert to Subgraph 🆕',
           callback: () => {
             if (!this.selectedItems.size)
