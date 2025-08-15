@@ -1,4 +1,5 @@
-import { groupBy } from 'es-toolkit/compat'
+import axios, { type AxiosError } from 'axios'
+import { groupBy } from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -205,6 +206,12 @@ export const useWorkflowTemplatesStore = defineStore(
         }
       } catch (error) {
         console.error('Error fetching workflow templates:', error)
+        if (axios.isAxiosError(error)) {
+          const axiosError = error as AxiosError
+          if (axiosError.response?.data) {
+            console.error('Template error details:', axiosError.response.data)
+          }
+        }
       }
     }
 
