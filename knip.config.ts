@@ -45,7 +45,10 @@ const config: KnipConfig = {
     'src/types/generatedManagerTypes.ts',
     // Design system components (may not be used immediately)
     'src/components/custom/button/IconGroup.vue',
+    'src/components/custom/button/MoreButton.vue',
+    'src/components/custom/button/TextButton.vue',
     'src/components/custom/card/CardTitle.vue',
+    'src/components/custom/card/CardDescription.vue',
     'src/components/custom/input/SingleSelect.vue'
   ],
   ignoreExportsUsedInFile: true,
