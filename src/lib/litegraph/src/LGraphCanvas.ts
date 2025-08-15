@@ -3646,8 +3646,12 @@ export class LGraphCanvas
     }
 
     // Add unique subgraph entries
-    // TODO: Must find all nested subgraphs
     for (const subgraph of subgraphs) {
+      for (const node of subgraph.nodes) {
+        if (node instanceof SubgraphNode) {
+          subgraphs.add(node.subgraph)
+        }
+      }
       const cloned = subgraph.clone(true).asSerialisable()
       serialisable.subgraphs.push(cloned)
     }
@@ -3764,12 +3768,19 @@ export class LGraphCanvas
       created.push(group)
     }
 
+    // Update subgraph ids with nesting
+    function updateSubgraphIds(nodes: { type: string }[]) {
+      for (const info of nodes) {
+        const subgraph = results.subgraphs.get(info.type)
+        if (!subgraph) continue
+        info.type = subgraph.id
+        updateSubgraphIds(subgraph.nodes)
+      }
+    }
+    updateSubgraphIds(parsed.nodes)
+
     // Nodes
     for (const info of parsed.nodes) {
-      // If the subgraph was cloned, update references to use the new subgraph ID.
-      const subgraph = results.subgraphs.get(info.type)
-      if (subgraph) info.type = subgraph.id
-
       const node = info.type == null ? null : LiteGraph.createNode(info.type)
       if (!node) {
         // failedNodes.push(info)
