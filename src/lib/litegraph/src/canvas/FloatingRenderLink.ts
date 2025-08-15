@@ -135,6 +135,10 @@ export class FloatingRenderLink implements RenderLink {
     return true
   }
 
+  canConnectToSubgraphInput(input: SubgraphInput): boolean {
+    return this.toType === 'output' && input.isValidTarget(this.fromSlot)
+  }
+
   connectToInput(
     node: LGraphNode,
     input: INodeInputSlot,

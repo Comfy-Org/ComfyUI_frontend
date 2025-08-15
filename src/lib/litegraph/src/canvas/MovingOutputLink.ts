@@ -55,6 +55,10 @@ export class MovingOutputLink extends MovingLinkBase {
     return reroute.origin_id !== this.outputNode.id
   }
 
+  canConnectToSubgraphInput(input: SubgraphInput): boolean {
+    return input.isValidTarget(this.fromSlot)
+  }
+
   connectToInput(): never {
     throw new Error('MovingOutputLink cannot connect to an input.')
   }
