@@ -162,13 +162,13 @@ export function useTemplateWorkflows() {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served as static files
       const response = await fetch(api.fileURL(`/templates/${id}.json`))
-      return response.json()
+      return await response.json()
     } else {
       // Custom node templates served via API
       const response = await api.fetchApi(
         `/workflow_templates/${sourceModule}/${id}.json`
       )
-      return response.json()
+      return await response.json()
     }
   }
 
