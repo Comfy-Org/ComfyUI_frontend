@@ -119,10 +119,6 @@
       "Straight": "直角线"
     }
   },
-  "Comfy_Load3D_3DViewerEnable": {
-    "name": "启用 3D 浏览器（测试版）",
-    "tooltip": "为所选节点启用 3D 浏览器（测试版）。此功能可让您直接在全尺寸 3D 浏览器中浏览并与 3D 模型交互。"
-  },
   "Comfy_Load3D_BackgroundColor": {
     "name": "初始背景颜色",
     "tooltip": "控制3D场景的默认背景颜色。此设置决定新建3D组件时的背景外观，但每个组件在创建后都可以单独调整。"
@@ -338,7 +334,7 @@
       "Disabled": "禁用",
       "Top": "顶部"
     },
-    "tooltip": "菜单列位置。在移动设备上，菜单始终显示于顶端。"
+    "tooltip": "选单列位置。在行动装置上，选单始终显示于顶端。"
   },
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
