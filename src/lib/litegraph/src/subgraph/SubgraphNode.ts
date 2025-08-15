@@ -370,7 +370,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       subgraphNode: this
     })
 
-    input.widget = { name: subgraphInput.name }
+    const backingInput =
+      (widget as { node?: LGraphNode }).node?.findInputSlot(widget.name, true)
+        ?.widget ?? {}
+    input.widget = { ...backingInput, name: subgraphInput.name }
     input._widget = promotedWidget
   }
 
