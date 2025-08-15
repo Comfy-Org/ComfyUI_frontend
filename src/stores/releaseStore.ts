@@ -226,6 +226,14 @@ export const useReleaseStore = defineStore('release', () => {
       return
     }
 
+    // Skip fetching if API nodes are disabled via argv
+    if (
+      systemStatsStore.systemStats?.system?.argv?.includes(
+        '--disable-api-nodes'
+      )
+    ) {
+      return
+    }
     isLoading.value = true
     error.value = null
 
