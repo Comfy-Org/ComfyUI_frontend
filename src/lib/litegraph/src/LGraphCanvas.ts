@@ -8079,20 +8079,36 @@ export class LGraphCanvas
           callback: () => {
             // find groupnodes, degroup and select children
             if (this.selectedItems.size) {
+              let hasGroups = false
               for (const item of this.selectedItems) {
                 const node = item as LGraphNode
                 const isGroup =
                   typeof node.type === 'string' &&
                   node.type.startsWith(`${PREFIX}${SEPARATOR}`)
                 if (isGroup && node.convertToNodes) {
+                  hasGroups = true
                   const nodes = node.convertToNodes()
-                  this.selectItems(nodes)
+
+                  requestAnimationFrame(() => {
+                    this.selectItems(nodes, true)
+
+                    if (!this.selectedItems.size)
+                      throw new Error('Convert to Subgraph: Nothing selected.')
+                    this._graph.convertToSubgraph(this.selectedItems)
+                  })
+                  return
                 }
               }
-            }
-            if (!this.selectedItems.size)
+
+              // If no groups were found, continue normally
+              if (!hasGroups) {
+                if (!this.selectedItems.size)
+                  throw new Error('Convert to Subgraph: Nothing selected.')
+                this._graph.convertToSubgraph(this.selectedItems)
+              }
+            } else {
               throw new Error('Convert to Subgraph: Nothing selected.')
-            this._graph.convertToSubgraph(this.selectedItems)
+            }
           }
         },
         {
