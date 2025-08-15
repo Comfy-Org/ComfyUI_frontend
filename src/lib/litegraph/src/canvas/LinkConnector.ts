@@ -651,6 +651,20 @@ export class LinkConnector {
       if (!input) throw new Error('No input slot found for link.')
 
       for (const link of renderLinks) {
+        // Validate the connection type before proceeding
+        if (
+          'canConnectToSubgraphInput' in link &&
+          !link.canConnectToSubgraphInput(input)
+        ) {
+          console.warn(
+            'Invalid connection type',
+            link.fromSlot.type,
+            '->',
+            input.type
+          )
+          continue
+        }
+
         link.connectToSubgraphInput(input, this.events)
       }
     } else {
@@ -892,6 +906,14 @@ export class LinkConnector {
 
     return node.inputs.some((input) =>
       this.renderLinks.some((link) => link.canConnectToInput(node, input))
+    )
+  }
+
+  isSubgraphInputValidDrop(input: SubgraphInput): boolean {
+    return this.renderLinks.some(
+      (link) =>
+        'canConnectToSubgraphInput' in link &&
+        link.canConnectToSubgraphInput(input)
     )
   }
 
