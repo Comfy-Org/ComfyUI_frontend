@@ -502,10 +502,93 @@ echo "Workflow triggered. Waiting for PR creation..."
    ## Files Generated
    - \`release-notes-${NEW_VERSION}.md\` - Comprehensive release notes
    - \`post-release-checklist.md\` - Follow-up tasks
+   - \`gtm-summary-${NEW_VERSION}.md\` - Marketing team notification
    EOF
    ```
 
 4. **RELEASE COMPLETION**: All post-release setup completed?
+
+### Step 16: Generate GTM Feature Summary
+
+1. **Extract and analyze PR data:**
+   ```bash
+   echo "📊 Checking for marketing-worthy features..."
+   
+   # Extract all PR data inline
+   PR_DATA=$(
+     PR_LIST=$(git log ${BASE_TAG}..HEAD --grep="Merge pull request" --pretty=format:"%s" | grep -oE "#[0-9]+" | tr -d '#' | sort -u)
+     
+     echo "["
+     first=true
+     for PR in $PR_LIST; do
+       [[ "$first" == true ]] && first=false || echo ","
+       gh pr view $PR --json number,title,author,body,files,labels,closedAt 2>/dev/null || continue
+     done
+     echo "]"
+   )
+   
+   # Save for analysis
+   echo "$PR_DATA" > prs-${NEW_VERSION}.json
+   ```
+
+2. **Analyze for GTM-worthy features:**
+   ```
+   <task>
+   Review these PRs to identify if ANY would interest a marketing/growth team.
+   
+   Consider if a PR:
+   - Changes something users directly interact with or experience
+   - Makes something noticeably better, faster, or easier
+   - Introduces capabilities users have been asking for
+   - Has visual assets (screenshots, GIFs, videos) that could be shared
+   - Tells a compelling story about improvement or innovation
+   - Would make users excited if they heard about it
+   
+   Many releases contain only technical improvements, bug fixes, or internal changes - 
+   that's perfectly normal. Only flag PRs that would genuinely interest end users.
+   
+   If you find marketing-worthy PRs, note:
+   - PR number, title, and author
+   - Any media links from the description
+   - One sentence on why it's worth showcasing
+   
+   If nothing is marketing-worthy, just say "No marketing-worthy features in this release."
+   </task>
+   
+   PR data: [contents of prs-${NEW_VERSION}.json]
+   ```
+
+3. **Generate GTM notification (only if needed):**
+   ```
+   If there are marketing-worthy features, create a message for #gtm with:
+   
+   🚀 Frontend Release v${NEW_VERSION}
+   
+   Timeline: Available now in nightly, ~2-3 weeks for core
+   
+   Features worth showcasing:
+   [List the selected PRs with media links and authors]
+   
+   Testing: --front-end-version ${NEW_VERSION}
+   
+   If there are NO marketing-worthy features, generate:
+   "No marketing-worthy features in v${NEW_VERSION} - mostly internal improvements and bug fixes."
+   ```
+
+4. **Save the output:**
+   ```bash
+   # Claude generates the GTM summary and saves it
+   # Save to gtm-summary-${NEW_VERSION}.md
+   
+   # Check if notification is needed
+   if grep -q "No marketing-worthy features" gtm-summary-${NEW_VERSION}.md; then
+     echo "✅ No GTM notification needed for this release"
+     echo "📄 Summary saved to: gtm-summary-${NEW_VERSION}.md"
+   else
+     echo "📋 GTM summary saved to: gtm-summary-${NEW_VERSION}.md"
+     echo "📤 Share this file in #gtm channel to notify the team"
+   fi
+   ```
 
 ## Advanced Safety Features
 
