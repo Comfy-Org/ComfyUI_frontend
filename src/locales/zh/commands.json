@@ -216,7 +216,7 @@
     "label": "显示设置对话框"
   },
   "Comfy_ToggleCanvasInfo": {
-    "label": "画布效能"
+    "label": "画布性能"
   },
   "Comfy_ToggleHelpCenter": {
     "label": "说明中心"
@@ -255,7 +255,7 @@
     "label": "切换日志底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "切换基本下方面板"
+    "label": "切换基础底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
     "label": "切换视图控制底部面板"
