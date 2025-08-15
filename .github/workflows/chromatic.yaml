@@ -1,10 +1,16 @@
 name: 'Chromatic'
 
+# - [Automate Chromatic with GitHub Actions • Chromatic docs]( https://www.chromatic.com/docs/github-actions/ )
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+permissions:
+  pull-requests: write
+  issue: write
 
 jobs:
   chromatic-deployment:
@@ -21,13 +27,71 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Get current time
+        id: current-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Comment PR - Build Started
+        if: github.event_name == 'pull_request'
+        uses: edumserrano/find-create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- STORYBOOK_BUILD_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: replace
+          body: |
+            <!-- STORYBOOK_BUILD_STATUS -->
+            ## 🎨 Storybook Build Status
+
+            🔄 **Building Storybook and running visual tests...**
+
+            ⏳ Build started at: ${{ steps.current-time.outputs.time }} UTC
+
+            ---
+            *This comment will be updated when the build completes*
+
       - name: Install dependencies
         run: npm ci
 
       - name: Build Storybook and run Chromatic
+        id: chromatic
         uses: chromaui/action@latest
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
           autoAcceptChanges: 'main' # Auto-accept changes on main branch
           exitOnceUploaded: true # Don't wait for UI tests to complete
+
+      - name: Get completion time
+        id: completion-time
+        if: always()
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Comment PR - Build Complete
+        if: github.event_name == 'pull_request' && always()
+        uses: edumserrano/find-create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- STORYBOOK_BUILD_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: replace
+          body: |
+            <!-- STORYBOOK_BUILD_STATUS -->
+            ## 🎨 Storybook Build Status
+
+            ${{ steps.chromatic.outcome == 'success' && '✅' || '❌' }} **${{ steps.chromatic.outcome == 'success' && 'Build completed successfully!' || 'Build failed!' }}**
+
+            ⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC
+
+            ### 📊 Build Summary
+            - **Components**: ${{ steps.chromatic.outputs.componentCount || '0' }}
+            - **Stories**: ${{ steps.chromatic.outputs.testCount || '0' }}
+            - **Visual changes**: ${{ steps.chromatic.outputs.changeCount || '0' }}
+            - **Errors**: ${{ steps.chromatic.outputs.errorCount || '0' }}
+
+            ### 🔗 Links
+            ${{ steps.chromatic.outputs.buildUrl && format('- [📸 View Chromatic Build]({0})', steps.chromatic.outputs.buildUrl) || '' }}
+            ${{ steps.chromatic.outputs.storybookUrl && format('- [📖 Preview Storybook]({0})', steps.chromatic.outputs.storybookUrl) || '' }}
+
+            ---
+            ${{ steps.chromatic.outcome == 'success' && '🎉 Your Storybook is ready for review!' || '⚠️ Please check the workflow logs for error details.' }}
