@@ -75,8 +75,8 @@
     "label": "锁定视图"
   },
   "Comfy_Canvas_ToggleMinimap": {
-     "label": "画布切换小地图"
-     },
+    "label": "画布切换小地图"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
   },
@@ -123,7 +123,7 @@
     "label": "将选区转换为子图"
   },
   "Comfy_Graph_ExitSubgraph": {
-    "label": "退出子图" 
+    "label": "退出子图"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
@@ -132,7 +132,7 @@
     "label": "添加框到选中节点"
   },
   "Comfy_Graph_UnpackSubgraph": {
-    "label": "解开所选子图"  
+    "label": "解开所选子图"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "将选中节点转换为组节点"
@@ -171,7 +171,7 @@
     "label": "切换进度对话框"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
-        "label": "减小 MaskEditor 中的笔刷大小"
+    "label": "减小 MaskEditor 中的笔刷大小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "增加 MaskEditor 画笔大小"
@@ -261,8 +261,8 @@
     "label": "切换视图控制底部面板"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-     "label": "显示快捷键对话框"
-},
+    "label": "显示快捷键对话框"
+  },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"
   },
