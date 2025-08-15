@@ -29,7 +29,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CanvasPointer } from '../src/CanvasPointer'
 
-describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests', () => {
+describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests', () => {
   let element: HTMLDivElement
   let pointer: any // Using 'any' for TDD - actual type is CanvasPointer with new properties
 
@@ -54,6 +54,7 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
 
     it('should have no last wheel event time immediately after loading', () => {
       expect(pointer.lastWheelEventTime).toBe(0)
+      expect(pointer.hasReceivedWheelEvent).toBe(false)
     })
 
     it('should have no buffered Linux event immediately after loading', () => {
@@ -175,6 +176,7 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
       pointer.detectedDevice = 'mouse'
       // Simulate a previous event to establish timing
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
     })
 
     it('should switch to trackpad on two-finger panning with non-zero deltaX and deltaY', () => {
@@ -275,6 +277,7 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
       // Set to trackpad mode
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
     })
 
     it('should switch to mouse on clear mouse wheel event with deltaY > 80', () => {
@@ -461,6 +464,7 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
     beforeEach(() => {
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
       vi.clearAllMocks()
     })
 
@@ -913,20 +917,31 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
     it('should handle float values correctly for mouse detection', () => {
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
       vi.spyOn(performance, 'now').mockReturnValue(500)
 
-      // Float value >= 60 should be detected as mouse
-      const event = new WheelEvent('wheel', {
+      // Float value <= 80 should NOT switch from trackpad
+      const event1 = new WheelEvent('wheel', {
         deltaY: 60.5,
         deltaX: 0
       })
-      pointer.detectDevice(event)
+      pointer.detectDevice(event1)
+      expect(pointer.detectedDevice).toBe('trackpad')
+
+      // Float value > 80 should switch to mouse
+      vi.spyOn(performance, 'now').mockReturnValue(1000) // 500ms later
+      const event2 = new WheelEvent('wheel', {
+        deltaY: 80.1,
+        deltaX: 0
+      })
+      pointer.detectDevice(event2)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
     it('should handle integer values correctly for trackpad detection', () => {
       pointer.detectedDevice = 'mouse'
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
       vi.spyOn(performance, 'now').mockReturnValue(500)
 
       // Integer values in two-finger panning
@@ -990,6 +1005,7 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
     it('should handle boundary values for mouse wheel detection', () => {
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
       vi.spyOn(performance, 'now').mockReturnValue(500)
 
       // Test deltaY = 80 (boundary)
@@ -1013,6 +1029,7 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
     it('should handle Linux wheel detection with various multiples', () => {
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
       vi.spyOn(performance, 'now').mockReturnValue(500)
 
       // Test with base 10 and multiple 50
@@ -1034,6 +1051,7 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
     it('should not confuse trackpad integers with Linux wheel', () => {
       pointer.detectedDevice = 'trackpad'
       pointer.lastWheelEventTime = 0
+      pointer.hasReceivedWheelEvent = true
       vi.spyOn(performance, 'now').mockReturnValue(500)
 
       // Trackpad two-finger panning with integers
@@ -1149,14 +1167,16 @@ describe.skip('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Te
         const base10Values = [10, 20, 30, 40, 50, -10, -20, -30]
         base10Values.forEach((deltaY) => {
           expect(Number.isInteger(deltaY)).toBe(true)
-          expect(deltaY % 10).toBe(0)
+          // Use Math.abs to avoid JavaScript's -0 vs 0 issue with modulo on negative numbers
+          expect(Math.abs(deltaY) % 10).toBe(0)
         })
 
         // Base 15 multiples
         const base15Values = [15, 30, 45, 60, -15, -30, -45]
         base15Values.forEach((deltaY) => {
           expect(Number.isInteger(deltaY)).toBe(true)
-          expect(deltaY % 15).toBe(0)
+          // Use Math.abs to avoid JavaScript's -0 vs 0 issue with modulo on negative numbers
+          expect(Math.abs(deltaY) % 15).toBe(0)
         })
       })
     })

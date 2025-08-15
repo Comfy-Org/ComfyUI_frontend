@@ -96,6 +96,24 @@ export class CanvasPointer {
   /** Last integer deltaY value seen (potential mouse wheel detent) */
   lastIntegerDelta: number | null = null
 
+  /** Currently detected input device type */
+  detectedDevice: 'mouse' | 'trackpad' = 'mouse'
+
+  /** Timestamp of last wheel event for cooldown tracking */
+  lastWheelEventTime: number = 0
+
+  /** Flag to track if we've received the first wheel event */
+  hasReceivedWheelEvent: boolean = false
+
+  /** Buffered Linux wheel event awaiting confirmation */
+  bufferedLinuxEvent?: WheelEvent
+
+  /** Timestamp when Linux event was buffered */
+  bufferedLinuxEventTime: number = 0
+
+  /** Timer ID for Linux buffer clearing */
+  linuxBufferTimeoutId?: number
+
   /**
    * If set, as soon as the mouse moves outside the click drift threshold, this action is run once.
    * @param pointer [DEPRECATED] This parameter will be removed in a future release.
@@ -277,84 +295,217 @@ export class CanvasPointer {
   }
 
   /**
-   * Checks if the given wheel event is part of a continued trackpad gesture.
-   * @param e The wheel event to check
-   * @returns `true` if the event is part of a continued trackpad gesture, otherwise `false`
-   */
-  #isContinuationOfGesture(e: WheelEvent): boolean {
-    const { lastTrackpadEvent } = this
-    if (!lastTrackpadEvent) return false
-
-    return (
-      e.timeStamp - lastTrackpadEvent.timeStamp < CanvasPointer.trackpadMaxGap
-    )
-  }
-
-  /**
    * Checks if the given wheel event is part of a trackpad gesture.
+   * This method now uses the new device detection internally for improved accuracy.
    * @param e The wheel event to check
    * @returns `true` if the event is part of a trackpad gesture, otherwise `false`
    */
   isTrackpadGesture(e: WheelEvent): boolean {
-    const absY = Math.abs(e.deltaY)
-    const absX = Math.abs(e.deltaX)
-    const threshold = CanvasPointer.trackpadThreshold
+    // Use the new device detection
+    this.detectDevice(e)
 
-    // Quick trackpad heuristics
-    // 1. Horizontal scrolling (2D) = trackpad
-    if (absX > 0 && absX < threshold) {
+    // For backward compatibility, update lastTrackpadEvent
+    if (this.detectedDevice === 'trackpad') {
       this.lastTrackpadEvent = e
-      return true
+
+      // Track integer values for legacy detent detection
+      if (Number.isInteger(e.deltaY) && Math.abs(e.deltaY) > 0) {
+        this.lastIntegerDelta = Math.abs(e.deltaY)
+      }
+    } else {
+      // Clear lastTrackpadEvent for mouse
+      this.lastTrackpadEvent = undefined
     }
 
-    // 2. Fractional values = trackpad
-    if (!Number.isInteger(e.deltaY) && absY < threshold) {
-      this.lastTrackpadEvent = e
-      return true
-    }
+    return this.detectedDevice === 'trackpad'
+  }
 
-    // 3. For integer values under threshold, check if it's a mouse wheel pattern
-    // Track integer values for potential mouse wheel detection
-    if (Number.isInteger(e.deltaY) && absY > 0 && absY < threshold) {
-      // If we have a previous integer delta, check if this is a multiple
-      if (this.lastIntegerDelta !== null && this.lastIntegerDelta > 0) {
-        // Use the smaller value as the potential detent
-        const potentialDetent = Math.min(absY, this.lastIntegerDelta)
-        // Check if both values are multiples of the potential detent
-        // Only consider it a mouse wheel if the detent is >= 5 (common mouse wheel values)
+  /**
+   * Detects whether the input device is a mouse or trackpad based on wheel event patterns.
+   * Uses an efficient timestamp-based approach with at most one timer for Linux detection.
+   * @param event The wheel event to analyze
+   */
+  detectDevice(event: WheelEvent): void {
+    const now = performance.now()
+    const timeSinceLastEvent = now - this.lastWheelEventTime
+
+    // Check if we have a buffered Linux event to validate
+    if (this.bufferedLinuxEvent && this.bufferedLinuxEventTime > 0) {
+      const timeSinceBuffer = now - this.bufferedLinuxEventTime
+      if (timeSinceBuffer <= 10 && event.deltaX === 0) {
+        // Check for Linux wheel pattern (divisibility)
         if (
-          potentialDetent >= 5 &&
-          absY % potentialDetent === 0 &&
-          this.lastIntegerDelta % potentialDetent === 0
+          this.isLinuxWheelPattern(this.bufferedLinuxEvent.deltaY, event.deltaY)
         ) {
-          // Update to the smaller detent value
-          this.lastIntegerDelta = potentialDetent
-          // Clear lastTrackpadEvent since this is a mouse wheel
-          this.lastTrackpadEvent = undefined
-          return false // Mouse wheel detected
+          this.detectedDevice = 'mouse'
+          this.clearLinuxBuffer()
+          this.lastWheelEventTime = now
+          return
         }
-      } else {
-        // Store this as potential detent for next time (only if we don't have one yet)
-        this.lastIntegerDelta = absY
+      }
+      // Clear buffer if not matched or timeout
+      if (timeSinceBuffer > 10) {
+        this.clearLinuxBuffer()
       }
     }
 
-    // 4. Check if this is a continuation of a trackpad gesture
-    // Do this AFTER checking for mouse wheel pattern to avoid false continuations
-    if (this.#isContinuationOfGesture(e)) {
-      this.lastTrackpadEvent = e
+    // Check cooldown period (500ms)
+    const isFirstEvent = !this.hasReceivedWheelEvent
+    const cooldownExpired = timeSinceLastEvent >= 500
+    const inCooldown = !isFirstEvent && !cooldownExpired
+
+    if (inCooldown) {
+      // Within cooldown - don't allow switching modes
+      // Exception: Linux buffering in trackpad mode
+      if (this.shouldBufferLinuxEvent(event)) {
+        this.bufferLinuxEvent(event, now)
+      }
+      // Update time to keep tracking the most recent event
+      this.lastWheelEventTime = now
+      return
+    }
+
+    // Perform device detection (first event or after cooldown)
+
+    // Check for trackpad patterns
+    if (this.isTrackpadPattern(event, isFirstEvent)) {
+      this.detectedDevice = 'trackpad'
+    }
+    // Check for mouse patterns
+    else if (this.isMousePattern(event)) {
+      this.detectedDevice = 'mouse'
+    }
+    // In trackpad mode, check if we should buffer potential Linux event
+    else if (
+      this.detectedDevice === 'trackpad' &&
+      this.shouldBufferLinuxEvent(event)
+    ) {
+      this.bufferLinuxEvent(event, now)
+    }
+
+    this.lastWheelEventTime = now
+    this.hasReceivedWheelEvent = true
+  }
+
+  /**
+   * Clears the buffered Linux wheel event and associated timer.
+   */
+  clearLinuxBuffer(): void {
+    this.bufferedLinuxEvent = undefined
+    this.bufferedLinuxEventTime = 0
+    if (this.linuxBufferTimeoutId !== undefined) {
+      clearTimeout(this.linuxBufferTimeoutId)
+      this.linuxBufferTimeoutId = undefined
+    }
+  }
+
+  /**
+   * Checks if the event matches trackpad input patterns.
+   * @param event The wheel event to check
+   * @param isFirstEvent Whether this is the first event after loading
+   */
+  private isTrackpadPattern(event: WheelEvent, isFirstEvent: boolean): boolean {
+    // Two-finger panning: non-zero deltaX AND deltaY
+    if (event.deltaX !== 0 && event.deltaY !== 0) {
       return true
     }
 
-    // Threshold check
-    const isTrackpad = absX < threshold && absY < threshold
-
-    // Save as trackpad event if detected as trackpad
-    if (isTrackpad) {
-      this.lastTrackpadEvent = e
+    // Pinch-to-zoom: ctrlKey with small deltaY
+    if (event.ctrlKey && Math.abs(event.deltaY) < 10) {
+      return true
     }
 
-    return isTrackpad
+    // On first event, also switch to trackpad for two-finger panning with any values
+    if (isFirstEvent && (event.deltaX !== 0 || event.deltaY !== 0)) {
+      // Check if it looks like two-finger panning (both axes or small values)
+      if (event.deltaX !== 0 && event.deltaY !== 0) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Checks if the event matches mouse wheel input patterns.
+   * @param event The wheel event to check
+   * @param inCooldown Whether we're within the cooldown period
+   */
+  private isMousePattern(event: WheelEvent): boolean {
+    const absY = Math.abs(event.deltaY)
+
+    // Clear mouse wheel event: deltaY > 80 (strictly greater)
+    // This is the primary threshold for switching from trackpad to mouse
+    if (absY > 80) {
+      return true
+    }
+
+    // Windows/Mac mouse: deltaY >= 60
+    // Only when already in mouse mode (not for switching from trackpad)
+    if (absY >= 60 && event.deltaX === 0 && this.detectedDevice === 'mouse') {
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Checks if the event should be buffered as a potential Linux wheel event.
+   * @param event The wheel event to check
+   */
+  private shouldBufferLinuxEvent(event: WheelEvent): boolean {
+    const absY = Math.abs(event.deltaY)
+    // Don't buffer clear mouse events (>= 60)
+    // Only buffer potential Linux wheel events in the 10-59 range
+    return (
+      this.detectedDevice === 'trackpad' &&
+      absY >= 10 &&
+      absY < 60 &&
+      event.deltaX === 0 &&
+      Number.isInteger(event.deltaY)
+    )
+  }
+
+  /**
+   * Buffers a potential Linux wheel event for later confirmation.
+   * @param event The event to buffer
+   * @param now The current timestamp
+   */
+  private bufferLinuxEvent(event: WheelEvent, now: number): void {
+    // Clear any existing timeout
+    if (this.linuxBufferTimeoutId !== undefined) {
+      clearTimeout(this.linuxBufferTimeoutId)
+    }
+
+    this.bufferedLinuxEvent = event
+    this.bufferedLinuxEventTime = now
+
+    // Set timeout to clear buffer after 10ms
+    this.linuxBufferTimeoutId = setTimeout(() => {
+      this.clearLinuxBuffer()
+    }, 10) as unknown as number
+  }
+
+  /**
+   * Checks if two deltaY values follow a Linux wheel pattern (divisibility).
+   * @param deltaY1 The first deltaY value
+   * @param deltaY2 The second deltaY value
+   */
+  private isLinuxWheelPattern(deltaY1: number, deltaY2: number): boolean {
+    const abs1 = Math.abs(deltaY1)
+    const abs2 = Math.abs(deltaY2)
+
+    // Check if they're the same value
+    if (abs1 === abs2) {
+      return true
+    }
+
+    // Check divisibility (one is a multiple of the other)
+    if (abs1 > 0 && abs2 > 0) {
+      return abs1 % abs2 === 0 || abs2 % abs1 === 0
+    }
+
+    return false
   }
 
   /**
