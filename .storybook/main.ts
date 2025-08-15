@@ -3,7 +3,7 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { type InlineConfig, mergeConfig } from 'vite'
+import type { InlineConfig } from 'vite'
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -13,6 +13,9 @@ const config: StorybookConfig = {
     options: {}
   },
   async viteFinal(config) {
+    // Use dynamic import to avoid CJS deprecation warning
+    const { mergeConfig } = await import('vite')
+
     // Filter out any plugins that might generate import maps
     if (config.plugins) {
       config.plugins = config.plugins.filter((plugin: any) => {
