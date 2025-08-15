@@ -36,7 +36,6 @@ describe('CanvasPointer', () => {
           // Third+ events: continue detecting mouse wheel
           if (index >= 1) {
             expect(isTrackpad).toBe(false) // Should be detected as mouse wheel
-            expect(pointer.lastIntegerDelta).toBe(10)
           }
         })
       })
@@ -75,9 +74,6 @@ describe('CanvasPointer', () => {
           // Should be detected as trackpad (small values, no valid detent)
           expect(isTrackpad).toBe(true)
         })
-
-        // The lastIntegerDelta would be 3 from the first event
-        expect(pointer.lastIntegerDelta).toBe(3)
       })
     })
 
@@ -237,7 +233,6 @@ describe('CanvasPointer', () => {
 
           if (index >= 1) {
             // Should detect detent of 10 despite mixed signs
-            expect(pointer.lastIntegerDelta).toBe(10)
           }
         })
       })
@@ -249,7 +244,6 @@ describe('CanvasPointer', () => {
           deltaX: 0
         })
         pointer.isTrackpadGesture(event1)
-        expect(pointer.lastIntegerDelta).toBe(10)
 
         // Add second event - should detect mouse wheel pattern
         const event2 = new WheelEvent('wheel', {
@@ -260,7 +254,6 @@ describe('CanvasPointer', () => {
 
         // Should detect as mouse wheel (both are multiples of 10)
         expect(isTrackpad).toBe(false)
-        expect(pointer.lastIntegerDelta).toBe(10) // The detected detent
       })
     })
   })

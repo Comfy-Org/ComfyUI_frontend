@@ -54,7 +54,7 @@ export class CanvasPointer {
    * After a flick gesture is complete, the automatic wheel events are sent with
    * reduced frequency, but much higher deltaX and deltaY values.
    */
-  static trackpadMaxGap = 200
+  static trackpadMaxGap = 500
 
   /** The element this PointerState should capture input against when dragging. */
   element: Element
@@ -92,9 +92,6 @@ export class CanvasPointer {
 
   /** The last pointermove event that was treated as a trackpad gesture. */
   lastTrackpadEvent?: WheelEvent
-
-  /** Last integer deltaY value seen (potential mouse wheel detent) */
-  lastIntegerDelta: number | null = null
 
   /** Currently detected input device type */
   detectedDevice: 'mouse' | 'trackpad' = 'mouse'
@@ -307,11 +304,6 @@ export class CanvasPointer {
     // For backward compatibility, update lastTrackpadEvent
     if (this.detectedDevice === 'trackpad') {
       this.lastTrackpadEvent = e
-
-      // Track integer values for legacy detent detection
-      if (Number.isInteger(e.deltaY) && Math.abs(e.deltaY) > 0) {
-        this.lastIntegerDelta = Math.abs(e.deltaY)
-      }
     } else {
       // Clear lastTrackpadEvent for mouse
       this.lastTrackpadEvent = undefined
@@ -349,9 +341,9 @@ export class CanvasPointer {
       }
     }
 
-    // Check cooldown period (500ms)
+    // Check cooldown period
     const isFirstEvent = !this.hasReceivedWheelEvent
-    const cooldownExpired = timeSinceLastEvent >= 500
+    const cooldownExpired = timeSinceLastEvent >= CanvasPointer.trackpadMaxGap
     const inCooldown = !isFirstEvent && !cooldownExpired
 
     if (inCooldown) {
