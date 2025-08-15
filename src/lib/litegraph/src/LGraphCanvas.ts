@@ -3608,6 +3608,7 @@ export class LGraphCanvas
       subgraphs: []
     }
 
+    // NOTE: logic for traversing nested subgraphs depends on this being a set.
     const subgraphs = new Set<Subgraph>()
 
     // Create serialisable objects
@@ -3646,6 +3647,7 @@ export class LGraphCanvas
     }
 
     // Add unique subgraph entries
+    // NOTE: subgraphs is appended to mid iteration.
     for (const subgraph of subgraphs) {
       for (const node of subgraph.nodes) {
         if (node instanceof SubgraphNode) {
