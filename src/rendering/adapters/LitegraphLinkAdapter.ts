@@ -14,7 +14,6 @@ import type {
   CanvasColour,
   INodeInputSlot,
   INodeOutputSlot,
-  ISlotType,
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -32,7 +31,7 @@ import {
   type RenderContext as PathRenderContext,
   type RenderMode
 } from '@/rendering/canvas/PathRenderer'
-import type { LayoutStore, Point } from '@/types/layoutTypes'
+import type { Point } from '@/types/layoutTypes'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -64,12 +63,10 @@ export interface LinkRenderOptions {
 }
 
 export class LitegraphLinkAdapter {
-  private layoutStore: LayoutStore
   private graph: LGraph
   private pathRenderer: CanvasPathRenderer
 
-  constructor(layoutStore: LayoutStore, graph: LGraph) {
-    this.layoutStore = layoutStore
+  constructor(graph: LGraph) {
     this.graph = graph
     this.pathRenderer = new CanvasPathRenderer()
   }
@@ -461,71 +458,5 @@ export class LitegraphLinkAdapter {
 
     // Render using pure renderer
     this.pathRenderer.drawDraggingLink(ctx, dragData, pathContext)
-  }
-
-  /**
-   * Render a dragging link with direct position data
-   * More flexible version for complex drag scenarios
-   */
-  renderDraggingLinkDirect(
-    ctx: CanvasRenderingContext2D,
-    fromPos: ReadOnlyPoint,
-    fromDir: LinkDirection,
-    toPos: ReadOnlyPoint,
-    context: LinkRenderContext,
-    options: {
-      fromInput?: boolean
-      toDir?: LinkDirection
-      color?: CanvasColour
-      type?: ISlotType
-      disabled?: boolean
-    } = {}
-  ): void {
-    // Use renderLinkDirect which already handles CENTER/NONE correctly
-    this.renderLinkDirect(
-      ctx,
-      fromPos,
-      toPos,
-      null, // no link
-      false, // skip_border
-      null, // flow
-      options.color || null,
-      fromDir,
-      options.toDir || LinkDirection.CENTER, // Default to CENTER for drag end
-      context,
-      {
-        disabled: options.disabled || false
-      }
-    )
-  }
-
-  /**
-   * Get slot position helper - may be useful for Vue components
-   */
-  getSlotAbsolutePosition(
-    nodeId: string,
-    slotType: 'input' | 'output',
-    slotIndex: number
-  ): Point | null {
-    // Get node from graph
-    const node = this.graph.getNodeById(nodeId)
-    if (!node) return null
-
-    // Get node position from layout tree
-    const nodeLayout = this.layoutStore.getNodeLayoutRef(nodeId).value
-    if (!nodeLayout) return null
-
-    // Get relative slot position from node
-    const relativePos =
-      slotType === 'input'
-        ? node.getInputPos(slotIndex)
-        : node.getOutputPos(slotIndex)
-    if (!relativePos) return null
-
-    // Combine to get absolute position
-    return {
-      x: nodeLayout.position.x + relativePos[0],
-      y: nodeLayout.position.y + relativePos[1]
-    }
   }
 }
