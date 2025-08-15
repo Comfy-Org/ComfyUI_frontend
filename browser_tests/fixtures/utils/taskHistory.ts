@@ -1,5 +1,5 @@
+import _ from 'es-toolkit/compat'
 import fs from 'fs'
-import _ from 'lodash'
 import path from 'path'
 import type { Request, Route } from 'playwright'
 import { v4 as uuidv4 } from 'uuid'
@@ -75,7 +75,9 @@ export default class TaskHistory {
 
   private async handleGetView(route: Route) {
     const fileName = getFilenameParam(route.request())
-    if (!this.outputContentTypes.has(fileName)) route.continue()
+    if (!this.outputContentTypes.has(fileName)) {
+      return route.continue()
+    }
 
     const asset = this.loadAsset(fileName)
     return route.fulfill({

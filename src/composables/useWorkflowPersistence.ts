@@ -1,3 +1,4 @@
+import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import { api } from '@/scripts/api'
@@ -87,6 +88,11 @@ export function useWorkflowPersistence() {
     }
   )
   api.addEventListener('graphChanged', persistCurrentWorkflow)
+
+  // Clean up event listener when component unmounts
+  tryOnScopeDispose(() => {
+    api.removeEventListener('graphChanged', persistCurrentWorkflow)
+  })
 
   // Restore workflow tabs states
   const openWorkflows = computed(() => workflowStore.openWorkflows)

@@ -58,6 +58,10 @@ export class ToOutputRenderLink implements RenderLink {
     return true
   }
 
+  canConnectToSubgraphInput(input: SubgraphInput): boolean {
+    return input.isValidTarget(this.fromSlot)
+  }
+
   connectToOutput(
     node: LGraphNode,
     output: INodeOutputSlot,

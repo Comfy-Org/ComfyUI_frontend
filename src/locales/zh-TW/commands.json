@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "重新啟動"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "為選取的節點開啟 3D 檢視器（Beta）"
+  },
   "Comfy_BrowseTemplates": {
     "label": "瀏覽範本"
   },
@@ -119,11 +122,17 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "將選取內容轉換為子圖"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "離開子圖"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "調整群組以符合內容"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "群組所選節點"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "解開所選子圖"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "將選取的節點轉換為群組節點"
@@ -176,6 +185,9 @@
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "管理器"
+  },
   "Comfy_OpenWorkflow": {
     "label": "開啟工作流程"
   },
@@ -202,6 +214,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "顯示設定對話框"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "畫布效能"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "說明中心"
   },
   "Comfy_ToggleTheme": {
     "label": "切換主題（深色／淺色）"
@@ -235,6 +253,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "切換日誌底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "切換基本下方面板"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "切換檢視控制底部面板"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "顯示快捷鍵對話框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切換專注模式"

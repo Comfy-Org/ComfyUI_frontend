@@ -1,5 +1,7 @@
+import { clamp } from 'es-toolkit/compat'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph, clamp } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IComboWidget,
   IStringComboWidget

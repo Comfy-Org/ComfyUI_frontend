@@ -61,6 +61,11 @@ jobs:
             exit 1
           fi
 
+      - name: Lint generated types
+        run: |
+          echo "Linting generated Comfy Registry API types..."
+          npm run lint:fix:no-cache -- ./src/types/comfyRegistryTypes.ts
+
       - name: Check for changes
         id: check-changes
         run: |

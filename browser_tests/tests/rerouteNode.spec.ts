@@ -18,7 +18,7 @@ test.describe('Reroute Node', () => {
       [workflowName]: workflowName
     })
     await comfyPage.setup()
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
 
     // Insert the workflow
     const workflowsTab = comfyPage.menu.workflowsTab
@@ -48,7 +48,9 @@ test.describe('LiteGraph Native Reroute Node', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
   })
 
-  test('Can add reroute by alt clicking on link', async ({ comfyPage }) => {
+  test('@2x @0.5x Can add reroute by alt clicking on link', async ({
+    comfyPage
+  }) => {
     const loadCheckpointNode = (
       await comfyPage.getNodeRefsByTitle('Load Checkpoint')
     )[0]
@@ -96,6 +98,31 @@ test.describe('LiteGraph Native Reroute Node', () => {
 
     await expect(comfyPage.canvas).toHaveScreenshot(
       'native_reroute_context_menu.png'
+    )
+  })
+
+  test('Can delete link that is connected to two reroutes', async ({
+    comfyPage
+  }) => {
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/4695
+    await comfyPage.loadWorkflow(
+      'reroute/single-native-reroute-default-workflow'
+    )
+
+    // To find the clickable midpoint button, we use the hardcoded value from the browser logs
+    // since the link is a bezier curve and not a straight line.
+    const middlePoint = { x: 359.4188232421875, y: 468.7716979980469 }
+
+    // Click the middle point of the link to open the context menu.
+    await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
+
+    // Click the "Delete" context menu option.
+    await comfyPage.page
+      .locator('.litecontextmenu .litemenu-entry', { hasText: 'Delete' })
+      .click()
+
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'native_reroute_delete_from_midpoint_context_menu.png'
     )
   })
 })

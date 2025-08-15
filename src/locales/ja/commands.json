@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "再起動"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "選択したノードの3Dビューアー（ベータ）を開く"
+  },
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
   },
@@ -119,11 +122,17 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "選択範囲をサブグラフに変換"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "サブグラフを終了"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "グループを内容に合わせて調整"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "選択したノードをグループ化"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "選択したサブグラフを展開"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "選択したノードをグループノードに変換"
@@ -176,6 +185,9 @@
   "Comfy_OpenClipspace": {
     "label": "クリップスペース"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "マネージャー"
+  },
   "Comfy_OpenWorkflow": {
     "label": "ワークフローを開く"
   },
@@ -202,6 +214,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "設定ダイアログを表示"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "キャンバスパフォーマンス"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "ヘルプセンター"
   },
   "Comfy_ToggleTheme": {
     "label": "テーマの切り替え（ダーク/ライト）"
@@ -235,6 +253,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "ログパネル下部の切り替え"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "必須な下部パネルを切り替え"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "表示コントロール下部パネルの切り替え"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "キーバインドダイアログを表示"
   },
   "Workspace_ToggleFocusMode": {
     "label": "フォーカスモードの切り替え"

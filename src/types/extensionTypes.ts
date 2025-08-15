@@ -6,14 +6,16 @@ import type { ComfyCommand } from '@/stores/commandStore'
 export interface BaseSidebarTabExtension {
   id: string
   title: string
-  icon?: string
+  icon?: string | Component
   iconBadge?: string | (() => string | null)
   tooltip?: string
+  label?: string
 }
 
 export interface BaseBottomPanelExtension {
   id: string
   title: string
+  targetPanel?: 'terminal' | 'shortcuts'
 }
 
 export interface VueExtension {

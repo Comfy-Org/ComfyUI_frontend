@@ -24,11 +24,11 @@ test.describe('Canvas Right Click Menu', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('add-group-group-added.png')
   })
 
-  test.skip('Can convert to group node', async ({ comfyPage }) => {
+  test('Can convert to group node', async ({ comfyPage }) => {
     await comfyPage.select2Nodes()
     await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
     await comfyPage.rightClickCanvas()
-    await comfyPage.clickContextMenuItem('Convert to Group Node')
+    await comfyPage.clickContextMenuItem('Convert to Group Node (Deprecated)')
     await comfyPage.promptDialogInput.fill('GroupNode2CLIP')
     await comfyPage.page.keyboard.press('Enter')
     await comfyPage.promptDialogInput.waitFor({ state: 'hidden' })

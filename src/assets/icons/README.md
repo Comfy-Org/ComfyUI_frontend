@@ -1,53 +1,148 @@
-# ComfyUI Custom Icons Guide
+# ComfyUI Icons Guide
 
-This guide explains how to add and use custom SVG icons in the ComfyUI frontend.
+ComfyUI supports three types of icons that can be used throughout the interface. All icons are automatically imported - no manual imports needed!
 
-## Overview
+## Quick Start - Code Examples
 
-ComfyUI uses a hybrid icon system that supports:
-- **PrimeIcons** - Legacy icon library (CSS classes like `pi pi-plus`)
-- **Iconify** - Modern icon system with 200,000+ icons
-- **Custom Icons** - Your own SVG icons
-
-Custom icons are powered by [unplugin-icons](https://github.com/unplugin/unplugin-icons) and integrate seamlessly with Vue's component system.
-
-## Quick Start
-
-### 1. Add Your SVG Icon
-
-Place your SVG file in the `custom/` directory:
-```
-src/assets/icons/custom/
-└── your-icon.svg
-```
-
-### 2. Use in Components
+### 1. PrimeIcons
 
 ```vue
 <template>
-  <!-- Use as a Vue component -->
-  <i-comfy:your-icon />
-  
-  <!-- In a PrimeVue button -->
-  <Button>
+  <!-- Basic usage -->
+  <i class="pi pi-plus" />
+  <i class="pi pi-cog" />
+  <i class="pi pi-check text-green-500" />
+
+  <!-- In PrimeVue components -->
+  <button icon="pi pi-save" label="Save" />
+  <button icon="pi pi-times" severity="danger" />
+</template>
+```
+
+[Browse all PrimeIcons →](https://primevue.org/icons/#list)
+
+### 2. Iconify Icons (Recommended)
+
+```vue
+<template>
+  <!-- Primary icon set: Lucide -->
+  <i-lucide:download />
+  <i-lucide:settings />
+  <i-lucide:workflow class="text-2xl" />
+
+  <!-- Other popular icon sets -->
+  <i-mdi:folder-open />
+  <!-- Material Design Icons -->
+  <i-heroicons:document-text />
+  <!-- Heroicons -->
+  <i-tabler:brand-github />
+  <!-- Tabler Icons -->
+  <i-carbon:cloud-upload />
+  <!-- Carbon Icons -->
+
+  <!-- With styling -->
+  <i-lucide:save class="w-6 h-6 text-blue-500" />
+</template>
+```
+
+[Browse 200,000+ icons →](https://icon-sets.iconify.design/)
+
+### 3. Custom Icons
+
+```vue
+<template>
+  <!-- Your custom SVG icons from src/assets/icons/custom/ -->
+  <i-comfy:workflow />
+  <i-comfy:node-tree />
+  <i-comfy:my-custom-icon class="text-xl" />
+
+  <!-- In PrimeVue button -->
+  <Button severity="secondary">
     <template #icon>
-      <i-comfy:your-icon />
+      <i-comfy:workflow />
     </template>
   </Button>
 </template>
 ```
 
-## SVG Requirements
+## Icon Usage Patterns
 
-### File Naming
-- Use kebab-case: `workflow-icon.svg`, `node-tree.svg`
-- Avoid special characters and spaces
-- The filename becomes the icon name
+### In Buttons
 
-### SVG Format
+```vue
+<template>
+  <!-- PrimeIcon in button (simple) -->
+  <Button icon="pi pi-check" label="Confirm" />
+
+  <!-- Iconify/Custom in button (template) -->
+  <Button>
+    <template #icon>
+      <i-lucide:save />
+    </template>
+    Save File
+  </Button>
+</template>
+```
+
+### Conditional Icons
+
+```vue
+<template>
+  <i-lucide:eye v-if="isVisible" />
+  <i-lucide:eye-off v-else />
+
+  <!-- Or with ternary -->
+  <component :is="isLocked ? 'i-lucide:lock' : 'i-lucide:lock-open'" />
+</template>
+```
+
+### With Tooltips
+
+```vue
+<template>
+  <i-lucide:info
+    v-tooltip="'Click for more information'"
+    class="cursor-pointer"
+  />
+</template>
+```
+
+## Using Iconify Icons
+
+### Finding Icons
+
+1. Visit [Iconify Icon Sets](https://icon-sets.iconify.design/)
+2. Search or browse collections
+3. Click on any icon to get its name
+4. Use with `i-[collection]:[icon-name]` format
+
+### Popular Collections
+
+- **Lucide** (`i-lucide:`) - Our primary icon set, clean and consistent
+- **Material Design Icons** (`i-mdi:`) - Comprehensive Material Design icons
+- **Heroicons** (`i-heroicons:`) - Beautiful hand-crafted SVG icons
+- **Tabler** (`i-tabler:`) - 3000+ free SVG icons
+- **Carbon** (`i-carbon:`) - IBM's design system icons
+
+## Adding Custom Icons
+
+### 1. Add Your SVG
+
+Place your SVG file in `src/assets/icons/custom/`:
+
+```
+src/assets/icons/custom/
+├── workflow-duplicate.svg
+├── node-preview.svg
+└── your-icon.svg
+```
+
+### 2. SVG Format Requirements
+
 ```xml
 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <path d="..." />
+  <!-- Use currentColor for theme compatibility -->
+  <path fill="currentColor" d="..." />
 </svg>
 ```
 
@@ -57,59 +152,98 @@ src/assets/icons/custom/
 - Use `currentColor` for theme-aware icons
 - Keep SVGs optimized and simple
 
-### Color Theming
+### 3. Use Immediately
 
-For icons that adapt to the current theme, use `currentColor`:
+```vue
+<template>
+  <i-comfy:your-icon />
+</template>
+```
+
+No imports needed - icons are auto-discovered!
+
+## Icon Guidelines
+
+### Naming Conventions
+
+- **Files**: `kebab-case.svg` (workflow-icon.svg)
+- **Usage**: `<i-comfy:workflow-icon />`
+
+### Size & Styling
+
+```vue
+<template>
+  <!-- Size with Tailwind classes -->
+  <i-lucide:plus class="w-4 h-4" />
+  <!-- 16px -->
+  <i-lucide:plus class="w-6 h-6" />
+  <!-- 24px (default) -->
+  <i-lucide:plus class="w-8 h-8" />
+  <!-- 32px -->
+
+  <!-- Or text size -->
+  <i-lucide:plus class="text-sm" />
+  <i-lucide:plus class="text-2xl" />
+
+  <!-- Colors -->
+  <i-lucide:check class="text-green-500" />
+  <i-lucide:x class="text-red-500" />
+</template>
+```
+
+### Theme Compatibility
+
+Always use `currentColor` in SVGs for automatic theme adaptation:
 
 ```xml
-<!-- ✅ Good: Uses currentColor -->
+<!-- ✅ Good: Adapts to light/dark theme -->
 <svg viewBox="0 0 24 24">
-  <path stroke="currentColor" fill="none" d="..." />
+  <path fill="currentColor" d="..." />
 </svg>
 
-<!-- ❌ Bad: Hardcoded colors -->
+<!-- ❌ Bad: Fixed colors -->
 <svg viewBox="0 0 24 24">
-  <path stroke="white" fill="black" d="..." />
+  <path fill="#000000" d="..." />
 </svg>
 ```
 
-## Usage Examples
+## Migration Guide
 
-### Basic Icon
+### From PrimeIcons to Iconify/Custom
+
 ```vue
-<i-comfy:workflow />
+<template>
+  <!-- Before -->
+  <Button icon="pi pi-download" />
+
+  <!-- After -->
+  <Button>
+    <template #icon>
+      <i-lucide:download />
+    </template>
+  </Button>
+</template>
 ```
 
-### With Classes
-```vue
-<i-comfy:workflow class="text-2xl text-blue-500" />
-```
+### From Inline SVG to Custom Icon
 
-### In Buttons
 ```vue
-<Button severity="secondary" text>
-  <template #icon>
-    <i-comfy:workflow />
-  </template>
-</Button>
-```
+<template>
+  <!-- Before: Inline SVG -->
+  <svg class="w-6 h-6" viewBox="0 0 24 24">
+    <path d="..." />
+  </svg>
 
-### Conditional Icons
-```vue
-<template #icon>
-  <i-comfy:workflow v-if="isWorkflow" />
-  <i-comfy:node v-else />
+  <!-- After: Save as custom/my-icon.svg and use -->
+  <i-comfy:my-icon class="w-6 h-6" />
 </template>
 ```
 
 ## Technical Details
 
-### How It Works
+### Auto-Import System
 
-1. **unplugin-icons** automatically discovers SVG files in `custom/`
-2. During build, SVGs are converted to Vue components
-3. Components are tree-shaken - only used icons are bundled
-4. The `i-` prefix and `comfy:` namespace identify custom icons
+Icons are automatically imported using `unplugin-icons` - no manual imports needed! Just use the icon component directly.
 
 ### Configuration
 
@@ -119,17 +253,18 @@ The icon system is configured in `vite.config.mts`:
 Icons({
   compiler: 'vue3',
   customCollections: {
-    'comfy': FileSystemIconLoader('src/assets/icons/custom'),
+    comfy: FileSystemIconLoader('src/assets/icons/custom')
   }
 })
 ```
 
 ### TypeScript Support
 
-Icons are automatically typed. If TypeScript doesn't recognize a new icon:
-1. Restart your dev server
-2. Check that the SVG file is valid
-3. Ensure the filename follows kebab-case convention
+Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
+
+1. Restart the dev server
+2. Ensure the SVG file is valid
+3. Check filename follows kebab-case
 
 ## Troubleshooting
 
@@ -157,22 +292,6 @@ Icons are automatically typed. If TypeScript doesn't recognize a new icon:
 4. **Theme support**: Always use `currentColor` for adaptable icons
 5. **Test both themes**: Verify icons look good in light and dark modes
 
-## Migration from PrimeIcons
-
-When replacing a PrimeIcon with a custom icon:
-
-```vue
-<!-- Before: PrimeIcon -->
-<Button icon="pi pi-box" />
-
-<!-- After: Custom icon -->
-<Button>
-  <template #icon>
-    <i-comfy:workflow />
-  </template>
-</Button>
-```
-
 ## Adding Icon Collections
 
 To add an entire icon set from npm:
@@ -182,3 +301,10 @@ To add an entire icon set from npm:
 3. Use with the appropriate prefix
 
 See the [unplugin-icons documentation](https://github.com/unplugin/unplugin-icons) for details.
+
+## Resources
+
+- [PrimeIcons List](https://primevue.org/icons/#list)
+- [Iconify Icon Browser](https://icon-sets.iconify.design/)
+- [Lucide Icons](https://lucide.dev/icons/)
+- [unplugin-icons docs](https://github.com/unplugin/unplugin-icons)

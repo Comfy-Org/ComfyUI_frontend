@@ -300,7 +300,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'ja', text: '日本語' },
       { value: 'ko', text: '한국어' },
       { value: 'fr', text: 'Français' },
-      { value: 'es', text: 'Español' }
+      { value: 'es', text: 'Español' },
+      { value: 'ar', text: 'عربي' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -829,6 +830,41 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: true,
     versionAdded: '1.25.0'
+  },
+  {
+    id: 'Comfy.Minimap.NodeColors',
+    name: 'Display node with its original color on minimap',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.ShowLinks',
+    name: 'Display links on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.ShowGroups',
+    name: 'Display node groups on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.RenderBypassState',
+    name: 'Render bypass state on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.RenderErrorState',
+    name: 'Render error state on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
   },
   {
     id: 'Comfy.Workflow.AutoSaveDelay',

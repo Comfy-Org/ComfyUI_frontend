@@ -82,7 +82,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { computed } from 'vue'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'

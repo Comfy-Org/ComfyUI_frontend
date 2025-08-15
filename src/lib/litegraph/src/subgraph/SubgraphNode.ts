@@ -72,7 +72,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
-        if (this.inputs.some((i) => i.name == name)) return
+        const existingInput = this.inputs.find((i) => i.name == name)
+        if (existingInput) {
+          const linkId = subgraphInput.linkIds[0]
+          const { inputNode } = subgraph.links[linkId].resolve(subgraph)
+          const widget = inputNode?.widgets?.find?.((w) => w.name == name)
+          if (widget) this.#setWidget(subgraphInput, existingInput, widget)
+          return
+        }
         const input = this.addInput(name, type)
 
         this.#addSubgraphInputListeners(subgraphInput, input)
@@ -118,6 +125,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!input) throw new Error('Subgraph input not found')
 
         input.label = newName
+        if (input._widget) {
+          input._widget.label = newName
+        }
       },
       { signal }
     )
@@ -161,7 +171,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput: SubgraphInput,
     input: INodeInputSlot & Partial<ISubgraphInput>
   ) {
-    input._listenerController?.abort()
+    if (
+      input._listenerController &&
+      typeof input._listenerController.abort === 'function'
+    ) {
+      input._listenerController.abort()
+    }
     input._listenerController = new AbortController()
     const { signal } = input._listenerController
 
@@ -197,7 +212,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     for (const input of this.inputs) {
-      input._listenerController?.abort()
+      if (
+        input._listenerController &&
+        typeof input._listenerController.abort === 'function'
+      ) {
+        input._listenerController.abort()
+      }
     }
 
     this.inputs.length = 0
@@ -246,10 +266,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const subgraphInput = this.subgraph.inputNode.slots.find(
         (slot) => slot.name === input.name
       )
-      if (!subgraphInput)
-        throw new Error(
-          `[SubgraphNode.configure] No subgraph input found for input ${input.name}`
+      if (!subgraphInput) {
+        // Skip inputs that don't exist in the subgraph definition
+        // This can happen when loading workflows with dynamically added inputs
+        console.warn(
+          `[SubgraphNode.configure] No subgraph input found for input ${input.name}, skipping`
         )
+        continue
+      }
 
       this.#addSubgraphInputListeners(subgraphInput, input)
 
@@ -508,7 +532,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     for (const input of this.inputs) {
-      input._listenerController?.abort()
+      if (
+        input._listenerController &&
+        typeof input._listenerController.abort === 'function'
+      ) {
+        input._listenerController.abort()
+      }
     }
   }
 }

@@ -171,12 +171,27 @@ export abstract class SubgraphIONodeBase<
   }
 
   /**
+   * Handles double-click on an IO slot to rename it.
+   * @param slot The slot that was double-clicked.
+   * @param event The event that triggered the double-click.
+   */
+  protected handleSlotDoubleClick(
+    slot: TSlot,
+    event: CanvasPointerEvent
+  ): void {
+    // Only allow renaming non-empty slots
+    if (slot !== this.emptySlot) {
+      this.#promptForSlotRename(slot, event)
+    }
+  }
+
+  /**
    * Shows the context menu for an IO slot.
    * @param slot The slot to show the context menu for.
    * @param event The event that triggered the context menu.
    */
   protected showSlotContextMenu(slot: TSlot, event: CanvasPointerEvent): void {
-    const options: IContextMenuValue[] = this.#getSlotMenuOptions(slot)
+    const options: (IContextMenuValue | null)[] = this.#getSlotMenuOptions(slot)
     if (!(options.length > 0)) return
 
     new LiteGraph.ContextMenu(options, {
@@ -193,20 +208,26 @@ export abstract class SubgraphIONodeBase<
    * @param slot The slot to get the context menu options for.
    * @returns The context menu options.
    */
-  #getSlotMenuOptions(slot: TSlot): IContextMenuValue[] {
-    const options: IContextMenuValue[] = []
+  #getSlotMenuOptions(slot: TSlot): (IContextMenuValue | null)[] {
+    const options: (IContextMenuValue | null)[] = []
 
     // Disconnect option if slot has connections
     if (slot !== this.emptySlot && slot.linkIds.length > 0) {
       options.push({ content: 'Disconnect Links', value: 'disconnect' })
     }
 
-    // Remove / rename slot option (except for the empty slot)
+    // Rename slot option (except for the empty slot)
     if (slot !== this.emptySlot) {
-      options.push(
-        { content: 'Remove Slot', value: 'remove' },
-        { content: 'Rename Slot', value: 'rename' }
-      )
+      options.push({ content: 'Rename Slot', value: 'rename' })
+    }
+
+    if (slot !== this.emptySlot) {
+      options.push(null) // separator
+      options.push({
+        content: 'Remove Slot',
+        value: 'remove',
+        className: 'danger'
+      })
     }
 
     return options
@@ -239,21 +260,30 @@ export abstract class SubgraphIONodeBase<
       // Rename the slot
       case 'rename':
         if (slot !== this.emptySlot) {
-          this.subgraph.canvasAction((c) =>
-            c.prompt(
-              'Slot name',
-              slot.name,
-              (newName: string) => {
-                if (newName) this.renameSlot(slot, newName)
-              },
-              event
-            )
-          )
+          this.#promptForSlotRename(slot, event)
         }
         break
     }
 
     this.subgraph.setDirtyCanvas(true)
+  }
+
+  /**
+   * Prompts the user to rename a slot.
+   * @param slot The slot to rename.
+   * @param event The event that triggered the rename.
+   */
+  #promptForSlotRename(slot: TSlot, event: CanvasPointerEvent): void {
+    this.subgraph.canvasAction((c) =>
+      c.prompt(
+        'Slot name',
+        slot.displayName,
+        (newName: string) => {
+          if (newName) this.renameSlot(slot, newName)
+        },
+        event
+      )
+    )
   }
 
   /** Arrange the slots in this node. */

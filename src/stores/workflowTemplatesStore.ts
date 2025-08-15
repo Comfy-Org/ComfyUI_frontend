@@ -1,4 +1,4 @@
-import { groupBy } from 'lodash'
+import { groupBy } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 

@@ -1,3 +1,5 @@
+import { toString } from 'es-toolkit/compat'
+
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -55,7 +57,6 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { stringOrEmpty } from './strings'
 import { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -1244,7 +1245,7 @@ export class LGraphCanvas
         value = LGraphCanvas.getPropertyPrintableValue(value, info.values)
 
       // value could contain invalid html characters, clean that
-      value = LGraphCanvas.decodeHTML(stringOrEmpty(value))
+      value = LGraphCanvas.decodeHTML(toString(value))
       entries.push({
         content:
           `<span class='property_name'>${info.label || i}</span>` +
@@ -2299,6 +2300,8 @@ export class LGraphCanvas
 
       const node_data = node.clone()?.serialize()
       if (node_data?.type != null) {
+        // Ensure the cloned node is configured against the correct type (especially for SubgraphNodes)
+        node_data.type = newType
         const cloned = LiteGraph.createNode(newType)
         if (cloned) {
           cloned.configure(node_data)
@@ -2384,7 +2387,7 @@ export class LGraphCanvas
       // Set the width of the line for isPointInStroke checks
       const { lineWidth } = this.ctx
       this.ctx.lineWidth = this.connections_width + 7
-      const dpi = window?.devicePixelRatio || 1
+      const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
@@ -3453,10 +3456,6 @@ export class LGraphCanvas
   processMouseWheel(e: WheelEvent): void {
     if (!this.graph || !this.allow_dragcanvas) return
 
-    // TODO: Mouse wheel zoom rewrite
-    // @ts-expect-error wheelDeltaY is non-standard property on WheelEvent
-    const delta = e.wheelDeltaY ?? e.detail * -60
-
     this.adjustMouseEvent(e)
 
     const pos: Point = [e.clientX, e.clientY]
@@ -3464,35 +3463,34 @@ export class LGraphCanvas
 
     let { scale } = this.ds
 
-    if (
-      LiteGraph.canvasNavigationMode === 'legacy' ||
-      (LiteGraph.canvasNavigationMode === 'standard' && e.ctrlKey)
-    ) {
-      if (delta > 0) {
-        scale *= this.zoom_speed
-      } else if (delta < 0) {
-        scale *= 1 / this.zoom_speed
-      }
-      this.ds.changeScale(scale, [e.clientX, e.clientY])
-    } else if (
-      LiteGraph.macTrackpadGestures &&
-      (!LiteGraph.macGesturesRequireMac || navigator.userAgent.includes('Mac'))
-    ) {
-      if (e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-        if (e.deltaY > 0) {
-          scale *= 1 / this.zoom_speed
-        } else if (e.deltaY < 0) {
-          scale *= this.zoom_speed
-        }
-        this.ds.changeScale(scale, [e.clientX, e.clientY])
-      } else if (e.ctrlKey) {
+    // Detect if this is a trackpad gesture or mouse wheel
+    const isTrackpad = this.pointer.isTrackpadGesture(e)
+
+    if (e.ctrlKey || LiteGraph.canvasNavigationMode === 'legacy') {
+      // Legacy mode or standard mode with ctrl - use wheel for zoom
+      if (isTrackpad) {
+        // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
         this.ds.changeScale(scale, [e.clientX, e.clientY], false)
-      } else if (e.shiftKey) {
-        this.ds.offset[0] -= e.deltaY * 1.18 * (1 / scale)
       } else {
-        this.ds.offset[0] -= e.deltaX * 1.18 * (1 / scale)
-        this.ds.offset[1] -= e.deltaY * 1.18 * (1 / scale)
+        // Mouse wheel - use stepped scaling
+        if (e.deltaY < 0) {
+          scale *= this.zoom_speed
+        } else if (e.deltaY > 0) {
+          scale *= 1 / this.zoom_speed
+        }
+        this.ds.changeScale(scale, [e.clientX, e.clientY])
+      }
+    } else {
+      // Standard mode without ctrl - use wheel / gestures to pan
+      // Trackpads and mice work on significantly different scales
+      const factor = isTrackpad ? 0.18 : 0.008_333
+
+      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
+        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
+      } else {
+        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
       }
     }
 
@@ -4130,6 +4128,7 @@ export class LGraphCanvas
     const selected = this.selectedItems
     if (!selected.size) return
 
+    const initialSelectionSize = selected.size
     let wasSelected: Positionable | undefined
     for (const sel of selected) {
       if (sel === keepSelected) {
@@ -4170,8 +4169,12 @@ export class LGraphCanvas
       }
     }
 
-    this.state.selectionChanged = true
-    this.onSelectionChange?.(this.selected_nodes)
+    // Only set selectionChanged if selection actually changed
+    const finalSelectionSize = selected.size
+    if (initialSelectionSize !== finalSelectionSize) {
+      this.state.selectionChanged = true
+      this.onSelectionChange?.(this.selected_nodes)
+    }
   }
 
   /** @deprecated See {@link LGraphCanvas.deselectAll} */
@@ -6058,7 +6061,7 @@ export class LGraphCanvas
       }
       ctx.fillStyle = '#FFF'
       ctx.fillText(
-        stringOrEmpty(node.order),
+        toString(node.order),
         node.pos[0] + LiteGraph.NODE_TITLE_HEIGHT * -0.5,
         node.pos[1] - 6
       )
@@ -6226,9 +6229,17 @@ export class LGraphCanvas
           break
         }
 
-        case 'Delete':
-          graph.removeLink(segment.id)
+        case 'Delete': {
+          // segment can be a Reroute object, in which case segment.id is the reroute id
+          const linkId =
+            segment instanceof Reroute
+              ? segment.linkIds.values().next().value
+              : segment.id
+          if (linkId !== undefined) {
+            graph.removeLink(linkId)
+          }
           break
+        }
         default:
       }
     }
@@ -8064,18 +8075,6 @@ export class LGraphCanvas
     } else {
       options = [
         {
-          content: 'Inputs',
-          has_submenu: true,
-          disabled: true
-        },
-        {
-          content: 'Outputs',
-          has_submenu: true,
-          disabled: true,
-          callback: LGraphCanvas.showMenuNodeOptionalOutputs
-        },
-        null,
-        {
           content: 'Convert to Subgraph 🆕',
           callback: () => {
             if (!this.selectedItems.size)
@@ -8242,13 +8241,17 @@ export class LGraphCanvas
               'Both in put and output slots were null when processing context menu.'
             )
 
-          if (_slot.removable) {
-            menu_info.push(
-              _slot.locked ? 'Cannot remove' : { content: 'Remove Slot', slot }
-            )
-          }
           if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
             menu_info.push({ content: 'Rename Slot', slot })
+          }
+
+          if (_slot.removable) {
+            menu_info.push(null)
+            menu_info.push(
+              _slot.locked
+                ? 'Cannot remove'
+                : { content: 'Remove Slot', slot, className: 'danger' }
+            )
           }
 
           if (node.getExtraSlotMenuOptions) {

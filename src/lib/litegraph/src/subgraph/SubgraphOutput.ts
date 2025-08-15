@@ -1,3 +1,5 @@
+import { pull } from 'es-toolkit/compat'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -9,7 +11,6 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import { removeFromArray } from '@/lib/litegraph/src/utils/collections'
 
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
@@ -59,7 +60,7 @@ export class SubgraphOutput extends SubgraphSlot {
       existingLink.disconnect(subgraph, 'input')
       const resolved = existingLink.resolve(subgraph)
       const links = resolved.output?.links
-      if (links) removeFromArray(links, existingLink.id)
+      if (links) pull(links, existingLink.id)
     }
 
     const link = new LLink(
