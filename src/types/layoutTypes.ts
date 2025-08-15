@@ -28,6 +28,7 @@ export interface Bounds {
 
 // ID types for type safety
 export type NodeId = string
+export type SlotId = string
 export type ConnectionId = string
 
 // Layout data structures
@@ -41,12 +42,18 @@ export interface NodeLayout {
   bounds: Bounds
 }
 
+export interface SlotLayout {
+  id: SlotId
+  nodeId: NodeId
+  position: Point // Relative to node
+  type: 'input' | 'output'
+  index: number
+}
+
 export interface ConnectionLayout {
   id: ConnectionId
-  sourceNodeId: NodeId
-  sourceSlotIndex: number
-  targetNodeId: NodeId
-  targetSlotIndex: number
+  sourceSlot: SlotId
+  targetSlot: SlotId
   // Control points for curved connections
   controlPoints?: Point[]
 }
