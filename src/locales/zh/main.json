@@ -83,10 +83,10 @@
     }
   },
   "breadcrumbsMenu": {
-    "clearWorkflow": "清除工作流程",
-    "deleteWorkflow": "刪除工作流程",
-    "duplicate": "複製",
-    "enterNewName": "輸入新名稱"
+    "clearWorkflow": "清空工作流",
+    "deleteWorkflow": "删除工作流",
+    "duplicate": "复制",
+    "enterNewName": "输入新名称"
   },
   "chatHistory": {
     "cancelEdit": "取消",
@@ -218,7 +218,7 @@
     "WEBCAM": "摄像头"
   },
   "desktopMenu": {
-    "confirmQuit": "有未保存的工作流程开启；任何未保存的更改都将丢失。忽略此警告并退出？",
+    "confirmQuit": "存在未保存的工作流；任何未保存的更改都将丢失。忽略此警告并退出？",
     "confirmReinstall": "这将清除您的 extra_models_config.yaml 文件，并重新开始安装。您确定吗？",
     "quit": "退出",
     "reinstall": "重新安装"
@@ -272,7 +272,7 @@
     "category": "类别",
     "choose_file_to_upload": "选择要上传的文件",
     "clear": "清除",
-    "clearFilters": "清除篩選",
+    "clearFilters": "清除筛选",
     "close": "关闭",
     "color": "颜色",
     "comingSoon": "即将推出",
@@ -297,7 +297,7 @@
     "devices": "设备",
     "disableAll": "禁用全部",
     "disabling": "禁用中",
-    "dismiss": "關閉",
+    "dismiss": "关闭",
     "download": "下载",
     "edit": "编辑",
     "empty": "空",
@@ -312,8 +312,8 @@
     "filter": "过滤",
     "findIssues": "查找问题",
     "firstTimeUIMessage": "这是您第一次使用新界面。选择 \"菜单 > 使用新菜单 > 禁用\" 来恢复旧界面。",
-    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
-    "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 或更高版本。",
+    "frontendNewer": "前端版本 {frontendVersion} 可能与后端版本 {backendVersion} 不兼容。",
+    "frontendOutdated": "前端版本 {frontendVersion} 已过时。后端需要 {requiredVersion} 或更高版本。",
     "goToNode": "转到节点",
     "help": "帮助",
     "icon": "图标",
@@ -399,8 +399,8 @@
     "upload": "上传",
     "usageHint": "使用提示",
     "user": "用户",
-    "versionMismatchWarning": "版本相容性警告",
-    "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
+    "versionMismatchWarning": "版本兼容性警告",
+    "versionMismatchWarningMessage": "{warning}：{detail} 请参考 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新说明。",
     "videoFailedToLoad": "视频加载失败",
     "workflow": "工作流"
   },
@@ -410,7 +410,7 @@
     "resetView": "重置视图",
     "selectMode": "选择模式",
     "toggleLinkVisibility": "切换连线可见性",
-    "toggleMinimap": "切換小地圖",
+    "toggleMinimap": "切换小地图",
     "zoomIn": "放大",
     "zoomOut": "缩小"
   },
@@ -720,7 +720,7 @@
     "disabled": "禁用",
     "disabledTooltip": "工作流将不会自动执行",
     "execute": "执行",
-    "help": "說明",
+    "help": "说明",
     "hideMenu": "隐藏菜单",
     "instant": "实时",
     "instantTooltip": "工作流将会在生成完成后立即执行",
@@ -734,9 +734,9 @@
     "run": "运行",
     "runWorkflow": "运行工作流程（Shift排在前面）",
     "runWorkflowFront": "运行工作流程（排在前面）",
-    "settings": "設定",
+    "settings": "设定",
     "showMenu": "显示菜单",
-    "theme": "主題",
+    "theme": "主题",
     "toggleBottomPanel": "底部面板"
   },
   "menuLabels": {
@@ -746,7 +746,7 @@
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
     "Canvas Toggle Link Visibility": "切换连线可见性",
     "Canvas Toggle Lock": "切换视图锁定",
-    "Canvas Toggle Minimap": "畫布切換小地圖",
+    "Canvas Toggle Minimap": "画布切换小地图",
     "Check for Updates": "检查更新",
     "Clear Pending Tasks": "清除待处理任务",
     "Clear Workflow": "清除工作流",
@@ -814,13 +814,13 @@
     "Toggle Bottom Panel": "切换底部面板",
     "Toggle Focus Mode": "切换专注模式",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
-    "Toggle Model Library Sidebar": "切換模型庫側邊欄",
-    "Toggle Node Library Sidebar": "切換節點庫側邊欄",
-    "Toggle Queue Sidebar": "切換佇列側邊欄",
+    "Toggle Model Library Sidebar": "切换模型库侧边栏",
+    "Toggle Node Library Sidebar": "切换节点库侧边栏",
+    "Toggle Queue Sidebar": "切换队列侧边栏",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
-    "Toggle Workflows Sidebar": "切換工作流程側邊欄",
+    "Toggle Workflows Sidebar": "切换工作流侧边栏",
     "Toggle the Custom Nodes Manager": "切换自定义节点管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
@@ -1620,10 +1620,10 @@
     "required": "必填"
   },
   "versionMismatchWarning": {
-    "dismiss": "關閉",
-    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
-    "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 版或更高版本。",
-    "title": "版本相容性警告",
+    "dismiss": "关闭",
+    "frontendNewer": "前端版本 {frontendVersion} 可能与后端版本 {backendVersion} 不兼容。",
+    "frontendOutdated": "前端版本 {frontendVersion} 已过时。后端需要 {requiredVersion} 版或更高版本。",
+    "title": "版本兼容性警告",
     "updateFrontend": "更新前端"
   },
   "welcome": {
