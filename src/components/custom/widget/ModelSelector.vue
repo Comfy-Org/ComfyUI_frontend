@@ -1,11 +1,3 @@
-<i18n>
-{
-  "en": {
-    "Checkpoints": "Checkpoints"
-  }
-}
-</i18n>
-
 <template>
   <BaseWidgetLayout>
     <template #leftPanel>
