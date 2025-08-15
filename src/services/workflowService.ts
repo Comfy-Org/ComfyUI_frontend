@@ -10,6 +10,7 @@ import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { TaskItemImpl } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -18,6 +19,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt, generateUUID } from '@/utils/formatUtil'
 
 import { useDialogService } from './dialogService'
+import { useExtensionService } from './extensionService'
 
 export const useWorkflowService = () => {
   const settingStore = useSettingStore()
@@ -178,7 +180,22 @@ export const useWorkflowService = () => {
 
     await app.loadGraphData(toRaw(workflowData))
     if (task.outputs) {
-      app.nodeOutputs = toRaw(task.outputs)
+      const nodeOutputsStore = useNodeOutputStore()
+      const rawOutputs = toRaw(task.outputs)
+
+      // Set outputs by execution ID to account for outputs inside of subgraphs
+      for (const nodeExecutionId in rawOutputs) {
+        nodeOutputsStore.setNodeOutputsByExecutionId(
+          nodeExecutionId,
+          rawOutputs[nodeExecutionId]
+        )
+      }
+
+      // Invoke extension (e.g., 3D nodes) hooks to allow them to update
+      useExtensionService().invokeExtensions(
+        'onNodeOutputsUpdated',
+        app.nodeOutputs
+      )
     }
   }
 
