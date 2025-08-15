@@ -7,23 +7,28 @@ import * as vuefire from 'vuefire'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 // Mock axios before any imports that use it
-vi.mock('axios')
+vi.mock('axios', () => {
+  const mockAxiosInstance = {
+    get: vi.fn().mockResolvedValue({
+      data: { balance: { credits: 0 } },
+      status: 200
+    }),
+    post: vi.fn().mockResolvedValue({
+      data: { id: 'test-customer-id' },
+      status: 201
+    })
+  }
+
+  return {
+    default: {
+      create: vi.fn().mockReturnValue(mockAxiosInstance),
+      isAxiosError: vi.fn().mockImplementation(() => false)
+    }
+  }
+})
+
 const mockedAxios = vi.mocked(axios)
-
-// Set up axios mock with default instance
-const mockAxiosInstance = {
-  get: vi.fn().mockResolvedValue({
-    data: { balance: { credits: 0 } },
-    status: 200
-  }),
-  post: vi.fn().mockResolvedValue({
-    data: { id: 'test-customer-id' },
-    status: 201
-  })
-}
-
-mockedAxios.create = vi.fn().mockReturnValue(mockAxiosInstance)
-mockedAxios.isAxiosError = vi.fn().mockImplementation(() => false) as any
+const mockAxiosInstance = mockedAxios.create() as any
 
 // Mock fetch
 const mockFetch = vi.fn()
@@ -122,7 +127,7 @@ describe('useFirebaseAuthStore', () => {
       data: { id: 'test-customer-id' },
       status: 201
     })
-    mockedAxios.isAxiosError = vi.fn().mockImplementation(() => false) as any
+    ;(mockedAxios.isAxiosError as any).mockReturnValue(false)
 
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
