@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
 
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -63,6 +64,7 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
+  const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
 
   // TODO: Dedupe `registerNodeDef`; this should remain synchronous.
   function registerSubgraphNodeDef(
@@ -762,15 +764,8 @@ export const useLitegraphService = () => {
       options.push({
         content: 'Bypass',
         callback: () => {
-          const mode =
-            this.mode === LGraphEventMode.BYPASS
-              ? LGraphEventMode.ALWAYS
-              : LGraphEventMode.BYPASS
-          for (const item of app.canvas.selectedItems) {
-            if (item instanceof LGraphNode) item.mode = mode
-          }
-          // @ts-expect-error fixme ts strict error
-          this.graph.change()
+          toggleSelectedNodesMode(LGraphEventMode.BYPASS)
+          app.canvas.setDirty(true, true)
         }
       })
 
