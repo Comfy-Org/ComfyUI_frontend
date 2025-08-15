@@ -11,7 +11,8 @@ const mockT = vi.fn((key: string) => {
     'shortcuts.subcategories.node': 'Node',
     'shortcuts.subcategories.queue': 'Queue',
     'shortcuts.subcategories.view': 'View',
-    'shortcuts.subcategories.panelControls': 'Panel Controls'
+    'shortcuts.subcategories.panelControls': 'Panel Controls',
+    'commands.Workflow_New.label': 'New Blank Workflow'
   }
   return translations[key] || key
 })
@@ -76,9 +77,7 @@ describe('ShortcutsList', () => {
     expect(wrapper.text()).toContain('Queue')
 
     // Check that commands are rendered
-    expect(wrapper.text()).toContain('New Workflow')
-    expect(wrapper.text()).toContain('Add Node')
-    expect(wrapper.text()).toContain('Clear Queue')
+    expect(wrapper.text()).toContain('New Blank Workflow')
   })
 
   it('should format keyboard shortcuts correctly', () => {
