@@ -272,6 +272,7 @@
     "category": "类别",
     "choose_file_to_upload": "选择要上传的文件",
     "clear": "清除",
+    "clearFilters": "清除筛选",
     "close": "关闭",
     "color": "颜色",
     "comingSoon": "即将推出",
@@ -298,6 +299,7 @@
     "disabling": "禁用中",
     "dismiss": "关闭",
     "download": "下载",
+    "duplicate": "复制",
     "edit": "编辑",
     "empty": "空",
     "enableAll": "启用全部",
@@ -568,6 +570,10 @@
     "applyingTexture": "应用纹理中...",
     "backgroundColor": "背景颜色",
     "camera": "摄影机",
+    "cameraType": {
+      "orthographic": "正交",
+      "perspective": "透视"
+    },
     "clearRecording": "清除录制",
     "edgeThreshold": "边缘阈值",
     "export": "导出",
@@ -588,6 +594,7 @@
       "wireframe": "线框"
     },
     "model": "模型",
+    "openIn3DViewer": "在 3D 查看器中打开",
     "previewOutput": "预览输出",
     "removeBackgroundImage": "移除背景图片",
     "resizeNodeMatchOutput": "调整节点以匹配输出",
@@ -598,8 +605,22 @@
     "switchCamera": "切换摄影机类型",
     "switchingMaterialMode": "切换材质模式中...",
     "upDirection": "上方向",
+    "upDirections": {
+      "original": "原始"
+    },
     "uploadBackgroundImage": "上传背景图片",
-    "uploadTexture": "上传纹理"
+    "uploadTexture": "上传纹理",
+    "viewer": {
+      "apply": "应用",
+      "cameraSettings": "相机设置",
+      "cameraType": "相机类型",
+      "cancel": "取消",
+      "exportSettings": "导出设置",
+      "lightSettings": "灯光设置",
+      "modelSettings": "模型设置",
+      "sceneSettings": "场景设置",
+      "title": "3D 查看器（测试版）"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "需要 ComfyUI {version}：",
@@ -728,6 +749,7 @@
     "manageExtensions": "管理擴充功能",
     "onChange": "更改时",
     "onChangeTooltip": "一旦进行更改，工作流将添加到执行队列",
+    "queue": "队列面板",
     "refresh": "刷新节点",
     "resetView": "重置视图",
     "run": "运行",
@@ -741,11 +763,11 @@
   "menuLabels": {
     "About ComfyUI": "关于ComfyUI",
     "Add Edit Model Step": "添加编辑模型步骤",
+    "Bottom Panel": "底部面板",
     "Browse Templates": "浏览模板",
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
-    "Canvas Toggle Link Visibility": "切换连线可见性",
+    "Canvas Performance": "画布性能",
     "Canvas Toggle Lock": "切换视图锁定",
-    "Canvas Toggle Minimap": "画布切换小地图",
     "Check for Updates": "检查更新",
     "Clear Pending Tasks": "清除待处理任务",
     "Clear Workflow": "清除工作流",
@@ -764,17 +786,23 @@
     "Desktop User Guide": "桌面端用户指南",
     "Duplicate Current Workflow": "复制当前工作流",
     "Edit": "编辑",
+    "Exit Subgraph": "退出子图",
     "Export": "导出",
     "Export (API)": "导出 (API)",
+    "File": "文件",
     "Fit Group To Contents": "适应组内容",
-    "Fit view to selected nodes": "适应视图到选中节点",
+    "Focus Mode": "专注模式",
     "Give Feedback": "提供反馈",
     "Group Selected Nodes": "将选中节点转换为组节点",
     "Help": "帮助",
+    "Help Center": "帮助中心",
     "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大笔刷大小",
     "Interrupt": "中断",
     "Load Default Workflow": "加载默认工作流",
     "Manage group nodes": "管理组节点",
+    "Manager": "管理器",
+    "Minimap": "小地图",
+    "Model Library": "模型库",
     "Move Selected Nodes Down": "下移所选节点",
     "Move Selected Nodes Left": "左移所选节点",
     "Move Selected Nodes Right": "右移所选节点",
@@ -782,7 +810,10 @@
     "Mute/Unmute Selected Nodes": "静音/取消静音选定节点",
     "New": "新建",
     "Next Opened Workflow": "下一个打开的工作流",
+    "Node Library": "节点库",
+    "Node Links": "节点连接",
     "Open": "打开",
+    "Open 3D Viewer (Beta) for Selected Node": "为选中节点打开3D查看器（测试版）",
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
     "Open Inputs Folder": "打开输入文件夹",
@@ -795,6 +826,7 @@
     "Pin/Unpin Selected Items": "固定/取消固定选定项目",
     "Pin/Unpin Selected Nodes": "固定/取消固定选定节点",
     "Previous Opened Workflow": "上一个打开的工作流",
+    "Queue Panel": "队列面板",
     "Queue Prompt": "执行提示词",
     "Queue Prompt (Front)": "执行提示词 (优先执行)",
     "Queue Selected Output Nodes": "将所选输出节点加入队列",
@@ -807,25 +839,31 @@
     "Restart": "重启",
     "Save": "保存",
     "Save As": "另存为",
+    "Show Keybindings Dialog": "显示快捷键对话框",
     "Show Settings Dialog": "显示设置对话框",
     "Sign Out": "退出登录",
-    "Toggle Bottom Panel": "切换底部面板",
-    "Toggle Focus Mode": "切换专注模式",
+    "Toggle Essential Bottom Panel": "切换基础底部面板",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
-    "Toggle Model Library Sidebar": "切换模型库侧边栏",
-    "Toggle Node Library Sidebar": "切换节点库侧边栏",
-    "Toggle Queue Sidebar": "切换队列侧边栏",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
-    "Toggle Workflows Sidebar": "切换工作流程侧边栏",
+    "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
     "Toggle the Custom Nodes Manager": "切换自定义节点管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
     "Ungroup selected group nodes": "解散选中组节点",
-    "Workflow": "工作流",
+    "Unpack the selected Subgraph": "解包选中子图",
+    "Workflows": "工作流",
     "Zoom In": "放大画面",
-    "Zoom Out": "缩小画面"
+    "Zoom Out": "缩小画面",
+    "Zoom to fit": "缩放以适应"
+  },
+  "minimap": {
+    "nodeColors": "节点颜色",
+    "renderBypassState": "渲染绕过状态",
+    "renderErrorState": "渲染错误状态",
+    "showGroups": "显示框架/分组",
+    "showLinks": "显示连接"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
@@ -1093,6 +1131,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3D查看器",
     "API Nodes": "API 节点",
     "About": "关于",
     "Appearance": "外观",
@@ -1144,10 +1183,31 @@
     "Window": "窗口",
     "Workflow": "工作流"
   },
+  "shortcuts": {
+    "essentials": "常用",
+    "keyboardShortcuts": "键盘快捷键",
+    "manageShortcuts": "管理快捷键",
+    "noKeybinding": "无快捷键",
+    "subcategories": {
+      "node": "节点",
+      "panelControls": "面板控制",
+      "queue": "队列",
+      "view": "视图",
+      "workflow": "工作流"
+    },
+    "viewControls": "视图控制"
+  },
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",
     "downloads": "下载",
     "helpCenter": "帮助中心",
+    "labels": {
+      "models": "模型",
+      "nodes": "节点",
+      "queue": "队列",
+      "templates": "模板",
+      "workflows": "工作流"
+    },
     "logout": "登出",
     "modelLibrary": "模型库",
     "newBlankWorkflow": "创建空白工作流",
@@ -1185,6 +1245,7 @@
       },
       "showFlatList": "平铺结果"
     },
+    "templates": "模板",
     "workflowTab": {
       "confirmDelete": "您确定要删除此工作流吗？",
       "confirmDeleteTitle": "删除工作流？",
@@ -1231,6 +1292,8 @@
       "Video": "视频生成",
       "Video API": "视频 API"
     },
+    "loadingMore": "正在加载更多模板...",
+    "searchPlaceholder": "搜索模板...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "混元3D 2.0 图生模型",
@@ -1553,6 +1616,7 @@
     "failedToExportModel": "无法将模型导出为 {format}",
     "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
+    "failedToInitializeLoad3dViewer": "初始化3D查看器失败",
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
     "failedToPurchaseCredits": "购买积分失败：{error}",
     "fileLoadError": "无法在 {fileName} 中找到工作流",

@@ -119,6 +119,10 @@
       "Straight": "直角线"
     }
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "启用3D查看器（测试版）",
+    "tooltip": "为选定节点启用3D查看器（测试版）。此功能允许你在全尺寸3D查看器中直接可视化和交互3D模型。"
+  },
   "Comfy_Load3D_BackgroundColor": {
     "name": "初始背景颜色",
     "tooltip": "控制3D场景的默认背景颜色。此设置决定新建3D组件时的背景外观，但每个组件在创建后都可以单独调整。"
