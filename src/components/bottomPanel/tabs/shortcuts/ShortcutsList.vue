@@ -20,7 +20,7 @@
           >
             <div class="shortcut-info flex-grow pr-4">
               <div class="shortcut-name text-sm font-medium">
-                {{ $t(`commands.${normalizeI18nKey(command.id)}.label`) }}
+                {{ t(`commands.${normalizeI18nKey(command.id)}.label`) }}
               </div>
             </div>
 
