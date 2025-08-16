@@ -56,29 +56,6 @@ The following table lists ALL core extensions in the system as of 2025-01-30:
 | webcamCapture.ts | Provides webcam capture capabilities | Media |
 | widgetInputs.ts | Implements various widget input types | Widgets |
 
-### load3d Subdirectory
-Located in `extensions/core/load3d/`:
-
-| File | Description | Type |
-|------|-------------|------|
-| AnimationManager.ts | Manages 3D animations | Manager |
-| CameraManager.ts | Handles camera controls and positioning | Manager |
-| ControlsManager.ts | Manages 3D scene controls | Manager |
-| EventManager.ts | Handles 3D scene events | Manager |
-| interfaces.ts | TypeScript interfaces for 3D functionality | Types |
-| LightingManager.ts | Manages scene lighting | Manager |
-| Load3DConfiguration.ts | Configuration for 3D loading | Config |
-| Load3d.ts | Core 3D loading functionality | Core |
-| Load3dAnimation.ts | Animation-specific 3D operations | Animation |
-| Load3dUtils.ts | Utility functions for 3D operations | Utils |
-| LoaderManager.ts | Manages various 3D file loaders | Manager |
-| ModelExporter.ts | Exports 3D models to different formats | Export |
-| ModelManager.ts | Manages 3D model lifecycle | Manager |
-| NodeStorage.ts | Handles storage for 3D nodes | Storage |
-| PreviewManager.ts | Manages 3D model previews | Manager |
-| RecordingManager.ts | Handles 3D scene recording | Manager |
-| SceneManager.ts | Core 3D scene management | Manager |
-| ViewHelperManager.ts | Manages 3D view helpers and gizmos | Manager |
 
 ### Conditional Lines Subdirectory
 Located in `extensions/core/load3d/conditional-lines/`:

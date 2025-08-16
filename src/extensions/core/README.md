@@ -14,7 +14,6 @@ This directory contains built-in extensions that ship with ComfyUI, including:
 
 - **Image Processing**: maskeditor, uploadImage, saveImageExtraOutput, clipspace
 - **Graph Management**: groupNode, groupNodeManage, groupOptions, rerouteNode, noteNode
-- **3D Support**: load3d, saveMesh (with extensive subdirectories)
 - **Input Handling**: widgetInputs, uploadAudio, webcamCapture, simpleTouchSupport
 - **UI Enhancements**: contextMenuFilter, previewAny, nodeTemplates
 - **Text Processing**: dynamicPrompts, editAttention
