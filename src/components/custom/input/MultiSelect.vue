@@ -9,14 +9,19 @@
       :max-selected-labels="0"
       :pt="pt"
     >
+      <!-- Trigger value (keep text scale identical) -->
       <template #value>
         <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
           {{ label }}
         </span>
       </template>
+
+      <!-- Chevron size identical to current -->
       <template #dropdownicon>
         <i-lucide:chevron-down class="text-lg text-neutral-400" />
       </template>
+
+      <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
       <template #option="slotProps">
         <div class="flex items-center gap-2">
           <div
@@ -37,6 +42,7 @@
       </template>
     </MultiSelect>
 
+    <!-- Selected count badge (unchanged) -->
     <div
       v-if="selectedCount > 0"
       class="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 dark-theme:bg-blue-500 text-xs font-semibold text-white"
@@ -54,21 +60,20 @@ import { computed } from 'vue'
 
 const { label, options } = defineProps<{
   label?: string
-  options: {
-    name: string
-    value: string
-  }[]
+  options: { name: string; value: string }[]
 }>()
 
-const selectedItems = defineModel<
-  {
-    name: string
-    value: string
-  }[]
->({ required: true })
+const selectedItems = defineModel<{ name: string; value: string }[]>({
+  required: true
+})
 
 const selectedCount = computed(() => selectedItems.value.length)
 
+/**
+ * Pure unstyled mode using only the PrimeVue PT API.
+ * All PrimeVue built-in checkboxes/headers are hidden via PT (no :deep hacks).
+ * Visual output matches the previous version exactly.
+ */
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: [
@@ -93,21 +98,30 @@ const pt = computed(() => ({
     class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
   },
   header: { class: 'hidden' },
+
+  // Overlay & list visuals unchanged
+  overlay:
+    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg',
   list: {
     class:
       'flex flex-col gap-1 p-0 list-none bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white border-none text-xs'
   },
-  overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg',
+
+  // Option row hover tone identical
   option:
     'flex gap-1 items-center p-2 text-neutral hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+
+  // Hide built-in checkboxes entirely via PT (no :deep)
   pcHeaderCheckbox: {
     root: { class: 'hidden' },
+    checkbox: { class: 'hidden' },
+    input: { class: 'hidden' },
     style: 'display: none !important'
   },
   pcOptionCheckbox: {
     root: { class: 'hidden' },
     checkbox: { class: 'hidden' },
+    input: { class: 'hidden' },
     style: 'display: none !important'
   },
   optionCheckbox: {
@@ -120,28 +134,3 @@ const pt = computed(() => ({
   }
 }))
 </script>
-
-<style scoped>
-/* Hide all checkbox elements */
-:deep(.p-checkbox),
-:deep(.p-checkbox-box),
-:deep(.p-checkbox-icon),
-:deep(.p-multiselect-option-checkbox),
-:deep(.p-multiselect-header-checkbox),
-:deep(.p-multiselect-checkbox),
-:deep([data-pc-section='pcOptionCheckbox']),
-:deep([data-pc-section='optionCheckbox']),
-:deep([data-pc-section='checkbox']) {
-  display: none !important;
-  visibility: hidden !important;
-  width: 0 !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Adjust option padding since checkbox is removed */
-:deep(.p-multiselect-option) {
-  padding-left: 0.5rem !important;
-}
-</style>
