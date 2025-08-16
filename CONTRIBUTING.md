@@ -87,8 +87,8 @@ After you start the dev server, you should see following logs:
 Make sure your desktop machine and touch device are on the same network. On your touch device,
 navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to access the ComfyUI frontend.
 
-> !IMPORTANT
- The dev server will NOT load JavaScript extensions from custom nodes. Only core extensions (built into the frontend) will be loaded. This is because the shim system that allows custom node JavaScript to import frontend modules only works in production builds. Python custom nodes still function normally. See [Extension Development Guide](docs/extensions/development.md) for details and workarounds. And See [Extension Overview](docs/extensions/README.md) for extensions overview.
+> ⚠️ IMPORTANT:
+The dev server will NOT load JavaScript extensions from custom nodes. Only core extensions (built into the frontend) will be loaded. This is because the shim system that allows custom node JavaScript to import frontend modules only works in production builds. Python custom nodes still function normally. See [Extension Development Guide](docs/extensions/development.md) for details and workarounds. And See [Extension Overview](docs/extensions/README.md) for extensions overview.
 
 
 ## Development Workflow
