@@ -4,29 +4,43 @@
       v-model="selectedItem"
       :options="options"
       option-label="name"
+      option-value="value"
       unstyled
       :placeholder="label"
       :pt="pt"
     >
+      <!-- Trigger value -->
       <template #value="slotProps">
-        <div class="flex items-center gap-2">
-          <slot name="label-icon" />
+        <div class="flex items-center gap-2 text-xs">
+          <slot name="icon" />
           <span
-            v-if="slotProps.value"
-            class="text-sm text-zinc-700 dark-theme:text-gray-200"
+            v-if="slotProps.value !== null && slotProps.value !== undefined"
+            class="text-xs text-zinc-700 dark-theme:text-gray-200"
           >
-            {{ slotProps.value.name }}
+            {{ getLabel(slotProps.value) }}
           </span>
-          <span v-else class="text-sm text-zinc-400 dark-theme:text-gray-500">
+          <span v-else class="text-xs text-zinc-700 dark-theme:text-gray-200">
             {{ label }}
           </span>
         </div>
       </template>
+
+      <!-- Trigger caret -->
       <template #dropdownicon>
-        <i-lucide:chevron-down class="text-lg text-neutral-400" />
+        <i-lucide:chevron-down
+          class="text-base text-neutral-400 dark-theme:text-gray-300"
+        />
       </template>
-      <template #option="slotProps">
-        <span>{{ slotProps.option.name }}</span>
+
+      <!-- Option row -->
+      <template #option="{ option, selected }">
+        <div class="flex items-center justify-between gap-3 w-full">
+          <span class="truncate text-xs">{{ option.name }}</span>
+          <i-lucide:check
+            v-if="selected"
+            class="text-xs text-neutral-900 dark-theme:text-white"
+          />
+        </div>
       </template>
     </Select>
   </div>
@@ -44,65 +58,75 @@ const { label, options } = defineProps<{
   }[]
 }>()
 
-const selectedItem = defineModel<{
-  name: string
-  value: string
-} | null>({ required: true })
+const selectedItem = defineModel<string | null>({ required: true })
 
+const getLabel = (val: string | null | undefined) => {
+  if (val == null) return label ?? ''
+  const found = options.find((o) => o.value === val)
+  return found ? found.name : label ?? ''
+}
+
+/**
+ * Unstyled + PT API only
+ * - No background/border (same as page background)
+ * - Text/icon scale: compact size matching MultiSelect
+ */
 const pt = computed(() => ({
   root: ({
-    props,
-    state
-  }: SelectPassThroughMethodOptions<{
-    name: string
-    value: string
-  }>) => ({
+    props
+  }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
     class: [
-      'relative inline-flex cursor-pointer select-none w-full border border-solid border-transparent',
-      'rounded-lg text-neutral dark-theme:text-white',
-      'transition-all duration-200 ease-in-out',
-      { 'opacity-60 cursor-default': props.disabled },
-      {
-        'border-zinc-300 dark-theme:border-zinc-800': state.overlayVisible
-      }
+      // container
+      'relative inline-flex w-full cursor-pointer select-none items-center',
+      // trigger surface
+      'rounded-md',
+      'bg-transparent text-neutral dark-theme:text-white',
+      'border-0',
+      // disabled
+      { 'opacity-60 cursor-default': props.disabled }
     ]
   }),
   label: {
     class:
-      'flex-1 flex items-center cursor-pointer overflow-hidden whitespace-nowrap pl-3 py-2 outline-none border-none'
+      // Align with MultiSelect labelContainer spacing
+      'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 outline-none'
   },
   dropdown: {
-    class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
+    class:
+      // Right chevron touch area
+      'flex shrink-0 items-center justify-center px-3 py-2'
+  },
+  overlay: {
+    class: [
+      // dropdown panel
+      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg'
+    ]
   },
   list: {
     class:
+      // Same list tone/size as MultiSelect
       'flex flex-col gap-1 p-0 list-none bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white border-none text-xs'
   },
-  overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg',
-  option:
-    'flex gap-1 items-center py-2 px-3 text-neutral hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50'
+  option: ({
+    context
+  }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
+    class: [
+      // Row layout
+      'flex items-center justify-between gap-3 px-3 py-2',
+      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+      // Selected state + check icon
+      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected }
+    ]
+  }),
+  optionLabel: {
+    class: 'truncate'
+  },
+  optionGroupLabel: {
+    class:
+      'px-3 py-2 text-xs uppercase tracking-wide text-zinc-500 dark-theme:text-zinc-400'
+  },
+  emptyMessage: {
+    class: 'px-3 py-2 text-sm text-zinc-500 dark-theme:text-zinc-400'
+  }
 }))
 </script>
-
-<style scoped>
-/* Hide default radio buttons */
-:deep(.p-radiobutton),
-:deep(.p-radiobutton-box),
-:deep(.p-radiobutton-icon),
-:deep([data-pc-section='pcOptionRadiobutton']),
-:deep([data-pc-section='optionRadiobutton']),
-:deep([data-pc-section='radiobutton']) {
-  display: none !important;
-  visibility: hidden !important;
-  width: 0 !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Adjust option padding since radio button is removed */
-:deep(.p-select-option) {
-  padding-left: 0.5rem !important;
-}
-</style>

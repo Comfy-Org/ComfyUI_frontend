@@ -37,6 +37,16 @@
           label="Select Projects"
           :options="projectOptions"
         />
+        <SingleSelect
+          v-model="selectedSort"
+          label="Sorting Type"
+          :options="sortOptions"
+          class="w-[135px]"
+        >
+          <template #icon>
+            <i-lucide:filter />
+          </template>
+        </SingleSelect>
       </div>
     </template>
 
@@ -105,6 +115,7 @@ import CardContainer from '../card/CardContainer.vue'
 import CardTop from '../card/CardTop.vue'
 import MultiSelect from '../input/MultiSelect.vue'
 import SearchBox from '../input/SearchBox.vue'
+import SingleSelect from '../input/SingleSelect.vue'
 import BaseWidgetLayout from './layout/BaseWidgetLayout.vue'
 import LeftSidePanel from './panel/LeftSidePanel.vue'
 import RightSidePanel from './panel/RightSidePanel.vue'
@@ -120,6 +131,12 @@ const projectOptions = ref([
   { name: 'Project A', value: 'proj-a' },
   { name: 'Project B', value: 'proj-b' },
   { name: 'Project C', value: 'proj-c' }
+])
+
+const sortOptions = ref([
+  { name: 'Popular', value: 'popular' },
+  { name: 'Latest', value: 'latest' },
+  { name: 'A → Z', value: 'az' }
 ])
 
 const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
@@ -152,6 +169,7 @@ provide(OnCloseKey, onClose)
 const searchQuery = ref<string>('')
 const selectedFrameworks = ref([])
 const selectedProjects = ref([])
+const selectedSort = ref<string>('popular')
 
 const selectedNavItem = ref<string | null>('installed')
 </script>
