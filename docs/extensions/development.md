@@ -75,10 +75,3 @@ For cloud extensions, modify `.env`:
 ```
 DEV_SERVER_COMFYUI_URL=http://stagingcloud.comfy.org/
 ```
-
-## Key Points
-
-- Python nodes work normally in dev mode
-- JavaScript widgets/UI require workarounds
-- Core frontend development has full hot reload
-- This trade-off preserves compatibility for existing extensions
