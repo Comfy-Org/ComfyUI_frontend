@@ -75,7 +75,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Default editable text - click to start editing, press Enter or blur to finish.'
+        story:
+          'Default editable text - click to start editing, press Enter or blur to finish.'
       }
     }
   }
@@ -119,7 +120,8 @@ export const AlwaysEditing: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'EditableText component that stays in edit mode - useful for forms or continuous editing.'
+        story:
+          'EditableText component that stays in edit mode - useful for forms or continuous editing.'
       }
     }
   }
@@ -166,7 +168,8 @@ export const FilenameEditing: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Filename editing example - automatically selects the filename without extension for easier renaming.'
+        story:
+          'Filename editing example - automatically selects the filename without extension for easier renaming.'
       }
     }
   }
@@ -177,7 +180,8 @@ export const LongText: Story = {
     components: { EditableText },
     data() {
       return {
-        longText: 'This is a very long text that demonstrates how the EditableText component handles lengthy content and text wrapping in both view and edit modes',
+        longText:
+          'This is a very long text that demonstrates how the EditableText component handles lengthy content and text wrapping in both view and edit modes',
         isEditing: false
       }
     },
@@ -210,7 +214,8 @@ export const LongText: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Long text example showing how the component handles text wrapping and lengthy content.'
+        story:
+          'Long text example showing how the component handles text wrapping and lengthy content.'
       }
     }
   }
@@ -265,7 +270,8 @@ export const ComfyUIWorkflowName: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'ComfyUI workflow name editing example with realistic UI styling.'
+        story:
+          'ComfyUI workflow name editing example with realistic UI styling.'
       }
     }
   }
@@ -319,7 +325,8 @@ export const NodeTitleEditing: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'ComfyUI node title editing example within a realistic node interface.'
+        story:
+          'ComfyUI node title editing example within a realistic node interface.'
       }
     }
   }
@@ -374,7 +381,8 @@ export const MultipleInstances: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Multiple EditableText instances in a list - demonstrates isolated editing states.'
+        story:
+          'Multiple EditableText instances in a list - demonstrates isolated editing states.'
       }
     }
   }
@@ -422,7 +430,8 @@ export const KeyboardInteraction: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Keyboard interaction demo - shows editing behavior with automatic restart for testing.'
+        story:
+          'Keyboard interaction demo - shows editing behavior with automatic restart for testing.'
       }
     }
   }

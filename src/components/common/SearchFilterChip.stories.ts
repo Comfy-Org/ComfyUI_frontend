@@ -21,14 +21,15 @@ const meta: Meta<typeof SearchFilterChip> = {
       defaultValue: 'Filter'
     },
     badge: {
-      control: 'text', 
+      control: 'text',
       description: 'Badge text/number displayed before the main text',
       defaultValue: '1'
     },
     badgeClass: {
       control: 'select',
       options: ['i-badge', 'o-badge', 'c-badge', 's-badge'],
-      description: 'CSS class for badge styling (i-badge: green, o-badge: red, c-badge: blue, s-badge: yellow)',
+      description:
+        'CSS class for badge styling (i-badge: green, o-badge: red, c-badge: blue, s-badge: yellow)',
       defaultValue: 'i-badge'
     },
     onRemove: {
@@ -125,7 +126,8 @@ export const LongText: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Filter chip with long text and large badge number to test layout.'
+        story:
+          'Filter chip with long text and large badge number to test layout.'
       }
     }
   }
@@ -196,7 +198,8 @@ export const ComfyUIFilters: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Example showing multiple filter chips as they might appear in ComfyUI search interface.'
+        story:
+          'Example showing multiple filter chips as they might appear in ComfyUI search interface.'
       }
     }
   }
@@ -211,7 +214,8 @@ export const Interactive: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Interactive chip - click the X button to see the remove event in the Actions panel.'
+        story:
+          'Interactive chip - click the X button to see the remove event in the Actions panel.'
       }
     }
   }

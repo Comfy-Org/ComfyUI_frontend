@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import FormItem from './FormItem.vue'
 import type { FormItem as FormItemType } from '@/types/settingTypes'
+
+import FormItem from './FormItem.vue'
 
 const meta: Meta = {
   title: 'Components/Common/FormItem',
@@ -18,7 +19,8 @@ const meta: Meta = {
   argTypes: {
     item: {
       control: 'object',
-      description: 'FormItem configuration object defining the input type and properties'
+      description:
+        'FormItem configuration object defining the input type and properties'
     },
     formValue: {
       control: 'text',
@@ -90,7 +92,8 @@ export const TextInput: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Text input FormItem with tooltip and placeholder. Hover over the info icon to see the tooltip.'
+        story:
+          'Text input FormItem with tooltip and placeholder. Hover over the info icon to see the tooltip.'
       }
     }
   }
@@ -105,7 +108,8 @@ export const NumberInput: Story = {
         numberItem: {
           name: 'CFG Scale',
           type: 'number',
-          tooltip: 'Classifier-free guidance scale controls how closely the AI follows your prompt',
+          tooltip:
+            'Classifier-free guidance scale controls how closely the AI follows your prompt',
           attrs: {
             min: 1,
             max: 30,
@@ -141,7 +145,8 @@ export const NumberInput: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Number input FormItem with min/max constraints and increment buttons for CFG scale parameter.'
+        story:
+          'Number input FormItem with min/max constraints and increment buttons for CFG scale parameter.'
       }
     }
   }
@@ -186,7 +191,8 @@ export const BooleanToggle: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Boolean FormItem using ToggleSwitch component for enable/disable settings.'
+        story:
+          'Boolean FormItem using ToggleSwitch component for enable/disable settings.'
       }
     }
   }
@@ -244,7 +250,8 @@ export const ComboSelect: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Combo select FormItem with ComfyUI sampling methods showing dropdown selection.'
+        story:
+          'Combo select FormItem with ComfyUI sampling methods showing dropdown selection.'
       }
     }
   }
@@ -259,7 +266,8 @@ export const SliderInput: Story = {
         sliderItem: {
           name: 'Denoise Strength',
           type: 'slider',
-          tooltip: 'How much to denoise the input image (0 = no change, 1 = complete redraw)',
+          tooltip:
+            'How much to denoise the input image (0 = no change, 1 = complete redraw)',
           attrs: {
             min: 0,
             max: 1,
@@ -294,7 +302,8 @@ export const SliderInput: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Slider FormItem for denoise strength with percentage display and fine-grained control.'
+        story:
+          'Slider FormItem for denoise strength with percentage display and fine-grained control.'
       }
     }
   }
@@ -309,7 +318,8 @@ export const KnobInput: Story = {
         knobItem: {
           name: 'Sampling Steps',
           type: 'knob',
-          tooltip: 'Number of denoising steps - more steps = higher quality but slower generation',
+          tooltip:
+            'Number of denoising steps - more steps = higher quality but slower generation',
           attrs: {
             min: 1,
             max: 150,
@@ -344,7 +354,8 @@ export const KnobInput: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Knob FormItem for sampling steps with quality indicator based on step count.'
+        story:
+          'Knob FormItem for sampling steps with quality indicator based on step count.'
       }
     }
   }
@@ -371,7 +382,7 @@ export const MultipleFormItems: Story = {
             attrs: { min: 64, max: 2048, step: 64 }
           },
           {
-            name: 'Height', 
+            name: 'Height',
             type: 'number',
             tooltip: 'Image height in pixels',
             attrs: { min: 64, max: 2048, step: 64 }
@@ -442,7 +453,8 @@ export const MultipleFormItems: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Multiple FormItems demonstrating all major input types in a realistic ComfyUI settings panel.'
+        story:
+          'Multiple FormItems demonstrating all major input types in a realistic ComfyUI settings panel.'
       }
     }
   }
@@ -498,7 +510,8 @@ export const WithCustomLabels: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'FormItem with custom label styling and prefix/suffix slots for enhanced UI elements.'
+        story:
+          'FormItem with custom label styling and prefix/suffix slots for enhanced UI elements.'
       }
     }
   }
@@ -553,7 +566,8 @@ export const ColorPicker: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Color picker FormItem with live preview showing the selected color value.'
+        story:
+          'Color picker FormItem with live preview showing the selected color value.'
       }
     }
   }
@@ -568,7 +582,8 @@ export const ComboWithComplexOptions: Story = {
         comboItem: {
           name: 'Quality Preset',
           type: 'combo',
-          tooltip: 'Predefined quality settings that adjust multiple parameters',
+          tooltip:
+            'Predefined quality settings that adjust multiple parameters',
           options: [
             { text: 'Draft (Fast)', value: 'draft' },
             { text: 'Medium Quality', value: 'medium' },
@@ -615,7 +630,8 @@ export const ComboWithComplexOptions: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Complex combo FormItem with object options showing text/value pairs and descriptions.'
+        story:
+          'Complex combo FormItem with object options showing text/value pairs and descriptions.'
       }
     }
   }

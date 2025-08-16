@@ -27,7 +27,7 @@ const meta: Meta<typeof InputKnob> = {
     },
     max: {
       control: { type: 'number' },
-      description: 'Maximum allowed value', 
+      description: 'Maximum allowed value',
       defaultValue: 100
     },
     step: {
@@ -37,7 +37,8 @@ const meta: Meta<typeof InputKnob> = {
     },
     resolution: {
       control: { type: 'number', min: 0, max: 5 },
-      description: 'Number of decimal places to display (auto-calculated from step if not provided)',
+      description:
+        'Number of decimal places to display (auto-calculated from step if not provided)',
       defaultValue: undefined
     },
     inputClass: {
@@ -49,7 +50,7 @@ const meta: Meta<typeof InputKnob> = {
       control: 'text',
       description: 'Additional CSS classes for the knob',
       defaultValue: undefined
-    },
+    }
   },
   tags: ['autodocs']
 }
@@ -101,7 +102,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Default InputKnob with range 0-100 and step of 1. Use either the knob or number input to change the value.'
+        story:
+          'Default InputKnob with range 0-100 and step of 1. Use either the knob or number input to change the value.'
       }
     }
   }
@@ -149,7 +151,8 @@ export const DecimalPrecision: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'InputKnob with decimal step (0.1) - automatically shows one decimal place based on step precision.'
+        story:
+          'InputKnob with decimal step (0.1) - automatically shows one decimal place based on step precision.'
       }
     }
   }
@@ -198,7 +201,8 @@ export const HighPrecision: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'High precision InputKnob with step of 0.001 and 3 decimal places resolution.'
+        story:
+          'High precision InputKnob with step of 0.001 and 3 decimal places resolution.'
       }
     }
   }
@@ -245,7 +249,8 @@ export const LargeRange: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'InputKnob with large range (0-1000) and step of 10 for coarser control.'
+        story:
+          'InputKnob with large range (0-1000) and step of 10 for coarser control.'
       }
     }
   }
@@ -292,7 +297,8 @@ export const NegativeRange: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'InputKnob with negative range (-50 to 50) demonstrating bidirectional control.'
+        story:
+          'InputKnob with negative range (-50 to 50) demonstrating bidirectional control.'
       }
     }
   }
@@ -337,7 +343,8 @@ export const CFGScale: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'ComfyUI CFG Scale parameter example - common parameter for controlling prompt adherence.'
+        story:
+          'ComfyUI CFG Scale parameter example - common parameter for controlling prompt adherence.'
       }
     }
   }
@@ -381,7 +388,8 @@ export const SamplingSteps: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'ComfyUI Sampling Steps parameter example - controls generation quality vs speed.'
+        story:
+          'ComfyUI Sampling Steps parameter example - controls generation quality vs speed.'
       }
     }
   }
@@ -425,7 +433,8 @@ export const DenoiseStrength: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'ComfyUI Denoise Strength parameter example - high precision control for img2img workflows.'
+        story:
+          'ComfyUI Denoise Strength parameter example - high precision control for img2img workflows.'
       }
     }
   }
@@ -474,7 +483,8 @@ export const CustomStyling: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'InputKnob with custom CSS classes applied to both knob and input components.'
+        story:
+          'InputKnob with custom CSS classes applied to both knob and input components.'
       }
     }
   }
@@ -548,7 +558,8 @@ export const ParameterGallery: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Gallery showing different parameter types commonly used in ComfyUI workflows.'
+        story:
+          'Gallery showing different parameter types commonly used in ComfyUI workflows.'
       }
     }
   }

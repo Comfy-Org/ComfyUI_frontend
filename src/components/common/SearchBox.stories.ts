@@ -37,7 +37,8 @@ const meta: Meta = {
     },
     filterIcon: {
       control: 'text',
-      description: 'Optional filter button icon (button hidden if not provided)',
+      description:
+        'Optional filter button icon (button hidden if not provided)',
       defaultValue: undefined
     },
     filters: {
@@ -80,7 +81,9 @@ export const Default: Story = {
       },
       handleSearch(value: string, filters: any) {
         console.log('Debounced search:', value, 'with filters:', filters)
-        this.log.unshift(`Search: "${value}" (${new Date().toLocaleTimeString()})`)
+        this.log.unshift(
+          `Search: "${value}" (${new Date().toLocaleTimeString()})`
+        )
         if (this.log.length > 5) this.log.pop()
       }
     },
@@ -115,7 +118,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Basic search box with debounced search functionality. Type to see search events in the log.'
+        story:
+          'Basic search box with debounced search functionality. Type to see search events in the log.'
       }
     }
   }
@@ -147,7 +151,9 @@ export const WithFilters: Story = {
       },
       removeFilter(filter: any) {
         console.log('Removing filter:', filter)
-        this.activeFilters = this.activeFilters.filter((f: any) => f.id !== filter.id)
+        this.activeFilters = this.activeFilters.filter(
+          (f: any) => f.id !== filter.id
+        )
       },
       showFilterDialog(event: Event) {
         console.log('Show filter dialog:', event)
@@ -180,7 +186,8 @@ export const WithFilters: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Search box with active filter chips and filter button. Remove filters by clicking the X.'
+        story:
+          'Search box with active filter chips and filter button. Remove filters by clicking the X.'
       }
     }
   }
@@ -279,7 +286,8 @@ export const FastDebounce: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Search box with fast debounce (100ms) for responsive searching. Counter shows search event frequency.'
+        story:
+          'Search box with fast debounce (100ms) for responsive searching. Counter shows search event frequency.'
       }
     }
   }
@@ -304,7 +312,12 @@ export const ComfyUINodeSearch: Story = {
         this.searchQuery = value
       },
       handleSearch(value: string, filters: any) {
-        console.log('Node search:', value, 'filters:', filters.map((f: any) => f.text))
+        console.log(
+          'Node search:',
+          value,
+          'filters:',
+          filters.map((f: any) => f.text)
+        )
         // Simulate search results
         this.searchResults = [
           `Found nodes matching "${value}"`,
@@ -314,7 +327,9 @@ export const ComfyUINodeSearch: Story = {
       },
       removeFilter(filter: any) {
         console.log('Removing node filter:', filter.text)
-        this.nodeFilters = this.nodeFilters.filter((f: any) => f.id !== filter.id)
+        this.nodeFilters = this.nodeFilters.filter(
+          (f: any) => f.id !== filter.id
+        )
       },
       showFilterDialog() {
         console.log('Opening node filter dialog')
@@ -352,7 +367,8 @@ export const ComfyUINodeSearch: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'ComfyUI node search example with realistic filters and search behavior.'
+        story:
+          'ComfyUI node search example with realistic filters and search behavior.'
       }
     }
   }
@@ -379,7 +395,9 @@ export const ModelManagerSearch: Story = {
       },
       removeFilter(filter: any) {
         console.log('Removing model filter:', filter.text)
-        this.modelFilters = this.modelFilters.filter((f: any) => f.id !== filter.id)
+        this.modelFilters = this.modelFilters.filter(
+          (f: any) => f.id !== filter.id
+        )
       },
       showFilterDialog() {
         console.log('Opening model filter dialog')
@@ -411,7 +429,8 @@ export const ModelManagerSearch: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Model Manager search example with model-specific filters and faster debounce.'
+        story:
+          'Model Manager search example with model-specific filters and faster debounce.'
       }
     }
   }
@@ -437,7 +456,9 @@ export const ExtensionSearch: Story = {
         console.log('Extension search:', value, 'filters:', filters)
       },
       removeFilter(filter: any) {
-        this.extensionFilters = this.extensionFilters.filter((f: any) => f.id !== filter.id)
+        this.extensionFilters = this.extensionFilters.filter(
+          (f: any) => f.id !== filter.id
+        )
       },
       showFilterDialog() {
         console.log('Opening extension filter dialog')
@@ -468,7 +489,8 @@ export const ExtensionSearch: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Extension Manager search example with pre-filled search and status filters.'
+        story:
+          'Extension Manager search example with pre-filled search and status filters.'
       }
     }
   }
@@ -511,7 +533,8 @@ export const ClearBehavior: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates clear button behavior - button appears when text is entered and disappears when cleared.'
+        story:
+          'Demonstrates clear button behavior - button appears when text is entered and disappears when cleared.'
       }
     }
   }
@@ -553,7 +576,8 @@ export const NoDebounce: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Search box with no debounce delay - search events fire immediately on every keystroke.'
+        story:
+          'Search box with no debounce delay - search events fire immediately on every keystroke.'
       }
     }
   }
@@ -567,7 +591,12 @@ export const ManyFilters: Story = {
         searchQuery: '',
         manyFilters: [
           { id: 1, text: 'Sampling', badge: '15', badgeClass: 'i-badge' },
-          { id: 2, text: 'Image Processing', badge: '23', badgeClass: 'o-badge' },
+          {
+            id: 2,
+            text: 'Image Processing',
+            badge: '23',
+            badgeClass: 'o-badge'
+          },
           { id: 3, text: 'ControlNet', badge: '12', badgeClass: 'c-badge' },
           { id: 4, text: 'Text Encoding', badge: '8', badgeClass: 's-badge' },
           { id: 5, text: 'Model Loading', badge: '6', badgeClass: 'i-badge' },
@@ -580,10 +609,17 @@ export const ManyFilters: Story = {
         this.searchQuery = value
       },
       handleSearch(value: string, filters: any) {
-        console.log('Search with many filters:', value, filters.length, 'filters')
+        console.log(
+          'Search with many filters:',
+          value,
+          filters.length,
+          'filters'
+        )
       },
       removeFilter(filter: any) {
-        this.manyFilters = this.manyFilters.filter((f: any) => f.id !== filter.id)
+        this.manyFilters = this.manyFilters.filter(
+          (f: any) => f.id !== filter.id
+        )
       },
       showFilterDialog() {
         console.log('Opening filter management dialog')
@@ -610,7 +646,8 @@ export const ManyFilters: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Search box with many active filters showing filter chip wrapping behavior.'
+        story:
+          'Search box with many active filters showing filter chip wrapping behavior.'
       }
     }
   }

@@ -51,7 +51,9 @@ export const Default: Story = {
     },
     methods: {
       logAction(action: string, value: number) {
-        this.log.unshift(`${action}: ${value} (${new Date().toLocaleTimeString()})`)
+        this.log.unshift(
+          `${action}: ${value} (${new Date().toLocaleTimeString()})`
+        )
         if (this.log.length > 8) this.log.pop()
       }
     },
@@ -82,7 +84,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Default batch count editor with smart exponential scaling. Use +/- buttons to see the doubling/halving behavior.'
+        story:
+          'Default batch count editor with smart exponential scaling. Use +/- buttons to see the doubling/halving behavior.'
       }
     }
   }
@@ -108,7 +111,8 @@ export const WithTooltip: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'BatchCountEdit with tooltip functionality - hover to see the "Batch Count" tooltip.'
+        story:
+          'BatchCountEdit with tooltip functionality - hover to see the "Batch Count" tooltip.'
       }
     }
   }
@@ -148,7 +152,8 @@ export const HighBatchCount: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'High batch count scenario showing potential performance warnings for large generation batches.'
+        story:
+          'High batch count scenario showing potential performance warnings for large generation batches.'
       }
     }
   }
@@ -192,7 +197,8 @@ export const ActionBarContext: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'BatchCountEdit integrated within a realistic ComfyUI action bar layout with queue controls.'
+        story:
+          'BatchCountEdit integrated within a realistic ComfyUI action bar layout with queue controls.'
       }
     }
   }
@@ -268,7 +274,8 @@ export const ExponentialScaling: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates the exponential scaling behavior - increment doubles the value, decrement halves it.'
+        story:
+          'Demonstrates the exponential scaling behavior - increment doubles the value, decrement halves it.'
       }
     }
   }
@@ -286,8 +293,11 @@ export const QueueWorkflowContext: Story = {
     },
     computed: {
       statusColor() {
-        return this.queueStatus === 'Ready' ? '#10b981' : 
-               this.queueStatus === 'Running' ? '#f59e0b' : '#6b7280'
+        return this.queueStatus === 'Ready'
+          ? '#10b981'
+          : this.queueStatus === 'Running'
+            ? '#f59e0b'
+            : '#6b7280'
       }
     },
     methods: {
@@ -348,7 +358,8 @@ export const QueueWorkflowContext: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'BatchCountEdit in a complete workflow queuing context with status and time estimates.'
+        story:
+          'BatchCountEdit in a complete workflow queuing context with status and time estimates.'
       }
     }
   }
@@ -360,9 +371,21 @@ export const LimitConstraints: Story = {
     data() {
       return {
         scenarios: [
-          { name: 'Conservative (max 10)', maxLimit: 10, description: 'For memory-constrained systems' },
-          { name: 'Standard (max 50)', maxLimit: 50, description: 'Typical production usage' },
-          { name: 'High-end (max 200)', maxLimit: 200, description: 'For powerful GPU setups' }
+          {
+            name: 'Conservative (max 10)',
+            maxLimit: 10,
+            description: 'For memory-constrained systems'
+          },
+          {
+            name: 'Standard (max 50)',
+            maxLimit: 50,
+            description: 'Typical production usage'
+          },
+          {
+            name: 'High-end (max 200)',
+            maxLimit: 200,
+            description: 'For powerful GPU setups'
+          }
         ]
       }
     },
@@ -394,7 +417,8 @@ export const LimitConstraints: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Different batch count limit scenarios for various system configurations and use cases.'
+        story:
+          'Different batch count limit scenarios for various system configurations and use cases.'
       }
     }
   }
@@ -419,7 +443,8 @@ export const MinimalInline: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Minimal inline usage of BatchCountEdit within a sentence context.'
+        story:
+          'Minimal inline usage of BatchCountEdit within a sentence context.'
       }
     }
   }

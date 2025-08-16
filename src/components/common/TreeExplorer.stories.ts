@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import TreeExplorer from './TreeExplorer.vue'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+
+import TreeExplorer from './TreeExplorer.vue'
 
 const meta: Meta = {
   title: 'Components/Common/TreeExplorer',
@@ -61,8 +62,16 @@ export const BasicTree: Story = {
               label: 'Workflows',
               icon: 'pi pi-sitemap',
               children: [
-                { key: 'portrait', label: 'Portrait Generation.json', icon: 'pi pi-file' },
-                { key: 'landscape', label: 'Landscape SDXL.json', icon: 'pi pi-file' },
+                {
+                  key: 'portrait',
+                  label: 'Portrait Generation.json',
+                  icon: 'pi pi-file'
+                },
+                {
+                  key: 'landscape',
+                  label: 'Landscape SDXL.json',
+                  icon: 'pi pi-file'
+                },
                 { key: 'anime', label: 'Anime Style.json', icon: 'pi pi-file' }
               ]
             },
@@ -71,13 +80,35 @@ export const BasicTree: Story = {
               label: 'Models',
               icon: 'pi pi-download',
               children: [
-                { key: 'checkpoints', label: 'Checkpoints', icon: 'pi pi-folder', children: [
-                  { key: 'sdxl', label: 'SDXL_base.safetensors', icon: 'pi pi-file' },
-                  { key: 'sd15', label: 'SD_1.5.safetensors', icon: 'pi pi-file' }
-                ]},
-                { key: 'lora', label: 'LoRA', icon: 'pi pi-folder', children: [
-                  { key: 'portrait_lora', label: 'portrait_enhance.safetensors', icon: 'pi pi-file' }
-                ]}
+                {
+                  key: 'checkpoints',
+                  label: 'Checkpoints',
+                  icon: 'pi pi-folder',
+                  children: [
+                    {
+                      key: 'sdxl',
+                      label: 'SDXL_base.safetensors',
+                      icon: 'pi pi-file'
+                    },
+                    {
+                      key: 'sd15',
+                      label: 'SD_1.5.safetensors',
+                      icon: 'pi pi-file'
+                    }
+                  ]
+                },
+                {
+                  key: 'lora',
+                  label: 'LoRA',
+                  icon: 'pi pi-folder',
+                  children: [
+                    {
+                      key: 'portrait_lora',
+                      label: 'portrait_enhance.safetensors',
+                      icon: 'pi pi-file'
+                    }
+                  ]
+                }
               ]
             },
             {
@@ -85,8 +116,16 @@ export const BasicTree: Story = {
               label: 'Outputs',
               icon: 'pi pi-images',
               children: [
-                { key: 'output1', label: 'ComfyUI_00001_.png', icon: 'pi pi-image' },
-                { key: 'output2', label: 'ComfyUI_00002_.png', icon: 'pi pi-image' }
+                {
+                  key: 'output1',
+                  label: 'ComfyUI_00001_.png',
+                  icon: 'pi pi-image'
+                },
+                {
+                  key: 'output2',
+                  label: 'ComfyUI_00002_.png',
+                  icon: 'pi pi-image'
+                }
               ]
             }
           ]
@@ -135,7 +174,8 @@ export const BasicTree: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Basic TreeExplorer with ComfyUI file structure showing workflows, models, and outputs.'
+        story:
+          'Basic TreeExplorer with ComfyUI file structure showing workflows, models, and outputs.'
       }
     }
   }
@@ -186,7 +226,8 @@ export const EmptyTree: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Empty TreeExplorer showing the state when no items are present in the workspace.'
+        story:
+          'Empty TreeExplorer showing the state when no items are present in the workspace.'
       }
     }
   }
@@ -218,8 +259,16 @@ export const DeepHierarchy: Story = {
                       label: 'Portraits',
                       icon: 'pi pi-folder',
                       children: [
-                        { key: 'realistic', label: 'Realistic Portrait.json', icon: 'pi pi-file' },
-                        { key: 'artistic', label: 'Artistic Portrait.json', icon: 'pi pi-file' }
+                        {
+                          key: 'realistic',
+                          label: 'Realistic Portrait.json',
+                          icon: 'pi pi-file'
+                        },
+                        {
+                          key: 'artistic',
+                          label: 'Artistic Portrait.json',
+                          icon: 'pi pi-file'
+                        }
                       ]
                     },
                     {
@@ -227,8 +276,16 @@ export const DeepHierarchy: Story = {
                       label: 'Landscapes',
                       icon: 'pi pi-folder',
                       children: [
-                        { key: 'nature', label: 'Nature Scene.json', icon: 'pi pi-file' },
-                        { key: 'urban', label: 'Urban Environment.json', icon: 'pi pi-file' }
+                        {
+                          key: 'nature',
+                          label: 'Nature Scene.json',
+                          icon: 'pi pi-file'
+                        },
+                        {
+                          key: 'urban',
+                          label: 'Urban Environment.json',
+                          icon: 'pi pi-file'
+                        }
                       ]
                     }
                   ]
@@ -238,8 +295,16 @@ export const DeepHierarchy: Story = {
                   label: 'ControlNet',
                   icon: 'pi pi-folder',
                   children: [
-                    { key: 'canny', label: 'Canny Edge.json', icon: 'pi pi-file' },
-                    { key: 'depth', label: 'Depth Map.json', icon: 'pi pi-file' }
+                    {
+                      key: 'canny',
+                      label: 'Canny Edge.json',
+                      icon: 'pi pi-file'
+                    },
+                    {
+                      key: 'depth',
+                      label: 'Depth Map.json',
+                      icon: 'pi pi-file'
+                    }
                   ]
                 }
               ]
@@ -275,7 +340,8 @@ export const DeepHierarchy: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Deep hierarchical TreeExplorer showing multi-level folder organization with workflows.'
+        story:
+          'Deep hierarchical TreeExplorer showing multi-level folder organization with workflows.'
       }
     }
   }
@@ -298,25 +364,25 @@ export const InteractiveOperations: Story = {
               label: 'My Workflows',
               icon: 'pi pi-sitemap',
               children: [
-                { 
-                  key: 'workflow1', 
-                  label: 'Image Generation.json', 
+                {
+                  key: 'workflow1',
+                  label: 'Image Generation.json',
                   icon: 'pi pi-file',
-                  handleRename: function(newName: string) {
+                  handleRename: function (newName: string) {
                     console.log(`Renaming workflow to: ${newName}`)
                   },
-                  handleDelete: function() {
+                  handleDelete: function () {
                     console.log('Deleting workflow')
                   }
                 },
-                { 
-                  key: 'workflow2', 
-                  label: 'Video Processing.json', 
+                {
+                  key: 'workflow2',
+                  label: 'Video Processing.json',
                   icon: 'pi pi-file',
-                  handleRename: function(newName: string) {
+                  handleRename: function (newName: string) {
                     console.log(`Renaming workflow to: ${newName}`)
                   },
-                  handleDelete: function() {
+                  handleDelete: function () {
                     console.log('Deleting workflow')
                   }
                 }
@@ -377,7 +443,8 @@ export const InteractiveOperations: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Interactive TreeExplorer demonstrating click, context menu, and selection operations with live logging.'
+        story:
+          'Interactive TreeExplorer demonstrating click, context menu, and selection operations with live logging.'
       }
     }
   }
@@ -399,9 +466,21 @@ export const WorkflowManager: Story = {
               label: 'My Workflows',
               icon: 'pi pi-user',
               children: [
-                { key: 'draft1', label: 'Draft - SDXL Portrait.json', icon: 'pi pi-file-edit' },
-                { key: 'final1', label: 'Final - Product Shots.json', icon: 'pi pi-file' },
-                { key: 'temp1', label: 'Temp - Testing.json', icon: 'pi pi-clock' }
+                {
+                  key: 'draft1',
+                  label: 'Draft - SDXL Portrait.json',
+                  icon: 'pi pi-file-edit'
+                },
+                {
+                  key: 'final1',
+                  label: 'Final - Product Shots.json',
+                  icon: 'pi pi-file'
+                },
+                {
+                  key: 'temp1',
+                  label: 'Temp - Testing.json',
+                  icon: 'pi pi-clock'
+                }
               ]
             },
             {
@@ -414,8 +493,16 @@ export const WorkflowManager: Story = {
                   label: 'Community',
                   icon: 'pi pi-users',
                   children: [
-                    { key: 'popular1', label: 'SDXL Ultimate.json', icon: 'pi pi-star-fill' },
-                    { key: 'popular2', label: 'ControlNet Pro.json', icon: 'pi pi-star-fill' }
+                    {
+                      key: 'popular1',
+                      label: 'SDXL Ultimate.json',
+                      icon: 'pi pi-star-fill'
+                    },
+                    {
+                      key: 'popular2',
+                      label: 'ControlNet Pro.json',
+                      icon: 'pi pi-star-fill'
+                    }
                   ]
                 },
                 {
@@ -423,8 +510,16 @@ export const WorkflowManager: Story = {
                   label: 'Templates',
                   icon: 'pi pi-clone',
                   children: [
-                    { key: 'template1', label: 'Basic Generation.json', icon: 'pi pi-file' },
-                    { key: 'template2', label: 'Img2Img Template.json', icon: 'pi pi-file' }
+                    {
+                      key: 'template1',
+                      label: 'Basic Generation.json',
+                      icon: 'pi pi-file'
+                    },
+                    {
+                      key: 'template2',
+                      label: 'Img2Img Template.json',
+                      icon: 'pi pi-file'
+                    }
                   ]
                 }
               ]
@@ -434,8 +529,16 @@ export const WorkflowManager: Story = {
               label: 'Recent',
               icon: 'pi pi-history',
               children: [
-                { key: 'recent1', label: 'Last Session.json', icon: 'pi pi-clock' },
-                { key: 'recent2', label: 'Quick Test.json', icon: 'pi pi-clock' }
+                {
+                  key: 'recent1',
+                  label: 'Last Session.json',
+                  icon: 'pi pi-clock'
+                },
+                {
+                  key: 'recent2',
+                  label: 'Quick Test.json',
+                  icon: 'pi pi-clock'
+                }
               ]
             }
           ]
@@ -469,7 +572,8 @@ export const WorkflowManager: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Realistic workflow manager showing organized hierarchy with categories, templates, and recent files.'
+        story:
+          'Realistic workflow manager showing organized hierarchy with categories, templates, and recent files.'
       }
     }
   }
@@ -491,10 +595,26 @@ export const CompactView: Story = {
               label: 'Checkpoints',
               icon: 'pi pi-download',
               children: [
-                { key: 'model1', label: 'SDXL_base.safetensors', icon: 'pi pi-file' },
-                { key: 'model2', label: 'SD_1.5_pruned.safetensors', icon: 'pi pi-file' },
-                { key: 'model3', label: 'Realistic_Vision_V5.safetensors', icon: 'pi pi-file' },
-                { key: 'model4', label: 'AnythingV5_v3.safetensors', icon: 'pi pi-file' }
+                {
+                  key: 'model1',
+                  label: 'SDXL_base.safetensors',
+                  icon: 'pi pi-file'
+                },
+                {
+                  key: 'model2',
+                  label: 'SD_1.5_pruned.safetensors',
+                  icon: 'pi pi-file'
+                },
+                {
+                  key: 'model3',
+                  label: 'Realistic_Vision_V5.safetensors',
+                  icon: 'pi pi-file'
+                },
+                {
+                  key: 'model4',
+                  label: 'AnythingV5_v3.safetensors',
+                  icon: 'pi pi-file'
+                }
               ]
             }
           ]
@@ -523,7 +643,8 @@ export const CompactView: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Compact TreeExplorer view for smaller interface areas with minimal spacing.'
+        story:
+          'Compact TreeExplorer view for smaller interface areas with minimal spacing.'
       }
     }
   }

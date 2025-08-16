@@ -86,7 +86,8 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Default refresh button - click to see loading animation for 2 seconds.'
+        story:
+          'Default refresh button - click to see loading animation for 2 seconds.'
       }
     }
   }
@@ -126,7 +127,8 @@ export const Active: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Refresh button in active/loading state showing progress spinner.'
+        story:
+          'Refresh button in active/loading state showing progress spinner.'
       }
     }
   }
@@ -298,7 +300,8 @@ export const DangerSeverity: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Refresh button with danger severity (red color) for critical refresh actions.'
+        story:
+          'Refresh button with danger severity (red color) for critical refresh actions.'
       }
     }
   }
@@ -425,7 +428,8 @@ export const SeverityGallery: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Gallery showing all available severity levels with their colors.'
+        story:
+          'Gallery showing all available severity levels with their colors.'
       }
     }
   }
