@@ -525,6 +525,8 @@ We welcome contributions to ComfyUI Frontend! Please see our [Contributing Guide
 
 For detailed development setup, testing procedures, and technical information, please refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
+> ⚠️ **Note for Extension Developers**: JavaScript extensions from custom nodes don't load in the dev server. Python nodes work normally, but their JavaScript/web components require production builds or workarounds. See [Extension Development Guide](docs/extensions/development.md) for details.
+
 ### i18n
 
 See [locales/README.md](src/locales/README.md) for details.

@@ -61,7 +61,7 @@ Run `npm run prepare` to install Git pre-commit hooks. Currently, the pre-commit
 
 ### Dev Server
 
-Note: The dev server will NOT load any extension from the ComfyUI server. Only core extensions will be loaded.
+Note: The dev server will NOT load JavaScript extensions from custom nodes. Only core extensions (built into the frontend) will be loaded. This is because the shim system that allows custom node JavaScript to import frontend modules only works in production builds. Python custom nodes still function normally. See [Extension Development Guide](docs/extensions/development.md) for details and workarounds.
 
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server
