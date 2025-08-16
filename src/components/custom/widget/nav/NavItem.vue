@@ -10,7 +10,7 @@
     @click="onClick"
   >
     <i-lucide:folder v-if="hasFolderIcon" class="text-xs text-neutral" />
-    <span>
+    <span class="flex items-center">
       <slot></slot>
     </span>
   </div>
