@@ -479,13 +479,22 @@ export const useQueueStore = defineStore('queue', () => {
       const existingHistoryItems = historyTasks.value.filter((item) =>
         allIndex.has(item.queueIndex)
       )
-      historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
+      const sortedTasks = [...newHistoryItems, ...existingHistoryItems]
         .slice(0, maxHistoryItems.value)
         .sort((a, b) => {
           const aTime = a.executionStartTimestamp ?? 0
           const bTime = b.executionStartTimestamp ?? 0
           return bTime - aTime
         })
+      const foundPromptIds = new Set()
+      const deduplicatedTasks = sortedTasks.filter((item) => {
+        if (!foundPromptIds.has(item.promptId)) {
+          foundPromptIds.add(item.promptId)
+          return true
+        }
+        return false
+      })
+      historyTasks.value = deduplicatedTasks
     } finally {
       isLoading.value = false
     }
