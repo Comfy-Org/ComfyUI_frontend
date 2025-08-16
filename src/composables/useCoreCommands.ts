@@ -9,7 +9,8 @@ import {
   LGraphEventMode,
   LGraphGroup,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -822,6 +823,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
 
         const subgraphNode = app.canvas.selectedItems.values().next().value
+        if (!(subgraphNode instanceof SubgraphNode)) return
         useNodeOutputStore().revokeSubgraphPreviews(subgraphNode)
         graph.unpackSubgraph(subgraphNode)
       }

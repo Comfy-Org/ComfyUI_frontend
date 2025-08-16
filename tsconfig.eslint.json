@@ -15,6 +15,7 @@
     "browser_tests/**/*.ts",
     "scripts/**/*.js",
     "scripts/**/*.ts",
-    "tests-ui/**/*.ts"
+    "tests-ui/**/*.ts",
+    ".storybook/**/*.ts"
   ]
 }

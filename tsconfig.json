@@ -37,6 +37,7 @@
     "src/types/**/*.d.ts",
     "tests-ui/**/*",
     "global.d.ts",
-    "vite.config.mts"
+    "vite.config.mts",
+    ".storybook/**/*"
   ]
 }

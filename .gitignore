@@ -72,3 +72,7 @@ vite.config.mts.timestamp-*.mjs
 
 # Linux core dumps
 ./core
+
+*storybook.log
+storybook-static
+

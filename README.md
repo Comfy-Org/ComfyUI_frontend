@@ -529,6 +529,10 @@ For detailed development setup, testing procedures, and technical information, p
 
 See [locales/README.md](src/locales/README.md) for details.
 
+### Storybook
+
+See [.storybook/README.md](.storybook/README.md) for component development and visual testing documentation.
+
 ## Troubleshooting
 
 For comprehensive troubleshooting and technical support, please refer to our official documentation:
