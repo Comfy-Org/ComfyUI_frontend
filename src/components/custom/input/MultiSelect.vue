@@ -25,7 +25,7 @@
       <template #option="slotProps">
         <div class="flex items-center gap-2">
           <div
-            class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded border-2 transition-all duration-200"
+            class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded border-[3px] transition-all duration-200"
             :class="
               slotProps.selected
                 ? 'border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
@@ -80,7 +80,7 @@ const pt = computed(() => ({
       'relative inline-flex cursor-pointer select-none w-full',
       'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
       'transition-all duration-200 ease-in-out',
-      'border-2.5 border-solid',
+      'border-[2.5px] border-solid',
       selectedCount.value > 0
         ? 'border-blue-400 dark-theme:border-blue-500'
         : 'border-transparent',
@@ -89,7 +89,7 @@ const pt = computed(() => ({
   }),
   labelContainer: {
     class:
-      'flex-1 flex items-center cursor-pointer overflow-hidden whitespace-nowrap pl-4 py-2 '
+      'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 '
   },
   label: {
     class: 'p-0'
@@ -103,33 +103,20 @@ const pt = computed(() => ({
   overlay:
     'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg',
   list: {
-    class:
-      'flex flex-col gap-1 p-0 list-none bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white border-none text-xs'
+    class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
   },
 
   // Option row hover tone identical
   option:
-    'flex gap-1 items-center p-2 text-neutral hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+    'flex gap-1 items-center p-2 hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
 
   // Hide built-in checkboxes entirely via PT (no :deep)
   pcHeaderCheckbox: {
     root: { class: 'hidden' },
-    checkbox: { class: 'hidden' },
-    input: { class: 'hidden' },
     style: 'display: none !important'
   },
   pcOptionCheckbox: {
     root: { class: 'hidden' },
-    checkbox: { class: 'hidden' },
-    input: { class: 'hidden' },
-    style: 'display: none !important'
-  },
-  optionCheckbox: {
-    class: 'hidden',
-    style: 'display: none !important'
-  },
-  optionCheckboxContainer: {
-    class: 'hidden',
     style: 'display: none !important'
   }
 }))

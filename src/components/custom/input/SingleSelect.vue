@@ -11,15 +11,15 @@
     >
       <!-- Trigger value -->
       <template #value="slotProps">
-        <div class="flex items-center gap-2 text-xs">
+        <div class="flex items-center gap-2 text-sm">
           <slot name="icon" />
           <span
             v-if="slotProps.value !== null && slotProps.value !== undefined"
-            class="text-xs text-zinc-700 dark-theme:text-gray-200"
+            class="text-zinc-700 dark-theme:text-gray-200"
           >
             {{ getLabel(slotProps.value) }}
           </span>
-          <span v-else class="text-xs text-zinc-700 dark-theme:text-gray-200">
+          <span v-else class="text-zinc-700 dark-theme:text-gray-200">
             {{ label }}
           </span>
         </div>
@@ -35,10 +35,10 @@
       <!-- Option row -->
       <template #option="{ option, selected }">
         <div class="flex items-center justify-between gap-3 w-full">
-          <span class="truncate text-xs">{{ option.name }}</span>
+          <span class="truncate">{{ option.name }}</span>
           <i-lucide:check
             v-if="selected"
-            class="text-xs text-neutral-900 dark-theme:text-white"
+            class="text-neutral-900 dark-theme:text-white"
           />
         </div>
       </template>
@@ -105,7 +105,7 @@ const pt = computed(() => ({
   list: {
     class:
       // Same list tone/size as MultiSelect
-      'flex flex-col gap-1 p-0 list-none bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white border-none text-xs'
+      'flex flex-col gap-1 p-0 list-none border-none text-xs'
   },
   option: ({
     context
