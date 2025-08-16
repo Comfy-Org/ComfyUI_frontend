@@ -1067,6 +1067,38 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
     })
   })
 
+  describe('Backward Compatibility', () => {
+    it('should maintain lastTrackpadEvent for backward compatibility', () => {
+      // Initially undefined
+      expect(pointer.lastTrackpadEvent).toBeUndefined()
+
+      // Set to trackpad mode with two-finger panning
+      const event1 = new WheelEvent('wheel', {
+        deltaY: 5,
+        deltaX: 3
+      })
+      pointer.isTrackpadGesture(event1)
+      expect(pointer.lastTrackpadEvent).toBe(event1)
+
+      // Update on continuation
+      const event2 = new WheelEvent('wheel', {
+        deltaY: 8,
+        deltaX: 4
+      })
+      pointer.isTrackpadGesture(event2)
+      expect(pointer.lastTrackpadEvent).toBe(event2)
+
+      // Clear when switching to mouse
+      vi.spyOn(performance, 'now').mockReturnValue(500) // After cooldown
+      const mouseEvent = new WheelEvent('wheel', {
+        deltaY: 120,
+        deltaX: 0
+      })
+      pointer.isTrackpadGesture(mouseEvent)
+      expect(pointer.lastTrackpadEvent).toBeUndefined()
+    })
+  })
+
   describe('Input Type Validation', () => {
     describe('Two-finger panning validation', () => {
       it('should accept integer deltaY values', () => {
