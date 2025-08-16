@@ -107,6 +107,9 @@
   "Comfy_ContactSupport": {
     "label": "サポートに連絡"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "モデルセレクターを表示（開発用）"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "現在のワークフローを複製"
   },

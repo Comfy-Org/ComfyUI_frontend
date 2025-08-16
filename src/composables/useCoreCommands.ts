@@ -1,5 +1,6 @@
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -877,6 +878,17 @@ export function useCoreCommands(): ComfyCommand[] {
         canvas.setGraph(
           navigationStore.navigationStack.at(-2) ?? canvas.graph.rootGraph
         )
+      }
+    },
+    {
+      id: 'Comfy.Dev.ShowModelSelector',
+      icon: 'pi pi-box',
+      label: 'Show Model Selector (Dev)',
+      versionAdded: '1.26.2',
+      category: 'view-controls' as const,
+      function: () => {
+        const modelSelectorDialog = useModelSelectorDialog()
+        modelSelectorDialog.show()
       }
     }
   ]
