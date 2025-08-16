@@ -101,7 +101,7 @@ const pt = computed(() => ({
 
   // Overlay & list visuals unchanged
   overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg',
+    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100',
   list: {
     class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
   },
