@@ -94,14 +94,14 @@ export const BasicTree: Story = {
       }
     },
     methods: {
-      handleNodeClick(node: any, event: MouseEvent) {
-        console.log('Node clicked:', node.label, event)
+      handleNodeClick(node: any, _event: MouseEvent) {
+        console.log('Node clicked:', node.label)
       },
       handleNodeDelete(node: any) {
         console.log('Node delete requested:', node.label)
       },
-      handleContextMenu(node: any, event: MouseEvent) {
-        console.log('Context menu on node:', node.label, event)
+      handleContextMenu(node: any, _event: MouseEvent) {
+        console.log('Context menu on node:', node.label)
       }
     },
     template: `
@@ -249,8 +249,8 @@ export const DeepHierarchy: Story = {
       }
     },
     methods: {
-      handleNodeClick(node: any, event: MouseEvent) {
-        console.log('Deep tree node clicked:', node.label, event)
+      handleNodeClick(node: any, _event: MouseEvent) {
+        console.log('Deep tree node clicked:', node.label)
       }
     },
     template: `
@@ -327,7 +327,7 @@ export const InteractiveOperations: Story = {
       }
     },
     methods: {
-      handleNodeClick(node: any, event: MouseEvent) {
+      handleNodeClick(node: any, _event: MouseEvent) {
         this.operationLog.unshift(`Clicked: ${node.label}`)
         if (this.operationLog.length > 8) this.operationLog.pop()
       },
@@ -335,7 +335,7 @@ export const InteractiveOperations: Story = {
         this.operationLog.unshift(`Delete requested: ${node.label}`)
         if (this.operationLog.length > 8) this.operationLog.pop()
       },
-      handleContextMenu(node: any, event: MouseEvent) {
+      handleContextMenu(node: any, _event: MouseEvent) {
         this.operationLog.unshift(`Context menu: ${node.label}`)
         if (this.operationLog.length > 8) this.operationLog.pop()
       }
@@ -443,7 +443,7 @@ export const WorkflowManager: Story = {
       }
     },
     methods: {
-      handleNodeClick(node: any, event: MouseEvent) {
+      handleNodeClick(node: any, _event: MouseEvent) {
         console.log('Workflow selected:', node.label)
       }
     },
