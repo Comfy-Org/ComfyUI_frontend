@@ -1,5 +1,5 @@
 <template>
-  <BaseWidgetLayout>
+  <BaseWidgetLayout :content-title="$t('Checkpoints')">
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
@@ -82,46 +82,46 @@
 
     <template #content>
       <!-- Card Examples -->
-      <div class="min-h-0 px-6 py-4 overflow-y-auto scrollbar-hide">
-        <h2 class="text-xxl py-4 pt-0 m-0">{{ $t('Checkpoints') }}</h2>
-        <div class="flex flex-wrap gap-2">
-          <CardContainer
-            v-for="i in 100"
-            :key="i"
-            ratio="square"
-            :max-width="480"
-            :min-width="230"
-          >
-            <template #top>
-              <CardTop ratio="landscape">
-                <template #default>
-                  <div class="w-full h-full bg-blue-500"></div>
-                </template>
-                <template #top-right>
-                  <IconButton
-                    class="!bg-white !text-neutral-900"
-                    @click="() => {}"
-                  >
-                    <i-lucide:info />
-                  </IconButton>
-                </template>
-                <template #bottom-right>
-                  <SquareTag label="png" />
-                  <SquareTag label="1.2 MB" />
-                  <SquareTag label="LoRA">
-                    <template #icon>
-                      <i-lucide:folder />
-                    </template>
-                  </SquareTag>
-                </template>
-              </CardTop>
-            </template>
-            <template #bottom>
-              <CardBottom></CardBottom>
-            </template>
-          </CardContainer>
-        </div>
+      <!-- <div class="min-h-0 px-6 py-4 overflow-y-auto scrollbar-hide"> -->
+      <!-- <h2 class="text-xxl py-4 pt-0 m-0">{{ $t('Checkpoints') }}</h2> -->
+      <div class="flex flex-wrap gap-2">
+        <CardContainer
+          v-for="i in 100"
+          :key="i"
+          ratio="square"
+          :max-width="480"
+          :min-width="230"
+        >
+          <template #top>
+            <CardTop ratio="landscape">
+              <template #default>
+                <div class="w-full h-full bg-blue-500"></div>
+              </template>
+              <template #top-right>
+                <IconButton
+                  class="!bg-white !text-neutral-900"
+                  @click="() => {}"
+                >
+                  <i-lucide:info />
+                </IconButton>
+              </template>
+              <template #bottom-right>
+                <SquareTag label="png" />
+                <SquareTag label="1.2 MB" />
+                <SquareTag label="LoRA">
+                  <template #icon>
+                    <i-lucide:folder />
+                  </template>
+                </SquareTag>
+              </template>
+            </CardTop>
+          </template>
+          <template #bottom>
+            <CardBottom></CardBottom>
+          </template>
+        </CardContainer>
       </div>
+      <!-- </div> -->
     </template>
 
     <template #rightPanel>
