@@ -1,4 +1,4 @@
-import { merge } from 'lodash'
+import { merge } from 'es-toolkit'
 import { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
@@ -458,7 +458,7 @@ export const useDialogService = () => {
       ...options,
       dialogComponentProps: merge(
         layoutDefaultProps,
-        options.dialogComponentProps
+        options.dialogComponentProps || {}
       )
     })
   }
