@@ -849,10 +849,38 @@ export class LGraphNode
         const widgetsWithValue = this.widgets.filter(
           (w) => w.serialize !== false
         )
-        for (let i = 0; i < info.widgets_values.length; ++i) {
-          const widget = widgetsWithValue[i]
-          if (widget) {
-            widget.value = info.widgets_values[i]
+
+        // Enhanced widget values restoration with name-based mapping
+        // Check if widgets_values contains name-based mapping (new format)
+        if (
+          Array.isArray(info.widgets_values) &&
+          info.widgets_values.length > 0 &&
+          info.widgets_values[0] &&
+          typeof info.widgets_values[0] === 'object' &&
+          'name' in info.widgets_values[0] &&
+          'value' in info.widgets_values[0]
+        ) {
+          // New format: name-based mapping
+          const valuesByName = new Map()
+          for (const item of info.widgets_values as Array<{
+            name: string
+            value: any
+          }>) {
+            valuesByName.set(item.name, item.value)
+          }
+
+          for (const widget of widgetsWithValue) {
+            if (valuesByName.has(widget.name)) {
+              widget.value = valuesByName.get(widget.name)
+            }
+          }
+        } else {
+          // Legacy format: index-based mapping for backward compatibility
+          for (let i = 0; i < info.widgets_values.length; ++i) {
+            const widget = widgetsWithValue[i]
+            if (widget) {
+              widget.value = info.widgets_values[i]
+            }
           }
         }
       }
@@ -896,11 +924,15 @@ export class LGraphNode
 
     const { widgets } = this
     if (widgets && this.serialize_widgets) {
+      // Use name-based mapping for widget values to ensure stable ordering
       o.widgets_values = []
-      for (const [i, widget] of widgets.entries()) {
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
-        // @ts-expect-error #595 No-null
-        o.widgets_values[i] = widget ? widget.value : null
+        // Store widget value with name for stable mapping
+        o.widgets_values.push({
+          name: widget.name,
+          value: widget ? widget.value : null
+        })
       }
     }
 
