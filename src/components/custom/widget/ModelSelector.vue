@@ -22,6 +22,36 @@
             <i-lucide:upload />
           </template>
         </IconTextButton>
+        <MoreButton>
+          <template #default="{ close }">
+            <IconTextButton
+              type="secondary"
+              label="Settings"
+              @click="
+                () => {
+                  close()
+                }
+              "
+            >
+              <template #icon>
+                <i-lucide:download />
+              </template>
+            </IconTextButton>
+            <IconTextButton
+              type="primary"
+              label="Profile"
+              @click="
+                () => {
+                  close()
+                }
+              "
+            >
+              <template #icon>
+                <i-lucide:scroll />
+              </template>
+            </IconTextButton>
+          </template>
+        </MoreButton>
       </div>
     </template>
 
@@ -110,6 +140,7 @@ import { OnCloseKey } from '@/types/custom_components/widgetTypes'
 import SquareTag from '../SquareTag.vue'
 import IconButton from '../button/IconButton.vue'
 import IconTextButton from '../button/IconTextButton.vue'
+import MoreButton from '../button/MoreButton.vue'
 import CardBottom from '../card/CardBottom.vue'
 import CardContainer from '../card/CardContainer.vue'
 import CardTop from '../card/CardTop.vue'
