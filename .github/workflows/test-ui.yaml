@@ -35,6 +35,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: 'npm'
+          cache-dependency-path: ComfyUI_frontend/package-lock.json
+
+      - name: Cache Vite build
+        uses: actions/cache@v4
+        with:
+          path: ComfyUI_frontend/node_modules/.vite
+          key: ${{ runner.os }}-vite-build-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vite-build-
 
       - name: Build ComfyUI_frontend
         run: |
@@ -92,7 +102,23 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(npm list @playwright/test --depth=0 --json | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
+        working-directory: ComfyUI_frontend
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-chromium
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
 
