@@ -63,9 +63,14 @@ const unifiedWidth = computed(() =>
   settingStore.get('Comfy.Sidebar.UnifiedWidth')
 )
 
-const sidebarPanelVisible = computed(
-  () => useSidebarTabStore().activeSidebarTab !== null
-)
+const sidebarPanelVisible = computed(() => {
+  const sidebarTabStore = useSidebarTabStore()
+  // Show sidebar if there's an active tab OR if there are tabs available (fallback)
+  return (
+    sidebarTabStore.activeSidebarTab !== null ||
+    sidebarTabStore.sidebarTabs.length > 0
+  )
+})
 const bottomPanelVisible = computed(
   () => useBottomPanelStore().bottomPanelVisible
 )
