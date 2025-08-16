@@ -193,16 +193,27 @@ export class LitegraphLinkAdapter {
   private convertToPathRenderContext(
     context: LinkRenderContext
   ): PathRenderContext {
+    // Match original arrow rendering conditions:
+    // Arrows only render when scale >= 0.6 AND highquality_render AND render_connection_arrows
+    const shouldShowArrows =
+      context.scale >= 0.6 &&
+      context.highQualityRender &&
+      context.renderConnectionArrows
+
+    // Only show center marker when not set to None
+    const shouldShowCenterMarker =
+      context.linkMarkerShape !== LinkMarkerShape.None
+
     return {
       style: {
         mode: this.convertRenderMode(context.renderMode),
         connectionWidth: context.connectionWidth,
         borderWidth: context.renderBorder ? 4 : undefined,
         arrowShape: this.convertArrowShape(context.linkMarkerShape),
-        showArrows: context.renderConnectionArrows,
+        showArrows: shouldShowArrows,
         lowQuality: context.lowQuality,
         // Center marker settings (matches original litegraph behavior)
-        showCenterMarker: true,
+        showCenterMarker: shouldShowCenterMarker,
         centerMarkerShape:
           context.linkMarkerShape === LinkMarkerShape.Arrow
             ? 'arrow'
