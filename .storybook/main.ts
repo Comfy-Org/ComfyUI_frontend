@@ -34,7 +34,7 @@ const config: StorybookConfig = {
           compiler: 'vue3',
           customCollections: {
             comfy: FileSystemIconLoader(
-              __dirname + '/../src/assets/icons/custom'
+              process.cwd() + '/src/assets/icons/custom'
             )
           }
         }),
@@ -46,9 +46,9 @@ const config: StorybookConfig = {
             })
           ],
           dirs: [
-            __dirname + '/../src/components',
-            __dirname + '/../src/layout',
-            __dirname + '/../src/views'
+            process.cwd() + '/src/components',
+            process.cwd() + '/src/layout',
+            process.cwd() + '/src/views'
           ],
           deep: true,
           extensions: ['vue']
@@ -60,7 +60,7 @@ const config: StorybookConfig = {
       },
       resolve: {
         alias: {
-          '@': __dirname + '/../src'
+          '@': process.cwd() + '/src'
         }
       },
       build: {
