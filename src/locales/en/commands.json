@@ -182,6 +182,9 @@
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Manager"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Open Workflow"
   },
@@ -208,6 +211,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Show Settings Dialog"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Canvas Performance"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Help Center"
   },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"

@@ -17,6 +17,7 @@ export interface ComfyCommand {
   versionAdded?: string
   confirmation?: string // If non-nullish, this command will prompt for confirmation
   source?: string
+  active?: () => boolean // Getter to check if the command is active/toggled on
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
 }
 
@@ -30,6 +31,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   versionAdded?: string
   confirmation?: string
   source?: string
+  active?: () => boolean
   category?: 'essentials' | 'view-controls'
 
   constructor(command: ComfyCommand) {
@@ -42,6 +44,7 @@ export class ComfyCommandImpl implements ComfyCommand {
     this.versionAdded = command.versionAdded
     this.confirmation = command.confirmation
     this.source = command.source
+    this.active = command.active
     this.category = command.category
   }
 

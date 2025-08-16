@@ -179,6 +179,9 @@
   "Comfy_OpenClipspace": {
     "label": "Клипспейс"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Менеджер"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Открыть рабочий процесс"
   },
@@ -205,6 +208,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Показать диалог настроек"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Производительность холста"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Центр поддержки"
   },
   "Comfy_ToggleTheme": {
     "label": "Переключить тему (Тёмная/Светлая)"

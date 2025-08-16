@@ -179,6 +179,9 @@
   "Comfy_OpenClipspace": {
     "label": "Espace de clip"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Gestionnaire"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Ouvrir le flux de travail"
   },
@@ -205,6 +208,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Afficher la boîte de dialogue des paramètres"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Performance du canvas"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Centre d'aide"
   },
   "Comfy_ToggleTheme": {
     "label": "Changer de thème (Sombre/Clair)"
