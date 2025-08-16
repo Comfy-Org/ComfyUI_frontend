@@ -16,6 +16,7 @@
     "scripts/**/*.js",
     "scripts/**/*.ts",
     "tests-ui/**/*.ts",
-    ".storybook/**/*.ts"
+    ".storybook/**/*.ts",
+    "src/**/*.stories.ts"
   ]
 }
