@@ -1,96 +1,63 @@
 import type { StorybookConfig } from '@storybook/vue3-vite'
+import vue from '@vitejs/plugin-vue'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig } from 'vite'
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
-  addons: ['@storybook/addon-docs'],
+  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  addons: [
+    '@storybook/addon-docs',
+    '@storybook/addon-controls',
+    '@storybook/addon-actions',
+    '@storybook/addon-viewport',
+    '@storybook/addon-backgrounds'
+  ],
   framework: {
     name: '@storybook/vue3-vite',
     options: {}
   },
-  async viteFinal(config) {
-    // Use dynamic import to avoid CJS deprecation warning
+  viteFinal: async (config) => {
     const { mergeConfig } = await import('vite')
 
-    // Filter out any plugins that might generate import maps
-    if (config.plugins) {
-      config.plugins = config.plugins.filter((plugin: any) => {
-        if (plugin && plugin.name && plugin.name.includes('import-map')) {
-          return false
-        }
-        return true
-      })
-    }
-
     return mergeConfig(config, {
-      // Replace plugins entirely to avoid inheritance issues
       plugins: [
-        // Only include plugins we explicitly need for Storybook
+        vue(),
         Icons({
           compiler: 'vue3',
           customCollections: {
-            comfy: FileSystemIconLoader(
-              process.cwd() + '/src/assets/icons/custom'
-            )
+            comfy: FileSystemIconLoader('../src/assets/icons/custom')
           }
         }),
         Components({
-          dts: false, // Disable dts generation in Storybook
+          dts: false, // Disable DTS generation for Storybook
           resolvers: [
             IconsResolver({
               customCollections: ['comfy']
             })
           ],
-          dirs: [
-            process.cwd() + '/src/components',
-            process.cwd() + '/src/layout',
-            process.cwd() + '/src/views'
-          ],
+          dirs: ['../src/components', '../src/layout', '../src/views'],
           deep: true,
           extensions: ['vue']
         })
-        // Note: Explicitly NOT including generateImportMapPlugin to avoid externalization
       ],
-      server: {
-        allowedHosts: true
-      },
       resolve: {
         alias: {
-          '@': process.cwd() + '/src'
+          '@': new URL('../src', import.meta.url).pathname
         }
       },
-      build: {
-        rollupOptions: {
-          external: () => {
-            // Don't externalize any modules in Storybook build
-            // This ensures PrimeVue and other dependencies are bundled
-            return false
-          },
-          onwarn: (warning, warn) => {
-            // Suppress specific warnings
-            if (
-              warning.code === 'UNUSED_EXTERNAL_IMPORT' &&
-              warning.message?.includes('resolveComponent')
-            ) {
-              return
-            }
-            // Suppress Storybook font asset warnings
-            if (
-              warning.code === 'UNRESOLVED_IMPORT' &&
-              warning.message?.includes('nunito-sans')
-            ) {
-              return
-            }
-            warn(warning)
-          }
-        },
-        chunkSizeWarningLimit: 1000
+      define: {
+        ...config.define,
+        global: 'globalThis',
+        __COMFYUI_FRONTEND_VERSION__: JSON.stringify('1.26.4'),
+        __SENTRY_ENABLED__: JSON.stringify(false),
+        __SENTRY_DSN__: JSON.stringify(''),
+        __ALGOLIA_APP_ID__: JSON.stringify(''),
+        __ALGOLIA_API_KEY__: JSON.stringify(''),
+        __USE_PROD_CONFIG__: JSON.stringify(false)
       }
-    } satisfies InlineConfig)
+    })
   }
 }
 export default config

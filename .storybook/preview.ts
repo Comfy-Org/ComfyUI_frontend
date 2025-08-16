@@ -1,53 +1,57 @@
-import { definePreset } from '@primevue/themes'
-import Aura from '@primevue/themes/aura'
 import { setup } from '@storybook/vue3'
 import type { Preview } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
-import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
+import { createI18n } from 'vue-i18n'
 
+import '../public/materialdesignicons.min.css'
+// Import styles
 import '../src/assets/css/style.css'
-import { i18n } from '../src/i18n'
-import '../src/lib/litegraph/public/css/litegraph.css'
-import { useWidgetStore } from '../src/stores/widgetStore'
-import { useColorPaletteStore } from '../src/stores/workspace/colorPaletteStore'
 
-const ComfyUIPreset = definePreset(Aura, {
-  semantic: {
-    // @ts-expect-error fix me
-    primary: Aura['primitive'].blue
-  }
-})
+// Mock Firebase for Storybook
+const mockFirebase = {
+  auth: () => ({
+    currentUser: null,
+    onAuthStateChanged: () => () => {}
+  }),
+  firestore: () => ({})
+}
 
-// Setup Vue app for Storybook
+// Setup Vue plugins for Storybook
 setup((app) => {
-  app.directive('tooltip', Tooltip)
   const pinia = createPinia()
-  app.use(pinia)
-
-  // Initialize stores
-  useColorPaletteStore(pinia)
-  useWidgetStore(pinia)
-
-  app.use(i18n)
-  app.use(PrimeVue, {
-    theme: {
-      preset: ComfyUIPreset,
-      options: {
-        prefix: 'p',
-        cssLayer: {
-          name: 'primevue',
-          order: 'primevue, tailwind-utilities'
+  const i18n = createI18n({
+    locale: 'en',
+    fallbackLocale: 'en',
+    messages: {
+      en: {
+        g: {
+          searchSettings: 'Search Settings',
+          noResultsFound: 'No Results Found',
+          searchFailedMessage: 'Try adjusting your search terms',
+          experimental: 'Experimental',
+          loadingPanel: 'Loading {panel}...'
         },
-        darkModeSelector: '.dark-theme, :root:has(.dark-theme)'
+        settings: {},
+        settingsCategories: {}
       }
     }
   })
-  app.use(ConfirmationService)
+
+  app.use(pinia)
+  app.use(i18n)
+  app.use(PrimeVue, {
+    theme: {
+      preset: null // Will use CSS for theming
+    }
+  })
   app.use(ToastService)
+  app.directive('tooltip', Tooltip)
+
+  // Provide mock services
+  app.provide('firebase', mockFirebase)
 })
 
 const preview: Preview = {
@@ -61,9 +65,40 @@ const preview: Preview = {
     backgrounds: {
       default: 'light',
       values: [
-        { name: 'light', value: '#ffffff' },
-        { name: 'dark', value: '#1a1a1a' }
+        {
+          name: 'light',
+          value: '#ffffff'
+        },
+        {
+          name: 'dark',
+          value: '#1a1a1a'
+        }
       ]
+    },
+    viewport: {
+      viewports: {
+        small: {
+          name: 'Small',
+          styles: {
+            width: '640px',
+            height: '480px'
+          }
+        },
+        medium: {
+          name: 'Medium',
+          styles: {
+            width: '768px',
+            height: '1024px'
+          }
+        },
+        large: {
+          name: 'Large',
+          styles: {
+            width: '1024px',
+            height: '768px'
+          }
+        }
+      }
     }
   }
 }
