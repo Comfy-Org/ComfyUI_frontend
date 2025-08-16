@@ -14,6 +14,19 @@ export const CORE_MENU_COMMANDS = [
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],
   [['Edit'], ['Comfy.OpenClipspace']],
   [
+    ['View'],
+    [
+      'Comfy.Canvas.ZoomIn',
+      'Comfy.Canvas.ZoomOut',
+      'Comfy.Canvas.FitView',
+      'Comfy.Canvas.ResetView'
+    ]
+  ],
+  [
+    ['View'],
+    ['Comfy.Canvas.ToggleLinkVisibility', 'Comfy.Canvas.ToggleMinimap']
+  ],
+  [
     ['Help'],
     [
       'Comfy.Help.OpenComfyUIIssues',

@@ -761,6 +761,7 @@
     "toggleBottomPanel": "Basculer le panneau inférieur"
   },
   "menuLabels": {
+    "View": "Affichage",
     "About ComfyUI": "À propos de ComfyUI",
     "Add Edit Model Step": "Ajouter une étape d’édition de modèle",
     "Bottom Panel": "Panneau inférieur",

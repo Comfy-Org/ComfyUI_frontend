@@ -761,7 +761,8 @@
     "toggleBottomPanel": "하단 패널 전환"
   },
   "menuLabels": {
-    "About ComfyUI": "ComfyUI에 대하여",
+    "View": "보기",
+    "About ComfyUI": "ComfyUI 정보",
     "Add Edit Model Step": "모델 편집 단계 추가",
     "Bottom Panel": "하단 패널",
     "Browse Templates": "템플릿 탐색",

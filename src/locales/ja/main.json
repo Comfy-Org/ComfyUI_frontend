@@ -761,6 +761,7 @@
     "toggleBottomPanel": "下部パネルを切り替え"
   },
   "menuLabels": {
+    "View": "表示",
     "About ComfyUI": "ComfyUIについて",
     "Add Edit Model Step": "モデル編集ステップを追加",
     "Bottom Panel": "下部パネル",

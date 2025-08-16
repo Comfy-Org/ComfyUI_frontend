@@ -177,40 +177,13 @@ const showManageExtensions = () => {
   }
 }
 
-const extraMenuItems: MenuItem[] = [
-  { separator: true },
-  {
-    key: 'theme',
-    label: t('menu.theme')
-  },
-  { separator: true },
-  {
-    key: 'browse-templates',
-    label: t('menuLabels.Browse Templates'),
-    icon: 'pi pi-folder-open',
-    command: () => commandStore.execute('Comfy.BrowseTemplates')
-  },
-  {
-    key: 'settings',
-    label: t('g.settings'),
-    icon: 'mdi mdi-cog-outline',
-    command: () => showSettings()
-  },
-  {
-    key: 'manage-extensions',
-    label: t('menu.manageExtensions'),
-    icon: 'mdi mdi-puzzle-outline',
-    command: showManageExtensions
-  }
-]
-
-const lightLabel = t('menu.light')
-const darkLabel = t('menu.dark')
+const lightLabel = computed(() => t('menu.light'))
+const darkLabel = computed(() => t('menu.dark'))
 
 const activeTheme = computed(() => {
   return colorPaletteStore.completedActivePalette.light_theme
-    ? lightLabel
-    : darkLabel
+    ? lightLabel.value
+    : darkLabel.value
 })
 
 const onThemeChange = async () => {
@@ -240,10 +213,38 @@ const translatedItems = computed(() => {
   }
   helpIndex = items.length
 
+  // Recreate extraMenuItems to ensure reactivity
+  const reactiveExtraMenuItems: MenuItem[] = [
+    { separator: true },
+    {
+      key: 'theme',
+      label: t('menu.theme')
+    },
+    { separator: true },
+    {
+      key: 'browse-templates',
+      label: t('menuLabels.Browse Templates'),
+      icon: 'pi pi-folder-open',
+      command: () => commandStore.execute('Comfy.BrowseTemplates')
+    },
+    {
+      key: 'settings',
+      label: t('g.settings'),
+      icon: 'mdi mdi-cog-outline',
+      command: () => showSettings()
+    },
+    {
+      key: 'manage-extensions',
+      label: t('menu.manageExtensions'),
+      icon: 'mdi mdi-puzzle-outline',
+      command: showManageExtensions
+    }
+  ]
+
   items.splice(
     helpIndex,
     0,
-    ...extraMenuItems,
+    ...reactiveExtraMenuItems,
     ...(helpItem
       ? [
           {
