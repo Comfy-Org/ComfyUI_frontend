@@ -56,10 +56,8 @@ const isUnpackVisible = computed(() => {
 
 const isConvertVisible = computed(() => {
   const selectableItems = canvasStore.selectedItems ?? []
-
   // Don't show if no items are selected
   if (selectableItems.length === 0) return false
-
   // Only show if at least one item is selected that is not a SubgraphNode
   // and not a group.
   const isNotGroupOrSubgraphNode = (item: Positionable) =>
