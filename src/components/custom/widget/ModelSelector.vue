@@ -17,79 +17,11 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconTextButton
-          type="primary"
-          label="Upload Model"
-          @click="
-            () => {
-              console.log('Upload Model')
-            }
-          "
-        >
+        <IconTextButton type="primary" label="Upload Model" @click="() => {}">
           <template #icon>
             <i-lucide:upload />
           </template>
         </IconTextButton>
-        <!-- <IconButton
-          size="sm"
-          class="!bg-orange-500 text-white"
-          @click="console.log('Hello World!!')"
-        >
-          <i-lucide:triangle-alert />
-        </IconButton>
-        <IconGroup>
-          <IconButton @click="console.log('Hello World!!')">
-            <i-lucide:heart />
-          </IconButton>
-          <IconButton @click="console.log('Hello World!!')">
-            <i-lucide:download />
-          </IconButton>
-          <IconButton @click="console.log('Hello World!!')">
-            <i-lucide:external-link />
-          </IconButton>
-        </IconGroup>
-        <TextButton
-          label="Action"
-          type="primary"
-          @click="console.log('Hello World!!')"
-        />
-        <TextButton
-          label="Action"
-          type="secondary"
-          @click="console.log('Hello World!!')"
-        />
-        <MoreButton>
-          <template #default="{ close }">
-            <IconTextButton
-              type="secondary"
-              label="Settings"
-              @click="
-                () => {
-                  console.log('Settings')
-                  close()
-                }
-              "
-            >
-              <template #icon>
-                <i-lucide:download />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              type="primary"
-              label="Profile"
-              @click="
-                () => {
-                  console.log('Profile')
-                  close()
-                }
-              "
-            >
-              <template #icon>
-                <i-lucide:scroll />
-              </template>
-            </IconTextButton>
-          </template>
-        </MoreButton> -->
       </div>
     </template>
 
@@ -128,7 +60,7 @@
                 <template #top-right>
                   <IconButton
                     class="!bg-white !text-neutral-900"
-                    @click="console.log('Hello World!!')"
+                    @click="() => {}"
                   >
                     <i-lucide:info />
                   </IconButton>
@@ -149,33 +81,6 @@
             </template>
           </CardContainer>
         </div>
-
-        <!-- <CardContainer ratio="portrait" :max-width="320" :min-width="200">
-          <template #top>
-            <CardTop ratio="square">
-              <div class="w-full h-full bg-red-500"></div>
-            </CardTop>
-          </template>
-          <template #bottom>
-            <CardBottom></CardBottom>
-          </template>
-        </CardContainer>
-
-        <CardContainer ratio="square" :max-width="320" :min-width="200">
-          <template #top>
-            <CardTop ratio="landscape">
-              <div class="w-full h-full bg-blue-500"></div>
-            </CardTop>
-          </template>
-          <template #bottom>
-            <CardBottom class="p-2 flex flex-col gap-2">
-              <CardTitle>{{ t('manager.nodePack') }}</CardTitle>
-              <CardDescription>{{
-                t('manager.noNodesFoundDescription')
-                }}</CardDescription>
-            </CardBottom>
-          </template>
-        </CardContainer> -->
       </div>
     </template>
 
