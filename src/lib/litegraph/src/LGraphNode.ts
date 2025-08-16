@@ -1,4 +1,10 @@
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
+import {
+  type SlotPositionContext,
+  calculateInputSlotPos,
+  calculateInputSlotPosFromSlot,
+  calculateOutputSlotPos
+} from '@/utils/slotCalculations'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -3227,67 +3233,22 @@ export class LGraphNode
   }
 
   /**
-   * Calculate slot position using Vue node dimensions.
-   * This method uses the COMFY_VUE_NODE_DIMENSIONS constants to match Vue component rendering.
-   * @param isInput Whether this is an input slot (true) or output slot (false)
-   * @param slot The slot object (for widget detection)
-   * @param slotIndex The index of the slot in the appropriate array
-   * @returns The [x, y] position of the slot center in graph coordinates
+   * Get the context needed for slot position calculations
+   * @internal
    */
-  #calculateVueSlotPosition(
-    isInput: boolean,
-    slot: INodeSlot,
-    slotIndex: number
-  ): Point {
-    const {
-      pos: [nodeX, nodeY],
-      size: [width]
-    } = this
-    const dimensions = LiteGraph.COMFY_VUE_NODE_DIMENSIONS.components
-    const spacing = LiteGraph.COMFY_VUE_NODE_DIMENSIONS.spacing
-
-    let slotCenterY: number
-
-    // IMPORTANT: LiteGraph's node position (nodeY) is at the TOP of the body (below the header)
-    // The header is rendered ABOVE this position at negative Y coordinates
-    // So we need to adjust for the difference between LiteGraph's header (30px) and Vue's header (34px)
-    const headerDifference =
-      dimensions.HEADER_HEIGHT - LiteGraph.NODE_TITLE_HEIGHT
-
-    if (isInput && isWidgetInputSlot(slot as INodeInputSlot)) {
-      // Widget input slot - calculate based on widget position
-      // Count regular (non-widget) input slots
-      const regularInputCount = this.#defaultVerticalInputs.length
-
-      // Find widget index
-      const widgetIndex =
-        this.widgets?.findIndex(
-          (w) => w.name === (slot as INodeInputSlot).widget?.name
-        ) ?? 0
-
-      // Y position relative to the node body top (not the header)
-      slotCenterY =
-        headerDifference +
-        regularInputCount * dimensions.SLOT_HEIGHT +
-        (regularInputCount > 0 ? spacing.BETWEEN_SLOTS_AND_BODY : 0) +
-        widgetIndex *
-          (dimensions.STANDARD_WIDGET_HEIGHT + spacing.BETWEEN_WIDGETS) +
-        dimensions.STANDARD_WIDGET_HEIGHT / 2
-    } else {
-      // Regular slot (input or output)
-      // Slots start at the top of the body, but we need to account for Vue's larger header
-      slotCenterY =
-        headerDifference +
-        slotIndex * dimensions.SLOT_HEIGHT +
-        dimensions.SLOT_HEIGHT / 2
+  #getSlotPositionContext(): SlotPositionContext {
+    return {
+      nodeX: this.pos[0],
+      nodeY: this.pos[1],
+      nodeWidth: this.size[0],
+      nodeHeight: this.size[1],
+      collapsed: this.flags.collapsed ?? false,
+      collapsedWidth: this._collapsed_width,
+      slotStartY: this.constructor.slot_start_y,
+      inputs: this.inputs,
+      outputs: this.outputs,
+      widgets: this.widgets
     }
-
-    // Calculate X position
-    // Input slots: 10px from left edge (center of 20x20 connector)
-    // Output slots: 10px from right edge (center of 20x20 connector)
-    const slotCenterX = isInput ? 10 : width - 10
-
-    return [nodeX + slotCenterX, nodeY + slotCenterY]
   }
 
   /**
@@ -3298,7 +3259,7 @@ export class LGraphNode
    * @returns Position of the input slot
    */
   getInputPos(slot: number): Point {
-    return this.getInputSlotPos(this.inputs[slot])
+    return calculateInputSlotPos(this.#getSlotPositionContext(), slot)
   }
 
   /**
@@ -3307,39 +3268,7 @@ export class LGraphNode
    * @returns Position of the centre of the input slot in graph co-ordinates.
    */
   getInputSlotPos(input: INodeInputSlot): Point {
-    const {
-      pos: [nodeX, nodeY]
-    } = this
-
-    if (this.flags.collapsed) {
-      const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
-      return [nodeX, nodeY - halfTitle]
-    }
-
-    const { pos } = input
-    if (pos) return [nodeX + pos[0], nodeY + pos[1]]
-
-    // Check if we should use Vue positioning
-    if (LiteGraph.vueNodesMode) {
-      if (isWidgetInputSlot(input)) {
-        // Widget slot - pass the slot object
-        return this.#calculateVueSlotPosition(true, input, -1)
-      } else {
-        // Regular slot - find its index in default vertical inputs
-        const slotIndex = this.#defaultVerticalInputs.indexOf(input)
-        if (slotIndex !== -1) {
-          return this.#calculateVueSlotPosition(true, input, slotIndex)
-        }
-      }
-    }
-
-    // default vertical slots
-    const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-    const nodeOffsetY = this.constructor.slot_start_y || 0
-    const slotIndex = this.#defaultVerticalInputs.indexOf(input)
-    const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
-
-    return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
+    return calculateInputSlotPosFromSlot(this.#getSlotPositionContext(), input)
   }
 
   /**
@@ -3350,38 +3279,7 @@ export class LGraphNode
    * @returns Position of the output slot
    */
   getOutputPos(slot: number): Point {
-    const {
-      pos: [nodeX, nodeY],
-      outputs,
-      size: [width]
-    } = this
-
-    if (this.flags.collapsed) {
-      const width = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
-      return [nodeX + width, nodeY - halfTitle]
-    }
-
-    const outputPos = outputs?.[slot]?.pos
-    if (outputPos) return [nodeX + outputPos[0], nodeY + outputPos[1]]
-
-    // Check if we should use Vue positioning
-    if (LiteGraph.vueNodesMode) {
-      const outputSlot = this.outputs[slot]
-      const slotIndex = this.#defaultVerticalOutputs.indexOf(outputSlot)
-      if (slotIndex !== -1) {
-        return this.#calculateVueSlotPosition(false, outputSlot, slotIndex)
-      }
-    }
-
-    // default vertical slots
-    const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-    const nodeOffsetY = this.constructor.slot_start_y || 0
-    const slotIndex = this.#defaultVerticalOutputs.indexOf(this.outputs[slot])
-    const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
-
-    // TODO: Why +1?
-    return [nodeX + width + 1 - offsetX, nodeY + slotY + nodeOffsetY]
+    return calculateOutputSlotPos(this.#getSlotPositionContext(), slot)
   }
 
   /** @inheritdoc */

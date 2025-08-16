@@ -29,9 +29,15 @@ import {
   type DragLinkData,
   type LinkRenderData,
   type RenderContext as PathRenderContext,
+  type Point,
   type RenderMode
 } from '@/rendering/canvas/PathRenderer'
-import type { Point } from '@/types/layoutTypes'
+import { layoutStore } from '@/stores/layoutStore'
+import {
+  type SlotPositionContext,
+  calculateInputSlotPos,
+  calculateOutputSlotPos
+} from '@/utils/slotCalculations'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -99,9 +105,17 @@ export class LitegraphLinkAdapter {
       return
     }
 
-    // Get positions from nodes
-    const startPos = sourceNode.getOutputPos(link.origin_slot)
-    const endPos = targetNode.getInputPos(link.target_slot)
+    // Get positions using layout tree data if available
+    const startPos = this.getSlotPosition(
+      sourceNode,
+      link.origin_slot,
+      false // output
+    )
+    const endPos = this.getSlotPosition(
+      targetNode,
+      link.target_slot,
+      true // input
+    )
 
     // Get directions from slots
     const startDir = sourceSlot.dir || LinkDirection.RIGHT
@@ -413,6 +427,42 @@ export class LitegraphLinkAdapter {
   }
 
   /**
+   * Get slot position using layout tree if available, fallback to node's position
+   */
+  private getSlotPosition(
+    node: LGraphNode,
+    slotIndex: number,
+    isInput: boolean
+  ): ReadOnlyPoint {
+    // Try to get position from layout tree
+    const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
+
+    if (nodeLayout) {
+      // Create context from layout tree data
+      const context: SlotPositionContext = {
+        nodeX: nodeLayout.position.x,
+        nodeY: nodeLayout.position.y,
+        nodeWidth: nodeLayout.size.width,
+        nodeHeight: nodeLayout.size.height,
+        collapsed: node.flags.collapsed || false,
+        collapsedWidth: node._collapsed_width,
+        slotStartY: node.constructor.slot_start_y,
+        inputs: node.inputs,
+        outputs: node.outputs,
+        widgets: node.widgets
+      }
+
+      // Use helper to calculate position
+      return isInput
+        ? calculateInputSlotPos(context, slotIndex)
+        : calculateOutputSlotPos(context, slotIndex)
+    }
+
+    // Fallback to node's own methods if layout not available
+    return isInput ? node.getInputPos(slotIndex) : node.getOutputPos(slotIndex)
+  }
+
+  /**
    * Render a link being dragged from a slot to mouse position
    * Used during link creation/reconnection
    */
@@ -431,10 +481,12 @@ export class LitegraphLinkAdapter {
   ): void {
     if (!fromNode) return
 
-    // Get slot position
-    const slotPos = options.fromInput
-      ? fromNode.getInputPos(fromSlotIndex)
-      : fromNode.getOutputPos(fromSlotIndex)
+    // Get slot position using layout tree if available
+    const slotPos = this.getSlotPosition(
+      fromNode,
+      fromSlotIndex,
+      options.fromInput || false
+    )
     if (!slotPos) return
 
     // Get slot direction
