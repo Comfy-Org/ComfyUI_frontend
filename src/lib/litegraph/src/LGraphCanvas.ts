@@ -2661,6 +2661,9 @@ export class LGraphCanvas
     if (widget) {
       this.#processWidgetClick(e, node, widget)
       this.node_widget = [node, widget]
+      // Override the onClick handler to prevent selection update for DOM widgets
+      // This fixes issue #4953: clicking textarea shouldn't trigger toolbar remount animation
+      pointer.onClick = () => {} // No-op to prevent processSelect from being called
     } else {
       // Node background
       pointer.onDoubleClick = () => {
