@@ -50,9 +50,6 @@ const meta: Meta<typeof InputKnob> = {
       description: 'Additional CSS classes for the knob',
       defaultValue: undefined
     },
-    onUpdateModelValue: {
-      description: 'Event emitted when value changes'
-    }
   },
   tags: ['autodocs']
 }
@@ -72,7 +69,7 @@ export const Default: Story = {
       }
     },
     methods: {
-      handleUpdate(newValue) {
+      handleUpdate(newValue: number) {
         console.log('Value updated:', newValue)
         this.value = newValue
       }
@@ -122,7 +119,7 @@ export const DecimalPrecision: Story = {
       }
     },
     methods: {
-      handleUpdate(newValue) {
+      handleUpdate(newValue: number) {
         console.log('Decimal value updated:', newValue)
         this.value = newValue
       }
@@ -170,7 +167,7 @@ export const HighPrecision: Story = {
       }
     },
     methods: {
-      handleUpdate(newValue) {
+      handleUpdate(newValue: number) {
         console.log('High precision value updated:', newValue)
         this.value = newValue
       }
@@ -219,7 +216,7 @@ export const LargeRange: Story = {
       }
     },
     methods: {
-      handleUpdate(newValue) {
+      handleUpdate(newValue: number) {
         console.log('Large range value updated:', newValue)
         this.value = newValue
       }
@@ -266,7 +263,7 @@ export const NegativeRange: Story = {
       }
     },
     methods: {
-      handleUpdate(newValue) {
+      handleUpdate(newValue: number) {
         console.log('Negative range value updated:', newValue)
         this.value = newValue
       }
@@ -311,7 +308,7 @@ export const CFGScale: Story = {
       }
     },
     methods: {
-      updateCFG(value) {
+      updateCFG(value: number) {
         console.log('CFG Scale updated:', value)
         this.cfgScale = value
       }
@@ -355,7 +352,7 @@ export const SamplingSteps: Story = {
       }
     },
     methods: {
-      updateSteps(value) {
+      updateSteps(value: number) {
         console.log('Sampling steps updated:', value)
         this.steps = value
       }
@@ -399,7 +396,7 @@ export const DenoiseStrength: Story = {
       }
     },
     methods: {
-      updateDenoise(value) {
+      updateDenoise(value: number) {
         console.log('Denoise strength updated:', value)
         this.denoise = value
       }
@@ -443,7 +440,7 @@ export const CustomStyling: Story = {
       }
     },
     methods: {
-      updateValue(newValue) {
+      updateValue(newValue: number) {
         console.log('Custom styled value updated:', newValue)
         this.value = newValue
       }
@@ -498,9 +495,9 @@ export const ParameterGallery: Story = {
       }
     },
     methods: {
-      updateParam(param, value) {
+      updateParam(param: string, value: number) {
         console.log(`${param} updated:`, value)
-        this.params[param] = value
+        ;(this.params as any)[param] = value
       }
     },
     template: `

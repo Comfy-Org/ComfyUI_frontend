@@ -397,11 +397,11 @@ export const SeverityGallery: Story = {
       }
     },
     methods: {
-      refresh(severity) {
+      refresh(severity: string) {
         console.log(`Refreshing with ${severity} severity`)
-        this.states[severity] = true
+        ;(this.states as any)[severity] = true
         setTimeout(() => {
-          this.states[severity] = false
+          ;(this.states as any)[severity] = false
         }, 2000)
       }
     },
@@ -442,7 +442,7 @@ export const StateComparison: Story = {
       }
     },
     methods: {
-      refresh(type) {
+      refresh(type: string) {
         console.log(`${type} refresh clicked`)
       }
     },

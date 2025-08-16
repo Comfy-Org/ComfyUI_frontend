@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import SearchBox from './SearchBox.vue'
-import type { SearchFilter } from './SearchFilterChip.vue'
 
-const meta: Meta<typeof SearchBox> = {
+const meta: Meta = {
   title: 'Components/Common/SearchBox',
-  component: SearchBox,
+  component: SearchBox as any,
   parameters: {
     layout: 'centered',
     docs: {
@@ -46,9 +45,6 @@ const meta: Meta<typeof SearchBox> = {
       description: 'Array of active filter chips to display',
       defaultValue: []
     },
-    onUpdateModelValue: {
-      description: 'Event emitted when search text changes'
-    },
     onSearch: {
       description: 'Debounced event emitted with search text and filters'
     },
@@ -63,10 +59,10 @@ const meta: Meta<typeof SearchBox> = {
 }
 
 export default meta
-type Story = StoryObj<typeof SearchBox>
+type Story = StoryObj
 
 export const Default: Story = {
-  render: (args) => ({
+  render: (args: any) => ({
     components: { SearchBox },
     setup() {
       return { args }
@@ -78,11 +74,11 @@ export const Default: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         console.log('Search text updated:', value)
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, filters: any) {
         console.log('Debounced search:', value, 'with filters:', filters)
         this.log.unshift(`Search: "${value}" (${new Date().toLocaleTimeString()})`)
         if (this.log.length > 5) this.log.pop()
@@ -126,7 +122,7 @@ export const Default: Story = {
 }
 
 export const WithFilters: Story = {
-  render: (args) => ({
+  render: (args: any) => ({
     components: { SearchBox },
     setup() {
       return { args }
@@ -142,18 +138,18 @@ export const WithFilters: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         console.log('Search updated:', value)
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, filters: any) {
         console.log('Search with filters:', value, filters)
       },
-      removeFilter(filter) {
+      removeFilter(filter: any) {
         console.log('Removing filter:', filter)
-        this.activeFilters = this.activeFilters.filter(f => f.id !== filter.id)
+        this.activeFilters = this.activeFilters.filter((f: any) => f.id !== filter.id)
       },
-      showFilterDialog(event) {
+      showFilterDialog(event: Event) {
         console.log('Show filter dialog:', event)
       }
     },
@@ -191,7 +187,7 @@ export const WithFilters: Story = {
 }
 
 export const CustomPlaceholder: Story = {
-  render: (args) => ({
+  render: (args: any) => ({
     components: { SearchBox },
     setup() {
       return { args }
@@ -202,10 +198,10 @@ export const CustomPlaceholder: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, _filters: any) {
         console.log('Custom search:', value)
       }
     },
@@ -238,7 +234,7 @@ export const CustomPlaceholder: Story = {
 }
 
 export const FastDebounce: Story = {
-  render: (args) => ({
+  render: (args: any) => ({
     components: { SearchBox },
     setup() {
       return { args }
@@ -250,10 +246,10 @@ export const FastDebounce: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, _filters: any) {
         this.searchCount++
         console.log(`Fast search #${this.searchCount}:`, value)
       }
@@ -304,21 +300,21 @@ export const ComfyUINodeSearch: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
-        console.log('Node search:', value, 'filters:', filters.map(f => f.text))
+      handleSearch(value: string, filters: any) {
+        console.log('Node search:', value, 'filters:', filters.map((f: any) => f.text))
         // Simulate search results
         this.searchResults = [
           `Found nodes matching "${value}"`,
-          `Active filters: ${filters.map(f => f.text).join(', ')}`,
+          `Active filters: ${filters.map((f: any) => f.text).join(', ')}`,
           `Total results: ${Math.floor(Math.random() * 50) + 1}`
         ]
       },
-      removeFilter(filter) {
+      removeFilter(filter: any) {
         console.log('Removing node filter:', filter.text)
-        this.nodeFilters = this.nodeFilters.filter(f => f.id !== filter.id)
+        this.nodeFilters = this.nodeFilters.filter((f: any) => f.id !== filter.id)
       },
       showFilterDialog() {
         console.log('Opening node filter dialog')
@@ -375,15 +371,15 @@ export const ModelManagerSearch: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, filters: any) {
         console.log('Model search:', value, 'filters:', filters)
       },
-      removeFilter(filter) {
+      removeFilter(filter: any) {
         console.log('Removing model filter:', filter.text)
-        this.modelFilters = this.modelFilters.filter(f => f.id !== filter.id)
+        this.modelFilters = this.modelFilters.filter((f: any) => f.id !== filter.id)
       },
       showFilterDialog() {
         console.log('Opening model filter dialog')
@@ -434,14 +430,14 @@ export const ExtensionSearch: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, filters: any) {
         console.log('Extension search:', value, 'filters:', filters)
       },
-      removeFilter(filter) {
-        this.extensionFilters = this.extensionFilters.filter(f => f.id !== filter.id)
+      removeFilter(filter: any) {
+        this.extensionFilters = this.extensionFilters.filter((f: any) => f.id !== filter.id)
       },
       showFilterDialog() {
         console.log('Opening extension filter dialog')
@@ -488,13 +484,13 @@ export const ClearBehavior: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
         if (value === '') {
           this.clearCount++
         }
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, _filters: any) {
         console.log('Search after clear:', value)
       }
     },
@@ -531,10 +527,10 @@ export const NoDebounce: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, _filters: any) {
         this.immediateSearchCount++
         console.log(`Immediate search #${this.immediateSearchCount}:`, value)
       }
@@ -580,14 +576,14 @@ export const ManyFilters: Story = {
       }
     },
     methods: {
-      handleUpdate(value) {
+      handleUpdate(value: string) {
         this.searchQuery = value
       },
-      handleSearch(value, filters) {
+      handleSearch(value: string, filters: any) {
         console.log('Search with many filters:', value, filters.length, 'filters')
       },
-      removeFilter(filter) {
-        this.manyFilters = this.manyFilters.filter(f => f.id !== filter.id)
+      removeFilter(filter: any) {
+        this.manyFilters = this.manyFilters.filter((f: any) => f.id !== filter.id)
       },
       showFilterDialog() {
         console.log('Opening filter management dialog')

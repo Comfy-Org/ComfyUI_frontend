@@ -25,9 +25,6 @@ const meta: Meta<typeof EditableText> = {
       description: 'Whether the component is currently in edit mode',
       defaultValue: false
     },
-    onUpdateModelValue: {
-      description: 'Event emitted when the model value should be updated'
-    },
     onEdit: {
       description: 'Event emitted when editing is finished with the new value'
     }
@@ -51,7 +48,7 @@ export const Default: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         console.log('Edit completed:', newValue)
         this.text = newValue
         this.editing = false
@@ -97,7 +94,7 @@ export const AlwaysEditing: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         console.log('Edit completed:', newValue)
         this.text = newValue
         // Stay in edit mode
@@ -138,7 +135,7 @@ export const FilenameEditing: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         console.log('Filename edited:', newValue)
         this.filename = newValue
         this.isEditing = false
@@ -185,7 +182,7 @@ export const LongText: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         console.log('Long text edited:', newValue)
         this.longText = newValue
         this.isEditing = false
@@ -229,7 +226,7 @@ export const ComfyUIWorkflowName: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         console.log('Workflow name edited:', newValue)
         this.workflowName = newValue
         this.isEditing = false
@@ -284,7 +281,7 @@ export const NodeTitleEditing: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         console.log('Node title edited:', newValue)
         this.nodeTitle = newValue
         this.isEditing = false
@@ -341,16 +338,16 @@ export const MultipleInstances: Story = {
       }
     },
     methods: {
-      handleEdit(id, newValue) {
+      handleEdit(id: number, newValue: string) {
         console.log(`Item ${id} edited:`, newValue)
-        const item = this.items.find(i => i.id === id)
+        const item = this.items.find((i: any) => i.id === id)
         if (item) {
           item.name = newValue
           item.editing = false
         }
       },
-      startEdit(id) {
-        this.items.forEach(item => {
+      startEdit(id: number) {
+        this.items.forEach((item: any) => {
           item.editing = item.id === id
         })
       }
@@ -394,7 +391,7 @@ export const KeyboardInteraction: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         this.log.push(`Edited: "${newValue}"`)
         this.text = newValue
         this.isEditing = false
@@ -441,7 +438,7 @@ export const EmptyText: Story = {
       }
     },
     methods: {
-      handleEdit(newValue) {
+      handleEdit(newValue: string) {
         console.log('Empty text edited:', newValue)
         this.text = newValue
         this.isEditing = false
