@@ -1371,6 +1371,18 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         }
         return 'Token-based'
       }
+    },
+    ViduTextToVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduImageToVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduReferenceVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduStartEndToVideoNode: {
+      displayPrice: '$0.4/Run'
     }
   }
 
