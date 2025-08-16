@@ -62,8 +62,14 @@
           </header>
 
           <main class="flex flex-col flex-1 min-h-0">
+            <!-- Fallback title bar when no leftPanel is provided -->
             <slot name="contentFilter"></slot>
-            <slot name="content"></slot>
+            <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
+              {{ contentTitle }}
+            </h2>
+            <div class="min-h-0 px-6 pt-0 pb-10 overflow-y-auto scrollbar-hide">
+              <slot name="content"></slot>
+            </div>
           </main>
         </div>
         <aside
@@ -83,6 +89,10 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 
 import IconButton from '@/components/custom/button/IconButton.vue'
 import { OnCloseKey } from '@/types/custom_components/widgetTypes'
+
+const { contentTitle } = defineProps<{
+  contentTitle: string
+}>()
 
 const BREAKPOINTS = { md: 880 }
 const PANEL_SIZES = {
