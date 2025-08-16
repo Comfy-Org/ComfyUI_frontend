@@ -15,6 +15,11 @@ vi.mock('axios', () => ({
   }
 }))
 
+// Mock networkClientAdapter to return the same axios instance
+vi.mock('@/services/networkClientAdapter', () => ({
+  createAxiosWithHeaders: vi.fn(() => mockAxiosInstance)
+}))
+
 describe('useReleaseService', () => {
   let service: ReturnType<typeof useReleaseService>
 

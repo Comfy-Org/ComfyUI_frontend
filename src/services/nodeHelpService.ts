@@ -1,4 +1,5 @@
 import { api } from '@/scripts/api'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/utils/nodeHelpUtil'
@@ -25,12 +26,12 @@ export class NodeHelpService {
 
     // Try locale-specific path first
     const localePath = `/extensions/${customNodeName}/docs/${node.name}/${locale}.md`
-    let res = await fetch(api.fileURL(localePath))
+    let res = await fetchWithHeaders(api.fileURL(localePath))
 
     if (!res.ok) {
       // Fall back to non-locale path
       const fallbackPath = `/extensions/${customNodeName}/docs/${node.name}.md`
-      res = await fetch(api.fileURL(fallbackPath))
+      res = await fetchWithHeaders(api.fileURL(fallbackPath))
     }
 
     if (!res.ok) {
@@ -45,7 +46,7 @@ export class NodeHelpService {
     locale: string
   ): Promise<string> {
     const mdUrl = `/docs/${node.name}/${locale}.md`
-    const res = await fetch(api.fileURL(mdUrl))
+    const res = await fetchWithHeaders(api.fileURL(mdUrl))
 
     if (!res.ok) {
       throw new Error(res.statusText)

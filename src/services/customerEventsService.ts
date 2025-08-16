@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { createAxiosWithHeaders } from '@/services/networkClientAdapter'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { type components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -22,7 +23,7 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
-const customerApiClient = axios.create({
+const customerApiClient = createAxiosWithHeaders({
   baseURL: COMFY_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'

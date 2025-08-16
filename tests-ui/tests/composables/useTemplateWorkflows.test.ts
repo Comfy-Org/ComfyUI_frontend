@@ -2,6 +2,7 @@ import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
 
 // Mock the store
@@ -40,6 +41,11 @@ vi.mock('@/stores/dialogStore', () => ({
 
 // Mock fetch
 global.fetch = vi.fn()
+
+// Mock fetchWithHeaders
+vi.mock('@/services/networkClientAdapter', () => ({
+  fetchWithHeaders: vi.fn()
+}))
 
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: any
@@ -98,6 +104,11 @@ describe('useTemplateWorkflows', () => {
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue({ workflow: 'data' })
+    } as unknown as Response)
+
+    // Also mock fetchWithHeaders
+    vi.mocked(fetchWithHeaders).mockResolvedValue({
       json: vi.fn().mockResolvedValue({ workflow: 'data' })
     } as unknown as Response)
   })
@@ -258,7 +269,9 @@ describe('useTemplateWorkflows', () => {
     await flushPromises()
 
     expect(result).toBe(true)
-    expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+    expect(vi.mocked(fetchWithHeaders)).toHaveBeenCalledWith(
+      'mock-file-url/templates/template1.json'
+    )
     expect(loadingTemplateId.value).toBe(null) // Should reset after loading
   })
 
@@ -273,7 +286,9 @@ describe('useTemplateWorkflows', () => {
     await flushPromises()
 
     expect(result).toBe(true)
-    expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+    expect(vi.mocked(fetchWithHeaders)).toHaveBeenCalledWith(
+      'mock-file-url/templates/template1.json'
+    )
   })
 
   it('should handle errors when loading templates', async () => {
@@ -282,8 +297,10 @@ describe('useTemplateWorkflows', () => {
     // Set the store as loaded
     mockWorkflowTemplatesStore.isLoaded = true
 
-    // Mock fetch to throw an error
-    vi.mocked(fetch).mockRejectedValueOnce(new Error('Failed to fetch'))
+    // Mock fetchWithHeaders to throw an error
+    vi.mocked(fetchWithHeaders).mockRejectedValueOnce(
+      new Error('Failed to fetch')
+    )
 
     // Spy on console.error
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

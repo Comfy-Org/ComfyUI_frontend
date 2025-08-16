@@ -2,6 +2,7 @@ import { whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 import { useCivitaiModel } from '@/composables/useCivitaiModel'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 
 export function useDownload(url: string, fileName?: string) {
@@ -14,7 +15,7 @@ export function useDownload(url: string, fileName?: string) {
 
   const fetchFileSize = async () => {
     try {
-      const response = await fetch(url, { method: 'HEAD' })
+      const response = await fetchWithHeaders(url, { method: 'HEAD' })
       if (!response.ok) throw new Error('Failed to fetch file size')
 
       const size = response.headers.get('content-length')

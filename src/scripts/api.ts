@@ -1,5 +1,3 @@
-import axios from 'axios'
-
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
   DisplayComponentWsMessage,
@@ -35,6 +33,7 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
@@ -329,7 +328,7 @@ export class ComfyApi extends EventTarget {
     } else {
       options.headers['Comfy-User'] = this.user
     }
-    return fetch(this.apiURL(route), options)
+    return fetchWithHeaders(this.apiURL(route), options)
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(
@@ -599,9 +598,9 @@ export class ComfyApi extends EventTarget {
    * Gets the index of core workflow templates.
    */
   async getCoreWorkflowTemplates(): Promise<WorkflowTemplates[]> {
-    const res = await axios.get(this.fileURL('/templates/index.json'))
-    const contentType = res.headers['content-type']
-    return contentType?.includes('application/json') ? res.data : []
+    const res = await fetchWithHeaders(this.fileURL('/templates/index.json'))
+    const contentType = res.headers.get('content-type')
+    return contentType?.includes('application/json') ? await res.json() : []
   }
 
   /**
@@ -1002,22 +1001,31 @@ export class ComfyApi extends EventTarget {
   }
 
   async getLogs(): Promise<string> {
-    return (await axios.get(this.internalURL('/logs'))).data
+    const response = await fetchWithHeaders(this.internalURL('/logs'))
+    return response.text()
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
-    return (await axios.get(this.internalURL('/logs/raw'))).data
+    const response = await fetchWithHeaders(this.internalURL('/logs/raw'))
+    return response.json()
   }
 
   async subscribeLogs(enabled: boolean): Promise<void> {
-    return await axios.patch(this.internalURL('/logs/subscribe'), {
-      enabled,
-      clientId: this.clientId
+    await fetchWithHeaders(this.internalURL('/logs/subscribe'), {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        enabled,
+        clientId: this.clientId
+      })
     })
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
-    return (await axios.get(this.internalURL('/folder_paths'))).data
+    const response = await fetchWithHeaders(this.internalURL('/folder_paths'))
+    return response.json()
   }
 
   /**
@@ -1026,7 +1034,8 @@ export class ComfyApi extends EventTarget {
    * @returns The custom nodes i18n data
    */
   async getCustomNodesI18n(): Promise<Record<string, any>> {
-    return (await axios.get(this.apiURL('/i18n'))).data
+    const response = await fetchWithHeaders(this.apiURL('/i18n'))
+    return response.json()
   }
 
   /**

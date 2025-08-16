@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
 vi.mock('@/scripts/api', () => ({
@@ -67,6 +68,11 @@ vi.mock('marked', () => ({
   }
 }))
 
+// Mock fetchWithHeaders
+vi.mock('@/services/networkClientAdapter', () => ({
+  fetchWithHeaders: vi.fn()
+}))
+
 describe('nodeHelpStore', () => {
   // Define a mock node for testing
   const mockCoreNode = {
@@ -91,10 +97,17 @@ describe('nodeHelpStore', () => {
   const mockFetch = vi.fn()
   global.fetch = mockFetch
 
+  // Helper to mock both fetch and fetchWithHeaders
+  const mockFetchResponse = (response: any) => {
+    mockFetch.mockResolvedValueOnce(response)
+    vi.mocked(fetchWithHeaders).mockResolvedValueOnce(response)
+  }
+
   beforeEach(() => {
     // Setup Pinia
     setActivePinia(createPinia())
     mockFetch.mockReset()
+    vi.mocked(fetchWithHeaders).mockReset()
   })
 
   it('should initialize with empty state', () => {
@@ -144,7 +157,7 @@ describe('nodeHelpStore', () => {
   it('should render markdown content correctly', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => '# Test Help\nThis is test help content'
     })
@@ -160,7 +173,7 @@ describe('nodeHelpStore', () => {
   it('should handle fetch errors and fall back to description', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: false,
       statusText: 'Not Found'
     })
@@ -175,7 +188,7 @@ describe('nodeHelpStore', () => {
   it('should include alt attribute for images', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => '![image](test.jpg)'
     })
@@ -188,7 +201,7 @@ describe('nodeHelpStore', () => {
   it('should prefix relative video src in custom nodes', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => '<video src="video.mp4"></video>'
     })
@@ -203,7 +216,7 @@ describe('nodeHelpStore', () => {
   it('should prefix relative video src for core nodes with node-specific base URL', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => '<video src="video.mp4"></video>'
     })
@@ -218,7 +231,7 @@ describe('nodeHelpStore', () => {
   it('should prefix relative source src in custom nodes', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () =>
         '<video><source src="video.mp4" type="video/mp4" /></video>'
@@ -234,7 +247,7 @@ describe('nodeHelpStore', () => {
   it('should prefix relative source src for core nodes with node-specific base URL', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () =>
         '<video><source src="video.webm" type="video/webm" /></video>'
@@ -250,7 +263,9 @@ describe('nodeHelpStore', () => {
   it('should handle loading state', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockImplementationOnce(() => new Promise(() => {})) // Never resolves
+    vi.mocked(fetchWithHeaders).mockImplementationOnce(
+      () => new Promise(() => {})
+    ) // Never resolves
 
     nodeHelpStore.openHelp(mockCoreNode as any)
     await nextTick()
@@ -261,24 +276,24 @@ describe('nodeHelpStore', () => {
   it('should try fallback URL for custom nodes', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch
+    vi.mocked(fetchWithHeaders)
       .mockResolvedValueOnce({
         ok: false,
         statusText: 'Not Found'
-      })
+      } as Response)
       .mockResolvedValueOnce({
         ok: true,
         text: async () => '# Fallback content'
-      })
+      } as Response)
 
     nodeHelpStore.openHelp(mockCustomNode as any)
     await flushPromises()
 
-    expect(mockFetch).toHaveBeenCalledTimes(2)
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(vi.mocked(fetchWithHeaders)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(fetchWithHeaders)).toHaveBeenCalledWith(
       '/extensions/test_module/docs/CustomNode/en.md'
     )
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(vi.mocked(fetchWithHeaders)).toHaveBeenCalledWith(
       '/extensions/test_module/docs/CustomNode.md'
     )
   })
@@ -286,7 +301,7 @@ describe('nodeHelpStore', () => {
   it('should prefix relative img src in raw HTML for custom nodes', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => '# Test\n<img src="image.png" alt="Test image">'
     })
@@ -302,7 +317,7 @@ describe('nodeHelpStore', () => {
   it('should prefix relative img src in raw HTML for core nodes', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => '# Test\n<img src="image.png" alt="Test image">'
     })
@@ -318,7 +333,7 @@ describe('nodeHelpStore', () => {
   it('should not prefix absolute img src in raw HTML', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => '<img src="/absolute/image.png" alt="Absolute">'
     })
@@ -334,7 +349,7 @@ describe('nodeHelpStore', () => {
   it('should not prefix external img src in raw HTML', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () =>
         '<img src="https://example.com/image.png" alt="External">'
@@ -351,7 +366,7 @@ describe('nodeHelpStore', () => {
   it('should handle various quote styles in media src attributes', async () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    mockFetch.mockResolvedValueOnce({
+    mockFetchResponse({
       ok: true,
       text: async () => `# Media Test
 

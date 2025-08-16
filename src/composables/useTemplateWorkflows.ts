@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
 import type {
@@ -161,7 +162,9 @@ export function useTemplateWorkflows() {
   const fetchTemplateJson = async (id: string, sourceModule: string) => {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served as static files
-      const response = await fetch(api.fileURL(`/templates/${id}.json`))
+      const response = await fetchWithHeaders(
+        api.fileURL(`/templates/${id}.json`)
+      )
       return await response.json()
     } else {
       // Custom node templates served via API
