@@ -9,7 +9,7 @@
     role="button"
     @click="onClick"
   >
-    <i-lucide:folder v-if="hasIcon" class="text-xs text-neutral" />
+    <i-lucide:folder v-if="hasFolderIcon" class="text-xs text-neutral" />
     <span>
       <slot></slot>
     </span>
@@ -18,11 +18,11 @@
 
 <script setup lang="ts">
 const {
-  hasIcon = true,
+  hasFolderIcon = true,
   active,
   onClick
 } = defineProps<{
-  hasIcon?: boolean
+  hasFolderIcon?: boolean
   active?: boolean
   onClick: () => void
 }>()
