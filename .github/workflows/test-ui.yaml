@@ -88,7 +88,20 @@ jobs:
         browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
     steps:
       - name: Wait for cache propagation
-        run: sleep 5
+        run: sleep 10
+
+      - name: Restore cached setup
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          fail-on-cache-miss: true
+          path: |
+            ComfyUI
+            ComfyUI_frontend
+          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: Get current time
         id: current-time
@@ -126,19 +139,6 @@ jobs:
           edit-mode: append
           body: |
             🔄 **${{ matrix.browser }}**: Running tests... [View Live Progress](${{ steps.building-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev?browser={2}&branch={0}', steps.project-name.outputs.branch, steps.project-name.outputs.name, matrix.browser) }})
-
-      - name: Restore cached setup
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
-        with:
-          fail-on-cache-miss: true
-          path: |
-            ComfyUI
-            ComfyUI_frontend
-          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
 
       - name: Install requirements
         run: |
