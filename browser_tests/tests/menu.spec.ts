@@ -178,6 +178,79 @@ test.describe('Menu', () => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
       expect(await comfyPage.getVisibleToastCount()).toBe(1)
     })
+
+    test('Browse Templates custom icon is visible and matches sidebar icon', async ({
+      comfyPage
+    }) => {
+      // Open the top menu
+      await comfyPage.menu.topbar.openTopbarMenu()
+      const menu = comfyPage.page.locator('.comfy-command-menu')
+
+      // Find the Browse Templates menu item
+      const browseTemplatesItem = menu.locator(
+        '.p-menubar-item-label:text-is("Browse Templates")'
+      )
+      await expect(browseTemplatesItem).toBeVisible()
+
+      // Check that the Browse Templates item has an icon
+      const menuIcon = browseTemplatesItem
+        .locator('..')
+        .locator('.p-menubar-item-icon')
+        .first()
+      await expect(menuIcon).toBeVisible()
+
+      // Get the icon's tag name and class to verify it's a component (not a string icon)
+      const menuIconType = await menuIcon.evaluate((el) => {
+        // If it's a Vue component, it will not have pi/mdi classes
+        // and should be an SVG or custom component
+        const tagName = el.tagName.toLowerCase()
+        const classes = el.className || ''
+        return {
+          tagName,
+          classes,
+          hasStringIcon:
+            typeof classes === 'string' &&
+            (classes.includes('pi ') || classes.includes('mdi '))
+        }
+      })
+
+      // Verify it's a component icon (not a string icon with pi/mdi classes)
+      expect(menuIconType.hasStringIcon).toBe(false)
+
+      // Close menu
+      await comfyPage.page.locator('body').click({ position: { x: 10, y: 10 } })
+
+      // Now check the sidebar templates button
+      const sidebarTemplatesButton = comfyPage.page.locator(
+        '.templates-tab-button'
+      )
+      await expect(sidebarTemplatesButton).toBeVisible()
+
+      // Get the sidebar icon info
+      const sidebarIcon = sidebarTemplatesButton.locator(
+        '.side-bar-button-icon'
+      )
+      await expect(sidebarIcon).toBeVisible()
+
+      const sidebarIconType = await sidebarIcon.evaluate((el) => {
+        const tagName = el.tagName.toLowerCase()
+        const classes = el.className || ''
+        return {
+          tagName,
+          classes,
+          hasStringIcon:
+            typeof classes === 'string' &&
+            (classes.includes('pi ') || classes.includes('mdi '))
+        }
+      })
+
+      // Verify sidebar also uses component icon (not string icon)
+      expect(sidebarIconType.hasStringIcon).toBe(false)
+
+      // Both should be using the same custom component (likely SVG elements)
+      expect(menuIconType.tagName).toBe('svg')
+      expect(sidebarIconType.tagName).toBe('svg')
+    })
   })
 
   // Only test 'Top' to reduce test time.

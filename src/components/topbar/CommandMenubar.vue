@@ -66,18 +66,20 @@
           class="p-menubar-item-icon pi pi-check text-sm"
           :class="{ invisible: !item.comfyCommand?.active?.() }"
         />
-        <span
-          v-else-if="
-            item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
-          "
+        <component
+          :is="getIconComponent(item)"
+          v-else-if="getIconLocation(item) === 'left'"
           class="p-menubar-item-icon"
-          :class="item.icon"
+          :class="typeof item.icon === 'string' ? item.icon : undefined"
         />
+
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <i
-          v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
+
+        <component
+          :is="getIconComponent(item)"
+          v-if="getIconLocation(item) === 'right'"
           class="ml-auto"
-          :class="item.icon"
+          :class="typeof item.icon === 'string' ? item.icon : undefined"
         />
         <span
           v-if="item?.comfyCommand?.keybinding"
@@ -94,13 +96,14 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem as PrimeMenuItem } from 'primevue/menuitem'
 import SelectButton from 'primevue/selectbutton'
 import TieredMenu, {
   type TieredMenuMethods,
   type TieredMenuState
 } from 'primevue/tieredmenu'
-import { computed, nextTick, ref } from 'vue'
+import { computed, defineAsyncComponent, markRaw, nextTick, ref } from 'vue'
+import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
@@ -116,6 +119,15 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
+
+// Extended MenuItem interface that supports component icons
+interface MenuItem extends Omit<PrimeMenuItem, 'icon'> {
+  icon?: string | { component: Component } | undefined
+}
+
+const TemplateIcon = markRaw(
+  defineAsyncComponent(() => import('virtual:icons/comfy/template'))
+)
 
 const colorPaletteStore = useColorPaletteStore()
 const menuItemsStore = useMenuItemStore()
@@ -187,7 +199,7 @@ const extraMenuItems: MenuItem[] = [
   {
     key: 'browse-templates',
     label: t('menuLabels.Browse Templates'),
-    icon: 'pi pi-folder-open',
+    icon: { component: TemplateIcon },
     command: () => commandStore.execute('Comfy.BrowseTemplates')
   },
   {
@@ -254,7 +266,8 @@ const translatedItems = computed(() => {
       : [])
   )
 
-  return items
+  // Cast to PrimeVue type - our template overrides icon handling
+  return items as PrimeMenuItem[]
 })
 
 const onMenuShow = () => {
@@ -302,6 +315,24 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
 
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
   return menuItemsStore.menuItemHasActiveStateChildren[item.parentPath]
+}
+
+const getIconComponent = (
+  item: MenuItem | PrimeMenuItem
+): string | Component | undefined => {
+  return typeof item.icon === 'string' ? 'i' : item.icon?.component
+}
+
+const getIconLocation = (
+  item: MenuItem | PrimeMenuItem
+): 'left' | 'right' | null => {
+  if (!item.icon) return null
+
+  if (item.comfyCommand?.id === 'Comfy.NewBlankWorkflow') {
+    return 'right'
+  }
+
+  return 'left'
 }
 </script>
 

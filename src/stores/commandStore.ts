@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import type { Component } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ComfyExtension } from '@/types/comfy'
@@ -11,7 +12,7 @@ export interface ComfyCommand {
   function: () => void | Promise<void>
 
   label?: string | (() => string)
-  icon?: string | (() => string)
+  icon?: string | { component: Component } | (() => string)
   tooltip?: string | (() => string)
   menubarLabel?: string | (() => string) // Menubar item label, if different from command label
   versionAdded?: string
@@ -25,7 +26,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   id: string
   function: () => void | Promise<void>
   _label?: string | (() => string)
-  _icon?: string | (() => string)
+  _icon?: string | { component: Component } | (() => string)
   _tooltip?: string | (() => string)
   _menubarLabel?: string | (() => string)
   versionAdded?: string

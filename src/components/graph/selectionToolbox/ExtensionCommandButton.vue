@@ -7,7 +7,13 @@
     }"
     severity="secondary"
     text
-    :icon="typeof command.icon === 'function' ? command.icon() : command.icon"
+    :icon="
+      typeof command.icon === 'function'
+        ? command.icon()
+        : typeof command.icon === 'string'
+          ? command.icon
+          : undefined
+    "
     @click="() => commandStore.execute(command.id)"
   />
 </template>
