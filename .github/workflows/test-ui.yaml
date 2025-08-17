@@ -121,14 +121,6 @@ jobs:
           fi
           echo "branch=${SANITIZED_BRANCH}" >> $GITHUB_OUTPUT
 
-      - name: Deploy building page
-        id: building-deploy
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .github/building-page --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}
-
       - name: Comment PR - Browser Test Started
         if: github.event_name == 'pull_request'
         uses: edumserrano/find-create-or-update-comment@v3
@@ -138,7 +130,7 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            🔄 **${{ matrix.browser }}**: Running tests... [View Live Progress](${{ steps.building-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev?browser={2}&branch={0}', steps.project-name.outputs.branch, steps.project-name.outputs.name, matrix.browser) }})
+            🔄 **${{ matrix.browser }}**: Running tests...
 
       - name: Install requirements
         run: |
