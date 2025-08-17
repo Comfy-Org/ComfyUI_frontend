@@ -130,6 +130,8 @@ import type {
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
+import { useLayout } from '@/composables/graph/useLayout'
+import { useLayoutSync } from '@/composables/graph/useLayoutSync'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -153,6 +155,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { layoutStore } from '@/stores/layoutStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -174,6 +177,7 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
+const { mutations: layoutMutations } = useLayout()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -314,6 +318,19 @@ const initializeNodeManager = () => {
   nodeSizes.value = nodeManager.nodeSizes
   detectChangesInRAF = nodeManager.detectChangesInRAF
   Object.assign(performanceMetrics, nodeManager.performanceMetrics)
+
+  // Initialize layout system with existing nodes
+  const nodes = comfyApp.graph._nodes.map((node: any) => ({
+    id: node.id.toString(),
+    pos: node.pos,
+    size: node.size
+  }))
+  layoutStore.initializeFromLiteGraph(nodes)
+
+  // Initialize layout sync (one-way: Layout Store → LiteGraph)
+  const { startSync } = useLayoutSync()
+  startSync(canvasStore.canvas)
+
   // Force computed properties to re-evaluate
   nodeDataTrigger.value++
 }
@@ -491,6 +508,13 @@ const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
   }
 
   canvasStore.canvas.selectNode(node)
+
+  // Bring node to front when clicked (similar to LiteGraph behavior)
+  // Skip if node is pinned
+  if (!node.flags?.pinned) {
+    layoutMutations.setSource('vue')
+    layoutMutations.bringNodeToFront(nodeData.id)
+  }
   node.selected = true
 
   canvasStore.updateSelectedItems()
