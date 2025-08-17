@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="visible && initialized"
+    ref="minimapRef"
     class="minimap-main-container flex absolute bottom-[20px] right-[90px] z-[1000]"
   >
     <MiniMapPanel
@@ -61,8 +62,9 @@ import { useCanvasStore } from '@/stores/graphStore'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 
-const minimap = useMinimap()
 const canvasStore = useCanvasStore()
+
+const minimapRef = ref<HTMLDivElement>()
 
 const {
   initialized,
@@ -85,8 +87,9 @@ const {
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
-  handleWheel
-} = minimap
+  handleWheel,
+  setMinimapRef
+} = useMinimap()
 
 const showOptionsPanel = ref(false)
 
@@ -104,10 +107,8 @@ watch(
   { immediate: true }
 )
 
-onMounted(async () => {
-  if (canvasStore.canvas) {
-    await init()
-  }
+onMounted(() => {
+  setMinimapRef(minimapRef.value)
 })
 
 onUnmounted(() => {
