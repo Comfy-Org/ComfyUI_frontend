@@ -1,3 +1,4 @@
+import './authHeaders'
 import './clipspace'
 import './contextMenuFilter'
 import './dynamicPrompts'
