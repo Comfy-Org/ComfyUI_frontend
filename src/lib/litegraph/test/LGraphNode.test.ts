@@ -656,4 +656,119 @@ describe('LGraphNode', () => {
       spy.mockRestore()
     })
   })
+
+  describe('removeInput/removeOutput on copied nodes', () => {
+    beforeEach(() => {
+      // Register a test node type so clone() can work
+      LiteGraph.registerNodeType('TestNode', LGraphNode)
+    })
+
+    test('should NOT throw error when calling removeInput on a copied node without graph', () => {
+      // Create a node with an input
+      const originalNode = new LGraphNode('Test Node')
+      originalNode.type = 'TestNode'
+      originalNode.addInput('input1', 'number')
+
+      // Clone the node (which creates a node without graph reference)
+      const copiedNode = originalNode.clone()
+
+      // This should NOT throw anymore - we can remove inputs on nodes without graph
+      expect(() => copiedNode!.removeInput(0)).not.toThrow()
+      expect(copiedNode!.inputs).toHaveLength(0)
+    })
+
+    test('should NOT throw error when calling removeOutput on a copied node without graph', () => {
+      // Create a node with an output
+      const originalNode = new LGraphNode('Test Node')
+      originalNode.type = 'TestNode'
+      originalNode.addOutput('output1', 'number')
+
+      // Clone the node (which creates a node without graph reference)
+      const copiedNode = originalNode.clone()
+
+      // This should NOT throw anymore - we can remove outputs on nodes without graph
+      expect(() => copiedNode!.removeOutput(0)).not.toThrow()
+      expect(copiedNode!.outputs).toHaveLength(0)
+    })
+
+    test('should skip disconnectInput/disconnectOutput when node has no graph', () => {
+      // Create nodes with input/output
+      const nodeWithInput = new LGraphNode('Test Node')
+      nodeWithInput.type = 'TestNode'
+      nodeWithInput.addInput('input1', 'number')
+
+      const nodeWithOutput = new LGraphNode('Test Node')
+      nodeWithOutput.type = 'TestNode'
+      nodeWithOutput.addOutput('output1', 'number')
+
+      // Clone nodes (no graph reference)
+      const clonedInput = nodeWithInput.clone()
+      const clonedOutput = nodeWithOutput.clone()
+
+      // Mock disconnect methods to verify they're not called
+      clonedInput!.disconnectInput = vi.fn()
+      clonedOutput!.disconnectOutput = vi.fn()
+
+      // Remove input/output - disconnect methods should NOT be called
+      clonedInput!.removeInput(0)
+      clonedOutput!.removeOutput(0)
+
+      expect(clonedInput!.disconnectInput).not.toHaveBeenCalled()
+      expect(clonedOutput!.disconnectOutput).not.toHaveBeenCalled()
+    })
+
+    test('should be able to removeInput on a copied node after adding to graph', () => {
+      // Create a graph and a node with an input
+      const graph = new LGraph()
+      const originalNode = new LGraphNode('Test Node')
+      originalNode.type = 'TestNode'
+      originalNode.addInput('input1', 'number')
+
+      // Clone the node and add to graph
+      const copiedNode = originalNode.clone()
+      expect(copiedNode).not.toBeNull()
+      graph.add(copiedNode!)
+
+      // This should work now that the node has a graph reference
+      expect(() => copiedNode!.removeInput(0)).not.toThrow()
+      expect(copiedNode!.inputs).toHaveLength(0)
+    })
+
+    test('should be able to removeOutput on a copied node after adding to graph', () => {
+      // Create a graph and a node with an output
+      const graph = new LGraph()
+      const originalNode = new LGraphNode('Test Node')
+      originalNode.type = 'TestNode'
+      originalNode.addOutput('output1', 'number')
+
+      // Clone the node and add to graph
+      const copiedNode = originalNode.clone()
+      expect(copiedNode).not.toBeNull()
+      graph.add(copiedNode!)
+
+      // This should work now that the node has a graph reference
+      expect(() => copiedNode!.removeOutput(0)).not.toThrow()
+      expect(copiedNode!.outputs).toHaveLength(0)
+    })
+
+    test('RerouteNode clone scenario - should be able to removeOutput and addOutput on cloned node', () => {
+      // This simulates the RerouteNode clone method behavior
+      const originalNode = new LGraphNode('Reroute')
+      originalNode.type = 'TestNode'
+      originalNode.addOutput('*', '*')
+
+      // Clone the node (simulating RerouteNode.clone)
+      const clonedNode = originalNode.clone()
+      expect(clonedNode).not.toBeNull()
+
+      // This should not throw - we should be able to modify outputs on a cloned node
+      expect(() => {
+        clonedNode!.removeOutput(0)
+        clonedNode!.addOutput('renamed', '*')
+      }).not.toThrow()
+
+      expect(clonedNode!.outputs).toHaveLength(1)
+      expect(clonedNode!.outputs[0].name).toBe('renamed')
+    })
+  })
 })
