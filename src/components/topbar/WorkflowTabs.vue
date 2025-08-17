@@ -3,6 +3,11 @@
     class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
+    <WorkflowOverflowMenu
+      v-if="showOverflowArrows"
+      :workflows="workflowStore.openWorkflows"
+      :active-workflow="workflowStore.activeWorkflow"
+    />
     <Button
       v-if="showOverflowArrows"
       icon="pi pi-chevron-left"
@@ -16,7 +21,7 @@
       ref="scrollPanelRef"
       class="overflow-hidden no-drag"
       :pt:content="{
-        class: 'p-0 w-full',
+        class: 'p-0 w-full flex',
         onwheel: handleWheel
       }"
       pt:bar-x="h-1"
@@ -84,6 +89,8 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
+
+import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 
 interface WorkflowOption {
   value: string
