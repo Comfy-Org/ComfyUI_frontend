@@ -1,0 +1,35 @@
+{
+  "id": "9d629276-f3fc-47a0-9da3-fa028d2f5774",
+  "revision": 0,
+  "last_node_id": 9,
+  "last_link_id": 13,
+  "nodes": [],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Group",
+      "bounding": [
+        204,
+        153.33334350585938,
+        335,
+        346
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "frontendVersion": "1.25.8"
+  },
+  "version": 0.4
+}

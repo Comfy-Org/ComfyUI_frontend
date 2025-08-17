@@ -7,6 +7,7 @@
     }"
     severity="secondary"
     text
+    data-testid="unpack-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
     <template #icon>
@@ -21,6 +22,7 @@
     }"
     severity="secondary"
     text
+    data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
     <template #icon>
@@ -34,12 +36,7 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  LGraphGroup,
-  LGraphNode,
-  Positionable,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
@@ -55,17 +52,18 @@ const isUnpackVisible = computed(() => {
 })
 
 const isConvertVisible = computed(() => {
-  const selectableItems = canvasStore.selectedItems ?? []
-  // Don't show if no items are selected
-  if (selectableItems.length === 0) return false
-  // Only show if at least one item is selected that is not a SubgraphNode
-  // and not a group.
-  const isNotGroupOrSubgraphNode = (item: Positionable) =>
-    !(
-      item instanceof LGraphGroup ||
-      (item instanceof LGraphNode && item.isSubgraphNode?.())
-    )
+  // Don't show if no nodes/reroutes are selected (only groups, reroutes, etc.)
+  if (!canvasStore.nodeSelected) return false
 
-  return Array.from(selectableItems).some(isNotGroupOrSubgraphNode)
+  // Don't show if exactly one SubgraphNode is selected (unpack button handles that)
+  if (
+    canvasStore.selectedItems.length === 1 &&
+    canvasStore.selectedItems[0] instanceof SubgraphNode
+  ) {
+    return false
+  }
+
+  // Show in all other cases (including multiple SubgraphNodes)
+  return true
 })
 </script>
