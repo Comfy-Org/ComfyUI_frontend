@@ -390,7 +390,7 @@
   },
   "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
     "name": "Low quality rendering zoom threshold",
-    "tooltip": "Render low quality shapes when zoomed out"
+    "tooltip": "Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details."
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Maximum FPS",

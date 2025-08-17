@@ -36,7 +36,7 @@
     "label": "重启"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "為所選節點開啟 3D 檢視器（Beta 版）"
+    "label": "为所选节点开启 3D 浏览器（Beta 版）"
   },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
@@ -78,7 +78,7 @@
     "label": "锁定视图"
   },
   "Comfy_Canvas_ToggleMinimap": {
-    "label": "畫布切換小地圖"
+    "label": "画布切换小地图"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
@@ -129,7 +129,7 @@
     "label": "将选区转换为子图"
   },
   "Comfy_Graph_ExitSubgraph": {
-    "label": "退出子圖"
+    "label": "退出子图"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
@@ -138,7 +138,7 @@
     "label": "添加框到选中节点"
   },
   "Comfy_Graph_UnpackSubgraph": {
-    "label": "解開所選子圖"
+    "label": "解开所选子图"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "将选中节点转换为组节点"
@@ -177,10 +177,10 @@
     "label": "切换进度对话框"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "減小 MaskEditor 中的筆刷大小"
+    "label": "减小 MaskEditor 中的笔刷大小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "增加 MaskEditor 畫筆大小"
+    "label": "增加 MaskEditor 画笔大小"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
@@ -190,6 +190,9 @@
   },
   "Comfy_OpenClipspace": {
     "label": "打开剪贴板"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "管理器"
   },
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
@@ -217,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "显示设置对话框"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "画布性能"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "说明中心"
   },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
@@ -252,13 +261,13 @@
     "label": "切换日志底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "切換基本下方面板"
+    "label": "切换基础底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "切換檢視控制底部面板"
+    "label": "切换视图控制底部面板"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "顯示快捷鍵對話框"
+    "label": "显示快捷键对话框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

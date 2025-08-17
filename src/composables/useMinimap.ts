@@ -5,9 +5,9 @@ import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformS
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
@@ -27,6 +27,7 @@ export type MinimapOptionKey =
 export function useMinimap() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
+  const workflowStore = useWorkflowStore()
   const colorPaletteStore = useColorPaletteStore()
 
   const containerRef = ref<HTMLDivElement>()
@@ -102,6 +103,9 @@ export function useMinimap() {
   const groupColor = computed(() =>
     isLightTheme.value ? '#A2D3EC' : '#1F547A'
   )
+  const groupColorDefault = computed(
+    () => (isLightTheme.value ? '#283640' : '#B3C1CB') // this is the default group color when using nodeColors setting
+  )
   const bypassColor = computed(() =>
     isLightTheme.value ? '#DBDBDB' : '#4B184B'
   )
@@ -144,7 +148,11 @@ export function useMinimap() {
   }
 
   const canvas = computed(() => canvasStore.canvas)
-  const graph = ref(app.canvas?.graph)
+  const graph = computed(() => {
+    // If we're in a subgraph, use that; otherwise use the canvas graph
+    const activeSubgraph = workflowStore.activeSubgraph
+    return activeSubgraph || canvas.value?.graph
+  })
 
   const containerStyles = computed(() => ({
     width: `${width}px`,
@@ -249,7 +257,17 @@ export function useMinimap() {
       const w = group.size[0] * scale.value
       const h = group.size[1] * scale.value
 
-      ctx.fillStyle = groupColor.value
+      let color = groupColor.value
+
+      if (nodeColors.value) {
+        color = group.color ?? groupColorDefault.value
+
+        if (isLightTheme.value) {
+          color = adjustColor(color, { opacity: 0.5 })
+        }
+      }
+
+      ctx.fillStyle = color
       ctx.fillRect(x, y, w, h)
     }
   }
@@ -614,7 +632,8 @@ export function useMinimap() {
     c.setDirty(true, true)
   }
 
-  let originalCallbacks: GraphCallbacks = {}
+  // Map to store original callbacks per graph ID
+  const originalCallbacksMap = new Map<string, GraphCallbacks>()
 
   const handleGraphChanged = useThrottleFn(() => {
     needsFullRedraw.value = true
@@ -628,11 +647,18 @@ export function useMinimap() {
     const g = graph.value
     if (!g) return
 
-    originalCallbacks = {
+    // Check if we've already wrapped this graph's callbacks
+    if (originalCallbacksMap.has(g.id)) {
+      return
+    }
+
+    // Store the original callbacks for this graph
+    const originalCallbacks: GraphCallbacks = {
       onNodeAdded: g.onNodeAdded,
       onNodeRemoved: g.onNodeRemoved,
       onConnectionChange: g.onConnectionChange
     }
+    originalCallbacksMap.set(g.id, originalCallbacks)
 
     g.onNodeAdded = function (node) {
       originalCallbacks.onNodeAdded?.call(this, node)
@@ -657,15 +683,19 @@ export function useMinimap() {
     const g = graph.value
     if (!g) return
 
-    if (originalCallbacks.onNodeAdded !== undefined) {
-      g.onNodeAdded = originalCallbacks.onNodeAdded
+    const originalCallbacks = originalCallbacksMap.get(g.id)
+    if (!originalCallbacks) {
+      console.error(
+        'Attempted to cleanup event listeners for graph that was never set up'
+      )
+      return
     }
-    if (originalCallbacks.onNodeRemoved !== undefined) {
-      g.onNodeRemoved = originalCallbacks.onNodeRemoved
-    }
-    if (originalCallbacks.onConnectionChange !== undefined) {
-      g.onConnectionChange = originalCallbacks.onConnectionChange
-    }
+
+    g.onNodeAdded = originalCallbacks.onNodeAdded
+    g.onNodeRemoved = originalCallbacks.onNodeRemoved
+    g.onConnectionChange = originalCallbacks.onConnectionChange
+
+    originalCallbacksMap.delete(g.id)
   }
 
   const init = async () => {
@@ -737,6 +767,19 @@ export function useMinimap() {
     },
     { immediate: true, flush: 'post' }
   )
+
+  // Watch for graph changes (e.g., when navigating to/from subgraphs)
+  watch(graph, (newGraph, oldGraph) => {
+    if (newGraph && newGraph !== oldGraph) {
+      cleanupEventListeners()
+      setupEventListeners()
+      needsFullRedraw.value = true
+      updateFlags.value.bounds = true
+      updateFlags.value.nodes = true
+      updateFlags.value.connections = true
+      updateMinimap()
+    }
+  })
 
   watch(visible, async (isVisible) => {
     if (isVisible) {

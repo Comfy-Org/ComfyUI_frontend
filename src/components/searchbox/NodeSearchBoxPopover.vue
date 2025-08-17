@@ -90,18 +90,16 @@ const closeDialog = () => {
 const canvasStore = useCanvasStore()
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
-  if (!triggerEvent) {
-    console.warn('The trigger event was undefined when addNode was called.')
-    return
-  }
-
   const node = litegraphService.addNodeOnGraph(nodeDef, {
     pos: getNewNodeLocation()
   })
 
-  if (disconnectOnReset) {
+  if (disconnectOnReset && triggerEvent) {
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
+  } else if (!triggerEvent) {
+    console.warn('The trigger event was undefined when addNode was called.')
   }
+
   disconnectOnReset = false
 
   // Notify changeTracker - new step should be added

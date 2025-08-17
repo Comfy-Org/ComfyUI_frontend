@@ -13,6 +13,10 @@ module.exports = defineConfig({
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream.
   'latent' is the short form of 'latent space'.
   'mask' is in the context of image processing.
-  Note: For Traditional Chinese (Taiwan), use Taiwan-specific terminology and traditional characters.
+  
+  IMPORTANT Chinese Translation Guidelines:
+  - For 'zh' locale: Use ONLY Simplified Chinese characters (简体中文). Common examples: 节点 (not 節點), 画布 (not 畫布), 图像 (not 圖像), 选择 (not 選擇), 减小 (not 減小).
+  - For 'zh-TW' locale: Use ONLY Traditional Chinese characters (繁體中文) with Taiwan-specific terminology.
+  - NEVER mix Simplified and Traditional Chinese characters within the same locale.
   `
 });

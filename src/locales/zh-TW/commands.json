@@ -191,6 +191,9 @@
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "管理器"
+  },
   "Comfy_OpenWorkflow": {
     "label": "開啟工作流程"
   },
@@ -217,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "顯示設定對話框"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "畫布效能"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "說明中心"
   },
   "Comfy_ToggleTheme": {
     "label": "切換主題（深色／淺色）"

@@ -191,6 +191,9 @@
   "Comfy_OpenClipspace": {
     "label": "클립스페이스"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "매니저"
+  },
   "Comfy_OpenWorkflow": {
     "label": "워크플로 열기"
   },
@@ -217,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "설정 대화상자 보기"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "캔버스 성능"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "도움말 센터"
   },
   "Comfy_ToggleTheme": {
     "label": "밝기 테마 전환 (어두운/밝은)"

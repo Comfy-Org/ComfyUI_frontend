@@ -261,7 +261,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
             return '$0.14-2.80/Run (varies with model, mode & duration)'
 
           const modelValue = String(modelWidget.value)
-          if (modelValue.includes('v2-master')) {
+          if (
+            modelValue.includes('v2-1-master') ||
+            modelValue.includes('v2-master')
+          ) {
             return '$1.40/Run'
           } else if (
             modelValue.includes('v1-6') ||
@@ -280,12 +283,19 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (modelValue.includes('v2-master')) {
+        if (
+          modelValue.includes('v2-1-master') ||
+          modelValue.includes('v2-master')
+        ) {
           if (durationValue.includes('10')) {
             return '$2.80/Run'
           }
           return '$1.40/Run' // 5s default
-        } else if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
+        } else if (
+          modelValue.includes('v2-1') ||
+          modelValue.includes('v1-6') ||
+          modelValue.includes('v1-5')
+        ) {
           if (modeValue.includes('pro')) {
             return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
           } else {
@@ -1352,9 +1362,27 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           return '$0.0004/$0.0016 per 1K tokens'
         } else if (model.includes('gpt-4.1')) {
           return '$0.002/$0.008 per 1K tokens'
+        } else if (model.includes('gpt-5-nano')) {
+          return '$0.00005/$0.0004 per 1K tokens'
+        } else if (model.includes('gpt-5-mini')) {
+          return '$0.00025/$0.002 per 1K tokens'
+        } else if (model.includes('gpt-5')) {
+          return '$0.00125/$0.01 per 1K tokens'
         }
         return 'Token-based'
       }
+    },
+    ViduTextToVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduImageToVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduReferenceVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduStartEndToVideoNode: {
+      displayPrice: '$0.4/Run'
     }
   }
 

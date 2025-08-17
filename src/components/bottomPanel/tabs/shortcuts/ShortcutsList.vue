@@ -20,7 +20,7 @@
           >
             <div class="shortcut-info flex-grow pr-4">
               <div class="shortcut-name text-sm font-medium">
-                {{ command.label || command.id }}
+                {{ t(`commands.${normalizeI18nKey(command.id)}.label`) }}
               </div>
             </div>
 
@@ -50,6 +50,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ComfyCommandImpl } from '@/stores/commandStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 

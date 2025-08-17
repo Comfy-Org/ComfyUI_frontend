@@ -191,6 +191,9 @@
   "Comfy_OpenClipspace": {
     "label": "クリップスペース"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "マネージャー"
+  },
   "Comfy_OpenWorkflow": {
     "label": "ワークフローを開く"
   },
@@ -217,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "設定ダイアログを表示"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "キャンバスパフォーマンス"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "ヘルプセンター"
   },
   "Comfy_ToggleTheme": {
     "label": "テーマの切り替え（ダーク/ライト）"

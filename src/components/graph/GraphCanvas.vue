@@ -21,7 +21,6 @@
 
       <MiniMap
         v-if="comfyAppReady && minimapEnabled"
-        ref="minimapRef"
         class="pointer-events-auto"
       />
     </template>
@@ -71,7 +70,6 @@ import { useContextMenuTranslation } from '@/composables/useContextMenuTranslati
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
-import { useMinimap } from '@/composables/useMinimap'
 import { usePaste } from '@/composables/usePaste'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
@@ -119,9 +117,7 @@ const selectionToolboxEnabled = computed(() =>
   settingStore.get('Comfy.Canvas.SelectionToolbox')
 )
 
-const minimapRef = ref<InstanceType<typeof MiniMap>>()
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
-const minimap = useMinimap()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -355,13 +351,6 @@ onMounted(async () => {
     async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
       await useWorkflowService().reloadCurrentWorkflow()
-    }
-  )
-
-  whenever(
-    () => minimapRef.value,
-    (ref) => {
-      minimap.setMinimapRef(ref)
     }
   )
 

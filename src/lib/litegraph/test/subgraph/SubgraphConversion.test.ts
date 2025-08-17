@@ -3,6 +3,7 @@ import { assert, describe, expect, it } from 'vitest'
 import {
   ISlotType,
   LGraph,
+  LGraphGroup,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
@@ -80,7 +81,7 @@ describe('SubgraphConversion', () => {
       expect(graph.nodes.length).toBe(4)
       expect(graph.links.size).toBe(2)
     })
-    it('Should keep reroutes', () => {
+    it('Should keep reroutes and groups', () => {
       const subgraph = createTestSubgraph({
         outputs: [{ name: 'value', type: 'number' }]
       })
@@ -98,6 +99,7 @@ describe('SubgraphConversion', () => {
       const outer = createNode(graph, ['number'])
       const outerLink = subgraphNode.connect(0, outer, 0)
       assert(outerLink)
+      subgraph.add(new LGraphGroup())
 
       subgraph.createReroute([10, 10], innerLink)
       graph.createReroute([10, 10], outerLink)
@@ -105,6 +107,7 @@ describe('SubgraphConversion', () => {
       graph.unpackSubgraph(subgraphNode)
 
       expect(graph.reroutes.size).toBe(2)
+      expect(graph.groups.length).toBe(1)
     })
     it('Should map reroutes onto split outputs', () => {
       const subgraph = createTestSubgraph({

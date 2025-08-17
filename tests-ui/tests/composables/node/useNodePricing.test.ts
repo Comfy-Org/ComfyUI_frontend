@@ -114,6 +114,16 @@ describe('useNodePricing', () => {
       expect(price).toBe('$1.40/Run')
     })
 
+    it('should return high price for kling-v2-1-master model', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('KlingImage2VideoNode', [
+        { name: 'model_name', value: 'v2-1-master' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.40/Run')
+    })
+
     it('should return standard price for kling-v1-6 model', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('KlingImage2VideoNode', [
@@ -1502,7 +1512,10 @@ describe('useNodePricing', () => {
           { model: 'gpt-4o', expected: '$0.0025/$0.01 per 1K tokens' },
           { model: 'gpt-4.1-nano', expected: '$0.0001/$0.0004 per 1K tokens' },
           { model: 'gpt-4.1-mini', expected: '$0.0004/$0.0016 per 1K tokens' },
-          { model: 'gpt-4.1', expected: '$0.002/$0.008 per 1K tokens' }
+          { model: 'gpt-4.1', expected: '$0.002/$0.008 per 1K tokens' },
+          { model: 'gpt-5-nano', expected: '$0.00005/$0.0004 per 1K tokens' },
+          { model: 'gpt-5-mini', expected: '$0.00025/$0.002 per 1K tokens' },
+          { model: 'gpt-5', expected: '$0.00125/$0.01 per 1K tokens' }
         ]
 
         testCases.forEach(({ model, expected }) => {

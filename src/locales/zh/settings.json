@@ -30,10 +30,10 @@
     "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
   },
   "Comfy_Canvas_NavigationMode": {
-    "name": "畫布導航模式",
+    "name": "画布导航模式",
     "options": {
-      "Left-Click Pan (Legacy)": "左鍵拖曳（舊版）",
-      "Standard (New)": "標準（新）"
+      "Left-Click Pan (Legacy)": "左键拖曳（旧版）",
+      "Standard (New)": "标准（新）"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -120,8 +120,8 @@
     }
   },
   "Comfy_Load3D_3DViewerEnable": {
-    "name": "啟用 3D 檢視器（測試版）",
-    "tooltip": "為所選節點啟用 3D 檢視器（測試版）。此功能可讓您直接在全尺寸 3D 檢視器中瀏覽並互動 3D 模型。"
+    "name": "启用3D查看器（测试版）",
+    "tooltip": "为选定节点启用3D查看器（测试版）。此功能允许你在全尺寸3D查看器中直接可视化和交互3D模型。"
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "初始背景颜色",
@@ -338,7 +338,7 @@
       "Disabled": "禁用",
       "Top": "顶部"
     },
-    "tooltip": "選單列位置。在行動裝置上，選單始終顯示於頂端。"
+    "tooltip": "选单列位置。在行动装置上，选单始终显示于顶端。"
   },
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
