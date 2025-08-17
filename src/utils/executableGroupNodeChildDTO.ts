@@ -27,6 +27,13 @@ export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
   }
 
   override resolveInput(slot: number) {
+    // Check if this group node is inside a subgraph (unsupported)
+    if (this.id.split(':').length > 2) {
+      throw new Error(
+        'Group nodes inside subgraphs are not supported. Please convert the group node to a subgraph instead.'
+      )
+    }
+
     const inputNode = this.node.getInputNode(slot)
     if (!inputNode) return
 

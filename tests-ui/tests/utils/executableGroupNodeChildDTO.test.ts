@@ -17,7 +17,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
   beforeEach(() => {
     // Create mock nodes
     mockNode = {
-      id: '10:3',
+      id: '3', // Simple node ID for most tests
       graph: {},
       getInputNode: vi.fn(),
       getInputLink: vi.fn(),
@@ -37,7 +37,18 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
   describe('resolveInput', () => {
     it('should resolve input from external node (node outside the group)', () => {
-      // Setup: External node with ID '1'
+      // Setup: Group node child with ID '10:3'
+      const groupNodeChild = {
+        id: '10:3',
+        graph: {},
+        getInputNode: vi.fn().mockReturnValue(mockInputNode),
+        getInputLink: vi.fn().mockReturnValue({
+          origin_slot: 0
+        }),
+        inputs: []
+      } as any
+
+      // External node with ID '1'
       const externalNodeDto = {
         id: '1',
         type: 'TestNode'
@@ -45,14 +56,9 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
       mockNodesByExecutionId.set('1', externalNodeDto)
 
-      mockNode.getInputNode = vi.fn().mockReturnValue(mockInputNode)
-      mockNode.getInputLink = vi.fn().mockReturnValue({
-        origin_slot: 0
-      })
-
       const dto = new ExecutableGroupNodeChildDTO(
-        mockNode,
-        ['10'], // Group node ID is 10
+        groupNodeChild,
+        [], // No subgraph path - group is in root graph
         mockNodesByExecutionId,
         undefined,
         mockGroupNodeHandler
@@ -68,7 +74,16 @@ describe('ExecutableGroupNodeChildDTO', () => {
     })
 
     it('should resolve input from internal node (node inside the same group)', () => {
-      // Setup: Internal node with ID '10:2'
+      // Setup: Group node child with ID '10:3'
+      const groupNodeChild = {
+        id: '10:3',
+        graph: {},
+        getInputNode: vi.fn(),
+        getInputLink: vi.fn(),
+        inputs: []
+      } as any
+
+      // Internal node with ID '10:2'
       const internalInputNode = {
         id: '10:2',
         graph: {}
@@ -82,14 +97,14 @@ describe('ExecutableGroupNodeChildDTO', () => {
       // Internal nodes are stored with just their index
       mockNodesByExecutionId.set('2', internalNodeDto)
 
-      mockNode.getInputNode = vi.fn().mockReturnValue(internalInputNode)
-      mockNode.getInputLink = vi.fn().mockReturnValue({
+      groupNodeChild.getInputNode.mockReturnValue(internalInputNode)
+      groupNodeChild.getInputLink.mockReturnValue({
         origin_slot: 1
       })
 
       const dto = new ExecutableGroupNodeChildDTO(
-        mockNode,
-        ['10'],
+        groupNodeChild,
+        [],
         mockNodesByExecutionId,
         undefined,
         mockGroupNodeHandler
@@ -109,7 +124,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
       const dto = new ExecutableGroupNodeChildDTO(
         mockNode,
-        ['10'],
+        [],
         mockNodesByExecutionId,
         undefined,
         mockGroupNodeHandler
@@ -126,7 +141,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
       const dto = new ExecutableGroupNodeChildDTO(
         mockNode,
-        ['10'],
+        [],
         mockNodesByExecutionId,
         undefined,
         mockGroupNodeHandler
@@ -144,51 +159,41 @@ describe('ExecutableGroupNodeChildDTO', () => {
 
       const dto = new ExecutableGroupNodeChildDTO(
         mockNode,
-        ['10'],
+        [],
         mockNodesByExecutionId, // Empty map
         undefined,
         mockGroupNodeHandler
       )
 
       expect(() => dto.resolveInput(0)).toThrow(
-        'Failed to get input node 1 for group node child 10:10:3 with slot 0'
+        'Failed to get input node 1 for group node child 3 with slot 0'
       )
     })
 
-    it('should handle nested group nodes correctly', () => {
-      // Setup: Node in a nested group with ID '10:5:2'
-      const nestedInputNode = {
-        id: '10:5:2',
-        graph: {}
-      } as LGraphNode
+    it('should throw error for group nodes inside subgraphs (unsupported)', () => {
+      // Setup: Group node child inside a subgraph (execution ID has more than 2 segments)
+      const nestedGroupNode = {
+        id: '1:2:3', // subgraph:groupnode:innernode
+        graph: {},
+        getInputNode: vi.fn().mockReturnValue(mockInputNode),
+        getInputLink: vi.fn().mockReturnValue({
+          origin_slot: 0
+        }),
+        inputs: []
+      } as any
 
-      const nestedNodeDto = {
-        id: '2',
-        type: 'NestedNode'
-      } as ExecutableLGraphNode
-
-      mockNodesByExecutionId.set('2', nestedNodeDto)
-
-      mockNode.getInputNode = vi.fn().mockReturnValue(nestedInputNode)
-      mockNode.getInputLink = vi.fn().mockReturnValue({
-        origin_slot: 2
-      })
-
+      // Create DTO with deeply nested path to simulate group node inside subgraph
       const dto = new ExecutableGroupNodeChildDTO(
-        mockNode,
-        ['10', '5'], // Nested in group 10, then group 5
+        nestedGroupNode,
+        ['1', '2'], // Path indicating it's inside a subgraph then group
         mockNodesByExecutionId,
         undefined,
         mockGroupNodeHandler
       )
 
-      const result = dto.resolveInput(0)
-
-      expect(result).toEqual({
-        node: nestedNodeDto,
-        origin_id: '10:5:2',
-        origin_slot: 2
-      })
+      expect(() => dto.resolveInput(0)).toThrow(
+        'Group nodes inside subgraphs are not supported. Please convert the group node to a subgraph instead.'
+      )
     })
   })
 })
