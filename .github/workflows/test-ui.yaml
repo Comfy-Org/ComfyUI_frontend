@@ -157,7 +157,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=comfyui-playwright-${{ matrix.browser }}
+          command: pages deploy ComfyUI_frontend/playwright-report --project-name=comfyui-playwright-${{ matrix.browser == 'chromium-0.5x' && 'chromium-0-5x' || matrix.browser }}
 
       - name: Save deployment info for summary
         if: always()
@@ -184,9 +184,9 @@ jobs:
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body-includes: '🔄 **${{ matrix.browser }}**: Running tests...'
+          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
           comment-author: 'github-actions[bot]'
-          edit-mode: replace
+          edit-mode: append
           body: |
             ${{ steps.playwright.outputs.exit_code == '0' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.outputs.exit_code == '0' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://comfyui-playwright-{0}.pages.dev', matrix.browser) }})
 
