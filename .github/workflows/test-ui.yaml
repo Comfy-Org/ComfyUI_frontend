@@ -2,9 +2,10 @@ name: Tests CI
 
 on:
   push:
-    branches: [main, master, core/*, desktop/*, sno-playwright-*]
+    branches: [main, master, core/*, desktop/*]
   pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*, vue-nodes-migration]
+    branches-ignore:
+      [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
 
 jobs:
   setup:
