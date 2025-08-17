@@ -150,6 +150,15 @@ jobs:
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
 
+      - name: Set project name
+        id: project-name
+        run: |
+          if [ "${{ matrix.browser }}" = "chromium-0.5x" ]; then
+            echo "name=comfyui-playwright-chromium-0-5x" >> $GITHUB_OUTPUT
+          else
+            echo "name=comfyui-playwright-${{ matrix.browser }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
         id: cloudflare-deploy
         if: always()
@@ -157,14 +166,14 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=comfyui-playwright-${{ matrix.browser == 'chromium-0.5x' && 'chromium-0-5x' || matrix.browser }}
+          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }}
 
       - name: Save deployment info for summary
         if: always()
         run: |
           mkdir -p deployment-info
           # wrangler-action outputs deployment-url instead of url
-          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://comfyui-playwright-{0}.pages.dev', matrix.browser) }}"
+          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.pages.dev', steps.project-name.outputs.name) }}"
           echo "${{ matrix.browser }}|${{ steps.playwright.outputs.exit_code }}|$DEPLOYMENT_URL" > deployment-info/${{ matrix.browser }}.txt
 
       - name: Upload deployment info
@@ -188,7 +197,7 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            ${{ steps.playwright.outputs.exit_code == '0' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.outputs.exit_code == '0' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://comfyui-playwright-{0}.pages.dev', matrix.browser) }})
+            ${{ steps.playwright.outputs.exit_code == '0' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.outputs.exit_code == '0' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.pages.dev', steps.project-name.outputs.name) }})
 
   comment-summary:
     needs: playwright-tests
