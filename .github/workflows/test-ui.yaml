@@ -2,7 +2,7 @@ name: Tests CI
 
 on:
   push:
-    branches: [main, master, core/*, desktop/*]
+    branches: [main, master, core/*, desktop/*, sno-playwright-*]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*, vue-nodes-migration]
 
@@ -36,6 +36,26 @@ jobs:
         with:
           node-version: lts/*
 
+      - name: Get current time
+        id: current-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Comment PR - Tests Started
+        if: github.event_name == 'pull_request'
+        uses: edumserrano/find-create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: append
+          body: |
+            <!-- PLAYWRIGHT_TEST_STATUS -->
+            🔄 **Preparing browser tests across multiple browsers...**
+            At: ${{ steps.current-time.outputs.time }} UTC
+
+            ---
+            *This comment will be updated when tests complete*
+
       - name: Build ComfyUI_frontend
         run: |
           npm ci
@@ -57,6 +77,10 @@ jobs:
   playwright-tests:
     needs: setup
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -64,6 +88,21 @@ jobs:
     steps:
       - name: Wait for cache propagation
         run: sleep 10
+
+      - name: Get current time
+        id: current-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Comment PR - Browser Test Started
+        if: github.event_name == 'pull_request'
+        uses: edumserrano/find-create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: append
+          body: |
+            🔄 **${{ matrix.browser }}**: Running tests...
 
       - name: Restore cached setup
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
@@ -97,8 +136,12 @@ jobs:
         working-directory: ComfyUI_frontend
 
       - name: Run Playwright tests (${{ matrix.browser }})
-        run: npx playwright test --project=${{ matrix.browser }}
+        id: playwright
+        run: |
+          npx playwright test --project=${{ matrix.browser }} --reporter=html
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
         working-directory: ComfyUI_frontend
+        continue-on-error: true
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -106,3 +149,127 @@ jobs:
           name: playwright-report-${{ matrix.browser }}
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
+
+      - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
+        id: cloudflare-deploy
+        if: always()
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ComfyUI_frontend/playwright-report --project-name=comfyui-playwright-${{ matrix.browser }}
+
+      - name: Save deployment info for summary
+        if: always()
+        run: |
+          mkdir -p deployment-info
+          # wrangler-action outputs deployment-url instead of url
+          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://comfyui-playwright-{0}.pages.dev', matrix.browser) }}"
+          echo "${{ matrix.browser }}|${{ steps.playwright.outputs.exit_code }}|$DEPLOYMENT_URL" > deployment-info/${{ matrix.browser }}.txt
+
+      - name: Upload deployment info
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-info-${{ matrix.browser }}
+          path: deployment-info/
+          retention-days: 1
+
+      - name: Get completion time
+        id: completion-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Comment PR - Browser Test Complete
+        if: github.event_name == 'pull_request' && always()
+        uses: edumserrano/find-create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '🔄 **${{ matrix.browser }}**: Running tests...'
+          comment-author: 'github-actions[bot]'
+          edit-mode: replace
+          body: |
+            ${{ steps.playwright.outputs.exit_code == '0' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.outputs.exit_code == '0' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://comfyui-playwright-{0}.pages.dev', matrix.browser) }})
+
+  comment-summary:
+    needs: playwright-tests
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download all deployment info
+        uses: actions/download-artifact@v4
+        with:
+          pattern: deployment-info-*
+          merge-multiple: true
+          path: deployment-info
+
+      - name: Get completion time
+        id: completion-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Generate comment body
+        id: comment-body
+        run: |
+          echo "<!-- PLAYWRIGHT_TEST_STATUS -->" > comment.md
+          echo "## 🎭 Playwright Test Results" >> comment.md
+          echo "" >> comment.md
+
+          # Check if all tests passed
+          ALL_PASSED=true
+          for file in deployment-info/*.txt; do
+            if [ -f "$file" ]; then
+              browser=$(basename "$file" .txt)
+              info=$(cat "$file")
+              exit_code=$(echo "$info" | cut -d'|' -f2)
+              if [ "$exit_code" != "0" ]; then
+                ALL_PASSED=false
+                break
+              fi
+            fi
+          done
+
+          if [ "$ALL_PASSED" = "true" ]; then
+            echo "✅ **All tests passed across all browsers!**" >> comment.md
+          else
+            echo "❌ **Some tests failed!**" >> comment.md
+          fi
+
+          echo "" >> comment.md
+          echo "⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
+          echo "" >> comment.md
+          echo "### 📊 Test Reports by Browser" >> comment.md
+
+          for file in deployment-info/*.txt; do
+            if [ -f "$file" ]; then
+              browser=$(basename "$file" .txt)
+              info=$(cat "$file")
+              exit_code=$(echo "$info" | cut -d'|' -f2)
+              url=$(echo "$info" | cut -d'|' -f3)
+              
+              if [ "$exit_code" = "0" ]; then
+                status="✅"
+              else
+                status="❌"
+              fi
+              
+              echo "- $status **$browser**: [View Report]($url)" >> comment.md
+            fi
+          done
+
+          echo "" >> comment.md
+          echo "---" >> comment.md
+          if [ "$ALL_PASSED" = "true" ]; then
+            echo "🎉 Your tests are passing across all browsers!" >> comment.md
+          else
+            echo "⚠️ Please check the test reports for details on failures." >> comment.md
+          fi
+
+      - name: Comment PR - Tests Complete
+        uses: edumserrano/find-create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: replace
+          body-file: comment.md
