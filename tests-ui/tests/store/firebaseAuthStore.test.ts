@@ -6,19 +6,27 @@ import * as vuefire from 'vuefire'
 
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
-// Mock axios before any imports that use it
-vi.mock('axios', () => {
-  const mockAxiosInstance = {
-    get: vi.fn().mockResolvedValue({
-      data: { balance: { credits: 0 } },
-      status: 200
-    }),
-    post: vi.fn().mockResolvedValue({
-      data: { id: 'test-customer-id' },
-      status: 201
-    })
+// Hoist the mock to avoid hoisting issues
+const mockAxiosInstance = vi.hoisted(() => ({
+  get: vi.fn().mockResolvedValue({
+    data: { balance: { credits: 0 } },
+    status: 200
+  }),
+  post: vi.fn().mockResolvedValue({
+    data: { id: 'test-customer-id' },
+    status: 201
+  }),
+  interceptors: {
+    request: {
+      use: vi.fn()
+    },
+    response: {
+      use: vi.fn()
+    }
   }
+}))
 
+vi.mock('axios', () => {
   return {
     default: {
       create: vi.fn().mockReturnValue(mockAxiosInstance),
@@ -27,8 +35,12 @@ vi.mock('axios', () => {
   }
 })
 
+// Mock networkClientAdapter
+vi.mock('@/services/networkClientAdapter', () => ({
+  createAxiosWithHeaders: vi.fn(() => mockAxiosInstance)
+}))
+
 const mockedAxios = vi.mocked(axios)
-const mockAxiosInstance = mockedAxios.create() as any
 
 // Mock fetch
 const mockFetch = vi.fn()

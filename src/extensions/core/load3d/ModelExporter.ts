@@ -5,6 +5,7 @@ import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import { useToastStore } from '@/stores/toastStore'
 
 export class ModelExporter {
@@ -43,10 +44,10 @@ export class ModelExporter {
       let response: Response
       if (isComfyUrl) {
         // Use ComfyUI API client for internal URLs
-        response = await fetch(api.apiURL(url))
+        response = await fetchWithHeaders(api.apiURL(url))
       } else {
         // Use direct fetch for external URLs
-        response = await fetch(url)
+        response = await fetchWithHeaders(url)
       }
 
       const blob = await response.blob()

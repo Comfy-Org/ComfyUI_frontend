@@ -27,6 +27,11 @@ vi.mock('axios', () => ({
   }
 }))
 
+// Mock networkClientAdapter to return the same axios instance
+vi.mock('@/services/networkClientAdapter', () => ({
+  createAxiosWithHeaders: vi.fn(() => mockAxiosInstance)
+}))
+
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => mockFirebaseAuthStore)
 }))

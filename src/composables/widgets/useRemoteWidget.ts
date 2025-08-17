@@ -1,13 +1,15 @@
-import axios from 'axios'
-
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { IWidget } from '@/lib/litegraph/src/litegraph'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
+import { createAxiosWithHeaders } from '@/services/networkClientAdapter'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
+
+// Create axios client with header injection
+const axiosClient = createAxiosWithHeaders()
 
 export interface CacheEntry<T> {
   data: T
@@ -58,7 +60,7 @@ const fetchData = async (
   controller: AbortController
 ) => {
   const { route, response_key, query_params, timeout = TIMEOUT } = config
-  const res = await axios.get(route, {
+  const res = await axiosClient.get(route, {
     params: query_params,
     signal: controller.signal,
     timeout

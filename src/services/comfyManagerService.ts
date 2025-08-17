@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
 import { api } from '@/scripts/api'
+import { createAxiosWithHeaders } from '@/services/networkClientAdapter'
 import {
   type InstallPackParams,
   type InstalledPacksResponse,
@@ -35,7 +36,7 @@ enum ManagerRoute {
   REBOOT = 'manager/reboot'
 }
 
-const managerApiClient = axios.create({
+const managerApiClient = createAxiosWithHeaders({
   baseURL: api.apiURL(''),
   headers: {
     'Content-Type': 'application/json'

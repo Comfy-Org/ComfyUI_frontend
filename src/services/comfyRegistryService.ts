@@ -1,12 +1,13 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
+import { createAxiosWithHeaders } from '@/services/networkClientAdapter'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 const API_BASE_URL = 'https://api.comfy.org'
 
-const registryApiClient = axios.create({
+const registryApiClient = createAxiosWithHeaders({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'

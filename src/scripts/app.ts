@@ -40,6 +40,7 @@ import { getSvgMetadata } from '@/scripts/metadata/svg'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -533,7 +534,7 @@ export class ComfyApp {
           if (match) {
             const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
             if (uri) {
-              const blob = await (await fetch(uri)).blob()
+              const blob = await (await fetchWithHeaders(uri)).blob()
               await this.handleFile(new File([blob], uri, { type: blob.type }))
             }
           }

@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { fetchWithHeaders } from '@/services/networkClientAdapter'
 import { useToastStore } from '@/stores/toastStore'
 
 class Load3dUtils {
@@ -9,7 +10,7 @@ class Load3dUtils {
     prefix: string,
     fileType: string = 'png'
   ) {
-    const blob = await fetch(imageData).then((r) => r.blob())
+    const blob = await fetchWithHeaders(imageData).then((r) => r.blob())
     const name = `${prefix}_${Date.now()}.${fileType}`
     const file = new File([blob], name, {
       type: fileType === 'mp4' ? 'video/mp4' : 'image/png'

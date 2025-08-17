@@ -21,6 +21,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { createAxiosWithHeaders } from '@/services/networkClientAdapter'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { type AuthHeader } from '@/types/authTypes'
 import { operations } from '@/types/comfyRegistryTypes'
@@ -46,7 +47,8 @@ export class FirebaseAuthStoreError extends Error {
 }
 
 // Customer API client - follows the same pattern as other services
-const customerApiClient = axios.create({
+// Now with automatic header injection from the registry
+const customerApiClient = createAxiosWithHeaders({
   baseURL: COMFY_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
