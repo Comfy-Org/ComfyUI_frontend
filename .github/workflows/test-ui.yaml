@@ -88,11 +88,33 @@ jobs:
         browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
     steps:
       - name: Wait for cache propagation
-        run: sleep 10
+        run: sleep 5
 
       - name: Get current time
         id: current-time
         run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Set project name
+        id: project-name
+        run: |
+          # Get branch name and sanitize it for Cloudflare branch names
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+
+          if [ "${{ matrix.browser }}" = "chromium-0.5x" ]; then
+            echo "name=comfyui-playwright-chromium-0-5x" >> $GITHUB_OUTPUT
+          else
+            echo "name=comfyui-playwright-${{ matrix.browser }}" >> $GITHUB_OUTPUT
+          fi
+          echo "branch=${SANITIZED_BRANCH}" >> $GITHUB_OUTPUT
+
+      - name: Deploy building page
+        id: building-deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy .github/building-page --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}
 
       - name: Comment PR - Browser Test Started
         if: github.event_name == 'pull_request'
@@ -103,7 +125,7 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            🔄 **${{ matrix.browser }}**: Running tests...
+            🔄 **${{ matrix.browser }}**: Running tests... [View Live Progress](${{ steps.building-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev?browser={2}&branch={0}', steps.project-name.outputs.branch, steps.project-name.outputs.name, matrix.browser) }})
 
       - name: Restore cached setup
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
@@ -151,15 +173,6 @@ jobs:
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
 
-      - name: Set project name
-        id: project-name
-        run: |
-          if [ "${{ matrix.browser }}" = "chromium-0.5x" ]; then
-            echo "name=comfyui-playwright-chromium-0-5x" >> $GITHUB_OUTPUT
-          else
-            echo "name=comfyui-playwright-${{ matrix.browser }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
         id: cloudflare-deploy
         if: always()
@@ -167,14 +180,14 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }}
+          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}
 
       - name: Save deployment info for summary
         if: always()
         run: |
           mkdir -p deployment-info
           # wrangler-action outputs deployment-url instead of url
-          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.pages.dev', steps.project-name.outputs.name) }}"
+          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
           echo "${{ matrix.browser }}|${{ steps.playwright.outputs.exit_code }}|$DEPLOYMENT_URL" > deployment-info/${{ matrix.browser }}.txt
 
       - name: Upload deployment info
@@ -198,7 +211,7 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            ${{ steps.playwright.outputs.exit_code == '0' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.outputs.exit_code == '0' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.pages.dev', steps.project-name.outputs.name) }})
+            ${{ steps.playwright.outputs.exit_code == '0' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.outputs.exit_code == '0' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }})
 
   comment-summary:
     needs: playwright-tests
@@ -282,4 +295,4 @@ jobs:
           body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
           comment-author: 'github-actions[bot]'
           edit-mode: replace
-          body-file: comment.md
+          body-path: comment.md
