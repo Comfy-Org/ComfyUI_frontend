@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical p-1 absolute bottom-[10px] right-[100px] z-[1000]"
+      class="p-buttongroup-vertical p-1 absolute bottom-[0px] right-[90px] z-[1000]"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
