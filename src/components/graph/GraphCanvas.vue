@@ -129,6 +129,8 @@ import type {
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
+import { useLayout } from '@/composables/graph/useLayout'
+import { useLayoutSync } from '@/composables/graph/useLayoutSync'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -156,6 +158,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { layoutStore } from '@/stores/layoutStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
