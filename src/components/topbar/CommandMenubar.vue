@@ -59,7 +59,7 @@
         @mousedown="
           isZoomCommand(item) ? handleZoomMouseDown(item, $event) : undefined
         "
-        @click="isZoomCommand(item) ? handleZoomClick($event) : undefined"
+        @click="handleItemClick(item, $event)"
       >
         <i
           v-if="hasActiveStateSiblings(item)"
@@ -285,11 +285,19 @@ const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
   }
 }
 
-const handleZoomClick = (event: MouseEvent) => {
-  event.preventDefault()
-  event.stopPropagation()
-  // Prevent the menu from closing for zoom commands
-  return false
+const handleItemClick = (item: MenuItem, event: MouseEvent) => {
+  // Prevent the menu from closing for zoom commands or commands that have active state
+  if (isZoomCommand(item) || item.comfyCommand?.active) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (item.comfyCommand?.active) {
+      item.command?.({
+        item,
+        originalEvent: event
+      })
+    }
+    return false
+  }
 }
 
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
