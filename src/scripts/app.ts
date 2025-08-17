@@ -799,6 +799,9 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     await useExtensionService().loadExtensions()
 
+    // Call preInit hook before any other initialization
+    await useExtensionService().invokeExtensionsAsync('preInit')
+
     this.#addProcessKeyHandler()
     this.#addConfigureHandler()
     this.#addApiUpdateHandlers()

@@ -71,6 +71,13 @@ export interface ComfyExtension {
    */
   aboutPageBadges?: AboutPageBadge[]
   /**
+   * Allows the extension to run code before the app is initialized. This is the earliest lifecycle hook.
+   * Called before the canvas is created and before any other extension hooks.
+   * Useful for registering services, header providers, or other cross-cutting concerns.
+   * @param app The ComfyUI app instance
+   */
+  preInit?(app: ComfyApp): Promise<void> | void
+  /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
    */
