@@ -10,7 +10,7 @@ import { type NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.describe('Item Interaction', () => {
   test('Can select/delete all items', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('mixed_graph_items')
+    await comfyPage.loadWorkflow('groups/mixed_graph_items')
     await comfyPage.canvas.press('Control+a')
     await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
     await comfyPage.canvas.press('Delete')
@@ -18,7 +18,7 @@ test.describe('Item Interaction', () => {
   })
 
   test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('mixed_graph_items')
+    await comfyPage.loadWorkflow('groups/mixed_graph_items')
     await comfyPage.canvas.press('Control+a')
     await comfyPage.canvas.press('KeyP')
     await comfyPage.nextFrame()
@@ -223,7 +223,7 @@ test.describe('Node Interaction', () => {
   })
 
   test('Link snap to slot', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('snap_to_slot')
+    await comfyPage.loadWorkflow('links/snap_to_slot')
     await expect(comfyPage.canvas).toHaveScreenshot('snap_to_slot.png')
 
     const outputSlotPos = {
@@ -240,7 +240,7 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can batch move links by drag with shift', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('batch_move_links')
+    await comfyPage.loadWorkflow('links/batch_move_links')
     await expect(comfyPage.canvas).toHaveScreenshot('batch_move_links.png')
 
     const outputSlot1Pos = {
@@ -320,7 +320,7 @@ test.describe('Node Interaction', () => {
       x: 167,
       y: 143
     }
-    await comfyPage.loadWorkflow('single_save_image_node')
+    await comfyPage.loadWorkflow('nodes/single_save_image_node')
     await comfyPage.canvas.click({
       position: textWidgetPos
     })
@@ -340,7 +340,7 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can double click node title to edit', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     await comfyPage.canvas.dblclick({
       position: {
         x: 50,
@@ -356,7 +356,7 @@ test.describe('Node Interaction', () => {
   test('Double click node body does not trigger edit', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     await comfyPage.canvas.dblclick({
       position: {
         x: 50,
@@ -381,7 +381,7 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can fit group to contents', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('oversized_group')
+    await comfyPage.loadWorkflow('groups/oversized_group')
     await comfyPage.ctrlA()
     await comfyPage.nextFrame()
     await comfyPage.executeCommand('Comfy.Graph.FitGroupToContents')
@@ -414,7 +414,7 @@ test.describe('Node Interaction', () => {
 
 test.describe('Group Interaction', () => {
   test('Can double click group title to edit', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('single_group')
+    await comfyPage.loadWorkflow('groups/single_group')
     await comfyPage.canvas.dblclick({
       position: {
         x: 50,
@@ -632,21 +632,21 @@ test.describe('Widget Interaction', () => {
 
 test.describe('Load workflow', () => {
   test('Can load workflow with string node id', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('string_node_id')
+    await comfyPage.loadWorkflow('nodes/string_node_id')
     await expect(comfyPage.canvas).toHaveScreenshot('string_node_id.png')
   })
 
   test('Can load workflow with ("STRING",) input node', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('string_input')
+    await comfyPage.loadWorkflow('inputs/string_input')
     await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
   })
 
   test('Restore workflow on reload (switch workflow)', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
@@ -655,7 +655,7 @@ test.describe('Load workflow', () => {
   test('Restore workflow on reload (modify workflow)', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.getFirstNodeRef())!
     await node.click('collapse')
     // Wait 300ms between 2 clicks so that it is not treated as a double click
@@ -734,7 +734,7 @@ test.describe('Load workflow', () => {
 
   test('Auto fit view after loading workflow', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.EnableWorkflowViewRestore', false)
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler_fit.png')
   })
 })
@@ -747,10 +747,10 @@ test.describe('Load duplicate workflow', () => {
   test('A workflow can be loaded multiple times in a row', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
   })
 })

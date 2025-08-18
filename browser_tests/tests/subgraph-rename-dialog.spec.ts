@@ -20,7 +20,7 @@ test.describe('Subgraph Slot Rename Dialog', () => {
   test('Shows current slot label (not stale) in rename dialog', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('basic-subgraph')
+    await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
     const subgraphNode = await comfyPage.getNodeRefById('2')
     await subgraphNode.navigateIntoSubgraph()
@@ -106,7 +106,7 @@ test.describe('Subgraph Slot Rename Dialog', () => {
   test('Shows current output slot label in rename dialog', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('basic-subgraph')
+    await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
     const subgraphNode = await comfyPage.getNodeRefById('2')
     await subgraphNode.navigateIntoSubgraph()
