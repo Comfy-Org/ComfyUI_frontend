@@ -74,7 +74,7 @@ test.describe('Workflows sidebar', () => {
 
   test('Can open workflow after insert', async ({ comfyPage }) => {
     await comfyPage.setupWorkflowsDirectory({
-      'workflow1.json': 'single_ksampler.json'
+      'workflow1.json': 'nodes/single_ksampler.json'
     })
 
     const tab = comfyPage.menu.workflowsTab
