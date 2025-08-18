@@ -1,8 +1,8 @@
 <template>
   <Transition name="slide-up" appear>
     <Panel
-      v-if="selectionOverlayState?.visible.value"
-      :key="selectionOverlayState?.updateCount.value"
+      v-if="isVisible"
+      :key="updateKey"
       class="selection-toolbox absolute left-1/2 rounded-lg"
       :pt="{
         header: 'hidden',
@@ -58,6 +58,10 @@ const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
 const selectionOverlayState = inject(SelectionOverlayInjectionKey)
+
+// Create computed properties to properly handle the injected readonly refs
+const isVisible = computed(() => selectionOverlayState?.visible.value ?? false)
+const updateKey = computed(() => selectionOverlayState?.updateCount.value ?? 0)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
