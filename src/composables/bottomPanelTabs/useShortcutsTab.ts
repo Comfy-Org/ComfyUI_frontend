@@ -11,14 +11,14 @@ export const useShortcutsTab = (): BottomPanelExtension[] => {
   return [
     {
       id: 'shortcuts-essentials',
-      title: t('shortcuts.essentials'),
+      title: () => t('shortcuts.essentials'), // Make it a function for reactivity
       component: markRaw(EssentialsPanel),
       type: 'vue',
       targetPanel: 'shortcuts'
     },
     {
       id: 'shortcuts-view-controls',
-      title: t('shortcuts.viewControls'),
+      title: () => t('shortcuts.viewControls'), // Make it a function for reactivity
       component: markRaw(ViewControlsPanel),
       type: 'vue',
       targetPanel: 'shortcuts'

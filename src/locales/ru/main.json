@@ -761,6 +761,7 @@
     "toggleBottomPanel": "Переключить нижнюю панель"
   },
   "menuLabels": {
+    "View": "Просмотр",
     "About ComfyUI": "О ComfyUI",
     "Add Edit Model Step": "Добавить или изменить шаг модели",
     "Bottom Panel": "Нижняя панель",

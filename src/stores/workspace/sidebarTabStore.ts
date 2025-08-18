@@ -28,6 +28,11 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const registerSidebarTab = (tab: SidebarTabExtension) => {
     sidebarTabs.value = [...sidebarTabs.value, tab]
 
+    // Auto-select first tab if none is active
+    if (!activeSidebarTabId.value && sidebarTabs.value.length === 1) {
+      activeSidebarTabId.value = tab.id
+    }
+
     // Generate label in format "Toggle X Sidebar"
     const labelFunction = () => {
       const tabTitle = te(tab.title) ? t(tab.title) : tab.title
@@ -85,6 +90,16 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
   }
 
   /**
+   * Ensures there's an active sidebar tab when none is selected.
+   * Activates the first available tab.
+   */
+  const ensureActiveTab = () => {
+    if (!activeSidebarTabId.value && sidebarTabs.value.length > 0) {
+      activeSidebarTabId.value = sidebarTabs.value[0].id
+    }
+  }
+
+  /**
    * Register the core sidebar tabs.
    */
   const registerCoreSidebarTabs = () => {
@@ -92,6 +107,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
+
+    // Ensure we have an active tab after registering core tabs
+    ensureActiveTab()
 
     const menuStore = useMenuItemStore()
 
@@ -120,6 +138,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     toggleSidebarTab,
     registerSidebarTab,
     unregisterSidebarTab,
-    registerCoreSidebarTabs
+    registerCoreSidebarTabs,
+    ensureActiveTab
   }
 })

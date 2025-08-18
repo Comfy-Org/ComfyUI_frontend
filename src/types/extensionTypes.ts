@@ -14,7 +14,7 @@ export interface BaseSidebarTabExtension {
 
 export interface BaseBottomPanelExtension {
   id: string
-  title: string
+  title: string | (() => string)
   targetPanel?: 'terminal' | 'shortcuts'
 }
 

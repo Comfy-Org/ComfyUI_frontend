@@ -13,8 +13,8 @@
               <span class="font-bold">
                 {{
                   shouldCapitalizeTab(tab.id)
-                    ? tab.title.toUpperCase()
-                    : tab.title
+                    ? getTabTitle(tab).toUpperCase()
+                    : getTabTitle(tab)
                 }}
               </span>
             </Tab>
@@ -64,9 +64,14 @@ import { computed } from 'vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 const bottomPanelStore = useBottomPanelStore()
 const dialogService = useDialogService()
+
+const getTabTitle = (tab: BottomPanelExtension): string => {
+  return typeof tab.title === 'function' ? tab.title() : tab.title
+}
 
 const isShortcutsTabActive = computed(() => {
   const activeTabId = bottomPanelStore.activeBottomPanelTabId

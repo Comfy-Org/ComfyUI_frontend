@@ -761,7 +761,8 @@
     "toggleBottomPanel": "底部面板"
   },
   "menuLabels": {
-    "About ComfyUI": "关于ComfyUI",
+    "View": "视图",
+    "About ComfyUI": "关于 ComfyUI",
     "Add Edit Model Step": "添加编辑模型步骤",
     "Bottom Panel": "底部面板",
     "Browse Templates": "浏览模板",
