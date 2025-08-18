@@ -22,7 +22,7 @@ test.describe('Load Workflow in Media', () => {
     test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
       comfyPage
     }) => {
-      await comfyPage.dragAndDropFile(fileName)
+      await comfyPage.dragAndDropFile(`workflowInMedia/${fileName}`)
       await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
     })
   })
