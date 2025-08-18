@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useSpatialIndex } from '@/composables/graph/useSpatialIndex'
 import type { Bounds } from '@/utils/spatial/QuadTree'
 
-describe('Spatial Index Performance', () => {
+// Skip this entire suite on CI to avoid flaky performance timing
+const isCI = Boolean(process.env.CI)
+const describeIfNotCI = isCI ? describe.skip : describe
+
+describeIfNotCI('Spatial Index Performance', () => {
   let spatialIndex: ReturnType<typeof useSpatialIndex>
 
   beforeEach(() => {
