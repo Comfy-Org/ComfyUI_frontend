@@ -110,7 +110,7 @@ test.describe('Node search box', () => {
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
     await comfyPage.closeMenu()
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     const screenCenter = {
       x: 200,
       y: 400
