@@ -84,8 +84,7 @@ const {
   handlePointerMove,
   handlePointerUp,
   handleWheel,
-  setMinimapRef,
-  init
+  setMinimapRef
 } = useMinimap()
 
 const showOptionsPanel = ref(false)
