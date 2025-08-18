@@ -277,6 +277,10 @@
     "label": "Переключить боковую панель библиотеки нод",
     "tooltip": "Библиотека нод"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "Переключить боковую панель проводника вывода",
+    "tooltip": "Проводник вывода"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "Переключить боковую панель очереди",
     "tooltip": "Очередь"

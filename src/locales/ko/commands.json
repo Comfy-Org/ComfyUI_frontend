@@ -277,6 +277,10 @@
     "label": "노드 라이브러리 사이드바 토글",
     "tooltip": "노드 라이브러리"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "출력 탐색기 사이드바 전환",
+    "tooltip": "출력 탐색기"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "실행 큐 사이드바 토글",
     "tooltip": "실행 큐"

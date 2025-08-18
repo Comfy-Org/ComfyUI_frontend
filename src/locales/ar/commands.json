@@ -277,6 +277,10 @@
     "label": "تبديل الشريط الجانبي لمكتبة العقد",
     "tooltip": "مكتبة العقد"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "تبديل الشريط الجانبي لمستكشف النتائج",
+    "tooltip": "مستكشف النتائج"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "تبديل الشريط الجانبي لقائمة الانتظار",
     "tooltip": "قائمة الانتظار"

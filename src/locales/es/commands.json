@@ -277,6 +277,10 @@
     "label": "Alternar Barra Lateral de Biblioteca de Nodos",
     "tooltip": "Biblioteca de Nodos"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "Alternar barra lateral del Explorador de Salidas",
+    "tooltip": "Explorador de Salidas"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "Alternar Barra Lateral de Cola",
     "tooltip": "Cola"

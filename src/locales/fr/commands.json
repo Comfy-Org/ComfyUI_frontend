@@ -277,6 +277,10 @@
     "label": "Basculer la barre latérale de la bibliothèque de nœuds",
     "tooltip": "Bibliothèque de nœuds"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "Basculer la barre latérale de l’Explorateur de sortie",
+    "tooltip": "Explorateur de sortie"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "Basculer la barre latérale de la file d'attente",
     "tooltip": "File d'attente"

@@ -277,6 +277,10 @@
     "label": "切換節點庫側邊欄",
     "tooltip": "節點庫"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "切換輸出總覽側邊欄",
+    "tooltip": "輸出總覽"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "切換佇列側邊欄",
     "tooltip": "佇列"

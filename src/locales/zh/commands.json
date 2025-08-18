@@ -277,6 +277,10 @@
     "label": "切换节点库侧边栏",
     "tooltip": "节点库"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "切换输出资源管理器侧边栏",
+    "tooltip": "输出资源管理器"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "切换执行队列侧边栏",
     "tooltip": "执行队列"

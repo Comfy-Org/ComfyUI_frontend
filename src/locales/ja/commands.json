@@ -277,6 +277,10 @@
     "label": "ノードライブラリサイドバーの切り替え",
     "tooltip": "ノードライブラリ"
   },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "出力エクスプローラーサイドバーを切り替え",
+    "tooltip": "出力エクスプローラー"
+  },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "キューサイドバーの切り替え",
     "tooltip": "キュー"

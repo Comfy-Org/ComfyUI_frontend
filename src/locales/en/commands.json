@@ -261,10 +261,10 @@
     "label": "Toggle Logs Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "Toggle Essential Bottom Panel"
+    "label": "Toggle shortcuts.essentials Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "Toggle View Controls Bottom Panel"
+    "label": "Toggle shortcuts.viewControls Bottom Panel"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"
@@ -276,6 +276,10 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Toggle Node Library Sidebar",
     "tooltip": "Node Library"
+  },
+  "Workspace_ToggleSidebarTab_output-explorer": {
+    "label": "Toggle Output Explorer Sidebar",
+    "tooltip": "Output Explorer"
   },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "Toggle Queue Sidebar",
