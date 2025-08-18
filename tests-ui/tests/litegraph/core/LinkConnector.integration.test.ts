@@ -335,13 +335,12 @@ describe('LinkConnector Integration', () => {
         } = graph.getNodeById(nodeId)!
 
         expect(input.link).toBeNull()
-        // @ts-expect-error toBeOneOf not in type definitions
-        expect(output.links?.length).toBeOneOf([0, undefined])
 
-        // @ts-expect-error toBeOneOf not in type definitions
-        expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-        // @ts-expect-error toBeOneOf not in type definitions
-        expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
+        expect([0, undefined]).toContain(output.links?.length)
+
+        expect([0, undefined]).toContain(input._floatingLinks?.size)
+
+        expect([0, undefined]).toContain(output._floatingLinks?.size)
       }
     })
 
@@ -538,13 +537,12 @@ describe('LinkConnector Integration', () => {
         } = graph.getNodeById(nodeId)!
 
         expect(input.link).toBeNull()
-        // @ts-expect-error toBeOneOf not in type definitions
-        expect(output.links?.length).toBeOneOf([0, undefined])
 
-        // @ts-expect-error toBeOneOf not in type definitions
-        expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-        // @ts-expect-error toBeOneOf not in type definitions
-        expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
+        expect([0, undefined]).toContain(output.links?.length)
+
+        expect([0, undefined]).toContain(input._floatingLinks?.size)
+
+        expect([0, undefined]).toContain(output._floatingLinks?.size)
       }
     })
 
@@ -857,13 +855,12 @@ describe('LinkConnector Integration', () => {
       } = graph.getNodeById(nodeId)!
 
       expect(input.link).toBeNull()
-      // @ts-expect-error toBeOneOf not in type definitions
-      expect(output.links?.length).toBeOneOf([0, undefined])
 
-      // @ts-expect-error toBeOneOf not in type definitions
-      expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-      // @ts-expect-error toBeOneOf not in type definitions
-      expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
+      expect([0, undefined]).toContain(output.links?.length)
+
+      expect([0, undefined]).toContain(input._floatingLinks?.size)
+
+      expect([0, undefined]).toContain(output._floatingLinks?.size)
     }
   })
 
