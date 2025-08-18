@@ -62,9 +62,9 @@
 
       <Button
         ref="zoomButton"
-        v-tooltip.top="t('zoomControls.label')"
+        v-tooltip.top="t('zoomControls.labelsave the re')"
         severity="secondary"
-        label="Profile"
+        :label="t('zoomControls.label')"
         :class="zoomButtonClass"
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
@@ -114,7 +114,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
@@ -240,7 +240,7 @@ onMounted(() => {
   canvasStore.initScaleSync()
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   canvasStore.cleanupScaleSync()
 })
 </script>

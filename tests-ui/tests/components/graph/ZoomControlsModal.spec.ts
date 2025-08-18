@@ -69,7 +69,7 @@ describe('ZoomControlsModal', () => {
     // Simulate the applyZoom function behavior
     const applyZoom = (val: { value: number }) => {
       const inputValue = val.value as number
-      if (isNaN(inputValue) || inputValue < 1 || inputValue > 100) {
+      if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
         return
       }
       mockSetAppZoom(inputValue)
@@ -77,7 +77,7 @@ describe('ZoomControlsModal', () => {
 
     // Test invalid values
     applyZoom({ value: 0 })
-    applyZoom({ value: 101 })
+    applyZoom({ value: 1010 })
     applyZoom({ value: NaN })
     expect(mockSetAppZoom).not.toHaveBeenCalled()
 
