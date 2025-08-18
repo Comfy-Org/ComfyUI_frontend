@@ -4,7 +4,7 @@ import {
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
   calculateOutputSlotPos
-} from '@/utils/slotCalculations'
+} from '@/renderer/core/canvas/litegraph/SlotCalculations'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'

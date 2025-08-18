@@ -4,7 +4,7 @@
  */
 import { nextTick, reactive, readonly } from 'vue'
 
-import { layoutMutations } from '@/services/layoutMutations'
+import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 

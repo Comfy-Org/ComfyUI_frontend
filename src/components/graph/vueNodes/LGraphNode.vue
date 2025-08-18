@@ -92,8 +92,8 @@ import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
 // Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { LODLevel, useLOD } from '@/composables/graph/useLOD'
-import { useNodeLayout } from '@/composables/graph/useNodeLayout'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useNodeLayout } from '@/renderer/extensions/vue-nodes/composables/useNodeLayout'
 
 import { LiteGraph } from '../../../lib/litegraph/src/litegraph'
 import NodeContent from './NodeContent.vue'

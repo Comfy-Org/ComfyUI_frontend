@@ -2,7 +2,7 @@ import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import {
   type LinkRenderContext,
   LitegraphLinkAdapter
-} from '@/rendering/adapters/LitegraphLinkAdapter'
+} from '@/renderer/core/canvas/litegraph/LitegraphLinkAdapter'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'

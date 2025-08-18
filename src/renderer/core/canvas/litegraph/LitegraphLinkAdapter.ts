@@ -31,13 +31,13 @@ import {
   type RenderContext as PathRenderContext,
   type Point,
   type RenderMode
-} from '@/rendering/canvas/PathRenderer'
-import { layoutStore } from '@/stores/layoutStore'
+} from '@/renderer/core/canvas/PathRenderer'
 import {
   type SlotPositionContext,
   calculateInputSlotPos,
   calculateOutputSlotPos
-} from '@/utils/slotCalculations'
+} from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 export interface LinkRenderContext {
   // Canvas settings

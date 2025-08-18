@@ -7,9 +7,9 @@
 import log from 'loglevel'
 import { computed, inject } from 'vue'
 
-import { layoutMutations } from '@/services/layoutMutations'
-import { layoutStore } from '@/stores/layoutStore'
-import type { Point } from '@/types/layoutTypes'
+import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import type { Point } from '@/renderer/core/layout/types'
 
 // Create a logger for layout debugging
 const logger = log.getLogger('layout')
