@@ -14,16 +14,7 @@
               class="p-3 border-none"
             >
               <span class="font-bold">
-                {{
-                  shouldCapitalizeTab(tab.id)
-                    ? (tab.titleKey
-                        ? $t(tab.titleKey)
-                        : tab.title || ''
-                      ).toUpperCase()
-                    : tab.titleKey
-                      ? $t(tab.titleKey)
-                      : tab.title || ''
-                }}
+                {{ getTabDisplayTitle(tab) }}
               </span>
             </Tab>
           </div>
@@ -68,13 +59,16 @@ import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import Tabs from 'primevue/tabs'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 const bottomPanelStore = useBottomPanelStore()
 const dialogService = useDialogService()
+const { t } = useI18n()
 
 const isShortcutsTabActive = computed(() => {
   const activeTabId = bottomPanelStore.activeBottomPanelTabId
@@ -86,6 +80,11 @@ const isShortcutsTabActive = computed(() => {
 
 const shouldCapitalizeTab = (tabId: string): boolean => {
   return tabId !== 'shortcuts-essentials' && tabId !== 'shortcuts-view-controls'
+}
+
+const getTabDisplayTitle = (tab: BottomPanelExtension): string => {
+  const title = tab.titleKey ? t(tab.titleKey) : tab.title || ''
+  return shouldCapitalizeTab(tab.id) ? title.toUpperCase() : title
 }
 
 const openKeybindingSettings = async () => {
