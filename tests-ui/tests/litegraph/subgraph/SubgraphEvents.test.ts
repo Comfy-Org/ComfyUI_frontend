@@ -1,8 +1,8 @@
 // TODO: Fix these tests after migration
 import { describe, expect, vi } from 'vitest'
 
-import { subgraphTest } from '../../fixtures/subgraphFixtures'
-import { verifyEventSequence } from '../../fixtures/subgraphHelpers'
+import { subgraphTest } from './fixtures/subgraphFixtures'
+import { verifyEventSequence } from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphEvents - Event Payload Verification', () => {
   subgraphTest(

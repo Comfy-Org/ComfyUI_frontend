@@ -2,7 +2,7 @@ import { describe } from 'vitest'
 
 import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { test } from '../fixtures/testExtensions'
+import { test } from './fixtures/testExtensions'
 
 describe('LGraph', () => {
   test('can be instantiated', ({ expect }) => {

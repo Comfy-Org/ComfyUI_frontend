@@ -8,7 +8,7 @@
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
-import { test } from '../../testExtensions'
+import { test } from '../../core/fixtures/testExtensions'
 import {
   createEventCapture,
   createNestedSubgraphs,

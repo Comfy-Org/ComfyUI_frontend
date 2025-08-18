@@ -13,7 +13,7 @@ import {
   createNestedSubgraphs,
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphEdgeCases - Recursion Detection', () => {
   it('should handle circular subgraph references without crashing', () => {

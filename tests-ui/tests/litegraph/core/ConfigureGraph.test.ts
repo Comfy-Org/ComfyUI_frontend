@@ -3,7 +3,7 @@ import { describe } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 
-import { dirtyTest } from './testExtensions'
+import { dirtyTest } from './fixtures/testExtensions'
 
 describe.skip('LGraph configure()', () => {
   dirtyTest(

@@ -12,12 +12,12 @@ import { RecursionError } from '@/lib/litegraph/src/litegraph'
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4 } from '@/lib/litegraph/src/litegraph'
 
-import { subgraphTest } from '../../fixtures/subgraphFixtures'
+import { subgraphTest } from './fixtures/subgraphFixtures'
 import {
   assertSubgraphStructure,
   createTestSubgraph,
   createTestSubgraphData
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('Subgraph Construction', () => {
   it('should create a subgraph with minimal data', () => {

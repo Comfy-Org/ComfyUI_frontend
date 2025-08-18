@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { subgraphTest } from '../../fixtures/subgraphFixtures'
+import { subgraphTest } from './fixtures/subgraphFixtures'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   subgraphTest(

@@ -3,7 +3,7 @@ import { describe } from 'vitest'
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 
-import { test } from '../fixtures/testExtensions'
+import { test } from './fixtures/testExtensions'
 
 describe('LGraph Serialisation', () => {
   test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {

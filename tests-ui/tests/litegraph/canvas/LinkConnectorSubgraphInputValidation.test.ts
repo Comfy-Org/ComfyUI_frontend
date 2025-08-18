@@ -7,7 +7,7 @@ import { ToOutputRenderLink } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
 
-import { createTestSubgraph } from '../../fixtures/subgraphHelpers'
+import { createTestSubgraph } from '../subgraph/fixtures/subgraphHelpers'
 
 describe.skip('LinkConnector SubgraphInput connection validation', () => {
   let connector: LinkConnector

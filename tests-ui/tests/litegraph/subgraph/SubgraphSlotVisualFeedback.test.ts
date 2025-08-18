@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { createTestSubgraph } from '../../fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphSlot visual feedback', () => {
   let mockCtx: CanvasRenderingContext2D

@@ -7,7 +7,7 @@ import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphNode Title Button', () => {
   describe.skip('Constructor', () => {

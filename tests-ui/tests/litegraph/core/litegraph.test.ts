@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, vi } from 'vitest'
 import { LiteGraphGlobal } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { test } from '../fixtures/testExtensions'
+import { test } from './fixtures/testExtensions'
 
 describe('Litegraph module', () => {
   test('contains a global export', ({ expect }) => {

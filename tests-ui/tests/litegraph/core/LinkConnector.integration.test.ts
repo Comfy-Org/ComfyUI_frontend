@@ -2,16 +2,16 @@
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import {
+  type CanvasPointerEvent,
   LGraph,
   LGraphNode,
   LLink,
+  LinkConnector,
   Reroute,
   type RerouteId
 } from '@/lib/litegraph/src/litegraph'
-import { LinkConnector } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 
-import { test as baseTest } from './testExtensions'
+import { test as baseTest } from './fixtures/testExtensions'
 
 interface TestContext {
   graph: LGraph
@@ -215,12 +215,12 @@ function mockedOutputDropEvent(
   } as any
 }
 
-describe.skip('LinkConnector Integration', () => {
+describe('LinkConnector Integration', () => {
   afterEach<TestContext>(({ validateLinkIntegrity }) => {
     validateLinkIntegrity()
   })
 
-  describe.skip('Moving input links', () => {
+  describe('Moving input links', () => {
     test('Should move input links', ({ graph, connector }) => {
       const nextLinkId = graph.last_link_id + 1
 
@@ -404,7 +404,7 @@ describe.skip('LinkConnector Integration', () => {
     })
   })
 
-  describe.skip('Moving output links', () => {
+  describe('Moving output links', () => {
     test('Should move output links', ({ graph, connector }) => {
       const nextLinkIds = [graph.last_link_id + 1, graph.last_link_id + 2]
 
@@ -690,7 +690,7 @@ describe.skip('LinkConnector Integration', () => {
     })
   })
 
-  describe.skip('Floating links', () => {
+  describe('Floating links', () => {
     test('Removed when connecting from reroute to input', ({
       graph,
       connector,

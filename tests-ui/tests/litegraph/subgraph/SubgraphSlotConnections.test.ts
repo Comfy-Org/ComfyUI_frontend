@@ -15,7 +15,7 @@ import {
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('Subgraph slot connections', () => {
   describe.skip('SubgraphInput connections', () => {

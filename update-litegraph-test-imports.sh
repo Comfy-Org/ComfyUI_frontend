@@ -1,3 +1,11 @@
+#!/bin/bash
+
+# Script to update imports in migrated litegraph tests to use direct imports where needed
+
+echo "Updating imports in litegraph tests..."
+
+# Fix measure.test.ts - it uses relative imports to specific modules
+cat > tests-ui/tests/litegraph/core/measure.test.ts << 'EOF'
 // TODO: Fix these tests after migration
 import { test as baseTest } from 'vitest'
 
@@ -298,3 +306,157 @@ test('isInRect correctly identifies if point coordinates are inside rectangle', 
   expect(isInRect(5, -1, rect)).toBe(false)
   expect(isInRect(5, 11, rect)).toBe(false)
 })
+EOF
+
+echo "Fixed measure.test.ts imports"
+
+# For files that do use the barrel import but need additional specific imports
+# Let's check what the LinkConnector test actually needs
+echo "Checking LinkConnector test requirements..."
+
+# The LinkConnector test was already using barrel imports in the original, 
+# but also imported CanvasPointerEvent separately
+cat > tests-ui/tests/litegraph/core/LinkConnector.integration.test.ts << 'EOF'
+// TODO: Fix these tests after migration
+import { afterEach, describe, expect, vi } from 'vitest'
+
+import {
+  LGraph,
+  LGraphNode,
+  LLink,
+  Reroute,
+  type RerouteId,
+  LinkConnector,
+  type CanvasPointerEvent
+} from '@/lib/litegraph/src/litegraph'
+
+import { test as baseTest } from './testExtensions'
+
+interface TestContext {
+  graph: LGraph
+  connector: LinkConnector
+  setConnectingLinks: ReturnType<typeof vi.fn>
+  createTestNode: (id: number) => LGraphNode
+  reroutesBeforeTest: [rerouteId: RerouteId, reroute: Reroute][]
+  validateIntegrityNoChanges: () => void
+  validateIntegrityFloatingRemoved: () => void
+  validateLinkIntegrity: () => void
+  getNextLinkIds: (
+    linkIds: Set<number>,
+    expectedExtraLinks?: number
+  ) => number[]
+  readonly floatingReroute: Reroute
+}
+
+const test = baseTest.extend<TestContext>({
+  reroutesBeforeTest: async ({ reroutesComplexGraph }, use) => {
+    await use([...reroutesComplexGraph.reroutes])
+  },
+
+  graph: async ({ reroutesComplexGraph }, use) => {
+    const ctx = vi.fn(() => ({ measureText: vi.fn(() => ({ width: 10 })) }))
+    for (const node of reroutesComplexGraph.nodes) {
+      node.updateArea(ctx() as unknown as CanvasRenderingContext2D)
+    }
+    await use(reroutesComplexGraph)
+  },
+  setConnectingLinks: async (
+    // eslint-disable-next-line no-empty-pattern
+    {},
+    use: (mock: ReturnType<typeof vi.fn>) => Promise<void>
+  ) => {
+    const mock = vi.fn()
+    await use(mock)
+  },
+  connector: async ({ setConnectingLinks }, use) => {
+    const connector = new LinkConnector(setConnectingLinks)
+    await use(connector)
+  },
+  createTestNode: async ({ graph }, use) => {
+    await use((id): LGraphNode => {
+      const node = new LGraphNode('test')
+      node.id = id
+      graph.add(node)
+      return node
+    })
+  },
+
+  validateIntegrityNoChanges: async (
+    { graph, reroutesBeforeTest, expect },
+    use
+  ) => {
+    await use(() => {
+      expect(graph.floatingLinks.size).toBe(1)
+      expect([...graph.reroutes]).toEqual(reroutesBeforeTest)
+
+      // Only the original reroute should be floating
+      const reroutesExceptOne = [...graph.reroutes.values()].filter(
+        (reroute) => reroute.id !== 1
+      )
+      for (const reroute of reroutesExceptOne) {
+        expect(reroute.floating).toBeUndefined()
+      }
+    })
+  },
+
+  validateIntegrityFloatingRemoved: async (
+    { graph, reroutesBeforeTest, expect },
+    use
+  ) => {
+    await use(() => {
+      expect(graph.floatingLinks.size).toBe(0)
+      expect([...graph.reroutes]).toEqual(reroutesBeforeTest)
+
+      for (const reroute of graph.reroutes.values()) {
+        expect(reroute.floating).toBeUndefined()
+      }
+    })
+  },
+
+  validateLinkIntegrity: async ({ graph, expect }, use) => {
+    await use(() => {
+      for (const reroute of graph.reroutes.values()) {
+        if (reroute.origin_id === undefined) {
+EOF
+
+# Read the rest of the LinkConnector test and append
+tail -n +101 tests-ui/tests/litegraph/core/LinkConnector.integration.test.ts >> /tmp/linkconnector_rest.txt
+cat /tmp/linkconnector_rest.txt >> tests-ui/tests/litegraph/core/LinkConnector.integration.test.ts
+rm /tmp/linkconnector_rest.txt
+
+echo "Fixed LinkConnector.integration.test.ts imports"
+
+# Now let's check what other files might need fixing
+echo "Checking for other files that need import fixes..."
+
+# Find files with relative imports "../src/"
+grep -r "from '\.\./src/" tests-ui/tests/litegraph/ --include="*.test.ts" | cut -d: -f1 | sort -u > /tmp/files_to_fix.txt
+
+if [ -s /tmp/files_to_fix.txt ]; then
+    echo "Files with relative imports to fix:"
+    cat /tmp/files_to_fix.txt
+    
+    # Fix each file
+    while IFS= read -r file; do
+        echo "Fixing imports in: $file"
+        # Replace ../src/ with @/lib/litegraph/src/
+        sed -i "s|from '\.\./src/|from '@/lib/litegraph/src/|g" "$file"
+    done < /tmp/files_to_fix.txt
+fi
+
+# Check for files importing from fixtures with relative paths
+echo "Fixing fixture imports..."
+find tests-ui/tests/litegraph -name "*.test.ts" -exec sed -i "s|from '\.\./\.\./fixtures/|from '../fixtures/|g" {} \;
+find tests-ui/tests/litegraph -name "*.test.ts" -exec sed -i "s|from '\.\./fixtures/|from './fixtures/|g" {} \;
+
+echo "Import updates complete!"
+
+# Clean up
+rm -f /tmp/files_to_fix.txt
+
+# Show summary of what was changed
+echo -e "\nSummary of changes:"
+echo "1. Fixed measure.test.ts to use direct imports to specific modules"
+echo "2. Fixed LinkConnector.integration.test.ts to properly import from barrel"
+echo "3. Updated all relative imports from ../src/ to use @/lib/litegraph/src/"
+echo "4. Fixed fixture import paths"

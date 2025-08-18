@@ -12,7 +12,7 @@ import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphSerialization - Basic Serialization', () => {
   it('should save and load simple subgraphs', () => {

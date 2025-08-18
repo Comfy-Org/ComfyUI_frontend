@@ -10,7 +10,7 @@ import {
   createEventCapture,
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 // Helper to create a node with a widget
 function createNodeWithWidget(

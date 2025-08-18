@@ -2,7 +2,7 @@ import { beforeEach, describe, expect } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { test } from '../fixtures/testExtensions'
+import { test } from './fixtures/testExtensions'
 
 describe('LGraphNode resize functionality', () => {
   let node: LGraphNode

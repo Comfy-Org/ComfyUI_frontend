@@ -11,7 +11,7 @@ import type { UUID } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('subgraphUtils', () => {
   describe.skip('getDirectSubgraphIds', () => {

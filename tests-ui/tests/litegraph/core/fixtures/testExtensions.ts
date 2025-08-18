@@ -2,11 +2,11 @@ import { test as baseTest } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-
 import type {
   ISerialisedGraph,
   SerialisableGraph
-} from '../src/types/serialisation'
+} from '@/lib/litegraph/src/types/serialisation'
+
 import floatingBranch from './assets/floatingBranch.json'
 import floatingLink from './assets/floatingLink.json'
 import linkedNodes from './assets/linkedNodes.json'

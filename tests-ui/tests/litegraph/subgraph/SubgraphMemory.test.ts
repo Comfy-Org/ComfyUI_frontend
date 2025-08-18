@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 
-import { subgraphTest } from '../../fixtures/subgraphFixtures'
+import { subgraphTest } from './fixtures/subgraphFixtures'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphNode Memory Management', () => {
   describe.skip('Event Listener Cleanup', () => {

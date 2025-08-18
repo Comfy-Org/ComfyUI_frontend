@@ -12,7 +12,7 @@ import {
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 function createNode(
   graph: LGraph,

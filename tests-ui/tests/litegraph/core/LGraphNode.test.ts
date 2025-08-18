@@ -7,7 +7,7 @@ import { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import { NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
 
-import { test } from '../fixtures/testExtensions'
+import { test } from './fixtures/testExtensions'
 
 function getMockISerialisedNode(
   data: Partial<ISerialisedNode>

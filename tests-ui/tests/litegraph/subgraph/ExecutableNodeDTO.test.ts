@@ -8,7 +8,7 @@ import {
   createNestedSubgraphs,
   createTestSubgraph,
   createTestSubgraphNode
-} from '../../fixtures/subgraphHelpers'
+} from './fixtures/subgraphHelpers'
 
 describe.skip('ExecutableNodeDTO Creation', () => {
   it('should create DTO from regular node', () => {

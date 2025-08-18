@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 
-import { test } from '../fixtures/testExtensions'
+import { test } from './fixtures/testExtensions'
 
 describe('LLink', () => {
   test('matches previous snapshot', () => {
