@@ -51,6 +51,9 @@ jobs:
           edit-mode: append
           body: |
             <!-- PLAYWRIGHT_TEST_STATUS -->
+
+            ---
+
             🔄 **Preparing browser tests across multiple browsers...**
             At: ${{ steps.current-time.outputs.time }} UTC
 
