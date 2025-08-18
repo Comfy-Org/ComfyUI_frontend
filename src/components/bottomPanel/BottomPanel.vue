@@ -13,8 +13,13 @@
               <span class="font-bold">
                 {{
                   shouldCapitalizeTab(tab.id)
-                    ? tab.title.toUpperCase()
-                    : tab.title
+                    ? (tab.titleKey
+                        ? $t(tab.titleKey)
+                        : tab.title || ''
+                      ).toUpperCase()
+                    : tab.titleKey
+                      ? $t(tab.titleKey)
+                      : tab.title || ''
                 }}
               </span>
             </Tab>
