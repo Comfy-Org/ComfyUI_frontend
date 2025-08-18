@@ -6,8 +6,8 @@
  */
 import { nextTick, reactive, readonly } from 'vue'
 
-import { PERFORMANCE_CONFIG } from '@/constants/layout'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { PERFORMANCE_CONFIG } from '@/renderer/core/layout/constants'
 
 import type { SafeWidgetData, VueNodeData, WidgetValue } from './useNodeWidgets'
 

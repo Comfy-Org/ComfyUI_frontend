@@ -7,7 +7,7 @@
 import log from 'loglevel'
 import { onUnmounted } from 'vue'
 
-import { layoutStore } from '@/stores/layoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 // Create a logger for layout debugging
 const logger = log.getLogger('layout')

@@ -4,8 +4,11 @@
  * Manages spatial indexing for efficient node queries based on bounds.
  * Uses QuadTree for fast spatial lookups with caching for performance.
  */
-import { PERFORMANCE_CONFIG, QUADTREE_CONFIG } from '@/constants/layout'
-import type { Bounds, NodeId } from '@/types/layoutTypes'
+import {
+  PERFORMANCE_CONFIG,
+  QUADTREE_CONFIG
+} from '@/renderer/core/layout/constants'
+import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { QuadTree } from '@/utils/spatial/QuadTree'
 
 /**

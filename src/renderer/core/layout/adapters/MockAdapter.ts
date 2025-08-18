@@ -3,8 +3,8 @@
  *
  * Simple in-memory implementation for testing without CRDT overhead.
  */
-import type { LayoutOperation } from '@/types/layoutOperations'
-import type { NodeId, NodeLayout } from '@/types/layoutTypes'
+import type { LayoutOperation } from '@/renderer/core/layout/types'
+import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
 
 import type { AdapterChange, LayoutAdapter } from './layoutAdapter'
 

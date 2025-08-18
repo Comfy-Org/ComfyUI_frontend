@@ -7,7 +7,7 @@
 import { reactive } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { layoutMutations } from '@/services/layoutMutations'
+import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 
 export interface ChangeDetectionMetrics {
   updateTime: number

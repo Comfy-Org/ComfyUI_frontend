@@ -3,9 +3,9 @@
  *
  * Provides unified access to the layout store and mutation API.
  */
-import { layoutMutations } from '@/services/layoutMutations'
-import { layoutStore } from '@/stores/layoutStore'
-import type { Bounds, NodeId, Point } from '@/types/layoutTypes'
+import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import type { Bounds, NodeId, Point } from '@/renderer/core/layout/types'
 
 /**
  * Main composable for accessing the layout system
