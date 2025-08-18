@@ -2,6 +2,10 @@ import { toString } from 'es-toolkit/compat'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import {
+  type LinkRenderContext,
+  LitegraphLinkAdapter
+} from '@/rendering/adapters/LitegraphLinkAdapter'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -51,7 +55,6 @@ import {
   containsRect,
   createBounds,
   distance,
-  findPointOnCurve,
   isInRect,
   isInRectangle,
   isPointInRect,
@@ -235,9 +238,6 @@ export class LGraphCanvas
   static #tmp_area = new Float32Array(4)
   static #margin_area = new Float32Array(4)
   static #link_bounding = new Float32Array(4)
-  static #lTempA: Point = new Float32Array(2)
-  static #lTempB: Point = new Float32Array(2)
-  static #lTempC: Point = new Float32Array(2)
 
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
@@ -639,6 +639,9 @@ export class LGraphCanvas
   /** Set on keydown, keyup. @todo */
   #shiftDown: boolean = false
 
+  /** Link rendering adapter for litegraph-to-canvas integration */
+  linkRenderer: LitegraphLinkAdapter | null = null
+
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
   dragZoomEnabled: boolean = false
   /** The start position of the drag zoom. */
@@ -699,6 +702,11 @@ export class LGraphCanvas
 
     this.ds = new DragAndScale(canvas)
     this.pointer = new CanvasPointer(canvas)
+
+    // Initialize link renderer if graph is available
+    if (graph) {
+      this.linkRenderer = new LitegraphLinkAdapter(graph)
+    }
 
     this.linkConnector.events.addEventListener('link-created', () =>
       this.#dirty()
@@ -1792,6 +1800,9 @@ export class LGraphCanvas
 
     this.clear()
     newGraph.attachCanvas(this)
+
+    // Re-initialize link renderer with new graph
+    this.linkRenderer = new LitegraphLinkAdapter(newGraph)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
     this.#dirty()
@@ -4590,18 +4601,26 @@ export class LGraphCanvas
               : LiteGraph.CONNECTING_LINK_COLOR
 
           // the connection being dragged by the mouse
-          this.renderLink(
-            ctx,
-            pos,
-            highlightPos,
-            null,
-            false,
-            null,
-            colour,
-            fromDirection,
-            dragDirection
-          )
+          if (this.linkRenderer) {
+            const context = this.buildLinkRenderContext()
+            this.linkRenderer.renderLinkDirect(
+              ctx,
+              pos,
+              highlightPos,
+              null,
+              false,
+              null,
+              colour,
+              fromDirection,
+              dragDirection,
+              context,
+              {
+                disabled: false
+              }
+            )
+          }
 
+          ctx.fillStyle = colour
           ctx.beginPath()
           if (connType === LiteGraph.EVENT || connShape === RenderShape.BOX) {
             ctx.rect(pos[0] - 6 + 0.5, pos[1] - 5 + 0.5, 14, 10)
@@ -5726,6 +5745,34 @@ export class LGraphCanvas
   }
 
   /**
+   * Build LinkRenderContext from canvas properties
+   * Helper method for using LitegraphLinkAdapter
+   */
+  private buildLinkRenderContext(): LinkRenderContext {
+    return {
+      // Canvas settings
+      renderMode: this.links_render_mode,
+      connectionWidth: this.connections_width,
+      renderBorder: this.render_connections_border,
+      lowQuality: this.low_quality,
+      highQualityRender: this.highquality_render,
+      scale: this.ds.scale,
+      linkMarkerShape: this.linkMarkerShape,
+      renderConnectionArrows: this.render_connection_arrows,
+
+      // State
+      highlightedLinks: new Set(Object.keys(this.highlighted_links)),
+
+      // Colors
+      defaultLinkColor: this.default_link_color,
+      linkTypeColors: LGraphCanvas.link_type_colors,
+
+      // Pattern for disabled links
+      disabledPattern: this._pattern
+    }
+  }
+
+  /**
    * draws a link between two points
    * @param ctx Canvas 2D rendering context
    * @param a start pos
@@ -5766,333 +5813,27 @@ export class LGraphCanvas
       disabled?: boolean
     } = {}
   ): void {
-    const linkColour =
-      link != null && this.highlighted_links[link.id]
-        ? '#FFF'
-        : color ||
-          link?.color ||
-          (link?.type != null && LGraphCanvas.link_type_colors[link.type]) ||
-          this.default_link_color
-    const startDir = start_dir || LinkDirection.RIGHT
-    const endDir = end_dir || LinkDirection.LEFT
-
-    const dist =
-      this.links_render_mode == LinkRenderType.SPLINE_LINK &&
-      (!endControl || !startControl)
-        ? distance(a, b)
-        : 0
-
-    // TODO: Subline code below was inserted in the wrong place - should be before this statement
-    if (this.render_connections_border && !this.low_quality) {
-      ctx.lineWidth = this.connections_width + 4
-    }
-    ctx.lineJoin = 'round'
-    num_sublines ||= 1
-    if (num_sublines > 1) ctx.lineWidth = 0.5
-
-    // begin line shape
-    const path = new Path2D()
-
-    /** The link or reroute we're currently rendering */
-    const linkSegment = reroute ?? link
-    if (linkSegment) linkSegment.path = path
-
-    const innerA = LGraphCanvas.#lTempA
-    const innerB = LGraphCanvas.#lTempB
-
-    /** Reference to {@link reroute._pos} if present, or {@link link._pos} if present.  Caches the centre point of the link. */
-    const pos: Point = linkSegment?._pos ?? [0, 0]
-
-    for (let i = 0; i < num_sublines; i++) {
-      const offsety = (i - (num_sublines - 1) * 0.5) * 5
-      innerA[0] = a[0]
-      innerA[1] = a[1]
-      innerB[0] = b[0]
-      innerB[1] = b[1]
-
-      if (this.links_render_mode == LinkRenderType.SPLINE_LINK) {
-        if (endControl) {
-          innerB[0] = b[0] + endControl[0]
-          innerB[1] = b[1] + endControl[1]
-        } else {
-          this.#addSplineOffset(innerB, endDir, dist)
+    if (this.linkRenderer) {
+      const context = this.buildLinkRenderContext()
+      this.linkRenderer.renderLinkDirect(
+        ctx,
+        a,
+        b,
+        link,
+        skip_border,
+        flow,
+        color,
+        start_dir,
+        end_dir,
+        context,
+        {
+          reroute,
+          startControl,
+          endControl,
+          num_sublines,
+          disabled
         }
-        if (startControl) {
-          innerA[0] = a[0] + startControl[0]
-          innerA[1] = a[1] + startControl[1]
-        } else {
-          this.#addSplineOffset(innerA, startDir, dist)
-        }
-        path.moveTo(a[0], a[1] + offsety)
-        path.bezierCurveTo(
-          innerA[0],
-          innerA[1] + offsety,
-          innerB[0],
-          innerB[1] + offsety,
-          b[0],
-          b[1] + offsety
-        )
-
-        // Calculate centre point
-        findPointOnCurve(pos, a, b, innerA, innerB, 0.5)
-
-        if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
-          const justPastCentre = LGraphCanvas.#lTempC
-          findPointOnCurve(justPastCentre, a, b, innerA, innerB, 0.51)
-
-          linkSegment._centreAngle = Math.atan2(
-            justPastCentre[1] - pos[1],
-            justPastCentre[0] - pos[0]
-          )
-        }
-      } else {
-        const l = this.links_render_mode == LinkRenderType.LINEAR_LINK ? 15 : 10
-        switch (startDir) {
-          case LinkDirection.LEFT:
-            innerA[0] += -l
-            break
-          case LinkDirection.RIGHT:
-            innerA[0] += l
-            break
-          case LinkDirection.UP:
-            innerA[1] += -l
-            break
-          case LinkDirection.DOWN:
-            innerA[1] += l
-            break
-        }
-        switch (endDir) {
-          case LinkDirection.LEFT:
-            innerB[0] += -l
-            break
-          case LinkDirection.RIGHT:
-            innerB[0] += l
-            break
-          case LinkDirection.UP:
-            innerB[1] += -l
-            break
-          case LinkDirection.DOWN:
-            innerB[1] += l
-            break
-        }
-        if (this.links_render_mode == LinkRenderType.LINEAR_LINK) {
-          path.moveTo(a[0], a[1] + offsety)
-          path.lineTo(innerA[0], innerA[1] + offsety)
-          path.lineTo(innerB[0], innerB[1] + offsety)
-          path.lineTo(b[0], b[1] + offsety)
-
-          // Calculate centre point
-          pos[0] = (innerA[0] + innerB[0]) * 0.5
-          pos[1] = (innerA[1] + innerB[1]) * 0.5
-
-          if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
-            linkSegment._centreAngle = Math.atan2(
-              innerB[1] - innerA[1],
-              innerB[0] - innerA[0]
-            )
-          }
-        } else if (this.links_render_mode == LinkRenderType.STRAIGHT_LINK) {
-          const midX = (innerA[0] + innerB[0]) * 0.5
-
-          path.moveTo(a[0], a[1])
-          path.lineTo(innerA[0], innerA[1])
-          path.lineTo(midX, innerA[1])
-          path.lineTo(midX, innerB[1])
-          path.lineTo(innerB[0], innerB[1])
-          path.lineTo(b[0], b[1])
-
-          // Calculate centre point
-          pos[0] = midX
-          pos[1] = (innerA[1] + innerB[1]) * 0.5
-
-          if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
-            const diff = innerB[1] - innerA[1]
-            if (Math.abs(diff) < 4) linkSegment._centreAngle = 0
-            else if (diff > 0) linkSegment._centreAngle = Math.PI * 0.5
-            else linkSegment._centreAngle = -(Math.PI * 0.5)
-          }
-        } else {
-          return
-        }
-      }
-    }
-
-    // rendering the outline of the connection can be a little bit slow
-    if (this.render_connections_border && !this.low_quality && !skip_border) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.5)'
-      ctx.stroke(path)
-    }
-
-    ctx.lineWidth = this.connections_width
-    ctx.fillStyle = ctx.strokeStyle = linkColour
-    ctx.stroke(path)
-
-    // render arrow in the middle
-    if (this.ds.scale >= 0.6 && this.highquality_render && linkSegment) {
-      // render arrow
-      if (this.render_connection_arrows) {
-        // compute two points in the connection
-        const posA = this.computeConnectionPoint(a, b, 0.25, startDir, endDir)
-        const posB = this.computeConnectionPoint(a, b, 0.26, startDir, endDir)
-        const posC = this.computeConnectionPoint(a, b, 0.75, startDir, endDir)
-        const posD = this.computeConnectionPoint(a, b, 0.76, startDir, endDir)
-
-        // compute the angle between them so the arrow points in the right direction
-        let angleA = 0
-        let angleB = 0
-        if (this.render_curved_connections) {
-          angleA = -Math.atan2(posB[0] - posA[0], posB[1] - posA[1])
-          angleB = -Math.atan2(posD[0] - posC[0], posD[1] - posC[1])
-        } else {
-          angleB = angleA = b[1] > a[1] ? 0 : Math.PI
-        }
-
-        // render arrow
-        const transform = ctx.getTransform()
-        ctx.translate(posA[0], posA[1])
-        ctx.rotate(angleA)
-        ctx.beginPath()
-        ctx.moveTo(-5, -3)
-        ctx.lineTo(0, +7)
-        ctx.lineTo(+5, -3)
-        ctx.fill()
-        ctx.setTransform(transform)
-
-        ctx.translate(posC[0], posC[1])
-        ctx.rotate(angleB)
-        ctx.beginPath()
-        ctx.moveTo(-5, -3)
-        ctx.lineTo(0, +7)
-        ctx.lineTo(+5, -3)
-        ctx.fill()
-        ctx.setTransform(transform)
-      }
-
-      // Draw link centre marker
-      ctx.beginPath()
-      if (this.linkMarkerShape === LinkMarkerShape.Arrow) {
-        const transform = ctx.getTransform()
-        ctx.translate(pos[0], pos[1])
-        if (linkSegment._centreAngle) ctx.rotate(linkSegment._centreAngle)
-        // The math is off, but it currently looks better in chromium
-        ctx.moveTo(-3.2, -5)
-        ctx.lineTo(+7, 0)
-        ctx.lineTo(-3.2, +5)
-        ctx.setTransform(transform)
-      } else if (
-        this.linkMarkerShape == null ||
-        this.linkMarkerShape === LinkMarkerShape.Circle
-      ) {
-        ctx.arc(pos[0], pos[1], 5, 0, Math.PI * 2)
-      }
-      if (disabled) {
-        const { fillStyle, globalAlpha } = ctx
-        ctx.fillStyle = this._pattern ?? '#797979'
-        ctx.globalAlpha = 0.75
-        ctx.fill()
-        ctx.globalAlpha = globalAlpha
-        ctx.fillStyle = fillStyle
-      }
-      ctx.fill()
-
-      if (LLink._drawDebug) {
-        const { fillStyle, font, globalAlpha, lineWidth, strokeStyle } = ctx
-        ctx.globalAlpha = 1
-        ctx.lineWidth = 4
-        ctx.fillStyle = 'white'
-        ctx.strokeStyle = 'black'
-        ctx.font = '16px Arial'
-
-        const text = String(linkSegment.id)
-        const { width, actualBoundingBoxAscent } = ctx.measureText(text)
-        const x = pos[0] - width * 0.5
-        const y = pos[1] + actualBoundingBoxAscent * 0.5
-        ctx.strokeText(text, x, y)
-        ctx.fillText(text, x, y)
-
-        ctx.font = font
-        ctx.globalAlpha = globalAlpha
-        ctx.lineWidth = lineWidth
-        ctx.fillStyle = fillStyle
-        ctx.strokeStyle = strokeStyle
-      }
-    }
-
-    // render flowing points
-    if (flow) {
-      ctx.fillStyle = linkColour
-      for (let i = 0; i < 5; ++i) {
-        const f = (LiteGraph.getTime() * 0.001 + i * 0.2) % 1
-        const flowPos = this.computeConnectionPoint(a, b, f, startDir, endDir)
-        ctx.beginPath()
-        ctx.arc(flowPos[0], flowPos[1], 5, 0, 2 * Math.PI)
-        ctx.fill()
-      }
-    }
-  }
-
-  /**
-   * Finds a point along a spline represented by a to b, with spline endpoint directions dictacted by start_dir and end_dir.
-   * @param a Start point
-   * @param b End point
-   * @param t Time: distance between points (e.g 0.25 is 25% along the line)
-   * @param start_dir Spline start direction
-   * @param end_dir Spline end direction
-   * @returns The point at {@link t} distance along the spline a-b.
-   */
-  computeConnectionPoint(
-    a: ReadOnlyPoint,
-    b: ReadOnlyPoint,
-    t: number,
-    start_dir: LinkDirection,
-    end_dir: LinkDirection
-  ): Point {
-    start_dir ||= LinkDirection.RIGHT
-    end_dir ||= LinkDirection.LEFT
-
-    const dist = distance(a, b)
-    const pa: Point = [a[0], a[1]]
-    const pb: Point = [b[0], b[1]]
-
-    this.#addSplineOffset(pa, start_dir, dist)
-    this.#addSplineOffset(pb, end_dir, dist)
-
-    const c1 = (1 - t) * (1 - t) * (1 - t)
-    const c2 = 3 * ((1 - t) * (1 - t)) * t
-    const c3 = 3 * (1 - t) * (t * t)
-    const c4 = t * t * t
-
-    const x = c1 * a[0] + c2 * pa[0] + c3 * pb[0] + c4 * b[0]
-    const y = c1 * a[1] + c2 * pa[1] + c3 * pb[1] + c4 * b[1]
-    return [x, y]
-  }
-
-  /**
-   * Modifies an existing point, adding a single-axis offset.
-   * @param point The point to add the offset to
-   * @param direction The direction to add the offset in
-   * @param dist Distance to offset
-   * @param factor Distance is mulitplied by this value.  Default: 0.25
-   */
-  #addSplineOffset(
-    point: Point,
-    direction: LinkDirection,
-    dist: number,
-    factor = 0.25
-  ): void {
-    switch (direction) {
-      case LinkDirection.LEFT:
-        point[0] += dist * -factor
-        break
-      case LinkDirection.RIGHT:
-        point[0] += dist * factor
-        break
-      case LinkDirection.UP:
-        point[1] += dist * -factor
-        break
-      case LinkDirection.DOWN:
-        point[1] += dist * factor
-        break
+      )
     }
   }
 
