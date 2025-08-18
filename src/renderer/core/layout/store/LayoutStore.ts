@@ -8,8 +8,7 @@ import log from 'loglevel'
 import { type ComputedRef, type Ref, computed, customRef } from 'vue'
 import * as Y from 'yjs'
 
-import { ACTOR_CONFIG, DEBUG_CONFIG } from '@/constants/layout'
-import { SpatialIndexManager } from '@/services/spatialIndexManager'
+import { ACTOR_CONFIG, DEBUG_CONFIG } from '@/renderer/core/layout/constants'
 import type {
   CreateNodeOperation,
   DeleteNodeOperation,
@@ -17,7 +16,7 @@ import type {
   MoveNodeOperation,
   ResizeNodeOperation,
   SetNodeZIndexOperation
-} from '@/types/layoutOperations'
+} from '@/renderer/core/layout/types'
 import type {
   Bounds,
   LayoutChange,
@@ -25,7 +24,8 @@ import type {
   NodeId,
   NodeLayout,
   Point
-} from '@/types/layoutTypes'
+} from '@/renderer/core/layout/types'
+import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 // Create logger for layout store
 const logger = log.getLogger(DEBUG_CONFIG.STORE_LOGGER_NAME)
@@ -662,4 +662,4 @@ class LayoutStoreImpl implements LayoutStore {
 export const layoutStore = new LayoutStoreImpl()
 
 // Export types for convenience
-export type { LayoutStore } from '@/types/layoutTypes'
+export type { LayoutStore } from '@/renderer/core/layout/types'

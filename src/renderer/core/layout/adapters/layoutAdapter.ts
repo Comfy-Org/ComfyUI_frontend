@@ -4,8 +4,8 @@
  * Abstracts the underlying CRDT implementation to allow for different
  * backends (Yjs, Automerge, etc.) and easier testing.
  */
-import type { LayoutOperation } from '@/types/layoutOperations'
-import type { NodeId, NodeLayout } from '@/types/layoutTypes'
+import type { LayoutOperation } from '@/renderer/core/layout/types'
+import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
 
 /**
  * Change event emitted by the adapter

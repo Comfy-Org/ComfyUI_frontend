@@ -4,14 +4,14 @@
  * Provides a clean API for layout operations that are CRDT-ready.
  * Operations are synchronous and applied directly to the store.
  */
-import { layoutStore } from '@/stores/layoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type {
   LayoutMutations,
   NodeId,
   NodeLayout,
   Point,
   Size
-} from '@/types/layoutTypes'
+} from '@/renderer/core/layout/types'
 
 class LayoutMutationsImpl implements LayoutMutations {
   /**

@@ -6,8 +6,13 @@
  */
 import * as Y from 'yjs'
 
-import type { LayoutOperation } from '@/types/layoutOperations'
-import type { Bounds, NodeId, NodeLayout, Point } from '@/types/layoutTypes'
+import type { LayoutOperation } from '@/renderer/core/layout/types'
+import type {
+  Bounds,
+  NodeId,
+  NodeLayout,
+  Point
+} from '@/renderer/core/layout/types'
 
 import type { AdapterChange, LayoutAdapter } from './layoutAdapter'
 
