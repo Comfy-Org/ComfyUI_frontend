@@ -241,7 +241,7 @@ test.describe('Workflows sidebar', () => {
   test('Does not report warning when switching between opened workflows', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('missing_nodes')
+    await comfyPage.loadWorkflow('missing/missing_nodes')
     await comfyPage.closeDialog()
 
     // Load blank workflow
