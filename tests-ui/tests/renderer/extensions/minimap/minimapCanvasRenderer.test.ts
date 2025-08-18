@@ -237,7 +237,14 @@ describe('minimapCanvasRenderer', () => {
         links: [1]
       }
     ] as any
-    mockGraph.links = new Map([[1, { id: 1, target_id: 2 }]]) as any
+
+    // Create a hybrid Map/Object for links as LiteGraph expects
+    const linksMap = new Map([[1, { id: 1, target_id: 2 }]])
+    const links = Object.assign(linksMap, {
+      1: { id: 1, target_id: 2 }
+    })
+    mockGraph.links = links as any
+
     mockGraph.getNodeById = vi.fn().mockReturnValue(targetNode)
 
     const context: MinimapRenderContext = {
