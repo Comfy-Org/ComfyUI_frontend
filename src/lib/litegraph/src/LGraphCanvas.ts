@@ -2683,6 +2683,26 @@ export class LGraphCanvas
         this.processNodeDblClicked(node)
       }
 
+      // Check for title button clicks before calling onMouseDown
+      if (node.title_buttons?.length && !node.flags.collapsed) {
+        // pos contains the offset from the node's position, so we need to use node-relative coordinates
+        const nodeRelativeX = pos[0]
+        const nodeRelativeY = pos[1]
+
+        for (let i = 0; i < node.title_buttons.length; i++) {
+          const button = node.title_buttons[i]
+          if (
+            button.visible &&
+            button.isPointInside(nodeRelativeX, nodeRelativeY)
+          ) {
+            node.onTitleButtonClick(button, this)
+            // Set a no-op click handler to prevent fallback canvas dragging
+            pointer.onClick = () => {}
+            return
+          }
+        }
+      }
+
       // Mousedown callback - can block drag
       if (node.onMouseDown?.(e, pos, this)) {
         // Node handled the event (e.g., title button clicked)
