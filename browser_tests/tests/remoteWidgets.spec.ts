@@ -89,7 +89,7 @@ test.describe('Remote COMBO Widget', () => {
       comfyPage
     }) => {
       const nodeName = 'Remote Widget Node'
-      await comfyPage.loadWorkflow('remote_widget')
+      await comfyPage.loadWorkflow('inputs/remote_widget')
       await comfyPage.page.waitForTimeout(512)
 
       const node = await comfyPage.page.evaluate((name) => {

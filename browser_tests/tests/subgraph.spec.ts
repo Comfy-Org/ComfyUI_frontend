@@ -641,7 +641,7 @@ test.describe('Subgraph Operations', () => {
       // Enable new menu for breadcrumb navigation
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
 
-      const workflowName = 'subgraph-with-promoted-text-widget'
+      const workflowName = 'subgraph/subgraph-with-promoted-text-widget'
       await comfyPage.loadWorkflow(workflowName)
 
       const textareaCount = await comfyPage.page

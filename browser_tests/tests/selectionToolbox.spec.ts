@@ -33,7 +33,7 @@ test.describe('Selection Toolbox', () => {
   test('shows at correct position when node is pasted', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     await comfyPage.selectNodes(['KSampler'])
     await comfyPage.ctrlC()
     await comfyPage.page.mouse.move(100, 100)
@@ -56,7 +56,7 @@ test.describe('Selection Toolbox', () => {
   test('hide when select and drag happen at the same time', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     const nodePos = await node.getPosition()
 
@@ -103,7 +103,7 @@ test.describe('Selection Toolbox', () => {
     comfyPage
   }) => {
     // A group + a KSampler node
-    await comfyPage.loadWorkflow('single_group')
+    await comfyPage.loadWorkflow('groups/single_group')
 
     // Select group + node should show bypass button
     await comfyPage.page.focus('canvas')

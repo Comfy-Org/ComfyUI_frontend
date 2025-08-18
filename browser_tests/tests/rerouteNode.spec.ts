@@ -13,7 +13,7 @@ test.describe('Reroute Node', () => {
   })
 
   test('loads from inserted workflow', async ({ comfyPage }) => {
-    const workflowName = 'single_connected_reroute_node.json'
+    const workflowName = 'links/single_connected_reroute_node.json'
     await comfyPage.setupWorkflowsDirectory({
       [workflowName]: workflowName
     })
