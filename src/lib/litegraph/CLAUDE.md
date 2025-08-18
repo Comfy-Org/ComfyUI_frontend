@@ -27,8 +27,6 @@
 
 # Testing Guidelines
 
-**NOTE**: Litegraph tests have been migrated to `tests-ui/tests/litegraph/` for better organization.
-
 ## Avoiding Circular Dependencies in Tests
 
 **CRITICAL**: When writing tests for subgraph-related code, always import from the barrel export to avoid circular dependency issues:
