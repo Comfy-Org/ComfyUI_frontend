@@ -261,10 +261,10 @@
     "label": "Toggle Logs Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "Toggle shortcuts.essentials Bottom Panel"
+    "label": "Toggle Essential Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "Toggle shortcuts.viewControls Bottom Panel"
+    "label": "Toggle View Controls Bottom Panel"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"
