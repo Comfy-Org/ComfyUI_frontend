@@ -80,7 +80,7 @@
 <script setup lang="ts">
 import Checkbox from 'primevue/checkbox'
 
-import { MinimapOptionKey } from '@/composables/useMinimap'
+import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 
 defineProps<{
   panelStyles: any
@@ -92,6 +92,6 @@ defineProps<{
 }>()
 
 defineEmits<{
-  updateOption: [key: MinimapOptionKey, value: boolean]
+  updateOption: [key: MinimapSettingsKey, value: boolean]
 }>()
 </script>

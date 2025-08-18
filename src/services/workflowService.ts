@@ -1,9 +1,9 @@
 import { toRaw } from 'vue'
 
-import { useWorkflowThumbnail } from '@/composables/useWorkflowThumbnail'
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
