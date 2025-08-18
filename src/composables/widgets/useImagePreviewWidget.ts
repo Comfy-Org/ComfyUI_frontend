@@ -1,13 +1,19 @@
-import { type LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import {
+  BaseWidget,
+  type CanvasPointer,
+  type LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
-  ICustomWidget,
   IWidgetOptions
-} from '@comfyorg/litegraph/dist/types/widgets'
-
+} from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 const renderPreview = (
@@ -15,7 +21,7 @@ const renderPreview = (
   node: LGraphNode,
   shiftY: number
 ) => {
-  const canvas = app.canvas
+  const canvas = useCanvasStore().getCanvas()
   const mouse = canvas.graph_mouse
 
   if (!canvas.pointer_is_down && node.pointerDown) {
@@ -36,7 +42,9 @@ const renderPreview = (
     node.imageIndex = imageIndex = 0
   }
 
-  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = 15
+  const settingStore = useSettingStore()
+  const allowImageSizeDraw = settingStore.get('Comfy.Node.AllowImageSizeDraw')
+  const IMAGE_TEXT_SIZE_TEXT_HEIGHT = allowImageSizeDraw ? 15 : 0
   const dw = node.size[0]
   const dh = node.size[1] - shiftY - IMAGE_TEXT_SIZE_TEXT_HEIGHT
 
@@ -165,12 +173,14 @@ const renderPreview = (
   ctx.drawImage(img, x, y, w, h)
 
   // Draw image size text below the image
-  ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
-  ctx.textAlign = 'center'
-  ctx.font = '10px sans-serif'
-  const sizeText = `${Math.round(img.naturalWidth)} × ${Math.round(img.naturalHeight)}`
-  const textY = y + h + 10
-  ctx.fillText(sizeText, x + w / 2, textY)
+  if (allowImageSizeDraw) {
+    ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
+    ctx.textAlign = 'center'
+    ctx.font = '10px sans-serif'
+    const sizeText = `${Math.round(img.naturalWidth)} × ${Math.round(img.naturalHeight)}`
+    const textY = y + h + 10
+    ctx.fillText(sizeText, x + w / 2, textY)
+  }
 
   const drawButton = (
     x: number,
@@ -229,32 +239,61 @@ const renderPreview = (
   }
 }
 
-class ImagePreviewWidget implements ICustomWidget {
-  readonly type: 'custom'
-  readonly name: string
-  readonly options: IWidgetOptions<unknown>
-  // Dummy value to satisfy type requirements
-  value: string
-  y: number = 0
-
-  constructor(name: string, options: IWidgetOptions<unknown>) {
-    this.type = 'custom'
-    this.name = name
-    this.options = options
-    this.value = ''
-  }
-
-  draw(
-    ctx: CanvasRenderingContext2D,
+class ImagePreviewWidget extends BaseWidget {
+  constructor(
     node: LGraphNode,
-    widget_width: number,
-    y: number,
-    H: number
-  ): void {
-    renderPreview(ctx, node, y)
+    name: string,
+    options: IWidgetOptions<string | object>
+  ) {
+    const widget: IBaseWidget = {
+      name,
+      options,
+      type: 'custom',
+      /** Dummy value to satisfy type requirements. */
+      value: '',
+      y: 0
+    }
+    super(widget, node)
+
+    // Don't serialize the widget value
+    this.serialize = false
   }
 
-  computeLayoutSize(this: IBaseWidget, node: LGraphNode) {
+  override drawWidget(ctx: CanvasRenderingContext2D): void {
+    renderPreview(ctx, this.node, this.y)
+  }
+
+  override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {
+    pointer.onDragStart = () => {
+      const { canvas } = app
+      const { graph } = canvas
+      canvas.emitBeforeChange()
+      graph?.beforeChange()
+      // Ensure that dragging is properly cleaned up, on success or failure.
+      pointer.finally = () => {
+        canvas.isDragging = false
+        graph?.afterChange()
+        canvas.emitAfterChange()
+      }
+
+      canvas.processSelect(node, pointer.eDown)
+      canvas.isDragging = true
+    }
+
+    pointer.onDragEnd = (e) => {
+      const { canvas } = app
+      if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
+        canvas.graph?.snapToGrid(canvas.selectedItems)
+
+      canvas.setDirty(true, true)
+    }
+
+    return true
+  }
+
+  override onClick(): void {}
+
+  override computeLayoutSize() {
     return {
       minHeight: 220,
       minWidth: 1
@@ -268,7 +307,7 @@ export const useImagePreviewWidget = () => {
     inputSpec: InputSpec
   ) => {
     return node.addCustomWidget(
-      new ImagePreviewWidget(inputSpec.name, {
+      new ImagePreviewWidget(node, inputSpec.name, {
         serialize: false
       })
     )

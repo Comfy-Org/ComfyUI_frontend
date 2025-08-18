@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div v-if="nodePacks?.length" class="flex flex-col h-full">
     <div class="p-6 flex-1 overflow-auto">
-      <InfoPanelHeader :node-packs="nodePacks">
+      <InfoPanelHeader :node-packs>
         <template #thumbnail>
           <PackIconStacked :node-packs="nodePacks" />
         </template>
@@ -24,32 +24,40 @@
       </div>
     </div>
   </div>
+  <div v-else class="mt-4 mx-8 flex-1 overflow-hidden text-sm">
+    {{ $t('manager.infoPanelEmpty') }}
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, onUnmounted } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
-import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components } from '@/types/comfyRegistryTypes'
 
 const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]
 }>()
 
-const comfyRegistryService = useComfyRegistryService()
+const { getNodeDefs } = useComfyRegistryStore()
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
-  if (!comfyRegistryService.packNodesAvailable(pack)) return []
-  return comfyRegistryService.getNodeDefs({
+  if (!pack.latest_version?.version) return []
+  const nodeDefs = await getNodeDefs.call({
     packId: pack.id,
-    versionId: pack.latest_version.id
+    version: pack.latest_version?.version,
+    // Fetch all nodes.
+    // TODO: Render all nodes previews and handle pagination.
+    // For determining length, use the `totalNumberOfPages` field of response
+    limit: 8192
   })
+  return nodeDefs?.comfy_nodes ?? []
 }
 
 const { state: allNodeDefs } = useAsyncState(
@@ -66,4 +74,8 @@ const totalNodesCount = computed(() =>
     0
   )
 )
+
+onUnmounted(() => {
+  getNodeDefs.cancel()
+})
 </script>

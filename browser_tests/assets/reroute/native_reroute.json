@@ -84,6 +84,10 @@
   "groups": [],
   "config": {},
   "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    },
     "reroutes": [
       {
         "id": 1,

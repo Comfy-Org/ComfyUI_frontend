@@ -1,39 +1,49 @@
 <template>
-  <div class="comfyui-body grid h-screen w-screen overflow-hidden">
-    <div class="comfyui-body-top" id="comfyui-body-top">
-      <TopMenubar v-if="useNewMenu === 'Top'" />
+  <div class="comfyui-body grid h-full w-full overflow-hidden">
+    <div id="comfyui-body-top" class="comfyui-body-top">
+      <TopMenubar v-if="showTopMenu" />
     </div>
-    <div class="comfyui-body-bottom" id="comfyui-body-bottom">
-      <TopMenubar v-if="useNewMenu === 'Bottom'" />
+    <div id="comfyui-body-bottom" class="comfyui-body-bottom">
+      <TopMenubar v-if="showBottomMenu" />
     </div>
-    <div class="comfyui-body-left" id="comfyui-body-left" />
-    <div class="comfyui-body-right" id="comfyui-body-right" />
-    <div class="graph-canvas-container" id="graph-canvas-container">
+    <div id="comfyui-body-left" class="comfyui-body-left" />
+    <div id="comfyui-body-right" class="comfyui-body-right" />
+    <div id="graph-canvas-container" class="graph-canvas-container">
       <GraphCanvas @ready="onGraphReady" />
     </div>
   </div>
 
   <GlobalToast />
+  <RerouteMigrationToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
-  <BrowserTabTitle />
   <MenuHamburger />
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useBreakpoints, useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  watch,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
+import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVersionMismatchWarning'
+import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
 import { StatusWsMessageStatus } from '@/schemas/apiSchema'
@@ -52,6 +62,7 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -59,6 +70,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
+useProgressFavicon()
+useBrowserTabTitle()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -66,6 +79,14 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const versionCompatibilityStore = useVersionCompatibilityStore()
+
+const breakpoints = useBreakpoints({ md: 961 })
+const isMobile = breakpoints.smaller('md')
+const showTopMenu = computed(() => isMobile.value || useNewMenu.value === 'Top')
+const showBottomMenu = computed(
+  () => !isMobile.value && useNewMenu.value === 'Bottom'
+)
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -168,27 +189,36 @@ const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   await queueStore.update()
 }
 
+const onExecutionSuccess = async () => {
+  await queueStore.update()
+}
+
 const reconnectingMessage: ToastMessageOptions = {
   severity: 'error',
   summary: t('g.reconnecting')
 }
 
 const onReconnecting = () => {
-  toast.remove(reconnectingMessage)
-  toast.add(reconnectingMessage)
+  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
+    toast.remove(reconnectingMessage)
+    toast.add(reconnectingMessage)
+  }
 }
 
 const onReconnected = () => {
-  toast.remove(reconnectingMessage)
-  toast.add({
-    severity: 'success',
-    summary: t('g.reconnected'),
-    life: 2000
-  })
+  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
+    toast.remove(reconnectingMessage)
+    toast.add({
+      severity: 'success',
+      summary: t('g.reconnected'),
+      life: 2000
+    })
+  }
 }
 
 onMounted(() => {
   api.addEventListener('status', onStatus)
+  api.addEventListener('execution_success', onExecutionSuccess)
   api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   executionStore.bindExecutionEvents()
@@ -202,6 +232,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   api.removeEventListener('status', onStatus)
+  api.removeEventListener('execution_success', onExecutionSuccess)
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
@@ -210,6 +241,17 @@ onBeforeUnmount(() => {
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 
 const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
+
+// Initialize version mismatch warning in setup context
+// It will be triggered automatically when the store is ready
+useFrontendVersionMismatchWarning({ immediate: true })
+
+void nextTick(() => {
+  versionCompatibilityStore.initialize().catch((error) => {
+    console.warn('Version compatibility check failed:', error)
+  })
+})
+
 const onGraphReady = () => {
   requestIdleCallback(
     () => {
@@ -224,15 +266,17 @@ const onGraphReady = () => {
       )
 
       // Load model folders
-      wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
+      void wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
 
       // Non-blocking load of node frequencies
-      wrapWithErrorHandlingAsync(useNodeFrequencyStore().loadNodeFrequencies)()
+      void wrapWithErrorHandlingAsync(
+        useNodeFrequencyStore().loadNodeFrequencies
+      )()
 
       // Node defs now available after comfyApp.setup.
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
-      useNodeDefStore().nodeSearchService.endsWithFilterStartSequence('')
+      useNodeDefStore().nodeSearchService.searchNode('')
     },
     { timeout: 1000 }
   )

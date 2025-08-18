@@ -1,16 +1,14 @@
 <template>
   <Galleria
     v-model:visible="galleryVisible"
-    @update:visible="handleVisibilityChange"
-    :activeIndex="activeIndex"
-    @update:activeIndex="handleActiveIndexChange"
+    :active-index="activeIndex"
     :value="allGalleryItems"
-    :showIndicators="false"
-    changeItemOnIndicatorHover
-    showItemNavigators
-    fullScreen
+    :show-indicators="false"
+    change-item-on-indicator-hover
+    show-item-navigators
+    full-screen
     circular
-    :showThumbnails="false"
+    :show-thumbnails="false"
     :pt="{
       mask: {
         onMousedown: onMaskMouseDown,
@@ -24,17 +22,20 @@
         style: 'position: fixed !important'
       }
     }"
+    @update:visible="handleVisibilityChange"
+    @update:active-index="handleActiveIndexChange"
   >
     <template #item="{ item }">
       <ComfyImage
+        v-if="item.isImage"
         :key="item.url"
         :src="item.url"
         :contain="false"
         :alt="item.filename"
         class="galleria-image"
-        v-if="item.isImage"
       />
       <ResultVideo v-else-if="item.isVideo" :result="item" />
+      <ResultAudio v-else-if="item.isAudio" :result="item" />
     </template>
   </Galleria>
 </template>
@@ -46,6 +47,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import { ResultItemImpl } from '@/stores/queueStore'
 
+import ResultAudio from './ResultAudio.vue'
 import ResultVideo from './ResultVideo.vue'
 
 const galleryVisible = ref(false)
@@ -141,5 +143,13 @@ img.galleria-image {
 .p-galleria-close-button {
   /* Set z-index so the close button doesn't get hidden behind the image when image is large */
   z-index: 1;
+}
+
+/* Mobile/tablet specific fixes */
+@media screen and (max-width: 768px) {
+  .p-galleria-prev-button,
+  .p-galleria-next-button {
+    z-index: 2;
+  }
 }
 </style>

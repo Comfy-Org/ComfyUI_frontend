@@ -25,6 +25,17 @@
     },
     "tooltip": "选择自定义选项以隐藏系统标题栏"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "画布背景图像",
+    "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
+  },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "画布导航模式",
+    "options": {
+      "Left-Click Pan (Legacy)": "左键拖曳（旧版）",
+      "Standard (New)": "标准（新）"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "显示选择工具箱"
   },
@@ -108,6 +119,46 @@
       "Straight": "直角线"
     }
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "启用3D查看器（测试版）",
+    "tooltip": "为选定节点启用3D查看器（测试版）。此功能允许你在全尺寸3D查看器中直接可视化和交互3D模型。"
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "初始背景颜色",
+    "tooltip": "控制3D场景的默认背景颜色。此设置决定新建3D组件时的背景外观，但每个组件在创建后都可以单独调整。"
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "摄像机类型",
+    "options": {
+      "orthographic": "正交",
+      "perspective": "透视"
+    },
+    "tooltip": "控制创建新的3D小部件时，默认的相机是透视还是正交。这个默认设置仍然可以在创建后为每个小部件单独切换。"
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "光照调整步长",
+    "tooltip": "控制在3D场景中调整光照强度时的步长。较小的步长值可以实现更精细的光照调整，较大的值则会使每次调整的变化更加明显。"
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "初始光照强度",
+    "tooltip": "设置3D场景中灯光的默认亮度级别。该数值决定新建3D控件时灯光照亮物体的强度，但每个控件在创建后都可以单独调整。"
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "最大光照强度",
+    "tooltip": "设置3D场景允许的最大光照强度值。此项定义了在调整任何3D控件照明时可设定的最高亮度上限。"
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "光照强度下限",
+    "tooltip": "设置3D场景允许的最小光照强度值。此项定义在调整任何3D控件照明时可设定的最低亮度。"
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "显示网格",
+    "tooltip": "默认显示网格开关"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "显示预览",
+    "tooltip": "默认显示预览开关"
+  },
   "Comfy_Locale": {
     "name": "语言"
   },
@@ -157,8 +208,8 @@
       "Show all": "显示全部"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "在节点上下文菜单中，将输入/组件之间转换的条目放置在子菜单中。"
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "显示 API 节点定价徽章"
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "节点搜索框",
@@ -186,6 +237,9 @@
   "Comfy_NodeSuggestions_number": {
     "name": "节点建议数量",
     "tooltip": "仅适用于 litegraph"
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "在图像预览下方显示宽度×高度"
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "连线自动吸附到节点接口",
@@ -216,6 +270,10 @@
     "name": "吸附高亮节点",
     "tooltip": "在拖动连线经过具有可用输入接口的节点时，高亮显示该节点。"
   },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "显示版本更新",
+    "tooltip": "显示新模型和主要新功能的更新。"
+  },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "指针点击漂移延迟",
     "tooltip": "按下指针按钮后，忽略指针移动的最大时间（毫秒）。\n\n有助于防止在点击时意外移动鼠标。"
@@ -243,10 +301,6 @@
     "name": "队列历史大小",
     "tooltip": "队列历史中显示的最大任务数量。"
   },
-  "Comfy_RerouteBeta": {
-    "name": "选择加入转接点Beta",
-    "tooltip": "启用新的转接点。\n\n通过按住alt并划过连线来添加转接点，或在连线中点菜单中添加。\n\n禁用此选项不会造成破坏 - 转接点将被隐藏。"
-  },
   "Comfy_Sidebar_Location": {
     "name": "侧边栏位置",
     "options": {
@@ -260,6 +314,9 @@
       "normal": "正常",
       "small": "小"
     }
+  },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "统一侧边栏宽度"
   },
   "Comfy_SnapToGrid_GridSize": {
     "name": "吸附网格大小",
@@ -280,11 +337,8 @@
       "Bottom": "底部",
       "Disabled": "禁用",
       "Top": "顶部"
-    }
-  },
-  "Comfy_Validation_NodeDefs": {
-    "name": "校验节点定义（慢）",
-    "tooltip": "推荐给节点开发者。开启后会在 ComfyUI 启动时校验全部节点定义。"
+    },
+    "tooltip": "选单列位置。在行动装置上，选单始终显示于顶端。"
   },
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
@@ -300,8 +354,22 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "关闭窗口时显示确认"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "自动保存",
+    "options": {
+      "after delay": "延迟后",
+      "off": "关闭"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "自动保存延迟（毫秒）",
+    "tooltip": "仅在自动保存设置为“延迟后”时适用。"
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "删除工作流时显示确认"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "持久化工作流状态并在页面（重新）加载时恢复"
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "显示缺失模型警告"
@@ -331,8 +399,16 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"
   },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "始终收缩新节点",
+    "tooltip": "创建节点时将其缩小到最小可能尺寸。禁用后，新添加的节点会略微加宽以显示控件数值。"
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "工具提示延迟"
+  },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "重新路由样条偏移",
+    "tooltip": "贝塞尔控制点从重新路由中心点的偏移"
   },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"

@@ -1,13 +1,25 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref } from 'vue'
+import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId,
+  parseNodeExecutionId,
+  parseNodeLocatorId
+} from '@/types/nodeIdentification'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import { UserFile } from './userFileStore'
 
@@ -21,7 +33,7 @@ export class ComfyWorkflow extends UserFile {
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
-  private _isModified: boolean = false
+  _isModified: boolean = false
 
   /**
    * @param options The path, modified, and size of the workflow.
@@ -31,7 +43,7 @@ export class ComfyWorkflow extends UserFile {
     super(options.path, options.modified, options.size)
   }
 
-  get key() {
+  override get key() {
     return this.path.substring(ComfyWorkflow.basePath.length)
   }
 
@@ -43,15 +55,15 @@ export class ComfyWorkflow extends UserFile {
     return this.changeTracker?.initialState ?? null
   }
 
-  get isLoaded(): boolean {
+  override get isLoaded(): boolean {
     return this.changeTracker !== null
   }
 
-  get isModified(): boolean {
+  override get isModified(): boolean {
     return this._isModified
   }
 
-  set isModified(value: boolean) {
+  override set isModified(value: boolean) {
     this._isModified = value
   }
 
@@ -62,7 +74,7 @@ export class ComfyWorkflow extends UserFile {
    * @param force Whether to force loading the content even if it is already loaded.
    * @returns this
    */
-  async load({
+  override async load({
     force = false
   }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
     await super.load({ force })
@@ -83,13 +95,13 @@ export class ComfyWorkflow extends UserFile {
     return this as LoadedComfyWorkflow
   }
 
-  unload(): void {
+  override unload(): void {
     console.debug('unload workflow', this.path)
     this.changeTracker = null
     super.unload()
   }
 
-  async save() {
+  override async save() {
     this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
@@ -104,7 +116,7 @@ export class ComfyWorkflow extends UserFile {
    * @param path The path to save the workflow to. Note: with 'workflows/' prefix.
    * @returns this
    */
-  async saveAs(path: string) {
+  override async saveAs(path: string) {
     this.content = JSON.stringify(this.activeState)
     return await super.saveAs(path)
   }
@@ -128,8 +140,8 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
 export interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
   isActive: (workflow: ComfyWorkflow) => boolean
-  openWorkflows: LoadedComfyWorkflow[]
-  openedWorkflowIndexShift: (shift: number) => LoadedComfyWorkflow | null
+  openWorkflows: ComfyWorkflow[]
+  openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
   openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
   openWorkflowsInBackground: (paths: {
     left?: string[]
@@ -153,6 +165,22 @@ export interface WorkflowStore {
   getWorkflowByPath: (path: string) => ComfyWorkflow | null
   syncWorkflows: (dir?: string) => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
+
+  /** `true` if any subgraph is currently being viewed. */
+  isSubgraphActive: boolean
+  activeSubgraph: Subgraph | undefined
+  /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
+  updateActiveGraph: () => void
+  executionIdToCurrentId: (id: string) => any
+  nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
+  nodeExecutionIdToNodeLocatorId: (
+    nodeExecutionId: NodeExecutionId | string
+  ) => NodeLocatorId | null
+  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId | string) => NodeId | null
+  nodeLocatorIdToNodeExecutionId: (
+    locatorId: NodeLocatorId | string,
+    targetSubgraph?: Subgraph
+  ) => NodeExecutionId | null
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -300,6 +328,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       (path) => path !== workflow.path
     )
     if (workflow.isTemporary) {
+      // Clear thumbnail when temporary workflow is closed
+      clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
@@ -360,12 +390,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** A filesystem operation is currently in progress (e.g. save, rename, delete) */
   const isBusy = ref<boolean>(false)
+  const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     isBusy.value = true
     try {
       // Capture all needed values upfront
       const oldPath = workflow.path
+      const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
 
       const openIndex = detachWorkflow(workflow)
@@ -376,10 +408,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
         attachWorkflow(workflow, openIndex)
       }
 
+      // Move thumbnail from old key to new key (using workflow keys, not full paths)
+      const newKey = workflow.key
+      moveWorkflowThumbnail(oldKey, newKey)
       // Update bookmarks
       if (wasBookmarked) {
-        bookmarkStore.setBookmarked(oldPath, false)
-        bookmarkStore.setBookmarked(newPath, true)
+        await bookmarkStore.setBookmarked(oldPath, false)
+        await bookmarkStore.setBookmarked(newPath, true)
       }
     } finally {
       isBusy.value = false
@@ -391,8 +426,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     try {
       await workflow.delete()
       if (bookmarkStore.isBookmarked(workflow.path)) {
-        bookmarkStore.setBookmarked(workflow.path, false)
+        await bookmarkStore.setBookmarked(workflow.path, false)
       }
+      // Clear thumbnail when workflow is deleted
+      clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
     } finally {
       isBusy.value = false
@@ -418,6 +455,196 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  /** @see WorkflowStore.isSubgraphActive */
+  const isSubgraphActive = ref(false)
+
+  /** @see WorkflowStore.activeSubgraph */
+  const activeSubgraph = shallowRef<Raw<Subgraph>>()
+
+  /** @see WorkflowStore.updateActiveGraph */
+  const updateActiveGraph = () => {
+    const subgraph = comfyApp.canvas?.subgraph
+    activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
+    if (!comfyApp.canvas) return
+
+    isSubgraphActive.value = isSubgraph(subgraph)
+  }
+
+  const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
+    const node = graph.getNodeById(id)
+    if (node?.isSubgraphNode()) return node.subgraph
+  }
+
+  const getSubgraphsFromInstanceIds = (
+    currentGraph: LGraph | Subgraph,
+    subgraphNodeIds: string[],
+    subgraphs: Subgraph[] = []
+  ): Subgraph[] => {
+    const currentPart = subgraphNodeIds.shift()
+    if (currentPart === undefined) return subgraphs
+
+    const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
+    if (subgraph === undefined) throw new Error('Subgraph not found')
+
+    subgraphs.push(subgraph)
+    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
+  }
+
+  const executionIdToCurrentId = (id: string) => {
+    const subgraph = activeSubgraph.value
+
+    // Short-circuit: ID belongs to the parent workflow / no active subgraph
+    if (!id.includes(':')) {
+      return !subgraph ? id : undefined
+    } else if (!subgraph) {
+      return
+    }
+
+    // Parse the execution ID (e.g., "123:456:789")
+    const subgraphNodeIds = id.split(':')
+
+    // Start from the root graph
+    const { graph } = comfyApp
+
+    // If the last subgraph is the active subgraph, return the node ID
+    const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
+    if (subgraphs.at(-1) === subgraph) {
+      return subgraphNodeIds.at(-1)
+    }
+  }
+
+  watch(activeWorkflow, updateActiveGraph)
+
+  /**
+   * Convert a node ID to a NodeLocatorId
+   * @param nodeId The local node ID
+   * @param subgraph The subgraph containing the node (defaults to active subgraph)
+   * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
+   */
+  const nodeIdToNodeLocatorId = (
+    nodeId: NodeId,
+    subgraph?: Subgraph
+  ): NodeLocatorId => {
+    const targetSubgraph = subgraph ?? activeSubgraph.value
+    if (!targetSubgraph) {
+      // Node is in the root graph, return the node ID as-is
+      return String(nodeId)
+    }
+
+    return createNodeLocatorId(targetSubgraph.id, nodeId)
+  }
+
+  /**
+   * Convert an execution ID to a NodeLocatorId
+   * @param nodeExecutionId The execution node ID (e.g., "123:456:789")
+   * @returns The NodeLocatorId or null if conversion fails
+   */
+  const nodeExecutionIdToNodeLocatorId = (
+    nodeExecutionId: NodeExecutionId | string
+  ): NodeLocatorId | null => {
+    // Handle simple node IDs (root graph - no colons)
+    if (!nodeExecutionId.includes(':')) {
+      return nodeExecutionId
+    }
+
+    const parts = parseNodeExecutionId(nodeExecutionId)
+    if (!parts || parts.length === 0) return null
+
+    const nodeId = parts[parts.length - 1]
+    const subgraphNodeIds = parts.slice(0, -1)
+
+    if (subgraphNodeIds.length === 0) {
+      // Node is in root graph, return the node ID as-is
+      return String(nodeId)
+    }
+
+    try {
+      const subgraphs = getSubgraphsFromInstanceIds(
+        comfyApp.graph,
+        subgraphNodeIds.map((id) => String(id))
+      )
+      const immediateSubgraph = subgraphs[subgraphs.length - 1]
+      return createNodeLocatorId(immediateSubgraph.id, nodeId)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Extract the node ID from a NodeLocatorId
+   * @param locatorId The NodeLocatorId
+   * @returns The local node ID or null if invalid
+   */
+  const nodeLocatorIdToNodeId = (
+    locatorId: NodeLocatorId | string
+  ): NodeId | null => {
+    const parsed = parseNodeLocatorId(locatorId)
+    return parsed?.localNodeId ?? null
+  }
+
+  /**
+   * Convert a NodeLocatorId to an execution ID for a specific context
+   * @param locatorId The NodeLocatorId
+   * @param targetSubgraph The subgraph context (defaults to active subgraph)
+   * @returns The execution ID or null if the node is not accessible from the target context
+   */
+  const nodeLocatorIdToNodeExecutionId = (
+    locatorId: NodeLocatorId | string,
+    targetSubgraph?: Subgraph
+  ): NodeExecutionId | null => {
+    const parsed = parseNodeLocatorId(locatorId)
+    if (!parsed) return null
+
+    const { subgraphUuid, localNodeId } = parsed
+
+    // If no subgraph UUID, this is a root graph node
+    if (!subgraphUuid) {
+      return String(localNodeId)
+    }
+
+    // Find the path from root to the subgraph with this UUID
+    const findSubgraphPath = (
+      graph: LGraph | Subgraph,
+      targetUuid: string,
+      path: NodeId[] = []
+    ): NodeId[] | null => {
+      if (isSubgraph(graph) && graph.id === targetUuid) {
+        return path
+      }
+
+      for (const node of graph._nodes) {
+        if (node.isSubgraphNode() && node.subgraph) {
+          const result = findSubgraphPath(node.subgraph, targetUuid, [
+            ...path,
+            node.id
+          ])
+          if (result) return result
+        }
+      }
+
+      return null
+    }
+
+    const path = findSubgraphPath(comfyApp.graph, subgraphUuid)
+    if (!path) return null
+
+    // If we have a target subgraph, check if the path goes through it
+    if (
+      targetSubgraph &&
+      !path.some((_, idx) => {
+        const subgraphs = getSubgraphsFromInstanceIds(
+          comfyApp.graph,
+          path.slice(0, idx + 1).map((id) => String(id))
+        )
+        return subgraphs[subgraphs.length - 1] === targetSubgraph
+      })
+    ) {
+      return null
+    }
+
+    return createNodeExecutionId([...path, localNodeId])
+  }
+
   return {
     activeWorkflow,
     isActive,
@@ -439,9 +666,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
     persistedWorkflows,
     modifiedWorkflows,
     getWorkflowByPath,
-    syncWorkflows
+    syncWorkflows,
+
+    isSubgraphActive,
+    activeSubgraph,
+    updateActiveGraph,
+    executionIdToCurrentId,
+    nodeIdToNodeLocatorId,
+    nodeExecutionIdToNodeLocatorId,
+    nodeLocatorIdToNodeId,
+    nodeLocatorIdToNodeExecutionId
   }
-}) as unknown as () => WorkflowStore
+}) satisfies () => WorkflowStore
 
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   const bookmarks = ref<Set<string>>(new Set())
@@ -462,18 +698,18 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     })
   }
 
-  const setBookmarked = (path: string, value: boolean) => {
+  const setBookmarked = async (path: string, value: boolean) => {
     if (bookmarks.value.has(path) === value) return
     if (value) {
       bookmarks.value.add(path)
     } else {
       bookmarks.value.delete(path)
     }
-    saveBookmarks()
+    await saveBookmarks()
   }
 
-  const toggleBookmarked = (path: string) => {
-    setBookmarked(path, !bookmarks.value.has(path))
+  const toggleBookmarked = async (path: string) => {
+    await setBookmarked(path, !bookmarks.value.has(path))
   }
 
   return {

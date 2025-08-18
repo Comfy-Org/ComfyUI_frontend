@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -41,9 +41,7 @@ export const useNodeDragAndDrop = <T>(
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)
-    onDrop(files).then((results) => {
-      if (!results?.length) return
-    })
+    void onDrop(files)
     return true
   }
 }

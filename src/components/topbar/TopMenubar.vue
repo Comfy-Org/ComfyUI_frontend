@@ -1,75 +1,66 @@
 <template>
-  <div
-    ref="topMenuRef"
-    class="comfyui-menu flex items-center"
-    v-show="showTopMenu"
-    :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
-  >
-    <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
-    <CommandMenubar />
-    <div class="flex-grow min-w-0 app-drag h-full">
-      <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
-    </div>
-    <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
-    <Actionbar />
-    <BottomPanelToggleButton class="flex-shrink-0" />
-    <Button
-      class="flex-shrink-0"
-      icon="pi pi-bars"
-      severity="secondary"
-      text
-      v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
-      :aria-label="$t('menu.hideMenu')"
-      @click="workspaceState.focusMode = true"
-      @contextmenu="showNativeSystemMenu"
-    />
+  <div>
     <div
-      v-show="menuSetting !== 'Bottom'"
-      class="window-actions-spacer flex-shrink-0"
+      v-show="showTopMenu && workflowTabsPosition === 'Topbar'"
+      class="w-full flex content-end z-[1001] h-[38px]"
+      style="background: var(--border-color)"
+    >
+      <WorkflowTabs />
+    </div>
+    <div
+      v-show="showTopMenu"
+      ref="topMenuRef"
+      class="comfyui-menu flex items-center"
+      :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
+    >
+      <CommandMenubar />
+      <div class="flex-grow min-w-0 app-drag h-full"></div>
+      <div
+        ref="menuRight"
+        class="comfyui-menu-right flex-shrink-1 overflow-auto"
+      />
+      <Actionbar />
+      <CurrentUserButton class="flex-shrink-0" />
+    </div>
+
+    <!-- Virtual top menu for native window (drag handle) -->
+    <div
+      v-show="isNativeWindow() && !showTopMenu"
+      class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)]"
     />
   </div>
-
-  <!-- Virtual top menu for native window (drag handle) -->
-  <div
-    v-show="isNativeWindow() && !showTopMenu"
-    class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)]"
-  />
 </template>
 
 <script setup lang="ts">
 import { useEventBus } from '@vueuse/core'
-import Button from 'primevue/button'
 import { computed, onMounted, provide, ref } from 'vue'
 
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
-import BottomPanelToggleButton from '@/components/topbar/BottomPanelToggleButton.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import {
-  electronAPI,
-  isElectron,
-  isNativeWindow,
-  showNativeSystemMenu
-} from '@/utils/envUtil'
+import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
-const workflowTabsPosition = computed(() =>
-  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
-)
+
 const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
 const showTopMenu = computed(
   () => betaMenuEnabled.value && !workspaceState.focusMode
+)
+const workflowTabsPosition = computed(() =>
+  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
 
 const menuRight = ref<HTMLDivElement | null>(null)
 // Menu-right holds legacy topbar elements attached by custom scripts
 onMounted(() => {
   if (menuRight.value) {
+    app.menu.element.style.width = 'fit-content'
     menuRight.value.appendChild(app.menu.element)
   }
 })
@@ -89,7 +80,7 @@ eventBus.on((event: string, payload: any) => {
 onMounted(() => {
   if (isElectron()) {
     electronAPI().changeTheme({
-      height: topMenuRef.value.getBoundingClientRect().height
+      height: topMenuRef.value?.getBoundingClientRect().height ?? 0
     })
   }
 })
@@ -123,8 +114,43 @@ onMounted(() => {
 }
 
 .comfyui-logo {
-  font-size: 1.2em;
   user-select: none;
   cursor: default;
+  filter: invert(0);
+}
+
+.dark-theme .comfyui-logo {
+  filter: invert(1);
+}
+
+.comfyui-menu-button-hide {
+  background-color: var(--comfy-menu-secondary-bg);
+  border-left: 1px solid var(--border-color);
+}
+</style>
+
+<style>
+.comfyui-menu-right::-webkit-scrollbar {
+  max-height: 5px;
+}
+
+.comfyui-menu-right:hover::-webkit-scrollbar {
+  cursor: grab;
+}
+
+.comfyui-menu-right::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--border-color) 60%, transparent);
+}
+
+.comfyui-menu-right:hover::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--border-color) 80%, transparent);
+}
+
+.comfyui-menu-right::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--fg-color) 30%, transparent);
+}
+
+.comfyui-menu-right::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--fg-color) 80%, transparent);
 }
 </style>

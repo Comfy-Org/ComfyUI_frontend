@@ -33,6 +33,16 @@ describe('getNodeSource', () => {
     })
   })
 
+  it('should identify core nodes from comfy_api_nodes module', () => {
+    const result = getNodeSource('comfy_api_nodes.some_module')
+    expect(result).toEqual({
+      type: NodeSourceType.Core,
+      className: 'comfy-core',
+      displayText: 'Comfy Core',
+      badgeText: '🦊'
+    })
+  })
+
   it('should identify custom nodes and format their names', () => {
     const result = getNodeSource('custom_nodes.ComfyUI-Example')
     expect(result).toEqual({

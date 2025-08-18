@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
@@ -64,7 +65,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   /**
    * @deprecated Use `settingStore.getDefaultValue` instead.
    */
-  getSettingDefaultValue<K extends keyof Settings>(id: K): Settings[K] {
+  getSettingDefaultValue<K extends keyof Settings>(
+    id: K
+  ): Settings[K] | undefined {
     return useSettingStore().getDefaultValue(id)
   }
 
@@ -85,7 +88,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     useSettingStore()
       .set(id, value)
       .catch((err) => {
-        useToastStore().addAlert(`Error saving setting '${id}': ${err}`)
+        useToastStore().addAlert(
+          t('toastMessages.errorSaveSetting', { id, err })
+        )
       })
   }
 

@@ -1,6 +1,10 @@
-import '@comfyorg/litegraph'
-import type { LLink, Size } from '@comfyorg/litegraph'
-
+import '@/lib/litegraph/src/litegraph'
+import type { LLink, Size } from '@/lib/litegraph/src/litegraph'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId
+} from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
@@ -8,7 +12,7 @@ import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
 import type { NodeId } from '../schemas/comfyWorkflowSchema'
 
 /** ComfyUI extensions of litegraph */
-declare module '@comfyorg/litegraph/dist/types/widgets' {
+declare module '@/lib/litegraph/src/types/widgets' {
   interface IWidgetOptions {
     /** Currently used by DOM widgets only.  Declaring here reduces complexity. */
     onHide?: (widget: DOMWidget) => void
@@ -16,6 +20,9 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * Controls whether the widget's value is included in the API workflow/prompt.
      * - If false, the value will be excluded from the API workflow but still serialized as part of the graph state
      * - If true or undefined, the value will be included in both the API workflow and graph state
+     * @default true
+     * @use {@link IBaseWidget.serialize} if you don't want the widget value to be included in both
+     * the API workflow and graph state.
      */
     serialize?: boolean
     /**
@@ -26,65 +33,58 @@ declare module '@comfyorg/litegraph/dist/types/widgets' {
      * The minimum size of the node if the widget is present.
      */
     minNodeSize?: Size
-    /**
-     * Whether the widget is optional.
-     */
-    inputIsOptional?: boolean
-    /**
-     * Whether the widget is forced to be an input.
-     */
-    forceInput?: boolean
-    /**
-     * Whether the widget defaults to input state. Can still be converted back
-     * to widget state.
-     */
-    defaultInput?: boolean
+
+    /** If the widget is advanced, this will be set to true. */
+    advanced?: boolean
+
+    /** If the widget is hidden, this will be set to true. */
+    hidden?: boolean
   }
 
   interface IBaseWidget {
-    onRemove?: () => void
-    beforeQueued?: () => unknown
-    afterQueued?: () => unknown
-    serializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
+    onRemove?(): void
+    beforeQueued?(): unknown
+    afterQueued?(): unknown
+    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
 
     /**
      * Refreshes the widget's value or options from its remote source.
      */
-    refresh?: () => unknown
+    refresh?(): unknown
 
     /**
      * If the widget supports dynamic prompts, this will be set to true.
      * See extensions/core/dynamicPrompts.ts
      */
     dynamicPrompts?: boolean
+  }
+}
 
-    /**
-     * Widget conversion fields
-     */
-    origType?: string
-    origComputeSize?: (width: number) => Size
-    origSerializeValue?: (
-      node: LGraphNode,
-      index: number
-    ) => Promise<unknown> | unknown
+/**
+ * ComfyUI extensions of litegraph interfaces
+ */
+declare module '@/lib/litegraph/src/interfaces' {
+  interface IWidgetLocator {
+    [key: symbol]: unknown
   }
 }
 
 /**
  *  ComfyUI extensions of litegraph
  */
-declare module '@comfyorg/litegraph' {
+declare module '@/lib/litegraph/src/litegraph' {
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
     comfyClass: string
     title: string
-    nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2
+    nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
     category?: string
     new (): T
   }
+
+  // Add interface augmentations into the class itself
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface BaseWidget extends IBaseWidget {}
 
   interface LGraphNode {
     constructor: LGraphNodeConstructor
@@ -99,7 +99,12 @@ declare module '@comfyorg/litegraph' {
     /** @deprecated groupNode */
     setInnerNodes?(nodes: LGraphNode[]): void
     /** Originally a group node API. */
-    getInnerNodes?(): LGraphNode[]
+    getInnerNodes?(
+      nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
+      subgraphNodePath?: readonly NodeId[],
+      nodes?: ExecutableLGraphNode[],
+      subgraphs?: Set<LGraphNode>
+    ): ExecutableLGraphNode[]
     /** @deprecated groupNode */
     convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
@@ -186,14 +191,14 @@ declare module '@comfyorg/litegraph' {
    * We should remove this hacky solution once we have a proper solution.
    */
   interface INodeOutputSlot {
-    widget?: IWidget
+    widget?: { name: string; [key: symbol]: unknown }
   }
 }
 
 /**
  * Extended types for litegraph, to be merged upstream once it has stabilized.
  */
-declare module '@comfyorg/litegraph' {
+declare module '@/lib/litegraph/src/litegraph' {
   /**
    * widgets_values is set to LGraphNode by `LGraphNode.configure`, but it is not
    * used by litegraph internally. We should remove the dependency on it later.

@@ -1,8 +1,8 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
 import { Ref } from 'vue'
 
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -21,7 +21,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
   usePragmaticDroppable(() => canvasRef.value, {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
-    onDrop: (event) => {
+    onDrop: async (event) => {
       const loc = event.location.current.input
       const dndData = event.source.data
 
@@ -29,12 +29,10 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
         const node = dndData.data as RenderedTreeExplorerNode
         if (node.data instanceof ComfyNodeDefImpl) {
           const nodeDef = node.data
-          // Add an offset on x to make sure after adding the node, the cursor
+          const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
+          // Add an offset on y to make sure after adding the node, the cursor
           // is on the node (top left corner)
-          const pos = comfyApp.clientPosToCanvasPos([
-            loc.clientX,
-            loc.clientY + LiteGraph.NODE_TITLE_HEIGHT
-          ])
+          pos[1] += LiteGraph.NODE_TITLE_HEIGHT
           litegraphService.addNodeOnGraph(nodeDef, { pos })
         } else if (node.data instanceof ComfyModelDef) {
           const model = node.data
@@ -79,7 +77,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
             loc.clientX,
             loc.clientY
           ])
-          workflowService.insertWorkflow(workflow, { position })
+          await workflowService.insertWorkflow(workflow, { position })
         }
       }
     }

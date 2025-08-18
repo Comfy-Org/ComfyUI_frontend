@@ -73,11 +73,13 @@ export const zComfyNodeDef = z.object({
   name: z.string(),
   display_name: z.string(),
   description: z.string(),
+  help: z.string().optional(),
   category: z.string(),
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),
-  experimental: z.boolean().optional()
+  experimental: z.boolean().optional(),
+  api_node: z.boolean().optional()
 })
 
 // Export types

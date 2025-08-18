@@ -1,19 +1,20 @@
-import { markRaw } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { defineAsyncComponent, markRaw } from 'vue'
 
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
+const WorkflowIcon = markRaw(
+  defineAsyncComponent(() => import('virtual:icons/comfy/workflow'))
+)
+
 export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
-  const { t } = useI18n()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
-
   return {
     id: 'workflows',
-    icon: 'pi pi-folder-open',
+    icon: WorkflowIcon,
     iconBadge: () => {
       if (
         settingStore.get('Comfy.Workflow.WorkflowTabsPosition') !== 'Sidebar'
@@ -23,8 +24,9 @@ export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
       const value = workflowStore.openWorkflows.length.toString()
       return value === '0' ? null : value
     },
-    title: t('sideToolbar.workflows'),
-    tooltip: t('sideToolbar.workflows'),
+    title: 'sideToolbar.workflows',
+    tooltip: 'sideToolbar.workflows',
+    label: 'sideToolbar.labels.workflows',
     component: markRaw(WorkflowsSidebarTab),
     type: 'vue'
   }

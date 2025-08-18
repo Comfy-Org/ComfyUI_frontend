@@ -1,12 +1,17 @@
-import { LinkMarkerShape } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
-
+import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
+/**
+ * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
+ * These settings must be present in the settings store and cannot be omitted.
+ *
+ * IMPORTANT: To prevent ID conflicts, settings should be marked as deprecated rather than removed
+ * when they are no longer needed.
+ */
 export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Validation.Workflows',
@@ -29,7 +34,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (No modifier)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
+    defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU,
+    defaultsByInstallVersion: {
+      '1.24.1': LinkReleaseTriggerAction.SEARCH_BOX
+    }
   },
   {
     id: 'Comfy.LinkRelease.ActionShift',
@@ -37,7 +45,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Action on link release (Shift)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
-    defaultValue: LinkReleaseTriggerAction.SEARCH_BOX
+    defaultValue: LinkReleaseTriggerAction.SEARCH_BOX,
+    defaultsByInstallVersion: {
+      '1.24.1': LinkReleaseTriggerAction.CONTEXT_MENU
+    }
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.NodePreview',
@@ -87,6 +98,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     options: ['normal', 'small'],
     // Default to small if the window is less than 1536px(2xl) wide.
     defaultValue: () => (window.innerWidth < 1536 ? 'small' : 'normal')
+  },
+  {
+    id: 'Comfy.Sidebar.UnifiedWidth',
+    category: ['Appearance', 'Sidebar', 'UnifiedWidth'],
+    name: 'Unified sidebar width',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.18.1'
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
@@ -220,6 +239,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Node.AllowImageSizeDraw',
+    category: ['LiteGraph', 'Node Widget', 'AllowImageSizeDraw'],
+    name: 'Show width × height below the image preview',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Group.DoubleClickTitleToEdit',
     category: ['LiteGraph', 'Group', 'DoubleClickTitleToEdit'],
     name: 'Double click group title to edit',
@@ -269,10 +295,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     options: [
       { value: 'en', text: 'English' },
       { value: 'zh', text: '中文' },
+      { value: 'zh-TW', text: '繁體中文' },
       { value: 'ru', text: 'Русский' },
       { value: 'ja', text: '日本語' },
       { value: 'ko', text: '한국어' },
-      { value: 'fr', text: 'Français' }
+      { value: 'fr', text: 'Français' },
+      { value: 'es', text: 'Español' },
+      { value: 'ar', text: 'عربي' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -299,6 +328,22 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
     defaultValue: NodeBadgeMode.ShowAll
+  },
+  {
+    id: 'Comfy.NodeBadge.ShowApiPricing',
+    category: ['Comfy', 'API Nodes'],
+    name: 'Show API node pricing badge',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.20.3'
+  },
+  {
+    id: 'Comfy.Notification.ShowVersionUpdates',
+    category: ['Comfy', 'Notification Preferences'],
+    name: 'Show version updates',
+    tooltip: 'Show updates for new models, and major new features.',
+    type: 'boolean',
+    defaultValue: true
   },
   {
     id: 'Comfy.ConfirmClear',
@@ -401,6 +446,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top', 'Bottom'],
+    tooltip:
+      'Menu bar position. On mobile devices, the menu is always shown at the top.',
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
@@ -465,15 +512,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
-    id: 'Comfy.Validation.NodeDefs',
-    name: 'Validate node definitions (slow)',
-    type: 'boolean',
-    tooltip:
-      'Recommended for node developers. This will validate all node definitions on startup.',
-    defaultValue: false,
-    versionAdded: '1.3.14'
-  },
-  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
@@ -523,17 +561,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.3.42'
-  },
-  {
-    id: 'Comfy.RerouteBeta',
-    category: ['LiteGraph', 'RerouteBeta'],
-    name: 'Opt-in to the reroute beta test',
-    tooltip: 'No longer has any effect; reroutes are always enabled.',
-    deprecated: true,
-    type: 'boolean',
-    defaultValue: false,
-    versionAdded: '1.3.42',
-    versionModified: '1.13.3'
   },
   {
     id: 'Comfy.Graph.LinkMarkers',
@@ -729,6 +756,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.7'
   },
   {
+    id: 'Comfy.InstalledVersion',
+    name: 'The frontend version that was running when the user first installed ComfyUI',
+    type: 'hidden',
+    defaultValue: null,
+    versionAdded: '1.24.0'
+  },
+  {
     id: 'LiteGraph.ContextMenu.Scaling',
     name: 'Scale node combo widget menus (lists) when zoomed in',
     defaultValue: false,
@@ -738,7 +772,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
     name: 'Low quality rendering zoom threshold',
-    tooltip: 'Render low quality shapes when zoomed out',
+    tooltip:
+      'Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details.',
     type: 'slider',
     attrs: {
       min: 0.1,
@@ -749,11 +784,149 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.9.1'
   },
   {
+    id: 'Comfy.Canvas.NavigationMode',
+    category: ['LiteGraph', 'Canvas', 'CanvasNavigationMode'],
+    name: 'Canvas Navigation Mode',
+    defaultValue: 'legacy',
+    type: 'combo',
+    options: [
+      { value: 'standard', text: 'Standard (New)' },
+      { value: 'legacy', text: 'Left-Click Pan (Legacy)' }
+    ],
+    versionAdded: '1.25.0',
+    defaultsByInstallVersion: {
+      '1.25.0': 'standard'
+    }
+  },
+  {
     id: 'Comfy.Canvas.SelectionToolbox',
     category: ['LiteGraph', 'Canvas', 'SelectionToolbox'],
     name: 'Show selection toolbox',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.10.5'
+  },
+  {
+    id: 'LiteGraph.Reroute.SplineOffset',
+    name: 'Reroute spline offset',
+    tooltip: 'The bezier control point offset from the reroute centre point',
+    type: 'slider',
+    defaultValue: 20,
+    attrs: {
+      min: 0,
+      max: 400
+    },
+    versionAdded: '1.15.7'
+  },
+  {
+    id: 'Comfy.Toast.DisableReconnectingToast',
+    name: 'Disable toasts when reconnecting or reconnected',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.15.12'
+  },
+  {
+    id: 'Comfy.Minimap.Visible',
+    name: 'Display minimap on canvas',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.25.0'
+  },
+  {
+    id: 'Comfy.Minimap.NodeColors',
+    name: 'Display node with its original color on minimap',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.ShowLinks',
+    name: 'Display links on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.ShowGroups',
+    name: 'Display node groups on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.RenderBypassState',
+    name: 'Render bypass state on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Minimap.RenderErrorState',
+    name: 'Render error state on minimap',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.26.0'
+  },
+  {
+    id: 'Comfy.Workflow.AutoSaveDelay',
+    name: 'Auto Save Delay (ms)',
+    defaultValue: 1000,
+    type: 'number',
+    tooltip: 'Only applies if Auto Save is set to "after delay".',
+    versionAdded: '1.16.0'
+  },
+  {
+    id: 'Comfy.Workflow.AutoSave',
+    name: 'Auto Save',
+    type: 'combo',
+    options: ['off', 'after delay'], // Room for other options like on focus change, tab change, window change
+    defaultValue: 'off', // Popular requst by users (https://github.com/Comfy-Org/ComfyUI_frontend/issues/1584#issuecomment-2536610154)
+    versionAdded: '1.16.0'
+  },
+  {
+    id: 'Comfy.Workflow.Persist',
+    name: 'Persist workflow state and restore on page (re)load',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.16.1'
+  },
+  {
+    id: 'LiteGraph.Node.DefaultPadding',
+    name: 'Always shrink new nodes',
+    tooltip:
+      'Resize nodes to the smallest possible size when created. When disabled, a newly added node will be widened slightly to show widget values.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.18.0'
+  },
+  {
+    id: 'Comfy.Canvas.BackgroundImage',
+    category: ['Appearance', 'Canvas', 'Background'],
+    name: 'Canvas background image',
+    type: 'backgroundImage',
+    tooltip:
+      'Image URL for the canvas background. You can right-click an image in the outputs panel and select "Set as Background" to use it, or upload your own image using the upload button.',
+    defaultValue: '',
+    versionAdded: '1.20.4',
+    versionModified: '1.20.5'
+  },
+  // Release data stored in settings
+  {
+    id: 'Comfy.Release.Version',
+    name: 'Last seen release version',
+    type: 'hidden',
+    defaultValue: ''
+  },
+  {
+    id: 'Comfy.Release.Status',
+    name: 'Release status',
+    type: 'hidden',
+    defaultValue: 'skipped'
+  },
+  {
+    id: 'Comfy.Release.Timestamp',
+    name: 'Release seen timestamp',
+    type: 'hidden',
+    defaultValue: 0
   }
 ]

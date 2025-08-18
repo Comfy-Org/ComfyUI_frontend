@@ -1,6 +1,5 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
-
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   type InputSpec,
@@ -55,7 +54,8 @@ export const useIntWidget = () => {
           : 'number'
 
     const step = inputSpec.step ?? 1
-    const defaultValue = inputSpec.default ?? 0
+    /** Assertion {@link inputSpec.default} */
+    const defaultValue = (inputSpec.default as number | undefined) ?? 0
     const widget = node.addWidget(
       widgetType,
       inputSpec.name,

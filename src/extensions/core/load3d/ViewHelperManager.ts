@@ -11,6 +11,7 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
   private getActiveCamera: () => THREE.Camera
   private getControls: () => OrbitControls
   private nodeStorage: NodeStorageInterface
+  // @ts-expect-error unused variable
   private renderer: THREE.WebGLRenderer
 
   constructor(
@@ -87,6 +88,16 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
   }
 
   handleResize(): void {}
+
+  visibleViewHelper(visible: boolean) {
+    if (visible) {
+      this.viewHelper.visible = true
+      this.viewHelperContainer.style.display = 'block'
+    } else {
+      this.viewHelper.visible = false
+      this.viewHelperContainer.style.display = 'none'
+    }
+  }
 
   recreateViewHelper(): void {
     if (this.viewHelper) {

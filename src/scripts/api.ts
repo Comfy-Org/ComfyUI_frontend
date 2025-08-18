@@ -1,6 +1,8 @@
 import axios from 'axios'
 
+import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
+  DisplayComponentWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -10,10 +12,13 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
+  FeatureFlagsWsMessage,
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
   PendingTaskItem,
+  ProgressStateWsMessage,
+  ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
   RunningTaskItem,
@@ -24,25 +29,69 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/schemas/comfyWorkflowSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string
-  // Mapping from node id to node info + input values
-  // TODO: Type this.
-  prompt: Record<number, any>
+  prompt: ComfyApiWorkflow
+  partial_execution_targets?: NodeExecutionId[]
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
     }
+    /**
+     * The auth token for the comfy org account if the user is logged in.
+     *
+     * Backend node can access this token by specifying following input:
+     * ```python
+      @classmethod
+      def INPUT_TYPES(s):
+        return {
+          "hidden": { "auth_token": "AUTH_TOKEN_COMFY_ORG"}
+        }
+
+      def execute(self, auth_token: str):
+        print(f"Auth token: {auth_token}")
+     * ```
+     */
+    auth_token_comfy_org?: string
+    /**
+     * The auth token for the comfy org account if the user is logged in.
+     *
+     * Backend node can access this token by specifying following input:
+     * ```python
+     * def INPUT_TYPES(s):
+     *   return {
+     *     "hidden": { "api_key": "API_KEY_COMFY_ORG" }
+     *   }
+     *
+     * def execute(self, api_key: str):
+     *   print(f"API Key: {api_key}")
+     * ```
+     */
+    api_key_comfy_org?: string
   }
   front?: boolean
   number?: number
+}
+
+/**
+ * Options for queuePrompt method
+ */
+interface QueuePromptOptions {
+  /**
+   * Optional list of node execution IDs to execute (partial execution).
+   * Each ID represents a node's position in nested subgraphs.
+   * Format: Colon-separated path of node IDs (e.g., "123:456:789")
+   */
+  partialExecutionTargets?: NodeExecutionId[]
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -66,8 +115,21 @@ interface BackendApiCalls {
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
   logs: LogsWsMessage
-  /** Mr Blob Preview, I presume? */
+  /** Binary preview/progress data */
   b_preview: Blob
+  /** Binary preview with metadata (node_id, prompt_id) */
+  b_preview_with_metadata: {
+    blob: Blob
+    nodeId: string
+    parentNodeId: string
+    displayNodeId: string
+    realNodeId: string
+    promptId: string
+  }
+  progress_text: ProgressTextWsMessage
+  progress_state: ProgressStateWsMessage
+  display_component: DisplayComponentWsMessage
+  feature_flags: FeatureFlagsWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -78,6 +140,8 @@ interface ApiMessage<T extends keyof ApiCalls> {
   type: T
   data: ApiCalls[T]
 }
+
+export class UnauthorizedError extends Error {}
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -130,7 +194,7 @@ type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
 type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
-/** EventTarget typing has no generic capability.  This interface enables tsc strict. */
+/** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
@@ -143,6 +207,36 @@ export interface ComfyApi extends EventTarget {
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: EventListenerOptions | boolean
   ): void
+}
+
+export class PromptExecutionError extends Error {
+  response: PromptResponse
+
+  constructor(response: PromptResponse) {
+    super('Prompt execution failed')
+    this.response = response
+  }
+
+  override toString() {
+    let message = ''
+    if (typeof this.response.error === 'string') {
+      message += this.response.error
+    } else if (this.response.error) {
+      message +=
+        this.response.error.message + ': ' + this.response.error.details
+    }
+
+    for (const [_, nodeError] of Object.entries(
+      this.response.node_errors ?? []
+    )) {
+      message += '\n' + nodeError.class_type + ':'
+      for (const errorReason of nodeError.errors) {
+        message += '\n    - ' + errorReason.message + ': ' + errorReason.details
+      }
+    }
+
+    return message
+  }
 }
 
 export class ComfyApi extends EventTarget {
@@ -164,6 +258,37 @@ export class ComfyApi extends EventTarget {
   socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
+
+  /**
+   * Get feature flags supported by this frontend client.
+   * Returns a copy to prevent external modification.
+   */
+  getClientFeatureFlags(): Record<string, unknown> {
+    return { ...defaultClientFeatureFlags }
+  }
+
+  /**
+   * Feature flags received from the backend server.
+   */
+  serverFeatureFlags: Record<string, unknown> = {}
+
+  /**
+   * The auth token for the comfy org account if the user is logged in.
+   * This is only used for {@link queuePrompt} now. It is not directly
+   * passed as parameter to the function because some custom nodes are hijacking
+   * {@link queuePrompt} improperly, which causes extra parameters to be lost
+   * in the function call chain.
+   *
+   * Ref: https://cs.comfy.org/search?q=context:global+%22api.queuePrompt+%3D%22&patternType=keyword&sm=0
+   *
+   * TODO: Move this field to parameter of {@link queuePrompt} once all
+   * custom nodes are patched.
+   */
+  authToken?: string
+  /**
+   * The API key for the comfy org account if the user logged in via API key.
+   */
+  apiKey?: string
 
   constructor() {
     super()
@@ -207,7 +332,7 @@ export class ComfyApi extends EventTarget {
     return fetch(this.apiURL(route), options)
   }
 
-  addEventListener<TEvent extends keyof ApiEvents>(
+  override addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: AddEventListenerOptions | boolean
@@ -217,7 +342,7 @@ export class ComfyApi extends EventTarget {
     this.#registered.add(type)
   }
 
-  removeEventListener<TEvent extends keyof ApiEvents>(
+  override removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
     callback: ((event: ApiEvents[TEvent]) => void) | null,
     options?: EventListenerOptions | boolean
@@ -248,7 +373,7 @@ export class ComfyApi extends EventTarget {
   }
 
   /** @deprecated Use {@link dispatchCustomEvent}. */
-  dispatchEvent(event: never): boolean {
+  override dispatchEvent(event: never): boolean {
     return super.dispatchEvent(event)
   }
 
@@ -288,6 +413,15 @@ export class ComfyApi extends EventTarget {
 
     this.socket.addEventListener('open', () => {
       opened = true
+
+      // Send feature flags as the first message
+      this.socket!.send(
+        JSON.stringify({
+          type: 'feature_flags',
+          data: this.getClientFeatureFlags()
+        })
+      )
+
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
       }
@@ -316,24 +450,61 @@ export class ComfyApi extends EventTarget {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
-          const buffer = event.data.slice(4)
+
+          let imageMime
           switch (eventType) {
+            case 3:
+              const decoder = new TextDecoder()
+              const data = event.data.slice(4)
+              const nodeIdLength = view.getUint32(4)
+              this.dispatchCustomEvent('progress_text', {
+                nodeId: decoder.decode(data.slice(4, 4 + nodeIdLength)),
+                text: decoder.decode(data.slice(4 + nodeIdLength))
+              })
+              break
             case 1:
-              const view2 = new DataView(event.data)
-              const imageType = view2.getUint32(0)
-              let imageMime
+              const imageType = view.getUint32(4)
+              const imageData = event.data.slice(8)
               switch (imageType) {
+                case 2:
+                  imageMime = 'image/png'
+                  break
                 case 1:
                 default:
                   imageMime = 'image/jpeg'
                   break
-                case 2:
-                  imageMime = 'image/png'
               }
-              const imageBlob = new Blob([buffer.slice(4)], {
+              const imageBlob = new Blob([imageData], {
                 type: imageMime
               })
               this.dispatchCustomEvent('b_preview', imageBlob)
+              break
+            case 4:
+              // PREVIEW_IMAGE_WITH_METADATA
+              const decoder4 = new TextDecoder()
+              const metadataLength = view.getUint32(4)
+              const metadataBytes = event.data.slice(8, 8 + metadataLength)
+              const metadata = JSON.parse(decoder4.decode(metadataBytes))
+              const imageData4 = event.data.slice(8 + metadataLength)
+
+              let imageMime4 = metadata.image_type
+
+              const imageBlob4 = new Blob([imageData4], {
+                type: imageMime4
+              })
+
+              // Dispatch enhanced preview event with metadata
+              this.dispatchCustomEvent('b_preview_with_metadata', {
+                blob: imageBlob4,
+                nodeId: metadata.node_id,
+                displayNodeId: metadata.display_node_id,
+                parentNodeId: metadata.parent_node_id,
+                realNodeId: metadata.real_node_id,
+                promptId: metadata.prompt_id
+              })
+
+              // Also dispatch legacy b_preview for backward compatibility
+              this.dispatchCustomEvent('b_preview', imageBlob4)
               break
             default:
               throw new Error(
@@ -364,12 +535,21 @@ export class ComfyApi extends EventTarget {
             case 'execution_cached':
             case 'execution_success':
             case 'progress':
+            case 'progress_state':
             case 'executed':
             case 'graphChanged':
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
               this.dispatchCustomEvent(msg.type, msg.data)
+              break
+            case 'feature_flags':
+              // Store server feature flags
+              this.serverFeatureFlags = msg.data
+              console.log(
+                'Server feature flags received:',
+                this.serverFeatureFlags
+              )
               break
             default:
               if (this.#registered.has(msg.type)) {
@@ -436,49 +616,36 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
-  async getNodeDefs({ validate = false }: { validate?: boolean } = {}): Promise<
-    Record<string, ComfyNodeDef>
-  > {
+  async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
-    const objectInfoUnsafe = await resp.json()
-    if (!validate) {
-      return objectInfoUnsafe
-    }
-    // Validate node definitions against zod schema. (slow)
-    const objectInfo: Record<string, ComfyNodeDef> = {}
-    for (const key in objectInfoUnsafe) {
-      const validatedDef = validateComfyNodeDef(
-        objectInfoUnsafe[key],
-        /* onError=*/ (errorMessage: string) => {
-          console.warn(
-            `Skipping invalid node definition: ${key}. See debug log for more information.`
-          )
-          console.debug(errorMessage)
-        }
-      )
-      if (validatedDef !== null) {
-        objectInfo[key] = validatedDef
-      }
-    }
-    return objectInfo
+    return await resp.json()
   }
 
   /**
-   *
+   * Queues a prompt to be executed
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
-   * @param {object} prompt The prompt data to queue
+   * @param {object} data The prompt data to queue
+   * @param {QueuePromptOptions} options Optional execution options
+   * @throws {PromptExecutionError} If the prompt fails to execute
    */
   async queuePrompt(
     number: number,
-    {
-      output,
-      workflow
-    }: { output: Record<number, any>; workflow: ComfyWorkflowJSON }
+    data: { output: ComfyApiWorkflow; workflow: ComfyWorkflowJSON },
+    options?: QueuePromptOptions
   ): Promise<PromptResponse> {
+    const { output: prompt, workflow } = data
+
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
-      prompt: output,
-      extra_data: { extra_pnginfo: { workflow } }
+      prompt,
+      ...(options?.partialExecutionTargets && {
+        partial_execution_targets: options.partialExecutionTargets
+      }),
+      extra_data: {
+        auth_token_comfy_org: this.authToken,
+        api_key_comfy_org: this.apiKey,
+        extra_pnginfo: { workflow }
+      }
     }
 
     if (number === -1) {
@@ -496,9 +663,7 @@ export class ComfyApi extends EventTarget {
     })
 
     if (res.status !== 200) {
-      throw {
-        response: await res.json()
-      }
+      throw new PromptExecutionError(await res.json())
     }
 
     return await res.json()
@@ -590,7 +755,8 @@ export class ComfyApi extends EventTarget {
         Running: data.queue_running.map((prompt: Record<number, any>) => ({
           taskType: 'Running',
           prompt,
-          remove: { name: 'Cancel', cb: () => api.interrupt() }
+          // prompt[1] is the prompt id
+          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
         })),
         Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
           taskType: 'Pending',
@@ -671,10 +837,15 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Interrupts the execution of the running prompt
+   * Interrupts the execution of the running prompt. If runningPromptId is provided,
+   * it is included in the payload as a helpful hint to the backend.
+   * @param {string | null} [runningPromptId] Optional Running Prompt ID to interrupt
    */
-  async interrupt() {
-    await this.#postItem('interrupt', null)
+  async interrupt(runningPromptId: string | null) {
+    await this.#postItem(
+      'interrupt',
+      runningPromptId ? { prompt_id: runningPromptId } : undefined
+    )
   }
 
   /**
@@ -704,7 +875,12 @@ export class ComfyApi extends EventTarget {
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
   async getSettings(): Promise<Settings> {
-    return (await this.fetchApi('/settings')).json()
+    const resp = await this.fetchApi('/settings')
+
+    if (resp.status == 401) {
+      throw new UnauthorizedError(resp.statusText)
+    }
+    return await resp.json()
   }
 
   /**
@@ -812,52 +988,6 @@ export class ComfyApi extends EventTarget {
     return resp
   }
 
-  /**
-   * @overload
-   * Lists user data files for the current user
-   * @param { string } dir The directory in which to list files
-   * @param { boolean } [recurse] If the listing should be recursive
-   * @param { true } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[][]> } The list of split file paths in the format [fullPath, ...splitPath]
-   */
-  /**
-   * @overload
-   * Lists user data files for the current user
-   * @param { string } dir The directory in which to list files
-   * @param { boolean } [recurse] If the listing should be recursive
-   * @param { false | undefined } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[]> } The list of files
-   */
-  async listUserData(
-    dir: string,
-    recurse: boolean,
-    split?: true
-  ): Promise<string[][]>
-  async listUserData(
-    dir: string,
-    recurse: boolean,
-    split?: false
-  ): Promise<string[]>
-  /**
-   * @deprecated Use `listUserDataFullInfo` instead.
-   */
-  async listUserData(dir: string, recurse: boolean, split?: boolean) {
-    const resp = await this.fetchApi(
-      `/userdata?${new URLSearchParams({
-        recurse: recurse ? 'true' : 'false',
-        dir,
-        split: split ? 'true' : 'false'
-      })}`
-    )
-    if (resp.status === 404) return []
-    if (resp.status !== 200) {
-      throw new Error(
-        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
-      )
-    }
-    return resp.json()
-  }
-
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
     const resp = await this.fetchApi(
       `/userdata?dir=${encodeURIComponent(dir)}&recurse=true&split=false&full_info=true`
@@ -897,6 +1027,33 @@ export class ComfyApi extends EventTarget {
    */
   async getCustomNodesI18n(): Promise<Record<string, any>> {
     return (await axios.get(this.apiURL('/i18n'))).data
+  }
+
+  /**
+   * Checks if the server supports a specific feature.
+   * @param featureName The name of the feature to check
+   * @returns true if the feature is supported, false otherwise
+   */
+  serverSupportsFeature(featureName: string): boolean {
+    return this.serverFeatureFlags[featureName] === true
+  }
+
+  /**
+   * Gets a server feature flag value.
+   * @param featureName The name of the feature to get
+   * @param defaultValue The default value if the feature is not found
+   * @returns The feature value or default
+   */
+  getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
+  }
+
+  /**
+   * Gets all server feature flags.
+   * @returns Copy of all server feature flags
+   */
+  getServerFeatures(): Record<string, unknown> {
+    return { ...this.serverFeatureFlags }
   }
 }
 

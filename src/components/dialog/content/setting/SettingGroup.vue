@@ -7,7 +7,7 @@
       }}
     </h3>
     <div
-      v-for="setting in group.settings"
+      v-for="setting in group.settings.filter((s) => !s.deprecated)"
       :key="setting.id"
       class="setting-item mb-4"
     >

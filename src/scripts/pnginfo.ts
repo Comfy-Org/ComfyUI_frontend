@@ -1,7 +1,7 @@
-// @ts-strict-ignore
-import { LiteGraph } from '@comfyorg/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { api } from './api'
+import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
 
@@ -14,11 +14,17 @@ export function getFlacMetadata(file: File): Promise<Record<string, string>> {
   return getFromFlacFile(file)
 }
 
+export function getAvifMetadata(file: File): Promise<Record<string, string>> {
+  return getFromAvifFile(file)
+}
+
+// @ts-expect-error fixme ts strict error
 function parseExifData(exifData) {
   // Check for the correct TIFF header (0x4949 for little-endian or 0x4D4D for big-endian)
   const isLittleEndian = String.fromCharCode(...exifData.slice(0, 2)) === 'II'
 
   // Function to read 16-bit and 32-bit integers from binary data
+  // @ts-expect-error fixme ts strict error
   function readInt(offset, isLittleEndian, length) {
     let arr = exifData.slice(offset, offset + length)
     if (length === 2) {
@@ -37,10 +43,12 @@ function parseExifData(exifData) {
   // Read the offset to the first IFD (Image File Directory)
   const ifdOffset = readInt(4, isLittleEndian, 4)
 
+  // @ts-expect-error fixme ts strict error
   function parseIFD(offset) {
     const numEntries = readInt(offset, isLittleEndian, 2)
     const result = {}
 
+    // @ts-expect-error fixme ts strict error
     for (let i = 0; i < numEntries; i++) {
       const entryOffset = offset + 2 + i * 12
       const tag = readInt(entryOffset, isLittleEndian, 2)
@@ -53,10 +61,12 @@ function parseExifData(exifData) {
       if (type === 2) {
         // ASCII string
         value = new TextDecoder('utf-8').decode(
+          // @ts-expect-error fixme ts strict error
           exifData.subarray(valueOffset, valueOffset + numValues - 1)
         )
       }
 
+      // @ts-expect-error fixme ts strict error
       result[tag] = value
     }
 
@@ -68,20 +78,12 @@ function parseExifData(exifData) {
   return ifdData
 }
 
-function splitValues(input) {
-  var output = {}
-  for (var key in input) {
-    var value = input[key]
-    var splitValues = value.split(':', 2)
-    output[splitValues[0]] = splitValues[1]
-  }
-  return output
-}
-
+// @ts-expect-error fixme ts strict error
 export function getWebpMetadata(file) {
   return new Promise<Record<string, string>>((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
+      // @ts-expect-error fixme ts strict error
       const webp = new Uint8Array(event.target.result as ArrayBuffer)
       const dataView = new DataView(webp.buffer)
 
@@ -115,9 +117,11 @@ export function getWebpMetadata(file) {
             webp.slice(offset + 8, offset + 8 + chunk_length)
           )
           for (var key in data) {
+            // @ts-expect-error fixme ts strict error
             const value = data[key] as string
             if (typeof value === 'string') {
               const index = value.indexOf(':')
+              // @ts-expect-error fixme ts strict error
               txt_chunks[value.slice(0, index)] = value.slice(index + 1)
             }
           }
@@ -134,10 +138,12 @@ export function getWebpMetadata(file) {
   })
 }
 
+// @ts-expect-error fixme ts strict error
 export function getLatentMetadata(file) {
   return new Promise((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
+      // @ts-expect-error fixme ts strict error
       const safetensorsData = new Uint8Array(event.target.result as ArrayBuffer)
       const dataView = new DataView(safetensorsData.buffer)
       let header_size = dataView.getUint32(0, true)
@@ -155,6 +161,7 @@ export function getLatentMetadata(file) {
   })
 }
 
+// @ts-expect-error fixme ts strict error
 export async function importA1111(graph, parameters) {
   const p = parameters.lastIndexOf('\nSteps:')
   if (p > -1) {
@@ -165,6 +172,7 @@ export async function importA1111(graph, parameters) {
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
       )
+      // @ts-expect-error fixme ts strict error
       .reduce((p, n) => {
         const s = n.split(':')
         if (s[1].endsWith(',')) {
@@ -186,18 +194,24 @@ export async function importA1111(graph, parameters) {
       const imageNode = LiteGraph.createNode('EmptyLatentImage')
       const vaeNode = LiteGraph.createNode('VAEDecode')
       const saveNode = LiteGraph.createNode('SaveImage')
+      // @ts-expect-error fixme ts strict error
       let hrSamplerNode = null
       let hrSteps = null
 
+      // @ts-expect-error fixme ts strict error
       const ceil64 = (v) => Math.ceil(v / 64) * 64
 
+      // @ts-expect-error fixme ts strict error
       const getWidget = (node, name) => {
+        // @ts-expect-error fixme ts strict error
         return node.widgets.find((w) => w.name === name)
       }
 
+      // @ts-expect-error fixme ts strict error
       const setWidgetValue = (node, name, value, isOptionPrefix?) => {
         const w = getWidget(node, name)
         if (isOptionPrefix) {
+          // @ts-expect-error fixme ts strict error
           const o = w.options.values.find((w) => w.startsWith(value))
           if (o) {
             w.value = o
@@ -210,8 +224,11 @@ export async function importA1111(graph, parameters) {
         }
       }
 
+      // @ts-expect-error fixme ts strict error
       const createLoraNodes = (clipNode, text, prevClip, prevModel) => {
+        // @ts-expect-error fixme ts strict error
         const loras = []
+        // @ts-expect-error fixme ts strict error
         text = text.replace(/<lora:([^:]+:[^>]+)>/g, function (m, c) {
           const s = c.split(':')
           const weight = parseFloat(s[1])
@@ -223,6 +240,7 @@ export async function importA1111(graph, parameters) {
           return ''
         })
 
+        // @ts-expect-error fixme ts strict error
         for (const l of loras) {
           const loraNode = LiteGraph.createNode('LoraLoader')
           graph.add(loraNode)
@@ -237,6 +255,7 @@ export async function importA1111(graph, parameters) {
 
         prevClip.node.connect(1, clipNode, 0)
         prevModel.node.connect(0, samplerNode, 0)
+        // @ts-expect-error fixme ts strict error
         if (hrSamplerNode) {
           prevModel.node.connect(0, hrSamplerNode, 0)
         }
@@ -244,6 +263,7 @@ export async function importA1111(graph, parameters) {
         return { text, prevModel, prevClip }
       }
 
+      // @ts-expect-error fixme ts strict error
       const replaceEmbeddings = (text) => {
         if (!embeddings.length) return text
         return text.replaceAll(
@@ -259,6 +279,7 @@ export async function importA1111(graph, parameters) {
         )
       }
 
+      // @ts-expect-error fixme ts strict error
       const popOpt = (name) => {
         const v = opts[name]
         delete opts[name]
@@ -275,28 +296,42 @@ export async function importA1111(graph, parameters) {
       graph.add(vaeNode)
       graph.add(saveNode)
 
+      // @ts-expect-error fixme ts strict error
       ckptNode.connect(1, clipSkipNode, 0)
+      // @ts-expect-error fixme ts strict error
       clipSkipNode.connect(0, positiveNode, 0)
+      // @ts-expect-error fixme ts strict error
       clipSkipNode.connect(0, negativeNode, 0)
+      // @ts-expect-error fixme ts strict error
       ckptNode.connect(0, samplerNode, 0)
+      // @ts-expect-error fixme ts strict error
       positiveNode.connect(0, samplerNode, 1)
+      // @ts-expect-error fixme ts strict error
       negativeNode.connect(0, samplerNode, 2)
+      // @ts-expect-error fixme ts strict error
       imageNode.connect(0, samplerNode, 3)
+      // @ts-expect-error fixme ts strict error
       vaeNode.connect(0, saveNode, 0)
+      // @ts-expect-error fixme ts strict error
       samplerNode.connect(0, vaeNode, 0)
+      // @ts-expect-error fixme ts strict error
       ckptNode.connect(2, vaeNode, 1)
 
       const handlers = {
+        // @ts-expect-error fixme ts strict error
         model(v) {
           setWidgetValue(ckptNode, 'ckpt_name', v, true)
         },
-        vae(v) {},
+        vae() {},
+        // @ts-expect-error fixme ts strict error
         'cfg scale'(v) {
           setWidgetValue(samplerNode, 'cfg', +v)
         },
+        // @ts-expect-error fixme ts strict error
         'clip skip'(v) {
           setWidgetValue(clipSkipNode, 'stop_at_clip_layer', -v)
         },
+        // @ts-expect-error fixme ts strict error
         sampler(v) {
           let name = v.toLowerCase().replace('++', 'pp').replaceAll(' ', '_')
           if (name.includes('karras')) {
@@ -307,12 +342,14 @@ export async function importA1111(graph, parameters) {
           }
           const w = getWidget(samplerNode, 'sampler_name')
           const o = w.options.values.find(
+            // @ts-expect-error fixme ts strict error
             (w) => w === name || w === 'sample_' + name
           )
           if (o) {
             setWidgetValue(samplerNode, 'sampler_name', o)
           }
         },
+        // @ts-expect-error fixme ts strict error
         size(v) {
           const wxh = v.split('x')
           const w = ceil64(+wxh[0])
@@ -342,6 +379,7 @@ export async function importA1111(graph, parameters) {
             if (hrMethod.startsWith('Latent')) {
               latentNode = upscaleNode = LiteGraph.createNode('LatentUpscale')
               graph.add(upscaleNode)
+              // @ts-expect-error fixme ts strict error
               samplerNode.connect(0, upscaleNode, 0)
 
               switch (hrMethod) {
@@ -353,7 +391,9 @@ export async function importA1111(graph, parameters) {
             } else {
               const decode = LiteGraph.createNode('VAEDecodeTiled')
               graph.add(decode)
+              // @ts-expect-error fixme ts strict error
               samplerNode.connect(0, decode, 0)
+              // @ts-expect-error fixme ts strict error
               ckptNode.connect(2, decode, 1)
 
               const upscaleLoaderNode =
@@ -365,17 +405,22 @@ export async function importA1111(graph, parameters) {
                 'ImageUpscaleWithModel'
               )
               graph.add(modelUpscaleNode)
+              // @ts-expect-error fixme ts strict error
               decode.connect(0, modelUpscaleNode, 1)
+              // @ts-expect-error fixme ts strict error
               upscaleLoaderNode.connect(0, modelUpscaleNode, 0)
 
               upscaleNode = LiteGraph.createNode('ImageScale')
               graph.add(upscaleNode)
+              // @ts-expect-error fixme ts strict error
               modelUpscaleNode.connect(0, upscaleNode, 0)
 
               const vaeEncodeNode = (latentNode =
                 LiteGraph.createNode('VAEEncodeTiled'))
               graph.add(vaeEncodeNode)
+              // @ts-expect-error fixme ts strict error
               upscaleNode.connect(0, vaeEncodeNode, 0)
+              // @ts-expect-error fixme ts strict error
               ckptNode.connect(2, vaeEncodeNode, 1)
             }
 
@@ -384,16 +429,23 @@ export async function importA1111(graph, parameters) {
 
             hrSamplerNode = LiteGraph.createNode('KSampler')
             graph.add(hrSamplerNode)
+            // @ts-expect-error fixme ts strict error
             ckptNode.connect(0, hrSamplerNode, 0)
+            // @ts-expect-error fixme ts strict error
             positiveNode.connect(0, hrSamplerNode, 1)
+            // @ts-expect-error fixme ts strict error
             negativeNode.connect(0, hrSamplerNode, 2)
+            // @ts-expect-error fixme ts strict error
             latentNode.connect(0, hrSamplerNode, 3)
+            // @ts-expect-error fixme ts strict error
             hrSamplerNode.connect(0, vaeNode, 0)
           }
         },
+        // @ts-expect-error fixme ts strict error
         steps(v) {
           setWidgetValue(samplerNode, 'steps', +v)
         },
+        // @ts-expect-error fixme ts strict error
         seed(v) {
           setWidgetValue(samplerNode, 'seed', +v)
         }
@@ -401,6 +453,7 @@ export async function importA1111(graph, parameters) {
 
       for (const opt in opts) {
         if (opt in handlers) {
+          // @ts-expect-error fixme ts strict error
           handlers[opt](popOpt(opt))
         }
       }

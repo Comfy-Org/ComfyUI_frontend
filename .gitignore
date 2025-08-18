@@ -7,10 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Package manager lockfiles (allow users to use different package managers)
+bun.lock
+bun.lockb
+pnpm-lock.yaml
+yarn.lock
+
+# ESLint cache
+.eslintcache
+
 node_modules
 dist
 dist-ssr
 *.local
+# Claude configuration
+.claude/*.local.json
 
 # Editor directories and files
 .vscode/*
@@ -38,7 +49,7 @@ tests-ui/workflows/examples
 /playwright-report/
 /blob-report/
 /playwright/.cache/
-browser_tests/*/*-win32.png
+browser_tests/**/*-win32.png
 
 .env
 
@@ -55,3 +66,9 @@ dist.zip
 
 # Temporary repository directory
 templates_repo/
+
+# Vite's timestamped config modules
+vite.config.mts.timestamp-*.mjs
+
+# Linux core dumps
+./core

@@ -1,4 +1,3 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
@@ -7,6 +6,9 @@ import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
+
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 export type Load3DNodeType = 'Load3D' | 'Preview3D'
 
@@ -33,13 +35,17 @@ export interface EventCallback {
 }
 
 export interface Load3DOptions {
-  createPreview?: boolean
   node?: LGraphNode
+  inputSpec?: CustomInputSpec
+  disablePreview?: boolean
+  isViewerMode?: boolean
 }
 
 export interface CaptureResult {
   scene: string
   mask: string
+  normal: string
+  lineart: string
 }
 
 export interface BaseManager {
@@ -96,18 +102,23 @@ export interface ViewHelperManagerInterface extends BaseManager {
 }
 
 export interface PreviewManagerInterface extends BaseManager {
-  previewRenderer: THREE.WebGLRenderer | null
   previewCamera: THREE.Camera
   previewContainer: HTMLDivElement
   showPreview: boolean
   previewWidth: number
   createCapturePreview(container: Element | HTMLElement): void
   updatePreviewSize(): void
-  updatePreviewRender(): void
   togglePreview(showPreview: boolean): void
   setTargetSize(width: number, height: number): void
   handleResize(): void
   updateBackgroundTexture(texture: THREE.Texture | null): void
+  getPreviewViewport(): {
+    left: number
+    bottom: number
+    width: number
+    height: number
+  } | null
+  renderPreview(): void
 }
 
 export interface EventManagerInterface {
@@ -138,6 +149,8 @@ export interface AnimationManagerInterface extends BaseManager {
 }
 
 export interface ModelManagerInterface {
+  originalFileName: string | null
+  originalURL: string | null
   currentModel: THREE.Object3D | null
   originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
   originalRotation: THREE.Euler | null
@@ -148,6 +161,7 @@ export interface ModelManagerInterface {
   clearModel(): void
   reset(): void
   setupModel(model: THREE.Object3D): Promise<void>
+  addModelToScene(model: THREE.Object3D): void
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
   setUpDirection(direction: UpDirection): void
   materialMode: MaterialMode
@@ -170,4 +184,13 @@ export interface LoaderManagerInterface {
   init(): void
   dispose(): void
   loadModel(url: string, originalFileName?: string): Promise<void>
+}
+
+export interface RecordingManagerInterface extends BaseManager {
+  startRecording(): Promise<void>
+  stopRecording(): void
+  hasRecording(): boolean
+  getRecordingDuration(): number
+  exportRecording(filename?: string): void
+  clearRecording(): void
 }

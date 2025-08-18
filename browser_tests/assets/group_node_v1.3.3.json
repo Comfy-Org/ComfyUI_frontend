@@ -43,6 +43,10 @@
   "groups": [],
   "config": {},
   "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    },
     "groupNodes": {
       "group_node": {
         "nodes": [

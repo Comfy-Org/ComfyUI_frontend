@@ -1,5 +1,6 @@
-import type { TreeNode } from 'primevue/treenode'
 import { Ref } from 'vue'
+
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
   const toggleNode = (node: TreeNode) => {
@@ -23,30 +24,20 @@ export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
   }
 
   const expandNode = (node: TreeNode) => {
-    if (
-      node.key &&
-      typeof node.key === 'string' &&
-      node.children &&
-      node.children.length
-    ) {
+    if (node.key && typeof node.key === 'string' && !node.leaf) {
       expandedKeys.value[node.key] = true
 
-      for (const child of node.children) {
+      for (const child of node.children ?? []) {
         expandNode(child)
       }
     }
   }
 
   const collapseNode = (node: TreeNode) => {
-    if (
-      node.key &&
-      typeof node.key === 'string' &&
-      node.children &&
-      node.children.length
-    ) {
+    if (node.key && typeof node.key === 'string' && !node.leaf) {
       delete expandedKeys.value[node.key]
 
-      for (const child of node.children) {
+      for (const child of node.children ?? []) {
         collapseNode(child)
       }
     }

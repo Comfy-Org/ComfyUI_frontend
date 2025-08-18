@@ -1,7 +1,7 @@
-import { LiteGraph } from '@comfyorg/litegraph'
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -38,6 +38,15 @@ export const usePaste = () => {
   }
 
   useEventListener(document, 'paste', async (e) => {
+    const isTargetInGraph =
+      e.target instanceof Element &&
+      (e.target.classList.contains('litegraph') ||
+        e.target.classList.contains('graph-canvas-container') ||
+        e.target.id === 'graph-canvas')
+
+    // If the target is not in the graph, we don't want to handle the paste event
+    if (!isTargetInGraph) return
+
     // ctrl+shift+v is used to paste nodes with connections
     // this is handled by litegraph
     if (workspaceStore.shiftDown) return

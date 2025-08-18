@@ -1,4 +1,4 @@
-import type { VueSeverity } from '../primeVueTypes'
+import type { PrimeVueSeverity } from '../primeVueTypes'
 
 interface MaintenanceTaskButton {
   /** The text to display on the button. */
@@ -32,7 +32,7 @@ export interface MaintenanceTask {
   /** Called by onClick to run the actual task. */
   execute: (args?: unknown[]) => boolean | Promise<boolean>
   /** Show the button with `severity="danger"` */
-  severity?: VueSeverity
+  severity?: PrimeVueSeverity
   /** Whether this task should display the terminal window when run. */
   usesTerminal?: boolean
   /** If `true`, successful completion of this task will refresh install validation and automatically continue if successful. */

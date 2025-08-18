@@ -5,24 +5,24 @@
   >
     <template #tool-buttons>
       <Button
+        v-tooltip.bottom="$t('g.refresh')"
         icon="pi pi-refresh"
-        @click="modelStore.loadModelFolders"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('g.refresh')"
+        @click="modelStore.loadModelFolders"
       />
       <Button
+        v-tooltip.bottom="$t('g.loadAllFolders')"
         icon="pi pi-cloud-download"
-        @click="modelStore.loadModels"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('g.loadAllFolders')"
+        @click="modelStore.loadModels"
       />
     </template>
     <template #header>
       <SearchBox
-        class="model-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
+        class="model-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchModels') + '...'"
         @search="handleSearch"
       />
@@ -31,9 +31,9 @@
       <ElectronDownloadItems v-if="isElectron()" />
 
       <TreeExplorer
-        class="model-lib-tree-explorer"
-        :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
+        class="model-lib-tree-explorer"
+        :root="renderedRoot"
       >
         <template #node="{ node }">
           <ModelTreeLeaf :node="node" />
@@ -46,7 +46,6 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import type { TreeNode } from 'primevue/treenode'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -64,6 +63,7 @@ import {
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isElectron } from '@/utils/envUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -89,9 +89,8 @@ const handleSearch = async (query: string) => {
     return model.searchable.includes(search)
   })
 
-  nextTick(() => {
-    expandNode(root.value)
-  })
+  await nextTick()
+  expandNode(root.value)
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
@@ -135,24 +134,27 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         return 'pi pi-folder'
       },
       getBadgeText() {
-        // Return null to apply default badge text
+        // Return undefined to apply default badge text
         // Return empty string to hide badge
         if (!folder) {
-          return null
+          return
         }
-        return folder.state === ResourceState.Loaded ? null : ''
+        return folder.state === ResourceState.Loaded ? undefined : ''
       },
       children,
       draggable: node.leaf,
       handleClick(e: MouseEvent) {
         if (this.leaf) {
+          // @ts-expect-error fixme ts strict error
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
             const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
+            // @ts-expect-error fixme ts strict error
             const widget = node.widgets.find(
               (widget) => widget.name === provider.key
             )
             if (widget) {
+              // @ts-expect-error fixme ts strict error
               widget.value = model.file_name
             }
           }
@@ -174,7 +176,7 @@ watch(
         const folderPath = key.split('/').slice(1).join('/')
         if (folderPath && !folderPath.includes('/')) {
           // Trigger (async) load of model data for this folder
-          modelStore.getLoadedModelFolder(folderPath)
+          void modelStore.getLoadedModelFolder(folderPath)
         }
       }
     })

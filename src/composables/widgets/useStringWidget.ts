@@ -1,5 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   type InputSpec,
   isStringInputSpec
@@ -7,6 +6,8 @@ import {
 import { app } from '@/scripts/app'
 import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
+
+const TRACKPAD_DETECTION_THRESHOLD = 50
 
 function addMultilineWidget(
   node: LGraphNode,
@@ -35,6 +36,7 @@ function addMultilineWidget(
     widget.callback?.(widget.value)
   })
 
+  // Allow middle mouse button panning
   inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
     if (event.button === 1) {
       app.canvas.processMouseDown(event)
@@ -51,6 +53,57 @@ function addMultilineWidget(
     if (event.button === 1) {
       app.canvas.processMouseUp(event)
     }
+  })
+
+  inputEl.addEventListener('wheel', (event: WheelEvent) => {
+    const gesturesEnabled = useSettingStore().get(
+      'LiteGraph.Pointer.TrackpadGestures'
+    )
+    const deltaX = event.deltaX
+    const deltaY = event.deltaY
+
+    const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+
+    // Prevent pinch zoom from zooming the page
+    if (event.ctrlKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Detect if this is likely a trackpad gesture vs mouse wheel
+    // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
+    // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
+    const isLikelyTrackpad =
+      Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
+
+    // Trackpad gestures: when enabled, trackpad panning goes to canvas
+    if (gesturesEnabled && isLikelyTrackpad) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
+    if (isHorizontal) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+    if (canScrollY) {
+      event.stopPropagation()
+      return
+    }
+
+    // If textarea can't scroll vertically, pass to canvas
+    event.preventDefault()
+    app.canvas.processMouseWheel(event)
   })
 
   return widget

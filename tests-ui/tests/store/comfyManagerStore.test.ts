@@ -13,6 +13,17 @@ vi.mock('@/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
 }))
 
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: vi.fn((key) => key)
+  }),
+  createI18n: vi.fn(() => ({
+    global: {
+      t: vi.fn((key) => key)
+    }
+  }))
+}))
+
 interface EnabledDisabledTestCase {
   desc: string
   installed: Record<string, ManagerPackInstalled>

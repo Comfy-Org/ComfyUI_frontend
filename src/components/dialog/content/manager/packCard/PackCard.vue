@@ -1,96 +1,165 @@
 <template>
   <Card
-    class="absolute inset-0 flex flex-col overflow-hidden rounded-2xl shadow-elevation-4 dark-theme:bg-dark-elevation-1 transition-all duration-200"
+    class="w-full h-full inline-flex flex-col justify-between items-start overflow-hidden rounded-lg shadow-elevation-3 dark-theme:bg-dark-elevation-2 transition-all duration-200"
     :class="{
-      'outline outline-[6px] outline-[var(--p-primary-color)]': isSelected
+      'selected-card': isSelected,
+      'opacity-60': isDisabled
     }"
     :pt="{
-      body: { class: 'p-0 flex flex-col h-full rounded-2xl' },
-      content: { class: 'flex-1 flex flex-col rounded-2xl' },
-      title: { class: 'p-0 m-0' },
-      footer: { class: 'p-0 m-0' }
+      body: { class: 'p-0 flex flex-col w-full h-full rounded-lg gap-0' },
+      content: { class: 'flex-1 flex flex-col rounded-lg min-h-0' },
+      title: { class: 'w-full h-full rounded-t-lg cursor-pointer' },
+      footer: {
+        class: 'p-0 m-0 flex flex-col gap-0',
+        style: {
+          borderTop: isLightTheme ? '1px solid #f4f4f4' : '1px solid #2C2C2C'
+        }
+      }
     }"
   >
     <template #title>
-      <div class="flex justify-between p-5 pb-1 align-middle text-sm">
-        <span class="flex items-start mt-2">
-          <i
-            class="pi pi-box text-muted text-2xl ml-1 mr-5"
-            style="opacity: 0.5"
-          />
-          <span class="text-lg relative top-[.25rem]">{{
-            $t('manager.nodePack')
-          }}</span>
-        </span>
-        <div class="flex items-center gap-2.5">
-          <div
-            v-if="nodePack.downloads"
-            class="flex items-center text-sm text-muted tracking-tighter"
-          >
-            <i class="pi pi-download mr-2" />
-            {{ $n(nodePack.downloads) }}
-          </div>
-          <template v-if="isPackInstalled">
-            <PackEnableToggle :node-pack="nodePack" />
-          </template>
-          <template v-else>
-            <PackInstallButton :node-packs="[nodePack]" />
-          </template>
-        </div>
-      </div>
+      <PackBanner :node-pack="nodePack" />
     </template>
     <template #content>
-      <ContentDivider />
-      <div class="flex flex-1 p-5 mt-3 cursor-pointer">
-        <div class="flex-shrink-0 mr-4">
-          <PackIcon :node-pack="nodePack" />
-        </div>
-        <div class="flex flex-col flex-1 min-w-0">
-          <span
-            class="text-lg font-bold pb-4 truncate overflow-hidden text-ellipsis"
-            :title="nodePack.name"
+      <template v-if="isInstalling">
+        <div
+          class="self-stretch inline-flex flex-col justify-center items-center gap-2 h-full"
+        >
+          <ProgressSpinner />
+          <div
+            class="self-stretch text-center justify-start text-sm font-medium leading-none"
           >
-            {{ nodePack.name }}
-          </span>
-          <div class="flex-1">
+            {{ $t('g.installing') }}...
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <div class="pt-4 px-4 pb-3 w-full h-full">
+          <div class="flex flex-col gap-y-1 w-full h-full">
+            <span
+              class="text-sm font-bold truncate overflow-hidden text-ellipsis"
+            >
+              {{ nodePack.name }}
+            </span>
             <p
               v-if="nodePack.description"
-              class="text-sm text-color-secondary m-0 line-clamp-3 overflow-hidden"
-              :title="nodePack.description"
+              class="flex-1 text-muted text-xs font-medium break-words overflow-hidden min-h-12 line-clamp-3 my-0 leading-4 mb-1 overflow-hidden"
             >
               {{ nodePack.description }}
             </p>
+            <div class="flex flex-col gap-y-2">
+              <div class="flex-1 flex items-center gap-2">
+                <div v-if="nodesCount" class="p-2 pl-0 text-xs">
+                  {{ nodesCount }} {{ $t('g.nodes') }}
+                </div>
+                <PackVersionBadge
+                  :node-pack="nodePack"
+                  :is-selected="isSelected"
+                  :fill="false"
+                />
+                <div
+                  v-if="formattedLatestVersionDate"
+                  class="px-2 py-1 flex justify-center items-center gap-1 text-xs text-muted font-medium"
+                >
+                  {{ formattedLatestVersionDate }}
+                </div>
+              </div>
+              <div class="flex">
+                <span
+                  v-if="publisherName"
+                  class="text-xs text-muted font-medium leading-3 max-w-40 truncate"
+                >
+                  {{ publisherName }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </template>
     <template #footer>
-      <ContentDivider :width="0.1" />
       <PackCardFooter :node-pack="nodePack" />
     </template>
   </Card>
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import Card from 'primevue/card'
-import { computed } from 'vue'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import ContentDivider from '@/components/common/ContentDivider.vue'
-import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
-import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
+import PackBanner from '@/components/dialog/content/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
-import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { components } from '@/types/comfyRegistryTypes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import {
+  IsInstallingKey,
+  type MergedNodePack,
+  type RegistryPack,
+  isMergedNodePack
+} from '@/types/comfyManagerTypes'
 
 const { nodePack, isSelected = false } = defineProps<{
-  nodePack: components['schemas']['Node']
+  nodePack: MergedNodePack | RegistryPack
   isSelected?: boolean
 }>()
 
-const managerStore = useComfyManagerStore()
+const { d } = useI18n()
 
-const isPackInstalled = computed(() =>
-  managerStore.isPackInstalled(nodePack?.id)
+const colorPaletteStore = useColorPaletteStore()
+const isLightTheme = computed(
+  () => colorPaletteStore.completedActivePalette.light_theme
 )
+
+const isInstalling = ref(false)
+provide(IsInstallingKey, isInstalling)
+
+const { isPackInstalled, isPackEnabled } = useComfyManagerStore()
+
+const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+const isDisabled = computed(
+  () => isInstalled.value && !isPackEnabled(nodePack?.id)
+)
+
+whenever(isInstalled, () => (isInstalling.value = false))
+
+const nodesCount = computed(() =>
+  isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined
+)
+const publisherName = computed(() => {
+  if (!nodePack) return null
+
+  const { publisher, author } = nodePack
+  return publisher?.name ?? publisher?.id ?? author
+})
+
+const formattedLatestVersionDate = computed(() => {
+  if (!nodePack.latest_version?.createdAt) return null
+
+  return d(new Date(nodePack.latest_version.createdAt), {
+    dateStyle: 'medium'
+  })
+})
 </script>
+
+<style scoped>
+.selected-card {
+  position: relative;
+}
+
+.selected-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 4px solid var(--p-primary-color);
+  border-radius: 0.5rem;
+  pointer-events: none;
+  z-index: 100;
+}
+</style>

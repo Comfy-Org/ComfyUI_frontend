@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 export function getFromPngBuffer(buffer: ArrayBuffer) {
   // Get the PNG data as a Uint8Array
   const pngData = new Uint8Array(buffer)
@@ -46,6 +45,7 @@ export function getFromPngFile(file: File) {
   return new Promise<Record<string, string>>((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
+      // @ts-expect-error fixme ts strict error
       r(getFromPngBuffer(event.target.result as ArrayBuffer))
     }
 

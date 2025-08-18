@@ -36,6 +36,7 @@ import ListBox from 'primevue/listbox'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ElectronFileDownload from '@/components/common/ElectronFileDownload.vue'
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useSettingStore } from '@/stores/settingStore'
@@ -129,9 +130,12 @@ const missingModels = computed(() => {
   })
 })
 
-onBeforeUnmount(() => {
+onBeforeUnmount(async () => {
   if (doNotAskAgain.value) {
-    useSettingStore().set('Comfy.Workflow.ShowMissingModelsWarning', false)
+    await useSettingStore().set(
+      'Comfy.Workflow.ShowMissingModelsWarning',
+      false
+    )
   }
 })
 </script>

@@ -1,4 +1,4 @@
-// @ts-strict-ignore
+import { WORKFLOW_ACCEPT_STRING } from '@/constants/supportedWorkflowFormats'
 import { type StatusWsMessageStatus, TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -92,7 +92,8 @@ export function $el<TTag extends string>(
   return element as ElementType<TTag>
 }
 
-function dragElement(dragEl, settings): () => void {
+// @ts-expect-error fixme ts strict error
+function dragElement(dragEl): () => void {
   var posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
@@ -108,7 +109,7 @@ function dragElement(dragEl, settings): () => void {
   }
 
   // When the element resizes (e.g. view queue) ensure it is still in the windows bounds
-  const resizeObserver = new ResizeObserver(() => {
+  new ResizeObserver(() => {
     ensureInBounds()
   }).observe(dragEl)
 
@@ -148,6 +149,7 @@ function dragElement(dragEl, settings): () => void {
     dragEl.style.top = newPosY + 'px'
     dragEl.style.bottom = 'unset'
 
+    // @ts-expect-error fixme ts strict error
     if (savePos) {
       localStorage.setItem(
         'Comfy.MenuPosition',
@@ -170,10 +172,12 @@ function dragElement(dragEl, settings): () => void {
     }
   }
 
+  // @ts-expect-error fixme ts strict error
   let savePos = undefined
   restorePos()
   savePos = true
 
+  // @ts-expect-error fixme ts strict error
   function dragMouseDown(e) {
     e = e || window.event
     e.preventDefault()
@@ -185,6 +189,7 @@ function dragElement(dragEl, settings): () => void {
     document.onmousemove = elementDrag
   }
 
+  // @ts-expect-error fixme ts strict error
   function elementDrag(e) {
     e = e || window.event
     e.preventDefault()
@@ -229,6 +234,7 @@ class ComfyList {
   element: HTMLDivElement
   button?: HTMLButtonElement
 
+  // @ts-expect-error fixme ts strict error
   constructor(text, type?, reverse?) {
     this.#text = text
     this.#type = type || text.toLowerCase()
@@ -249,6 +255,7 @@ class ComfyList {
           textContent: section
         }),
         $el('div.comfy-list-items', [
+          // @ts-expect-error fixme ts strict error
           ...(this.#reverse ? items[section].reverse() : items[section]).map(
             (item: TaskItem) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
@@ -264,6 +271,7 @@ class ComfyList {
                   textContent: 'Load',
                   onclick: async () => {
                     await app.loadGraphData(
+                      // @ts-expect-error fixme ts strict error
                       item.prompt[3].extra_pnginfo.workflow,
                       true,
                       false
@@ -310,6 +318,7 @@ class ComfyList {
 
   async show() {
     this.element.style.display = 'block'
+    // @ts-expect-error fixme ts strict error
     this.button.textContent = 'Close'
 
     await this.load()
@@ -317,6 +326,7 @@ class ComfyList {
 
   hide() {
     this.element.style.display = 'none'
+    // @ts-expect-error fixme ts strict error
     this.button.textContent = 'View ' + this.#text
   }
 
@@ -339,14 +349,22 @@ export class ComfyUI {
   lastQueueSize: number
   queue: ComfyList
   history: ComfyList
+  // @ts-expect-error fixme ts strict error
   autoQueueMode: string
+  // @ts-expect-error fixme ts strict error
   graphHasChanged: boolean
+  // @ts-expect-error fixme ts strict error
   autoQueueEnabled: boolean
+  // @ts-expect-error fixme ts strict error
   menuContainer: HTMLDivElement
+  // @ts-expect-error fixme ts strict error
   queueSize: Element
+  // @ts-expect-error fixme ts strict error
   restoreMenuPosition: () => void
+  // @ts-expect-error fixme ts strict error
   loadFile: () => void
 
+  // @ts-expect-error fixme ts strict error
   constructor(app) {
     this.app = app
     this.dialog = new ComfyDialog()
@@ -369,10 +387,11 @@ export class ComfyUI {
     const fileInput = $el('input', {
       id: 'comfy-file-input',
       type: 'file',
-      accept: '.json,image/png,.latent,.safetensors,image/webp,audio/flac',
+      accept: WORKFLOW_ACCEPT_STRING,
       style: { display: 'none' },
       parent: document.body,
       onchange: async () => {
+        // @ts-expect-error fixme ts strict error
         await app.handleFile(fileInput.files[0])
         fileInput.value = ''
       }
@@ -394,6 +413,7 @@ export class ComfyUI {
         }
       ],
       {
+        // @ts-expect-error fixme ts strict error
         onChange: (value) => {
           this.autoQueueMode = value.item.value
         }
@@ -456,7 +476,9 @@ export class ComfyUI {
           $el('label', { innerHTML: 'Extra options' }, [
             $el('input', {
               type: 'checkbox',
+              // @ts-expect-error fixme ts strict error
               onchange: (i) => {
+                // @ts-expect-error fixme ts strict error
                 document.getElementById('extraOptions').style.display = i
                   .srcElement.checked
                   ? 'block'
@@ -492,6 +514,7 @@ export class ComfyUI {
                 value: this.batchCount,
                 min: '1',
                 style: { width: '35%', marginLeft: '0.4em' },
+                // @ts-expect-error fixme ts strict error
                 oninput: (i) => {
                   this.batchCount = i.target.value
                   /* Even though an <input> element with a type of range logically represents a number (since
@@ -511,6 +534,7 @@ export class ComfyUI {
                 min: '1',
                 max: '100',
                 value: this.batchCount,
+                // @ts-expect-error fixme ts strict error
                 oninput: (i) => {
                   this.batchCount = i.srcElement.value
                   // Note
@@ -532,6 +556,7 @@ export class ComfyUI {
                 type: 'checkbox',
                 checked: false,
                 title: 'Automatically queue prompt when the queue size hits 0',
+                // @ts-expect-error fixme ts strict error
                 onchange: (e) => {
                   this.autoQueueEnabled = e.target.checked
                   autoQueueModeEl.style.display = this.autoQueueEnabled
@@ -640,7 +665,7 @@ export class ComfyUI {
     // Hide by default on construction so it does not interfere with other views.
     this.menuContainer.style.display = 'none'
 
-    this.restoreMenuPosition = dragElement(this.menuContainer, this.settings)
+    this.restoreMenuPosition = dragElement(this.menuContainer)
 
     // @ts-expect-error
     this.setStatus({ exec_info: { queue_remaining: 'X' } })

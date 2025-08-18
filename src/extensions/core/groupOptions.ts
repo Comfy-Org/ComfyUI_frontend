@@ -1,9 +1,7 @@
-// @ts-strict-ignore
-import { LGraphGroup } from '@comfyorg/litegraph'
-import { LGraphCanvas } from '@comfyorg/litegraph'
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { Positionable } from '@comfyorg/litegraph/dist/interfaces'
-
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
 
 import { app } from '../../scripts/app'
@@ -26,7 +24,9 @@ app.registerExtension({
     LGraphCanvas.prototype.getCanvasMenuOptions = function (
       this: LGraphCanvas
     ) {
+      // @ts-expect-error fixme ts strict error
       const options = orig.apply(this, arguments)
+      // @ts-expect-error fixme ts strict error
       const group = this.graph.getGroupOnPos(
         this.graph_mouse[0],
         this.graph_mouse[1]
@@ -38,7 +38,9 @@ app.registerExtension({
             callback: () => {
               const group = new LGraphGroup()
               addNodesToGroup(group, this.selectedItems)
+              // @ts-expect-error fixme ts strict error
               this.graph.add(group)
+              // @ts-expect-error fixme ts strict error
               this.graph.change()
             }
           })
@@ -56,6 +58,7 @@ app.registerExtension({
         disabled: !this.selectedItems?.size,
         callback: () => {
           addNodesToGroup(group, this.selectedItems)
+          // @ts-expect-error fixme ts strict error
           this.graph.change()
         }
       })
@@ -65,6 +68,7 @@ app.registerExtension({
         return options
       } else {
         // Add a separator between the default options and the group options
+        // @ts-expect-error fixme ts strict error
         options.push(null)
       }
 
@@ -85,6 +89,7 @@ app.registerExtension({
             'Comfy.GroupSelectedNodes.Padding'
           )
           group.resizeTo(group.children, padding)
+          // @ts-expect-error fixme ts strict error
           this.graph.change()
         }
       })
@@ -93,6 +98,7 @@ app.registerExtension({
         content: 'Select Nodes',
         callback: () => {
           this.selectNodes(nodesInGroup)
+          // @ts-expect-error fixme ts strict error
           this.graph.change()
           this.canvas.focus()
         }

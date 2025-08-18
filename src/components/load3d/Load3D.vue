@@ -1,63 +1,99 @@
 <template>
-  <div class="relative w-full h-full">
+  <div
+    class="relative w-full h-full"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
     <Load3DScene
+      ref="load3DSceneRef"
       :node="node"
-      :type="type"
-      :backgroundColor="backgroundColor"
-      :showGrid="showGrid"
-      :lightIntensity="lightIntensity"
+      :input-spec="inputSpec"
+      :background-color="backgroundColor"
+      :show-grid="showGrid"
+      :light-intensity="lightIntensity"
       :fov="fov"
-      :cameraType="cameraType"
-      :showPreview="showPreview"
-      :backgroundImage="backgroundImage"
-      :upDirection="upDirection"
-      :materialMode="materialMode"
-      :edgeThreshold="edgeThreshold"
-      @materialModeChange="listenMaterialModeChange"
-      @backgroundColorChange="listenBackgroundColorChange"
-      @lightIntensityChange="listenLightIntensityChange"
-      @fovChange="listenFOVChange"
-      @cameraTypeChange="listenCameraTypeChange"
-      @showGridChange="listenShowGridChange"
-      @showPreviewChange="listenShowPreviewChange"
-      @backgroundImageChange="listenBackgroundImageChange"
-      @upDirectionChange="listenUpDirectionChange"
-      @edgeThresholdChange="listenEdgeThresholdChange"
+      :camera-type="cameraType"
+      :show-preview="showPreview"
+      :background-image="backgroundImage"
+      :up-direction="upDirection"
+      :material-mode="materialMode"
+      :edge-threshold="edgeThreshold"
+      @material-mode-change="listenMaterialModeChange"
+      @background-color-change="listenBackgroundColorChange"
+      @light-intensity-change="listenLightIntensityChange"
+      @fov-change="listenFOVChange"
+      @camera-type-change="listenCameraTypeChange"
+      @show-grid-change="listenShowGridChange"
+      @show-preview-change="listenShowPreviewChange"
+      @background-image-change="listenBackgroundImageChange"
+      @up-direction-change="listenUpDirectionChange"
+      @edge-threshold-change="listenEdgeThresholdChange"
+      @recording-status-change="listenRecordingStatusChange"
     />
     <Load3DControls
-      :backgroundColor="backgroundColor"
-      :showGrid="showGrid"
-      :showPreview="showPreview"
-      :lightIntensity="lightIntensity"
-      :showLightIntensityButton="showLightIntensityButton"
+      :input-spec="inputSpec"
+      :background-color="backgroundColor"
+      :show-grid="showGrid"
+      :show-preview="showPreview"
+      :light-intensity="lightIntensity"
+      :show-light-intensity-button="showLightIntensityButton"
       :fov="fov"
-      :showFOVButton="showFOVButton"
-      :showPreviewButton="showPreviewButton"
-      :cameraType="cameraType"
-      :hasBackgroundImage="hasBackgroundImage"
-      :upDirection="upDirection"
-      :materialMode="materialMode"
-      :isAnimation="false"
-      :edgeThreshold="edgeThreshold"
-      @updateBackgroundImage="handleBackgroundImageUpdate"
-      @switchCamera="switchCamera"
-      @toggleGrid="toggleGrid"
-      @updateBackgroundColor="handleBackgroundColorChange"
-      @updateLightIntensity="handleUpdateLightIntensity"
-      @togglePreview="togglePreview"
-      @updateFOV="handleUpdateFOV"
-      @updateUpDirection="handleUpdateUpDirection"
-      @updateMaterialMode="handleUpdateMaterialMode"
-      @updateEdgeThreshold="handleUpdateEdgeThreshold"
+      :show-f-o-v-button="showFOVButton"
+      :show-preview-button="showPreviewButton"
+      :camera-type="cameraType"
+      :has-background-image="hasBackgroundImage"
+      :up-direction="upDirection"
+      :material-mode="materialMode"
+      :edge-threshold="edgeThreshold"
+      @update-background-image="handleBackgroundImageUpdate"
+      @switch-camera="switchCamera"
+      @toggle-grid="toggleGrid"
+      @update-background-color="handleBackgroundColorChange"
+      @update-light-intensity="handleUpdateLightIntensity"
+      @toggle-preview="togglePreview"
+      @update-f-o-v="handleUpdateFOV"
+      @update-up-direction="handleUpdateUpDirection"
+      @update-material-mode="handleUpdateMaterialMode"
+      @update-edge-threshold="handleUpdateEdgeThreshold"
+      @export-model="handleExportModel"
     />
+    <div
+      v-if="enable3DViewer"
+      class="absolute top-12 right-2 z-20 pointer-events-auto"
+    >
+      <ViewerControls :node="node" />
+    </div>
+
+    <div
+      v-if="showRecordingControls"
+      class="absolute right-2 z-20 pointer-events-auto"
+      :class="{
+        'top-12': !enable3DViewer,
+        'top-24': enable3DViewer
+      }"
+    >
+      <RecordingControls
+        :node="node"
+        :is-recording="isRecording"
+        :has-recording="hasRecording"
+        :recording-duration="recordingDuration"
+        @start-recording="handleStartRecording"
+        @stop-recording="handleStopRecording"
+        @export-recording="handleExportRecording"
+        @clear-recording="handleClearRecording"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
+import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
+import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   CameraType,
@@ -67,7 +103,10 @@ import {
 } from '@/extensions/core/load3d/interfaces'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
 
+const { t } = useI18n()
 const { widget } = defineProps<{
   widget: ComponentWidget<string[]>
 }>()
@@ -90,10 +129,62 @@ const backgroundImage = ref('')
 const upDirection = ref<UpDirection>('original')
 const materialMode = ref<MaterialMode>('original')
 const edgeThreshold = ref(85)
+const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
+const isRecording = ref(false)
+const hasRecording = ref(false)
+const recordingDuration = ref(0)
+const showRecordingControls = ref(!inputSpec.isPreview)
+const enable3DViewer = computed(() =>
+  useSettingStore().get('Comfy.Load3D.3DViewerEnable')
+)
 
 const showPreviewButton = computed(() => {
   return !type.includes('Preview')
 })
+
+const handleMouseEnter = () => {
+  if (load3DSceneRef.value?.load3d) {
+    load3DSceneRef.value.load3d.updateStatusMouseOnScene(true)
+  }
+}
+
+const handleMouseLeave = () => {
+  if (load3DSceneRef.value?.load3d) {
+    load3DSceneRef.value.load3d.updateStatusMouseOnScene(false)
+  }
+}
+
+const handleStartRecording = async () => {
+  if (load3DSceneRef.value?.load3d) {
+    await load3DSceneRef.value.load3d.startRecording()
+    isRecording.value = true
+  }
+}
+
+const handleStopRecording = () => {
+  if (load3DSceneRef.value?.load3d) {
+    load3DSceneRef.value.load3d.stopRecording()
+    isRecording.value = false
+    recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
+    hasRecording.value = recordingDuration.value > 0
+  }
+}
+
+const handleExportRecording = () => {
+  if (load3DSceneRef.value?.load3d) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `${timestamp}-scene-recording.mp4`
+    load3DSceneRef.value.load3d.exportRecording(filename)
+  }
+}
+
+const handleClearRecording = () => {
+  if (load3DSceneRef.value?.load3d) {
+    load3DSceneRef.value.load3d.clearRecording()
+    hasRecording.value = false
+    recordingDuration.value = 0
+  }
+}
 
 const switchCamera = () => {
   cameraType.value =
@@ -130,7 +221,11 @@ const handleBackgroundImageUpdate = async (file: File | null) => {
     return
   }
 
-  backgroundImage.value = await Load3dUtils.uploadFile(file)
+  const resourceFolder = (node.properties['Resource Folder'] as string) || ''
+
+  const subfolder = resourceFolder.trim() ? `3d/${resourceFolder.trim()}` : '3d'
+
+  backgroundImage.value = await Load3dUtils.uploadFile(file, subfolder)
 
   node.properties['Background Image'] = backgroundImage.value
 }
@@ -165,6 +260,24 @@ const handleUpdateMaterialMode = (value: MaterialMode) => {
   node.properties['Material Mode'] = value
 }
 
+const handleExportModel = async (format: string) => {
+  if (!load3DSceneRef.value?.load3d) {
+    useToastStore().addAlert(t('toastMessages.no3dSceneToExport'))
+    return
+  }
+
+  try {
+    await load3DSceneRef.value.load3d.exportModel(format)
+  } catch (error) {
+    console.error('Error exporting model:', error)
+    useToastStore().addAlert(
+      t('toastMessages.failedToExportModel', {
+        format: format.toUpperCase()
+      })
+    )
+  }
+}
+
 const listenMaterialModeChange = (mode: MaterialMode) => {
   materialMode.value = mode
 
@@ -177,6 +290,15 @@ const listenUpDirectionChange = (value: UpDirection) => {
 
 const listenEdgeThresholdChange = (value: number) => {
   edgeThreshold.value = value
+}
+
+const listenRecordingStatusChange = (value: boolean) => {
+  isRecording.value = value
+
+  if (!value && load3DSceneRef.value?.load3d) {
+    recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
+    hasRecording.value = recordingDuration.value > 0
+  }
 }
 
 const listenBackgroundColorChange = (value: string) => {

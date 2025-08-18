@@ -1,6 +1,10 @@
-import { CanvasPointer, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { watchEffect } from 'vue'
 
+import {
+  CanvasPointer,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -15,6 +19,7 @@ export const useLitegraphSettings = () => {
     const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
     if (canvasStore.canvas) {
       canvasStore.canvas.show_info = canvasInfoEnabled
+      canvasStore.canvas.draw(false, true)
     }
   })
 
@@ -114,6 +119,27 @@ export const useLitegraphSettings = () => {
   watchEffect(() => {
     LiteGraph.context_menu_scaling = settingStore.get(
       'LiteGraph.ContextMenu.Scaling'
+    )
+  })
+
+  watchEffect(() => {
+    LiteGraph.Reroute.maxSplineOffset = settingStore.get(
+      'LiteGraph.Reroute.SplineOffset'
+    )
+  })
+
+  watchEffect(() => {
+    const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode') as
+      | 'standard'
+      | 'legacy'
+
+    LiteGraph.canvasNavigationMode = navigationMode
+    LiteGraph.macTrackpadGestures = navigationMode === 'standard'
+  })
+
+  watchEffect(() => {
+    LiteGraph.saveViewportWithGraph = settingStore.get(
+      'Comfy.EnableWorkflowViewRestore'
     )
   })
 }

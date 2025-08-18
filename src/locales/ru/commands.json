@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Проверить наличие обновлений"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "Открыть папку пользовательских нод"
   },
@@ -32,8 +35,14 @@
   "Comfy-Desktop_Restart": {
     "label": "Перезагрузить"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Открыть 3D-просмотрщик (бета) для выбранного узла"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
+  },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "Добавить или изменить шаг модели"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Удалить выбранные элементы"
@@ -41,14 +50,32 @@
   "Comfy_Canvas_FitView": {
     "label": "Подогнать вид к выбранным нодам"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Переместить выбранные узлы вниз"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Переместить выбранные узлы влево"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Переместить выбранные узлы вправо"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Переместить выбранные узлы вверх"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Изменить размер выбранных узлов"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Переключить видимость ссылки"
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Переключить блокировку холста"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Полотно: переключить миникарту"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Обход/Необход выбранных нод"
@@ -77,6 +104,12 @@
   "Comfy_ClearWorkflow": {
     "label": "Очистить рабочий процесс"
   },
+  "Comfy_ContactSupport": {
+    "label": "Связаться с поддержкой"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Показать выбор модели (Dev)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Дублировать текущий рабочий процесс"
   },
@@ -89,11 +122,20 @@
   "Comfy_Feedback": {
     "label": "Обратная связь"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Преобразовать выделенное в подграф"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Выйти из подграфа"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Подогнать группу к содержимому"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Группировать выбранные ноды"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Распаковать выбранный подграф"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Преобразовать выбранные ноды в групповую ноду"
@@ -128,11 +170,26 @@
   "Comfy_Manager_CustomNodesManager": {
     "label": "Менеджер Пользовательских Узлов"
   },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "Переключить диалоговое окно прогресса"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Уменьшить размер кисти в MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Увеличить размер кисти в MaskEditor"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Открыть редактор масок для выбранной ноды"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Новый пустой рабочий процесс"
   },
   "Comfy_OpenClipspace": {
     "label": "Клипспейс"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "Менеджер"
   },
   "Comfy_OpenWorkflow": {
     "label": "Открыть рабочий процесс"
@@ -142,6 +199,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "Очередь запросов (передняя)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Добавить выбранные выходные узлы в очередь"
   },
   "Comfy_Redo": {
     "label": "Повторить"
@@ -158,11 +218,23 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Показать диалог настроек"
   },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Производительность холста"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Центр поддержки"
+  },
   "Comfy_ToggleTheme": {
     "label": "Переключить тему (Тёмная/Светлая)"
   },
   "Comfy_Undo": {
     "label": "Отменить"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Открыть окно входа"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Выйти"
   },
   "Workspace_CloseWorkflow": {
     "label": "Закрыть текущий рабочий процесс"
@@ -184,6 +256,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Переключить нижнюю панель логов"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Показать/скрыть основную нижнюю панель"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Показать или скрыть нижнюю панель управления просмотром"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Показать диалог клавиш"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Переключить режим фокуса"

@@ -4,9 +4,8 @@
     :style="style"
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
   >
-    <div class="actionbar-content flex items-center select-none" ref="panelRef">
-      <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
-      </span>
+    <div ref="panelRef" class="actionbar-content flex items-center select-none">
+      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2 p-0!" />
       <ComfyQueueButton />
     </div>
   </Panel>
@@ -21,7 +20,7 @@ import {
   useLocalStorage,
   watchDebounced
 } from '@vueuse/core'
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
 import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
@@ -31,10 +30,11 @@ import ComfyQueueButton from './ComfyQueueButton.vue'
 
 const settingsStore = useSettingStore()
 
-const visible = computed(
-  () => settingsStore.get('Comfy.UseNewMenu') !== 'Disabled'
-)
+const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 
+const visible = computed(() => position.value !== 'Disabled')
+
+const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
@@ -50,7 +50,16 @@ const {
 } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
-  containerElement: document.body
+  containerElement: document.body,
+  onMove: (event) => {
+    // Prevent dragging the menu over the top of the tabs
+    if (position.value === 'Top') {
+      const minY = topMenuRef?.value?.getBoundingClientRect().top ?? 40
+      if (event.y < minY) {
+        event.y = minY
+      }
+    }
+  }
 })
 
 // Update storedPosition when x or y changes
@@ -64,15 +73,6 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  if (x.value !== 0 || y.value !== 0) {
-    return
-  }
-  if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
-    x.value = storedPosition.value.x
-    y.value = storedPosition.value.y
-    captureLastDragState()
-    return
-  }
   if (panelRef.value) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -83,15 +83,31 @@ const setInitialPosition = () => {
       return
     }
 
-    x.value = (screenWidth - menuWidth) / 2
-    y.value = screenHeight - menuHeight - 10 // 10px margin from bottom
-    captureLastDragState()
+    // Check if stored position exists and is within bounds
+    if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
+      // Ensure stored position is within screen bounds
+      x.value = clamp(storedPosition.value.x, 0, screenWidth - menuWidth)
+      y.value = clamp(storedPosition.value.y, 0, screenHeight - menuHeight)
+      captureLastDragState()
+      return
+    }
+
+    // If no stored position or current position, set to bottom center
+    if (x.value === 0 && y.value === 0) {
+      x.value = clamp((screenWidth - menuWidth) / 2, 0, screenWidth - menuWidth)
+      y.value = clamp(
+        screenHeight - menuHeight - 10,
+        0,
+        screenHeight - menuHeight
+      )
+      captureLastDragState()
+    }
   }
 }
 onMounted(setInitialPosition)
-watch(visible, (newVisible) => {
+watch(visible, async (newVisible) => {
   if (newVisible) {
-    nextTick(setInitialPosition)
+    await nextTick(setInitialPosition)
   }
 })
 
@@ -176,7 +192,6 @@ const adjustMenuPosition = () => {
 
 useEventListener(window, 'resize', adjustMenuPosition)
 
-const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const topMenuBounds = useElementBounding(topMenuRef)
 const overlapThreshold = 20 // pixels
 const isOverlappingWithTopMenu = computed(() => {

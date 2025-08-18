@@ -1,7 +1,5 @@
-// @ts-strict-ignore
-import { LGraphCanvas } from '@comfyorg/litegraph'
-
 import { t } from '@/i18n'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useDialogService } from '@/services/dialogService'
 import { useToastStore } from '@/stores/toastStore'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -32,6 +30,7 @@ const id = 'Comfy.NodeTemplates'
 const file = 'comfy.templates.json'
 
 class ManageTemplates extends ComfyDialog {
+  // @ts-expect-error fixme ts strict error
   templates: any[]
   draggedEl: HTMLElement | null
   saveVisualCue: number | null
@@ -61,10 +60,11 @@ class ManageTemplates extends ComfyDialog {
     }) as HTMLInputElement
   }
 
-  createButtons() {
+  override createButtons() {
     const btns = super.createButtons()
     btns[0].textContent = 'Close'
-    btns[0].onclick = (e) => {
+    btns[0].onclick = () => {
+      // @ts-expect-error fixme ts strict error
       clearTimeout(this.saveVisualCue)
       this.close()
     }
@@ -106,11 +106,13 @@ class ManageTemplates extends ComfyDialog {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
       console.error(error)
+      // @ts-expect-error fixme ts strict error
       useToastStore().addAlert(error.message)
     }
   }
 
   async importAll() {
+    // @ts-expect-error fixme ts strict error
     for (const file of this.importInput.files) {
       if (file.type === 'application/json' || file.name.endsWith('.json')) {
         const reader = new FileReader()
@@ -129,6 +131,7 @@ class ManageTemplates extends ComfyDialog {
       }
     }
 
+    // @ts-expect-error fixme ts strict error
     this.importInput.value = null
 
     this.close()
@@ -136,7 +139,7 @@ class ManageTemplates extends ComfyDialog {
 
   exportAll() {
     if (this.templates.length == 0) {
-      useToastStore().addAlert('No templates to export.')
+      useToastStore().addAlert(t('toastMessages.noTemplatesToExport'))
       return
     }
 
@@ -156,13 +159,14 @@ class ManageTemplates extends ComfyDialog {
     }, 0)
   }
 
-  show() {
+  override show() {
     // Show list of template names + delete button
     super.show(
       $el(
         'div',
         {},
         this.templates.flatMap((t, i) => {
+          // @ts-expect-error fixme ts strict error
           let nameInput
           return [
             $el(
@@ -177,6 +181,7 @@ class ManageTemplates extends ComfyDialog {
                   gap: '5px',
                   backgroundColor: 'var(--comfy-menu-bg)'
                 },
+                // @ts-expect-error fixme ts strict error
                 ondragstart: (e) => {
                   this.draggedEl = e.currentTarget
                   e.currentTarget.style.opacity = '0.6'
@@ -184,6 +189,7 @@ class ManageTemplates extends ComfyDialog {
                   e.dataTransfer.effectAllowed = 'move'
                   e.dataTransfer.setDragImage(this.emptyImg, 0, 0)
                 },
+                // @ts-expect-error fixme ts strict error
                 ondragend: (e) => {
                   e.target.style.opacity = '1'
                   e.currentTarget.style.border = '1px dashed transparent'
@@ -192,7 +198,9 @@ class ManageTemplates extends ComfyDialog {
                   // rearrange the elements
                   this.element
                     .querySelectorAll('.templateManagerRow')
+                    // @ts-expect-error fixme ts strict error
                     .forEach((el: HTMLElement, i) => {
+                      // @ts-expect-error fixme ts strict error
                       var prev_i = Number.parseInt(el.dataset.id)
 
                       if (el == this.draggedEl && prev_i != i) {
@@ -206,6 +214,7 @@ class ManageTemplates extends ComfyDialog {
                     })
                   this.store()
                 },
+                // @ts-expect-error fixme ts strict error
                 ondragover: (e) => {
                   e.preventDefault()
                   if (e.currentTarget == this.draggedEl) return
@@ -232,6 +241,7 @@ class ManageTemplates extends ComfyDialog {
                     style: {
                       cursor: 'grab'
                     },
+                    // @ts-expect-error fixme ts strict error
                     onmousedown: (e) => {
                       // enable dragging only from the label
                       if (e.target.localName == 'label')
@@ -246,7 +256,9 @@ class ManageTemplates extends ComfyDialog {
                         transitionProperty: 'background-color',
                         transitionDuration: '0s'
                       },
+                      // @ts-expect-error fixme ts strict error
                       onchange: (e) => {
+                        // @ts-expect-error fixme ts strict error
                         clearTimeout(this.saveVisualCue)
                         var el = e.target
                         var row = el.parentNode.parentNode
@@ -262,8 +274,10 @@ class ManageTemplates extends ComfyDialog {
                           el.style.backgroundColor = 'var(--comfy-input-bg)'
                         }, 15)
                       },
+                      // @ts-expect-error fixme ts strict error
                       onkeypress: (e) => {
                         var el = e.target
+                        // @ts-expect-error fixme ts strict error
                         clearTimeout(this.saveVisualCue)
                         el.style.transitionDuration = '0s'
                         el.style.backgroundColor = 'var(--comfy-input-bg)'
@@ -279,7 +293,7 @@ class ManageTemplates extends ComfyDialog {
                       fontSize: '12px',
                       fontWeight: 'normal'
                     },
-                    onclick: (e) => {
+                    onclick: () => {
                       const json = JSON.stringify({ templates: [t] }, null, 2) // convert the data to a JSON string
                       const blob = new Blob([json], {
                         type: 'application/json'
@@ -287,6 +301,7 @@ class ManageTemplates extends ComfyDialog {
                       const url = URL.createObjectURL(blob)
                       const a = $el('a', {
                         href: url,
+                        // @ts-expect-error fixme ts strict error
                         download: (nameInput.value || t.name) + '.json',
                         style: { display: 'none' },
                         parent: document.body
@@ -305,6 +320,7 @@ class ManageTemplates extends ComfyDialog {
                       color: 'red',
                       fontWeight: 'normal'
                     },
+                    // @ts-expect-error fixme ts strict error
                     onclick: (e) => {
                       const item = e.target.parentNode.parentNode
                       item.parentNode.removeChild(item)
@@ -315,6 +331,7 @@ class ManageTemplates extends ComfyDialog {
                       setTimeout(function () {
                         that.element
                           .querySelectorAll('.templateManagerRow')
+                          // @ts-expect-error fixme ts strict error
                           .forEach((el: HTMLElement, i) => {
                             el.dataset.id = i.toString()
                           })
@@ -336,22 +353,27 @@ app.registerExtension({
   setup() {
     const manage = new ManageTemplates()
 
+    // @ts-expect-error fixme ts strict error
     const clipboardAction = async (cb) => {
       // We use the clipboard functions but dont want to overwrite the current user clipboard
       // Restore it after we've run our callback
       const old = localStorage.getItem('litegrapheditor_clipboard')
       await cb()
+      // @ts-expect-error fixme ts strict error
       localStorage.setItem('litegrapheditor_clipboard', old)
     }
 
     const orig = LGraphCanvas.prototype.getCanvasMenuOptions
     LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+      // @ts-expect-error fixme ts strict error
       const options = orig.apply(this, arguments)
 
+      // @ts-expect-error fixme ts strict error
       options.push(null)
       options.push({
         content: `Save Selected as Template`,
         disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
+        // @ts-expect-error fixme ts strict error
         callback: async () => {
           const name = await useDialogService().prompt({
             title: t('nodeTemplates.saveAsTemplate'),
@@ -363,6 +385,7 @@ app.registerExtension({
           clipboardAction(() => {
             app.canvas.copyToClipboard()
             let data = localStorage.getItem('litegrapheditor_clipboard')
+            // @ts-expect-error fixme ts strict error
             data = JSON.parse(data)
             const nodeIds = Object.keys(app.canvas.selected_nodes)
             for (let i = 0; i < nodeIds.length; i++) {
@@ -377,6 +400,7 @@ app.registerExtension({
                   // @ts-expect-error
                   data.groupNodes = {}
                 }
+                if (nodeData == null) throw new TypeError('nodeData is not set')
                 // @ts-expect-error
                 data.groupNodes[nodeData.name] = groupData
                 // @ts-expect-error
@@ -414,6 +438,7 @@ app.registerExtension({
         }
       })
 
+      // @ts-expect-error fixme ts strict error
       subItems.push(null, {
         content: 'Manage',
         callback: () => manage.show()

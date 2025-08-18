@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 
 import type {
   ComboInputSpec,
@@ -15,6 +15,7 @@ import {
   isFloatInputSpec,
   isIntInputSpec
 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import { lcm } from './mathUtil'
 
@@ -61,8 +62,8 @@ const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
   }
 
   return mergeCommonInputSpec(
-    [type, { ...options1, ...mergedOptions }] as unknown as T,
-    [type, { ...options2, ...mergedOptions }] as unknown as T
+    [type, { ...options1, ...mergedOptions }] as T,
+    [type, { ...options2, ...mergedOptions }] as T
   )
 }
 
@@ -84,8 +85,8 @@ const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
   }
 
   return mergeCommonInputSpec(
-    ['COMBO', { ...options1, options: intersection }] as unknown as T,
-    ['COMBO', { ...options2, options: intersection }] as unknown as T
+    ['COMBO', { ...options1, options: intersection }] as T,
+    ['COMBO', { ...options2, options: intersection }] as T
   )
 }
 
@@ -107,9 +108,7 @@ const mergeCommonInputSpec = <T extends InputSpec>(
     return value1 === value2 || (_.isNil(value1) && _.isNil(value2))
   })
 
-  return mergeIsValid
-    ? ([type, { ...options1, ...options2 }] as unknown as T)
-    : null
+  return mergeIsValid ? ([type, { ...options1, ...options2 }] as T) : null
 }
 
 /**
@@ -139,4 +138,12 @@ export const mergeInputSpec = (
   }
 
   return mergeCommonInputSpec(spec1, spec2)
+}
+
+/**
+ * Checks if a node definition represents a subgraph node.
+ * Subgraph nodes are created with category='subgraph' and python_module='nodes'.
+ */
+export const isSubgraphNode = (nodeDef: ComfyNodeDefImpl): boolean => {
+  return nodeDef.category === 'subgraph' && nodeDef.python_module === 'nodes'
 }

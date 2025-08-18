@@ -16,9 +16,9 @@
           placeholder="Select existing ComfyUI installation (optional)"
           class="flex-1"
           :class="{ 'p-invalid': pathError }"
-          @update:modelValue="validateSource"
+          @update:model-value="validateSource"
         />
-        <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
+        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
       </div>
 
       <Message v-if="pathError" severity="error">
@@ -44,7 +44,7 @@
         >
           <Checkbox
             v-model="item.selected"
-            :inputId="item.id"
+            :input-id="item.id"
             :binary="true"
             @click.stop
           />
@@ -99,7 +99,7 @@ const isValidSource = computed(
   () => sourcePath.value !== '' && pathError.value === ''
 )
 
-const validateSource = async (sourcePath: string) => {
+const validateSource = async (sourcePath: string | undefined) => {
   if (!sourcePath) {
     pathError.value = ''
     return
@@ -109,7 +109,7 @@ const validateSource = async (sourcePath: string) => {
     pathError.value = ''
     const validation = await electron.validateComfyUISource(sourcePath)
 
-    if (!validation.isValid) pathError.value = validation.error
+    if (!validation.isValid) pathError.value = validation.error ?? 'ERROR'
   } catch (error) {
     console.error(error)
     pathError.value = t('install.pathValidationFailed')

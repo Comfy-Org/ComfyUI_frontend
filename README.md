@@ -75,7 +75,7 @@ The development of successive minor versions overlaps. For example, while versio
   <summary>v1.5: Native translation (i18n)</summary>
 
   ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language
-  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, or Korean. This native
+  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, Korean, or Arabic. This native
   implementation offers better performance, reliability, and maintainability compared to previous solutions.<br>
 
   More details available here: https://blog.comfy.org/p/native-localization-support-i18n
@@ -510,79 +510,29 @@ The selection toolbox will display the command button when items are selected:
 
 </details>
 
+## Contributing
+
+We welcome contributions to ComfyUI Frontend! Please see our [Contributing Guide](CONTRIBUTING.md) for:
+
+- Ways to contribute (code, documentation, testing, community support)
+- Development setup and workflow
+- Code style guidelines
+- Testing requirements
+- How to submit pull requests
+- Backporting fixes to release branches
+
 ## Development
 
-### Tech Stack
-
-- [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
-- [Pinia](https://pinia.vuejs.org/) for state management
-- [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
-- [litegraph.js](https://github.com/Comfy-Org/litegraph.js) for node editor
-- [zod](https://zod.dev/) for schema validation
-- [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
-
-### Git pre-commit hooks
-
-Run `npm run prepare` to install Git pre-commit hooks. Currently, the pre-commit
-hook is used to auto-format code on commit.
-
-### Dev Server
-
-Note: The dev server will NOT load any extension from the ComfyUI server. Only
-core extensions will be loaded.
-
-- Start local ComfyUI backend at `localhost:8188`
-- Run `npm run dev` to start the dev server
-- Run `npm run dev:electron` to start the dev server with electron API mocked
-
-#### Access dev server on touch devices
-
-Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to `true`.
-
-After you start the dev server, you should see following logs:
-
-```
-> comfyui-frontend@1.3.42 dev
-> vite
-
-
-  VITE v5.4.6  ready in 488 ms
-
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: http://172.21.80.1:5173/
-  ➜  Network: http://192.168.2.20:5173/
-  ➜  press h + enter to show help
-```
-
-Make sure your desktop machine and touch device are on the same network. On your touch device,
-navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to access the ComfyUI frontend.
-
-### Unit Test
-
-- `npm i` to install all dependencies
-- `npm run test:unit` to execute all unit tests.
-
-### Component Test
-
-Component test verifies Vue components in `src/components/`.
-
-- `npm run test:component` to execute all component tests.
-
-### Playwright Test
-
-Playwright test verifies the whole app. See <https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/README.md> for details.
-
-### litegraph.js
-
-This repo is using litegraph package hosted on <https://github.com/Comfy-Org/litegraph.js>. Any changes to litegraph should be submitted in that repo instead.
-
-#### Test litegraph.js changes
-
-- Run `npm link` in the local litegraph repo.
-- Run `npm link @comfyorg/litegraph` in this repo.
-
-This will replace the litegraph package in this repo with the local litegraph repo.
+For detailed development setup, testing procedures, and technical information, please refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### i18n
 
 See [locales/README.md](src/locales/README.md) for details.
+
+## Troubleshooting
+
+For comprehensive troubleshooting and technical support, please refer to our official documentation:
+
+- **[General Troubleshooting Guide](https://docs.comfy.org/troubleshooting/overview)** - Common issues, performance optimization, and reporting bugs
+- **[Custom Node Issues](https://docs.comfy.org/troubleshooting/custom-node-issues)** - Debugging custom node problems and conflicts
+- **[Desktop Installation Guide](https://docs.comfy.org/installation/desktop/windows)** - Desktop-specific installation and troubleshooting

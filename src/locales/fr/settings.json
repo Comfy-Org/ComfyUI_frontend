@@ -25,6 +25,17 @@
     },
     "tooltip": "Choisissez l'option personnalisée pour masquer la barre de titre du système"
   },
+  "Comfy_Canvas_BackgroundImage": {
+    "name": "Image de fond du canevas",
+    "tooltip": "URL de l'image pour le fond du canevas. Vous pouvez faire un clic droit sur une image dans le panneau de sortie et sélectionner « Définir comme fond » pour l'utiliser."
+  },
+  "Comfy_Canvas_NavigationMode": {
+    "name": "Mode de navigation sur le canvas",
+    "options": {
+      "Left-Click Pan (Legacy)": "Panoramique clic gauche (Hérité)",
+      "Standard (New)": "Standard (Nouveau)"
+    }
+  },
   "Comfy_Canvas_SelectionToolbox": {
     "name": "Afficher la boîte à outils de sélection"
   },
@@ -108,6 +119,46 @@
       "Straight": "Droit"
     }
   },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "Activer le visualiseur 3D (Bêta)",
+    "tooltip": "Active le visualiseur 3D (Bêta) pour les nœuds sélectionnés. Cette fonctionnalité vous permet de visualiser et d’interagir avec des modèles 3D directement dans le visualiseur 3D en taille réelle."
+  },
+  "Comfy_Load3D_BackgroundColor": {
+    "name": "Couleur de fond initiale",
+    "tooltip": "Contrôle la couleur de fond par défaut de la scène 3D. Ce paramètre détermine l'apparence du fond lors de la création d'un nouveau widget 3D, mais peut être ajusté individuellement pour chaque widget après la création."
+  },
+  "Comfy_Load3D_CameraType": {
+    "name": "Type de Caméra",
+    "options": {
+      "orthographic": "orthographique",
+      "perspective": "perspective"
+    },
+    "tooltip": "Contrôle si la caméra est en perspective ou orthographique par défaut lorsqu'un nouveau widget 3D est créé. Ce défaut peut toujours être basculé individuellement pour chaque widget après sa création."
+  },
+  "Comfy_Load3D_LightAdjustmentIncrement": {
+    "name": "Incrément d'ajustement de la lumière",
+    "tooltip": "Contrôle la taille de l'incrément lors de l'ajustement de l'intensité lumineuse dans les scènes 3D. Une valeur de pas plus petite permet un contrôle plus précis des ajustements de lumière, tandis qu'une valeur plus grande entraîne des changements plus visibles à chaque ajustement."
+  },
+  "Comfy_Load3D_LightIntensity": {
+    "name": "Intensité lumineuse initiale",
+    "tooltip": "Définit le niveau de luminosité par défaut de l’éclairage dans la scène 3D. Cette valeur détermine l’intensité avec laquelle les lumières illuminent les objets lors de la création d’un nouveau widget 3D, mais peut être ajustée individuellement pour chaque widget après la création."
+  },
+  "Comfy_Load3D_LightIntensityMaximum": {
+    "name": "Intensité lumineuse maximale",
+    "tooltip": "Définit la valeur maximale autorisée pour l’intensité lumineuse dans les scènes 3D. Cela fixe la limite supérieure de luminosité pouvant être réglée lors de l’ajustement de l’éclairage dans tout widget 3D."
+  },
+  "Comfy_Load3D_LightIntensityMinimum": {
+    "name": "Intensité lumineuse minimale",
+    "tooltip": "Définit la valeur minimale autorisée de l’intensité lumineuse pour les scènes 3D. Cela définit la limite inférieure de luminosité pouvant être réglée lors de l’ajustement de l’éclairage dans tout widget 3D."
+  },
+  "Comfy_Load3D_ShowGrid": {
+    "name": "Afficher la Grille",
+    "tooltip": "Basculer pour afficher la grille par défaut"
+  },
+  "Comfy_Load3D_ShowPreview": {
+    "name": "Afficher l'Aperçu",
+    "tooltip": "Basculer pour afficher l'aperçu par défaut"
+  },
   "Comfy_Locale": {
     "name": "Langue"
   },
@@ -157,8 +208,8 @@
       "Show all": "Afficher tout"
     }
   },
-  "Comfy_NodeInputConversionSubmenus": {
-    "name": "Dans le menu contextuel du nœud, placez les entrées qui convertissent entre l'entrée/widget dans des sous-menus."
+  "Comfy_NodeBadge_ShowApiPricing": {
+    "name": "Afficher l’insigne de tarification API du nœud"
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Implémentation de la boîte de recherche de nœud",
@@ -186,6 +237,9 @@
   "Comfy_NodeSuggestions_number": {
     "name": "Nombre de suggestions de nœuds",
     "tooltip": "Uniquement pour la boîte de recherche/contexte du menu litegraph"
+  },
+  "Comfy_Node_AllowImageSizeDraw": {
+    "name": "Afficher la largeur × la hauteur sous l'aperçu de l'image"
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Lien d'ancrage automatique à l'emplacement du nœud",
@@ -216,6 +270,10 @@
     "name": "Le snap met en évidence le nœud",
     "tooltip": "Lorsque vous faites glisser un lien sur un nœud avec une fente d'entrée viable, mettez en évidence le nœud"
   },
+  "Comfy_Notification_ShowVersionUpdates": {
+    "name": "Afficher les mises à jour de version",
+    "tooltip": "Afficher les mises à jour pour les nouveaux modèles et les nouvelles fonctionnalités majeures."
+  },
   "Comfy_Pointer_ClickBufferTime": {
     "name": "Délai de dérive du clic du pointeur",
     "tooltip": "Après avoir appuyé sur un bouton de pointeur, c'est le temps maximum (en millisecondes) que le mouvement du pointeur peut être ignoré.\n\nAide à prévenir que les objets soient déplacés involontairement si le pointeur est déplacé lors du clic."
@@ -243,10 +301,6 @@
     "name": "Taille de l'historique de la file d'attente",
     "tooltip": "Le nombre maximum de tâches qui s'affichent dans l'historique de la file d'attente."
   },
-  "Comfy_RerouteBeta": {
-    "name": "Participer au test bêta de reroute",
-    "tooltip": "Active les nouveaux reroutes natifs.\n\nLes reroutes peuvent être ajoutés en maintenant alt et en glissant à partir d'une ligne de lien, ou sur le menu de lien.\n\nLa désactivation de cette option est non destructive - les reroutes sont cachés."
-  },
   "Comfy_Sidebar_Location": {
     "name": "Emplacement de la barre latérale",
     "options": {
@@ -260,6 +314,9 @@
       "normal": "normal",
       "small": "petit"
     }
+  },
+  "Comfy_Sidebar_UnifiedWidth": {
+    "name": "Largeur unifiée de la barre latérale"
   },
   "Comfy_SnapToGrid_GridSize": {
     "name": "Taille de la grille d'alignement",
@@ -280,11 +337,8 @@
       "Bottom": "Bas",
       "Disabled": "Désactivé",
       "Top": "Haut"
-    }
-  },
-  "Comfy_Validation_NodeDefs": {
-    "name": "Valider les définitions de nœuds (lent)",
-    "tooltip": "Recommandé pour les développeurs de nœuds. Cela validera toutes les définitions de nœuds au démarrage."
+    },
+    "tooltip": "Position de la barre de menu. Sur les appareils mobiles, le menu est toujours affiché en haut."
   },
   "Comfy_Validation_Workflows": {
     "name": "Valider les flux de travail"
@@ -300,8 +354,22 @@
   "Comfy_Window_UnloadConfirmation": {
     "name": "Afficher une confirmation lors de la fermeture de la fenêtre"
   },
+  "Comfy_Workflow_AutoSave": {
+    "name": "Auto Sauvegarde",
+    "options": {
+      "after delay": "après délai",
+      "off": "désactivé"
+    }
+  },
+  "Comfy_Workflow_AutoSaveDelay": {
+    "name": "Délai de l'Auto Sauvegarde (ms)",
+    "tooltip": "S'applique uniquement si l'Auto Sauvegarde est réglée sur \"après délai\"."
+  },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Afficher une confirmation lors de la suppression des flux de travail"
+  },
+  "Comfy_Workflow_Persist": {
+    "name": "Persiste l'état du flux de travail et restaure lors du (re)chargement de la page"
   },
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Afficher l'avertissement des modèles manquants"
@@ -331,8 +399,16 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Mise à l'échelle des menus de widgets combinés de nœuds (listes) lors du zoom"
   },
+  "LiteGraph_Node_DefaultPadding": {
+    "name": "Toujours réduire les nouveaux nœuds",
+    "tooltip": "Redimensionner les nœuds à la taille minimale possible lors de leur création. Lorsque cette option est désactivée, un nœud nouvellement ajouté sera légèrement élargi pour afficher les valeurs des widgets."
+  },
   "LiteGraph_Node_TooltipDelay": {
     "name": "Délai d'infobulle"
+  },
+  "LiteGraph_Reroute_SplineOffset": {
+    "name": "Réacheminement décalage de spline",
+    "tooltip": "Le point de contrôle de Bézier est décalé par rapport au point central de réacheminement"
   },
   "pysssss_SnapToGrid": {
     "name": "Toujours aligner sur la grille"

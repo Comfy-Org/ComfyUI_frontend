@@ -1,8 +1,9 @@
 export const CORE_MENU_COMMANDS = [
-  [['Workflow'], ['Comfy.NewBlankWorkflow']],
-  [['Workflow'], ['Comfy.OpenWorkflow', 'Comfy.BrowseTemplates']],
+  [[], ['Comfy.NewBlankWorkflow']],
+  [[], []], // Separator after New
+  [['File'], ['Comfy.OpenWorkflow']],
   [
-    ['Workflow'],
+    ['File'],
     [
       'Comfy.SaveWorkflow',
       'Comfy.SaveWorkflowAs',
@@ -11,8 +12,6 @@ export const CORE_MENU_COMMANDS = [
     ]
   ],
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],
-  [['Edit'], ['Comfy.RefreshNodeDefinitions']],
-  [['Edit'], ['Comfy.ClearWorkflow']],
   [['Edit'], ['Comfy.OpenClipspace']],
   [
     ['Help'],
@@ -23,5 +22,8 @@ export const CORE_MENU_COMMANDS = [
       'Comfy.Help.OpenComfyUIForum'
     ]
   ],
-  [['Help'], ['Comfy.Help.AboutComfyUI', 'Comfy.Feedback']]
+  [
+    ['Help'],
+    ['Comfy.Help.AboutComfyUI', 'Comfy.Feedback', 'Comfy.ContactSupport']
+  ]
 ]

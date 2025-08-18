@@ -1,23 +1,25 @@
 <!-- The main global dialog to show various things -->
 <template>
   <Dialog
-    v-for="(item, index) in dialogStore.dialogStack"
+    v-for="item in dialogStore.dialogStack"
     :key="item.key"
     v-model:visible="item.visible"
     class="global-dialog"
     v-bind="item.dialogComponentProps"
-    :auto-z-index="false"
     :pt="item.dialogComponentProps.pt"
-    :pt:mask:style="{ zIndex: baseZIndex + index + 1 }"
     :aria-labelledby="item.key"
   >
     <template #header>
-      <component
-        v-if="item.headerComponent"
-        :is="item.headerComponent"
-        :id="item.key"
-      />
-      <h3 v-else :id="item.key">{{ item.title || ' ' }}</h3>
+      <div v-if="!item.dialogComponentProps?.headless">
+        <component
+          :is="item.headerComponent"
+          v-if="item.headerComponent"
+          :id="item.key"
+        />
+        <h3 v-else :id="item.key">
+          {{ item.title || ' ' }}
+        </h3>
+      </div>
     </template>
 
     <component
@@ -25,29 +27,19 @@
       v-bind="item.contentProps"
       :maximized="item.dialogComponentProps.maximized"
     />
+
+    <template v-if="item.footerComponent" #footer>
+      <component :is="item.footerComponent" />
+    </template>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import { ZIndex } from '@primeuix/utils/zindex'
-import { usePrimeVue } from '@primevue/core'
 import Dialog from 'primevue/dialog'
-import { computed, onMounted } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-
-const primevue = usePrimeVue()
-
-const baseZIndex = computed(() => {
-  return primevue?.config?.zIndex?.modal ?? 1100
-})
-
-onMounted(() => {
-  const mask = document.createElement('div')
-  ZIndex.set('model', mask, baseZIndex.value)
-})
 </script>
 
 <style>
@@ -59,5 +51,18 @@ onMounted(() => {
 .global-dialog .p-dialog-content {
   @apply p-2 2xl:p-[var(--p-dialog-content-padding)];
   @apply pt-0;
+}
+
+.manager-dialog {
+  height: 80vh;
+  max-width: 1724px;
+  max-height: 1026px;
+}
+
+@media (min-width: 3000px) {
+  .manager-dialog {
+    max-width: 2200px;
+    max-height: 1320px;
+  }
 }
 </style>

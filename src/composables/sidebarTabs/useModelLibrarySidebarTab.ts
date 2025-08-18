@@ -1,19 +1,21 @@
-import { markRaw } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { defineAsyncComponent, markRaw } from 'vue'
 
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'
 
-export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
-  const { t } = useI18n()
+const AiModelIcon = markRaw(
+  defineAsyncComponent(() => import('virtual:icons/comfy/ai-model'))
+)
 
+export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
   return {
     id: 'model-library',
-    icon: 'pi pi-box',
-    title: t('sideToolbar.modelLibrary'),
-    tooltip: t('sideToolbar.modelLibrary'),
+    icon: AiModelIcon,
+    title: 'sideToolbar.modelLibrary',
+    tooltip: 'sideToolbar.modelLibrary',
+    label: 'sideToolbar.labels.models',
     component: markRaw(ModelLibrarySidebarTab),
     type: 'vue',
     iconBadge: () => {

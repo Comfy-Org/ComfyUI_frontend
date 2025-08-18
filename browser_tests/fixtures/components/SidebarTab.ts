@@ -95,18 +95,6 @@ export class WorkflowsSidebarTab extends SidebarTab {
     return this.page.locator('.workflows-sidebar-tab')
   }
 
-  get browseGalleryButton() {
-    return this.root.locator('.browse-templates-button')
-  }
-
-  get newBlankWorkflowButton() {
-    return this.root.locator('.new-blank-workflow-button')
-  }
-
-  get openWorkflowButton() {
-    return this.root.locator('.open-workflow-button')
-  }
-
   async getOpenedWorkflowNames() {
     return await this.root
       .locator('.comfyui-workflows-open .node-label')

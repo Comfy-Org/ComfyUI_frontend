@@ -1,17 +1,23 @@
 <template>
   <FormItem
-    :item="formItem"
     :id="setting.id"
-    :formValue="settingValue"
-    @update:formValue="updateSettingValue"
+    :item="formItem"
+    :form-value="settingValue"
+    @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag v-if="setting.experimental" :value="$t('g.experimental')" />
+      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
       <Tag
-        v-if="setting.deprecated"
-        :value="$t('g.deprecated')"
-        severity="danger"
-      />
+        v-if="setting.experimental"
+        v-tooltip="{
+          value: $t('g.experimental'),
+          showDelay: 600
+        }"
+      >
+        <template #icon>
+          <i-material-symbols:experiment-outline />
+        </template>
+      </Tag>
     </template>
   </FormItem>
 </template>
@@ -22,6 +28,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import { st } from '@/i18n'
 import { useSettingStore } from '@/stores/settingStore'
 import type { SettingOption, SettingParams } from '@/types/settingTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -58,7 +65,7 @@ const formItem = computed(() => {
     ...props.setting,
     name: t(`settings.${normalizedId}.name`, props.setting.name),
     tooltip: props.setting.tooltip
-      ? t(`settings.${normalizedId}.tooltip`, props.setting.tooltip)
+      ? st(`settings.${normalizedId}.tooltip`, props.setting.tooltip)
       : undefined,
     options: props.setting.options
       ? translateOptions(props.setting.options)
@@ -68,7 +75,7 @@ const formItem = computed(() => {
 
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
-const updateSettingValue = (value: any) => {
-  settingStore.set(props.setting.id, value)
+const updateSettingValue = async (value: any) => {
+  await settingStore.set(props.setting.id, value)
 }
 </script>

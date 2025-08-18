@@ -51,13 +51,21 @@
         0.85,
         false,
         false,
-        ""
+        "",
+        {
+          "foo": "bar"
+        }
       ]
     }
   ],
   "links": [],
   "groups": [],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    }
+  },
   "version": 0.4
 }

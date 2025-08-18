@@ -1,13 +1,18 @@
 <template>
   <div class="relative">
     <Button
+      v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
+      v-tooltip.top="{
+        value: localizedCurrentColorName ?? t('color.noColor'),
+        showDelay: 512
+      }"
       severity="secondary"
       text
       @click="() => (showColorPicker = !showColorPicker)"
     >
       <template #icon>
         <div class="flex items-center gap-1">
-          <i class="pi pi-circle-fill" :style="{ color: currentColor }" />
+          <i class="pi pi-circle-fill" :style="{ color: currentColor ?? '' }" />
           <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
         </div>
       </template>
@@ -17,19 +22,19 @@
       class="color-picker-container absolute -top-10 left-1/2"
     >
       <SelectButton
-        :modelValue="selectedColorOption"
-        @update:modelValue="applyColor"
+        :model-value="selectedColorOption"
         :options="colorOptions"
-        optionLabel="name"
-        dataKey="value"
+        option-label="name"
+        data-key="value"
+        @update:model-value="applyColor"
       >
         <template #option="{ option }">
           <i
+            v-tooltip.top="option.localizedName"
             class="pi pi-circle-fill"
             :style="{
               color: isLightTheme ? option.value.light : option.value.dark
             }"
-            v-tooltip.top="option.localizedName"
             :data-testid="option.name"
           />
         </template>
@@ -39,14 +44,19 @@
 </template>
 
 <script setup lang="ts">
-import type { ColorOption as CanvasColorOption } from '@comfyorg/litegraph'
-import { LGraphCanvas, LiteGraph, isColorable } from '@comfyorg/litegraph'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { ColorOption as CanvasColorOption } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  isColorable
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
@@ -54,6 +64,7 @@ import { getItemsColorOption } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const colorPaletteStore = useColorPaletteStore()
+const workflowStore = useWorkflowStore()
 const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
@@ -108,6 +119,7 @@ const applyColor = (colorOption: ColorOption | null) => {
   canvasStore.canvas?.setDirty(true, true)
   currentColorOption.value = canvasColorOption
   showColorPicker.value = false
+  workflowStore.activeWorkflow?.changeTracker.checkState()
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)
@@ -118,6 +130,16 @@ const currentColor = computed(() =>
       : currentColorOption.value?.bgcolor
     : null
 )
+
+const localizedCurrentColorName = computed(() => {
+  if (!currentColorOption.value?.bgcolor) return null
+  const colorOption = colorOptions.find(
+    (option) =>
+      option.value.dark === currentColorOption.value?.bgcolor ||
+      option.value.light === currentColorOption.value?.bgcolor
+  )
+  return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
+})
 
 watch(
   () => canvasStore.selectedItems,

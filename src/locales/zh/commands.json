@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "检查更新"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "打开自定义节点文件夹"
   },
@@ -32,8 +35,14 @@
   "Comfy-Desktop_Restart": {
     "label": "重启"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "为所选节点开启 3D 浏览器（Beta 版）"
+  },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
+  },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "添加编辑模型步骤"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "删除选定的项目"
@@ -41,14 +50,32 @@
   "Comfy_Canvas_FitView": {
     "label": "适应视图到选中节点"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "下移选中的节点"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "向左移动选中节点"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "向右移动选中节点"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "上移选中的节点"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "调整选定节点的大小"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "切换链接可见性"
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "锁定视图"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "画布切换小地图"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
@@ -77,6 +104,12 @@
   "Comfy_ClearWorkflow": {
     "label": "清除工作流"
   },
+  "Comfy_ContactSupport": {
+    "label": "联系支持"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "顯示模型選擇器（開發）"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
   },
@@ -89,11 +122,20 @@
   "Comfy_Feedback": {
     "label": "反馈"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "将选区转换为子图"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "退出子图"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "添加框到选中节点"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "解开所选子图"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "将选中节点转换为组节点"
@@ -128,11 +170,26 @@
   "Comfy_Manager_CustomNodesManager": {
     "label": "自定义节点管理器"
   },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "切换进度对话框"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "减小 MaskEditor 中的笔刷大小"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "增加 MaskEditor 画笔大小"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "打开选中节点的遮罩编辑器"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
   },
   "Comfy_OpenClipspace": {
     "label": "打开剪贴板"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "管理器"
   },
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
@@ -142,6 +199,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "执行提示词（前端）"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "队列所选输出节点"
   },
   "Comfy_Redo": {
     "label": "重做"
@@ -158,11 +218,23 @@
   "Comfy_ShowSettingsDialog": {
     "label": "显示设置对话框"
   },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "画布性能"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "说明中心"
+  },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
   },
   "Comfy_Undo": {
     "label": "撤销"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "打开登录对话框"
+  },
+  "Comfy_User_SignOut": {
+    "label": "退出登录"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"
@@ -184,6 +256,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "切换日志底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "切换基础底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "切换视图控制底部面板"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "显示快捷键对话框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

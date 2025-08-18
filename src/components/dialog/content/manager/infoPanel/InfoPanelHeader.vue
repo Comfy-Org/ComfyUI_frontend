@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -46,7 +46,14 @@ const { nodePacks } = defineProps<{
 
 const managerStore = useComfyManagerStore()
 
-const isAllInstalled = computed(() =>
-  nodePacks.every((nodePack) => managerStore.isPackInstalled(nodePack.id))
+const isAllInstalled = ref(false)
+watch(
+  [() => nodePacks, () => managerStore.installedPacks],
+  () => {
+    isAllInstalled.value = nodePacks.every((nodePack) =>
+      managerStore.isPackInstalled(nodePack.id)
+    )
+  },
+  { immediate: true }
 )
 </script>

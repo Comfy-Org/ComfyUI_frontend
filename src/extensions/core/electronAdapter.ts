@@ -1,7 +1,10 @@
+import log from 'loglevel'
+
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 import { checkMirrorReachable } from '@/utils/networkUtil'
@@ -12,6 +15,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
   const workflowStore = useWorkflowStore()
+  const toastStore = useToastStore()
 
   const onChangeRestartApp = (newValue: string, oldValue: string) => {
     // Add a delay to allow changes to take effect before restarting.
@@ -159,6 +163,56 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         }
       },
       {
+        id: 'Comfy-Desktop.CheckForUpdates',
+        label: 'Check for Updates',
+        icon: 'pi pi-sync',
+        async function() {
+          try {
+            const updateInfo = await electronAPI.checkForUpdates({
+              disableUpdateReadyAction: true
+            })
+
+            if (!updateInfo.isUpdateAvailable) {
+              toastStore.add({
+                severity: 'info',
+                summary: t('desktopUpdate.noUpdateFound'),
+                life: 5_000
+              })
+              return
+            }
+
+            const proceed = await useDialogService().confirm({
+              title: t('desktopUpdate.updateFoundTitle', {
+                version: updateInfo.version
+              }),
+              message: t('desktopUpdate.updateAvailableMessage'),
+              type: 'default'
+            })
+            if (proceed) {
+              try {
+                electronAPI.restartAndInstall()
+              } catch (error) {
+                log.error('Error installing update:', error)
+                toastStore.add({
+                  severity: 'error',
+                  summary: t('g.error'),
+                  detail: t('desktopUpdate.errorInstallingUpdate'),
+                  life: 10_000
+                })
+              }
+            }
+          } catch (error) {
+            log.error('Error checking for updates:', error)
+            toastStore.add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('desktopUpdate.errorCheckingUpdate'),
+              life: 10_000
+            })
+          }
+        }
+      },
+      {
         id: 'Comfy-Desktop.Reinstall',
         label: 'Reinstall',
         icon: 'pi pi-refresh',
@@ -223,7 +277,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
       },
       {
         path: ['Help'],
-        commands: ['Comfy-Desktop.Reinstall']
+        commands: ['Comfy-Desktop.CheckForUpdates', 'Comfy-Desktop.Reinstall']
       }
     ],
 

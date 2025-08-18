@@ -5,21 +5,25 @@
     :style="inputStyle"
   >
     <EditableText
-      :isEditing="showInput"
-      :modelValue="editedTitle"
+      :is-editing="showInput"
+      :model-value="editedTitle"
       @edit="onEdit"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { LGraphGroup, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
-import type { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { type CSSProperties, computed, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -28,7 +32,12 @@ const settingStore = useSettingStore()
 
 const showInput = ref(false)
 const editedTitle = ref('')
-const { style: inputStyle, updatePosition } = useAbsolutePosition()
+const { style: inputPositionStyle, updatePosition } = useAbsolutePosition()
+const inputFontStyle = ref<CSSProperties>({})
+const inputStyle = computed<CSSProperties>(() => ({
+  ...inputPositionStyle.value,
+  ...inputFontStyle.value
+}))
 
 const titleEditorStore = useTitleEditorStore()
 const canvasStore = useCanvasStore()
@@ -36,7 +45,15 @@ const previousCanvasDraggable = ref(true)
 
 const onEdit = (newValue: string) => {
   if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
-    titleEditorStore.titleEditorTarget.title = newValue.trim()
+    const trimmedTitle = newValue.trim()
+    titleEditorStore.titleEditorTarget.title = trimmedTitle
+
+    // If this is a subgraph node, sync the runtime subgraph name for breadcrumb reactivity
+    const target = titleEditorStore.titleEditorTarget
+    if (target instanceof LGraphNode && target.isSubgraphNode?.()) {
+      target.subgraph.name = trimmedTitle
+    }
+
     app.graph.setDirtyCanvas(true, true)
   }
   showInput.value = false
@@ -59,23 +76,19 @@ watch(
 
     if (target instanceof LGraphGroup) {
       const group = target
-      updatePosition(
-        {
-          pos: group.pos,
-          size: [group.size[0], group.titleHeight]
-        },
-        { fontSize: `${group.font_size * scale}px` }
-      )
+      updatePosition({
+        pos: group.pos,
+        size: [group.size[0], group.titleHeight]
+      })
+      inputFontStyle.value = { fontSize: `${group.font_size * scale}px` }
     } else if (target instanceof LGraphNode) {
       const node = target
       const [x, y] = node.getBounding()
-      updatePosition(
-        {
-          pos: [x, y],
-          size: [node.width, LiteGraph.NODE_TITLE_HEIGHT]
-        },
-        { fontSize: `${12 * scale}px` }
-      )
+      updatePosition({
+        pos: [x, y],
+        size: [node.width, LiteGraph.NODE_TITLE_HEIGHT]
+      })
+      inputFontStyle.value = { fontSize: `${12 * scale}px` }
     }
   }
 )
@@ -87,7 +100,7 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
     }
 
     const group: LGraphGroup = event.detail.group
-    const [x, y] = group.pos
+    const [_, y] = group.pos
 
     const e = event.detail.originalEvent
     const relativeY = e.canvasY - y
@@ -101,7 +114,7 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
     }
 
     const node: LGraphNode = event.detail.node
-    const [x, y] = node.pos
+    const [_, y] = node.pos
 
     const e = event.detail.originalEvent
     const relativeY = e.canvasY - y

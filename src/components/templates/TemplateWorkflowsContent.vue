@@ -20,40 +20,32 @@
         class="absolute translate-x-0 top-0 left-0 h-full w-80 shadow-md z-5 transition-transform duration-300 ease-in-out"
       >
         <ProgressSpinner
-          v-if="!workflowTemplatesStore.isLoaded || !isReady"
+          v-if="!isTemplatesLoaded || !isReady"
           class="absolute w-8 h-full inset-0"
         />
         <TemplateWorkflowsSideNav
-          :tabs="tabs"
-          :selected-tab="selectedTab"
+          :tabs="allTemplateGroups"
+          :selected-tab="selectedTemplate"
           @update:selected-tab="handleTabSelection"
         />
       </aside>
       <div
-        class="flex-1 overflow-auto transition-all duration-300"
+        class="flex-1 transition-all duration-300"
         :class="{
           'pl-80': isSideNavOpen || !isSmallScreen,
           'pl-8': !isSideNavOpen && isSmallScreen
         }"
       >
-        <div v-if="isReady && selectedTab" class="flex flex-col px-12 pb-4">
-          <div class="py-3 text-left">
-            <h2 class="text-lg">{{ selectedTab.title }}</h2>
-          </div>
-          <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-8 justify-items-center"
-          >
-            <div v-for="template in selectedTab.templates" :key="template.name">
-              <TemplateWorkflowCard
-                :sourceModule="selectedTab.moduleName"
-                :template="template"
-                :loading="template.name === workflowLoading"
-                :categoryTitle="selectedTab.title"
-                @loadWorkflow="loadWorkflow"
-              />
-            </div>
-          </div>
-        </div>
+        <TemplateWorkflowView
+          v-if="isReady && selectedTemplate"
+          class="px-12 py-4"
+          :title="selectedTemplate.title"
+          :source-module="selectedTemplate.moduleName"
+          :templates="selectedTemplate.templates"
+          :loading="loadingTemplateId"
+          :category-title="selectedTemplate.title"
+          @load-workflow="handleLoadWorkflow"
+        />
       </div>
     </div>
   </div>
@@ -64,19 +56,13 @@ import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { watch } from 'vue'
 
-import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
+import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import TemplateWorkflowsSideNav from '@/components/templates/TemplateWorkflowsSideNav.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
+import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
 import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
-
-const { t } = useI18n()
 
 const {
   isSmallScreen,
@@ -84,27 +70,32 @@ const {
   toggle: toggleSideNav
 } = useResponsiveCollapse()
 
-const workflowTemplatesStore = useWorkflowTemplatesStore()
-const { isReady } = useAsyncState(
-  workflowTemplatesStore.loadWorkflowTemplates,
-  null
+const {
+  selectedTemplate,
+  loadingTemplateId,
+  isTemplatesLoaded,
+  allTemplateGroups,
+  loadTemplates,
+  selectFirstTemplateCategory,
+  selectTemplateCategory,
+  loadWorkflowTemplate
+} = useTemplateWorkflows()
+
+const { isReady } = useAsyncState(loadTemplates, null)
+
+watch(
+  isReady,
+  () => {
+    if (isReady.value) {
+      selectFirstTemplateCategory()
+    }
+  },
+  { once: true }
 )
 
-const selectedTab = ref<WorkflowTemplates | null>()
-const selectFirstTab = () => {
-  const firstTab = workflowTemplatesStore.groupedTemplates[0].modules[0]
-  handleTabSelection(firstTab)
-}
-watch(isReady, selectFirstTab, { once: true })
-
-const workflowLoading = ref<string | null>(null)
-
-const tabs = computed(() => workflowTemplatesStore.groupedTemplates)
-
 const handleTabSelection = (selection: WorkflowTemplates | null) => {
-  //Listbox allows deselecting so this special case is ignored here
-  if (selection !== selectedTab.value && selection !== null) {
-    selectedTab.value = selection
+  if (selection !== null) {
+    selectTemplateCategory(selection)
 
     // On small screens, close the sidebar when a category is selected
     if (isSmallScreen.value) {
@@ -113,30 +104,9 @@ const handleTabSelection = (selection: WorkflowTemplates | null) => {
   }
 }
 
-const loadWorkflow = async (id: string) => {
-  if (!isReady.value) return
+const handleLoadWorkflow = async (id: string) => {
+  if (!isReady.value || !selectedTemplate.value) return false
 
-  workflowLoading.value = id
-  let json
-  if (selectedTab.value.moduleName === 'default') {
-    // Default templates provided by frontend are served on this separate endpoint
-    json = await fetch(api.fileURL(`/templates/${id}.json`)).then((r) =>
-      r.json()
-    )
-  } else {
-    json = await fetch(
-      api.apiURL(
-        `/workflow_templates/${selectedTab.value.moduleName}/${id}.json`
-      )
-    ).then((r) => r.json())
-  }
-  useDialogStore().closeDialog()
-  const workflowName =
-    selectedTab.value.moduleName === 'default'
-      ? t(`templateWorkflows.template.${id}`, id)
-      : id
-  await app.loadGraphData(json, true, true, workflowName)
-
-  return false
+  return loadWorkflowTemplate(id, selectedTemplate.value.moduleName)
 }
 </script>

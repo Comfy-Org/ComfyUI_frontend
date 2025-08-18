@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
@@ -131,12 +131,15 @@ export const useNodeVideo = (node: LGraphNode) => {
   let minWidth = DEFAULT_VIDEO_SIZE
 
   const setMinDimensions = (video: HTMLVideoElement) => {
-    const intrinsicAspectRatio = video.videoWidth / video.videoHeight
-    if (!intrinsicAspectRatio || isNaN(intrinsicAspectRatio)) return
+    const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
+      fitDimensionsToNodeWidth(
+        video.videoWidth,
+        video.videoHeight,
+        node.size?.[0] || DEFAULT_VIDEO_SIZE
+      )
 
-    // Set min. height s.t. video spans node's x-axis while maintaining aspect ratio
-    minWidth = node.size?.[0] || DEFAULT_VIDEO_SIZE
-    minHeight = Math.max(minWidth / intrinsicAspectRatio, 64)
+    minWidth = calculatedWidth
+    minHeight = calculatedHeight
   }
 
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
@@ -155,9 +158,9 @@ export const useNodeVideo = (node: LGraphNode) => {
     const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
     if (!hasWidget) {
       const widget = node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
-        hideOnZoom: false,
-        serialize: false
+        hideOnZoom: false
       })
+      widget.serialize = false
       widget.computeLayoutSize = () => ({
         minHeight,
         minWidth

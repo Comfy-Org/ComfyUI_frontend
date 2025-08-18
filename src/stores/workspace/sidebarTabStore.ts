@@ -5,7 +5,9 @@ import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLib
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { useWorkflowsSidebarTab } from '@/composables/sidebarTabs/useWorkflowsSidebarTab'
+import { t, te } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
@@ -25,15 +27,47 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
   const registerSidebarTab = (tab: SidebarTabExtension) => {
     sidebarTabs.value = [...sidebarTabs.value, tab]
+
+    // Generate label in format "Toggle X Sidebar"
+    const labelFunction = () => {
+      const tabTitle = te(tab.title) ? t(tab.title) : tab.title
+      return `Toggle ${tabTitle} Sidebar`
+    }
+    const tooltipFunction = tab.tooltip
+      ? te(String(tab.tooltip))
+        ? () => t(String(tab.tooltip))
+        : String(tab.tooltip)
+      : undefined
+
+    const menubarLabelFunction = () => {
+      const menubarLabelKeys: Record<string, string> = {
+        queue: 'menu.queue',
+        'node-library': 'sideToolbar.nodeLibrary',
+        'model-library': 'sideToolbar.modelLibrary',
+        workflows: 'sideToolbar.workflows'
+      }
+
+      const key = menubarLabelKeys[tab.id]
+      if (key && te(key)) {
+        return t(key)
+      }
+
+      return tab.title
+    }
+
     useCommandStore().registerCommand({
       id: `Workspace.ToggleSidebarTab.${tab.id}`,
-      icon: tab.icon,
-      label: `Toggle ${tab.title} Sidebar`,
-      tooltip: tab.tooltip,
+      icon: typeof tab.icon === 'string' ? tab.icon : undefined,
+      label: labelFunction,
+      menubarLabel: menubarLabelFunction,
+      tooltip: tooltipFunction,
       versionAdded: '1.3.9',
+      category: 'view-controls' as const,
       function: () => {
         toggleSidebarTab(tab.id)
-      }
+      },
+      active: () => activeSidebarTab.value?.id === tab.id,
+      source: 'System'
     })
   }
 
@@ -58,6 +92,25 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
+
+    const menuStore = useMenuItemStore()
+
+    menuStore.registerCommands(
+      ['View'],
+      [
+        'Workspace.ToggleBottomPanel',
+        'Comfy.BrowseTemplates',
+        'Workspace.ToggleFocusMode',
+        'Comfy.ToggleCanvasInfo',
+        'Comfy.Canvas.ToggleMinimap',
+        'Comfy.Canvas.ToggleLinkVisibility'
+      ]
+    )
+
+    menuStore.registerCommands(
+      ['View'],
+      ['Comfy.Canvas.ZoomIn', 'Comfy.Canvas.ZoomOut', 'Comfy.Canvas.FitView']
+    )
   }
 
   return {

@@ -1,17 +1,17 @@
 <template>
   <div class="flex flex-col">
-    <div class="relative show-light-intensity" v-if="showLightIntensityButton">
+    <div v-if="showLightIntensityButton" class="relative show-light-intensity">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleLightIntensity"
       >
         <i
-          class="pi pi-sun text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.lightIntensity'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-sun text-white text-lg"
+        />
       </Button>
       <div
         v-show="showLightIntensity"
@@ -21,10 +21,10 @@
         <Slider
           v-model="lightIntensity"
           class="w-full"
+          :min="lightIntensityMinimum"
+          :max="lightIntensityMaximum"
+          :step="lightAdjustmentIncrement"
           @change="updateLightIntensity"
-          :min="1"
-          :max="20"
-          :step="1"
         />
       </div>
     </div>
@@ -38,6 +38,7 @@ import Slider from 'primevue/slider'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
+import { useSettingStore } from '@/stores/settingStore'
 
 const vTooltip = Tooltip
 
@@ -53,6 +54,16 @@ const emit = defineEmits<{
 const lightIntensity = ref(props.lightIntensity)
 const showLightIntensityButton = ref(props.showLightIntensityButton)
 const showLightIntensity = ref(false)
+
+const lightIntensityMaximum = useSettingStore().get(
+  'Comfy.Load3D.LightIntensityMaximum'
+)
+const lightIntensityMinimum = useSettingStore().get(
+  'Comfy.Load3D.LightIntensityMinimum'
+)
+const lightAdjustmentIncrement = useSettingStore().get(
+  'Comfy.Load3D.LightAdjustmentIncrement'
+)
 
 watch(
   () => props.lightIntensity,

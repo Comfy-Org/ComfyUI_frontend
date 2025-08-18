@@ -1,7 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import {
   ComfyWorkflow,
@@ -9,14 +12,29 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Add mock for api at the top of the file
 vi.mock('@/scripts/api', () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
-    listUserDataFullInfo: vi.fn()
+    listUserDataFullInfo: vi.fn(),
+    apiURL: vi.fn(),
+    addEventListener: vi.fn()
   }
+}))
+
+// Mock comfyApp globally for the store setup
+vi.mock('@/scripts/app', () => ({
+  app: {
+    canvas: {} // Start with empty canvas object
+  }
+}))
+
+// Mock isSubgraph
+vi.mock('@/utils/typeGuardUtil', () => ({
+  isSubgraph: vi.fn(() => false)
 }))
 
 describe('useWorkflowStore', () => {
@@ -260,7 +278,7 @@ describe('useWorkflowStore', () => {
 
       // Set up initial bookmark
       expect(workflow.path).toBe('workflows/dir/test.json')
-      bookmarkStore.setBookmarked(workflow.path, true)
+      await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
       // Mock super.rename
@@ -340,7 +358,7 @@ describe('useWorkflowStore', () => {
       vi.spyOn(workflow, 'delete').mockResolvedValue()
 
       // Bookmark the workflow
-      bookmarkStore.setBookmarked(workflow.path, true)
+      await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
       // Delete the workflow
@@ -446,6 +464,263 @@ describe('useWorkflowStore', () => {
       expect(newWorkflow.path).toBe('workflows/new-test.json')
       expect(newWorkflow.content).toBe(JSON.stringify(mockState))
       expect(newWorkflow.isModified).toBe(false)
+    })
+  })
+
+  describe('Subgraphs', () => {
+    beforeEach(async () => {
+      // Ensure canvas exists for these tests
+      vi.mocked(comfyApp).canvas = { subgraph: null } as any
+
+      // Setup an active workflow as updateActiveGraph depends on it
+      const workflow = store.createTemporary('test-subgraph-workflow.json')
+      // Mock load to avoid actual file operations/parsing
+      vi.spyOn(workflow, 'load').mockImplementation(async () => {
+        workflow.changeTracker = { activeState: {} } as any // Minimal mock
+        workflow.originalContent = '{}'
+        workflow.content = '{}'
+        return workflow as LoadedComfyWorkflow
+      })
+      await store.openWorkflow(workflow)
+
+      // Reset mocks before each subgraph test
+      vi.mocked(comfyApp.canvas).subgraph = undefined // Use undefined for root graph
+    })
+
+    it('should handle when comfyApp.canvas is not available', async () => {
+      // Arrange
+      vi.mocked(comfyApp).canvas = null as any // Simulate canvas not ready
+
+      // Act
+      console.debug(store.isSubgraphActive)
+      store.updateActiveGraph()
+      await nextTick()
+
+      // Assert
+      console.debug(store.isSubgraphActive)
+      expect(store.isSubgraphActive).toBe(false) // Should default to false
+      expect(store.activeSubgraph).toBeUndefined() // Should default to empty
+    })
+
+    it('should correctly update state when the root graph is active', async () => {
+      // Arrange: Ensure comfyApp indicates root graph is active
+      vi.mocked(comfyApp.canvas).subgraph = undefined // Use undefined for root graph
+
+      // Act: Trigger the update
+      store.updateActiveGraph()
+      await nextTick() // Wait for Vue reactivity
+
+      // Assert: Check store state
+      expect(store.isSubgraphActive).toBe(false)
+      expect(store.activeSubgraph).toBeUndefined()
+    })
+
+    it('should correctly update state when a subgraph is active', async () => {
+      // Arrange: Setup mock subgraph structure
+      const mockSubgraph = {
+        name: 'Level 2 Subgraph',
+        isRootGraph: false,
+        pathToRootGraph: [
+          { name: 'Root' }, // Root Graph (index 0, ignored)
+          { name: 'Level 1 Subgraph' },
+          { name: 'Level 2 Subgraph' }
+        ]
+      } as any
+      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
+
+      // Mock isSubgraph to return true for our mockSubgraph
+      vi.mocked(isSubgraph).mockImplementation(
+        (obj): obj is Subgraph => obj === mockSubgraph
+      )
+
+      // Act: Trigger the update
+      store.updateActiveGraph()
+      await nextTick() // Wait for Vue reactivity
+
+      // Assert: Check store state
+      expect(store.isSubgraphActive).toBe(true)
+      expect(store.activeSubgraph).toEqual(mockSubgraph)
+    })
+
+    it('should update automatically when activeWorkflow changes', async () => {
+      // Arrange: Set initial canvas state (e.g., a subgraph)
+      const initialSubgraph = {
+        name: 'Initial Subgraph',
+        pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
+        isRootGraph: false
+      } as any
+      vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
+
+      // Mock isSubgraph to return true for our initialSubgraph
+      vi.mocked(isSubgraph).mockImplementation(
+        (obj): obj is Subgraph => obj === initialSubgraph
+      )
+
+      // Trigger initial update based on the *first* workflow opened in beforeEach
+      store.updateActiveGraph()
+      await nextTick()
+
+      // Verify initial state
+      expect(store.isSubgraphActive).toBe(true)
+      expect(store.activeSubgraph).toEqual(initialSubgraph)
+
+      // Act: Change the active workflow
+      const workflow2 = store.createTemporary('workflow2.json')
+      // Mock load for the second workflow
+      vi.spyOn(workflow2, 'load').mockImplementation(async () => {
+        workflow2.changeTracker = { activeState: {} } as any
+        workflow2.originalContent = '{}'
+        workflow2.content = '{}'
+        return workflow2 as LoadedComfyWorkflow
+      })
+
+      // Before changing workflow, set the canvas state to something different (e.g., root)
+      // This ensures the watcher *does* cause a state change we can assert
+      vi.mocked(comfyApp.canvas).subgraph = undefined
+
+      // Mock isSubgraph to return false for undefined
+      vi.mocked(isSubgraph).mockImplementation(
+        (_obj): _obj is Subgraph => false
+      )
+
+      await store.openWorkflow(workflow2) // This changes activeWorkflow and triggers the watch
+      await nextTick() // Allow watcher and potential async operations in updateActiveGraph to complete
+
+      // Assert: Check that the state was updated by the watcher based on the *new* canvas state
+      expect(store.isSubgraphActive).toBe(false) // Should reflect the change to undefined subgraph
+      expect(store.activeSubgraph).toBeUndefined()
+    })
+  })
+
+  describe('NodeLocatorId conversions', () => {
+    beforeEach(() => {
+      // Setup mock graph structure with subgraphs
+      const mockSubgraph = {
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        rootGraph: null as any,
+        _nodes: [],
+        nodes: []
+      }
+
+      const mockNode = {
+        id: 123,
+        isSubgraphNode: () => true,
+        subgraph: mockSubgraph
+      }
+
+      const mockRootGraph = {
+        _nodes: [mockNode],
+        nodes: [mockNode],
+        subgraphs: new Map([[mockSubgraph.id, mockSubgraph]]),
+        getNodeById: (id: string | number) => {
+          if (String(id) === '123') return mockNode
+          return null
+        }
+      }
+
+      mockSubgraph.rootGraph = mockRootGraph as any
+
+      vi.mocked(comfyApp).graph = mockRootGraph as any
+      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph as any
+      store.activeSubgraph = mockSubgraph as any
+    })
+
+    describe('nodeIdToNodeLocatorId', () => {
+      it('should convert node ID to NodeLocatorId for subgraph nodes', () => {
+        const result = store.nodeIdToNodeLocatorId(456)
+        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+      })
+
+      it('should return simple node ID for root graph nodes', () => {
+        store.activeSubgraph = undefined
+        const result = store.nodeIdToNodeLocatorId(123)
+        expect(result).toBe('123')
+      })
+
+      it('should use provided subgraph instead of active one', () => {
+        const customSubgraph = {
+          id: 'custom-uuid-1234-5678-90ab-cdef12345678'
+        } as any
+        const result = store.nodeIdToNodeLocatorId(789, customSubgraph)
+        expect(result).toBe('custom-uuid-1234-5678-90ab-cdef12345678:789')
+      })
+    })
+
+    describe('nodeExecutionIdToNodeLocatorId', () => {
+      it('should convert execution ID to NodeLocatorId', () => {
+        const result = store.nodeExecutionIdToNodeLocatorId('123:456')
+        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+      })
+
+      it('should return simple node ID for root level nodes', () => {
+        const result = store.nodeExecutionIdToNodeLocatorId('123')
+        expect(result).toBe('123')
+      })
+
+      it('should return null for invalid execution IDs', () => {
+        const result = store.nodeExecutionIdToNodeLocatorId('999:456')
+        expect(result).toBeNull()
+      })
+    })
+
+    describe('nodeLocatorIdToNodeId', () => {
+      it('should extract node ID from NodeLocatorId', () => {
+        const result = store.nodeLocatorIdToNodeId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+        )
+        expect(result).toBe(456)
+      })
+
+      it('should handle string node IDs', () => {
+        const result = store.nodeLocatorIdToNodeId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:node_1'
+        )
+        expect(result).toBe('node_1')
+      })
+
+      it('should handle simple node IDs (root graph)', () => {
+        const result = store.nodeLocatorIdToNodeId('123')
+        expect(result).toBe(123)
+
+        const stringResult = store.nodeLocatorIdToNodeId('node_1')
+        expect(stringResult).toBe('node_1')
+      })
+
+      it('should return null for invalid NodeLocatorId', () => {
+        const result = store.nodeLocatorIdToNodeId('invalid:format')
+        expect(result).toBeNull()
+      })
+    })
+
+    describe('nodeLocatorIdToNodeExecutionId', () => {
+      it('should convert NodeLocatorId to execution ID', () => {
+        // Need to mock isSubgraph to identify our mockSubgraph
+        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
+          return obj === store.activeSubgraph
+        })
+
+        const result = store.nodeLocatorIdToNodeExecutionId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+        )
+        expect(result).toBe('123:456')
+      })
+
+      it('should handle simple node IDs (root graph)', () => {
+        const result = store.nodeLocatorIdToNodeExecutionId('123')
+        expect(result).toBe('123')
+      })
+
+      it('should return null for unknown subgraph UUID', () => {
+        const result = store.nodeLocatorIdToNodeExecutionId(
+          'unknown-uuid-1234-5678-90ab-cdef12345678:456'
+        )
+        expect(result).toBeNull()
+      })
+
+      it('should return null for invalid NodeLocatorId', () => {
+        const result = store.nodeLocatorIdToNodeExecutionId('invalid:format')
+        expect(result).toBeNull()
+      })
     })
   })
 })

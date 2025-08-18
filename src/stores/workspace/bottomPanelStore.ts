@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
 import {
   useCommandTerminalTab,
   useLogsTerminalTab
@@ -10,46 +11,112 @@ import { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'
 
+type PanelType = 'terminal' | 'shortcuts'
+
+interface PanelState {
+  tabs: BottomPanelExtension[]
+  activeTabId: string
+  visible: boolean
+}
+
 export const useBottomPanelStore = defineStore('bottomPanel', () => {
-  const bottomPanelVisible = ref(false)
-  const toggleBottomPanel = () => {
-    // If there are no tabs, don't show the bottom panel
-    if (bottomPanelTabs.value.length === 0) {
-      return
+  // Multi-panel state
+  const panels = ref<Record<PanelType, PanelState>>({
+    terminal: { tabs: [], activeTabId: '', visible: false },
+    shortcuts: { tabs: [], activeTabId: '', visible: false }
+  })
+
+  const activePanel = ref<PanelType | null>(null)
+
+  // Computed properties for active panel
+  const activePanelState = computed(() =>
+    activePanel.value ? panels.value[activePanel.value] : null
+  )
+
+  const activeBottomPanelTab = computed<BottomPanelExtension | null>(() => {
+    const state = activePanelState.value
+    if (!state) return null
+    return state.tabs.find((tab) => tab.id === state.activeTabId) ?? null
+  })
+
+  const bottomPanelVisible = computed({
+    get: () => !!activePanel.value,
+    set: (visible: boolean) => {
+      if (!visible) {
+        activePanel.value = null
+      }
     }
-    bottomPanelVisible.value = !bottomPanelVisible.value
+  })
+  const bottomPanelTabs = computed(() => activePanelState.value?.tabs ?? [])
+  const activeBottomPanelTabId = computed({
+    get: () => activePanelState.value?.activeTabId ?? '',
+    set: (tabId: string) => {
+      const state = activePanelState.value
+      if (state) {
+        state.activeTabId = tabId
+      }
+    }
+  })
+
+  const togglePanel = (panelType: PanelType) => {
+    const panel = panels.value[panelType]
+    if (panel.tabs.length === 0) return
+
+    if (activePanel.value === panelType) {
+      // Hide current panel
+      activePanel.value = null
+    } else {
+      // Show target panel
+      activePanel.value = panelType
+      if (!panel.activeTabId && panel.tabs.length > 0) {
+        panel.activeTabId = panel.tabs[0].id
+      }
+    }
   }
 
-  const bottomPanelTabs = ref<BottomPanelExtension[]>([])
-  const activeBottomPanelTabId = ref<string | null>(null)
-  const activeBottomPanelTab = computed<BottomPanelExtension | null>(() => {
-    return (
-      bottomPanelTabs.value.find(
-        (tab) => tab.id === activeBottomPanelTabId.value
-      ) ?? null
-    )
-  })
-  const setActiveTab = (tabId: string) => {
-    activeBottomPanelTabId.value = tabId
+  const toggleBottomPanel = () => {
+    // Legacy method - toggles terminal panel
+    togglePanel('terminal')
   }
+
+  const setActiveTab = (tabId: string) => {
+    const state = activePanelState.value
+    if (state) {
+      state.activeTabId = tabId
+    }
+  }
+
   const toggleBottomPanelTab = (tabId: string) => {
-    if (activeBottomPanelTabId.value === tabId && bottomPanelVisible.value) {
-      bottomPanelVisible.value = false
-    } else {
-      activeBottomPanelTabId.value = tabId
-      bottomPanelVisible.value = true
+    // Find which panel contains this tab
+    for (const [panelType, panel] of Object.entries(panels.value)) {
+      const tab = panel.tabs.find((t) => t.id === tabId)
+      if (tab) {
+        if (activePanel.value === panelType && panel.activeTabId === tabId) {
+          activePanel.value = null
+        } else {
+          activePanel.value = panelType as PanelType
+          panel.activeTabId = tabId
+        }
+        return
+      }
     }
   }
   const registerBottomPanelTab = (tab: BottomPanelExtension) => {
-    bottomPanelTabs.value = [...bottomPanelTabs.value, tab]
-    if (bottomPanelTabs.value.length === 1) {
-      activeBottomPanelTabId.value = tab.id
+    const targetPanel = tab.targetPanel ?? 'terminal'
+    const panel = panels.value[targetPanel]
+
+    panel.tabs = [...panel.tabs, tab]
+    if (panel.tabs.length === 1) {
+      panel.activeTabId = tab.id
     }
+
     useCommandStore().registerCommand({
       id: `Workspace.ToggleBottomPanelTab.${tab.id}`,
       icon: 'pi pi-list',
       label: `Toggle ${tab.title} Bottom Panel`,
-      function: () => toggleBottomPanelTab(tab.id)
+      category: 'view-controls' as const,
+      function: () => toggleBottomPanelTab(tab.id),
+      source: 'System'
     })
   }
 
@@ -58,6 +125,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     if (isElectron()) {
       registerBottomPanelTab(useCommandTerminalTab())
     }
+    useShortcutsTab().forEach(registerBottomPanelTab)
   }
 
   const registerExtensionBottomPanelTabs = (extension: ComfyExtension) => {
@@ -67,6 +135,11 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   }
 
   return {
+    // Multi-panel API
+    panels,
+    activePanel,
+    togglePanel,
+
     bottomPanelVisible,
     toggleBottomPanel,
     bottomPanelTabs,

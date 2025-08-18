@@ -2,6 +2,7 @@ import { useEventListener, whenever } from '@vueuse/core'
 import { computed, readonly, ref } from 'vue'
 
 import { api } from '@/scripts/api'
+import { ManagerWsQueueStatus } from '@/types/comfyManagerTypes'
 
 type QueuedTask<T> = {
   task: () => Promise<T>
@@ -10,16 +11,14 @@ type QueuedTask<T> = {
 
 const MANAGER_WS_MSG_TYPE = 'cm-queue-status'
 
-enum ManagerWsQueueStatus {
-  DONE = 'done',
-  IN_PROGRESS = 'in_progress'
-}
-
 export const useManagerQueue = () => {
   const clientQueueItems = ref<QueuedTask<unknown>[]>([])
   const clientQueueLength = computed(() => clientQueueItems.value.length)
   const onCompletedQueue = ref<((() => void) | undefined)[]>([])
   const onCompleteWaitingCount = ref(0)
+  const uncompletedCount = computed(
+    () => clientQueueLength.value + onCompleteWaitingCount.value
+  )
 
   const serverQueueStatus = ref<ManagerWsQueueStatus>(ManagerWsQueueStatus.DONE)
   const isServerIdle = computed(
@@ -93,6 +92,7 @@ export const useManagerQueue = () => {
     allTasksDone,
     statusMessage: readonly(serverQueueStatus),
     queueLength: clientQueueLength,
+    uncompletedCount,
 
     enqueueTask,
     clearQueue,

@@ -2,18 +2,25 @@
   <PackActionButton
     v-bind="$attrs"
     :label="
-      nodePacks.length > 1 ? $t('manager.installSelected') : $t('g.install')
+      label ??
+      (nodePacks.length > 1 ? $t('manager.installSelected') : $t('g.install'))
     "
-    severity="secondary"
+    :severity="variant === 'black' ? undefined : 'secondary'"
+    :variant="variant"
+    :loading="isInstalling"
     :loading-message="$t('g.installing')"
     @action="installAllPacks"
+    @click="onClick"
   />
 </template>
 
 <script setup lang="ts">
+import { inject, ref } from 'vue'
+
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
+  IsInstallingKey,
   ManagerChannel,
   ManagerDatabaseSource,
   SelectedVersion
@@ -22,9 +29,17 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks } = defineProps<{
+const { nodePacks, variant, label } = defineProps<{
   nodePacks: NodePack[]
+  variant?: 'default' | 'black'
+  label?: string
 }>()
+
+const isInstalling = inject(IsInstallingKey, ref(false))
+
+const onClick = (): void => {
+  isInstalling.value = true
+}
 
 const managerStore = useComfyManagerStore()
 
@@ -49,6 +64,8 @@ const installPack = (item: NodePack) =>
 
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
+
+  isInstalling.value = true
 
   const uninstalledPacks = nodePacks.filter(
     (pack) => !managerStore.isPackInstalled(pack.id)

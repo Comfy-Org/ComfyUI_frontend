@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type PasteHandler<T> = (files: File[]) => Promise<T>
 
@@ -23,9 +23,7 @@ export const useNodePaste = <T>(
 
     const paste = allow_batch ? filteredFiles : filteredFiles.slice(0, 1)
 
-    onPaste(paste).then((result) => {
-      if (!result) return
-    })
+    void onPaste(paste)
     return true
   }
 }

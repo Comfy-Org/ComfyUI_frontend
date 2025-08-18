@@ -1,4 +1,4 @@
-import { memoize } from 'lodash'
+import { memoize } from 'es-toolkit/compat'
 
 type RGB = { r: number; g: number; b: number }
 type HSL = { h: number; s: number; l: number }
@@ -40,7 +40,7 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
   return { h, s, l }
 }
 
-function hexToRgb(hex: string): RGB {
+export function hexToRgb(hex: string): RGB {
   let r = 0,
     g = 0,
     b = 0

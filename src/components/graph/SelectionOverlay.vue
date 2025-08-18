@@ -1,43 +1,52 @@
 <!-- This component is used to bound the selected items on the canvas. -->
 <template>
   <div
+    v-show="visible"
     class="selection-overlay-container pointer-events-none z-40"
     :class="{
       'show-border': showBorder
     }"
     :style="style"
-    v-show="visible"
   >
-    <slot></slot>
+    <slot />
   </div>
 </template>
 
 <script setup lang="ts">
-import { createBounds } from '@comfyorg/litegraph'
-import type { LGraphCanvas } from '@comfyorg/litegraph'
-import { ref, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+import { provide, readonly, ref, watch } from 'vue'
 
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
+import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 const canvasStore = useCanvasStore()
 const { style, updatePosition } = useAbsolutePosition()
+const { getSelectableItems } = useSelectedLiteGraphItems()
 
 const visible = ref(false)
 const showBorder = ref(false)
+// Increment counter to notify child components of position/visibility change
+// This does not include viewport changes.
+const overlayUpdateCount = ref(0)
+provide(SelectionOverlayInjectionKey, {
+  visible: readonly(visible),
+  updateCount: readonly(overlayUpdateCount)
+})
 
-const positionSelectionOverlay = (canvas: LGraphCanvas) => {
-  const selectedItems = canvas.selectedItems
-  showBorder.value = selectedItems.size > 1
+const positionSelectionOverlay = () => {
+  const selectableItems = getSelectableItems()
+  showBorder.value = selectableItems.size > 1
 
-  if (!selectedItems.size) {
+  if (!selectableItems.size) {
     visible.value = false
     return
   }
 
   visible.value = true
-  const bounds = createBounds(selectedItems)
+  const bounds = createBounds(selectableItems)
   if (bounds) {
     updatePosition({
       pos: [bounds[0], bounds[1]],
@@ -46,34 +55,19 @@ const positionSelectionOverlay = (canvas: LGraphCanvas) => {
   }
 }
 
-// Register listener on canvas creation.
-watch(
-  () => canvasStore.canvas,
-  (canvas: LGraphCanvas | null) => {
-    if (!canvas) return
-
-    canvas.onSelectionChange = useChainCallback(canvas.onSelectionChange, () =>
-      positionSelectionOverlay(canvas)
-    )
+whenever(
+  () => canvasStore.getCanvas().state.selectionChanged,
+  () => {
+    requestAnimationFrame(() => {
+      positionSelectionOverlay()
+      overlayUpdateCount.value++
+      canvasStore.getCanvas().state.selectionChanged = false
+    })
   },
   { immediate: true }
 )
 
-watch(
-  () => {
-    const canvas = canvasStore.canvas
-    if (!canvas) return null
-    return {
-      scale: canvas.ds.state.scale,
-      offset: [canvas.ds.state.offset[0], canvas.ds.state.offset[1]]
-    }
-  },
-  (state) => {
-    if (!state) return
-
-    positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
-  }
-)
+canvasStore.getCanvas().ds.onChanged = positionSelectionOverlay
 
 watch(
   () => canvasStore.canvas?.state?.draggingItems,
@@ -83,12 +77,19 @@ watch(
     // the correct position.
     // https://github.com/Comfy-Org/ComfyUI_frontend/issues/2656
     if (draggingItems === false) {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         visible.value = true
-        positionSelectionOverlay(canvasStore.canvas as LGraphCanvas)
-      }, 100)
+        positionSelectionOverlay()
+        overlayUpdateCount.value++
+      })
     } else {
-      visible.value = false
+      // Selection change update to visible state is delayed by a frame. Here
+      // we also delay a frame so that the order of events is correct when
+      // the initial selection and dragging happens at the same time.
+      requestAnimationFrame(() => {
+        visible.value = false
+        overlayUpdateCount.value++
+      })
     }
   }
 )

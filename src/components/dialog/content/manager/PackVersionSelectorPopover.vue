@@ -10,7 +10,7 @@
       <ProgressSpinner class="w-8 h-8 mb-2" />
       {{ $t('manager.loadingVersions') }}
     </div>
-    <div v-else-if="allVersionOptions.length === 0" class="py-2">
+    <div v-else-if="versionOptions.length === 0" class="py-2">
       <NoResultsPlaceholder
         :title="$t('g.noResultsFound')"
         :message="$t('manager.tryAgainLater')"
@@ -23,9 +23,9 @@
       v-model="selectedVersion"
       option-label="label"
       option-value="value"
-      :options="allVersionOptions"
+      :options="versionOptions"
       :highlight-on-select="false"
-      class="my-3 w-full max-h-[50vh] border-none"
+      class="my-3 w-full max-h-[50vh] border-none shadow-none"
     >
       <template #option="slotProps">
         <div class="flex justify-between items-center w-full p-1">
@@ -58,11 +58,11 @@
 </template>
 
 <script setup lang="ts">
-import { useAsyncState, whenever } from '@vueuse/core'
+import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
@@ -75,6 +75,7 @@ import {
   SelectedVersion
 } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
+import { isSemVer } from '@/utils/formatUtil'
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -93,58 +94,80 @@ const isQueueing = ref(false)
 
 const selectedVersion = ref<string>(SelectedVersion.LATEST)
 onMounted(() => {
+  const initialVersion = getInitialSelectedVersion() ?? SelectedVersion.LATEST
   selectedVersion.value =
-    nodePack.publisher?.name === 'Unclaimed'
-      ? SelectedVersion.NIGHTLY
-      : nodePack.latest_version?.version ?? SelectedVersion.NIGHTLY
+    // Use NIGHTLY when version is a Git hash
+    isSemVer(initialVersion) ? initialVersion : SelectedVersion.NIGHTLY
 })
+
+const getInitialSelectedVersion = () => {
+  if (!nodePack.id) return
+
+  // If unclaimed, set selected version to nightly
+  if (nodePack.publisher?.name === 'Unclaimed') return SelectedVersion.NIGHTLY
+
+  // If node pack is installed, set selected version to the installed version
+  if (managerStore.isPackInstalled(nodePack.id))
+    return managerStore.getInstalledPackVersion(nodePack.id)
+
+  // If node pack is not installed, set selected version to latest
+  return nodePack.latest_version?.version
+}
 
 const fetchVersions = async () => {
   if (!nodePack?.id) return []
   return (await registryService.getPackVersions(nodePack.id)) || []
 }
 
-const {
-  isLoading: isLoadingVersions,
-  state: versions,
-  execute: startFetchVersions
-} = useAsyncState(fetchVersions, [])
+const versionOptions = ref<
+  {
+    value: string
+    label: string
+  }[]
+>([])
 
-const specialOptions = computed(() => {
-  const options = [
+const isLoadingVersions = ref(false)
+
+const onNodePackChange = async () => {
+  isLoadingVersions.value = true
+
+  // Fetch versions from the registry
+  const versions = await fetchVersions()
+  const availableVersionOptions = versions
+    .map((version) => ({
+      value: version.version ?? '',
+      label: version.version ?? ''
+    }))
+    .filter((option) => option.value)
+
+  // Add Latest option
+  const defaultVersions = [
     {
       value: SelectedVersion.LATEST,
       label: t('manager.latestVersion')
     }
   ]
 
-  // Only include nightly option if there is a repo
+  // Add Nightly option if there is a non-empty `repository` field
   if (nodePack.repository?.length) {
-    options.push({
+    defaultVersions.push({
       value: SelectedVersion.NIGHTLY,
       label: t('manager.nightlyVersion')
     })
   }
 
-  return options
-})
-
-const versionOptions = computed(() =>
-  versions.value.map((version) => ({
-    value: version.version,
-    label: version.version
-  }))
-)
-
-const allVersionOptions = computed(() => [
-  ...specialOptions.value,
-  ...versionOptions.value
-])
+  versionOptions.value = [...defaultVersions, ...availableVersionOptions]
+  isLoadingVersions.value = false
+}
 
 whenever(
   () => nodePack.id,
-  () => startFetchVersions(),
-  { deep: true }
+  (nodePackId, oldNodePackId) => {
+    if (nodePackId !== oldNodePackId) {
+      void onNodePackChange()
+    }
+  },
+  { deep: true, immediate: true }
 )
 
 const handleSubmit = async () => {
@@ -161,8 +184,4 @@ const handleSubmit = async () => {
   isQueueing.value = false
   emit('submit')
 }
-
-onUnmounted(() => {
-  managerStore.installPack.clear()
-})
 </script>

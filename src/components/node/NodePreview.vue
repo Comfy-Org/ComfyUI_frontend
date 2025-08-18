@@ -6,28 +6,31 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
   <div class="_sb_node_preview">
     <div class="_sb_table">
       <div
-        class="node_header"
+        class="node_header overflow-ellipsis mr-4"
+        :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
           color: litegraphColors.NODE_TITLE_COLOR
         }"
       >
-        <div class="_sb_dot headdot"></div>
+        <div class="_sb_dot headdot pr-3" />
         {{ nodeDef.display_name }}
       </div>
-      <div class="_sb_preview_badge">PREVIEW</div>
+      <div class="_sb_preview_badge">{{ $t('g.preview') }}</div>
 
       <!-- Node slot I/O -->
       <div
         v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
-        class="_sb_row slot_row"
         :key="(slotInput?.name || '') + (slotOutput?.index.toString() || '')"
+        class="_sb_row slot_row"
       >
         <div class="_sb_col">
-          <div v-if="slotInput" :class="['_sb_dot', slotInput.type]"></div>
+          <div v-if="slotInput" :class="['_sb_dot', slotInput.type]" />
         </div>
-        <div class="_sb_col">{{ slotInput ? slotInput.name : '' }}</div>
-        <div class="_sb_col middle-column"></div>
+        <div class="_sb_col">
+          {{ slotInput ? slotInput.name : '' }}
+        </div>
+        <div class="_sb_col middle-column" />
         <div
           class="_sb_col _sb_inherit"
           :style="{
@@ -37,15 +40,15 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
           {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
-          <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]"></div>
+          <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]" />
         </div>
       </div>
 
       <!-- Node widget inputs -->
       <div
         v-for="widgetInput in widgetInputDefs"
-        class="_sb_row _long_field"
         :key="widgetInput.name"
+        class="_sb_row _long_field"
       >
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
         <div
@@ -56,7 +59,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         >
           {{ widgetInput.name }}
         </div>
-        <div class="_sb_col middle-column"></div>
+        <div class="_sb_col middle-column" />
         <div
           class="_sb_col _sb_inherit"
           :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
@@ -67,27 +70,27 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       </div>
     </div>
     <div
+      v-if="renderedDescription"
       class="_sb_description"
-      v-if="nodeDef.description"
       :style="{
         color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
         backgroundColor: litegraphColors.WIDGET_BGCOLOR
       }"
-    >
-      {{ nodeDef.description }}
-    </div>
+      v-html="renderedDescription"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { computed } from 'vue'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-const props = defineProps<{
+const { nodeDef } = defineProps<{
   nodeDef: ComfyNodeDefV2
 }>()
 
@@ -98,7 +101,12 @@ const litegraphColors = computed(
 
 const widgetStore = useWidgetStore()
 
-const nodeDef = props.nodeDef
+const { description } = nodeDef
+const renderedDescription = computed(() => {
+  if (!description) return ''
+  return renderMarkdownToHtml(description)
+})
+
 const allInputDefs = Object.values(nodeDef.inputs)
 const allOutputDefs = nodeDef.outputs
 const slotInputDefs = allInputDefs.filter(

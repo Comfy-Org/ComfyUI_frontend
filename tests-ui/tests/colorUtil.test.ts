@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { describe, expect, it, vi } from 'vitest'
 
 import { adjustColor } from '@/utils/colorUtil'
@@ -16,7 +15,7 @@ interface ColorTestCase {
 
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
 
-vi.mock('lodash', () => ({
+vi.mock('es-toolkit/compat', () => ({
   memoize: (fn: any) => fn
 }))
 
@@ -80,7 +79,7 @@ describe('colorUtil - adjustColor', () => {
     })
   }
 
-  describe.each(Object.entries(colors))('%s color', (colorName, color) => {
+  describe.each(Object.entries(colors))('%s color', (_colorName, color) => {
     describe.each(formats)('%s format', (format) => {
       runAdjustColorTests(color, format as ColorFormat)
     })
@@ -107,7 +106,9 @@ describe('colorUtil - adjustColor', () => {
   })
 
   it('returns the original value for null or undefined inputs', () => {
+    // @ts-expect-error fixme ts strict error
     expect(adjustColor(null, { opacity: targetOpacity })).toBe(null)
+    // @ts-expect-error fixme ts strict error
     expect(adjustColor(undefined, { opacity: targetOpacity })).toBe(undefined)
   })
 

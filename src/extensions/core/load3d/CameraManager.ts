@@ -14,6 +14,7 @@ export class CameraManager implements CameraManagerInterface {
   orthographicCamera: THREE.OrthographicCamera
   activeCamera: THREE.Camera
 
+  // @ts-expect-error unused variable
   private renderer: THREE.WebGLRenderer
   private eventManager: EventManagerInterface
   private nodeStorage: NodeStorageInterface
@@ -178,12 +179,16 @@ export class CameraManager implements CameraManagerInterface {
   }
 
   handleResize(width: number, height: number): void {
+    const aspect = width / height
+    this.updateAspectRatio(aspect)
+  }
+
+  updateAspectRatio(aspect: number): void {
     if (this.activeCamera === this.perspectiveCamera) {
-      this.perspectiveCamera.aspect = width / height
+      this.perspectiveCamera.aspect = aspect
       this.perspectiveCamera.updateProjectionMatrix()
     } else {
       const frustumSize = 10
-      const aspect = width / height
       this.orthographicCamera.left = (-frustumSize * aspect) / 2
       this.orthographicCamera.right = (frustumSize * aspect) / 2
       this.orthographicCamera.top = frustumSize / 2

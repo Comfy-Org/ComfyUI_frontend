@@ -3,26 +3,26 @@
   <div class="flex flex-row items-center gap-2">
     <div class="form-label flex flex-grow items-center">
       <span
+        :id="`${props.id}-label`"
         class="text-muted"
         :class="props.labelClass"
-        :id="`${props.id}-label`"
       >
-        <slot name="name-prefix"></slot>
+        <slot name="name-prefix" />
         {{ props.item.name }}
         <i
           v-if="props.item.tooltip"
-          class="pi pi-info-circle bg-transparent"
           v-tooltip="props.item.tooltip"
+          class="pi pi-info-circle bg-transparent"
         />
-        <slot name="name-suffix"></slot>
+        <slot name="name-suffix" />
       </span>
     </div>
     <div class="form-input flex justify-end">
       <component
         :is="markRaw(getFormComponent(props.item))"
         :id="props.id"
-        :aria-labelledby="`${props.id}-label`"
         v-model:modelValue="formValue"
+        :aria-labelledby="`${props.id}-label`"
         v-bind="getFormAttrs(props.item)"
       />
     </div>
@@ -36,6 +36,7 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { type Component, markRaw } from 'vue'
 
+import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
@@ -72,7 +73,7 @@ function getFormAttrs(item: FormItem) {
             item.options(formValue.value)
           : item.options
 
-      if (typeof item.options[0] !== 'string') {
+      if (typeof item.options?.[0] !== 'string') {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
       }
@@ -102,6 +103,8 @@ function getFormComponent(item: FormItem): Component {
       return FormColorPicker
     case 'url':
       return UrlInput
+    case 'backgroundImage':
+      return BackgroundImageUpload
     default:
       return InputText
   }

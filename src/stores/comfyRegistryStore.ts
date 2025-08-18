@@ -1,18 +1,27 @@
+import QuickLRU from '@alloc/quick-lru'
+import { partition } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
 const PACK_LIST_CACHE_SIZE = 20
-const PACK_BY_ID_CACHE_SIZE = 50
+const PACK_BY_ID_CACHE_SIZE = 64
 
 type NodePack = components['schemas']['Node']
 type ListPacksParams = operations['listAllNodes']['parameters']['query']
 type ListPacksResult =
   operations['listAllNodes']['responses'][200]['content']['application/json']
-type ComfyNode = components['schemas']['ComfyNode']
+type GetNodeDefsParams = operations['ListComfyNodes']['parameters']['query'] & {
+  packId: components['schemas']['Node']['id']
+  version: components['schemas']['NodeVersion']['version']
+}
+type GetPackByIdPath = operations['getNode']['parameters']['path']['nodeId']
+
+const isNodePack = (pack: NodePack | undefined): pack is NodePack => {
+  return pack !== undefined && 'id' in pack
+}
 
 /**
  * Store for managing remote custom nodes
@@ -20,88 +29,123 @@ type ComfyNode = components['schemas']['ComfyNode']
 export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   const registryService = useComfyRegistryService()
 
-  let listAllPacksHandler: ReturnType<
-    typeof useCachedRequest<ListPacksParams, ListPacksResult>
-  >
-  let getPackByIdHandler: ReturnType<typeof useCachedRequest<string, NodePack>>
-  let getNodeDefsHandler: ReturnType<
-    typeof useCachedRequest<{ packId: string; versionId: string }, ComfyNode[]>
-  >
-
-  const recentListResult = ref<NodePack[]>([])
-  const hasPacks = computed(() => recentListResult.value.length > 0)
+  let getPacksByIdController: AbortController | null = null
+  const getPacksByIdCache = new QuickLRU<NodePack['id'], NodePack>({
+    maxSize: PACK_BY_ID_CACHE_SIZE
+  })
 
   /**
    * Get a list of all node packs from the registry
    */
-  const listAllPacks = async (params: ListPacksParams) => {
-    listAllPacksHandler ??= useCachedRequest<ListPacksParams, ListPacksResult>(
-      registryService.listAllPacks,
-      { maxSize: PACK_LIST_CACHE_SIZE }
-    )
-
-    const response = await listAllPacksHandler.call(params)
-    if (response) recentListResult.value = response.nodes || []
-
-    return response
-  }
+  const listAllPacks = useCachedRequest<ListPacksParams, ListPacksResult>(
+    registryService.listAllPacks,
+    { maxSize: PACK_LIST_CACHE_SIZE }
+  )
 
   /**
    * Get a pack by its ID from the registry
    */
-  const getPackById = async (
-    packId: NodePack['id']
-  ): Promise<NodePack | null> => {
-    if (!packId) return null
+  const getPackById = useCachedRequest<GetPackByIdPath, NodePack>(
+    async (params) => {
+      if (!params) return null
+      return registryService.getPackById(params)
+    },
+    { maxSize: PACK_BY_ID_CACHE_SIZE }
+  )
 
-    getPackByIdHandler ??= useCachedRequest<string, NodePack>(
-      registryService.getPackById,
-      { maxSize: PACK_BY_ID_CACHE_SIZE }
+  /**
+   * Get a list of packs by their IDs from the registry
+   */
+  const getPacksByIds = async (ids: NodePack['id'][]): Promise<NodePack[]> => {
+    const [cachedPacksIds, uncachedPacksIds] = partition(ids, (id) =>
+      getPacksByIdCache.has(id)
     )
 
-    return getPackByIdHandler.call(packId)
+    const resolvedPacks = cachedPacksIds
+      .map((id) => getPacksByIdCache.get(id))
+      .filter(isNodePack)
+
+    if (uncachedPacksIds.length) {
+      getPacksByIdController = new AbortController()
+      const uncachedPacks = await registryService.listAllPacks(
+        {
+          node_id: uncachedPacksIds.filter(
+            (id): id is string => id !== undefined
+          )
+        },
+        getPacksByIdController.signal
+      )
+
+      const { nodes = [] } = uncachedPacks ?? {}
+      nodes.forEach((pack) => {
+        if (pack?.id) {
+          getPacksByIdCache.set(pack.id, pack)
+          resolvedPacks.push(pack)
+        }
+      })
+    }
+
+    return resolvedPacks
   }
 
   /**
    * Get the node definitions for a pack
    */
-  const getNodeDefs = async (
-    packId: NodePack['id'],
-    versionId: NonNullable<NodePack['latest_version']>['id']
-  ) => {
-    if (!packId || !versionId) return null
+  const getNodeDefs = useCachedRequest<
+    GetNodeDefsParams,
+    operations['ListComfyNodes']['responses'][200]['content']['application/json']
+  >(registryService.getNodeDefs, { maxSize: PACK_BY_ID_CACHE_SIZE })
 
-    getNodeDefsHandler ??= useCachedRequest<
-      { packId: string; versionId: string },
-      ComfyNode[]
-    >(registryService.getNodeDefs, { maxSize: PACK_BY_ID_CACHE_SIZE })
+  /**
+   * Search for packs by pack name or node names
+   */
+  const search = useCachedRequest<
+    operations['searchNodes']['parameters']['query'],
+    ListPacksResult
+  >(registryService.search, { maxSize: PACK_LIST_CACHE_SIZE })
 
-    return getNodeDefsHandler.call({ packId, versionId })
-  }
+  /**
+   * Get the node pack that contains a specific ComfyUI node by its name.
+   * Results are cached to avoid redundant API calls.
+   *
+   * @see {@link useComfyRegistryService.inferPackFromNodeName} for details on the ranking algorithm
+   */
+  const inferPackFromNodeName = useCachedRequest<
+    operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName'],
+    NodePack
+  >(registryService.inferPackFromNodeName, { maxSize: PACK_BY_ID_CACHE_SIZE })
 
   /**
    * Clear all cached data
    */
   const clearCache = () => {
-    listAllPacksHandler?.clear()
-    getPackByIdHandler?.clear()
+    getNodeDefs.clear()
+    listAllPacks.clear()
+    getPackById.clear()
+    inferPackFromNodeName.clear()
   }
 
   /**
-   * Cancel any in-flight requests
+   * Cancel all any in-flight requests.
    */
   const cancelRequests = () => {
-    listAllPacksHandler?.cancel()
-    getPackByIdHandler?.cancel()
+    getNodeDefs.cancel()
+    listAllPacks.cancel()
+    getPackById.cancel()
+    inferPackFromNodeName.cancel()
+    getPacksByIdController?.abort()
   }
 
   return {
-    recentListResult,
-    hasPacks,
-
     listAllPacks,
     getPackById,
+    getPacksByIds: {
+      call: getPacksByIds,
+      cancel: () => getPacksByIdController?.abort()
+    },
     getNodeDefs,
+    search,
+    inferPackFromNodeName,
 
     clearCache,
     cancelRequests,

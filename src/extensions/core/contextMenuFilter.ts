@@ -1,4 +1,8 @@
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
 
@@ -33,9 +37,10 @@ const ext = {
           const clickedComboValue = currentNode?.widgets
             ?.filter(
               (w) =>
-                w.type === 'combo' && w.options.values?.length === values.length
+                isComboWidget(w) && w.options.values?.length === values.length
             )
             .find((w) =>
+              // @ts-expect-error Poorly typed; filter above "should" mitigate exceptions
               w.options.values?.every((v, i) => v === values[i])
             )?.value
 

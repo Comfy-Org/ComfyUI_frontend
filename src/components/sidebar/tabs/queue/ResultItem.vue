@@ -1,5 +1,9 @@
 <template>
-  <div class="result-container" ref="resultContainer">
+  <div
+    ref="resultContainer"
+    class="result-container"
+    @click="handlePreviewClick"
+  >
     <ComfyImage
       v-if="result.isImage"
       :src="result.url"
@@ -8,30 +12,22 @@
       :alt="result.filename"
     />
     <ResultVideo v-else-if="result.isVideo" :result="result" />
+    <ResultAudio v-else-if="result.isAudio" :result="result" />
     <div v-else class="task-result-preview">
-      <i class="pi pi-file"></i>
+      <i class="pi pi-file" />
       <span>{{ result.mediaType }}</span>
-    </div>
-
-    <div v-if="result.supportsPreview" class="preview-mask">
-      <Button
-        icon="pi pi-eye"
-        severity="secondary"
-        @click="emit('preview', result)"
-        rounded
-      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import { ResultItemImpl } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 
+import ResultAudio from './ResultAudio.vue'
 import ResultVideo from './ResultVideo.vue'
 
 const props = defineProps<{
@@ -47,6 +43,12 @@ const settingStore = useSettingStore()
 const imageFit = computed<string>(() =>
   settingStore.get('Comfy.Queue.ImageFit')
 )
+
+const handlePreviewClick = () => {
+  if (props.result.supportsPreview) {
+    emit('preview', props.result)
+  }
+}
 
 onMounted(() => {
   if (props.result.mediaType === 'images') {
@@ -67,22 +69,11 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
-.preview-mask {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 1;
-}
-
-.result-container:hover .preview-mask {
-  opacity: 1;
+.result-container:hover {
+  transform: scale(1.02);
 }
 </style>

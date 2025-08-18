@@ -153,7 +153,7 @@ app.registerExtension({
       const weightDelta = event.key === 'ArrowUp' ? delta : -delta
       const updatedText = selectedText.replace(
         /\((.*):([+-]?\d+(?:\.\d+)?)\)/,
-        (match, text, weight) => {
+        (_, text, weight) => {
           weight = incrementWeight(weight, weightDelta)
           if (weight == 1) {
             return text

@@ -1,5 +1,6 @@
-import { LiteGraph } from '@comfyorg/litegraph'
 import { z } from 'zod'
+
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 const nodeSlotSchema = z.object({
   CLIP: z.string(),
@@ -48,6 +49,7 @@ const litegraphBaseSchema = z.object({
   WIDGET_OUTLINE_COLOR: z.string(),
   WIDGET_TEXT_COLOR: z.string(),
   WIDGET_SECONDARY_TEXT_COLOR: z.string(),
+  WIDGET_DISABLED_TEXT_COLOR: z.string(),
   LINK_COLOR: z.string(),
   EVENT_LINK_COLOR: z.string(),
   CONNECTING_LINK_COLOR: z.string(),

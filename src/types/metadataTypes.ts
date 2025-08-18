@@ -43,3 +43,99 @@ export type TextRange = {
   start: number
   end: number
 }
+
+export enum ASCII {
+  GLTF = 0x46546c67,
+  JSON = 0x4e4f534a,
+  OPEN_BRACE = 0x7b
+}
+
+export enum GltfSizeBytes {
+  HEADER = 12,
+  CHUNK_HEADER = 8
+}
+
+export type GltfHeader = {
+  magicNumber: number
+  gltfFormatVersion: number
+  totalLengthBytes: number
+}
+
+export type GltfChunkHeader = {
+  chunkLengthBytes: number
+  chunkTypeIdentifier: number
+}
+
+export type GltfExtras = {
+  workflow?: string | object
+  prompt?: string | object
+  [key: string]: any
+}
+
+export type GltfJsonData = {
+  asset?: {
+    extras?: GltfExtras
+    [key: string]: any
+  }
+  [key: string]: any
+}
+
+/**
+ * Represents the content range [start, end) of an ISOBMFF box, excluding its header.
+ * Null if the box was not found.
+ */
+export type IsobmffBoxContentRange = { start: number; end: number } | null
+
+export type AvifInfeBox = {
+  box_header: {
+    size: number
+    type: 'infe'
+  }
+  version: number
+  flags: number
+  item_ID: number
+  item_protection_index: number
+  item_type: string
+  item_name: string
+  content_type?: string
+  content_encoding?: string
+}
+
+export type AvifIinfBox = {
+  box_header: {
+    size: number
+    type: 'iinf'
+  }
+  version: number
+  flags: number
+  entry_count: number
+  entries: AvifInfeBox[]
+}
+
+export type AvifIlocItemExtent = {
+  extent_offset: number
+  extent_length: number
+}
+
+export type AvifIlocItem = {
+  item_ID: number
+  data_reference_index: number
+  base_offset: number
+  extent_count: number
+  extents: AvifIlocItemExtent[]
+}
+
+export type AvifIlocBox = {
+  box_header: {
+    size: number
+    type: 'iloc'
+  }
+  version: number
+  flags: number
+  offset_size: number
+  length_size: number
+  base_offset_size: number
+  index_size: number
+  item_count: number
+  items: AvifIlocItem[]
+}

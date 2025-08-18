@@ -1,7 +1,7 @@
 <template>
-  <div class="relative overflow-hidden h-full w-full bg-black" ref="rootEl">
+  <div ref="rootEl" class="relative overflow-hidden h-full w-full bg-black">
     <div class="p-terminal rounded-none h-full w-full p-2">
-      <div class="h-full terminal-host" ref="terminalEl"></div>
+      <div ref="terminalEl" class="h-full terminal-host" />
     </div>
   </div>
 </template>
@@ -12,11 +12,11 @@ import { Ref, onUnmounted, ref } from 'vue'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 
 const emit = defineEmits<{
-  created: [ReturnType<typeof useTerminal>, Ref<HTMLElement>]
+  created: [ReturnType<typeof useTerminal>, Ref<HTMLElement | undefined>]
   unmounted: []
 }>()
-const terminalEl = ref<HTMLElement>()
-const rootEl = ref<HTMLElement>()
+const terminalEl = ref<HTMLElement | undefined>()
+const rootEl = ref<HTMLElement | undefined>()
 emit('created', useTerminal(terminalEl), rootEl)
 
 onUnmounted(() => emit('unmounted'))

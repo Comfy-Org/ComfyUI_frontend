@@ -3,12 +3,12 @@
     <div class="relative show-up-direction">
       <Button class="p-button-rounded p-button-text" @click="toggleUpDirection">
         <i
-          class="pi pi-arrow-up text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.upDirection'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-arrow-up text-white text-lg"
+        />
       </Button>
       <div
         v-show="showUpDirection"
@@ -34,12 +34,12 @@
         @click="toggleMaterialMode"
       >
         <i
-          class="pi pi-box text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.materialMode'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-box text-white text-lg"
+        />
       </Button>
       <div
         v-show="showMaterialMode"
@@ -58,18 +58,19 @@
         </div>
       </div>
     </div>
+
     <div v-if="materialMode === 'lineart'" class="relative show-edge-threshold">
       <Button
         class="p-button-rounded p-button-text"
         @click="toggleEdgeThreshold"
       >
         <i
-          class="pi pi-sliders-h text-white text-lg"
           v-tooltip.right="{
             value: t('load3d.edgeThreshold'),
             showDelay: 300
           }"
-        ></i>
+          class="pi pi-sliders-h text-white text-lg"
+        />
       </Button>
       <div
         v-show="showEdgeThreshold"
@@ -82,10 +83,10 @@
         <Slider
           v-model="edgeThreshold"
           class="w-full"
-          @change="updateEdgeThreshold"
           :min="0"
           :max="120"
           :step="1"
+          @change="updateEdgeThreshold"
         />
       </div>
     </div>
@@ -100,13 +101,14 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const vTooltip = Tooltip
 
 const props = defineProps<{
+  inputSpec: CustomInputSpec
   upDirection: UpDirection
   materialMode: MaterialMode
-  isAnimation: boolean
   edgeThreshold?: number
 }>()
 
@@ -141,7 +143,7 @@ const materialModes = computed(() => {
     //'depth' disable for now
   ]
 
-  if (!props.isAnimation) {
+  if (!props.inputSpec.isAnimation && !props.inputSpec.isPreview) {
     modes.push('lineart')
   }
 
@@ -169,6 +171,7 @@ watch(
 watch(
   () => props.edgeThreshold,
   (newValue) => {
+    // @ts-expect-error fixme ts strict error
     edgeThreshold.value = newValue
   }
 )
@@ -203,7 +206,7 @@ const selectMaterialMode = (mode: MaterialMode) => {
 }
 
 const formatMaterialMode = (mode: MaterialMode) => {
-  return mode.charAt(0).toUpperCase() + mode.slice(1)
+  return t(`load3d.materialModes.${mode}`)
 }
 
 const toggleEdgeThreshold = () => {

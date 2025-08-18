@@ -1,8 +1,8 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { IComboWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { ref } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   ComboInputSpec,
@@ -18,7 +18,6 @@ import {
   type ComfyWidgetConstructorV2,
   addValueControlWidgets
 } from '@/scripts/widgets'
-import { generateUUID } from '@/utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
@@ -32,7 +31,6 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 const addMultiSelectWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
   const widgetValue = ref<string[]>([])
   const widget = new ComponentWidgetImpl({
-    id: generateUUID(),
     node,
     name: inputSpec.name,
     component: MultiSelectWidget,
@@ -73,10 +71,12 @@ const addComboWidget = (node: LGraphNode, inputSpec: ComboInputSpec) => {
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
     const origOptions = widget.options
-    widget.options = new Proxy(origOptions as Record<string | symbol, any>, {
-      get(target, prop: string | symbol) {
-        if (prop !== 'values') return target[prop]
-        return remoteWidget.getValue()
+    widget.options = new Proxy(origOptions, {
+      get(target, prop) {
+        // Assertion: Proxy handler passthrough
+        return prop !== 'values'
+          ? target[prop as keyof typeof target]
+          : remoteWidget.getValue()
       }
     })
   }

@@ -1,32 +1,22 @@
 <template>
-  <div class="flex justify-between p-5 text-xs text-muted">
-    <div class="flex items-center gap-2 cursor-pointer">
-      <span v-if="nodePack.publisher?.name">
-        {{ nodePack.publisher.name }}
-      </span>
-      <PackVersionBadge v-if="isInstalled" :node-pack="nodePack" />
-      <span v-else-if="nodePack.latest_version">
-        {{ nodePack.latest_version.version }}
-      </span>
+  <div
+    class="min-h-12 flex justify-between items-center px-4 py-2 text-xs text-muted font-medium leading-3"
+  >
+    <div v-if="nodePack.downloads" class="flex items-center gap-1.5">
+      <i class="pi pi-download text-muted"></i>
+      <span>{{ formattedDownloads }}</span>
     </div>
-    <div
-      v-if="nodePack.latest_version?.createdAt"
-      class="flex items-center gap-2 truncate"
-    >
-      {{ $t('g.updated') }}
-      {{
-        $d(new Date(nodePack.latest_version.createdAt), {
-          dateStyle: 'medium'
-        })
-      }}
-    </div>
+    <PackInstallButton v-if="!isInstalled" :node-packs="[nodePack]" />
+    <PackEnableToggle v-else :node-pack="nodePack" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
+import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -36,4 +26,10 @@ const { nodePack } = defineProps<{
 
 const { isPackInstalled } = useComfyManagerStore()
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+
+const { n } = useI18n()
+
+const formattedDownloads = computed(() =>
+  nodePack.downloads ? n(nodePack.downloads) : ''
+)
 </script>

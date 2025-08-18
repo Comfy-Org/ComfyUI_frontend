@@ -1,4 +1,7 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "업데이트 확인"
+  },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
     "label": "사용자 정의 노드 폴더 열기"
   },
@@ -32,8 +35,14 @@
   "Comfy-Desktop_Restart": {
     "label": "재시작"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "선택한 노드에 대해 3D 뷰어(베타) 열기"
+  },
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
+  },
+  "Comfy_Canvas_AddEditModelStep": {
+    "label": "모델 편집 단계 추가"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "선택한 항목 삭제"
@@ -41,14 +50,32 @@
   "Comfy_Canvas_FitView": {
     "label": "선택한 노드에 뷰 맞추기"
   },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "선택한 노드 아래로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "선택한 노드 왼쪽으로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "선택한 노드 오른쪽으로 이동"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "선택한 노드 위로 이동"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "뷰 재설정"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "선택된 노드 크기 조정"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "캔버스 링크 가시성 토글"
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "캔버스 잠금 토글"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "캔버스 미니맵 전환"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "선택한 노드 우회/우회 해제"
@@ -75,10 +102,16 @@
     "label": "보류 중인 작업 지우기"
   },
   "Comfy_ClearWorkflow": {
-    "label": "워크플로 지우기"
+    "label": "워크플로 내용 지우기"
+  },
+  "Comfy_ContactSupport": {
+    "label": "지원팀에 문의하기"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "모델 선택기 표시 (개발자용)"
   },
   "Comfy_DuplicateWorkflow": {
-    "label": "현재 워크플로우 복제"
+    "label": "현재 워크플로 복제"
   },
   "Comfy_ExportWorkflow": {
     "label": "워크플로 내보내기"
@@ -89,11 +122,20 @@
   "Comfy_Feedback": {
     "label": "피드백"
   },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "선택 영역을 서브그래프로 변환"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "서브그래프 종료"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "선택한 노드 그룹화"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "선택한 서브그래프 풀기"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "선택한 노드를 그룹 노드로 변환"
@@ -128,11 +170,26 @@
   "Comfy_Manager_CustomNodesManager": {
     "label": "사용자 정의 노드 관리자"
   },
+  "Comfy_Manager_ToggleManagerProgressDialog": {
+    "label": "진행 상황 대화 상자 전환"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "마스크 편집기에서 브러시 크기 줄이기"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "마스크 편집기에서 브러시 크기 늘리기"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "선택한 노드 마스크 편집기 열기"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "새로운 빈 워크플로"
   },
   "Comfy_OpenClipspace": {
     "label": "클립스페이스"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "매니저"
   },
   "Comfy_OpenWorkflow": {
     "label": "워크플로 열기"
@@ -142,6 +199,9 @@
   },
   "Comfy_QueuePromptFront": {
     "label": "실행 큐 맨 앞에 프롬프트 추가"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "선택한 출력 노드 대기열에 추가"
   },
   "Comfy_Redo": {
     "label": "다시 실행"
@@ -158,14 +218,26 @@
   "Comfy_ShowSettingsDialog": {
     "label": "설정 대화상자 보기"
   },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "캔버스 성능"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "도움말 센터"
+  },
   "Comfy_ToggleTheme": {
     "label": "밝기 테마 전환 (어두운/밝은)"
   },
   "Comfy_Undo": {
     "label": "실행 취소"
   },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "로그인 대화상자 열기"
+  },
+  "Comfy_User_SignOut": {
+    "label": "로그아웃"
+  },
   "Workspace_CloseWorkflow": {
-    "label": "현재 워크플로우 닫기"
+    "label": "현재 워크플로 닫기"
   },
   "Workspace_NextOpenedWorkflow": {
     "label": "다음 열린 워크플로"
@@ -184,6 +256,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "로그 하단 패널 토글"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "필수 하단 패널 전환"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "보기 컨트롤 하단 패널 전환"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "키 바인딩 대화상자 표시"
   },
   "Workspace_ToggleFocusMode": {
     "label": "포커스 모드 토글"

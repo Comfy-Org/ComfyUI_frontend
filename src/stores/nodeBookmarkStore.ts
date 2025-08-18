@@ -1,9 +1,9 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import type { TreeNode } from 'primevue/treenode'
 import { computed } from 'vue'
 
 import type { BookmarkCustomization } from '@/schemas/apiSchema'
+import type { TreeNode } from '@/types/treeExplorerTypes'
 
 import { useNodeDefStore } from './nodeDefStore'
 import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'
@@ -30,15 +30,15 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const isBookmarked = (node: ComfyNodeDefImpl) =>
     bookmarksSet.value.has(node.nodePath) || bookmarksSet.value.has(node.name)
 
-  const toggleBookmark = (node: ComfyNodeDefImpl) => {
+  const toggleBookmark = async (node: ComfyNodeDefImpl) => {
     if (isBookmarked(node)) {
-      deleteBookmark(node.nodePath)
+      await deleteBookmark(node.nodePath)
       // Delete the bookmark at the top level if it exists
       // This is used for clicking the bookmark button in the node library, i.e.
       // the node is inside original/standard node library tree node
-      deleteBookmark(node.name)
+      await deleteBookmark(node.name)
     } else {
-      addBookmark(node.name)
+      await addBookmark(node.name)
     }
   }
 
@@ -62,30 +62,28 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     return buildNodeDefTree(bookmarkNodes)
   }
 
-  const addBookmark = (nodePath: string) => {
-    settingStore.set(BOOKMARK_SETTING_ID, [...bookmarks.value, nodePath])
+  const addBookmark = async (nodePath: string) => {
+    await settingStore.set(BOOKMARK_SETTING_ID, [...bookmarks.value, nodePath])
   }
 
-  const deleteBookmark = (nodePath: string) => {
-    settingStore.set(
+  const deleteBookmark = async (nodePath: string) => {
+    await settingStore.set(
       BOOKMARK_SETTING_ID,
       bookmarks.value.filter((b: string) => b !== nodePath)
     )
   }
 
-  const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
+  const addNewBookmarkFolder = async (
+    parent: ComfyNodeDefImpl | undefined,
+    folderName: string
+  ) => {
     const parentPath = parent ? parent.nodePath : ''
-    let newFolderPath = parentPath + 'New Folder/'
-    let suffix = 1
-    while (bookmarks.value.some((b: string) => b.startsWith(newFolderPath))) {
-      newFolderPath = parentPath + `New Folder ${suffix}/`
-      suffix++
-    }
-    addBookmark(newFolderPath)
+    const newFolderPath = parentPath + folderName + '/'
+    await addBookmark(newFolderPath)
     return newFolderPath
   }
 
-  const renameBookmarkFolder = (
+  const renameBookmarkFolder = async (
     folderNode: ComfyNodeDefImpl,
     newName: string
   ) => {
@@ -109,7 +107,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       throw new Error(`Folder name "${newNodePath}" already exists`)
     }
 
-    settingStore.set(
+    await settingStore.set(
       BOOKMARK_SETTING_ID,
       bookmarks.value.map((b: string) =>
         b.startsWith(folderNode.nodePath)
@@ -117,28 +115,28 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
           : b
       )
     )
-    renameBookmarkCustomization(folderNode.nodePath, newNodePath)
+    await renameBookmarkCustomization(folderNode.nodePath, newNodePath)
   }
 
-  const deleteBookmarkFolder = (folderNode: ComfyNodeDefImpl) => {
+  const deleteBookmarkFolder = async (folderNode: ComfyNodeDefImpl) => {
     if (!folderNode.isDummyFolder) {
       throw new Error('Cannot delete non-folder node')
     }
-    settingStore.set(
+    await settingStore.set(
       BOOKMARK_SETTING_ID,
       bookmarks.value.filter(
         (b: string) =>
           b !== folderNode.nodePath && !b.startsWith(folderNode.nodePath)
       )
     )
-    deleteBookmarkCustomization(folderNode.nodePath)
+    await deleteBookmarkCustomization(folderNode.nodePath)
   }
 
   const bookmarksCustomization = computed<
     Record<string, BookmarkCustomization>
   >(() => settingStore.get('Comfy.NodeLibrary.BookmarksCustomization'))
 
-  const updateBookmarkCustomization = (
+  const updateBookmarkCustomization = async (
     nodePath: string,
     customization: BookmarkCustomization
   ) => {
@@ -155,23 +153,23 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
     // If the customization is empty, remove it entirely
     if (Object.keys(newCustomization).length === 0) {
-      deleteBookmarkCustomization(nodePath)
+      await deleteBookmarkCustomization(nodePath)
     } else {
-      settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+      await settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
         ...bookmarksCustomization.value,
         [nodePath]: newCustomization
       })
     }
   }
 
-  const deleteBookmarkCustomization = (nodePath: string) => {
-    settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+  const deleteBookmarkCustomization = async (nodePath: string) => {
+    await settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
       ...bookmarksCustomization.value,
       [nodePath]: undefined
     } as Record<string, BookmarkCustomization>)
   }
 
-  const renameBookmarkCustomization = (
+  const renameBookmarkCustomization = async (
     oldNodePath: string,
     newNodePath: string
   ) => {
@@ -180,7 +178,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       updatedCustomization[newNodePath] = updatedCustomization[oldNodePath]
       delete updatedCustomization[oldNodePath]
     }
-    settingStore.set(
+    await settingStore.set(
       'Comfy.NodeLibrary.BookmarksCustomization',
       updatedCustomization
     )
