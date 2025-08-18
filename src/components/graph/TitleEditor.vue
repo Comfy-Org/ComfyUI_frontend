@@ -24,7 +24,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useGraphMutationService } from '@/services/graphMutationService'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -42,19 +42,23 @@ const inputStyle = computed<CSSProperties>(() => ({
 const titleEditorStore = useTitleEditorStore()
 const canvasStore = useCanvasStore()
 const previousCanvasDraggable = ref(true)
+const graphMutationService = useGraphMutationService()
 
-const onEdit = (newValue: string) => {
+const onEdit = async (newValue: string) => {
   if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
     const trimmedTitle = newValue.trim()
-    titleEditorStore.titleEditorTarget.title = trimmedTitle
-
-    // If this is a subgraph node, sync the runtime subgraph name for breadcrumb reactivity
     const target = titleEditorStore.titleEditorTarget
-    if (target instanceof LGraphNode && target.isSubgraphNode?.()) {
-      target.subgraph.name = trimmedTitle
-    }
 
-    app.graph.setDirtyCanvas(true, true)
+    if (target instanceof LGraphNode) {
+      await graphMutationService.updateNodeTitle(target.id, trimmedTitle)
+
+      // If this is a subgraph node, sync the runtime subgraph name for breadcrumb reactivity
+      if (target.isSubgraphNode?.()) {
+        target.subgraph.name = trimmedTitle
+      }
+    } else if (target instanceof LGraphGroup) {
+      await graphMutationService.updateGroupTitle(target.id, trimmedTitle)
+    }
   }
   showInput.value = false
   titleEditorStore.titleEditorTarget = null
