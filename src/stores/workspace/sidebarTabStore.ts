@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useOutputExplorerSidebarTab } from '@/composables/sidebarTabs/outputExplorerSidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import { useOutputExplorerSidebarTab } from '@/composables/sidebarTabs/outputExplorerSidebarTab'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { useWorkflowsSidebarTab } from '@/composables/sidebarTabs/useWorkflowsSidebarTab'
 import { t, te } from '@/i18n'
@@ -93,7 +93,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
-<<<<<<< HEAD
+    registerSidebarTab(useOutputExplorerSidebarTab())
 
     const menuStore = useMenuItemStore()
 
@@ -113,9 +113,6 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       ['View'],
       ['Comfy.Canvas.ZoomIn', 'Comfy.Canvas.ZoomOut', 'Comfy.Canvas.FitView']
     )
-=======
-    registerSidebarTab(useOutputExplorerSidebarTab())
->>>>>>> e9f3e42a (Add output explorer)
   }
 
   return {

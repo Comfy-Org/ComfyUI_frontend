@@ -42,7 +42,7 @@
               >
                 <span v-if="index === 0" :class="['mr-2 pi', row.icon]"></span>
                 <span class="whitespace-nowrap overflow-hidden text-ellipsis">
-                  {{ row._display[item.key] }}
+                  {{ (row._display as any)[item.key] }}
                 </span>
               </div>
             </div>
@@ -73,9 +73,7 @@ type Item = {
   size: number
 }
 
-type RecordString<T> = {
-  [key in keyof T]: T[key]
-}
+type RecordString<T> = Record<keyof T, any>
 
 type ResolvedItem<T> = T & {
   icon: string
@@ -137,23 +135,29 @@ const sortField = ref('name')
 
 const iconMapLegacy = (icon: string) => {
   const prefix = 'pi-'
-  const legacy = {
+  const legacy: Record<string, string> = {
     audio: 'headphones'
   }
   return prefix + (legacy[icon] || icon)
 }
 
 const renderedItems = computed(() => {
-  const columnRenderText = columns.value.reduce((acc, column) => {
-    acc[column.key] = column.renderText
-    return acc
-  }, {})
+  const columnRenderText = columns.value.reduce(
+    (acc, column) => {
+      acc[column.key] = column.renderText
+      return acc
+    },
+    {} as Record<string, (val: any, row: Item) => string>
+  )
 
   return props.items.map((item) => {
-    const display = Object.entries(item).reduce((acc, [key, value]) => {
-      acc[key] = columnRenderText[key]?.(value, item) ?? value
-      return acc
-    }, {} as RecordString<Item>)
+    const display = Object.entries(item).reduce(
+      (acc, [key, value]) => {
+        acc[key] = columnRenderText[key]?.(value, item) ?? value
+        return acc
+      },
+      {} as Record<string, any>
+    )
     return { ...item, icon: iconMapLegacy(item.type), _display: display }
   })
 })
@@ -173,8 +177,8 @@ const sortedItems = computed(() => {
   const direction = sortDirection.value === 'asc' ? 1 : -1
 
   const sorting = (a: ResolvedItem<Item>, b: ResolvedItem<Item>) => {
-    const aValue = a[sortField.value]
-    const bValue = b[sortField.value]
+    const aValue = (a as any)[sortField.value]
+    const bValue = (b as any)[sortField.value]
 
     const result =
       typeof aValue === 'string'

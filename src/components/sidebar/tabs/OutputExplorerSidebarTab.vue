@@ -2,25 +2,25 @@
   <SidebarTabTemplate :title="$t('sideToolbar.outputExplorer')">
     <template #tool-buttons>
       <Button
+        v-tooltip.bottom="$t('g.back')"
         icon="pi pi-arrow-up"
-        @click="handleBackParentFolder"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('g.back')"
         :disabled="!currentFolder"
+        @click="handleBackParentFolder"
       />
       <Button
+        v-tooltip.bottom="$t('g.refresh')"
         icon="pi pi-refresh"
-        @click="loadFolderItems"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('g.refresh')"
+        @click="loadFolderItems"
       />
     </template>
     <template #header>
       <SearchBox
-        class="model-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
+        class="model-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.searchIn', ['output'])"
         @search="handleSearch"
       />
@@ -141,14 +141,22 @@ const itemsCount = computed(() => {
 
 const renderedItems = computed(() => {
   const query = filterContent.value
+  let items = currentFolderItems.value
 
-  if (!query) {
-    return currentFolderItems.value
+  if (query) {
+    items = items.filter((item) => {
+      return item.name.toLowerCase().includes(query.toLowerCase())
+    })
   }
 
-  return currentFolderItems.value.filter((item) => {
-    return item.name.toLowerCase().includes(query.toLowerCase())
-  })
+  // Convert OutputItem to Item format expected by ListExplorer
+  return items.map((item) => ({
+    key: item.key,
+    name: item.name,
+    type: item.type,
+    size: item.size,
+    modifyTime: item.modifyTime
+  }))
 })
 
 const handleSearch = async (query: string) => {
@@ -214,11 +222,17 @@ const handleBackParentFolder = async () => {
   await loadFolderItems()
 }
 
-const handleDbClickItem = (item: OutputItem, event: MouseEvent) => {
-  if (item.type === 'folder') {
-    openFolder(item, folderPaths.value.length)
+const handleDbClickItem = (item: any, _event: MouseEvent) => {
+  // Find the original OutputItem from currentFolderItems
+  const originalItem = currentFolderItems.value.find(
+    (outputItem) => outputItem.key === item.key
+  )
+  if (!originalItem) return
+
+  if (originalItem.type === 'folder') {
+    void openFolder(originalItem, folderPaths.value.length)
   } else {
-    openItemPreview(item)
+    openItemPreview(originalItem)
   }
 }
 

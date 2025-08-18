@@ -703,5 +703,79 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "WEBCAM": "WEBCAM"
+  },
+  "auth": {
+    "apiKey": {
+      "title": "API Key",
+      "label": "API Key",
+      "description": "Use your Comfy API key to enable API Nodes",
+      "placeholder": "Enter your API Key",
+      "error": "Invalid API Key",
+      "storageFailed": "Failed to store API Key",
+      "storageFailedDetail": "Please try again.",
+      "stored": "API Key stored",
+      "storedDetail": "Your API Key has been stored successfully",
+      "cleared": "API Key cleared",
+      "clearedDetail": "Your API Key has been cleared successfully",
+      "invalid": "Invalid API Key",
+      "invalidDetail": "Please enter a valid API Key",
+      "helpText": "Need an API key?",
+      "generateKey": "Get one here",
+      "whitelistInfo": "About non-whitelisted sites"
+    },
+    "login": {
+      "title": "Log in to your account",
+      "useApiKey": "Comfy API Key",
+      "signInOrSignUp": "Sign In / Sign Up",
+      "forgotPasswordError": "Failed to send password reset email",
+      "passwordResetSent": "Password reset email sent",
+      "passwordResetSentDetail": "Please check your email for a link to reset your password.",
+      "newUser": "New here?",
+      "userAvatar": "User Avatar",
+      "signUp": "Sign up",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Enter the same password again",
+      "forgotPassword": "Forgot password?",
+      "loginButton": "Log in",
+      "orContinueWith": "Or continue with",
+      "loginWithGoogle": "Log in with Google",
+      "loginWithGithub": "Log in with Github",
+      "termsText": "By clicking \"Next\" or \"Sign Up\", you agree to our",
+      "termsLink": "Terms of Use",
+      "andText": "and",
+      "privacyLink": "Privacy Policy",
+      "success": "Login successful",
+      "failed": "Login failed",
+      "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
+      "questionsContactPrefix": "Questions? Contact us at",
+      "noAssociatedUser": "There is no Comfy user associated with the provided API key"
+    },
+    "signup": {
+      "title": "Create an account",
+      "alreadyHaveAccount": "Already have an account?",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter new password",
+      "signUpButton": "Sign up",
+      "signIn": "Sign in",
+      "signUpWithGoogle": "Sign up with Google",
+      "signUpWithGithub": "Sign up with Github",
+      "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
+      "personalDataConsentLabel": "I agree to the processing of my personal data."
+    },
+    "signOut": {
+      "signOut": "Log Out",
+      "success": "Signed out successfully",
+      "successDetail": "You have been signed out of your account."
+    },
+    "passwordUpdate": {
+      "success": "Password Updated",
+      "successDetail": "Your password has been updated successfully"
+    }
   }
 }

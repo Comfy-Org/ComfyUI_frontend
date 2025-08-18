@@ -19,7 +19,7 @@
 
 <script setup lang="ts" generic="T">
 import { useElementSize, useScroll } from '@vueuse/core'
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit'
 import { type CSSProperties, computed, ref } from 'vue'
 
 type Item = T & { key: string }
