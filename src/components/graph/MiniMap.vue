@@ -36,6 +36,7 @@
         size="small"
         text
         severity="secondary"
+        data-testid="close-minmap-button"
         @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
         <template #icon>

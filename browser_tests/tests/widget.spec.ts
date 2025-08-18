@@ -256,6 +256,7 @@ test.describe('Animated image widget', () => {
     await comfyPage.dragAndDropFile('animated_webp.webp', {
       dropPosition: { x, y }
     })
+    await comfyPage.page.waitForTimeout(200)
 
     // Expect the filename combo value to be updated
     const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)
