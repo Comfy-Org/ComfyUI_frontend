@@ -15,7 +15,6 @@ import { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
-import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -25,6 +24,10 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import {
+  ManagerUIState,
+  useManagerStateStore
+} from '@/stores/managerStateStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -717,27 +720,36 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-objects-column',
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
-      function: async () => {
-        const { is_legacy_manager_ui } =
-          (await useComfyManagerService().isLegacyManagerUI()) ?? {}
+      function: () => {
+        const managerStore = useManagerStateStore()
+        const state = managerStore.managerUIState
 
-        if (is_legacy_manager_ui === true) {
-          try {
-            await useCommandStore().execute(
-              'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
-            )
-          } catch (error) {
-            console.error('error', error)
-            useToastStore().add({
+        switch (state) {
+          case ManagerUIState.DISABLED:
+            toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('manager.legacyMenuNotAvailable'),
+              detail: t('manager.notAvailable'),
               life: 3000
             })
+            break
+
+          case ManagerUIState.LEGACY_UI:
+            useCommandStore()
+              .execute('Comfy.Manager.Menu.ToggleVisibility')
+              .catch(() => {
+                toastStore.add({
+                  severity: 'error',
+                  summary: t('g.error'),
+                  detail: t('manager.legacyMenuNotAvailable'),
+                  life: 3000
+                })
+              })
+            break
+
+          case ManagerUIState.NEW_UI:
             dialogService.showManagerDialog()
-          }
-        } else {
-          dialogService.showManagerDialog()
+            break
         }
       }
     },
