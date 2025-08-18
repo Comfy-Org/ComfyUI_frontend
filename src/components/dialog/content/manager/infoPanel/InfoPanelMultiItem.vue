@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed, onUnmounted, provide } from 'vue'
+import { computed, onUnmounted, provide, toRef } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -64,9 +64,9 @@ import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoP
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { usePackageSelection } from '@/composables/usePackageSelection'
+import { usePackageStatus } from '@/composables/usePackageStatus'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetail } from '@/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/types/importFailedTypes'
@@ -75,22 +75,21 @@ const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]
 }>()
 
-const managerStore = useComfyManagerStore()
-const conflictDetectionStore = useConflictDetectionStore()
+const nodePacksRef = toRef(() => nodePacks)
+
+// Use new composables for cleaner code
+const {
+  installedPacks,
+  notInstalledPacks,
+  isAllInstalled,
+  isNoneInstalled,
+  isMixed
+} = usePackageSelection(nodePacksRef)
+
+const { hasImportFailed, overallStatus } = usePackageStatus(nodePacksRef)
+
 const { checkNodeCompatibility } = useConflictDetection()
-
 const { getNodeDefs } = useComfyRegistryStore()
-
-// Check if any package has import failed status
-const hasImportFailed = computed(() => {
-  return nodePacks.some((pack) => {
-    if (!pack.id) return false
-    const conflicts = conflictDetectionStore.getConflictsForPackageByID(pack.id)
-    return (
-      conflicts?.conflicts?.some((c) => c.type === 'import_failed') || false
-    )
-  })
-})
 
 // Provide import failed context for PackStatusMessage
 provide(ImportFailedKey, {
@@ -98,28 +97,7 @@ provide(ImportFailedKey, {
   showImportFailedDialog: () => {} // No-op for multi-selection
 })
 
-// Check installation status
-const installedPacks = computed(() =>
-  nodePacks.filter((pack) => managerStore.isPackInstalled(pack.id))
-)
-
-const notInstalledPacks = computed(() =>
-  nodePacks.filter((pack) => !managerStore.isPackInstalled(pack.id))
-)
-
-const isAllInstalled = computed(
-  () => installedPacks.value.length === nodePacks.length
-)
-
-const isNoneInstalled = computed(
-  () => notInstalledPacks.value.length === nodePacks.length
-)
-
-const isMixed = computed(
-  () => installedPacks.value.length > 0 && notInstalledPacks.value.length > 0
-)
-
-// Check for conflicts in not-installed packages - store per package
+// Check for conflicts in not-installed packages - keep original logic but simplified
 const packageConflicts = computed(() => {
   const conflictsByPackage = new Map<string, ConflictDetail[]>()
 
@@ -150,39 +128,6 @@ const conflictInfo = computed<ConflictDetail[]>(() => {
 })
 
 const hasConflicts = computed(() => conflictInfo.value.length > 0)
-
-// Determine the most important status from all selected packages
-const overallStatus = computed(() => {
-  // Check for import failed first (highest priority for installed packages)
-  if (hasImportFailed.value) {
-    // Import failed doesn't have a specific status enum, so we return active
-    // but the PackStatusMessage will handle it via hasImportFailed prop
-    return 'NodeVersionStatusActive' as components['schemas']['NodeVersionStatus']
-  }
-
-  // Priority order: banned > deleted > flagged > pending > active
-  const statusPriority = [
-    'NodeStatusBanned',
-    'NodeVersionStatusBanned',
-    'NodeStatusDeleted',
-    'NodeVersionStatusDeleted',
-    'NodeVersionStatusFlagged',
-    'NodeVersionStatusPending',
-    'NodeStatusActive',
-    'NodeVersionStatusActive'
-  ]
-
-  for (const priorityStatus of statusPriority) {
-    if (nodePacks.some((pack) => pack.status === priorityStatus)) {
-      return priorityStatus as
-        | components['schemas']['NodeStatus']
-        | components['schemas']['NodeVersionStatus']
-    }
-  }
-
-  // Default to active if no specific status found
-  return 'NodeVersionStatusActive' as components['schemas']['NodeVersionStatus']
-})
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
   if (!pack.latest_version?.version) return []
