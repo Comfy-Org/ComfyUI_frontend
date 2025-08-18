@@ -27,25 +27,41 @@ export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
   }
 
   override resolveInput(slot: number) {
+    // Check if this group node is inside a subgraph (unsupported)
+    if (this.id.split(':').length > 2) {
+      throw new Error(
+        'Group nodes inside subgraphs are not supported. Please convert the group node to a subgraph instead.'
+      )
+    }
+
     const inputNode = this.node.getInputNode(slot)
     if (!inputNode) return
 
     const link = this.node.getInputLink(slot)
     if (!link) throw new Error('Failed to get input link')
 
-    const id = String(inputNode.id).split(':').at(-1)
-    if (id === undefined) throw new Error('Invalid input node id')
+    const inputNodeId = String(inputNode.id)
 
-    const inputNodeDto = this.nodesByExecutionId?.get(id)
+    // Try to find the node using the full ID first (for nodes outside the group)
+    let inputNodeDto = this.nodesByExecutionId?.get(inputNodeId)
+
+    // If not found, try with just the last part of the ID (for nodes inside the group)
+    if (!inputNodeDto) {
+      const id = inputNodeId.split(':').at(-1)
+      if (id !== undefined) {
+        inputNodeDto = this.nodesByExecutionId?.get(id)
+      }
+    }
+
     if (!inputNodeDto) {
       throw new Error(
-        `Failed to get input node ${id} for group node child ${this.id} with slot ${slot}`
+        `Failed to get input node ${inputNodeId} for group node child ${this.id} with slot ${slot}`
       )
     }
 
     return {
       node: inputNodeDto,
-      origin_id: String(inputNode.id),
+      origin_id: inputNodeId,
       origin_slot: link.origin_slot
     }
   }

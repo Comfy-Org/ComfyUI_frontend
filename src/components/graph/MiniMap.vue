@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="visible && initialized"
+    ref="minimapRef"
     class="minimap-main-container flex absolute bottom-[20px] right-[90px] z-[1000]"
   >
     <MiniMapPanel
@@ -54,15 +55,13 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
-import { useMinimap } from '@/composables/useMinimap'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 
-const minimap = useMinimap()
-const canvasStore = useCanvasStore()
+const minimapRef = ref<HTMLDivElement>()
 
 const {
   initialized,
@@ -80,13 +79,13 @@ const {
   renderBypass,
   renderError,
   updateOption,
-  init,
   destroy,
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
-  handleWheel
-} = minimap
+  handleWheel,
+  setMinimapRef
+} = useMinimap()
 
 const showOptionsPanel = ref(false)
 
@@ -94,19 +93,9 @@ const toggleOptionsPanel = () => {
   showOptionsPanel.value = !showOptionsPanel.value
 }
 
-watch(
-  () => canvasStore.canvas,
-  async (canvas) => {
-    if (canvas && !initialized.value) {
-      await init()
-    }
-  },
-  { immediate: true }
-)
-
-onMounted(async () => {
-  if (canvasStore.canvas) {
-    await init()
+onMounted(() => {
+  if (minimapRef.value) {
+    setMinimapRef(minimapRef.value)
   }
 })
 
