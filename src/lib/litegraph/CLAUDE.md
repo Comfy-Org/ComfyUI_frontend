@@ -27,18 +27,20 @@
 
 # Testing Guidelines
 
+**NOTE**: Litegraph tests have been migrated to `tests-ui/tests/litegraph/` for better organization.
+
 ## Avoiding Circular Dependencies in Tests
 
 **CRITICAL**: When writing tests for subgraph-related code, always import from the barrel export to avoid circular dependency issues:
 
 ```typescript
 // ✅ CORRECT - Use barrel import
-import { LGraph, Subgraph, SubgraphNode } from "@/litegraph"
+import { LGraph, Subgraph, SubgraphNode } from "@/lib/litegraph/src/litegraph"
 
 // ❌ WRONG - Direct imports cause circular dependency
-import { LGraph } from "@/LGraph"
-import { Subgraph } from "@/subgraph/Subgraph" 
-import { SubgraphNode } from "@/subgraph/SubgraphNode"
+import { LGraph } from "@/lib/litegraph/src/LGraph"
+import { Subgraph } from "@/lib/litegraph/src/subgraph/Subgraph" 
+import { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
 ```
 
 **Root cause**: `LGraph` and `Subgraph` have a circular dependency:
