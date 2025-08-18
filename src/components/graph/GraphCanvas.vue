@@ -754,6 +754,7 @@ onMounted(async () => {
 
   // Set up a one-time listener for when the first node is added
   // This handles the case where Vue nodes are enabled but the graph starts empty
+  // TODO: Replace this with a reactive graph mutations observer when available
   if (
     transformPaneEnabled.value &&
     comfyApp.graph &&
