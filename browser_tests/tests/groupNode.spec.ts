@@ -137,7 +137,9 @@ test.describe('Group Node', () => {
   test('Preserves hidden input configuration when containing duplicate node types', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('groupnodes/group_node_identical_nodes_hidden_inputs')
+    await comfyPage.loadWorkflow(
+      'groupnodes/group_node_identical_nodes_hidden_inputs'
+    )
     await comfyPage.nextFrame()
 
     const groupNodeId = 19
