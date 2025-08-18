@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef } from 'vue'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraphCanvas,
   LGraphGroup,
@@ -38,17 +38,29 @@ export const useCanvasStore = defineStore('canvas', () => {
   const appScalePercentage = ref(100)
 
   // Set up scale synchronization when canvas is available
+  let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
+    undefined
   const initScaleSync = () => {
     if (app.canvas?.ds) {
       // Initial sync
-      appScalePercentage.value = Math.round(app.canvas.ds.scale * 10)
+      originalOnChanged = app.canvas.ds.onChanged
+      appScalePercentage.value = Math.round(app.canvas.ds.scale * 100)
 
       // Set up continuous sync
       app.canvas.ds.onChanged = () => {
         if (app.canvas?.ds?.scale) {
-          appScalePercentage.value = Math.round(app.canvas.ds.scale * 10)
+          appScalePercentage.value = Math.round(app.canvas.ds.scale * 100)
         }
+        // Call original handler if exists
+        originalOnChanged?.(app.canvas.ds.scale, app.canvas.ds.offset)
       }
+    }
+  }
+
+  const cleanupScaleSync = () => {
+    if (app.canvas?.ds) {
+      app.canvas.ds.onChanged = originalOnChanged
+      originalOnChanged = undefined
     }
   }
 
@@ -63,13 +75,13 @@ export const useCanvasStore = defineStore('canvas', () => {
 
   /**
    * Sets the canvas zoom level from a percentage value
-   * @param percentage - Zoom percentage value (1-100, where 100 = 100% zoom)
+   * @param percentage - Zoom percentage value (1-1000, where 1000 = 1000% zoom)
    */
   const setAppZoomFromPercentage = (percentage: number) => {
     if (!app.canvas?.ds || percentage <= 0) return
 
-    // Convert percentage to scale (100% = 10.0 scale)
-    const newScale = percentage / 10
+    // Convert percentage to scale (1000% = 10.0 scale)
+    const newScale = percentage / 100
     const ds = app.canvas.ds
 
     ds.changeScale(
@@ -79,7 +91,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     app.canvas.setDirty(true, true)
 
     // Update reactive value immediately for UI consistency
-    appScalePercentage.value = Math.round(newScale * 10)
+    appScalePercentage.value = Math.round(newScale * 100)
   }
 
   return {
@@ -92,6 +104,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,
-    initScaleSync
+    initScaleSync,
+    cleanupScaleSync
   }
 })

@@ -1,16 +1,16 @@
 <template>
   <div>
-    <ZoomControlsModal :visible="showZoomPopup" />
+    <ZoomControlsModal :visible="isModalVisible" />
 
     <!-- Backdrop -->
     <div
       v-if="hasActivePopup"
       class="fixed inset-0 z-[1000]"
-      @click="closePopups"
+      @click="hideModal"
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical p-1 absolute bottom-[0px] right-[90px] z-[1000]"
+      class="p-buttongroup-vertical p-1 absolute bottom-[0px] right-[10px] md:right-[90px] z-[1000]"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
@@ -69,7 +69,7 @@
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
         :style="stringifiedMinimapStyles.buttonStyles"
-        @click="toggleZoomPopup"
+        @click="toggleModal"
       >
         <span class="inline-flex text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
@@ -114,11 +114,12 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useMinimap } from '@/composables/useMinimap'
+import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -133,12 +134,8 @@ const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
 const minimap = useMinimap()
-
-// Popup state
-const showZoomPopup = ref(false)
-
-// Computed property for backdrop visibility
-const hasActivePopup = computed(() => showZoomPopup.value)
+const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
+  useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
   const buttonGroupKeys = ['backgroundColor', 'borderRadius', 'width']
@@ -205,7 +202,7 @@ const handButtonClass = computed(() =>
 
 const zoomButtonClass = computed(() => [
   '!w-16',
-  showZoomPopup.value
+  isModalVisible.value
     ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
     : '',
   'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]'
@@ -239,17 +236,12 @@ const linkVisibilityAriaLabel = computed(() =>
     : t('graphCanvasMenu.hideLinks')
 )
 
-const toggleZoomPopup = () => {
-  showZoomPopup.value = !showZoomPopup.value
-}
-
-const closePopups = () => {
-  showZoomPopup.value = false
-}
-
 onMounted(() => {
-  // Initialize scale synchronization
   canvasStore.initScaleSync()
+})
+
+onUnmounted(() => {
+  canvasStore.cleanupScaleSync()
 })
 </script>
 

@@ -118,7 +118,7 @@
             ref="zoomInput"
             :default-value="canvasStore.appScalePercentage"
             :min="1"
-            :max="100"
+            :max="1000"
             :show-buttons="false"
             :use-grouping="false"
             :unstyled="true"
@@ -168,7 +168,7 @@ const minimapToggleText = computed(() =>
 
 const applyZoom = (val: InputNumberInputEvent) => {
   const inputValue = val.value as number
-  if (isNaN(inputValue) || inputValue < 1 || inputValue > 100) {
+  if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
     return
   }
   canvasStore.setAppZoomFromPercentage(inputValue)
