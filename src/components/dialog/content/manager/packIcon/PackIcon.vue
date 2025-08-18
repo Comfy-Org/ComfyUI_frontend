@@ -13,7 +13,7 @@
       <!-- blur background -->
       <div
         v-if="imgSrc"
-        class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+        class="absolute inset-0 bg-cover bg-center bg-no-repeat"
         :style="{
           backgroundImage: `url(${imgSrc})`,
           filter: 'blur(10px)'

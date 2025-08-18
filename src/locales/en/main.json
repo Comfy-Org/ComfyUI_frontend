@@ -204,6 +204,7 @@
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All Missing Nodes",
     "packsSelected": "packs selected",
+    "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
     "status": {
       "active": "Active",
       "pending": "Pending",
