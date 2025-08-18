@@ -13,7 +13,7 @@
 
 2. **JavaScript Extensions** - Frontend functionality that can be:
    - Pure JavaScript extensions (implement `ComfyExtension` interface)
-   - JavaScript components of custom nodes (in `/web/` or `/js/` folders)
+   - JavaScript components of custom nodes (in `/web/` or `/js/` folders, or custom directories specified via `WEB_DIRECTORY` export in `__init__.py` [see docs](https://docs.comfy.org/custom-nodes/backend/lifecycle#web-directory))
    - Core extensions (built into frontend at `/src/extensions/core/` - see [Core Extensions Documentation](./core.md))
 
 ### How Extensions Load
@@ -107,7 +107,13 @@ Build the frontend for full functionality:
 ```bash
 npm run build
 ```
-Note: Slower iteration, no hot reload
+
+For faster iteration during development, use watch mode:
+```bash
+npx vite build --watch
+```
+
+Note: Watch mode provides faster rebuilds than full builds, but still no hot reload
 
 ### Option 3: Test Against Cloud/Staging
 

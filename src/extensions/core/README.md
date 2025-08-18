@@ -19,6 +19,8 @@ This directory contains built-in extensions that ship with ComfyUI, including:
 - **Text Processing**: dynamicPrompts, editAttention
 - **Platform Support**: electronAdapter
 
+and more.
+
 ## See Also
 
 - [Extension Development Guide](/docs/extensions/development.md) - How to develop extensions
