@@ -15,10 +15,23 @@ export enum ManagerUIState {
 export const useManagerStateStore = defineStore('managerState', () => {
   const managerUIState = ref<ManagerUIState | null>(null)
   const isInitialized = ref(false)
+  let initializationPromise: Promise<void> | null = null
 
-  const initializeManagerState = async () => {
+  const ensureInitialized = async () => {
     if (isInitialized.value) return
 
+    // If already initializing, wait for that to complete
+    if (initializationPromise) {
+      await initializationPromise
+      return
+    }
+
+    // Start initialization
+    initializationPromise = initializeManagerState()
+    await initializationPromise
+  }
+
+  const initializeManagerState = async () => {
     const systemStats = useSystemStatsStore().systemStats
     const { flags } = useFeatureFlags()
     const clientSupportsV4 =
@@ -30,7 +43,14 @@ export const useManagerStateStore = defineStore('managerState', () => {
     } else if (
       systemStats?.system?.argv?.includes('--enable-manager-legacy-ui')
     ) {
-      managerUIState.value = ManagerUIState.LEGACY_UI
+      // Check if legacy manager is actually available
+      try {
+        await useComfyManagerService().isLegacyManagerUI()
+        managerUIState.value = ManagerUIState.LEGACY_UI
+      } catch {
+        // Legacy manager not installed - disable manager
+        managerUIState.value = ManagerUIState.DISABLED
+      }
     } else {
       // Check if we can use new UI
       if (clientSupportsV4 && flags.supportsManagerV4) {
@@ -52,8 +72,14 @@ export const useManagerStateStore = defineStore('managerState', () => {
     isInitialized.value = true
   }
 
+  // Getter that ensures initialization before returning the state
+  const getManagerUIState = async () => {
+    await ensureInitialized()
+    return managerUIState.value
+  }
+
   return {
     managerUIState: readonly(managerUIState),
-    initializeManagerState
+    getManagerUIState
   }
 })

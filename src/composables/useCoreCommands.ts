@@ -720,9 +720,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-objects-column',
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
-      function: () => {
+      function: async () => {
         const managerStore = useManagerStateStore()
-        const state = managerStore.managerUIState
+        const state = await managerStore.getManagerUIState()
 
         switch (state) {
           case ManagerUIState.DISABLED:
