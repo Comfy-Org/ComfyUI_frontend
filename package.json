@@ -41,6 +41,7 @@
     "@trivago/prettier-plugin-sort-imports": "^5.2.0",
     "@types/dompurify": "^3.0.5",
     "@types/fs-extra": "^11.0.4",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^20.14.8",
     "@types/semver": "^7.7.0",
     "@types/three": "^0.169.0",
