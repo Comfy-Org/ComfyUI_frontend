@@ -18,6 +18,7 @@
 import { inject, ref } from 'vue'
 
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -75,15 +76,20 @@ const installAllPacks = async () => {
   if (!nodePacks?.length) return
 
   if (hasConflict && conflictInfo) {
-    const conflictedPackages: ConflictDetectionResult[] = nodePacks.map(
-      (pack) => ({
-        package_id: pack.id || '',
-        package_name: pack.name || '',
-        has_conflict: true,
-        conflicts: conflictInfo || [],
-        is_compatible: false
+    // Check each package individually for conflicts
+    const { checkNodeCompatibility } = useConflictDetection()
+    const conflictedPackages: ConflictDetectionResult[] = nodePacks
+      .map((pack) => {
+        const compatibilityCheck = checkNodeCompatibility(pack)
+        return {
+          package_id: pack.id || '',
+          package_name: pack.name || '',
+          has_conflict: compatibilityCheck.hasConflict,
+          conflicts: compatibilityCheck.conflicts,
+          is_compatible: !compatibilityCheck.hasConflict
+        }
       })
-    )
+      .filter((result) => result.has_conflict) // Only show packages with conflicts
 
     showNodeConflictDialog({
       conflictedPackages,
