@@ -2,10 +2,7 @@
  * Widget renderer composable for Vue node system
  * Maps LiteGraph widget types to Vue components
  */
-import {
-  WidgetType,
-  widgetTypeToComponent
-} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { WidgetType, widgetTypeToComponent } from '../registry/widgetRegistry'
 
 /**
  * Static mapping of LiteGraph widget types to Vue widget component names
