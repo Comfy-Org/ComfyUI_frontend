@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
-vi.mock('@/composables/useMinimap', () => ({
-  useMinimap: vi.fn()
+vi.mock('@/renderer/thumbnail/graphThumbnailRenderer', () => ({
+  createGraphThumbnail: vi.fn()
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -19,13 +19,14 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const { useWorkflowThumbnail } = await import(
-  '@/composables/useWorkflowThumbnail'
+  '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 )
-const { useMinimap } = await import('@/composables/useMinimap')
+const { createGraphThumbnail } = await import(
+  '@/renderer/thumbnail/graphThumbnailRenderer'
+)
 const { api } = await import('@/scripts/api')
 
 describe('useWorkflowThumbnail', () => {
-  let mockMinimapInstance: any
   let workflowStore: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
@@ -39,35 +40,23 @@ describe('useWorkflowThumbnail', () => {
     // Now set up mocks
     vi.clearAllMocks()
 
-    const blob = new Blob()
-
     global.URL.createObjectURL = vi.fn(() => 'data:image/png;base64,test')
     global.URL.revokeObjectURL = vi.fn()
 
     // Mock API responses
     vi.mocked(api.moveUserData).mockResolvedValue({ status: 200 } as Response)
 
-    mockMinimapInstance = {
-      renderMinimap: vi.fn(),
-      canvasRef: {
-        value: {
-          toBlob: vi.fn((cb) => cb(blob))
-        }
-      },
-      width: 250,
-      height: 200
-    }
-
-    vi.mocked(useMinimap).mockReturnValue(mockMinimapInstance)
+    // Default createGraphThumbnail to return test value
+    vi.mocked(createGraphThumbnail).mockReturnValue(
+      'data:image/png;base64,test'
+    )
   })
 
   it('should capture minimap thumbnail', async () => {
     const { createMinimapPreview } = useWorkflowThumbnail()
     const thumbnail = await createMinimapPreview()
 
-    expect(useMinimap).toHaveBeenCalledOnce()
-    expect(mockMinimapInstance.renderMinimap).toHaveBeenCalledOnce()
-
+    expect(createGraphThumbnail).toHaveBeenCalledOnce()
     expect(thumbnail).toBe('data:image/png;base64,test')
   })
 
@@ -161,6 +150,9 @@ describe('useWorkflowThumbnail', () => {
     // Reset the mock to track new calls and create different URL
     vi.clearAllMocks()
     global.URL.createObjectURL = vi.fn(() => 'data:image/png;base64,test2')
+    vi.mocked(createGraphThumbnail).mockReturnValue(
+      'data:image/png;base64,test2'
+    )
 
     // Store second thumbnail for same workflow - should revoke the first URL
     await storeThumbnail(mockWorkflow)

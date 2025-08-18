@@ -40,7 +40,7 @@ import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import { useWorkflowThumbnail } from '@/composables/useWorkflowThumbnail'
+import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { useWorkflowService } from '@/services/workflowService'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'

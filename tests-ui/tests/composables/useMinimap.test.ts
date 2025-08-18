@@ -3,28 +3,39 @@ import { nextTick } from 'vue'
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
+const triggerRAF = async () => {
+  // Trigger all RAF callbacks
+  Object.values(rafCallbacks).forEach((cb) => cb?.())
+  await flushPromises()
+}
+
 const mockPause = vi.fn()
 const mockResume = vi.fn()
 
-vi.mock('@vueuse/core', () => {
-  const callbacks: Record<string, () => void> = {}
-  let callbackId = 0
+const rafCallbacks: Record<string, () => void> = {}
+let rafCallbackId = 0
 
+vi.mock('@vueuse/core', () => {
   return {
     useRafFn: vi.fn((callback, options) => {
-      const id = callbackId++
-      callbacks[id] = callback
+      const id = rafCallbackId++
+      rafCallbacks[id] = callback
 
       if (options?.immediate !== false) {
         void Promise.resolve().then(() => callback())
       }
 
+      const resumeFn = vi.fn(() => {
+        mockResume()
+        // Execute the RAF callback immediately when resumed
+        if (rafCallbacks[id]) {
+          rafCallbacks[id]()
+        }
+      })
+
       return {
         pause: mockPause,
-        resume: vi.fn(() => {
-          mockResume()
-          void Promise.resolve().then(() => callbacks[id]?.())
-        })
+        resume: resumeFn
       }
     }),
     useThrottleFn: vi.fn((callback) => {
@@ -142,7 +153,9 @@ vi.mock('@/stores/workflowStore', () => ({
   }))
 }))
 
-const { useMinimap } = await import('@/composables/useMinimap')
+const { useMinimap } = await import(
+  '@/renderer/extensions/minimap/composables/useMinimap'
+)
 const { api } = await import('@/scripts/api')
 
 describe('useMinimap', () => {
@@ -425,7 +438,19 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // Force initial render
+      minimap.renderMinimap()
+
+      // Force a render by triggering a graph change
+      mockGraph._nodes.push({
+        id: 'new-node',
+        pos: [150, 150],
+        size: [100, 50]
+      })
+
+      // Trigger RAF to process changes
+      await triggerRAF()
+      await nextTick()
 
       expect(getContextSpy).toHaveBeenCalled()
       expect(getContextSpy).toHaveBeenCalledWith('2d')
@@ -438,7 +463,15 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // Force initial render
+      minimap.renderMinimap()
+
+      // Force a render by modifying a node position
+      mockGraph._nodes[0].pos = [50, 50]
+
+      // Trigger RAF to process changes
+      await triggerRAF()
+      await nextTick()
 
       const renderingOccurred =
         mockContext2D.clearRect.mock.calls.length > 0 ||
@@ -449,6 +482,15 @@ describe('useMinimap', () => {
         console.log('Minimap initialized:', minimap.initialized.value)
         console.log('Canvas exists:', !!defaultCanvasStore.canvas)
         console.log('Graph exists:', !!defaultCanvasStore.canvas?.graph)
+        console.log(
+          'clearRect calls:',
+          mockContext2D.clearRect.mock.calls.length
+        )
+        console.log('fillRect calls:', mockContext2D.fillRect.mock.calls.length)
+        console.log(
+          'getContext calls:',
+          mockCanvasElement.getContext.mock.calls.length
+        )
       }
 
       expect(renderingOccurred).toBe(true)
@@ -478,6 +520,10 @@ describe('useMinimap', () => {
       minimap.canvasRef.value = mockCanvasElement
 
       await minimap.init()
+
+      // The renderer has a fast path for empty graphs, force it to execute
+      minimap.renderMinimap()
+
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       expect(minimap.initialized.value).toBe(true)
@@ -917,7 +963,7 @@ describe('useMinimap', () => {
   describe('setMinimapRef', () => {
     it('should set minimap reference', () => {
       const minimap = useMinimap()
-      const ref = { value: 'test-ref' }
+      const ref = document.createElement('div')
 
       minimap.setMinimapRef(ref)
 
