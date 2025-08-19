@@ -172,7 +172,7 @@ jobs:
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() # note: use always() to allow results to be upload/report even tests failed.
         with:
           name: playwright-report-${{ matrix.browser }}
           path: ComfyUI_frontend/playwright-report/
@@ -185,7 +185,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }} --compatibility-date=2023-05-18
+          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}
 
       - name: Save deployment info for summary
         if: always()
