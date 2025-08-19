@@ -59,8 +59,8 @@ jobs:
             ---
 
             <img alt='claude-loading' src="https://github.com/user-attachments/assets/5ac382c7-e004-429b-8e35-7feb3e8f9c6f" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
-            **Preparing browser tests across multiple browsers...**
-            At: ${{ steps.current-time.outputs.time }} UTC
+
+            **Preparing browser tests across multiple browsers...** At: ${{ steps.current-time.outputs.time }} UTC
 
             ---
             *This comment will be updated when tests complete*
