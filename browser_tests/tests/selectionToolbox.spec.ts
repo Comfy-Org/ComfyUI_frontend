@@ -254,4 +254,109 @@ test.describe('Selection Toolbox', () => {
       expect(await selectedNode.getProperty('color')).toBeUndefined()
     })
   })
+
+  test.describe('Convert to Subgraph Button', () => {
+    test('hides when only groups are selected', async ({ comfyPage }) => {
+      // Load workflow with a group
+      await comfyPage.loadWorkflow('group/single_empty_group')
+
+      // Click on empty space first to focus it
+      await comfyPage.canvas.click({ position: { x: 200, y: 200 } })
+      await comfyPage.nextFrame()
+
+      // Select all (workflow contains only a single group and no nodes)
+      await comfyPage.page.keyboard.press('Control+A')
+      await comfyPage.nextFrame()
+
+      // Check if selection toolbox is visible
+      const selectionToolbox = comfyPage.page.locator('.selection-toolbox')
+      await expect(selectionToolbox).toBeVisible()
+
+      // The convert to subgraph button should not be visible when only group is selected
+      const convertButton = comfyPage.page.locator(
+        '.selection-toolbox [data-testid="convert-to-subgraph-button"]'
+      )
+      await expect(convertButton).not.toBeVisible()
+    })
+
+    test('does not show when single SubgraphNode is selected', async ({
+      comfyPage
+    }) => {
+      // Load workflow with a single SubgraphNode
+      await comfyPage.loadWorkflow('subgraph/basic-subgraph')
+
+      // Click on empty space first to focus it
+      await comfyPage.canvas.click({ position: { x: 200, y: 200 } })
+      await comfyPage.nextFrame()
+
+      // Select all to select the single subgraph node
+      await comfyPage.page.keyboard.press('Control+A')
+      await comfyPage.nextFrame()
+
+      // The convert to subgraph button should not be visible
+      const convertButton = comfyPage.page.locator(
+        '.selection-toolbox [data-testid="convert-to-subgraph-button"]'
+      )
+      await expect(convertButton).not.toBeVisible()
+    })
+
+    test('shows when multiple SubgraphNodes are selected', async ({
+      comfyPage
+    }) => {
+      // Load workflow with a single SubgraphNode
+      await comfyPage.loadWorkflow('subgraph/basic-subgraph')
+
+      // Click on empty space first to focus it
+      await comfyPage.canvas.click({ position: { x: 200, y: 200 } })
+      await comfyPage.nextFrame()
+
+      // Select all to select the single subgraph node
+      await comfyPage.page.keyboard.press('Control+A')
+      await comfyPage.nextFrame()
+
+      // Copy and paste the subgraph node
+      await comfyPage.ctrlC()
+      await comfyPage.page.mouse.move(100, 100)
+      await comfyPage.ctrlV()
+
+      // Select all to select the two subgraph nodes
+      await comfyPage.page.keyboard.press('Control+A')
+      await comfyPage.nextFrame()
+
+      // The convert to subgraph button should be visible
+      // Use .first() in case there are multiple toolboxes due to copy/paste
+      const convertButton = comfyPage.page
+        .locator(
+          '.selection-toolbox [data-testid="convert-to-subgraph-button"]'
+        )
+        .first()
+      await expect(convertButton).toBeVisible()
+    })
+
+    test('shows when nodes are selected', async ({ comfyPage }) => {
+      // Zoom out to ensure toolbox is not truncated by viewport
+      await comfyPage.page.keyboard.press('Control+Minus')
+      await comfyPage.page.keyboard.press('Control+Minus')
+      await comfyPage.page.keyboard.press('Control+Minus')
+      await comfyPage.nextFrame()
+
+      // Click on empty space first to focus it
+      await comfyPage.canvas.click({ position: { x: 200, y: 200 } })
+      await comfyPage.nextFrame()
+
+      // Select all (workflow contains only a single group and no nodes)
+      await comfyPage.page.keyboard.press('Control+A')
+      await comfyPage.nextFrame()
+
+      // Check if selection toolbox is visible
+      const selectionToolbox = comfyPage.page.locator('.selection-toolbox')
+      await expect(selectionToolbox).toBeVisible()
+
+      // The convert to subgraph button should be visible
+      const convertButton = comfyPage.page.locator(
+        '.selection-toolbox [data-testid="convert-to-subgraph-button"]'
+      )
+      await expect(convertButton).toBeVisible()
+    })
+  })
 })
