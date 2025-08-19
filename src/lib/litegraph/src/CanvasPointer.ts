@@ -315,59 +315,74 @@ export class CanvasPointer {
   detectDevice(event: WheelEvent): void {
     const now = performance.now()
     const timeSinceLastEvent = now - this.lastWheelEventTime
+    this.lastWheelEventTime = now
 
-    // Check if we have a buffered Linux event to validate
-    if (this.bufferedLinuxEvent && this.bufferedLinuxEventTime > 0) {
-      const timeSinceBuffer = now - this.bufferedLinuxEventTime
-      if (timeSinceBuffer <= 10 && event.deltaX === 0) {
-        // Check for Linux wheel pattern
-        if (
-          this.isLinuxWheelPattern(this.bufferedLinuxEvent.deltaY, event.deltaY)
-        ) {
-          this.detectedDevice = 'mouse'
-          this.clearLinuxBuffer()
-          this.lastWheelEventTime = now
-          return
-        }
-      }
-      if (timeSinceBuffer > 10) {
-        this.clearLinuxBuffer()
-      }
-    }
-
-    // Check cooldown period
-    const isFirstEvent = !this.hasReceivedWheelEvent
-    const cooldownExpired = timeSinceLastEvent >= CanvasPointer.trackpadMaxGap
-    const inCooldown = !isFirstEvent && !cooldownExpired
-
-    if (inCooldown) {
-      // Within cooldown - maintain current mode except for Linux buffering
-      if (this.shouldBufferLinuxEvent(event)) {
-        this.bufferLinuxEvent(event, now)
-      }
-      this.lastWheelEventTime = now
+    if (this.#isHighResWheelEvent(event, now)) {
+      this.detectedDevice = 'mouse'
       return
     }
 
-    // Perform device detection
-    // Check for trackpad patterns
-    if (this.isTrackpadPattern(event)) {
-      this.detectedDevice = 'trackpad'
-    }
-    // Check for mouse patterns
-    else if (this.isMousePattern(event)) {
-      this.detectedDevice = 'mouse'
-    }
-    // In trackpad mode, check if we should buffer potential Linux event
-    else if (
-      this.detectedDevice === 'trackpad' &&
-      this.shouldBufferLinuxEvent(event)
-    ) {
-      this.bufferLinuxEvent(event, now)
+    if (this.#isWithinCooldown(timeSinceLastEvent)) {
+      if (this.#shouldBufferLinuxEvent(event)) {
+        this.#bufferLinuxEvent(event, now)
+      }
+      return
     }
 
-    this.lastWheelEventTime = now
+    this.#updateDeviceMode(event, now)
     this.hasReceivedWheelEvent = true
+  }
+
+  /**
+   * Validates buffered high res wheel events and switches to mouse mode if pattern matches.
+   * @returns `true` if if switched to mouse mode
+   */
+  #isHighResWheelEvent(event: WheelEvent, now: number): boolean {
+    if (!this.bufferedLinuxEvent || this.bufferedLinuxEventTime <= 0) {
+      return false
+    }
+
+    const timeSinceBuffer = now - this.bufferedLinuxEventTime
+
+    if (timeSinceBuffer > 10) {
+      this.clearLinuxBuffer()
+      return false
+    }
+
+    if (
+      event.deltaX === 0 &&
+      this.#isLinuxWheelPattern(this.bufferedLinuxEvent.deltaY, event.deltaY)
+    ) {
+      this.clearLinuxBuffer()
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Checks if we're within the cooldown period where mode switching is disabled.
+   */
+  #isWithinCooldown(timeSinceLastEvent: number): boolean {
+    const isFirstEvent = !this.hasReceivedWheelEvent
+    const cooldownExpired = timeSinceLastEvent >= CanvasPointer.trackpadMaxGap
+    return !isFirstEvent && !cooldownExpired
+  }
+
+  /**
+   * Updates the device mode based on event patterns.
+   */
+  #updateDeviceMode(event: WheelEvent, now: number): void {
+    if (this.#isTrackpadPattern(event)) {
+      this.detectedDevice = 'trackpad'
+    } else if (this.isMousePattern(event)) {
+      this.detectedDevice = 'mouse'
+    } else if (
+      this.detectedDevice === 'trackpad' &&
+      this.#shouldBufferLinuxEvent(event)
+    ) {
+      this.#bufferLinuxEvent(event, now)
+    }
   }
 
   /**
@@ -386,7 +401,7 @@ export class CanvasPointer {
    * Checks if the event matches trackpad input patterns.
    * @param event The wheel event to check
    */
-  private isTrackpadPattern(event: WheelEvent): boolean {
+  #isTrackpadPattern(event: WheelEvent): boolean {
     // Two-finger panning: non-zero deltaX AND deltaY
     if (event.deltaX !== 0 && event.deltaY !== 0) return true
 
@@ -399,37 +414,37 @@ export class CanvasPointer {
   /**
    * Checks if the event matches mouse wheel input patterns.
    * @param event The wheel event to check
-   * @param inCooldown Whether we're within the cooldown period
    */
   private isMousePattern(event: WheelEvent): boolean {
-    const absY = Math.abs(event.deltaY)
+    const absoluteDeltaY = Math.abs(event.deltaY)
+    const hasNoHorizontalMovement = event.deltaX === 0
 
     // Primary threshold for switching from trackpad to mouse
-    if (absY > 80) {
-      return true
-    }
+    if (absoluteDeltaY > 80) return true
 
     // Secondary threshold when already in mouse mode
-    if (absY >= 60 && event.deltaX === 0 && this.detectedDevice === 'mouse') {
-      return true
-    }
-
-    return false
+    const isSecondaryThreshold =
+      absoluteDeltaY >= 60 &&
+      hasNoHorizontalMovement &&
+      this.detectedDevice === 'mouse'
+    return isSecondaryThreshold
   }
 
   /**
    * Checks if the event should be buffered as a potential Linux wheel event.
    * @param event The wheel event to check
    */
-  private shouldBufferLinuxEvent(event: WheelEvent): boolean {
-    const absY = Math.abs(event.deltaY)
-    // Buffer potential Linux wheel events in the 10-59 range
+  #shouldBufferLinuxEvent(event: WheelEvent): boolean {
+    const absoluteDeltaY = Math.abs(event.deltaY)
+    const isInLinuxRange = absoluteDeltaY >= 10 && absoluteDeltaY < 60
+    const isVerticalOnly = event.deltaX === 0
+    const hasIntegerDelta = Number.isInteger(event.deltaY)
+
     return (
       this.detectedDevice === 'trackpad' &&
-      absY >= 10 &&
-      absY < 60 &&
-      event.deltaX === 0 &&
-      Number.isInteger(event.deltaY)
+      isInLinuxRange &&
+      isVerticalOnly &&
+      hasIntegerDelta
     )
   }
 
@@ -438,7 +453,7 @@ export class CanvasPointer {
    * @param event The event to buffer
    * @param now The current timestamp
    */
-  private bufferLinuxEvent(event: WheelEvent, now: number): void {
+  #bufferLinuxEvent(event: WheelEvent, now: number): void {
     if (this.linuxBufferTimeoutId !== undefined) {
       clearTimeout(this.linuxBufferTimeoutId)
     }
@@ -457,20 +472,15 @@ export class CanvasPointer {
    * @param deltaY1 The first deltaY value
    * @param deltaY2 The second deltaY value
    */
-  private isLinuxWheelPattern(deltaY1: number, deltaY2: number): boolean {
-    const abs1 = Math.abs(deltaY1)
-    const abs2 = Math.abs(deltaY2)
+  #isLinuxWheelPattern(deltaY1: number, deltaY2: number): boolean {
+    const absolute1 = Math.abs(deltaY1)
+    const absolute2 = Math.abs(deltaY2)
 
-    if (abs1 === abs2) {
-      return true
-    }
+    if (absolute1 === 0 || absolute2 === 0) return false
+    if (absolute1 === absolute2) return true
 
     // Check if one value is a multiple of the other
-    if (abs1 > 0 && abs2 > 0) {
-      return abs1 % abs2 === 0 || abs2 % abs1 === 0
-    }
-
-    return false
+    return absolute1 % absolute2 === 0 || absolute2 % absolute1 === 0
   }
 
   /**
