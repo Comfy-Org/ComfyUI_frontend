@@ -1,3 +1,4 @@
+import { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -61,10 +62,10 @@ export function getOrderedInputSpecs(
  * @returns Reordered widget values array
  */
 export function sortWidgetValuesByInputOrder(
-  widgetValues: any[],
+  widgetValues: TWidgetValue[],
   currentWidgetOrder: string[],
   inputOrder: string[]
-): any[] {
+): TWidgetValue[] {
   if (!inputOrder || inputOrder.length === 0) {
     return widgetValues
   }
@@ -78,7 +79,7 @@ export function sortWidgetValuesByInputOrder(
   })
 
   // Reorder based on input_order
-  const reordered: any[] = []
+  const reordered: TWidgetValue[] = []
   const usedNames = new Set<string>()
 
   // First, add values in the order specified by input_order
