@@ -86,7 +86,6 @@
 </template>
 
 <script setup lang="ts">
-import log from 'loglevel'
 import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
 
 // Import the VueNodeData type
@@ -100,13 +99,6 @@ import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
-
-// Create logger for vue nodes
-const logger = log.getLogger('vue-nodes')
-// In dev mode, always show debug logs
-if (import.meta.env.DEV) {
-  logger.setLevel('debug')
-}
 
 // Extended props for main node component
 interface LGraphNodeProps {
@@ -165,25 +157,6 @@ const {
   handleDrag: handleLayoutDrag,
   endDrag
 } = useNodeLayout(props.nodeData.id)
-
-// Debug layout position
-watch(
-  layoutPosition,
-  (newPos, oldPos) => {
-    logger.debug(`Layout position changed for node ${props.nodeData.id}:`, {
-      newPos,
-      oldPos,
-      layoutPositionValue: layoutPosition.value
-    })
-  },
-  { immediate: true, deep: true }
-)
-
-logger.debug(`LGraphNode mounted for ${props.nodeData.id}`, {
-  layoutPosition: layoutPosition.value,
-  propsPosition: props.position,
-  nodeDataId: props.nodeData.id
-})
 
 // Drag state for styling
 const isDragging = ref(false)
