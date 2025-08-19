@@ -71,7 +71,7 @@ export function sortWidgetValuesByInputOrder(
   }
 
   // Create a map of widget name to value
-  const valueMap = new Map<string, any>()
+  const valueMap = new Map<string, TWidgetValue>()
   currentWidgetOrder.forEach((name, index) => {
     if (index < widgetValues.length) {
       valueMap.set(name, widgetValues[index])
