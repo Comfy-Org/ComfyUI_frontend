@@ -1,6 +1,6 @@
 <template>
   <div
-    class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-100 dark-theme:bg-zinc-800"
+    class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-50 dark-theme:bg-zinc-800"
   >
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
@@ -45,8 +45,13 @@
               </IconButton>
               <slot name="header"></slot>
             </div>
-            <div class="flex justify-end gap-2 min-w-20">
-              <slot name="header-right-area"></slot>
+            <slot name="header-right-area"></slot>
+            <div
+              class="flex justify-end gap-2 w-0"
+              :class="
+                hasRightPanel && !isRightPanelOpen ? 'min-w-18' : 'min-w-8'
+              "
+            >
               <IconButton
                 v-if="isRightPanelOpen && hasRightPanel"
                 @click="toggleRightPanel"
@@ -55,18 +60,24 @@
               </IconButton>
             </div>
           </header>
-          <main class="flex-1">
-            <slot name="content"></slot>
+
+          <main class="flex flex-col flex-1 min-h-0">
+            <!-- Fallback title bar when no leftPanel is provided -->
+            <slot name="contentFilter"></slot>
+            <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
+              {{ contentTitle }}
+            </h2>
+            <div class="min-h-0 px-6 pt-0 pb-10 overflow-y-auto scrollbar-hide">
+              <slot name="content"></slot>
+            </div>
           </main>
         </div>
-        <Transition name="slide-panel-right">
-          <aside
-            v-if="hasRightPanel && isRightPanelOpen"
-            class="w-1/4 min-w-40 max-w-80"
-          >
-            <slot name="rightPanel"></slot>
-          </aside>
-        </Transition>
+        <aside
+          v-if="hasRightPanel && isRightPanelOpen"
+          class="w-1/4 min-w-40 max-w-80"
+        >
+          <slot name="rightPanel"></slot>
+        </aside>
       </div>
     </div>
   </div>
@@ -76,10 +87,14 @@
 import { useBreakpoints } from '@vueuse/core'
 import { computed, inject, ref, useSlots, watch } from 'vue'
 
-import IconButton from '@/components/custom/button/IconButton.vue'
-import { OnCloseKey } from '@/types/custom_components/widgetTypes'
+import IconButton from '@/components/button/IconButton.vue'
+import { OnCloseKey } from '@/types/widgetTypes'
 
-const BREAKPOINTS = { sm: 480 }
+const { contentTitle } = defineProps<{
+  contentTitle: string
+}>()
+
+const BREAKPOINTS = { md: 880 }
 const PANEL_SIZES = {
   width: 'w-1/3',
   minWidth: 'min-w-40',
@@ -90,7 +105,7 @@ const slots = useSlots()
 const closeDialog = inject(OnCloseKey, () => {})
 
 const breakpoints = useBreakpoints(BREAKPOINTS)
-const notMobile = breakpoints.greater('sm')
+const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
 const isRightPanelOpen = ref<boolean>(false)
@@ -159,18 +174,5 @@ const toggleRightPanel = () => {
 .slide-panel-enter-from,
 .slide-panel-leave-to {
   transform: translateX(-100%);
-}
-
-/* Slide transition for right panel */
-.slide-panel-right-enter-active,
-.slide-panel-right-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-  backface-visibility: hidden;
-}
-
-.slide-panel-right-enter-from,
-.slide-panel-right-leave-to {
-  transform: translateX(100%);
 }
 </style>

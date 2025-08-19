@@ -7,7 +7,7 @@
       <slot name="header-title"></slot>
     </PanelHeader>
 
-    <nav class="flex-1 px-3 py-4 flex flex-col gap-2">
+    <nav class="flex-1 px-3 py-4 flex flex-col gap-1">
       <template v-for="(item, index) in navItems" :key="index">
         <div v-if="'items' in item" class="flex flex-col gap-2">
           <NavTitle :title="item.title" />
@@ -36,10 +36,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
+import NavItem from '@/components/widget/nav/NavItem.vue'
+import NavTitle from '@/components/widget/nav/NavTitle.vue'
+import { NavGroupData, NavItemData } from '@/types/navTypes'
 
-import NavItem from '../nav/NavItem.vue'
-import NavTitle from '../nav/NavTitle.vue'
 import PanelHeader from './PanelHeader.vue'
 
 const { navItems = [], modelValue } = defineProps<{
