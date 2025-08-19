@@ -125,10 +125,6 @@ jobs:
       - name: Set project name
         id: project-name
         run: |
-          # Get branch name and sanitize it for Cloudflare branch names
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
-
           if [ "${{ matrix.browser }}" = "chromium-0.5x" ]; then
             echo "name=comfyui-playwright-chromium-0-5x" >> $GITHUB_OUTPUT
           else
