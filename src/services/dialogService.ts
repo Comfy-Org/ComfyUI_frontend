@@ -439,12 +439,17 @@ export const useDialogService = () => {
   }) {
     const layoutDefaultProps: DialogComponentProps = {
       headless: true,
-      unstyled: true,
       modal: true,
       closable: false,
       pt: {
-        mask: {
-          class: 'bg-black bg-opacity-40'
+        root: {
+          class: 'rounded-2xl overflow-hidden'
+        },
+        header: {
+          class: '!p-0 hidden'
+        },
+        content: {
+          class: '!p-0 !m-0'
         }
       }
     }
