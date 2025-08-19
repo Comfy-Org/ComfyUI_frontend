@@ -49,18 +49,6 @@ export const NODE_DEFAULTS = {
 } as const
 
 /**
- * Debug and development settings
- */
-export const DEBUG_CONFIG = {
-  /** LocalStorage key for enabling layout debug mode */
-  LAYOUT_DEBUG_KEY: 'layout-debug',
-  /** Logger name for layout system */
-  LOGGER_NAME: 'layout',
-  /** Logger name for layout store */
-  STORE_LOGGER_NAME: 'layout-store'
-} as const
-
-/**
  * Actor and source identifiers
  */
 export const ACTOR_CONFIG = {
