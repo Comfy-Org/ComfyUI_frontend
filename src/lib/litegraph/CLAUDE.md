@@ -33,12 +33,12 @@
 
 ```typescript
 // ✅ CORRECT - Use barrel import
-import { LGraph, Subgraph, SubgraphNode } from "@/litegraph"
+import { LGraph, Subgraph, SubgraphNode } from "@/lib/litegraph/src/litegraph"
 
 // ❌ WRONG - Direct imports cause circular dependency
-import { LGraph } from "@/LGraph"
-import { Subgraph } from "@/subgraph/Subgraph" 
-import { SubgraphNode } from "@/subgraph/SubgraphNode"
+import { LGraph } from "@/lib/litegraph/src/LGraph"
+import { Subgraph } from "@/lib/litegraph/src/subgraph/Subgraph" 
+import { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
 ```
 
 **Root cause**: `LGraph` and `Subgraph` have a circular dependency:

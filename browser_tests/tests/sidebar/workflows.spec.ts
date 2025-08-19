@@ -74,7 +74,7 @@ test.describe('Workflows sidebar', () => {
 
   test('Can open workflow after insert', async ({ comfyPage }) => {
     await comfyPage.setupWorkflowsDirectory({
-      'workflow1.json': 'single_ksampler.json'
+      'workflow1.json': 'nodes/single_ksampler.json'
     })
 
     const tab = comfyPage.menu.workflowsTab
@@ -241,7 +241,7 @@ test.describe('Workflows sidebar', () => {
   test('Does not report warning when switching between opened workflows', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('missing_nodes')
+    await comfyPage.loadWorkflow('missing/missing_nodes')
     await comfyPage.closeDialog()
 
     // Load blank workflow
