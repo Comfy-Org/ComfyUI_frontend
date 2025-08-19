@@ -24,26 +24,22 @@ export function transformNodeDefV1ToV2(
 
   // Process required inputs
   if (nodeDefV1.input?.required) {
-    for (const [name, inputSpecV1] of Object.entries(
-      nodeDefV1.input.required
-    )) {
+    Object.entries(nodeDefV1.input.required).forEach(([name, inputSpecV1]) => {
       inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
         name,
         isOptional: false
       })
-    }
+    })
   }
 
   // Process optional inputs
   if (nodeDefV1.input?.optional) {
-    for (const [name, inputSpecV1] of Object.entries(
-      nodeDefV1.input.optional
-    )) {
+    Object.entries(nodeDefV1.input.optional).forEach(([name, inputSpecV1]) => {
       inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
         name,
         isOptional: true
       })
-    }
+    })
   }
 
   // Transform outputs
