@@ -1,4 +1,4 @@
-import ModelSelector from '@/components/custom/widget/ModelSelector.vue'
+import ModelSelector from '@/components/widget/ModelSelector.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 

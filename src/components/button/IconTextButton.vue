@@ -10,12 +10,12 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
-import type { BaseButtonProps } from '@/types/custom_components/buttonTypes'
+import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
   getBaseButtonClasses,
   getButtonSizeClasses,
   getButtonTypeClasses
-} from '@/types/custom_components/buttonTypes'
+} from '@/types/buttonTypes'
 
 interface IconTextButtonProps extends BaseButtonProps {
   iconPosition?: 'left' | 'right'

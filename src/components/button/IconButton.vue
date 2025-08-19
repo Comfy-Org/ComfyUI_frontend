@@ -8,12 +8,12 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
-import type { BaseButtonProps } from '@/types/custom_components/buttonTypes'
+import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
   getBaseButtonClasses,
   getButtonTypeClasses,
   getIconButtonSizeClasses
-} from '@/types/custom_components/buttonTypes'
+} from '@/types/buttonTypes'
 
 interface IconButtonProps extends BaseButtonProps {
   onClick: (event: Event) => void

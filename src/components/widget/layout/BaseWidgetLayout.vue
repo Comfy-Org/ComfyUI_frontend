@@ -87,8 +87,8 @@
 import { useBreakpoints } from '@vueuse/core'
 import { computed, inject, ref, useSlots, watch } from 'vue'
 
-import IconButton from '@/components/custom/button/IconButton.vue'
-import { OnCloseKey } from '@/types/custom_components/widgetTypes'
+import IconButton from '@/components/button/IconButton.vue'
+import { OnCloseKey } from '@/types/widgetTypes'
 
 const { contentTitle } = defineProps<{
   contentTitle: string

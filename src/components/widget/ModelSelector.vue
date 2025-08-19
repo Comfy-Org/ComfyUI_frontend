@@ -106,13 +106,13 @@
                 </IconButton>
               </template>
               <template #bottom-right>
-                <SquareTag label="png" />
-                <SquareTag label="1.2 MB" />
-                <SquareTag label="LoRA">
+                <SquareChip label="png" />
+                <SquareChip label="1.2 MB" />
+                <SquareChip label="LoRA">
                   <template #icon>
                     <i-lucide:folder />
                   </template>
-                </SquareTag>
+                </SquareChip>
               </template>
             </CardTop>
           </template>
@@ -134,22 +134,21 @@
 import { provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
-import { OnCloseKey } from '@/types/custom_components/widgetTypes'
-
-import SquareTag from '../SquareTag.vue'
-import IconButton from '../button/IconButton.vue'
-import IconTextButton from '../button/IconTextButton.vue'
-import MoreButton from '../button/MoreButton.vue'
-import CardBottom from '../card/CardBottom.vue'
-import CardContainer from '../card/CardContainer.vue'
-import CardTop from '../card/CardTop.vue'
-import MultiSelect from '../input/MultiSelect.vue'
-import SearchBox from '../input/SearchBox.vue'
-import SingleSelect from '../input/SingleSelect.vue'
-import BaseWidgetLayout from './layout/BaseWidgetLayout.vue'
-import LeftSidePanel from './panel/LeftSidePanel.vue'
-import RightSidePanel from './panel/RightSidePanel.vue'
+import IconButton from '@/components/button/IconButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import MoreButton from '@/components/button/MoreButton.vue'
+import CardBottom from '@/components/card/CardBottom.vue'
+import CardContainer from '@/components/card/CardContainer.vue'
+import CardTop from '@/components/card/CardTop.vue'
+import SquareChip from '@/components/chip/SquareChip.vue'
+import MultiSelect from '@/components/input/MultiSelect.vue'
+import SearchBox from '@/components/input/SearchBox.vue'
+import SingleSelect from '@/components/input/SingleSelect.vue'
+import BaseWidgetLayout from '@/components/widget/layout/BaseWidgetLayout.vue'
+import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
+import { NavGroupData, NavItemData } from '@/types/navTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
 
 const frameworkOptions = ref([
   { name: 'Vue', value: 'vue' },

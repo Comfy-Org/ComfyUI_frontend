@@ -36,10 +36,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { NavGroupData, NavItemData } from '@/types/custom_components/navTypes'
+import NavItem from '@/components/widget/nav/NavItem.vue'
+import NavTitle from '@/components/widget/nav/NavTitle.vue'
+import { NavGroupData, NavItemData } from '@/types/navTypes'
 
-import NavItem from '../nav/NavItem.vue'
-import NavTitle from '../nav/NavTitle.vue'
 import PanelHeader from './PanelHeader.vue'
 
 const { navItems = [], modelValue } = defineProps<{
