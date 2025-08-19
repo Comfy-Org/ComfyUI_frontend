@@ -9,7 +9,12 @@
       :aria-label="$t('g.moreWorkflows')"
       @click="menu?.toggle($event)"
     />
-    <Menu ref="menu" :model="menuItems" :popup="true" />
+    <Menu
+      ref="menu"
+      :model="menuItems"
+      :popup="true"
+      class="max-h-[40vh] overflow-auto"
+    />
   </div>
 </template>
 

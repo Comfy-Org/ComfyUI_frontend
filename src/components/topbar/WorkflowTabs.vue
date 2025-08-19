@@ -3,11 +3,6 @@
     class="workflow-tabs-container flex flex-row max-w-full h-full flex-auto overflow-hidden"
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
-    <WorkflowOverflowMenu
-      v-if="showOverflowArrows"
-      :workflows="workflowStore.openWorkflows"
-      :active-workflow="workflowStore.activeWorkflow"
-    />
     <Button
       v-if="showOverflowArrows"
       icon="pi pi-chevron-left"
@@ -52,6 +47,11 @@
       class="overflow-arrow overflow-arrow-right"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
+    />
+    <WorkflowOverflowMenu
+      v-if="showOverflowArrows"
+      :workflows="workflowStore.openWorkflows"
+      :active-workflow="workflowStore.activeWorkflow"
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
