@@ -1925,6 +1925,7 @@ export class LGraphNode
       }
     }
 
+    widget.onRemove?.()
     this.widgets.splice(widgetIndex, 1)
   }
 
