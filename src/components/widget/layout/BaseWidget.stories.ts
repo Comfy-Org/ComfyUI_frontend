@@ -175,130 +175,253 @@ const createStoryTemplate = (args: StoryArgs) => ({
     }
   },
   template: `
-    <BaseWidgetLayout :content-title="args.contentTitle || 'Content Title'">
-      <!-- Left Panel -->
-      <template v-if="args.hasLeftPanel" #leftPanel>
-        <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
-          <template #header-icon>
-            <Puzzle :size="16" class="text-neutral" />
-          </template>
-          <template #header-title>
-            <span class="text-neutral text-base">Title</span>
-          </template>
-        </LeftSidePanel>
-      </template>
-
-      <!-- Header -->
-      <template v-if="args.hasHeader" #header>
-        <SearchBox
-          class="max-w-[384px]"
-          :modelValue="searchQuery"
-          @update:modelValue="searchQuery = $event"
-        />
-      </template>
-
-      <!-- Header Right Area -->
-      <template v-if="args.hasHeaderRightArea" #header-right-area>
-        <div class="flex gap-2">
-          <IconTextButton type="primary" label="Upload Model" @click="() => {}">
-            <template #icon>
-              <Upload :size="12" />
+    <div>
+      <BaseWidgetLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+        <!-- Left Panel -->
+        <template v-if="args.hasLeftPanel" #leftPanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
+            <template #header-icon>
+              <Puzzle :size="16" class="text-neutral" />
             </template>
-          </IconTextButton>
-
-          <MoreButton>
-            <template #default="{ close }">
-              <IconTextButton
-                type="secondary"
-                label="Settings"
-                @click="() => { close() }"
-              >
-                <template #icon>
-                  <Download :size="12" />
-                </template>
-              </IconTextButton>
-
-              <IconTextButton
-                type="primary"
-                label="Profile"
-                @click="() => { close() }"
-              >
-                <template #icon>
-                  <Scroll :size="12" />
-                </template>
-              </IconTextButton>
+            <template #header-title>
+              <span class="text-neutral text-base">Title</span>
             </template>
-          </MoreButton>
-        </div>
-      </template>
+          </LeftSidePanel>
+        </template>
 
-      <!-- Content Filter -->
-      <template v-if="args.hasContentFilter" #contentFilter>
-        <div class="relative px-6 pt-2 pb-4 flex gap-2">
-          <MultiSelect
-            v-model="selectedFrameworks"
-            label="Select Frameworks"
-            :options="frameworkOptions"
+        <!-- Header -->
+        <template v-if="args.hasHeader" #header>
+          <SearchBox
+            class="max-w-[384px]"
+            :modelValue="searchQuery"
+            @update:modelValue="searchQuery = $event"
           />
-          <MultiSelect
-            v-model="selectedProjects"
-            label="Select Projects"
-            :options="projectOptions"
+        </template>
+
+        <!-- Header Right Area -->
+        <template v-if="args.hasHeaderRightArea" #header-right-area>
+          <div class="flex gap-2">
+            <IconTextButton type="primary" label="Upload Model" @click="() => {}">
+              <template #icon>
+                <Upload :size="12" />
+              </template>
+            </IconTextButton>
+
+            <MoreButton>
+              <template #default="{ close }">
+                <IconTextButton
+                  type="secondary"
+                  label="Settings"
+                  @click="() => { close() }"
+                >
+                  <template #icon>
+                    <Download :size="12" />
+                  </template>
+                </IconTextButton>
+
+                <IconTextButton
+                  type="primary"
+                  label="Profile"
+                  @click="() => { close() }"
+                >
+                  <template #icon>
+                    <Scroll :size="12" />
+                  </template>
+                </IconTextButton>
+              </template>
+            </MoreButton>
+          </div>
+        </template>
+
+        <!-- Content Filter -->
+        <template v-if="args.hasContentFilter" #contentFilter>
+          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+            <MultiSelect
+              v-model="selectedFrameworks"
+              label="Select Frameworks"
+              :options="frameworkOptions"
+            />
+            <MultiSelect
+              v-model="selectedProjects"
+              label="Select Projects"
+              :options="projectOptions"
+            />
+            <SingleSelect
+              v-model="selectedSort"
+              label="Sorting Type"
+              :options="sortOptions"
+              class="w-[135px]"
+            >
+              <template #icon>
+                <Filter :size="12" />
+              </template>
+            </SingleSelect>
+          </div>
+        </template>
+
+        <!-- Content -->
+        <template #content>
+          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+            <CardContainer
+              v-for="i in args.cardCount"
+              :key="i"
+              ratio="square"
+            >
+              <template #top>
+                <CardTop ratio="landscape">
+                  <template #default>
+                    <div class="w-full h-full bg-blue-500"></div>
+                  </template>
+                  <template #top-right>
+                    <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
+                      <Info :size="16" />
+                    </IconButton>
+                  </template>
+                  <template #bottom-right>
+                    <SquareChip label="png" />
+                    <SquareChip label="1.2 MB" />
+                    <SquareChip label="LoRA">
+                      <template #icon>
+                        <Folder :size="12" />
+                      </template>
+                    </SquareChip>
+                  </template>
+                </CardTop>
+              </template>
+              <template #bottom>
+                <CardBottom />
+              </template>
+            </CardContainer>
+          </div>
+        </template>
+      </BaseWidgetLayout>
+
+      <BaseWidgetLayout v-else :content-title="args.contentTitle || 'Content Title'">
+        <!-- Same content but WITH right panel -->
+        <!-- Left Panel -->
+        <template v-if="args.hasLeftPanel" #leftPanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
+            <template #header-icon>
+              <Puzzle :size="16" class="text-neutral" />
+            </template>
+            <template #header-title>
+              <span class="text-neutral text-base">Title</span>
+            </template>
+          </LeftSidePanel>
+        </template>
+
+        <!-- Header -->
+        <template v-if="args.hasHeader" #header>
+          <SearchBox
+            class="max-w-[384px]"
+            :modelValue="searchQuery"
+            @update:modelValue="searchQuery = $event"
           />
-          <SingleSelect
-            v-model="selectedSort"
-            label="Sorting Type"
-            :options="sortOptions"
-            class="w-[135px]"
-          >
-            <template #icon>
-              <Filter :size="12" />
-            </template>
-          </SingleSelect>
-        </div>
-      </template>
+        </template>
 
-      <!-- Content -->
-      <template #content>
-        <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
-          <CardContainer
-            v-for="i in args.cardCount"
-            :key="i"
-            ratio="square"
-          >
-            <template #top>
-              <CardTop ratio="landscape">
-                <template #default>
-                  <div class="w-full h-full bg-blue-500"></div>
-                </template>
-                <template #top-right>
-                  <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
-                    <Info :size="16" />
-                  </IconButton>
-                </template>
-                <template #bottom-right>
-                  <SquareChip label="png" />
-                  <SquareChip label="1.2 MB" />
-                  <SquareChip label="LoRA">
-                    <template #icon>
-                      <Folder :size="12" />
-                    </template>
-                  </SquareChip>
-                </template>
-              </CardTop>
-            </template>
-            <template #bottom>
-              <CardBottom />
-            </template>
-          </CardContainer>
-        </div>
-      </template>
+        <!-- Header Right Area -->
+        <template v-if="args.hasHeaderRightArea" #header-right-area>
+          <div class="flex gap-2">
+            <IconTextButton type="primary" label="Upload Model" @click="() => {}">
+              <template #icon>
+                <Upload :size="12" />
+              </template>
+            </IconTextButton>
 
-      <!-- Right Panel -->
-      <template v-if="args.hasRightPanel" #rightPanel>
-        <RightSidePanel />
-      </template>
-    </BaseWidgetLayout>
+            <MoreButton>
+              <template #default="{ close }">
+                <IconTextButton
+                  type="secondary"
+                  label="Settings"
+                  @click="() => { close() }"
+                >
+                  <template #icon>
+                    <Download :size="12" />
+                  </template>
+                </IconTextButton>
+
+                <IconTextButton
+                  type="primary"
+                  label="Profile"
+                  @click="() => { close() }"
+                >
+                  <template #icon>
+                    <Scroll :size="12" />
+                  </template>
+                </IconTextButton>
+              </template>
+            </MoreButton>
+          </div>
+        </template>
+
+        <!-- Content Filter -->
+        <template v-if="args.hasContentFilter" #contentFilter>
+          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+            <MultiSelect
+              v-model="selectedFrameworks"
+              label="Select Frameworks"
+              :options="frameworkOptions"
+            />
+            <MultiSelect
+              v-model="selectedProjects"
+              label="Select Projects"
+              :options="projectOptions"
+            />
+            <SingleSelect
+              v-model="selectedSort"
+              label="Sorting Type"
+              :options="sortOptions"
+              class="w-[135px]"
+            >
+              <template #icon>
+                <Filter :size="12" />
+              </template>
+            </SingleSelect>
+          </div>
+        </template>
+
+        <!-- Content -->
+        <template #content>
+          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+            <CardContainer
+              v-for="i in args.cardCount"
+              :key="i"
+              ratio="square"
+            >
+              <template #top>
+                <CardTop ratio="landscape">
+                  <template #default>
+                    <div class="w-full h-full bg-blue-500"></div>
+                  </template>
+                  <template #top-right>
+                    <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
+                      <Info :size="16" />
+                    </IconButton>
+                  </template>
+                  <template #bottom-right>
+                    <SquareChip label="png" />
+                    <SquareChip label="1.2 MB" />
+                    <SquareChip label="LoRA">
+                      <template #icon>
+                        <Folder :size="12" />
+                      </template>
+                    </SquareChip>
+                  </template>
+                </CardTop>
+              </template>
+              <template #bottom>
+                <CardBottom />
+              </template>
+            </CardContainer>
+          </div>
+        </template>
+
+        <!-- Right Panel - Only when hasRightPanel is true -->
+        <template #rightPanel>
+          <RightSidePanel />
+        </template>
+      </BaseWidgetLayout>
+    </div>
   `
 })
 
