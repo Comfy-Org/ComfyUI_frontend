@@ -355,7 +355,7 @@ export class CanvasPointer {
     // Perform device detection (first event or after cooldown)
 
     // Check for trackpad patterns
-    if (this.isTrackpadPattern(event, isFirstEvent)) {
+    if (this.isTrackpadPattern(event)) {
       this.detectedDevice = 'trackpad'
     }
     // Check for mouse patterns
@@ -389,26 +389,13 @@ export class CanvasPointer {
   /**
    * Checks if the event matches trackpad input patterns.
    * @param event The wheel event to check
-   * @param isFirstEvent Whether this is the first event after loading
    */
-  private isTrackpadPattern(event: WheelEvent, isFirstEvent: boolean): boolean {
+  private isTrackpadPattern(event: WheelEvent): boolean {
     // Two-finger panning: non-zero deltaX AND deltaY
-    if (event.deltaX !== 0 && event.deltaY !== 0) {
-      return true
-    }
+    if (event.deltaX !== 0 && event.deltaY !== 0) return true
 
     // Pinch-to-zoom: ctrlKey with small deltaY
-    if (event.ctrlKey && Math.abs(event.deltaY) < 10) {
-      return true
-    }
-
-    // On first event, also switch to trackpad for two-finger panning with any values
-    if (isFirstEvent && (event.deltaX !== 0 || event.deltaY !== 0)) {
-      // Check if it looks like two-finger panning (both axes or small values)
-      if (event.deltaX !== 0 && event.deltaY !== 0) {
-        return true
-      }
-    }
+    if (event.ctrlKey && Math.abs(event.deltaY) < 10) return true
 
     return false
   }
