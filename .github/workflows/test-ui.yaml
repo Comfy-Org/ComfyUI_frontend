@@ -7,11 +7,15 @@ on:
     branches-ignore:
       [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
 
+env:
+  DATE_FORMAT: '+%m/%d/%Y, %I:%M:%S %p'
+
 jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
+      sanitized-branch: ${{ steps.branch-info.outputs.sanitized }}
     steps:
       - name: Checkout ComfyUI
         uses: actions/checkout@v4
@@ -39,7 +43,7 @@ jobs:
 
       - name: Get current time
         id: current-time
-        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
       - name: Comment PR - Tests Started
         if: github.event_name == 'pull_request'
@@ -69,6 +73,14 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Generate sanitized branch name
+        id: branch-info
+        run: |
+          # Get branch name and sanitize it for Cloudflare branch names
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+          echo "sanitized=${SANITIZED_BRANCH}" >> $GITHUB_OUTPUT
 
       - name: Save cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
@@ -108,7 +120,7 @@ jobs:
 
       - name: Get current time
         id: current-time
-        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
       - name: Set project name
         id: project-name
@@ -122,7 +134,7 @@ jobs:
           else
             echo "name=comfyui-playwright-${{ matrix.browser }}" >> $GITHUB_OUTPUT
           fi
-          echo "branch=${SANITIZED_BRANCH}" >> $GITHUB_OUTPUT
+          echo "branch=${{ needs.setup.outputs.sanitized-branch }}" >> $GITHUB_OUTPUT
 
       - name: Comment PR - Browser Test Started
         if: github.event_name == 'pull_request'
@@ -175,7 +187,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}
+          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }} --compatibility-date=2023-05-18
 
       - name: Save deployment info for summary
         if: always()
@@ -183,7 +195,7 @@ jobs:
           mkdir -p deployment-info
           # wrangler-action outputs deployment-url instead of url
           DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
-          echo "${{ matrix.browser }}|${{ steps.playwright.outputs.exit_code }}|$DEPLOYMENT_URL" > deployment-info/${{ matrix.browser }}.txt
+          echo "${{ matrix.browser }}|${{ steps.playwright.outputs.exit_code }}|${DEPLOYMENT_URL}" > deployment-info/${{ matrix.browser }}.txt
 
       - name: Upload deployment info
         if: always()
@@ -195,7 +207,7 @@ jobs:
 
       - name: Get completion time
         id: completion-time
-        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
       - name: Comment PR - Browser Test Complete
         if: github.event_name == 'pull_request' && always()
@@ -224,7 +236,7 @@ jobs:
 
       - name: Get completion time
         id: completion-time
-        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
       - name: Generate comment body
         id: comment-body
@@ -291,3 +303,25 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: replace
           body-path: comment.md
+
+      - name: Check test results and fail if needed
+        run: |
+          # Check if all tests passed and fail the job if not
+          ALL_PASSED=true
+          for file in deployment-info/*.txt; do
+            if [ -f "$file" ]; then
+              info=$(cat "$file")
+              exit_code=$(echo "$info" | cut -d'|' -f2)
+              if [ "$exit_code" != "0" ]; then
+                ALL_PASSED=false
+                break
+              fi
+            fi
+          done
+          
+          if [ "$ALL_PASSED" = "false" ]; then
+            echo "❌ Tests failed in one or more browsers. Failing the CI job."
+            exit 1
+          else
+            echo "✅ All tests passed across all browsers!"
+          fi

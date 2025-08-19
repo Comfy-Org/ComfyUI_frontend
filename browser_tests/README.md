@@ -426,11 +426,11 @@ The project automatically deploys Playwright test reports to Cloudflare Pages fo
 
 1. **Test execution**: All browser tests run in parallel across multiple browsers
 2. **Report generation**: HTML reports are generated for each browser configuration
-3. **Cloudflare deployment**: Each browser's report deploys to its own Cloudflare Pages project:
-   - `comfyui-playwright-chromium`
-   - `comfyui-playwright-mobile-chrome`
-   - `comfyui-playwright-chromium-2x` (2x scale)
-   - `comfyui-playwright-chromium-0-5x` (0.5x scale)
+3. **Cloudflare deployment**: Each browser's report deploys to its own Cloudflare Pages project with branch isolation:
+   - `comfyui-playwright-chromium` (with branch-specific URLs)
+   - `comfyui-playwright-mobile-chrome` (with branch-specific URLs)
+   - `comfyui-playwright-chromium-2x` (2x scale, with branch-specific URLs)
+   - `comfyui-playwright-chromium-0-5x` (0.5x scale, with branch-specific URLs)
 
 4. **PR comments**: GitHub automatically updates PR comments with:
    - ✅/❌ Test status for each browser
@@ -441,7 +441,7 @@ The project automatically deploys Playwright test reports to Cloudflare Pages fo
 
 - **From PR comments**: Click the "View Report" links for each browser
 - **From GitHub Actions**: Download artifacts from failed runs
-- **Direct URLs**: Reports are available at `https://comfyui-playwright-[browser].pages.dev`
+- **Direct URLs**: Reports are available at `https://[branch].comfyui-playwright-[browser].pages.dev` (branch-specific deployments)
 
 #### Report features:
 
