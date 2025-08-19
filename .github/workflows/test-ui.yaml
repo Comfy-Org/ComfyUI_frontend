@@ -214,7 +214,7 @@ jobs:
         run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
       - name: Comment PR - Browser Test Complete
-        if: github.event_name == 'pull_request' && always()
+        if: always() && github.event_name == 'pull_request'
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
