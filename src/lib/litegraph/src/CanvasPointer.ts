@@ -302,12 +302,7 @@ export class CanvasPointer {
     this.detectDevice(e)
 
     // For backward compatibility, update lastTrackpadEvent
-    if (this.detectedDevice === 'trackpad') {
-      this.lastTrackpadEvent = e
-    } else {
-      // Clear lastTrackpadEvent for mouse
-      this.lastTrackpadEvent = undefined
-    }
+    this.lastTrackpadEvent = this.detectedDevice === 'trackpad' ? e : undefined
 
     return this.detectedDevice === 'trackpad'
   }
