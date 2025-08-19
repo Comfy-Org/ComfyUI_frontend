@@ -751,6 +751,32 @@ onMounted(async () => {
 
   comfyAppReady.value = true
 
+  // Set up a one-time listener for when the first node is added
+  // This handles the case where Vue nodes are enabled but the graph starts empty
+  // TODO: Replace this with a reactive graph mutations observer when available
+  if (
+    transformPaneEnabled.value &&
+    comfyApp.graph &&
+    !nodeManager &&
+    comfyApp.graph._nodes.length === 0
+  ) {
+    const originalOnNodeAdded = comfyApp.graph.onNodeAdded
+    comfyApp.graph.onNodeAdded = function (node: any) {
+      // Restore original handler
+      comfyApp.graph.onNodeAdded = originalOnNodeAdded
+
+      // Initialize node manager if needed
+      if (transformPaneEnabled.value && !nodeManager) {
+        initializeNodeManager()
+      }
+
+      // Call original handler
+      if (originalOnNodeAdded) {
+        originalOnNodeAdded.call(this, node)
+      }
+    }
+  }
+
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
