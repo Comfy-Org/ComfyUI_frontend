@@ -137,7 +137,9 @@ test.describe('Group Node', () => {
   test('Preserves hidden input configuration when containing duplicate node types', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('group_node_identical_nodes_hidden_inputs')
+    await comfyPage.loadWorkflow(
+      'groupnodes/group_node_identical_nodes_hidden_inputs'
+    )
     await comfyPage.nextFrame()
 
     const groupNodeId = 19
@@ -204,7 +206,7 @@ test.describe('Group Node', () => {
   test('Loads from a workflow using the legacy path separator ("/")', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('legacy_group_node')
+    await comfyPage.loadWorkflow('groupnodes/legacy_group_node')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.locator('.comfy-missing-nodes')
@@ -213,7 +215,7 @@ test.describe('Group Node', () => {
 
   test.describe('Copy and paste', () => {
     let groupNode: NodeReference | null
-    const WORKFLOW_NAME = 'group_node_v1.3.3'
+    const WORKFLOW_NAME = 'groupnodes/group_node_v1.3.3'
     const GROUP_NODE_CATEGORY = 'group nodes>workflow'
     const GROUP_NODE_PREFIX = 'workflow>'
     const GROUP_NODE_NAME = 'group_node' // Node name in given workflow

@@ -319,7 +319,7 @@ test.describe('Node Help', () => {
       comfyPage
     }) => {
       // First load workflow with custom node
-      await comfyPage.loadWorkflow('group_node_v1.3.3')
+      await comfyPage.loadWorkflow('groupnodes/group_node_v1.3.3')
 
       // Mock custom node documentation with fallback
       await comfyPage.page.route(

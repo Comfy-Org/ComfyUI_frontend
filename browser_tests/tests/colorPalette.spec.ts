@@ -154,7 +154,7 @@ test.describe('Color Palette', () => {
     // doesn't update the store immediately.
     await comfyPage.setup()
 
-    await comfyPage.loadWorkflow('every_node_color')
+    await comfyPage.loadWorkflow('nodes/every_node_color')
     await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark-all-colors.png'
@@ -192,7 +192,7 @@ test.describe('Color Palette', () => {
 
 test.describe('Node Color Adjustments', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('every_node_color')
+    await comfyPage.loadWorkflow('nodes/every_node_color')
   })
 
   test('should adjust opacity via node opacity setting', async ({

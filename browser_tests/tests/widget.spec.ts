@@ -38,7 +38,7 @@ test.describe('Combo text widget', () => {
           .options.values
       })
 
-    await comfyPage.loadWorkflow('optional_combo_input')
+    await comfyPage.loadWorkflow('inputs/optional_combo_input')
     const initialComboValues = await getComboValues()
 
     // Focus canvas
@@ -57,7 +57,7 @@ test.describe('Combo text widget', () => {
   test('Should refresh combo values of nodes with v2 combo input spec', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('node_with_v2_combo_input')
+    await comfyPage.loadWorkflow('inputs/node_with_v2_combo_input')
     // click canvas to focus
     await comfyPage.page.mouse.click(400, 300)
     // press R to trigger refresh
@@ -90,7 +90,7 @@ test.describe('Boolean widget', () => {
 
 test.describe('Slider widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('simple_slider')
+    await comfyPage.loadWorkflow('inputs/simple_slider')
     await comfyPage.page.waitForTimeout(300)
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
@@ -136,7 +136,7 @@ test.describe('Dynamic widget manipulation', () => {
   test('Auto expand node when widget is added dynamically', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     await comfyPage.page.waitForTimeout(300)
 
     await comfyPage.page.evaluate(() => {

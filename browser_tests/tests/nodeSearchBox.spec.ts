@@ -16,7 +16,7 @@ test.describe('Node search box', () => {
   })
 
   test(`Can trigger on group body double click`, async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('single_group_only')
+    await comfyPage.loadWorkflow('groups/single_group_only')
     await comfyPage.page.mouse.dblclick(50, 50, { delay: 5 })
     await comfyPage.nextFrame()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
@@ -59,7 +59,7 @@ test.describe('Node search box', () => {
   })
 
   test('Can auto link batch moved node', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('batch_move_links')
+    await comfyPage.loadWorkflow('links/batch_move_links')
 
     const outputSlot1Pos = {
       x: 304,
@@ -110,7 +110,7 @@ test.describe('Node search box', () => {
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
     await comfyPage.closeMenu()
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     const screenCenter = {
       x: 200,
       y: 400

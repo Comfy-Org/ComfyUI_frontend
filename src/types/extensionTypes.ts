@@ -14,7 +14,8 @@ export interface BaseSidebarTabExtension {
 
 export interface BaseBottomPanelExtension {
   id: string
-  title: string
+  title?: string // For extensions that provide static titles
+  titleKey?: string // For core tabs with i18n keys
   targetPanel?: 'terminal' | 'shortcuts'
 }
 
