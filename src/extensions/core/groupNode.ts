@@ -1,3 +1,4 @@
+import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
 import { type NodeId } from '@/lib/litegraph/src/LGraphNode'
 import {
@@ -34,11 +35,6 @@ type GroupNodeWorkflowData = {
   links: ComfyLink[]
   nodes: ComfyNode[]
 }
-
-// v1 Prefix + Separator: workflow/
-// v2 Prefix + Separator: workflow> (ComfyUI_frontend v1.2.63)
-const PREFIX = 'workflow'
-const SEPARATOR = '>'
 
 const Workflow = {
   InUse: {
