@@ -320,7 +320,7 @@ export class CanvasPointer {
     if (this.bufferedLinuxEvent && this.bufferedLinuxEventTime > 0) {
       const timeSinceBuffer = now - this.bufferedLinuxEventTime
       if (timeSinceBuffer <= 10 && event.deltaX === 0) {
-        // Check for Linux wheel pattern (divisibility)
+        // Check for Linux wheel pattern
         if (
           this.isLinuxWheelPattern(this.bufferedLinuxEvent.deltaY, event.deltaY)
         ) {
@@ -330,7 +330,6 @@ export class CanvasPointer {
           return
         }
       }
-      // Clear buffer if not matched or timeout
       if (timeSinceBuffer > 10) {
         this.clearLinuxBuffer()
       }
@@ -342,18 +341,15 @@ export class CanvasPointer {
     const inCooldown = !isFirstEvent && !cooldownExpired
 
     if (inCooldown) {
-      // Within cooldown - don't allow switching modes
-      // Exception: Linux buffering in trackpad mode
+      // Within cooldown - maintain current mode except for Linux buffering
       if (this.shouldBufferLinuxEvent(event)) {
         this.bufferLinuxEvent(event, now)
       }
-      // Update time to keep tracking the most recent event
       this.lastWheelEventTime = now
       return
     }
 
-    // Perform device detection (first event or after cooldown)
-
+    // Perform device detection
     // Check for trackpad patterns
     if (this.isTrackpadPattern(event)) {
       this.detectedDevice = 'trackpad'
@@ -408,14 +404,12 @@ export class CanvasPointer {
   private isMousePattern(event: WheelEvent): boolean {
     const absY = Math.abs(event.deltaY)
 
-    // Clear mouse wheel event: deltaY > 80 (strictly greater)
-    // This is the primary threshold for switching from trackpad to mouse
+    // Primary threshold for switching from trackpad to mouse
     if (absY > 80) {
       return true
     }
 
-    // Windows/Mac mouse: deltaY >= 60
-    // Only when already in mouse mode (not for switching from trackpad)
+    // Secondary threshold when already in mouse mode
     if (absY >= 60 && event.deltaX === 0 && this.detectedDevice === 'mouse') {
       return true
     }
@@ -429,8 +423,7 @@ export class CanvasPointer {
    */
   private shouldBufferLinuxEvent(event: WheelEvent): boolean {
     const absY = Math.abs(event.deltaY)
-    // Don't buffer clear mouse events (>= 60)
-    // Only buffer potential Linux wheel events in the 10-59 range
+    // Buffer potential Linux wheel events in the 10-59 range
     return (
       this.detectedDevice === 'trackpad' &&
       absY >= 10 &&
@@ -446,7 +439,6 @@ export class CanvasPointer {
    * @param now The current timestamp
    */
   private bufferLinuxEvent(event: WheelEvent, now: number): void {
-    // Clear any existing timeout
     if (this.linuxBufferTimeoutId !== undefined) {
       clearTimeout(this.linuxBufferTimeoutId)
     }
@@ -469,12 +461,11 @@ export class CanvasPointer {
     const abs1 = Math.abs(deltaY1)
     const abs2 = Math.abs(deltaY2)
 
-    // Check if they're the same value
     if (abs1 === abs2) {
       return true
     }
 
-    // Check divisibility (one is a multiple of the other)
+    // Check if one value is a multiple of the other
     if (abs1 > 0 && abs2 > 0) {
       return abs1 % abs2 === 0 || abs2 % abs1 === 0
     }
