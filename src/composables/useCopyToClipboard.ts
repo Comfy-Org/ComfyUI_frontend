@@ -4,7 +4,7 @@ import { useToast } from 'primevue/usetoast'
 import { t } from '@/i18n'
 
 export function useCopyToClipboard() {
-  const { copy, copied, isSupported } = useClipboard()
+  const { copy, copied } = useClipboard()
   const toast = useToast()
   const showSuccessToast = () => {
     toast.add({
@@ -24,6 +24,7 @@ export function useCopyToClipboard() {
 
   function fallbackCopy(text: string) {
     const textarea = document.createElement('textarea')
+    textarea.setAttribute('readonly', '')
     textarea.value = text
     textarea.style.position = 'fixed'
     textarea.style.opacity = '0'
@@ -46,21 +47,16 @@ export function useCopyToClipboard() {
   }
 
   const copyToClipboard = async (text: string) => {
-    if (isSupported) {
-      try {
-        await copy(text)
-        if (copied.value) {
-          showSuccessToast()
-        } else {
-          // If VueUse copy failed, try fallback
-          fallbackCopy(text)
-        }
-      } catch (err) {
-        // VueUse copy failed, try fallback
+    try {
+      await copy(text)
+      if (copied.value) {
+        showSuccessToast()
+      } else {
+        // If VueUse copy failed, try fallback
         fallbackCopy(text)
       }
-    } else {
-      // Clipboard API not supported, use fallback
+    } catch (err) {
+      // VueUse copy failed, try fallback
       fallbackCopy(text)
     }
   }
