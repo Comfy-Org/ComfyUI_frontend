@@ -4,17 +4,9 @@
  * Implements one-way sync from Layout Store to LiteGraph.
  * The layout store is the single source of truth.
  */
-import log from 'loglevel'
 import { onUnmounted } from 'vue'
 
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
-
-// Create a logger for layout debugging
-const logger = log.getLogger('layout')
-// In dev mode, always show debug logs
-if (import.meta.env.DEV) {
-  logger.setLevel('debug')
-}
 
 /**
  * Composable for syncing LiteGraph with the Layout system
@@ -32,12 +24,6 @@ export function useLayoutSync() {
 
     // Subscribe to layout changes
     unsubscribe = layoutStore.onChange((change) => {
-      logger.debug('Layout sync received change:', {
-        source: change.source,
-        nodeIds: change.nodeIds,
-        type: change.type
-      })
-
       // Apply changes to LiteGraph regardless of source
       // The layout store is the single source of truth
       for (const nodeId of change.nodeIds) {
@@ -52,10 +38,6 @@ export function useLayoutSync() {
           liteNode.pos[0] !== layout.position.x ||
           liteNode.pos[1] !== layout.position.y
         ) {
-          logger.debug(`Updating LiteGraph node ${nodeId} position:`, {
-            from: { x: liteNode.pos[0], y: liteNode.pos[1] },
-            to: layout.position
-          })
           liteNode.pos[0] = layout.position.x
           liteNode.pos[1] = layout.position.y
         }

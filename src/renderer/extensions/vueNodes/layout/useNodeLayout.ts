@@ -4,19 +4,11 @@
  * Uses customRef for shared write access with Canvas renderer.
  * Provides dragging functionality and reactive layout state.
  */
-import log from 'loglevel'
 import { computed, inject } from 'vue'
 
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type { Point } from '@/renderer/core/layout/types'
-
-// Create a logger for layout debugging
-const logger = log.getLogger('layout')
-// In dev mode, always show debug logs
-if (import.meta.env.DEV) {
-  logger.setLevel('debug')
-}
 
 /**
  * Composable for individual Vue node components
@@ -37,20 +29,10 @@ export function useNodeLayout(nodeId: string) {
   // Get the customRef for this node (shared write access)
   const layoutRef = store.getNodeLayoutRef(nodeId)
 
-  logger.debug(`useNodeLayout initialized for node ${nodeId}`, {
-    hasLayout: !!layoutRef.value,
-    initialPosition: layoutRef.value?.position
-  })
-
   // Computed properties for easy access
   const position = computed(() => {
     const layout = layoutRef.value
     const pos = layout?.position ?? { x: 0, y: 0 }
-    logger.debug(`Node ${nodeId} position computed:`, {
-      pos,
-      hasLayout: !!layout,
-      layoutRefValue: layout
-    })
     return pos
   })
   const size = computed(
@@ -96,12 +78,6 @@ export function useNodeLayout(nodeId: string) {
    */
   const handleDrag = (event: PointerEvent) => {
     if (!isDragging || !dragStartPos || !dragStartMouse || !transformState) {
-      logger.debug(`Drag skipped for node ${nodeId}:`, {
-        isDragging,
-        hasDragStartPos: !!dragStartPos,
-        hasDragStartMouse: !!dragStartMouse,
-        hasTransformState: !!transformState
-      })
       return
     }
 
@@ -124,13 +100,6 @@ export function useNodeLayout(nodeId: string) {
       x: dragStartPos.x + canvasDelta.x,
       y: dragStartPos.y + canvasDelta.y
     }
-
-    logger.debug(`Dragging node ${nodeId}:`, {
-      mouseDelta,
-      canvasDelta,
-      newPosition,
-      currentLayoutPos: layoutRef.value?.position
-    })
 
     // Apply mutation through the layout system
     mutations.moveNode(nodeId, newPosition)
