@@ -1,5 +1,8 @@
 <template>
-  <div :class="containerClasses" :style="containerStyle">
+  <div
+    :class="containerClasses"
+    :style="maxWidth && maxWidth ? containerStyle : ''"
+  >
     <slot name="top"></slot>
     <slot name="bottom"></slot>
   </div>
@@ -13,8 +16,8 @@ const {
   maxWidth,
   minWidth
 } = defineProps<{
-  maxWidth: number
-  minWidth: number
+  maxWidth?: number
+  minWidth?: number
   ratio?: 'square' | 'portrait' | 'tallPortrait'
 }>()
 

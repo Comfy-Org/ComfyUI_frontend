@@ -260,13 +260,11 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
       <!-- Content -->
       <template #content>
-        <div class="flex flex-wrap gap-2">
+        <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
           <CardContainer
             v-for="i in args.cardCount"
             :key="i"
             ratio="square"
-            :max-width="480"
-            :min-width="230"
           >
             <template #top>
               <CardTop ratio="landscape">
