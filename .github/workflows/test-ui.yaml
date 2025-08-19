@@ -58,7 +58,8 @@ jobs:
 
             ---
 
-            🔄 **Preparing browser tests across multiple browsers...**
+            <img alt='claude-loading' src="https://github.com/user-attachments/assets/5ac382c7-e004-429b-8e35-7feb3e8f9c6f" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
+            **Preparing browser tests across multiple browsers...**
             At: ${{ steps.current-time.outputs.time }} UTC
 
             ---
@@ -145,7 +146,8 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            🔄 **${{ matrix.browser }}**: Running tests...
+            <img alt='claude-loading' src="https://github.com/user-attachments/assets/5ac382c7-e004-429b-8e35-7feb3e8f9c6f" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
+            **${{ matrix.browser }}**: Running tests...
 
       - name: Install requirements
         run: |
@@ -318,7 +320,7 @@ jobs:
               fi
             fi
           done
-          
+
           if [ "$ALL_PASSED" = "false" ]; then
             echo "❌ Tests failed in one or more browsers. Failing the CI job."
             exit 1
