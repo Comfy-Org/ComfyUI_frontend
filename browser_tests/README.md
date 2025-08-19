@@ -392,16 +392,6 @@ Option 2 - Generate local baselines for comparison:
 npx playwright test --update-snapshots
 ```
 
-### Getting Test Artifacts from GitHub Actions
-
-When tests fail in CI, you can download screenshots and traces:
-
-1. Go to the failed workflow run in GitHub Actions
-2. Scroll to "Artifacts" section at the bottom
-3. Download `playwright-report` or `test-results`
-4. Extract and open the HTML report locally
-5. View actual vs expected screenshots and execution traces
-
 ### Creating New Screenshot Baselines
 
 For PRs from `Comfy-Org/ComfyUI_frontend` branches:
@@ -412,17 +402,19 @@ For PRs from `Comfy-Org/ComfyUI_frontend` branches:
 
 > **Note:** Fork PRs cannot auto-commit screenshots. A maintainer will need to commit the screenshots manually for you (don't worry, they'll do it).
 
-## CI/CD Integration
+## Viewing Test Reports
 
 ### Automated Test Deployment
 
-The project automatically deploys Playwright test reports to Cloudflare Pages for every PR and push to main branches. This provides:
+The project automatically deploys Playwright test reports to Cloudflare Pages for every PR and push to main branches.
 
-- **Live test reports** with interactive HTML views
-- **Cross-browser testing** across chromium, mobile-chrome, and different viewport sizes
-- **Real-time PR comments** with test status and links to detailed reports
+### Accessing Test Reports
 
-#### How it works:
+- **From PR comments**: Click the "View Report" links for each browser
+- **Direct URLs**: Reports are available at `https://[branch].comfyui-playwright-[browser].pages.dev` (branch-specific deployments)
+- **From GitHub Actions**: Download artifacts from failed runs
+
+### How It Works
 
 1. **Test execution**: All browser tests run in parallel across multiple browsers
 2. **Report generation**: HTML reports are generated for each browser configuration
@@ -436,21 +428,6 @@ The project automatically deploys Playwright test reports to Cloudflare Pages fo
    - ✅/❌ Test status for each browser
    - Direct links to interactive test reports
    - Real-time progress updates as tests complete
-
-#### Accessing test reports:
-
-- **From PR comments**: Click the "View Report" links for each browser
-- **From GitHub Actions**: Download artifacts from failed runs
-- **Direct URLs**: Reports are available at `https://[branch].comfyui-playwright-[browser].pages.dev` (branch-specific deployments)
-
-#### Report features:
-
-- **Interactive HTML reports** with test results, screenshots, and traces
-- **Detailed failure analysis** with before/after screenshots
-- **Test execution videos** for failed tests
-- **Network logs** and console output for debugging
-
-This integration ensures that test results are easily accessible to reviewers and maintainers, making it simple to verify that changes don't break existing functionality across different browsers and viewport sizes.
 
 ## Resources
 
