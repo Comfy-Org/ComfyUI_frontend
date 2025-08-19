@@ -4,11 +4,10 @@
  * Uses Yjs for efficient local state management and future collaboration.
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
-import log from 'loglevel'
 import { type ComputedRef, type Ref, computed, customRef } from 'vue'
 import * as Y from 'yjs'
 
-import { ACTOR_CONFIG, DEBUG_CONFIG } from '@/renderer/core/layout/constants'
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import type {
   CreateNodeOperation,
   DeleteNodeOperation,
@@ -26,13 +25,6 @@ import type {
   Point
 } from '@/renderer/core/layout/types'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
-
-// Create logger for layout store
-const logger = log.getLogger(DEBUG_CONFIG.STORE_LOGGER_NAME)
-// In dev mode, always show debug logs
-if (import.meta.env.DEV) {
-  logger.setLevel('debug')
-}
 
 class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
@@ -74,25 +66,10 @@ class LayoutStoreImpl implements LayoutStore {
       event.changes.keys.forEach((_change, key) => {
         const trigger = this.nodeTriggers.get(key)
         if (trigger) {
-          logger.debug(`Yjs change detected for node ${key}, triggering ref`)
           trigger()
         }
       })
     })
-
-    // Debug: Log layout operations
-    if (localStorage.getItem(DEBUG_CONFIG.LAYOUT_DEBUG_KEY) === 'true') {
-      this.yoperations.observe((event) => {
-        const operations: LayoutOperation[] = []
-        event.changes.added.forEach((item) => {
-          const content = item.content.getContent()
-          if (Array.isArray(content) && content.length > 0) {
-            operations.push(content[0] as LayoutOperation)
-          }
-        })
-        console.log('Layout Operation:', operations)
-      })
-    }
   }
 
   /**
@@ -102,8 +79,6 @@ class LayoutStoreImpl implements LayoutStore {
     let nodeRef = this.nodeRefs.get(nodeId)
 
     if (!nodeRef) {
-      logger.debug(`Creating new layout ref for node ${nodeId}`)
-
       nodeRef = customRef<NodeLayout | null>((track, trigger) => {
         // Store the trigger so we can call it when Yjs changes
         this.nodeTriggers.set(nodeId, trigger)
@@ -113,11 +88,6 @@ class LayoutStoreImpl implements LayoutStore {
             track()
             const ynode = this.ynodes.get(nodeId)
             const layout = ynode ? this.yNodeToLayout(ynode) : null
-            logger.debug(`Layout ref GET for node ${nodeId}:`, {
-              position: layout?.position,
-              hasYnode: !!ynode,
-              version: this.version
-            })
             return layout
           },
           set: (newLayout: NodeLayout | null) => {
@@ -192,7 +162,6 @@ class LayoutStoreImpl implements LayoutStore {
                 }
               }
             }
-            logger.debug(`Layout ref SET triggering for node ${nodeId}`)
             trigger()
           }
         }
@@ -294,12 +263,6 @@ class LayoutStoreImpl implements LayoutStore {
    * Apply a layout operation using Yjs transactions
    */
   applyOperation(operation: LayoutOperation): void {
-    logger.debug(`applyOperation called:`, {
-      type: operation.type,
-      nodeId: operation.nodeId,
-      operation
-    })
-
     // Create change object outside transaction so we can use it after
     const change: LayoutChange = {
       type: 'update',
@@ -360,9 +323,6 @@ class LayoutStoreImpl implements LayoutStore {
     change.nodeIds.forEach((nodeId) => {
       const trigger = this.nodeTriggers.get(nodeId)
       if (trigger) {
-        logger.debug(
-          `Manually triggering ref for node ${nodeId} after operation`
-        )
         trigger()
       }
     })
@@ -413,11 +373,6 @@ class LayoutStoreImpl implements LayoutStore {
   initializeFromLiteGraph(
     nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
   ): void {
-    logger.debug('Initializing layout store from LiteGraph', {
-      nodeCount: nodes.length,
-      nodes: nodes.map((n) => ({ id: n.id, pos: n.pos }))
-    })
-
     this.ydoc.transact(() => {
       this.ynodes.clear()
       this.nodeRefs.clear()
@@ -443,17 +398,8 @@ class LayoutStoreImpl implements LayoutStore {
 
         // Add to spatial index
         this.spatialIndex.insert(layout.id, layout.bounds)
-
-        logger.debug(
-          `Initialized node ${layout.id} at position:`,
-          layout.position
-        )
       })
     }, 'initialization')
-
-    logger.debug('Layout store initialization complete', {
-      totalNodes: this.ynodes.size
-    })
   }
 
   // Operation handlers
@@ -463,11 +409,8 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const ynode = this.ynodes.get(operation.nodeId)
     if (!ynode) {
-      logger.warn(`No ynode found for ${operation.nodeId}`)
       return
     }
-
-    logger.debug(`Moving node ${operation.nodeId}`, operation.position)
 
     const size = ynode.get('size') as { width: number; height: number }
     ynode.set('position', operation.position)
