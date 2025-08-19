@@ -6,6 +6,21 @@ import { t } from '@/i18n'
 export function useCopyToClipboard() {
   const { copy, copied, isSupported } = useClipboard()
   const toast = useToast()
+  const showSuccessToast = () => {
+    toast.add({
+      severity: 'success',
+      summary: t('g.success'),
+      detail: t('clipboard.successMessage'),
+      life: 3000
+    })
+  }
+  const showErrorToast = () => {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('clipboard.errorMessage')
+    })
+  }
 
   function fallbackCopy(text: string) {
     const textarea = document.createElement('textarea')
@@ -16,29 +31,17 @@ export function useCopyToClipboard() {
     textarea.select()
 
     try {
+      // using legacy document.execCommand for fallback for old and linux browsers
       const successful = document.execCommand('copy')
       if (successful) {
-        toast.add({
-          severity: 'success',
-          summary: t('g.success'),
-          detail: t('clipboard.successMessage'),
-          life: 3000
-        })
+        showSuccessToast()
       } else {
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('clipboard.errorMessage')
-        })
+        showErrorToast()
       }
     } catch (err) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('clipboard.errorMessage')
-      })
+      showErrorToast()
     } finally {
-      document.body.removeChild(textarea)
+      textarea.remove()
     }
   }
 
@@ -46,15 +49,8 @@ export function useCopyToClipboard() {
     if (isSupported) {
       try {
         await copy(text)
-
-        // Check if copy was successful
         if (copied.value) {
-          toast.add({
-            severity: 'success',
-            summary: t('g.success'),
-            detail: t('clipboard.successMessage'),
-            life: 3000
-          })
+          showSuccessToast()
         } else {
           // If VueUse copy failed, try fallback
           fallbackCopy(text)
