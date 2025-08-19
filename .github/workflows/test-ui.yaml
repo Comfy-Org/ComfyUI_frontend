@@ -169,10 +169,17 @@ jobs:
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
         run: |
+          set +e  # Don't exit on failure
           npx playwright test --project=${{ matrix.browser }} --reporter=html
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
+          EXIT_CODE=$?
+          echo "exit_code=${EXIT_CODE}" >> $GITHUB_OUTPUT
+          
+          # Save test result for deployment job
+          mkdir -p test-results
+          echo "${{ matrix.browser }}|${EXIT_CODE}" > test-results/${{ matrix.browser }}.txt
+          
+          exit ${EXIT_CODE}  # Fail the job if tests failed
         working-directory: ComfyUI_frontend
-        continue-on-error: true
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -181,25 +188,72 @@ jobs:
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
 
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 1
+
+  deploy-reports:
+    needs: [setup, playwright-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
+    steps:
+      - name: Download playwright report
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results
+
+      - name: Set project name
+        id: project-name
+        run: |
+          if [ "${{ matrix.browser }}" = "chromium-0.5x" ]; then
+            echo "name=comfyui-playwright-chromium-0-5x" >> $GITHUB_OUTPUT
+          else
+            echo "name=comfyui-playwright-${{ matrix.browser }}" >> $GITHUB_OUTPUT
+          fi
+          echo "branch=${{ needs.setup.outputs.sanitized-branch }}" >> $GITHUB_OUTPUT
+
       - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
         id: cloudflare-deploy
-        if: always()
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }} --compatibility-date=2023-05-18
+          command: pages deploy playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }} --compatibility-date=2023-05-18
 
       - name: Save deployment info for summary
-        if: always()
         run: |
           mkdir -p deployment-info
+          # Get actual test result from artifact
+          if [ -f "test-results/${{ matrix.browser }}.txt" ]; then
+            info=$(cat "test-results/${{ matrix.browser }}.txt")
+            EXIT_CODE=$(echo "$info" | cut -d'|' -f2)
+          else
+            EXIT_CODE="1"  # Default to failure if no result
+          fi
           # wrangler-action outputs deployment-url instead of url
           DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
-          echo "${{ matrix.browser }}|${{ steps.playwright.outputs.exit_code }}|${DEPLOYMENT_URL}" > deployment-info/${{ matrix.browser }}.txt
+          echo "${{ matrix.browser }}|${EXIT_CODE}|${DEPLOYMENT_URL}" > deployment-info/${{ matrix.browser }}.txt
 
       - name: Upload deployment info
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: deployment-info-${{ matrix.browser }}
@@ -211,18 +265,33 @@ jobs:
         run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
       - name: Comment PR - Browser Test Complete
-        if: github.event_name == 'pull_request' && always()
-        uses: edumserrano/find-create-or-update-comment@v3
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
-          comment-author: 'github-actions[bot]'
-          edit-mode: append
-          body: |
-            ${{ steps.playwright.outputs.exit_code == '0' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.outputs.exit_code == '0' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }})
+        if: github.event_name == 'pull_request'
+        run: |
+          # Get actual test result
+          if [ -f "test-results/${{ matrix.browser }}.txt" ]; then
+            info=$(cat "test-results/${{ matrix.browser }}.txt")
+            EXIT_CODE=$(echo "$info" | cut -d'|' -f2)
+          else
+            EXIT_CODE="1"
+          fi
+          
+          if [ "$EXIT_CODE" = "0" ]; then
+            STATUS="✅"
+            MESSAGE="Tests passed!"
+          else
+            STATUS="❌"
+            MESSAGE="Tests failed!"
+          fi
+          
+          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
+          
+          gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            -f body="${STATUS} **${{ matrix.browser }}**: ${MESSAGE} [View Report](${DEPLOYMENT_URL})"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   comment-summary:
-    needs: playwright-tests
+    needs: [playwright-tests, deploy-reports]
     runs-on: ubuntu-latest
     if: always() && github.event_name == 'pull_request'
     permissions:
