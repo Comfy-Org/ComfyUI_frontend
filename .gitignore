@@ -13,8 +13,9 @@ bun.lockb
 pnpm-lock.yaml
 yarn.lock
 
-# ESLint cache
+# Cache files
 .eslintcache
+.prettiercache
 
 node_modules
 dist
