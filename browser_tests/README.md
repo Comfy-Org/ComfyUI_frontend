@@ -412,6 +412,46 @@ For PRs from `Comfy-Org/ComfyUI_frontend` branches:
 
 > **Note:** Fork PRs cannot auto-commit screenshots. A maintainer will need to commit the screenshots manually for you (don't worry, they'll do it).
 
+## CI/CD Integration
+
+### Automated Test Deployment
+
+The project automatically deploys Playwright test reports to Cloudflare Pages for every PR and push to main branches. This provides:
+
+- **Live test reports** with interactive HTML views
+- **Cross-browser testing** across chromium, mobile-chrome, and different viewport sizes
+- **Real-time PR comments** with test status and links to detailed reports
+
+#### How it works:
+
+1. **Test execution**: All browser tests run in parallel across multiple browsers
+2. **Report generation**: HTML reports are generated for each browser configuration
+3. **Cloudflare deployment**: Each browser's report deploys to its own Cloudflare Pages project with branch isolation:
+   - `comfyui-playwright-chromium` (with branch-specific URLs)
+   - `comfyui-playwright-mobile-chrome` (with branch-specific URLs)
+   - `comfyui-playwright-chromium-2x` (2x scale, with branch-specific URLs)
+   - `comfyui-playwright-chromium-0-5x` (0.5x scale, with branch-specific URLs)
+
+4. **PR comments**: GitHub automatically updates PR comments with:
+   - ✅/❌ Test status for each browser
+   - Direct links to interactive test reports
+   - Real-time progress updates as tests complete
+
+#### Accessing test reports:
+
+- **From PR comments**: Click the "View Report" links for each browser
+- **From GitHub Actions**: Download artifacts from failed runs
+- **Direct URLs**: Reports are available at `https://[branch].comfyui-playwright-[browser].pages.dev` (branch-specific deployments)
+
+#### Report features:
+
+- **Interactive HTML reports** with test results, screenshots, and traces
+- **Detailed failure analysis** with before/after screenshots
+- **Test execution videos** for failed tests
+- **Network logs** and console output for debugging
+
+This integration ensures that test results are easily accessible to reviewers and maintainers, making it simple to verify that changes don't break existing functionality across different browsers and viewport sizes.
+
 ## Resources
 
 - [Playwright UI Mode](https://playwright.dev/docs/test-ui-mode) - Interactive test debugging
