@@ -762,7 +762,6 @@
   },
   "menuLabels": {
     "About ComfyUI": "À propos de ComfyUI",
-    "Add Edit Model Step": "Ajouter une étape d’édition de modèle",
     "Bottom Panel": "Panneau inférieur",
     "Browse Templates": "Parcourir les modèles",
     "Bypass/Unbypass Selected Nodes": "Contourner/Ne pas contourner les nœuds sélectionnés",
