@@ -2585,9 +2585,21 @@ export class LGraphCanvas
               e.shiftKey &&
               (output.links?.length || output._floatingLinks?.size)
             ) {
-              linkConnector.moveOutputLink(graph, output)
-              this.#linkConnectorDrop()
-              return
+              const outputLinks = [
+                ...(output.links ?? []),
+                ...[...(output._floatingLinks ?? new Set())]
+              ]
+              if (
+                outputLinks.some(
+                  (linkId) =>
+                    typeof linkId === 'number' &&
+                    graph.getLink(linkId) !== undefined
+                )
+              ) {
+                linkConnector.moveOutputLink(graph, output)
+                this.#linkConnectorDrop()
+                return
+              }
             }
 
             // New output link
