@@ -29,12 +29,19 @@
         </div>
       </Message>
     </template>
+    <div class="mb-3 flex gap-2">
+      <SelectButton v-model="filterType" :options="filterTypes" />
+    </div>
     <DataTable
-      :value="extensionStore.extensions"
+      v-model:selection="selectedExtensions"
+      :value="filteredExtensions"
       striped-rows
       size="small"
       :filters="filters"
+      selection-mode="multiple"
+      data-key="name"
     >
+      <Column selection-mode="multiple" :frozen="true" style="width: 3rem" />
       <Column :header="$t('g.extensionName')" sortable field="name">
         <template #body="slotProps">
           {{ slotProps.data.name }}
@@ -42,6 +49,7 @@
             v-if="extensionStore.isCoreExtension(slotProps.data.name)"
             value="Core"
           />
+          <Tag v-else value="Custom" severity="info" />
         </template>
       </Column>
       <Column
@@ -78,6 +86,7 @@ import Column from 'primevue/column'
 import ContextMenu from 'primevue/contextmenu'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
+import SelectButton from 'primevue/selectbutton'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, onMounted, ref } from 'vue'
@@ -88,6 +97,10 @@ import { useSettingStore } from '@/stores/settingStore'
 
 import PanelTemplate from './PanelTemplate.vue'
 
+const filterTypes = ['All', 'Core', 'Custom']
+const filterType = ref('All')
+const selectedExtensions = ref<Array<any>>([])
+
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }
 })
@@ -96,6 +109,22 @@ const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
 
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
+
+const filteredExtensions = computed(() => {
+  const extensions = extensionStore.extensions
+  switch (filterType.value) {
+    case 'Core':
+      return extensions.filter((ext) =>
+        extensionStore.isCoreExtension(ext.name)
+      )
+    case 'Custom':
+      return extensions.filter(
+        (ext) => !extensionStore.isCoreExtension(ext.name)
+      )
+    default:
+      return extensions
+  }
+})
 
 onMounted(() => {
   extensionStore.extensions.forEach((ext) => {
@@ -163,6 +192,33 @@ const applyChanges = () => {
 
 const menu = ref<InstanceType<typeof ContextMenu>>()
 const contextMenuItems = [
+  {
+    label: 'Enable Selected',
+    icon: 'pi pi-check',
+    command: async () => {
+      selectedExtensions.value.forEach((ext) => {
+        if (!extensionStore.isExtensionReadOnly(ext.name)) {
+          editingEnabledExtensions.value[ext.name] = true
+        }
+      })
+      await updateExtensionStatus()
+    }
+  },
+  {
+    label: 'Disable Selected',
+    icon: 'pi pi-times',
+    command: async () => {
+      selectedExtensions.value.forEach((ext) => {
+        if (!extensionStore.isExtensionReadOnly(ext.name)) {
+          editingEnabledExtensions.value[ext.name] = false
+        }
+      })
+      await updateExtensionStatus()
+    }
+  },
+  {
+    separator: true
+  },
   {
     label: 'Enable All',
     icon: 'pi pi-check',

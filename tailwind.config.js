@@ -8,6 +8,7 @@ export default {
 
   theme: {
     fontSize: {
+      xxs: '0.625rem',
       xs: '0.75rem',
       sm: '0.875rem',
       base: '1rem',
@@ -82,7 +83,7 @@ export default {
           100: '#8282821a',
           200: '#e4e4e7',
           300: '#d4d4d8',
-          400: '#a1a1aa',
+          400: '#A1A3AE',
           500: '#71717a',
           600: '#52525b',
           700: '#38393b',

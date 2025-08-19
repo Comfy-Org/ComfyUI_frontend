@@ -1,6 +1,6 @@
 <template>
   <h3
-    class="m-0 px-3 py-0 pt-5 text-sm font-bold uppercase text-neutral-400 dark-theme:text-neutral-400"
+    class="m-0 px-3 py-0 pt-5 text-xxs font-bold uppercase text-neutral-400 dark-theme:text-neutral-400"
   >
     {{ title }}
   </h3>
