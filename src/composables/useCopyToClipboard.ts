@@ -26,8 +26,12 @@ export function useCopyToClipboard() {
     const textarea = document.createElement('textarea')
     textarea.setAttribute('readonly', '')
     textarea.value = text
-    textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
+    textarea.style.position = 'absolute'
+    textarea.style.left = '-9999px'
+    textarea.setAttribute('aria-hidden', 'true')
+    textarea.setAttribute('tabindex', '-1')
+    textarea.style.width = '1px'
+    textarea.style.height = '1px'
     document.body.appendChild(textarea)
     textarea.select()
 
