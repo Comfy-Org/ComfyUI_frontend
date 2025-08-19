@@ -50,6 +50,22 @@ setup((app) => {
   app.use(ToastService)
 })
 
+// Dark theme decorator
+export const withTheme = (Story: any, context: any) => {
+  const theme = context.globals.theme || 'light'
+
+  // Apply theme class to document root
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark-theme')
+    document.body.classList.add('dark-theme')
+  } else {
+    document.documentElement.classList.remove('dark-theme')
+    document.body.classList.remove('dark-theme')
+  }
+
+  return Story()
+}
+
 const preview: Preview = {
   parameters: {
     controls: {
@@ -62,10 +78,27 @@ const preview: Preview = {
       default: 'light',
       values: [
         { name: 'light', value: '#ffffff' },
-        { name: 'dark', value: '#1a1a1a' }
+        { name: 'dark', value: '#0a0a0a' }
       ]
     }
-  }
+  },
+  globalTypes: {
+    theme: {
+      name: 'Theme',
+      description: 'Global theme for components',
+      defaultValue: 'light',
+      toolbar: {
+        icon: 'circlehollow',
+        items: [
+          { value: 'light', icon: 'sun', title: 'Light' },
+          { value: 'dark', icon: 'moon', title: 'Dark' }
+        ],
+        showName: true,
+        dynamicTitle: true
+      }
+    }
+  },
+  decorators: [withTheme]
 }
 
 export default preview
