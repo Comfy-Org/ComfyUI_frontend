@@ -762,7 +762,6 @@
   },
   "menuLabels": {
     "About ComfyUI": "關於 ComfyUI",
-    "Add Edit Model Step": "新增編輯模型步驟",
     "Bottom Panel": "底部面板",
     "Browse Templates": "瀏覽範本",
     "Bypass/Unbypass Selected Nodes": "繞過/取消繞過選取節點",
