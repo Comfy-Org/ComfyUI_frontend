@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import {
-  getOrderedInputNames,
-  sortNodeInputsByOrder
+  getOrderedInputSpecs,
+  sortWidgetValuesByInputOrder
 } from '@/utils/nodeDefOrderingUtil'
 
 describe('nodeDefOrderingUtil', () => {
-  describe('sortNodeInputsByOrder', () => {
+  describe('getOrderedInputSpecs', () => {
     it('should maintain order when no input_order is specified', () => {
       const nodeDef: ComfyNodeDef = {
         name: 'TestNode',
@@ -25,8 +26,12 @@ describe('nodeDefOrderingUtil', () => {
         }
       }
 
-      const result = sortNodeInputsByOrder(nodeDef)
-      expect(result).toEqual(nodeDef)
+      const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+      const result = getOrderedInputSpecs(nodeDefImpl, nodeDefImpl.inputs)
+
+      // Should maintain Object.values order when no input_order
+      const names = result.map((spec) => spec.name)
+      expect(names).toEqual(['image', 'seed', 'steps'])
     })
 
     it('should sort inputs according to input_order', () => {
@@ -49,9 +54,11 @@ describe('nodeDefOrderingUtil', () => {
         }
       }
 
-      const result = sortNodeInputsByOrder(nodeDef)
-      const orderedKeys = Object.keys(result.input!.required!)
-      expect(orderedKeys).toEqual(['steps', 'seed', 'image'])
+      const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+      const result = getOrderedInputSpecs(nodeDefImpl, nodeDefImpl.inputs)
+
+      const names = result.map((spec) => spec.name)
+      expect(names).toEqual(['steps', 'seed', 'image'])
     })
 
     it('should handle missing inputs in input_order gracefully', () => {
@@ -74,9 +81,12 @@ describe('nodeDefOrderingUtil', () => {
         }
       }
 
-      const result = sortNodeInputsByOrder(nodeDef)
-      const orderedKeys = Object.keys(result.input!.required!)
-      expect(orderedKeys).toEqual(['steps', 'seed', 'image'])
+      const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+      const result = getOrderedInputSpecs(nodeDefImpl, nodeDefImpl.inputs)
+
+      // Should skip nonexistent and include image at the end
+      const names = result.map((spec) => spec.name)
+      expect(names).toEqual(['steps', 'seed', 'image'])
     })
 
     it('should handle inputs not in input_order', () => {
@@ -100,12 +110,15 @@ describe('nodeDefOrderingUtil', () => {
         }
       }
 
-      const result = sortNodeInputsByOrder(nodeDef)
-      const orderedKeys = Object.keys(result.input!.required!)
-      expect(orderedKeys).toEqual(['steps', 'seed', 'image', 'cfg'])
+      const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+      const result = getOrderedInputSpecs(nodeDefImpl, nodeDefImpl.inputs)
+
+      // Should have ordered ones first, then remaining
+      const names = result.map((spec) => spec.name)
+      expect(names).toEqual(['steps', 'seed', 'image', 'cfg'])
     })
 
-    it('should sort multiple categories', () => {
+    it('should handle both required and optional inputs', () => {
       const nodeDef: ComfyNodeDef = {
         name: 'TestNode',
         display_name: 'Test Node',
@@ -129,77 +142,133 @@ describe('nodeDefOrderingUtil', () => {
         }
       }
 
-      const result = sortNodeInputsByOrder(nodeDef)
-      const requiredKeys = Object.keys(result.input!.required!)
-      const optionalKeys = Object.keys(result.input!.optional!)
-      expect(requiredKeys).toEqual(['seed', 'image'])
-      expect(optionalKeys).toEqual(['strength', 'mask'])
-    })
-  })
+      const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+      const result = getOrderedInputSpecs(nodeDefImpl, nodeDefImpl.inputs)
 
-  describe('getOrderedInputNames', () => {
-    it('should return ordered names when input_order is specified', () => {
-      const nodeDef: ComfyNodeDef = {
-        name: 'TestNode',
-        display_name: 'Test Node',
-        category: 'test',
-        python_module: 'test',
-        description: 'Test node',
+      const names = result.map((spec) => spec.name)
+      const optionalFlags = result.map((spec) => spec.isOptional)
+
+      expect(names).toEqual(['seed', 'image', 'strength', 'mask'])
+      expect(optionalFlags).toEqual([false, false, true, true])
+    })
+
+    it('should work with real KSampler node example', () => {
+      // Simulating different backend orderings
+      const kSamplerDefBackendA: ComfyNodeDef = {
+        name: 'KSampler',
+        display_name: 'KSampler',
+        category: 'sampling',
+        python_module: 'nodes',
+        description: 'KSampler node',
         output_node: false,
         input: {
           required: {
-            image: ['IMAGE', {}],
-            seed: ['INT', { default: 0 }],
-            steps: ['INT', { default: 20 }]
+            // Alphabetical order from backend A
+            cfg: ['FLOAT', { default: 8, min: 0, max: 100 }],
+            denoise: ['FLOAT', { default: 1, min: 0, max: 1 }],
+            latent_image: ['LATENT', {}],
+            model: ['MODEL', {}],
+            negative: ['CONDITIONING', {}],
+            positive: ['CONDITIONING', {}],
+            sampler_name: [['euler', 'euler_cfg_pp'], {}],
+            scheduler: [['simple', 'sgm_uniform'], {}],
+            seed: ['INT', { default: 0, min: 0, max: Number.MAX_SAFE_INTEGER }],
+            steps: ['INT', { default: 20, min: 1, max: 10000 }]
           }
         },
         input_order: {
-          required: ['steps', 'seed', 'image']
+          required: [
+            'model',
+            'seed',
+            'steps',
+            'cfg',
+            'sampler_name',
+            'scheduler',
+            'positive',
+            'negative',
+            'latent_image',
+            'denoise'
+          ]
         }
       }
 
-      const result = getOrderedInputNames(nodeDef, 'required')
-      expect(result).toEqual(['steps', 'seed', 'image'])
+      const nodeDefImpl = new ComfyNodeDefImpl(kSamplerDefBackendA)
+      const result = getOrderedInputSpecs(nodeDefImpl, nodeDefImpl.inputs)
+
+      const names = result.map((spec) => spec.name)
+      // Should follow input_order, not alphabetical
+      expect(names).toEqual([
+        'model',
+        'seed',
+        'steps',
+        'cfg',
+        'sampler_name',
+        'scheduler',
+        'positive',
+        'negative',
+        'latent_image',
+        'denoise'
+      ])
+    })
+  })
+
+  describe('sortWidgetValuesByInputOrder', () => {
+    it('should reorder widget values to match input_order', () => {
+      const widgetValues = [0, 'model_ref', 5, 1]
+      const currentWidgetOrder = ['momentum', 'model', 'norm_threshold', 'eta']
+      const correctOrder = ['model', 'eta', 'norm_threshold', 'momentum']
+
+      const result = sortWidgetValuesByInputOrder(
+        widgetValues,
+        currentWidgetOrder,
+        correctOrder
+      )
+
+      expect(result).toEqual(['model_ref', 1, 5, 0])
     })
 
-    it('should return Object.keys order when no input_order', () => {
-      const nodeDef: ComfyNodeDef = {
-        name: 'TestNode',
-        display_name: 'Test Node',
-        category: 'test',
-        python_module: 'test',
-        description: 'Test node',
-        output_node: false,
-        input: {
-          required: {
-            image: ['IMAGE', {}],
-            seed: ['INT', { default: 0 }],
-            steps: ['INT', { default: 20 }]
-          }
-        }
-      }
+    it('should handle missing widgets in input_order', () => {
+      const widgetValues = [1, 2, 3, 4]
+      const currentWidgetOrder = ['a', 'b', 'c', 'd']
+      const inputOrder = ['b', 'd'] // Only partial order
 
-      const result = getOrderedInputNames(nodeDef, 'required')
-      expect(result).toEqual(['image', 'seed', 'steps'])
+      const result = sortWidgetValuesByInputOrder(
+        widgetValues,
+        currentWidgetOrder,
+        inputOrder
+      )
+
+      // b=2, d=4, then a=1, c=3
+      expect(result).toEqual([2, 4, 1, 3])
     })
 
-    it('should return empty array when category has no inputs', () => {
-      const nodeDef: ComfyNodeDef = {
-        name: 'TestNode',
-        display_name: 'Test Node',
-        category: 'test',
-        python_module: 'test',
-        description: 'Test node',
-        output_node: false,
-        input: {
-          required: {
-            image: ['IMAGE', {}]
-          }
-        }
-      }
+    it('should handle extra widget values', () => {
+      const widgetValues = [1, 2, 3, 4, 5] // More values than names
+      const currentWidgetOrder = ['a', 'b', 'c']
+      const inputOrder = ['c', 'a', 'b']
 
-      const result = getOrderedInputNames(nodeDef, 'optional')
-      expect(result).toEqual([])
+      const result = sortWidgetValuesByInputOrder(
+        widgetValues,
+        currentWidgetOrder,
+        inputOrder
+      )
+
+      // c=3, a=1, b=2, then extras 4, 5
+      expect(result).toEqual([3, 1, 2, 4, 5])
+    })
+
+    it('should return unchanged when no input_order', () => {
+      const widgetValues = [1, 2, 3]
+      const currentWidgetOrder = ['a', 'b', 'c']
+      const inputOrder: string[] = []
+
+      const result = sortWidgetValuesByInputOrder(
+        widgetValues,
+        currentWidgetOrder,
+        inputOrder
+      )
+
+      expect(result).toEqual([1, 2, 3])
     })
   })
 })

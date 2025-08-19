@@ -10,7 +10,6 @@ import {
   isComboInputSpec,
   isComboInputSpecV1
 } from '@/schemas/nodeDefSchema'
-import { getOrderedInputNames } from '@/utils/nodeDefOrderingUtil'
 
 /**
  * Transforms a V1 node definition to V2 format
@@ -23,32 +22,28 @@ export function transformNodeDefV1ToV2(
   // Transform inputs
   const inputs: Record<string, InputSpecV2> = {}
 
-  // Process required inputs in the correct order
+  // Process required inputs
   if (nodeDefV1.input?.required) {
-    const orderedNames = getOrderedInputNames(nodeDefV1, 'required')
-    orderedNames.forEach((name) => {
-      const inputSpecV1 = nodeDefV1.input!.required![name]
-      if (inputSpecV1) {
-        inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
-          name,
-          isOptional: false
-        })
-      }
-    })
+    for (const [name, inputSpecV1] of Object.entries(
+      nodeDefV1.input.required
+    )) {
+      inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
+        name,
+        isOptional: false
+      })
+    }
   }
 
-  // Process optional inputs in the correct order
+  // Process optional inputs
   if (nodeDefV1.input?.optional) {
-    const orderedNames = getOrderedInputNames(nodeDefV1, 'optional')
-    orderedNames.forEach((name) => {
-      const inputSpecV1 = nodeDefV1.input!.optional![name]
-      if (inputSpecV1) {
-        inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
-          name,
-          isOptional: true
-        })
-      }
-    })
+    for (const [name, inputSpecV1] of Object.entries(
+      nodeDefV1.input.optional
+    )) {
+      inputs[name] = transformInputSpecV1ToV2(inputSpecV1, {
+        name,
+        isOptional: true
+      })
+    }
   }
 
   // Transform outputs
