@@ -423,11 +423,11 @@ export class CanvasPointer {
     if (absoluteDeltaY > 80) return true
 
     // Secondary threshold when already in mouse mode
-    const isSecondaryThreshold =
+    return (
       absoluteDeltaY >= 60 &&
       hasNoHorizontalMovement &&
       this.detectedDevice === 'mouse'
-    return isSecondaryThreshold
+    )
   }
 
   /**
