@@ -34,17 +34,54 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative px-6 pt-2 pb-4 flex gap-2 flex-wrap">
-        <!-- Model Filter -->
-        <MultiSelect
-          v-model="selectedModelObjects"
-          :label="modelFilterLabel"
-          :options="modelOptions"
-        >
-          <template #icon>
-            <i-lucide:cpu />
-          </template>
-        </MultiSelect>
+      <div class="relative px-6 pt-2 pb-4 flex gap-2 flex-wrap justify-between">
+        <!-- Filters -->
+        <div class="flex gap-2 flex-wrap">
+          <!-- Model Filter -->
+          <MultiSelect
+            v-model="selectedModelObjects"
+            :label="modelFilterLabel"
+            :options="modelOptions"
+            :has-search-box="true"
+            :search-placeholder="
+              $t('templateWorkflows.searchModels', 'Search models...')
+            "
+          >
+            <template #icon>
+              <i-lucide:cpu />
+            </template>
+          </MultiSelect>
+
+          <!-- Use Case Filter -->
+          <MultiSelect
+            v-model="selectedUseCaseObjects"
+            :label="useCaseFilterLabel"
+            :options="useCaseOptions"
+            :has-search-box="true"
+            :search-placeholder="
+              $t('templateWorkflows.searchUseCases', 'Search use cases...')
+            "
+          >
+            <template #icon>
+              <i-lucide:target />
+            </template>
+          </MultiSelect>
+
+          <!-- License Filter -->
+          <MultiSelect
+            v-model="selectedLicenseObjects"
+            :label="licenseFilterLabel"
+            :options="licenseOptions"
+            :has-search-box="true"
+            :search-placeholder="
+              $t('templateWorkflows.searchLicenses', 'Search licenses...')
+            "
+          >
+            <template #icon>
+              <i-lucide:file-text />
+            </template>
+          </MultiSelect>
+        </div>
 
         <!-- Sort Options -->
         <SingleSelect
@@ -57,25 +94,6 @@
             <i-lucide:arrow-up-down />
           </template>
         </SingleSelect>
-
-        <!-- Filter Tags -->
-        <div
-          v-if="selectedModelObjects.length > 0"
-          class="flex flex-wrap gap-1 items-center"
-        >
-          <span class="text-sm text-neutral-600 dark:text-neutral-400">{{
-            $t('templateWorkflows.activeFilters', 'Filters:')
-          }}</span>
-          <button
-            v-for="modelObj in selectedModelObjects"
-            :key="modelObj.value"
-            class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-            @click="removeModelFilter(modelObj.value)"
-          >
-            {{ modelObj.name }}
-            <i-lucide:x class="w-3 h-3" />
-          </button>
-        </div>
       </div>
     </template>
 
@@ -189,13 +207,19 @@ const navigationFilteredTemplates = computed(() => {
 const {
   searchQuery,
   selectedModels,
+  selectedUseCases,
+  selectedLicenses,
   sortBy,
   filteredTemplates,
   availableModels,
+  availableUseCases,
+  availableLicenses,
   filteredCount,
   totalCount,
-  resetFilters,
-  removeModelFilter
+  resetFilters
+  // removeModelFilter,
+  // removeUseCaseFilter,
+  // removeLicenseFilter
 } = useTemplateFiltering(navigationFilteredTemplates)
 
 // Convert between string array and object array for MultiSelect component
@@ -208,13 +232,37 @@ const selectedModelObjects = computed({
   }
 })
 
+const selectedUseCaseObjects = computed({
+  get() {
+    return selectedUseCases.value.map((useCase) => ({
+      name: useCase,
+      value: useCase
+    }))
+  },
+  set(value: { name: string; value: string }[]) {
+    selectedUseCases.value = value.map((item) => item.value)
+  }
+})
+
+const selectedLicenseObjects = computed({
+  get() {
+    return selectedLicenses.value.map((license) => ({
+      name: license,
+      value: license
+    }))
+  },
+  set(value: { name: string; value: string }[]) {
+    selectedLicenses.value = value.map((item) => item.value)
+  }
+})
+
 // Loading state
 const isLoading = ref(true)
 
 // Navigation
 const selectedNavItem = ref<string | null>('all')
 
-// Model filter options
+// Filter options
 const modelOptions = computed(() =>
   availableModels.value.map((model) => ({
     name: model,
@@ -222,7 +270,21 @@ const modelOptions = computed(() =>
   }))
 )
 
-// Model filter label
+const useCaseOptions = computed(() =>
+  availableUseCases.value.map((useCase) => ({
+    name: useCase,
+    value: useCase
+  }))
+)
+
+const licenseOptions = computed(() =>
+  availableLicenses.value.map((license) => ({
+    name: license,
+    value: license
+  }))
+)
+
+// Filter labels
 const modelFilterLabel = computed(() => {
   if (selectedModelObjects.value.length === 0) {
     return t('templateWorkflows.modelFilter', 'Model Filter')
@@ -235,17 +297,41 @@ const modelFilterLabel = computed(() => {
   }
 })
 
+const useCaseFilterLabel = computed(() => {
+  if (selectedUseCaseObjects.value.length === 0) {
+    return t('templateWorkflows.useCaseFilter', 'Use Case')
+  } else if (selectedUseCaseObjects.value.length === 1) {
+    return selectedUseCaseObjects.value[0].name
+  } else {
+    return t('templateWorkflows.useCasesSelected', {
+      count: selectedUseCaseObjects.value.length
+    })
+  }
+})
+
+const licenseFilterLabel = computed(() => {
+  if (selectedLicenseObjects.value.length === 0) {
+    return t('templateWorkflows.licenseFilter', 'License')
+  } else if (selectedLicenseObjects.value.length === 1) {
+    return selectedLicenseObjects.value[0].name
+  } else {
+    return t('templateWorkflows.licensesSelected', {
+      count: selectedLicenseObjects.value.length
+    })
+  }
+})
+
 // Sort options
 const sortOptions = computed(() => [
-  {
-    name: t('templateWorkflows.sort.recommended', 'Recommended'),
-    value: 'recommended'
-  },
   {
     name: t('templateWorkflows.sort.alphabetical', 'A → Z'),
     value: 'alphabetical'
   },
-  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' }
+  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
+  {
+    name: t('templateWorkflows.sort.default', 'Default'),
+    value: 'default'
+  }
 ])
 
 // Additional computed properties for TemplateWorkflowView

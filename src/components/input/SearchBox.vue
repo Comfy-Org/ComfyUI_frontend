@@ -13,13 +13,16 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { computed, defineModel } from 'vue'
+import { computed } from 'vue'
 
 const { placeHolder, hasBorder = false } = defineProps<{
   placeHolder?: string
   hasBorder?: boolean
 }>()
-const searchQuery = defineModel<string>('')
+
+const searchQuery = defineModel<string>({
+  default: ''
+})
 
 const wrapperStyle = computed(() => {
   return hasBorder
