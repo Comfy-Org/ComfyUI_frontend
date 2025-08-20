@@ -36,6 +36,7 @@ import type {
   INodeSlot,
   INodeSlotContextItem,
   ISlotType,
+  LinkNetwork,
   LinkSegment,
   NullableProperties,
   Point,
@@ -2575,31 +2576,30 @@ export class LGraphCanvas
     } else if (!node.flags.collapsed) {
       const { inputs, outputs } = node
 
+      function hasRelevantOutputLinks(
+        output: INodeOutputSlot,
+        network: LinkNetwork
+      ): boolean {
+        const outputLinks = [
+          ...(output.links ?? []),
+          ...[...(output._floatingLinks ?? new Set())]
+        ]
+        return outputLinks.some(
+          (linkId) =>
+            typeof linkId === 'number' && network.getLink(linkId) !== undefined
+        )
+      }
+
       // Outputs
       if (outputs) {
         for (const [i, output] of outputs.entries()) {
           const link_pos = node.getOutputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
-            if (
-              e.shiftKey &&
-              (output.links?.length || output._floatingLinks?.size)
-            ) {
-              const outputLinks = [
-                ...(output.links ?? []),
-                ...[...(output._floatingLinks ?? new Set())]
-              ]
-              if (
-                outputLinks.some(
-                  (linkId) =>
-                    typeof linkId === 'number' &&
-                    graph.getLink(linkId) !== undefined
-                )
-              ) {
-                linkConnector.moveOutputLink(graph, output)
-                this.#linkConnectorDrop()
-                return
-              }
+            if (e.shiftKey && hasRelevantOutputLinks(output, graph)) {
+              linkConnector.moveOutputLink(graph, output)
+              this.#linkConnectorDrop()
+              return
             }
 
             // New output link
