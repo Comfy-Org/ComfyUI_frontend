@@ -3,6 +3,7 @@ import {
   type LinkRenderContext,
   LitegraphLinkAdapter
 } from '@/renderer/core/canvas/litegraph/LitegraphLinkAdapter'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -2194,11 +2195,14 @@ export class LGraphCanvas
           this.processSelect(node, e, true)
         } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
           // Reroutes
-          const reroute = graph.getRerouteOnPos(
-            e.canvasX,
-            e.canvasY,
-            this.#visibleReroutes
-          )
+          // Try layout store first, fallback to old method
+          const rerouteLayout = layoutStore.queryRerouteAtPoint({
+            x: e.canvasX,
+            y: e.canvasY
+          })
+          const reroute = rerouteLayout
+            ? graph.getReroute(Number(rerouteLayout.id))
+            : graph.getRerouteOnPos(e.canvasX, e.canvasY, this.#visibleReroutes)
           if (reroute) {
             if (e.altKey) {
               pointer.onClick = (upEvent) => {
@@ -2397,16 +2401,21 @@ export class LGraphCanvas
       this.ctx.lineWidth = this.connections_width + 7
       const dpi = window?.devicePixelRatio || 1
 
+      // Try layout store for link hit testing first
+      const hitLinkId = layoutStore.queryLinkAtPoint({ x, y }, this.ctx)
+
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
         if (!centre) continue
 
+        // Check if this link was hit (using layout store or fallback to old method)
+        const isLinkHit = hitLinkId
+          ? String(linkSegment.id) === hitLinkId
+          : linkSegment.path &&
+            this.ctx.isPointInStroke(linkSegment.path, x * dpi, y * dpi)
+
         // If we shift click on a link then start a link from that input
-        if (
-          (e.shiftKey || e.altKey) &&
-          linkSegment.path &&
-          this.ctx.isPointInStroke(linkSegment.path, x * dpi, y * dpi)
-        ) {
+        if ((e.shiftKey || e.altKey) && isLinkHit) {
           this.ctx.lineWidth = lineWidth
 
           if (e.shiftKey && !e.altKey) {
@@ -3103,8 +3112,27 @@ export class LGraphCanvas
         // For input/output hovering
         // to store the output of isOverNodeInput
         const pos: Point = [0, 0]
-        const inputId = isOverNodeInput(node, x, y, pos)
-        const outputId = isOverNodeOutput(node, x, y, pos)
+
+        // Try to use layout store for hit testing first, fallback to old method
+        let inputId: number = -1
+        let outputId: number = -1
+
+        const slotLayout = layoutStore.querySlotAtPoint({ x, y })
+        if (slotLayout && slotLayout.nodeId === String(node.id)) {
+          if (slotLayout.type === 'input') {
+            inputId = slotLayout.index
+            pos[0] = slotLayout.position.x
+            pos[1] = slotLayout.position.y
+          } else {
+            outputId = slotLayout.index
+            pos[0] = slotLayout.position.x
+            pos[1] = slotLayout.position.y
+          }
+        } else {
+          // Fallback to old method
+          inputId = isOverNodeInput(node, x, y, pos)
+          outputId = isOverNodeOutput(node, x, y, pos)
+        }
         const overWidget = node.getWidgetOnPos(x, y, true) ?? undefined
 
         if (!node.mouseOver) {
@@ -4974,6 +5002,7 @@ export class LGraphCanvas
       node._setConcreteSlots()
       if (!node.collapsed) {
         node.arrange()
+        node.registerSlots() // Register slots for hit detection
       }
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
       return
@@ -5065,6 +5094,7 @@ export class LGraphCanvas
     node._setConcreteSlots()
     if (!node.collapsed) {
       node.arrange()
+      node.registerSlots() // Register slots for hit detection
       node.drawSlots(ctx, {
         fromSlot: this.linkConnector.renderLinks[0]?.fromSlot as
           | INodeOutputSlot
@@ -5079,6 +5109,7 @@ export class LGraphCanvas
 
       this.drawNodeWidgets(node, null, ctx)
     } else if (this.render_collapsed_slots) {
+      node.registerSlots() // Register slots for collapsed nodes too
       node.drawCollapsedSlots(ctx)
     }
 
@@ -5469,6 +5500,19 @@ export class LGraphCanvas
         this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
       }
       reroute.draw(ctx, this._pattern)
+
+      // Register reroute layout with layout store for hit testing
+      layoutStore.updateRerouteLayout(String(reroute.id), {
+        id: String(reroute.id),
+        position: { x: reroute.pos[0], y: reroute.pos[1] },
+        radius: 8, // Reroute.radius
+        bounds: {
+          x: reroute.pos[0] - 8,
+          y: reroute.pos[1] - 8,
+          width: 16,
+          height: 16
+        }
+      })
 
       // Never draw slots when the pointer is down
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
@@ -5982,6 +6026,8 @@ export class LGraphCanvas
 
         case 'Delete':
           graph.removeLink(segment.id)
+          // Clean up layout store
+          layoutStore.deleteLinkLayout(String(segment.id))
           break
         default:
       }
@@ -8026,11 +8072,18 @@ export class LGraphCanvas
 
       // Check for reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-        const reroute = this.graph.getRerouteOnPos(
-          event.canvasX,
-          event.canvasY,
-          this.#visibleReroutes
-        )
+        // Try layout store first, fallback to old method
+        const rerouteLayout = layoutStore.queryRerouteAtPoint({
+          x: event.canvasX,
+          y: event.canvasY
+        })
+        const reroute = rerouteLayout
+          ? this.graph.getReroute(Number(rerouteLayout.id))
+          : this.graph.getRerouteOnPos(
+              event.canvasX,
+              event.canvasY,
+              this.#visibleReroutes
+            )
         if (reroute) {
           menu_info.unshift(
             {
