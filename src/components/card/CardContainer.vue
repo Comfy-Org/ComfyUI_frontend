@@ -1,8 +1,5 @@
 <template>
-  <div
-    :class="containerClasses"
-    :style="maxWidth && maxWidth ? containerStyle : ''"
-  >
+  <div :class="containerClasses" :style="containerStyle">
     <slot name="top"></slot>
     <slot name="bottom"></slot>
   </div>
@@ -34,8 +31,12 @@ const containerClasses = computed(() => {
   return `${baseClasses} ${ratioClasses[ratio]}`
 })
 
-const containerStyle = computed(() => ({
-  maxWidth: `${maxWidth}px`,
-  minWidth: `${minWidth}px`
-}))
+const containerStyle = computed(() =>
+  maxWidth || minWidth
+    ? {
+        maxWidth: `${maxWidth}px`,
+        minWidth: `${minWidth}px`
+      }
+    : {}
+)
 </script>
