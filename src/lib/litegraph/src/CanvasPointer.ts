@@ -106,7 +106,7 @@ export class CanvasPointer {
   bufferedLinuxEventTime: number = 0
 
   /** Timer ID for Linux buffer clearing */
-  linuxBufferTimeoutId?: number
+  linuxBufferTimeoutId?: ReturnType<typeof setTimeout>
 
   /**
    * If set, as soon as the mouse moves outside the click drift threshold, this action is run once.
@@ -444,7 +444,7 @@ export class CanvasPointer {
     // Set timeout to clear buffer after 10ms
     this.linuxBufferTimeoutId = setTimeout(() => {
       this.#clearLinuxBuffer()
-    }, 10) as unknown as number
+    }, 10)
   }
 
   /**
