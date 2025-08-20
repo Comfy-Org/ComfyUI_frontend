@@ -209,4 +209,22 @@ This Storybook setup includes:
 - PrimeVue component library integration
 - Proper alias resolution for `@/` imports
 
-For component-specific examples, see the NodePreview stories in `src/components/node/`.
+## Icon Usage in Storybook
+
+In this project, the `<i-lucide:... />` syntax from unplugin-icons is not supported in Storybook.  
+
+**Example:**
+
+```vue
+<script setup lang="ts">
+import { Trophy, Settings } from 'lucide-vue-next'
+</script>
+
+<template>
+  <Trophy :size="16" class="text-neutral" />
+  <Settings :size="16" class="text-neutral" />
+</template>
+```
+
+This approach ensures icons render correctly in Storybook and remain consistent with the rest of the app.
+

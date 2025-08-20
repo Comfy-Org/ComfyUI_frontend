@@ -84,7 +84,8 @@
     "vitest": "^2.0.0",
     "vue-tsc": "^2.1.10",
     "zip-dir": "^2.0.0",
-    "zod-to-json-schema": "^3.24.1"
+    "zod-to-json-schema": "^3.24.1",
+    "lucide-vue-next": "^0.540.0"
   },
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",

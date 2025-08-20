@@ -13,8 +13,8 @@ const {
   maxWidth,
   minWidth
 } = defineProps<{
-  maxWidth: number
-  minWidth: number
+  maxWidth?: number
+  minWidth?: number
   ratio?: 'square' | 'portrait' | 'tallPortrait'
 }>()
 
@@ -31,8 +31,12 @@ const containerClasses = computed(() => {
   return `${baseClasses} ${ratioClasses[ratio]}`
 })
 
-const containerStyle = computed(() => ({
-  maxWidth: `${maxWidth}px`,
-  minWidth: `${minWidth}px`
-}))
+const containerStyle = computed(() =>
+  maxWidth || minWidth
+    ? {
+        maxWidth: `${maxWidth}px`,
+        minWidth: `${minWidth}px`
+      }
+    : {}
+)
 </script>
