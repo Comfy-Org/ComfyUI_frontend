@@ -10,6 +10,7 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/types/workflowTemplateTypes'
+import { getCategoryIcon } from '@/utils/categoryIcons'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Enhanced template interface for easier filtering
@@ -302,6 +303,15 @@ export const useWorkflowTemplatesStore = defineStore(
             (t) => t.sourceModule !== 'default'
           )
 
+        case 'lora-training':
+          return enhancedTemplates.value.filter(
+            (t) =>
+              t.tags?.includes('LoRA') ||
+              t.tags?.includes('Training') ||
+              t.name?.toLowerCase().includes('lora') ||
+              t.title?.toLowerCase().includes('lora')
+          )
+
         case 'performance-small':
           return enhancedTemplates.value.filter((t) => t.isPerformance)
 
@@ -347,11 +357,19 @@ export const useWorkflowTemplatesStore = defineStore(
       const macCompatibleCounts = enhancedTemplates.value.filter(
         (t) => t.isMacCompatible
       ).length
+      const loraTrainingCounts = enhancedTemplates.value.filter(
+        (t) =>
+          t.tags?.includes('LoRA') ||
+          t.tags?.includes('Training') ||
+          t.name?.toLowerCase().includes('lora') ||
+          t.title?.toLowerCase().includes('lora')
+      ).length
 
       // All Templates - as a simple selector
       items.push({
         id: 'all',
-        label: st('templateWorkflows.category.All', 'All Templates')
+        label: st('templateWorkflows.category.All', 'All Templates'),
+        icon: getCategoryIcon('all')
       })
 
       // Getting Started - as a simple selector
@@ -361,7 +379,8 @@ export const useWorkflowTemplatesStore = defineStore(
           label: st(
             'templateWorkflows.category.GettingStarted',
             'Getting Started'
-          )
+          ),
+          icon: getCategoryIcon('getting-started')
         })
       }
 
@@ -377,28 +396,32 @@ export const useWorkflowTemplatesStore = defineStore(
         if (imageCounts > 0) {
           generationTypeItems.push({
             id: 'generation-image',
-            label: st('templateWorkflows.category.Image', 'Image')
+            label: st('templateWorkflows.category.Image', 'Image'),
+            icon: getCategoryIcon('generation-image')
           })
         }
 
         if (videoCounts > 0) {
           generationTypeItems.push({
             id: 'generation-video',
-            label: st('templateWorkflows.category.Video', 'Video')
+            label: st('templateWorkflows.category.Video', 'Video'),
+            icon: getCategoryIcon('generation-video')
           })
         }
 
         if (threeDCounts > 0) {
           generationTypeItems.push({
             id: 'generation-3d',
-            label: st('templateWorkflows.category.3DModels', '3D Models')
+            label: st('templateWorkflows.category.3DModels', '3D Models'),
+            icon: getCategoryIcon('generation-3d')
           })
         }
 
         if (audioCounts > 0) {
           generationTypeItems.push({
             id: 'generation-audio',
-            label: st('templateWorkflows.category.Audio', 'Audio')
+            label: st('templateWorkflows.category.Audio', 'Audio'),
+            icon: getCategoryIcon('generation-audio')
           })
         }
 
@@ -414,11 +437,15 @@ export const useWorkflowTemplatesStore = defineStore(
       // Closed Models (API nodes) - as a group
       if (apiCounts > 0) {
         items.push({
-          title: st('templateWorkflows.category.ClosedModels', 'Closed Models'),
+          title: st(
+            'templateWorkflows.category.ClosedSourceModels',
+            'Closed Source Models'
+          ),
           items: [
             {
               id: 'api-nodes',
-              label: st('templateWorkflows.category.APINodes', 'API nodes')
+              label: st('templateWorkflows.category.APINodes', 'API nodes'),
+              icon: getCategoryIcon('api-nodes')
             }
           ]
         })
@@ -428,7 +455,28 @@ export const useWorkflowTemplatesStore = defineStore(
       if (extensionCounts > 0) {
         items.push({
           id: 'extensions',
-          label: st('templateWorkflows.category.Extensions', 'Extensions')
+          label: st('templateWorkflows.category.Extensions', 'Extensions'),
+          icon: getCategoryIcon('extensions')
+        })
+      }
+
+      // Model Training - as a group
+      if (loraTrainingCounts > 0) {
+        items.push({
+          title: st(
+            'templateWorkflows.category.ModelTraining',
+            'Model Training'
+          ),
+          items: [
+            {
+              id: 'lora-training',
+              label: st(
+                'templateWorkflows.category.LoRATraining',
+                'LoRA Training'
+              ),
+              icon: getCategoryIcon('lora-training')
+            }
+          ]
         })
       }
 
@@ -437,7 +485,8 @@ export const useWorkflowTemplatesStore = defineStore(
         const performanceItems: NavItemData[] = [
           {
             id: 'performance-small',
-            label: st('templateWorkflows.category.SmallModels', 'Small Models')
+            label: st('templateWorkflows.category.SmallModels', 'Small Models'),
+            icon: getCategoryIcon('small-models')
           }
         ]
 
@@ -448,7 +497,8 @@ export const useWorkflowTemplatesStore = defineStore(
             label: st(
               'templateWorkflows.category.RunsOnMac',
               'Runs on Mac (Silicon)'
-            )
+            ),
+            icon: getCategoryIcon('runs-on-mac')
           })
         }
 

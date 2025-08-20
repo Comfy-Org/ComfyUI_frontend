@@ -9,7 +9,7 @@
         </template>
         <template #header-title>
           <span class="text-neutral text-base">{{
-            $t('templateWorkflows.categories', 'Categories')
+            $t('sideToolbar.templates', 'Templates')
           }}</span>
         </template>
       </LeftSidePanel>
@@ -146,11 +146,6 @@
       </div>
     </template>
 
-    <template #rightPanel>
-      <RightSidePanel>
-        <!-- Template details could go here -->
-      </RightSidePanel>
-    </template>
   </BaseWidgetLayout>
 </template>
 
