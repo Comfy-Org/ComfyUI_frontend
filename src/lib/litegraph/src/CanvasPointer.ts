@@ -56,6 +56,9 @@ export class CanvasPointer {
    */
   static trackpadMaxGap = 500
 
+  /** The maximum time in milliseconds to buffer a high-res wheel event. */
+  static maxHighResBufferTime = 10
+
   /** The element this PointerState should capture input against when dragging. */
   element: Element
   /** Pointer ID used by drag capture. */
@@ -316,7 +319,7 @@ export class CanvasPointer {
 
   /**
    * Validates buffered high res wheel events and switches to mouse mode if pattern matches.
-   * @returns `true` if if switched to mouse mode
+   * @returns `true` if switched to mouse mode
    */
   #isHighResWheelEvent(event: WheelEvent, now: number): boolean {
     if (!this.bufferedLinuxEvent || this.bufferedLinuxEventTime <= 0) {
@@ -325,7 +328,7 @@ export class CanvasPointer {
 
     const timeSinceBuffer = now - this.bufferedLinuxEventTime
 
-    if (timeSinceBuffer > 10) {
+    if (timeSinceBuffer > CanvasPointer.maxHighResBufferTime) {
       this.#clearLinuxBuffer()
       return false
     }
@@ -444,7 +447,7 @@ export class CanvasPointer {
     // Set timeout to clear buffer after 10ms
     this.linuxBufferTimeoutId = setTimeout(() => {
       this.#clearLinuxBuffer()
-    }, 10)
+    }, CanvasPointer.maxHighResBufferTime)
   }
 
   /**
