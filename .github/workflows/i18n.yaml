@@ -17,6 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
+    
+    - name: Cache tool outputs
+      uses: actions/cache@v4
+      with:
+        path: |
+          ComfyUI_frontend/node_modules/.cache
+          ComfyUI_frontend/.cache
+        key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
+        restore-keys: |
+          i18n-tools-cache-${{ runner.os }}-
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend

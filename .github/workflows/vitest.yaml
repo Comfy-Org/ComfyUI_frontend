@@ -25,6 +25,7 @@ jobs:
         path: |
           node_modules/.cache
           .cache
+          coverage
         key: test-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           test-tools-cache-${{ runner.os }}-

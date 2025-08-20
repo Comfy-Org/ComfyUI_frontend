@@ -32,8 +32,10 @@ jobs:
             node_modules/.cache
             .eslintcache
             .cache
-          key: ci-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+            tsconfig.tsbuildinfo
+          key: ci-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.vue', '*.config.*') }}
           restore-keys: |
+            ci-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
             ci-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies

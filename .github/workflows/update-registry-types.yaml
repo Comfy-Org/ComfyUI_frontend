@@ -37,6 +37,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache comfy-api repository
+        uses: actions/cache@v4
+        with:
+          path: comfy-api
+          key: comfy-api-repo-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            comfy-api-repo-${{ runner.os }}-
+
       - name: Checkout comfy-api repository
         uses: actions/checkout@v4
         with:

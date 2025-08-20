@@ -30,6 +30,7 @@ jobs:
           path: |
             node_modules/.cache
             .cache
+            tsconfig.tsbuildinfo
           key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             release-tools-cache-${{ runner.os }}-
@@ -137,6 +138,8 @@ jobs:
           path: |
             node_modules/.cache
             .cache
+            tsconfig.tsbuildinfo
+            dist
           key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             types-tools-cache-${{ runner.os }}-

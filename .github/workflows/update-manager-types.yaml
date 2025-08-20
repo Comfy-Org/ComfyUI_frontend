@@ -38,6 +38,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache ComfyUI-Manager repository
+        uses: actions/cache@v4
+        with:
+          path: ComfyUI-Manager
+          key: comfyui-manager-repo-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            comfyui-manager-repo-${{ runner.os }}-
+
       - name: Checkout ComfyUI-Manager repository
         uses: actions/checkout@v4
         with:

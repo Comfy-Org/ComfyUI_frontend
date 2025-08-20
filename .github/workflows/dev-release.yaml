@@ -27,6 +27,8 @@ jobs:
           path: |
             node_modules/.cache
             .cache
+            tsconfig.tsbuildinfo
+            dist
           key: dev-release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             dev-release-tools-cache-${{ runner.os }}-

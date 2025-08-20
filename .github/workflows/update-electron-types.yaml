@@ -20,6 +20,16 @@ jobs:
           node-version: lts/*
           cache: 'npm'
 
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache
+            .cache
+          key: electron-types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            electron-types-tools-cache-${{ runner.os }}-
+
       - name: Update electron types
         run: npm install @comfyorg/comfyui-electron-types@latest
 

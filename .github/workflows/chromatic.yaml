@@ -57,6 +57,7 @@ jobs:
           path: |
             node_modules/.cache
             .cache
+            storybook-static
           key: storybook-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             storybook-tools-cache-${{ runner.os }}-
