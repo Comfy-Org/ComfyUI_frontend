@@ -22,6 +22,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache
+            .cache
+          key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            release-tools-cache-${{ runner.os }}-
+
       - name: Get current version
         id: current_version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
@@ -116,7 +128,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
+          cache: 'npm'
           registry-url: https://registry.npmjs.org
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache
+            .cache
+          key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            types-tools-cache-${{ runner.os }}-
+
       - run: npm ci
       - run: npm run build:types
       - name: Publish package

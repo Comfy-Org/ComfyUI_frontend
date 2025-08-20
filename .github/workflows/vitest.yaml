@@ -17,6 +17,17 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 'lts/*'
+        cache: 'npm'
+
+    - name: Cache tool outputs
+      uses: actions/cache@v4
+      with:
+        path: |
+          node_modules/.cache
+          .cache
+        key: test-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          test-tools-cache-${{ runner.os }}-
 
     - name: Install dependencies
       run: npm ci

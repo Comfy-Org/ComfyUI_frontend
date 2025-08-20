@@ -40,6 +40,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: 'npm'
 
       - name: Get current time
         id: current-time
@@ -64,6 +65,16 @@ jobs:
 
             ---
             *This comment will be updated when tests complete*
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ComfyUI_frontend/node_modules/.cache
+            ComfyUI_frontend/.cache
+          key: playwright-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
+          restore-keys: |
+            playwright-tools-cache-${{ runner.os }}-
 
       - name: Build ComfyUI_frontend
         run: |
