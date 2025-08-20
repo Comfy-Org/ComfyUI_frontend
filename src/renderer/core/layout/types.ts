@@ -28,8 +28,6 @@ export interface Bounds {
 export type NodeId = string
 export type SlotId = string
 export type ConnectionId = string
-export type LinkId = string
-export type RerouteId = string
 
 // Layout data structures
 export interface NodeLayout {
@@ -43,29 +41,11 @@ export interface NodeLayout {
 }
 
 export interface SlotLayout {
+  id: SlotId
   nodeId: NodeId
-  index: number
+  position: Point // Relative to node
   type: 'input' | 'output'
-  position: Point
-  bounds: Bounds
-}
-
-export interface LinkLayout {
-  id: string
-  path: Path2D
-  bounds: Bounds
-  centerPos: Point
-  sourceNodeId: NodeId
-  targetNodeId: NodeId
-  sourceSlot: number
-  targetSlot: number
-}
-
-export interface RerouteLayout {
-  id: RerouteId
-  position: Point
-  radius: number
-  bounds: Bounds
+  index: number
 }
 
 export interface ConnectionLayout {
@@ -319,33 +299,6 @@ export interface LayoutStore {
   // Spatial queries (non-reactive)
   queryNodeAtPoint(point: Point): NodeId | null
   queryNodesInBounds(bounds: Bounds): NodeId[]
-
-  // Hit testing queries for links, slots, and reroutes
-  queryLinkAtPoint(point: Point, ctx?: CanvasRenderingContext2D): LinkId | null
-  querySlotAtPoint(point: Point): SlotLayout | null
-  queryRerouteAtPoint(point: Point): RerouteLayout | null
-  queryItemsInBounds(bounds: Bounds): {
-    nodes: NodeId[]
-    links: LinkId[]
-    slots: string[]
-    reroutes: RerouteId[]
-  }
-
-  // Update methods for link, slot, and reroute layouts
-  updateLinkLayout(linkId: LinkId, layout: LinkLayout): void
-  updateSlotLayout(key: string, layout: SlotLayout): void
-  updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
-
-  // Delete methods for cleanup
-  deleteLinkLayout(linkId: LinkId): void
-  deleteSlotLayout(key: string): void
-  deleteNodeSlotLayouts(nodeId: NodeId): void
-  deleteRerouteLayout(rerouteId: RerouteId): void
-
-  // Get layout data
-  getLinkLayout(linkId: LinkId): LinkLayout | null
-  getSlotLayout(key: string): SlotLayout | null
-  getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
 
   // Direct mutation API (CRDT-ready)
   applyOperation(operation: LayoutOperation): void
