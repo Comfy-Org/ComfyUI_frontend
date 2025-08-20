@@ -319,7 +319,7 @@ export class LinkConnector {
               console.warn(
                 'Subgraph output link found in non-subgraph network.'
               )
-              return
+              continue
             }
 
             const output = network.outputs.at(link.target_slot)
@@ -331,11 +331,8 @@ export class LinkConnector {
               output
             )
             renderLink.fromDirection = LinkDirection.NONE
-            this.renderLinks.push(renderLink)
+            renderLinks.push(renderLink)
 
-            this.state.connectingTo = 'output'
-
-            this.#setLegacyLinks(false)
             continue
           }
           const renderLink = new MovingOutputLink(
