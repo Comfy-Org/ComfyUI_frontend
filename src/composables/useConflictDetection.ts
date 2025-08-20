@@ -1,4 +1,4 @@
-import { uniqBy } from 'lodash'
+import { uniqBy } from 'es-toolkit/compat'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
