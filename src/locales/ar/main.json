@@ -762,7 +762,6 @@
   },
   "menuLabels": {
     "About ComfyUI": "حول ComfyUI",
-    "Add Edit Model Step": "إضافة خطوة تعديل النموذج",
     "Bottom Panel": "لوحة سفلية",
     "Browse Templates": "تصفح القوالب",
     "Bypass/Unbypass Selected Nodes": "تجاوز/إلغاء تجاوز العقد المحددة",

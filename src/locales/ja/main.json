@@ -762,7 +762,6 @@
   },
   "menuLabels": {
     "About ComfyUI": "ComfyUIについて",
-    "Add Edit Model Step": "モデル編集ステップを追加",
     "Bottom Panel": "下部パネル",
     "Browse Templates": "テンプレートを参照",
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
