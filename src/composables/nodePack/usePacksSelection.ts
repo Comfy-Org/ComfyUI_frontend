@@ -11,7 +11,7 @@ export type SelectionState = 'all-installed' | 'none-installed' | 'mixed'
  * Composable for managing multi-package selection states
  * Handles installation status tracking and selection state determination
  */
-export function usePackageSelection(nodePacks: Ref<NodePack[]>) {
+export function usePacksSelection(nodePacks: Ref<NodePack[]>) {
   const managerStore = useComfyManagerStore()
 
   const installedPacks = computed(() =>

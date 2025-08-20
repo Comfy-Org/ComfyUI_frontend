@@ -22,7 +22,7 @@ const STATUS_PRIORITY = [
  * Composable for managing package status with priority
  * Handles import failures and determines the most important status
  */
-export function usePackageStatus(nodePacks: Ref<NodePack[]>) {
+export function usePacksStatus(nodePacks: Ref<NodePack[]>) {
   const conflictDetectionStore = useConflictDetectionStore()
 
   const hasImportFailed = computed(() => {
