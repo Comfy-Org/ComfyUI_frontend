@@ -15,6 +15,8 @@ export interface TemplateInfo {
   tags?: string[]
   models?: string[]
   date?: string
+  useCase?: string
+  license?: string
 }
 
 export interface WorkflowTemplates {

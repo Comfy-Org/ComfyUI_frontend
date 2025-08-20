@@ -895,6 +895,8 @@
     "noResultsHint": "Try adjusting your search or filters",
     "modelFilter": "Model Filter",
     "modelsSelected": "{count} Models",
+    "useCasesSelected": "{count} Use Cases",
+    "licensesSelected": "{count} Licenses",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",

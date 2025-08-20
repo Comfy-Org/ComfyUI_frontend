@@ -6,7 +6,9 @@ import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 export interface TemplateFilterOptions {
   searchQuery?: string
   selectedModels?: string[]
-  sortBy?: 'recommended' | 'alphabetical' | 'newest'
+  selectedUseCases?: string[] // Now represents selected tags
+  selectedLicenses?: string[]
+  sortBy?: 'default' | 'alphabetical' | 'newest'
 }
 
 export function useTemplateFiltering(
@@ -14,7 +16,9 @@ export function useTemplateFiltering(
 ) {
   const searchQuery = ref('')
   const selectedModels = ref<string[]>([])
-  const sortBy = ref<'recommended' | 'alphabetical' | 'newest'>('recommended')
+  const selectedUseCases = ref<string[]>([])
+  const selectedLicenses = ref<string[]>([])
+  const sortBy = ref<'default' | 'alphabetical' | 'newest'>('default')
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
@@ -47,6 +51,20 @@ export function useTemplateFiltering(
     return Array.from(modelSet).sort()
   })
 
+  const availableUseCases = computed(() => {
+    const tagSet = new Set<string>()
+    templatesArray.value.forEach((template) => {
+      if (template.tags && Array.isArray(template.tags)) {
+        template.tags.forEach((tag) => tagSet.add(tag))
+      }
+    })
+    return Array.from(tagSet).sort()
+  })
+
+  const availableLicenses = computed(() => {
+    return ['Open Source', 'Closed Source (API Nodes)']
+  })
+
   const filteredBySearch = computed(() => {
     if (!searchQuery.value.trim()) {
       return templatesArray.value
@@ -71,8 +89,45 @@ export function useTemplateFiltering(
     })
   })
 
+  const filteredByUseCases = computed(() => {
+    if (selectedUseCases.value.length === 0) {
+      return filteredByModels.value
+    }
+
+    return filteredByModels.value.filter((template) => {
+      if (!template.tags || !Array.isArray(template.tags)) {
+        return false
+      }
+      return selectedUseCases.value.some((selectedTag) =>
+        template.tags?.includes(selectedTag)
+      )
+    })
+  })
+
+  const filteredByLicenses = computed(() => {
+    if (selectedLicenses.value.length === 0) {
+      return filteredByUseCases.value
+    }
+
+    return filteredByUseCases.value.filter((template) => {
+      // Check if template has API in its tags or name (indicating it's a closed source API node)
+      const isApiTemplate =
+        template.tags?.includes('API') ||
+        template.name?.toLowerCase().includes('api_')
+
+      return selectedLicenses.value.some((selectedLicense) => {
+        if (selectedLicense === 'Closed Source (API Nodes)') {
+          return isApiTemplate
+        } else if (selectedLicense === 'Open Source') {
+          return !isApiTemplate
+        }
+        return false
+      })
+    })
+  })
+
   const sortedTemplates = computed(() => {
-    const templates = [...filteredByModels.value]
+    const templates = [...filteredByLicenses.value]
 
     switch (sortBy.value) {
       case 'alphabetical':
@@ -87,9 +142,9 @@ export function useTemplateFiltering(
           const dateB = new Date(b.date || '1970-01-01')
           return dateB.getTime() - dateA.getTime()
         })
-      case 'recommended':
+      case 'default':
       default:
-        // Keep original order (recommended order)
+        // Keep original order (default order)
         return templates
     }
   })
@@ -99,11 +154,21 @@ export function useTemplateFiltering(
   const resetFilters = () => {
     searchQuery.value = ''
     selectedModels.value = []
-    sortBy.value = 'recommended'
+    selectedUseCases.value = []
+    selectedLicenses.value = []
+    sortBy.value = 'default'
   }
 
   const removeModelFilter = (model: string) => {
     selectedModels.value = selectedModels.value.filter((m) => m !== model)
+  }
+
+  const removeUseCaseFilter = (tag: string) => {
+    selectedUseCases.value = selectedUseCases.value.filter((t) => t !== tag)
+  }
+
+  const removeLicenseFilter = (license: string) => {
+    selectedLicenses.value = selectedLicenses.value.filter((l) => l !== license)
   }
 
   const filteredCount = computed(() => filteredTemplates.value.length)
@@ -113,16 +178,22 @@ export function useTemplateFiltering(
     // State
     searchQuery,
     selectedModels,
+    selectedUseCases,
+    selectedLicenses,
     sortBy,
 
     // Computed
     filteredTemplates,
     availableModels,
+    availableUseCases,
+    availableLicenses,
     filteredCount,
     totalCount,
 
     // Methods
     resetFilters,
-    removeModelFilter
+    removeModelFilter,
+    removeUseCaseFilter,
+    removeLicenseFilter
   }
 }

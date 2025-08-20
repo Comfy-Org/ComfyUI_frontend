@@ -7,28 +7,6 @@
     pt:root="h-full grid grid-rows-[auto_1fr_auto]"
     pt:content="p-2 overflow-auto"
   >
-    <template #header>
-      <div class="flex flex-col">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg">{{ title }}</h2>
-          <SelectButton
-            v-model="layout"
-            :options="['grid', 'list']"
-            :allow-empty="false"
-          >
-            <template #option="{ option }">
-              <i :class="[option === 'list' ? 'pi pi-bars' : 'pi pi-table']" />
-            </template>
-          </SelectButton>
-        </div>
-        <TemplateSearchBar
-          v-model:search-query="searchQuery"
-          :filtered-count="filteredCount"
-          @clear-filters="() => reset()"
-        />
-      </div>
-    </template>
-
     <template #list="{ items }">
       <TemplateWorkflowList
         :source-module="sourceModule"
@@ -77,11 +55,8 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import DataView from 'primevue/dataview'
-import SelectButton from 'primevue/selectbutton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import TemplateSearchBar from '@/components/templates/TemplateSearchBar.vue'
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
 import TemplateWorkflowCardSkeleton from '@/components/templates/TemplateWorkflowCardSkeleton.vue'
 import TemplateWorkflowList from '@/components/templates/TemplateWorkflowList.vue'
