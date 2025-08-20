@@ -38,6 +38,7 @@ import {
   calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import type { LinkLayout } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -139,6 +140,25 @@ export class LitegraphLinkAdapter {
 
     // Store path for hit detection
     link.path = path
+
+    // Register link layout with layout store
+    if (path && linkData.centerPos) {
+      const linkLayout: LinkLayout = {
+        id: String(link.id),
+        path,
+        bounds: this.calculateLinkBounds(
+          linkData.startPoint,
+          linkData.endPoint,
+          linkData.controlPoints
+        ),
+        centerPos: linkData.centerPos,
+        sourceNodeId: String(link.origin_id),
+        targetNodeId: String(link.target_id),
+        sourceSlot: link.origin_slot,
+        targetSlot: link.target_slot
+      }
+      layoutStore.updateLinkLayout(String(link.id), linkLayout)
+    }
   }
 
   /**
@@ -434,6 +454,25 @@ export class LitegraphLinkAdapter {
           linkSegment._centreAngle = linkData.centerAngle
         }
       }
+
+      // Register link layout with layout store if this is a real link
+      if (link && path && linkData.centerPos) {
+        const linkLayout: LinkLayout = {
+          id: String(link.id),
+          path,
+          bounds: this.calculateLinkBounds(
+            linkData.startPoint,
+            linkData.endPoint,
+            linkData.controlPoints
+          ),
+          centerPos: linkData.centerPos,
+          sourceNodeId: String(link.origin_id),
+          targetNodeId: String(link.target_id),
+          sourceSlot: link.origin_slot,
+          targetSlot: link.target_slot
+        }
+        layoutStore.updateLinkLayout(String(link.id), linkLayout)
+      }
     }
   }
 
@@ -521,5 +560,39 @@ export class LitegraphLinkAdapter {
 
     // Render using pure renderer
     this.pathRenderer.drawDraggingLink(ctx, dragData, pathContext)
+  }
+
+  /**
+   * Calculate bounding box for a link
+   */
+  private calculateLinkBounds(
+    startPoint: Point,
+    endPoint: Point,
+    controlPoints?: Point[]
+  ): { x: number; y: number; width: number; height: number } {
+    // Start with endpoints
+    let minX = Math.min(startPoint.x, endPoint.x)
+    let maxX = Math.max(startPoint.x, endPoint.x)
+    let minY = Math.min(startPoint.y, endPoint.y)
+    let maxY = Math.max(startPoint.y, endPoint.y)
+
+    // Include control points if present (for spline links)
+    if (controlPoints) {
+      for (const cp of controlPoints) {
+        minX = Math.min(minX, cp.x)
+        maxX = Math.max(maxX, cp.x)
+        minY = Math.min(minY, cp.y)
+        maxY = Math.max(maxY, cp.y)
+      }
+    }
+
+    // Add some padding for hit detection
+    const padding = 10
+    return {
+      x: minX - padding,
+      y: minY - padding,
+      width: maxX - minX + 2 * padding,
+      height: maxY - minY + 2 * padding
+    }
   }
 }
