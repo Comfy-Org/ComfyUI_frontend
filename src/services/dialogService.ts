@@ -1,6 +1,7 @@
 import { merge } from 'es-toolkit/compat'
 import { Component } from 'vue'
 
+import WorkflowTemplateSelector from '@/components/custom/widget/WorkflowTemplateSelector.vue'
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
@@ -121,6 +122,28 @@ export const useDialogService = () => {
         }
       },
       props
+    })
+  }
+
+  function showWorkflowTemplateSelectorDialog() {
+    const layoutDefaultProps: DialogComponentProps = {
+      headless: true,
+      modal: true,
+      closable: false,
+      pt: {
+        content: { class: '!px-0' },
+        root: { style: 'width: 90vw; max-width: 1400px; height: 85vh;' }
+      }
+    }
+
+    showLayoutDialog({
+      key: 'global-workflow-template-selector',
+      component: WorkflowTemplateSelector,
+      props: {
+        onClose: () =>
+          dialogStore.closeDialog({ key: 'global-workflow-template-selector' })
+      },
+      dialogComponentProps: layoutDefaultProps
     })
   }
 
@@ -470,6 +493,7 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
+    showWorkflowTemplateSelectorDialog,
     showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,

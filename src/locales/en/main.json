@@ -882,6 +882,21 @@
         "audio_ace_step_1_t2a_song": "ACE Step v1 Text to Song",
         "audio_ace_step_1_m2m_editing": "ACE Step v1 M2M Editing"
       }
+    },
+    "categories": "Categories",
+    "resetFilters": "Reset Filters",
+    "sorting": "Sort by",
+    "activeFilters": "Filters:",
+    "loading": "Loading templates...",
+    "noResults": "No templates found",
+    "noResultsHint": "Try adjusting your search or filters",
+    "modelFilter": "Model Filter",
+    "modelsSelected": "{count} Models",
+    "resultsCount": "Showing {count} of {total} templates",
+    "sort": {
+      "recommended": "Recommended",
+      "alphabetical": "A → Z",
+      "newest": "Newest"
     }
   },
   "graphCanvasMenu": {

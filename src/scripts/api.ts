@@ -597,11 +597,28 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets the index of core workflow templates.
+   * @param locale Optional locale code (e.g., 'en', 'fr', 'zh') to load localized templates
    */
-  async getCoreWorkflowTemplates(): Promise<WorkflowTemplates[]> {
-    const res = await axios.get(this.fileURL('/templates/index.json'))
-    const contentType = res.headers['content-type']
-    return contentType?.includes('application/json') ? res.data : []
+  async getCoreWorkflowTemplates(
+    locale?: string
+  ): Promise<WorkflowTemplates[]> {
+    const fileName =
+      locale && locale !== 'en' ? `index.${locale}.json` : 'index.json'
+    try {
+      const res = await axios.get(this.fileURL(`/templates/${fileName}`))
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : []
+    } catch (error) {
+      // Fallback to default English version if localized version doesn't exist
+      if (locale && locale !== 'en') {
+        console.warn(
+          `Localized templates for '${locale}' not found, falling back to English`
+        )
+        return this.getCoreWorkflowTemplates('en')
+      }
+      console.error('Error loading core workflow templates:', error)
+      return []
+    }
   }
 
   /**
