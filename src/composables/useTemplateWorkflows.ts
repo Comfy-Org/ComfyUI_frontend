@@ -60,7 +60,7 @@ export function useTemplateWorkflows() {
   const getTemplateThumbnailUrl = (
     template: TemplateInfo,
     sourceModule: string,
-    index = ''
+    index = '1'
   ) => {
     const basePath =
       sourceModule === 'default'

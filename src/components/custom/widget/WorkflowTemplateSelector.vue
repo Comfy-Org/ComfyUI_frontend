@@ -104,93 +104,15 @@
         </p>
       </div>
 
-      <div v-else class="flex flex-wrap gap-2">
-        <CardContainer
-          v-for="template in filteredTemplates"
-          :key="`${template.name}-${template.sourceModule || 'default'}`"
-          ratio="square"
-          :max-width="480"
-          :min-width="230"
-          class="cursor-pointer hover:shadow-lg transition-shadow"
-          @click="() => loadTemplate(template)"
-        >
-          <template #top>
-            <CardTop ratio="landscape">
-              <template #default>
-                <img
-                  :src="
-                    getTemplateThumbnailUrl(
-                      template,
-                      template.sourceModule || 'default'
-                    )
-                  "
-                  :alt="
-                    getTemplateTitle(
-                      template,
-                      template.sourceModule || 'default'
-                    )
-                  "
-                  class="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </template>
-              <template #top-right>
-                <IconButton
-                  class="!bg-white !text-neutral-900"
-                  @click.stop="() => showTemplateInfo(template)"
-                >
-                  <i-lucide:info />
-                </IconButton>
-              </template>
-              <template #bottom-right>
-                <SquareChip
-                  v-if="template.mediaType"
-                  :label="template.mediaSubtype || template.mediaType"
-                />
-                <SquareChip
-                  v-for="model in (template.models || []).slice(0, 2)"
-                  :key="model"
-                  :label="model"
-                >
-                  <template #icon>
-                    <i-lucide:cpu />
-                  </template>
-                </SquareChip>
-                <SquareChip
-                  v-if="(template.models || []).length > 2"
-                  :label="`+${(template.models || []).length - 2}`"
-                />
-              </template>
-            </CardTop>
-          </template>
-          <template #bottom>
-            <CardBottom>
-              <template #title>
-                {{
-                  getTemplateTitle(template, template.sourceModule || 'default')
-                }}
-              </template>
-              <template #description>
-                {{
-                  getTemplateDescription(
-                    template,
-                    template.sourceModule || 'default'
-                  )
-                }}
-              </template>
-              <template #tags>
-                <span
-                  v-for="tag in (template.tags || []).slice(0, 3)"
-                  :key="tag"
-                  class="inline-block px-2 py-1 text-xs bg-neutral-100 dark:bg-neutral-800 rounded"
-                >
-                  {{ tag }}
-                </span>
-              </template>
-            </CardBottom>
-          </template>
-        </CardContainer>
-      </div>
+      <TemplateWorkflowView
+        v-else
+        :title="selectedCategoryTitle"
+        :source-module="'default'"
+        :templates="filteredTemplates"
+        :loading="loadingTemplate"
+        :category-title="selectedCategoryTitle"
+        @load-workflow="onLoadWorkflow"
+      />
 
       <!-- Results Summary -->
       <div
@@ -218,15 +140,11 @@
 import { computed, onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
+import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import BaseWidgetLayout from '@/components/widget/layout/BaseWidgetLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
@@ -246,13 +164,7 @@ provide(OnCloseKey, onClose)
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()
-const {
-  loadTemplates,
-  getTemplateThumbnailUrl,
-  getTemplateTitle,
-  getTemplateDescription,
-  loadWorkflowTemplate
-} = useTemplateWorkflows()
+const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
 
 // Get navigation items from the new store structure
 const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
@@ -336,14 +248,35 @@ const sortOptions = computed(() => [
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' }
 ])
 
-// Methods
-const loadTemplate = async (template: any) => {
-  await loadWorkflowTemplate(template.name, template.sourceModule || 'default')
-}
+// Additional computed properties for TemplateWorkflowView
+const selectedCategoryTitle = computed(() => {
+  if (!selectedNavItem.value)
+    return t('templateWorkflows.title', 'Workflow Templates')
 
-const showTemplateInfo = (template: any) => {
-  // TODO: Show template info modal
-  console.log('Show template info for:', template)
+  const navItem = navItems.value.find((item) => {
+    if ('id' in item) {
+      return item.id === selectedNavItem.value
+    }
+    return false
+  })
+
+  if (navItem && 'title' in navItem) {
+    return navItem.title
+  }
+
+  return t('templateWorkflows.title', 'Workflow Templates')
+})
+
+const loadingTemplate = ref<string | null>(null)
+
+// Methods
+const onLoadWorkflow = async (templateName: string) => {
+  loadingTemplate.value = templateName
+  try {
+    await loadWorkflowTemplate(templateName, 'default')
+  } finally {
+    loadingTemplate.value = null
+  }
 }
 
 // Initialize
