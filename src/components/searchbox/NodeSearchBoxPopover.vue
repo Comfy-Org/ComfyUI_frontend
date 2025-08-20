@@ -63,7 +63,7 @@ let disconnectOnReset = false
 const settingStore = useSettingStore()
 const litegraphService = useLitegraphService()
 
-const { visible } = storeToRefs(useSearchBoxStore())
+const { visible, newSearchBoxEnabled } = storeToRefs(useSearchBoxStore())
 const dismissable = ref(true)
 const getNewNodeLocation = (): Point => {
   return triggerEvent
@@ -107,9 +107,6 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   window.requestAnimationFrame(closeDialog)
 }
 
-const newSearchBoxEnabled = computed(
-  () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
-)
 const showSearchBox = (e: CanvasPointerEvent) => {
   if (newSearchBoxEnabled.value) {
     if (e.pointerType === 'touch') {
