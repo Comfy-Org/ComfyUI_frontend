@@ -1,0 +1,6 @@
+# .git-blame-ignore-revs
+# List of commits to ignore in git blame
+# Format: <commit hash> # <description>
+
+# npm run format on litegraph merge (10,672 insertions, 7,327 deletions across 129 files)
+c53f197de2a3e0fa66b16dedc65c131235c1c4b6

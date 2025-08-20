@@ -14,7 +14,7 @@ const mockSetAppZoom = vi.fn()
 const mockSettingGet = vi.fn().mockReturnValue(true)
 
 // Mock dependencies
-vi.mock('@/composables/useMinimap', () => ({
+vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
   useMinimap: () => ({
     containerStyles: { value: { backgroundColor: '#fff', borderRadius: '8px' } }
   })

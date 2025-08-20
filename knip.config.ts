@@ -42,7 +42,14 @@ const config: KnipConfig = {
     'vite.electron.config.mts',
     'vite.types.config.mts',
     // Auto generated manager types
-    'src/types/generatedManagerTypes.ts'
+    'src/types/generatedManagerTypes.ts',
+    // Design system components (may not be used immediately)
+    'src/components/button/IconGroup.vue',
+    'src/components/button/MoreButton.vue',
+    'src/components/button/TextButton.vue',
+    'src/components/card/CardTitle.vue',
+    'src/components/card/CardDescription.vue',
+    'src/components/input/SingleSelect.vue'
   ],
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration

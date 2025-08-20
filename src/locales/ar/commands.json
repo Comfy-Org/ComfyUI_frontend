@@ -41,9 +41,6 @@
   "Comfy_BrowseTemplates": {
     "label": "تصفح القوالب"
   },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "إضافة خطوة تحرير النموذج"
-  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف العناصر المحددة"
   },

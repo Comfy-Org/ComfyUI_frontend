@@ -76,7 +76,7 @@
 import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import { useMinimap } from '@/composables/useMinimap'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 
 import MiniMapPanel from './MiniMapPanel.vue'
@@ -116,7 +116,9 @@ const toggleOptionsPanel = () => {
 }
 
 onMounted(() => {
-  setMinimapRef(minimapRef.value)
+  if (minimapRef.value) {
+    setMinimapRef(minimapRef.value)
+  }
 })
 
 onUnmounted(() => {

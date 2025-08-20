@@ -1,5 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
+import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -2681,6 +2682,26 @@ export class LGraphCanvas
           node
         })
         this.processNodeDblClicked(node)
+      }
+
+      // Check for title button clicks before calling onMouseDown
+      if (node.title_buttons?.length && !node.flags.collapsed) {
+        // pos contains the offset from the node's position, so we need to use node-relative coordinates
+        const nodeRelativeX = pos[0]
+        const nodeRelativeY = pos[1]
+
+        for (let i = 0; i < node.title_buttons.length; i++) {
+          const button = node.title_buttons[i]
+          if (
+            button.visible &&
+            button.isPointInside(nodeRelativeX, nodeRelativeY)
+          ) {
+            node.onTitleButtonClick(button, this)
+            // Set a no-op click handler to prevent fallback canvas dragging
+            pointer.onClick = () => {}
+            return
+          }
+        }
       }
 
       // Mousedown callback - can block drag
@@ -8082,7 +8103,6 @@ export class LGraphCanvas
       | IContextMenuValue<(typeof LiteGraph.VALID_SHAPES)[number]>
       | null
     )[]
-
     if (node.getMenuOptions) {
       options = node.getMenuOptions(this)
     } else {
@@ -8090,9 +8110,38 @@ export class LGraphCanvas
         {
           content: 'Convert to Subgraph 🆕',
           callback: () => {
-            if (!this.selectedItems.size)
+            // find groupnodes, degroup and select children
+            if (this.selectedItems.size) {
+              let hasGroups = false
+              for (const item of this.selectedItems) {
+                const node = item as LGraphNode
+                const isGroup =
+                  typeof node.type === 'string' &&
+                  node.type.startsWith(`${PREFIX}${SEPARATOR}`)
+                if (isGroup && node.convertToNodes) {
+                  hasGroups = true
+                  const nodes = node.convertToNodes()
+
+                  requestAnimationFrame(() => {
+                    this.selectItems(nodes, true)
+
+                    if (!this.selectedItems.size)
+                      throw new Error('Convert to Subgraph: Nothing selected.')
+                    this._graph.convertToSubgraph(this.selectedItems)
+                  })
+                  return
+                }
+              }
+
+              // If no groups were found, continue normally
+              if (!hasGroups) {
+                if (!this.selectedItems.size)
+                  throw new Error('Convert to Subgraph: Nothing selected.')
+                this._graph.convertToSubgraph(this.selectedItems)
+              }
+            } else {
               throw new Error('Convert to Subgraph: Nothing selected.')
-            this._graph.convertToSubgraph(this.selectedItems)
+            }
           }
         },
         {

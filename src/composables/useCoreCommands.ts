@@ -10,12 +10,12 @@ import {
   LGraphEventMode,
   LGraphGroup,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -793,17 +793,6 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
     },
     {
-      id: 'Comfy.Canvas.AddEditModelStep',
-      icon: 'pi pi-pen-to-square',
-      label: 'Add Edit Model Step',
-      versionAdded: '1.23.3',
-      function: async () => {
-        const node = app.canvas.selectedItems.values().next().value
-        if (!(node instanceof LGraphNode)) return
-        await addFluxKontextGroupNode(node)
-      }
-    },
-    {
       id: 'Comfy.Graph.ConvertToSubgraph',
       icon: 'pi pi-sitemap',
       label: 'Convert Selection to Subgraph',
@@ -841,6 +830,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
 
         const subgraphNode = app.canvas.selectedItems.values().next().value
+        if (!(subgraphNode instanceof SubgraphNode)) return
         useNodeOutputStore().revokeSubgraphPreviews(subgraphNode)
         graph.unpackSubgraph(subgraphNode)
       }

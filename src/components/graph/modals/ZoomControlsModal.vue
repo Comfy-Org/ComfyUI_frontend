@@ -139,7 +139,7 @@ import { Button, InputNumber, InputNumberInputEvent } from 'primevue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useMinimap } from '@/composables/useMinimap'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'

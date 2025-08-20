@@ -13,8 +13,9 @@ bun.lockb
 pnpm-lock.yaml
 yarn.lock
 
-# ESLint cache
+# Cache files
 .eslintcache
+.prettiercache
 
 node_modules
 dist
@@ -22,6 +23,7 @@ dist-ssr
 *.local
 # Claude configuration
 .claude/*.local.json
+.claude/settings.json
 
 # Editor directories and files
 .vscode/*
@@ -72,3 +74,7 @@ vite.config.mts.timestamp-*.mjs
 
 # Linux core dumps
 ./core
+
+*storybook.log
+storybook-static
+

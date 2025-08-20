@@ -41,9 +41,6 @@
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
   },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "Добавить или изменить шаг модели"
-  },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Удалить выбранные элементы"
   },
