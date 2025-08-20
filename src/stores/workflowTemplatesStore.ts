@@ -1,9 +1,10 @@
-import { groupBy } from 'es-toolkit/compat'
+import Fuse from 'fuse.js'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import { st } from '@/i18n'
+import { i18n, st } from '@/i18n'
 import { api } from '@/scripts/api'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -11,13 +12,16 @@ import type {
 } from '@/types/workflowTemplateTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-const SHOULD_SORT_CATEGORIES = new Set([
-  // API Node templates should be strictly sorted by name to avoid any
-  // favoritism or bias towards a particular API. Other categories can
-  // have their ordering specified in index.json freely.
-  'Image API',
-  'Video API'
-])
+// Enhanced template interface for easier filtering
+interface EnhancedTemplate extends TemplateInfo {
+  sourceModule: string
+  category?: string
+  categoryType?: string
+  isAPI?: boolean
+  isPerformance?: boolean
+  isMacCompatible?: boolean
+  searchableText?: string
+}
 
 export const useWorkflowTemplatesStore = defineStore(
   'workflowTemplates',
@@ -25,37 +29,6 @@ export const useWorkflowTemplatesStore = defineStore(
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const isLoaded = ref(false)
-
-    /**
-     * Sort a list of templates in alphabetical order by localized display name.
-     */
-    const sortTemplateList = (templates: TemplateInfo[]) =>
-      templates.sort((a, b) => {
-        const aName = st(
-          `templateWorkflows.name.${normalizeI18nKey(a.name)}`,
-          a.title ?? a.name
-        )
-        const bName = st(
-          `templateWorkflows.name.${normalizeI18nKey(b.name)}`,
-          b.name
-        )
-        return aName.localeCompare(bName)
-      })
-
-    /**
-     * Sort any template categories (grouped templates) that should be sorted.
-     * Leave other categories' templates in their original order specified in index.json
-     */
-    const sortCategoryTemplates = (categories: WorkflowTemplates[]) =>
-      categories.map((category) => {
-        if (SHOULD_SORT_CATEGORIES.has(category.title)) {
-          return {
-            ...category,
-            templates: sortTemplateList(category.templates)
-          }
-        }
-        return category
-      })
 
     /**
      * Add localization fields to a template.
@@ -144,12 +117,13 @@ export const useWorkflowTemplatesStore = defineStore(
       }
     }
 
+    /**
+     * Original grouped templates for backward compatibility
+     */
     const groupedTemplates = computed<TemplateGroup[]>(() => {
       // Get regular categories
       const allTemplates = [
-        ...sortCategoryTemplates(coreTemplates.value).map(
-          localizeTemplateCategory
-        ),
+        ...coreTemplates.value.map(localizeTemplateCategory),
         ...Object.entries(customTemplates.value).map(
           ([moduleName, templates]) => ({
             moduleName,
@@ -169,38 +143,330 @@ export const useWorkflowTemplatesStore = defineStore(
       ]
 
       // Group templates by their main category
-      const groupedByCategory = Object.entries(
-        groupBy(allTemplates, (template) =>
-          template.moduleName === 'default'
-            ? st(
-                'templateWorkflows.category.ComfyUI Examples',
-                'ComfyUI Examples'
-              )
-            : st('templateWorkflows.category.Custom Nodes', 'Custom Nodes')
-        )
-      ).map(([label, modules]) => ({ label, modules }))
-
-      // Insert the "All" category at the top of the "ComfyUI Examples" group
-      const comfyExamplesGroupIndex = groupedByCategory.findIndex(
-        (group) =>
-          group.label ===
-          st('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
-      )
-
-      if (comfyExamplesGroupIndex !== -1) {
-        groupedByCategory[comfyExamplesGroupIndex].modules.unshift(
-          createAllCategory()
-        )
-      }
+      const groupedByCategory = [
+        {
+          label: st(
+            'templateWorkflows.category.ComfyUI Examples',
+            'ComfyUI Examples'
+          ),
+          modules: [
+            createAllCategory(),
+            ...allTemplates.filter((t) => t.moduleName === 'default')
+          ]
+        },
+        ...(Object.keys(customTemplates.value).length > 0
+          ? [
+              {
+                label: st(
+                  'templateWorkflows.category.Custom Nodes',
+                  'Custom Nodes'
+                ),
+                modules: allTemplates.filter((t) => t.moduleName !== 'default')
+              }
+            ]
+          : [])
+      ]
 
       return groupedByCategory
+    })
+
+    /**
+     * Enhanced templates with proper categorization for filtering
+     */
+    const enhancedTemplates = computed<EnhancedTemplate[]>(() => {
+      const allTemplates: EnhancedTemplate[] = []
+
+      // Process core templates
+      coreTemplates.value.forEach((category) => {
+        category.templates.forEach((template) => {
+          const isAPI = category.title?.includes('API') || false
+          const isPerformance =
+            template.models?.some(
+              (model) =>
+                model.toLowerCase().includes('turbo') ||
+                model.toLowerCase().includes('fast') ||
+                model.toLowerCase().includes('schnell') ||
+                model.toLowerCase().includes('fp8')
+            ) || false
+
+          const isMacCompatible =
+            template.models?.some(
+              (model) =>
+                model.toLowerCase().includes('fp8') ||
+                model.toLowerCase().includes('turbo') ||
+                model.toLowerCase().includes('schnell')
+            ) || false
+
+          const enhancedTemplate: EnhancedTemplate = {
+            ...template,
+            sourceModule: category.moduleName,
+            category: category.title,
+            categoryType: category.type,
+            isAPI,
+            isPerformance,
+            isMacCompatible,
+            searchableText: [
+              template.title || template.name,
+              template.description || '',
+              category.title,
+              ...(template.tags || []),
+              ...(template.models || [])
+            ].join(' ')
+          }
+
+          allTemplates.push(enhancedTemplate)
+        })
+      })
+
+      // Process custom templates
+      Object.entries(customTemplates.value).forEach(
+        ([moduleName, templates]) => {
+          templates.forEach((name) => {
+            const enhancedTemplate: EnhancedTemplate = {
+              name,
+              title: name,
+              description: name,
+              mediaType: 'image',
+              mediaSubtype: 'jpg',
+              sourceModule: moduleName,
+              category: 'Extensions',
+              categoryType: 'extension',
+              isAPI: false,
+              isPerformance: false,
+              isMacCompatible: false,
+              searchableText: `${name} ${moduleName} extension`
+            }
+            allTemplates.push(enhancedTemplate)
+          })
+        }
+      )
+
+      return allTemplates
+    })
+
+    /**
+     * Fuse.js instance for advanced template searching and filtering
+     */
+    const templateFuse = computed(() => {
+      const fuseOptions = {
+        keys: [
+          { name: 'searchableText', weight: 0.4 },
+          { name: 'title', weight: 0.3 },
+          { name: 'name', weight: 0.2 },
+          { name: 'tags', weight: 0.1 }
+        ],
+        threshold: 0.3,
+        includeScore: true
+      }
+
+      return new Fuse(enhancedTemplates.value, fuseOptions)
+    })
+
+    /**
+     * Filter templates by category using Fuse.js
+     */
+    const filterTemplatesByCategory = (categoryId: string) => {
+      if (categoryId === 'all') {
+        return enhancedTemplates.value
+      }
+
+      switch (categoryId) {
+        case 'getting-started':
+          return enhancedTemplates.value.filter((t) => t.category === 'Basics')
+
+        case 'generation-image':
+          return enhancedTemplates.value.filter(
+            (t) => t.categoryType === 'image' && !t.isAPI
+          )
+
+        case 'generation-video':
+          return enhancedTemplates.value.filter(
+            (t) => t.categoryType === 'video' && !t.isAPI
+          )
+
+        case 'generation-3d':
+          return enhancedTemplates.value.filter(
+            (t) => t.categoryType === '3d' && !t.isAPI
+          )
+
+        case 'generation-audio':
+          return enhancedTemplates.value.filter(
+            (t) => t.categoryType === 'audio' && !t.isAPI
+          )
+
+        case 'api-nodes':
+          return enhancedTemplates.value.filter((t) => t.isAPI)
+
+        case 'extensions':
+          return enhancedTemplates.value.filter(
+            (t) => t.sourceModule !== 'default'
+          )
+
+        case 'performance-small':
+          return enhancedTemplates.value.filter((t) => t.isPerformance)
+
+        case 'performance-mac':
+          return enhancedTemplates.value.filter((t) => t.isMacCompatible)
+
+        default:
+          return enhancedTemplates.value
+      }
+    }
+
+    /**
+     * New navigation structure matching NavItemData | NavGroupData format
+     */
+    const navGroupedTemplates = computed<(NavItemData | NavGroupData)[]>(() => {
+      if (!isLoaded.value) return []
+
+      const items: (NavItemData | NavGroupData)[] = []
+
+      // Count templates for each category
+      const imageCounts = enhancedTemplates.value.filter(
+        (t) => t.categoryType === 'image' && !t.isAPI
+      ).length
+      const videoCounts = enhancedTemplates.value.filter(
+        (t) => t.categoryType === 'video' && !t.isAPI
+      ).length
+      const audioCounts = enhancedTemplates.value.filter(
+        (t) => t.categoryType === 'audio' && !t.isAPI
+      ).length
+      const threeDCounts = enhancedTemplates.value.filter(
+        (t) => t.categoryType === '3d' && !t.isAPI
+      ).length
+      const apiCounts = enhancedTemplates.value.filter((t) => t.isAPI).length
+      const gettingStartedCounts = enhancedTemplates.value.filter(
+        (t) => t.category === 'Basics'
+      ).length
+      const extensionCounts = enhancedTemplates.value.filter(
+        (t) => t.sourceModule !== 'default'
+      ).length
+      const performanceCounts = enhancedTemplates.value.filter(
+        (t) => t.isPerformance
+      ).length
+      const macCompatibleCounts = enhancedTemplates.value.filter(
+        (t) => t.isMacCompatible
+      ).length
+
+      // All Templates - as a simple selector
+      items.push({
+        id: 'all',
+        label: st('templateWorkflows.category.All', 'All Templates')
+      })
+
+      // Getting Started - as a simple selector
+      if (gettingStartedCounts > 0) {
+        items.push({
+          id: 'getting-started',
+          label: st(
+            'templateWorkflows.category.GettingStarted',
+            'Getting Started'
+          )
+        })
+      }
+
+      // Generation Type - as a group with sub-items
+      if (
+        imageCounts > 0 ||
+        videoCounts > 0 ||
+        threeDCounts > 0 ||
+        audioCounts > 0
+      ) {
+        const generationTypeItems: NavItemData[] = []
+
+        if (imageCounts > 0) {
+          generationTypeItems.push({
+            id: 'generation-image',
+            label: st('templateWorkflows.category.Image', 'Image')
+          })
+        }
+
+        if (videoCounts > 0) {
+          generationTypeItems.push({
+            id: 'generation-video',
+            label: st('templateWorkflows.category.Video', 'Video')
+          })
+        }
+
+        if (threeDCounts > 0) {
+          generationTypeItems.push({
+            id: 'generation-3d',
+            label: st('templateWorkflows.category.3DModels', '3D Models')
+          })
+        }
+
+        if (audioCounts > 0) {
+          generationTypeItems.push({
+            id: 'generation-audio',
+            label: st('templateWorkflows.category.Audio', 'Audio')
+          })
+        }
+
+        items.push({
+          title: st(
+            'templateWorkflows.category.GenerationType',
+            'Generation Type'
+          ),
+          items: generationTypeItems
+        })
+      }
+
+      // Closed Models (API nodes) - as a group
+      if (apiCounts > 0) {
+        items.push({
+          title: st('templateWorkflows.category.ClosedModels', 'Closed Models'),
+          items: [
+            {
+              id: 'api-nodes',
+              label: st('templateWorkflows.category.APINodes', 'API nodes')
+            }
+          ]
+        })
+      }
+
+      // Extensions - as a simple selector
+      if (extensionCounts > 0) {
+        items.push({
+          id: 'extensions',
+          label: st('templateWorkflows.category.Extensions', 'Extensions')
+        })
+      }
+
+      // Performance - as a group
+      if (performanceCounts > 0) {
+        const performanceItems: NavItemData[] = [
+          {
+            id: 'performance-small',
+            label: st('templateWorkflows.category.SmallModels', 'Small Models')
+          }
+        ]
+
+        // Mac compatibility (only if there are compatible models)
+        if (macCompatibleCounts > 0) {
+          performanceItems.push({
+            id: 'performance-mac',
+            label: st(
+              'templateWorkflows.category.RunsOnMac',
+              'Runs on Mac (Silicon)'
+            )
+          })
+        }
+
+        items.push({
+          title: st('templateWorkflows.category.Performance', 'Performance'),
+          items: performanceItems
+        })
+      }
+
+      return items
     })
 
     async function loadWorkflowTemplates() {
       try {
         if (!isLoaded.value) {
           customTemplates.value = await api.getWorkflowTemplates()
-          coreTemplates.value = await api.getCoreWorkflowTemplates()
+          const locale = i18n.global.locale.value
+          coreTemplates.value = await api.getCoreWorkflowTemplates(locale)
           isLoaded.value = true
         }
       } catch (error) {
@@ -210,6 +476,10 @@ export const useWorkflowTemplatesStore = defineStore(
 
     return {
       groupedTemplates,
+      navGroupedTemplates,
+      enhancedTemplates,
+      templateFuse,
+      filterTemplatesByCategory,
       isLoaded,
       loadWorkflowTemplates
     }
