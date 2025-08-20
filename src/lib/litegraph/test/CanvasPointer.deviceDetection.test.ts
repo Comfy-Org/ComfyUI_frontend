@@ -31,11 +31,11 @@ import { CanvasPointer } from '../src/CanvasPointer'
 
 describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests', () => {
   let element: HTMLDivElement
-  let pointer: any // Using 'any' for TDD - actual type is CanvasPointer with new properties
+  let pointer: CanvasPointer
 
   beforeEach(() => {
     element = document.createElement('div')
-    pointer = new CanvasPointer(element) as any // Cast to any for TDD testing
+    pointer = new CanvasPointer(element)
     // Mock performance.now() for timestamp-based testing
     vi.spyOn(performance, 'now').mockReturnValue(0)
     vi.spyOn(global, 'setTimeout')
