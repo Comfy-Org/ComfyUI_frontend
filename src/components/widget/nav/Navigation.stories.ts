@@ -40,7 +40,7 @@ export const NavigationItem: Story = {
   })
 }
 
-export const CompleteNavigation: Story = {
+export const CustomNavigation: Story = {
   render: () => ({
     components: {
       NavTitle,
@@ -58,8 +58,8 @@ export const CompleteNavigation: Story = {
       LogOut
     },
     template: `
-      <nav class="w-64 p-4 bg-gray-50 rounded-lg">
-        <NavTitle>Main Menu</NavTitle>
+      <nav class="w-64 p-4 bg-white dark-theme:bg-zinc-800 rounded-lg">
+        <NavTitle title="Main Menu" />
         <div class="mt-4 space-y-2">
           <NavItem :hasFolderIcon="false"><Home :size="16" class="inline mr-2" />Dashboard</NavItem>
           <NavItem :hasFolderIcon="false"><FolderOpen :size="16" class="inline mr-2" />Projects</NavItem>
@@ -67,7 +67,7 @@ export const CompleteNavigation: Story = {
           <NavItem :hasFolderIcon="false"><Users :size="16" class="inline mr-2" />Team</NavItem>
         </div>
         <div class="mt-6">
-          <NavTitle>Resources</NavTitle>
+          <NavTitle title="Resources" />
           <div class="mt-4 space-y-2">
             <NavItem :hasFolderIcon="false"><BookOpen :size="16" class="inline mr-2" />Documentation</NavItem>
             <NavItem :hasFolderIcon="false"><GraduationCap :size="16" class="inline mr-2" />Tutorials</NavItem>
@@ -75,7 +75,7 @@ export const CompleteNavigation: Story = {
           </div>
         </div>
         <div class="mt-6">
-          <NavTitle>Account</NavTitle>
+          <NavTitle title="Account" />
           <div class="mt-4 space-y-2">
             <NavItem :hasFolderIcon="false"><Settings :size="16" class="inline mr-2" />Settings</NavItem>
             <NavItem :hasFolderIcon="false"><User :size="16" class="inline mr-2" />Profile</NavItem>
@@ -117,17 +117,19 @@ export const LeftSidePanelDemo: Story = {
       return { navItems, active }
     },
     template: `
-      <div class="w-80 h-[560px] bg-white dark-theme:bg-zinc-800 rounded-lg border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden">
-        <LeftSidePanel v-model="active" :nav-items="navItems">
-          <template #header-icon>
-            <FolderOpen :size="14" />
-          </template>
-          <template #header-title>
-            Navigation
-          </template>
-        </LeftSidePanel>
+      <div class="w-full h-[560px] flex">
+        <div class="w-64 rounded-lg">
+          <LeftSidePanel v-model="active" :nav-items="navItems">
+            <template #header-icon>
+              <FolderOpen :size="14" />
+            </template>
+            <template #header-title>
+              Navigation
+            </template>
+          </LeftSidePanel>
+        </div>
 
-        <div class="p-3 text-sm bg-gray-50 dark-theme:bg-zinc-900 border-t border-zinc-200 dark-theme:border-zinc-700">
+        <div class="flex-1 p-3 text-sm bg-gray-50 dark-theme:bg-zinc-900 border-t border-zinc-200 dark-theme:border-zinc-700">
           Active: {{ active ?? 'None' }}
         </div>
       </div>
