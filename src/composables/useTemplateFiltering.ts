@@ -8,7 +8,7 @@ export interface TemplateFilterOptions {
   selectedModels?: string[]
   selectedUseCases?: string[] // Now represents selected tags
   selectedLicenses?: string[]
-  sortBy?: 'default' | 'alphabetical' | 'newest'
+  sortBy?: 'default' | 'alphabetical' | 'newest' | 'vram-low-to-high' | 'model-size-low-to-high'
 }
 
 export function useTemplateFiltering(
@@ -18,7 +18,7 @@ export function useTemplateFiltering(
   const selectedModels = ref<string[]>([])
   const selectedUseCases = ref<string[]>([])
   const selectedLicenses = ref<string[]>([])
-  const sortBy = ref<'default' | 'alphabetical' | 'newest'>('default')
+  const sortBy = ref<'default' | 'alphabetical' | 'newest' | 'vram-low-to-high' | 'model-size-low-to-high'>('default')
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
@@ -142,6 +142,14 @@ export function useTemplateFiltering(
           const dateB = new Date(b.date || '1970-01-01')
           return dateB.getTime() - dateA.getTime()
         })
+      case 'vram-low-to-high':
+        // TODO: Implement VRAM sorting when VRAM data is available
+        // For now, keep original order
+        return templates
+      case 'model-size-low-to-high':
+        // TODO: Implement model size sorting when model size data is available
+        // For now, keep original order
+        return templates
       case 'default':
       default:
         // Keep original order (default order)

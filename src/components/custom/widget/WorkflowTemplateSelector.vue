@@ -319,13 +319,21 @@ const licenseFilterLabel = computed(() => {
 // Sort options
 const sortOptions = computed(() => [
   {
-    name: t('templateWorkflows.sort.alphabetical', 'A → Z'),
-    value: 'alphabetical'
+    name: t('templateWorkflows.sort.default', 'Default'),
+    value: 'default'
   },
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
-    name: t('templateWorkflows.sort.default', 'Default'),
-    value: 'default'
+    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Utilization (Low to High)'),
+    value: 'vram-low-to-high'
+  },
+  {
+    name: t('templateWorkflows.sort.modelSizeLowToHigh', 'Model Size (Low to High)'),
+    value: 'model-size-low-to-high'
+  },
+  {
+    name: t('templateWorkflows.sort.alphabetical', 'Alphabetical (A-Z)'),
+    value: 'alphabetical'
   }
 ])
 
