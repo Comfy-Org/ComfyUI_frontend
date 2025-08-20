@@ -1,0 +1,96 @@
+name: Storybook Improvement
+description: 'Report Storybook-related improvements, new stories, or configuration issues'
+title: '[Storybook]: '
+labels: ['area:storybook', 'enhancement']
+type: Storybook
+
+body:
+  - type: checkboxes
+    attributes:
+      label: Prerequisites
+      options:
+        - label: I have checked the existing Storybook documentation in `.storybook/`
+          required: true
+        - label: I have searched existing issues to make sure this isn't a duplicate
+          required: true
+        - label: I have checked if this relates to any existing Storybook PRs
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What type of Storybook improvement is this?
+      options:
+        - Component Stories - Add new stories for existing components
+        - Story Enhancement - Improve existing stories
+        - Configuration - Storybook configuration improvements
+        - Visual Testing - Chromatic/visual regression testing
+        - Documentation - Storybook documentation improvements
+        - Build/Performance - Build optimizations or performance improvements
+        - Theme/Styling - Theme support or styling improvements
+        - Tools/Addons - Storybook addons or tool integration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What improvement are you suggesting?
+      description: Describe the Storybook improvement you'd like to see
+      placeholder: |
+        Example: "Add comprehensive stories for the NodeWidget component covering all widget types (text, number, combo, etc.) to improve component development and testing."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Use Case & Context
+      description: Why is this improvement needed? What problem does it solve?
+      placeholder: |
+        - Current state of the component/story
+        - What's missing or could be improved
+        - How this would benefit development workflow
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this improvement?
+      options:
+        - Low - Nice to have enhancement
+        - Medium - Would improve development workflow
+        - High - Important for component quality/testing
+        - Critical - Needed for proper Storybook functionality
+    validations:
+      required: true
+
+  - type: textarea
+    id: components
+    attributes:
+      label: Components Affected
+      description: Which components or areas would be affected by this improvement?
+      placeholder: |
+        - NodeWidget
+        - Settings components
+        - All button components
+        - etc.
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Ideas (Optional)
+      description: Any ideas on how this could be implemented?
+      placeholder: |
+        - Specific stories to create
+        - Configuration changes needed
+        - Dependencies or tools required
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples or References
+      description: Any examples from other projects, screenshots, or links that help illustrate the improvement
