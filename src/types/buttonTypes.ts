@@ -1,13 +1,14 @@
 import type { HTMLAttributes } from 'vue'
 
 export interface BaseButtonProps {
-  size?: 'sm' | 'md'
+  size?: 'fit-content' | 'sm' | 'md'
   type?: 'primary' | 'secondary' | 'transparent'
   class?: HTMLAttributes['class']
 }
 
 export const getButtonSizeClasses = (size: BaseButtonProps['size'] = 'md') => {
   const sizeClasses = {
+    'fit-content': '',
     sm: 'px-2 py-1.5 text-xs',
     md: 'px-2.5 py-2 text-sm'
   }
@@ -31,6 +32,7 @@ export const getIconButtonSizeClasses = (
   size: BaseButtonProps['size'] = 'md'
 ) => {
   const sizeClasses = {
+    'fit-content': 'w-auto h-auto',
     sm: 'w-6 h-6 text-xs !rounded-md',
     md: 'w-8 h-8 text-sm'
   }
