@@ -6,7 +6,6 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -2246,8 +2245,6 @@ export class LGraph
         // Drop broken links, and ignore reroutes with no valid links
         if (!reroute.validateLinks(this._links, this.floatingLinks)) {
           this.reroutes.delete(reroute.id)
-          // Clean up layout store
-          layoutStore.deleteRerouteLayout(String(reroute.id))
         }
       }
 
