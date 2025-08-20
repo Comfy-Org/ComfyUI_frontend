@@ -73,7 +73,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 0
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('trackpad')
         expect(pointer.lastWheelEventTime).toBe(0) // Records current time
       })
@@ -85,7 +85,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 0
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('trackpad')
       })
 
@@ -96,7 +96,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 0
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('mouse')
       })
 
@@ -107,7 +107,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: -3
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('trackpad')
       })
 
@@ -118,7 +118,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 4
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('trackpad')
       })
 
@@ -129,7 +129,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 0
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('trackpad')
       })
     })
@@ -142,7 +142,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 0
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('mouse')
       })
 
@@ -153,7 +153,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 0
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('mouse')
       })
 
@@ -164,7 +164,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaX: 0
         })
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('mouse')
       })
     })
@@ -189,7 +189,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 8
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -202,7 +202,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -215,7 +215,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 15
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -228,7 +228,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -241,7 +241,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -254,7 +254,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -267,7 +267,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
   })
@@ -289,7 +289,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -302,7 +302,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -315,7 +315,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -328,7 +328,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -341,7 +341,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -354,7 +354,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
   })
@@ -370,7 +370,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 60,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
       expect(pointer.lastWheelEventTime).toBe(0)
 
       // Try to switch after 499ms - should fail
@@ -380,7 +380,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 5,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -394,7 +394,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 60,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Try to switch after 500ms - should succeed
       vi.spyOn(performance, 'now').mockReturnValue(500)
@@ -403,7 +403,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 5,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -417,7 +417,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 5,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Try to switch after 400ms - should fail
       vi.spyOn(performance, 'now').mockReturnValue(400)
@@ -426,7 +426,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 120,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -442,20 +442,22 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
 
       // Send first mouse event at time 0
       vi.spyOn(performance, 'now').mockReturnValue(0)
-      pointer.detectDevice(new WheelEvent('wheel', { deltaY: 60, deltaX: 0 }))
+      pointer.isTrackpadGesture(
+        new WheelEvent('wheel', { deltaY: 60, deltaX: 0 })
+      )
 
       // Send trackpad events within 500ms window
       trackpadEvents.forEach((eventData, index) => {
         vi.spyOn(performance, 'now').mockReturnValue((index + 1) * 100) // 100ms, 200ms, 300ms
         const event = new WheelEvent('wheel', eventData)
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('mouse') // Should remain mouse
       })
 
       // After 500ms from last event (300ms + 500ms = 800ms), should be able to switch
       vi.spyOn(performance, 'now').mockReturnValue(800)
       const switchEvent = new WheelEvent('wheel', { deltaY: 5, deltaX: 3 })
-      pointer.detectDevice(switchEvent)
+      pointer.isTrackpadGesture(switchEvent)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
   })
@@ -477,7 +479,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.bufferedLinuxEvent).toBe(event)
       expect(pointer.bufferedLinuxEventTime).toBe(500)
       expect(pointer.detectedDevice).toBe('trackpad') // No immediate switch
@@ -494,13 +496,13 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       // First Linux event
       vi.spyOn(performance, 'now').mockReturnValue(500)
       const event1 = new WheelEvent('wheel', { deltaY: 15, deltaX: 0 })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
       const firstTimeoutId = pointer.linuxBufferTimeoutId
 
       // Second Linux event before timeout
       vi.spyOn(performance, 'now').mockReturnValue(505)
       const event2 = new WheelEvent('wheel', { deltaY: 10, deltaX: 0 })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       // Should clear the first timeout and create a new one
       expect(clearTimeoutSpy).toHaveBeenCalledWith(firstTimeoutId)
@@ -517,7 +519,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.bufferedLinuxEvent).toBe(event)
       expect(pointer.detectedDevice).toBe('trackpad')
       expect(setTimeoutSpy).toHaveBeenCalledTimes(1)
@@ -532,7 +534,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.bufferedLinuxEvent).toBeUndefined()
       expect(pointer.detectedDevice).toBe('trackpad')
       expect(setTimeoutSpy).not.toHaveBeenCalled() // No timer created
@@ -547,7 +549,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 1
       })
 
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.bufferedLinuxEvent).toBeUndefined()
       expect(pointer.detectedDevice).toBe('trackpad')
       expect(setTimeoutSpy).not.toHaveBeenCalled() // No timer created
@@ -562,7 +564,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
       expect(pointer.bufferedLinuxEvent).toBe(event1)
       const timeoutId = pointer.linuxBufferTimeoutId
 
@@ -572,7 +574,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('mouse')
       expect(pointer.bufferedLinuxEvent).toBeUndefined()
@@ -587,7 +589,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Follow-up within 10ms with deltaY divisible by 10
       vi.spyOn(performance, 'now').mockReturnValue(505)
@@ -595,7 +597,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 30,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('mouse')
       expect(pointer.bufferedLinuxEvent).toBeUndefined()
@@ -609,7 +611,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 15,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Follow-up with multiple of 15
       vi.spyOn(performance, 'now').mockReturnValue(508)
@@ -617,7 +619,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 45,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('mouse')
     })
@@ -630,7 +632,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 30,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Follow-up with divisor
       vi.spyOn(performance, 'now').mockReturnValue(507)
@@ -638,7 +640,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('mouse')
     })
@@ -651,7 +653,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Follow-up with non-divisible value
       vi.spyOn(performance, 'now').mockReturnValue(505)
@@ -659,7 +661,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 13,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('trackpad')
     })
@@ -672,7 +674,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Follow-up after 10ms
       vi.spyOn(performance, 'now').mockReturnValue(511)
@@ -680,7 +682,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('trackpad')
     })
@@ -693,7 +695,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.bufferedLinuxEvent).toBe(event)
 
       // Simulate timeout firing
@@ -712,7 +714,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: -15,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Follow-up with same negative value
       vi.spyOn(performance, 'now').mockReturnValue(505)
@@ -720,7 +722,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: -15,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('mouse')
     })
@@ -733,7 +735,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Follow-up with negative multiple
       vi.spyOn(performance, 'now').mockReturnValue(505)
@@ -741,7 +743,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: -30,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
 
       expect(pointer.detectedDevice).toBe('mouse')
     })
@@ -755,7 +757,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 5,
         deltaX: 2
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Within cooldown at 100ms, but Linux buffering should still work
       vi.spyOn(performance, 'now').mockReturnValue(100)
@@ -763,7 +765,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.bufferedLinuxEvent).toBe(event2)
 
       // Follow-up for Linux detection at 105ms
@@ -772,7 +774,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 20,
         deltaX: 0
       })
-      pointer.detectDevice(event3)
+      pointer.isTrackpadGesture(event3)
 
       // Should switch despite being within original 500ms window
       expect(pointer.detectedDevice).toBe('mouse')
@@ -791,7 +793,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaY: 120, // Clear mouse wheel value
           deltaX: 0
         })
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
       }
 
       // Should create NO timers for regular mouse wheel events
@@ -805,7 +807,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       // Send a Linux-like event that requires buffering
       vi.spyOn(performance, 'now').mockReturnValue(500)
       const event1 = new WheelEvent('wheel', { deltaY: 10, deltaX: 0 })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Should create exactly one timer
       expect(setTimeoutSpy).toHaveBeenCalledTimes(1)
@@ -814,7 +816,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       for (let i = 1; i <= 10; i++) {
         vi.spyOn(performance, 'now').mockReturnValue(500 + i * 100)
         const event = new WheelEvent('wheel', { deltaY: 5, deltaX: 3 })
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
       }
 
       // Still only one timer (the Linux buffer timeout)
@@ -854,7 +856,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           })
         }
 
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
 
         // Track maximum timers created
         maxTimersCreated = Math.max(
@@ -878,7 +880,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaY: 60 + Math.random() * 100,
           deltaX: Math.random() * 50
         })
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
       }
 
       // Should only have a few properties for tracking state
@@ -899,13 +901,15 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
 
         // Mouse event
         vi.spyOn(performance, 'now').mockReturnValue(baseTime)
-        pointer.detectDevice(
+        pointer.isTrackpadGesture(
           new WheelEvent('wheel', { deltaY: 120, deltaX: 0 })
         )
 
         // Trackpad event
         vi.spyOn(performance, 'now').mockReturnValue(baseTime + 500)
-        pointer.detectDevice(new WheelEvent('wheel', { deltaY: 5, deltaX: 3 }))
+        pointer.isTrackpadGesture(
+          new WheelEvent('wheel', { deltaY: 5, deltaX: 3 })
+        )
       }
 
       // Should create minimal or no timers despite 200 events
@@ -925,7 +929,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 60.5,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
       expect(pointer.detectedDevice).toBe('trackpad')
 
       // Float value > 80 should switch to mouse
@@ -934,7 +938,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 80.1,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -949,7 +953,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 5,
         deltaX: 3
       })
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -961,7 +965,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       })
 
       // This is pinch-to-zoom but deltaY > 10, so stays as mouse on first event
-      pointer.detectDevice(event)
+      pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -976,7 +980,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
           deltaY: 60,
           deltaX: 0
         })
-        pointer.detectDevice(event)
+        pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('mouse')
       }
     })
@@ -988,7 +992,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
       expect(pointer.detectedDevice).toBe('mouse')
 
       // Reset and test deltaY = 9.999999
@@ -998,7 +1002,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 9.999999,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
@@ -1013,7 +1017,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 80,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
       expect(pointer.detectedDevice).toBe('trackpad')
 
       // Test deltaY = 80.000001
@@ -1022,7 +1026,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 80.000001,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -1037,14 +1041,14 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 0
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       vi.spyOn(performance, 'now').mockReturnValue(505) // 5ms later
       const event2 = new WheelEvent('wheel', {
         deltaY: 50,
         deltaX: 0
       })
-      pointer.detectDevice(event2)
+      pointer.isTrackpadGesture(event2)
       expect(pointer.detectedDevice).toBe('mouse')
     })
 
@@ -1059,43 +1063,11 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaY: 10,
         deltaX: 5 // Non-zero deltaX
       })
-      pointer.detectDevice(event1)
+      pointer.isTrackpadGesture(event1)
 
       // Should not buffer this as Linux event
       expect(pointer.bufferedLinuxEvent).toBeUndefined()
       expect(pointer.detectedDevice).toBe('trackpad')
-    })
-  })
-
-  describe('Backward Compatibility', () => {
-    it('should maintain lastTrackpadEvent for backward compatibility', () => {
-      // Initially undefined
-      expect(pointer.lastTrackpadEvent).toBeUndefined()
-
-      // Set to trackpad mode with two-finger panning
-      const event1 = new WheelEvent('wheel', {
-        deltaY: 5,
-        deltaX: 3
-      })
-      pointer.isTrackpadGesture(event1)
-      expect(pointer.lastTrackpadEvent).toBe(event1)
-
-      // Update on continuation
-      const event2 = new WheelEvent('wheel', {
-        deltaY: 8,
-        deltaX: 4
-      })
-      pointer.isTrackpadGesture(event2)
-      expect(pointer.lastTrackpadEvent).toBe(event2)
-
-      // Clear when switching to mouse
-      vi.spyOn(performance, 'now').mockReturnValue(500) // After cooldown
-      const mouseEvent = new WheelEvent('wheel', {
-        deltaY: 120,
-        deltaX: 0
-      })
-      pointer.isTrackpadGesture(mouseEvent)
-      expect(pointer.lastTrackpadEvent).toBeUndefined()
     })
   })
 
