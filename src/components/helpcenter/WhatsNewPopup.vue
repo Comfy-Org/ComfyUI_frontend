@@ -136,8 +136,6 @@ const closePopup = async () => {
   hide()
 }
 
-// Learn more handled by anchor href
-
 // const handleCTA = async () => {
 //   window.open('https://docs.comfy.org/installation/update_comfyui', '_blank')
 //   await closePopup()
@@ -171,8 +169,8 @@ defineExpose({
 .help-center-arrow {
   position: absolute;
   bottom: calc(
-    var(--sidebar-width, 4rem) + 0.25rem
-  ); /* Position toward center of help center icon */
+    var(--sidebar-width, 4rem) * 2 + 0.25rem
+  ); /* Position toward center of help center icon (accounting for 2 icons below) */
   transform: none;
   z-index: 999;
   pointer-events: none;
