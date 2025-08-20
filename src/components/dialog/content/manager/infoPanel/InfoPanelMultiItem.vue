@@ -63,9 +63,9 @@ import PackUninstallButton from '@/components/dialog/content/manager/button/Pack
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
+import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
+import { usePacksStatus } from '@/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/composables/useConflictDetection'
-import { usePackageSelection } from '@/composables/usePackageSelection'
-import { usePackageStatus } from '@/composables/usePackageStatus'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetail } from '@/types/conflictDetectionTypes'
@@ -84,9 +84,9 @@ const {
   isAllInstalled,
   isNoneInstalled,
   isMixed
-} = usePackageSelection(nodePacksRef)
+} = usePacksSelection(nodePacksRef)
 
-const { hasImportFailed, overallStatus } = usePackageStatus(nodePacksRef)
+const { hasImportFailed, overallStatus } = usePacksStatus(nodePacksRef)
 
 const { checkNodeCompatibility } = useConflictDetection()
 const { getNodeDefs } = useComfyRegistryStore()
