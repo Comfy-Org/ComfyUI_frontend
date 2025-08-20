@@ -297,7 +297,7 @@ export class CanvasPointer {
   isTrackpadGesture(e: WheelEvent): boolean {
     // Use the new device detection
     const now = performance.now()
-    const timeSinceLastEvent = now - this.lastWheelEventTime
+    const timeSinceLastEvent = Math.max(0, now - this.lastWheelEventTime)
     this.lastWheelEventTime = now
 
     if (this.#isHighResWheelEvent(e, now)) {
