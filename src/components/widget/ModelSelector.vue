@@ -59,6 +59,10 @@
       <div class="relative px-6 pt-2 pb-4 flex gap-2">
         <MultiSelect
           v-model="selectedFrameworks"
+          class="w-[250px]"
+          :has-search-box="true"
+          :show-selected-count="true"
+          :has-clear-button="true"
           label="Select Frameworks"
           :options="frameworkOptions"
         />

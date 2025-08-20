@@ -9,6 +9,41 @@
       :max-selected-labels="0"
       :pt="pt"
     >
+      <template
+        v-if="hasSearchBox || showSelectedCount || hasClearButton"
+        #header
+      >
+        <div class="p-2 flex flex-col gap-y-4 pb-0">
+          <SearchBox
+            v-if="hasSearchBox"
+            v-model="searchQuery"
+            :has-border="true"
+            :place-holder="searchPlaceholder"
+          />
+          <div class="flex items-center justify-between">
+            <span
+              v-if="showSelectedCount"
+              class="text-sm text-neutral-400 dark-theme:text-zinc-500 px-1"
+            >
+              {{
+                selectedCount > 0
+                  ? $t('g.itemsSelected', { selectedCount })
+                  : $t('g.itemSelected', { selectedCount })
+              }}
+            </span>
+            <TextButton
+              v-if="hasClearButton"
+              :label="$t('g.clearAll')"
+              type="transparent"
+              size="fit-content"
+              class="text-sm !text-blue-500 !dark-theme:text-blue-600"
+              @click.stop="selectedItems = []"
+            />
+          </div>
+          <div class="h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+        </div>
+      </template>
+
       <!-- Trigger value (keep text scale identical) -->
       <template #value>
         <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
@@ -42,7 +77,7 @@
       </template>
     </MultiSelect>
 
-    <!-- Selected count badge (unchanged) -->
+    <!-- Selected count badge -->
     <div
       v-if="selectedCount > 0"
       class="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 dark-theme:bg-blue-500 text-xs font-semibold text-white"
@@ -58,22 +93,41 @@ import MultiSelect, {
 } from 'primevue/multiselect'
 import { computed } from 'vue'
 
-const { label, options } = defineProps<{
-  label?: string
-  options: { name: string; value: string }[]
-}>()
+import SearchBox from '@/components/input/SearchBox.vue'
 
-const selectedItems = defineModel<{ name: string; value: string }[]>({
+import TextButton from '../button/TextButton.vue'
+
+type Option = { name: string; value: string }
+
+interface Props {
+  /** Input label shown on the trigger button */
+  label?: string
+  /** Static options for the multiselect (when not using async search) */
+  options: Option[]
+  /** Show search box in the panel header */
+  hasSearchBox?: boolean
+  /** Show selected count text in the panel header */
+  showSelectedCount?: boolean
+  /** Show "Clear all" action in the panel header */
+  hasClearButton?: boolean
+  /** Placeholder for the search input */
+  searchPlaceholder?: string
+}
+const {
+  label,
+  options,
+  hasSearchBox = false,
+  showSelectedCount = false,
+  hasClearButton = false,
+  searchPlaceholder = 'Search...'
+} = defineProps<Props>()
+
+const selectedItems = defineModel<Option[]>({
   required: true
 })
-
+const searchQuery = defineModel<string>('searchQuery')
 const selectedCount = computed(() => selectedItems.value.length)
 
-/**
- * Pure unstyled mode using only the PrimeVue PT API.
- * All PrimeVue built-in checkboxes/headers are hidden via PT (no :deep hacks).
- * Visual output matches the previous version exactly.
- */
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: [
@@ -97,19 +151,19 @@ const pt = computed(() => ({
   dropdown: {
     class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
   },
-  header: { class: 'hidden' },
-
+  header: () => ({
+    class:
+      hasSearchBox || showSelectedCount || hasClearButton ? 'block' : 'hidden'
+  }),
   // Overlay & list visuals unchanged
   overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100',
+    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700',
   list: {
     class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
   },
-
   // Option row hover tone identical
   option:
     'flex gap-1 items-center p-2 hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
-
   // Hide built-in checkboxes entirely via PT (no :deep)
   pcHeaderCheckbox: {
     root: { class: 'hidden' },
