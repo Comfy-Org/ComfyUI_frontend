@@ -2426,7 +2426,10 @@ export class LGraphCanvas
             pointer.onDragEnd = (e) => this.#processDraggedItems(e)
             return
           }
-        } else if (isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)) {
+        } else if (
+          this.linkMarkerShape !== LinkMarkerShape.None &&
+          isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)
+        ) {
           this.ctx.lineWidth = lineWidth
 
           pointer.onClick = () => this.showLinkMenu(linkSegment, e)
@@ -4693,6 +4696,11 @@ export class LGraphCanvas
 
   /** @returns If the pointer is over a link centre marker, the link segment it belongs to.  Otherwise, `undefined`.  */
   #getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
+    // Skip hit detection if center markers are disabled
+    if (this.linkMarkerShape === LinkMarkerShape.None) {
+      return undefined
+    }
+
     for (const linkSegment of this.renderedPaths) {
       const centre = linkSegment._pos
       if (!centre) continue
