@@ -187,7 +187,7 @@ export { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
 export { MovingOutputLink } from './canvas/MovingOutputLink'
 export { ToOutputRenderLink } from './canvas/ToOutputRenderLink'
 export { ToInputFromIoNodeLink } from './canvas/ToInputFromIoNodeLink'
-export type { TWidgetType, IWidgetOptions } from './types/widgets'
+export type { TWidgetType, TWidgetValue, IWidgetOptions } from './types/widgets'
 export {
   findUsedSubgraphIds,
   getDirectSubgraphIds,
