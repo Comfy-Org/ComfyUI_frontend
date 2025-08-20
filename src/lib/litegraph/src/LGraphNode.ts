@@ -3,7 +3,8 @@ import {
   type SlotPositionContext,
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
-  calculateOutputSlotPos
+  calculateOutputSlotPos,
+  registerNodeSlots
 } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 
 import type { DragAndScale } from './DragAndScale'
@@ -4107,6 +4108,13 @@ export class LGraphNode
       : 0
     this.#arrangeWidgets(widgetStartY)
     this.#arrangeWidgetInputSlots()
+  }
+
+  /**
+   * Register all slots with the layout store for hit detection
+   */
+  registerSlots(): void {
+    registerNodeSlots(String(this.id), this.#getSlotPositionContext())
   }
 
   /**
