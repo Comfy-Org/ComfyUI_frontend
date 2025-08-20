@@ -162,6 +162,9 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
 
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
         run: npx playwright test --project=${{ matrix.browser }} --reporter=html
@@ -177,11 +180,35 @@ jobs:
       - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
         id: cloudflare-deploy
         if: always()
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}
+        run: |
+          # Retry logic for wrangler deploy (3 attempts)
+          RETRY_COUNT=0
+          MAX_RETRIES=3
+          SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
+            
+            if npx wrangler pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
+              SUCCESS=true
+              echo "Deployment successful on attempt $RETRY_COUNT"
+            else
+              echo "Deployment failed on attempt $RETRY_COUNT"
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "Retrying in 10 seconds..."
+                sleep 10
+              fi
+            fi
+          done
+          
+          if [ $SUCCESS = false ]; then
+            echo "All deployment attempts failed"
+            exit 1
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Save deployment info for summary
         if: always()
