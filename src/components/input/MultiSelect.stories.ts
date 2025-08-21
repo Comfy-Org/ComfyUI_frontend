@@ -13,6 +13,21 @@ const meta: Meta<typeof MultiSelect> = {
     },
     options: {
       control: 'object'
+    },
+    hasSearchBox: {
+      control: 'boolean',
+      description: 'Toggle searchBar visibility'
+    },
+    showSelectedCount: {
+      control: 'boolean',
+      description: 'Toggle selected count visibility'
+    },
+    hasClearButton: {
+      control: 'boolean',
+      description: 'Toggle clear button visibility'
+    },
+    searchPlaceholder: {
+      control: 'text'
     }
   }
 }
