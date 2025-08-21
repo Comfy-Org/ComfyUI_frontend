@@ -50,6 +50,9 @@ export function useLayoutSync() {
           liteNode.size[0] = layout.size.width
           liteNode.size[1] = layout.size.height
         }
+
+        // Update slot layouts for all changed nodes
+        layoutStore.updateNodeSlotLayouts(nodeId)
       }
 
       // Trigger single redraw for all changes
