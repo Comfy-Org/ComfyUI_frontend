@@ -2,7 +2,7 @@
   <div
     v-if="visible && initialized"
     ref="minimapRef"
-    class="minimap-main-container flex absolute bottom-[66px] right-2 md:right-12 z-[1000]"
+    class="minimap-main-container flex absolute bottom-[66px] right-2 md:right-11 z-[1000]"
   >
     <MiniMapPanel
       v-if="showOptionsPanel"

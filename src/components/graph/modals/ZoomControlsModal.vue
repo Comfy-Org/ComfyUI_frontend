@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="visible"
-    class="w-[250px] absolute flex justify-center right-2 md:right-12 z-[1300] bottom-[66px] !bg-inherit !border-0"
+    class="w-[250px] absolute flex justify-center right-2 md:right-11 z-[1300] bottom-[66px] !bg-inherit !border-0"
   >
     <div
       class="bg-white dark-theme:bg-[#2b2b2b] border border-gray-200 dark-theme:border-gray-700 rounded-lg shadow-lg p-4 w-4/5"
