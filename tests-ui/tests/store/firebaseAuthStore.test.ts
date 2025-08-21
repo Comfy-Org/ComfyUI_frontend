@@ -1,8 +1,10 @@
+import { FirebaseError } from 'firebase/app'
 import * as firebaseAuth from 'firebase/auth'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 // Mock fetch
@@ -46,21 +48,24 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('firebase/auth', () => ({
-  signInWithEmailAndPassword: vi.fn(),
-  createUserWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn(),
-  onAuthStateChanged: vi.fn(),
-  signInWithPopup: vi.fn(),
-  GoogleAuthProvider: class {
-    setCustomParameters = vi.fn()
-  },
-  GithubAuthProvider: class {
-    setCustomParameters = vi.fn()
-  },
-  browserLocalPersistence: 'browserLocalPersistence',
-  setPersistence: vi.fn().mockResolvedValue(undefined)
-}))
+vi.mock('firebase/auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('firebase/auth')>()
+  return {
+    ...actual,
+    signInWithEmailAndPassword: vi.fn(),
+    createUserWithEmailAndPassword: vi.fn(),
+    signOut: vi.fn(),
+    onAuthStateChanged: vi.fn(),
+    signInWithPopup: vi.fn(),
+    GoogleAuthProvider: class {
+      setCustomParameters = vi.fn()
+    },
+    GithubAuthProvider: class {
+      setCustomParameters = vi.fn()
+    },
+    setPersistence: vi.fn().mockResolvedValue(undefined)
+  }
+})
 
 // Mock useToastStore
 vi.mock('@/stores/toastStore', () => ({
@@ -70,11 +75,7 @@ vi.mock('@/stores/toastStore', () => ({
 }))
 
 // Mock useDialogService
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showSettingsDialog: vi.fn()
-  })
-}))
+vi.mock('@/services/dialogService')
 
 describe('useFirebaseAuthStore', () => {
   let store: ReturnType<typeof useFirebaseAuthStore>
@@ -92,6 +93,12 @@ describe('useFirebaseAuthStore', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+
+    // Setup dialog service mock
+    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
+      showSettingsDialog: vi.fn(),
+      showErrorDialog: vi.fn()
+    })
 
     // Mock useFirebaseAuth to return our mock auth object
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
@@ -297,7 +304,7 @@ describe('useFirebaseAuthStore', () => {
 
       const token = await store.getIdToken()
 
-      expect(token).toBeNull()
+      expect(token).toBeUndefined()
     })
 
     it('should return null for token after login and logout sequence', async () => {
@@ -329,7 +336,7 @@ describe('useFirebaseAuthStore', () => {
 
       // Verify token is null after logout
       const tokenAfterLogout = await store.getIdToken()
-      expect(tokenAfterLogout).toBeNull()
+      expect(tokenAfterLogout).toBeUndefined()
     })
 
     it('should handle network errors gracefully when offline (reproduces issue #4468)', async () => {
@@ -340,20 +347,19 @@ describe('useFirebaseAuthStore', () => {
       mockUser.getIdToken.mockReset()
 
       // Mock network failure (auth/network-request-failed error from Firebase)
-      const networkError = new Error(
-        'Firebase: Error (auth/network-request-failed).'
+      const networkError = new FirebaseError(
+        firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED,
+        'mock error'
       )
-      networkError.name = 'FirebaseError'
-      ;(networkError as any).code = 'auth/network-request-failed'
 
       mockUser.getIdToken.mockRejectedValue(networkError)
 
       const token = await store.getIdToken()
-      expect(token).toBeNull() // Should return null instead of throwing
+      expect(token).toBeUndefined() // Should return undefined instead of throwing
     })
 
-    it('should throw error when getIdToken fails with non-network error', async () => {
-      // This test verifies that non-network errors are thrown instead of handled gracefully
+    it('should show error dialog when getIdToken fails with non-network error', async () => {
+      // This test verifies that non-network errors trigger the error dialog
       mockUser.getIdToken.mockReset()
 
       // Mock a non-network error using actual Firebase Auth error code
@@ -363,10 +369,16 @@ describe('useFirebaseAuthStore', () => {
 
       mockUser.getIdToken.mockRejectedValue(authError)
 
-      // Should throw the error instead of returning null
-      await expect(store.getIdToken()).rejects.toThrow(
-        'User account is disabled.'
-      )
+      // Should call the error dialog instead of throwing
+      const token = await store.getIdToken()
+
+      expect(
+        vi.mocked(useDialogService)().showErrorDialog
+      ).toHaveBeenCalledWith(authError, {
+        title: 'errorDialog.defaultTitle',
+        reportType: 'authenticationError'
+      })
+      expect(token).toBeUndefined()
     })
   })
 
@@ -385,11 +397,10 @@ describe('useFirebaseAuthStore', () => {
 
       // Setup user with network error on token refresh
       mockUser.getIdToken.mockReset()
-      const networkError = new Error(
-        'Firebase: Error (auth/network-request-failed).'
+      const networkError = new FirebaseError(
+        firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED,
+        'mock error'
       )
-      networkError.name = 'FirebaseError'
-      ;(networkError as any).code = 'auth/network-request-failed'
       mockUser.getIdToken.mockRejectedValue(networkError)
 
       const authHeader = await store.getAuthHeader()

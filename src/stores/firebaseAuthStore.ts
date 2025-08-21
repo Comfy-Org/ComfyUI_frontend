@@ -1,5 +1,7 @@
+import { FirebaseError } from 'firebase/app'
 import {
   type Auth,
+  AuthErrorCodes,
   GithubAuthProvider,
   GoogleAuthProvider,
   type User,
@@ -20,6 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { type AuthHeader } from '@/types/authTypes'
 import { operations } from '@/types/comfyRegistryTypes'
@@ -88,21 +91,28 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     lastBalanceUpdateTime.value = null
   })
 
-  const getIdToken = async (): Promise<string | null> => {
+  const getIdToken = async (): Promise<string | undefined> => {
     if (currentUser.value) {
       try {
         return await currentUser.value.getIdToken()
-      } catch (error: any) {
-        if (error?.code === 'auth/network-request-failed') {
+      } catch (error: unknown) {
+        if (
+          error instanceof FirebaseError &&
+          error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
+        ) {
           console.warn(
             'Could not authenticate with Firebase. Features requiring authentication might not work.'
           )
-          return null // handle gracefully
+          return
         }
-        throw error
+
+        useDialogService().showErrorDialog(error, {
+          title: t('errorDialog.defaultTitle'),
+          reportType: 'authenticationError'
+        })
+        console.error(error)
       }
     }
-    return null
   }
 
   /**
