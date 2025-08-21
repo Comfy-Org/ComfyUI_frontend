@@ -2203,9 +2203,17 @@ export class LGraphCanvas
             x: e.canvasX,
             y: e.canvasY
           })
-          const reroute = rerouteLayout
-            ? graph.getReroute(Number(rerouteLayout.id))
-            : graph.getRerouteOnPos(e.canvasX, e.canvasY, this.#visibleReroutes)
+
+          let reroute
+          if (rerouteLayout) {
+            reroute = graph.getReroute(Number(rerouteLayout.id))
+          } else {
+            reroute = graph.getRerouteOnPos(
+              e.canvasX,
+              e.canvasY,
+              this.#visibleReroutes
+            )
+          }
           if (reroute) {
             if (e.altKey) {
               pointer.onClick = (upEvent) => {
@@ -2414,10 +2422,33 @@ export class LGraphCanvas
         if (!centre) continue
 
         // Check if this link was hit (using layout store or fallback to old method)
-        const isLinkHit = hitLinkId
-          ? String(linkSegment.id) === hitLinkId
-          : linkSegment.path &&
-            this.ctx.isPointInStroke(linkSegment.path, x * dpi, y * dpi)
+        let isLinkHit = false
+        if (hitLinkId) {
+          // Build the expected key for this segment
+          // Reroute segments use: segment:linkId:rerouteId
+          // Regular links use: link:linkId
+          const isReroute = 'linkIds' in linkSegment // Reroute has linkIds property
+          let expectedKey: string
+          if (isReroute) {
+            // linkSegment is a Reroute, get first link ID from the Set
+            const rerouteSegment = linkSegment as any // Type assertion since we know it's a Reroute
+            const firstLinkId = rerouteSegment.linkIds.values().next().value
+            expectedKey = `segment:${firstLinkId}:${linkSegment.id}`
+          } else {
+            expectedKey = `link:${linkSegment.id}`
+          }
+
+          isLinkHit = expectedKey === hitLinkId
+        }
+
+        if (!isLinkHit && linkSegment.path) {
+          // Fallback to old method if not found in layout store
+          isLinkHit = this.ctx.isPointInStroke(
+            linkSegment.path,
+            x * dpi,
+            y * dpi
+          )
+        }
 
         // If we shift click on a link then start a link from that input
         if ((e.shiftKey || e.altKey) && isLinkHit) {
@@ -8160,13 +8191,21 @@ export class LGraphCanvas
           x: event.canvasX,
           y: event.canvasY
         })
-        const reroute = rerouteLayout
-          ? this.graph.getReroute(Number(rerouteLayout.id))
-          : this.graph.getRerouteOnPos(
-              event.canvasX,
-              event.canvasY,
-              this.#visibleReroutes
-            )
+
+        let reroute
+        if (rerouteLayout) {
+          console.debug('✅ Using LayoutStore for reroute query', {
+            rerouteLayout
+          })
+          reroute = this.graph.getReroute(Number(rerouteLayout.id))
+        } else {
+          console.debug('⚠️ Falling back to old reroute query method')
+          reroute = this.graph.getRerouteOnPos(
+            event.canvasX,
+            event.canvasY,
+            this.#visibleReroutes
+          )
+        }
         if (reroute) {
           menu_info.unshift(
             {
