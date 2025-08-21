@@ -519,6 +519,9 @@ export class LitegraphLinkAdapter {
     // Convert context
     const pathContext = this.convertToPathRenderContext(context)
 
+    // Hide center marker when dragging links
+    pathContext.style.showCenterMarker = false
+
     // Render using pure renderer
     this.pathRenderer.drawDraggingLink(ctx, dragData, pathContext)
   }
