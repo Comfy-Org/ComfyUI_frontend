@@ -7,6 +7,8 @@
 import { type ComputedRef, type Ref, computed, customRef } from 'vue'
 import * as Y from 'yjs'
 
+import { registerNodeSlots } from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import type {
   CreateNodeOperation,
@@ -349,6 +351,36 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Update slot layouts for a node when it moves or changes
+   */
+  updateNodeSlotLayouts(nodeId: NodeId): void {
+    // Get the node layout
+    const nodeLayout = this.getNodeLayoutRef(nodeId).value
+    if (!nodeLayout) return
+
+    // Get the LiteGraph node to access slot information
+    const liteNode = window.app?.graph?.getNodeById(parseInt(nodeId))
+    if (!liteNode) return
+
+    // Create context for slot position calculation
+    const context: SlotPositionContext = {
+      nodeX: nodeLayout.position.x,
+      nodeY: nodeLayout.position.y,
+      nodeWidth: nodeLayout.size.width,
+      nodeHeight: nodeLayout.size.height,
+      collapsed: liteNode.flags?.collapsed || false,
+      collapsedWidth: liteNode._collapsed_width,
+      slotStartY: liteNode.constructor.slot_start_y,
+      inputs: liteNode.inputs || [],
+      outputs: liteNode.outputs || [],
+      widgets: liteNode.widgets
+    }
+
+    // Register all slots for this node
+    registerNodeSlots(nodeId, context)
+  }
+
+  /**
    * Update reroute layout data
    */
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void {
@@ -677,6 +709,9 @@ class LayoutStoreImpl implements LayoutStore {
       height: size.height
     })
 
+    // Update slot layouts when node moves
+    this.updateNodeSlotLayouts(operation.nodeId)
+
     change.nodeIds.push(operation.nodeId)
   }
 
@@ -698,6 +733,9 @@ class LayoutStoreImpl implements LayoutStore {
       width: operation.size.width,
       height: operation.size.height
     })
+
+    // Update slot layouts when node resizes
+    this.updateNodeSlotLayouts(operation.nodeId)
 
     change.nodeIds.push(operation.nodeId)
   }
@@ -722,6 +760,9 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Add to spatial index
     this.spatialIndex.insert(operation.nodeId, operation.layout.bounds)
+
+    // Initialize slot layouts for new node
+    this.updateNodeSlotLayouts(operation.nodeId)
 
     change.type = 'create'
     change.nodeIds.push(operation.nodeId)

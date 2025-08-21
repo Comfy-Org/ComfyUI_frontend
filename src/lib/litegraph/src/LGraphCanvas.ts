@@ -5062,7 +5062,6 @@ export class LGraphCanvas
       node._setConcreteSlots()
       if (!node.collapsed) {
         node.arrange()
-        node.registerSlots() // Register slots for hit detection
       }
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
       return
@@ -5154,7 +5153,6 @@ export class LGraphCanvas
     node._setConcreteSlots()
     if (!node.collapsed) {
       node.arrange()
-      node.registerSlots() // Register slots for hit detection
       node.drawSlots(ctx, {
         fromSlot: this.linkConnector.renderLinks[0]?.fromSlot as
           | INodeOutputSlot
@@ -5169,7 +5167,6 @@ export class LGraphCanvas
 
       this.drawNodeWidgets(node, null, ctx)
     } else if (this.render_collapsed_slots) {
-      node.registerSlots() // Register slots for collapsed nodes too
       node.drawCollapsedSlots(ctx)
     }
 
