@@ -1,7 +1,9 @@
 <template>
   <Panel
-    class="selection-toolbox absolute left-1/2 rounded-lg"
+    v-show="visible"
+    class="selection-toolbox rounded-lg"
     :class="{ 'animate-slide-up': shouldAnimate }"
+    :style="style"
     :pt="{
       header: 'hidden',
       content: 'p-0 flex flex-row'
@@ -28,7 +30,7 @@
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed, inject } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -41,23 +43,30 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
+import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
-const selectionOverlayState = inject(SelectionOverlayInjectionKey)
-const { shouldAnimate } = useRetriggerableAnimation(
-  selectionOverlayState?.updateCount,
-  { animateOnMount: true }
-)
+// Get position and visibility from the new composable
+const { style, visible } = useSelectionToolboxPosition()
+
+// Track selection changes for animation
+const selectionUpdateCount = ref(0)
+watch(visible, () => {
+  selectionUpdateCount.value++
+})
+
+const { shouldAnimate } = useRetriggerableAnimation(selectionUpdateCount, {
+  animateOnMount: true
+})
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -75,25 +84,3 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })
 </script>
-
-<style scoped>
-.selection-toolbox {
-  transform: translateX(-50%) translateY(-120%);
-}
-
-/* Slide up animation using CSS animation */
-@keyframes slideUp {
-  from {
-    transform: translateX(-50%) translateY(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(-50%) translateY(-120%);
-    opacity: 1;
-  }
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-</style>
