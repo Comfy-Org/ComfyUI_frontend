@@ -9,10 +9,15 @@ import * as Y from 'yjs'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import type {
+  CreateLinkOperation,
   CreateNodeOperation,
+  CreateRerouteOperation,
+  DeleteLinkOperation,
   DeleteNodeOperation,
+  DeleteRerouteOperation,
   LayoutOperation,
   MoveNodeOperation,
+  MoveRerouteOperation,
   ResizeNodeOperation,
   SetNodeZIndexOperation
 } from '@/renderer/core/layout/types'
@@ -35,6 +40,8 @@ class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<Y.Map<unknown>> // Maps nodeId -> Y.Map containing NodeLayout data
+  private ylinks: Y.Map<Y.Map<unknown>> // Maps linkId -> Y.Map containing link data
+  private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
   private yoperations: Y.Array<LayoutOperation> // Operation log
 
   // Vue reactivity layer
@@ -66,6 +73,8 @@ class LayoutStoreImpl implements LayoutStore {
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
+    this.ylinks = this.ydoc.getMap('links')
+    this.yreroutes = this.ydoc.getMap('reroutes')
     this.yoperations = this.ydoc.getArray('operations')
 
     // Initialize spatial index managers
@@ -83,6 +92,51 @@ class LayoutStoreImpl implements LayoutStore {
         const trigger = this.nodeTriggers.get(key)
         if (trigger) {
           trigger()
+        }
+      })
+    })
+
+    // Listen for link changes and update spatial indexes
+    this.ylinks.observe((event) => {
+      this.version++
+      event.changes.keys.forEach((change, linkId) => {
+        if (change.action === 'delete') {
+          this.linkLayouts.delete(linkId)
+          this.linkSpatialIndex.remove(linkId)
+        } else {
+          // Link was added or updated - geometry will be computed separately
+          // This just tracks that the link exists in CRDT
+        }
+      })
+    })
+
+    // Listen for reroute changes and update spatial indexes
+    this.yreroutes.observe((event) => {
+      this.version++
+      event.changes.keys.forEach((change, rerouteId) => {
+        if (change.action === 'delete') {
+          this.rerouteLayouts.delete(rerouteId)
+          this.rerouteSpatialIndex.remove(rerouteId)
+        } else if (change.action === 'update' || change.action === 'add') {
+          const rerouteData = this.yreroutes.get(rerouteId)
+          if (rerouteData) {
+            const pos = rerouteData.get('position') as Point
+            if (pos) {
+              // Update reroute layout when position changes
+              const layout: RerouteLayout = {
+                id: rerouteId,
+                position: pos,
+                radius: 8,
+                bounds: {
+                  x: pos.x - 8,
+                  y: pos.y - 8,
+                  width: 16,
+                  height: 16
+                }
+              }
+              this.updateRerouteLayout(rerouteId, layout)
+            }
+          }
         }
       })
     })
@@ -555,6 +609,21 @@ class LayoutStoreImpl implements LayoutStore {
       case 'deleteNode':
         this.handleDeleteNode(operation as DeleteNodeOperation, change)
         break
+      case 'createLink':
+        this.handleCreateLink(operation as CreateLinkOperation, change)
+        break
+      case 'deleteLink':
+        this.handleDeleteLink(operation as DeleteLinkOperation, change)
+        break
+      case 'createReroute':
+        this.handleCreateReroute(operation as CreateRerouteOperation, change)
+        break
+      case 'deleteReroute':
+        this.handleDeleteReroute(operation as DeleteRerouteOperation, change)
+        break
+      case 'moveReroute':
+        this.handleMoveReroute(operation as MoveRerouteOperation, change)
+        break
     }
   }
 
@@ -745,6 +814,79 @@ class LayoutStoreImpl implements LayoutStore {
 
     change.type = 'delete'
     change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleCreateLink(
+    operation: CreateLinkOperation,
+    change: LayoutChange
+  ): void {
+    const linkData = new Y.Map<unknown>()
+    linkData.set('id', operation.linkId)
+    linkData.set('sourceNodeId', operation.sourceNodeId)
+    linkData.set('sourceSlot', operation.sourceSlot)
+    linkData.set('targetNodeId', operation.targetNodeId)
+    linkData.set('targetSlot', operation.targetSlot)
+
+    this.ylinks.set(operation.linkId, linkData)
+
+    // Link geometry will be computed separately when nodes move
+    // This just tracks that the link exists
+    change.type = 'create'
+  }
+
+  private handleDeleteLink(
+    operation: DeleteLinkOperation,
+    change: LayoutChange
+  ): void {
+    if (!this.ylinks.has(operation.linkId)) return
+
+    this.ylinks.delete(operation.linkId)
+    this.linkLayouts.delete(operation.linkId)
+    this.linkSpatialIndex.remove(operation.linkId)
+
+    change.type = 'delete'
+  }
+
+  private handleCreateReroute(
+    operation: CreateRerouteOperation,
+    change: LayoutChange
+  ): void {
+    const rerouteData = new Y.Map<unknown>()
+    rerouteData.set('id', operation.rerouteId)
+    rerouteData.set('position', operation.position)
+    rerouteData.set('parentId', operation.parentId)
+    rerouteData.set('linkIds', operation.linkIds)
+
+    this.yreroutes.set(operation.rerouteId, rerouteData)
+
+    // The observer will automatically update the spatial index
+    change.type = 'create'
+  }
+
+  private handleDeleteReroute(
+    operation: DeleteRerouteOperation,
+    change: LayoutChange
+  ): void {
+    if (!this.yreroutes.has(operation.rerouteId)) return
+
+    this.yreroutes.delete(operation.rerouteId)
+    this.rerouteLayouts.delete(operation.rerouteId)
+    this.rerouteSpatialIndex.remove(operation.rerouteId)
+
+    change.type = 'delete'
+  }
+
+  private handleMoveReroute(
+    operation: MoveRerouteOperation,
+    change: LayoutChange
+  ): void {
+    const yreroute = this.yreroutes.get(operation.rerouteId)
+    if (!yreroute) return
+
+    yreroute.set('position', operation.position)
+
+    // The observer will automatically update the spatial index
+    change.type = 'update'
   }
 
   /**

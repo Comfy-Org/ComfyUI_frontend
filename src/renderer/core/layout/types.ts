@@ -166,6 +166,11 @@ export type OperationType =
   | 'deleteNode'
   | 'setNodeVisibility'
   | 'batchUpdate'
+  | 'createLink'
+  | 'deleteLink'
+  | 'createReroute'
+  | 'deleteReroute'
+  | 'moveReroute'
 
 /**
  * Move node operation
@@ -229,6 +234,70 @@ export interface BatchUpdateOperation extends BaseOperation {
 }
 
 /**
+ * Create link operation
+ */
+export interface CreateLinkOperation {
+  type: 'createLink'
+  linkId: LinkId
+  sourceNodeId: NodeId
+  sourceSlot: number
+  targetNodeId: NodeId
+  targetSlot: number
+  timestamp: number
+  actor: string
+  source: 'canvas' | 'vue' | 'external'
+}
+
+/**
+ * Delete link operation
+ */
+export interface DeleteLinkOperation {
+  type: 'deleteLink'
+  linkId: LinkId
+  timestamp: number
+  actor: string
+  source: 'canvas' | 'vue' | 'external'
+}
+
+/**
+ * Create reroute operation
+ */
+export interface CreateRerouteOperation {
+  type: 'createReroute'
+  rerouteId: RerouteId
+  position: Point
+  parentId?: RerouteId
+  linkIds: LinkId[]
+  timestamp: number
+  actor: string
+  source: 'canvas' | 'vue' | 'external'
+}
+
+/**
+ * Delete reroute operation
+ */
+export interface DeleteRerouteOperation {
+  type: 'deleteReroute'
+  rerouteId: RerouteId
+  timestamp: number
+  actor: string
+  source: 'canvas' | 'vue' | 'external'
+}
+
+/**
+ * Move reroute operation
+ */
+export interface MoveRerouteOperation {
+  type: 'moveReroute'
+  rerouteId: RerouteId
+  position: Point
+  previousPosition: Point
+  timestamp: number
+  actor: string
+  source: 'canvas' | 'vue' | 'external'
+}
+
+/**
  * Union of all operation types
  */
 export type LayoutOperation =
@@ -239,6 +308,11 @@ export type LayoutOperation =
   | DeleteNodeOperation
   | SetNodeVisibilityOperation
   | BatchUpdateOperation
+  | CreateLinkOperation
+  | DeleteLinkOperation
+  | CreateRerouteOperation
+  | DeleteRerouteOperation
+  | MoveRerouteOperation
 
 // Legacy alias for compatibility
 export type AnyLayoutOperation = LayoutOperation

@@ -2,7 +2,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { Reroute, RerouteId } from './Reroute'
@@ -460,13 +460,15 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       reroute.linkIds.delete(this.id)
       if (!keepReroutes && !reroute.totalLinks) {
         network.reroutes.delete(reroute.id)
-        // Clean up layout store
-        layoutStore.deleteRerouteLayout(String(reroute.id))
+        // Delete reroute from Layout Store
+        layoutMutations.setSource('canvas')
+        layoutMutations.deleteReroute(String(reroute.id))
       }
     }
     network.links.delete(this.id)
-    // Clean up layout store
-    layoutStore.deleteLinkLayout(String(this.id))
+    // Delete link from Layout Store
+    layoutMutations.setSource('canvas')
+    layoutMutations.deleteLink(String(this.id))
   }
 
   /**

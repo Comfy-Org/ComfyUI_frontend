@@ -5558,19 +5558,6 @@ export class LGraphCanvas
       }
       reroute.draw(ctx, this._pattern)
 
-      // Register reroute layout with layout store for hit testing
-      layoutStore.updateRerouteLayout(String(reroute.id), {
-        id: String(reroute.id),
-        position: { x: reroute.pos[0], y: reroute.pos[1] },
-        radius: 8, // Reroute.radius
-        bounds: {
-          x: reroute.pos[0] - 8,
-          y: reroute.pos[1] - 8,
-          width: 16,
-          height: 16
-        }
-      })
-
       // Never draw slots when the pointer is down
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
