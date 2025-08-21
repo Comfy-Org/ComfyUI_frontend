@@ -15,6 +15,10 @@ const meta: Meta<typeof SearchBox> = {
       control: 'boolean',
       description: 'Toggle border prop'
     }
+  },
+  args: {
+    placeHolder: 'Search...',
+    hasBorder: false
   }
 }
 
@@ -29,9 +33,23 @@ export const Default: Story = {
       return { searchText, args }
     },
     template: `
-      <div>
-        <SearchBox v-model:="searchQuery" />
+      <div style="max-width: 320px;">
+        <SearchBox v-bind="args" v-model="searchText" />
       </div>
     `
   })
+}
+
+export const WithBorder: Story = {
+  ...Default,
+  args: {
+    hasBorder: true
+  }
+}
+
+export const NoBorder: Story = {
+  ...Default,
+  args: {
+    hasBorder: false
+  }
 }
