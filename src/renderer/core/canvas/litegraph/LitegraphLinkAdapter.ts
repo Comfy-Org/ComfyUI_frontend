@@ -38,6 +38,7 @@ import {
   calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import type { Bounds } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -139,6 +140,36 @@ export class LitegraphLinkAdapter {
 
     // Store path for hit detection
     link.path = path
+
+    // Update layout store only if link geometry changed
+    if (link.id !== -1) {
+      // Don't register floating links
+      const bounds = this.calculateLinkBounds(startPos, endPos, linkData)
+      const centerPos = linkData.centerPos || {
+        x: (startPos[0] + endPos[0]) / 2,
+        y: (startPos[1] + endPos[1]) / 2
+      }
+
+      // Check if geometry changed
+      const existing = layoutStore.getLinkLayout(String(link.id))
+      if (
+        !existing ||
+        !this.boundsEqual(existing.bounds, bounds) ||
+        !this.pointEqual(existing.centerPos, centerPos)
+      ) {
+        // Geometry changed, update layout store
+        layoutStore.updateLinkLayout(String(link.id), {
+          id: String(link.id),
+          path: path,
+          bounds: bounds,
+          centerPos: centerPos,
+          sourceNodeId: String(link.origin_id),
+          targetNodeId: String(link.target_id),
+          sourceSlot: link.origin_slot,
+          targetSlot: link.target_slot
+        })
+      }
+    }
   }
 
   /**
@@ -434,6 +465,40 @@ export class LitegraphLinkAdapter {
           linkSegment._centreAngle = linkData.centerAngle
         }
       }
+
+      // Update layout store only if link geometry changed
+      if (link && link.id !== -1) {
+        // Don't register floating links or temp links
+        const bounds = this.calculateLinkBounds(
+          [linkData.startPoint.x, linkData.startPoint.y] as ReadOnlyPoint,
+          [linkData.endPoint.x, linkData.endPoint.y] as ReadOnlyPoint,
+          linkData
+        )
+        const centerPos = linkData.centerPos || {
+          x: (linkData.startPoint.x + linkData.endPoint.x) / 2,
+          y: (linkData.startPoint.y + linkData.endPoint.y) / 2
+        }
+
+        // Check if geometry changed
+        const existing = layoutStore.getLinkLayout(String(link.id))
+        if (
+          !existing ||
+          !this.boundsEqual(existing.bounds, bounds) ||
+          !this.pointEqual(existing.centerPos, centerPos)
+        ) {
+          // Geometry changed, update layout store
+          layoutStore.updateLinkLayout(String(link.id), {
+            id: String(link.id),
+            path: path,
+            bounds: bounds,
+            centerPos: centerPos,
+            sourceNodeId: String(link.origin_id),
+            targetNodeId: String(link.target_id),
+            sourceSlot: link.origin_slot,
+            targetSlot: link.target_slot
+          })
+        }
+      }
     }
   }
 
@@ -524,5 +589,56 @@ export class LitegraphLinkAdapter {
 
     // Render using pure renderer
     this.pathRenderer.drawDraggingLink(ctx, dragData, pathContext)
+  }
+
+  /**
+   * Calculate bounding box for a link
+   * Includes padding for line width and control points
+   */
+  private calculateLinkBounds(
+    startPos: ReadOnlyPoint,
+    endPos: ReadOnlyPoint,
+    linkData: LinkRenderData
+  ): Bounds {
+    let minX = Math.min(startPos[0], endPos[0])
+    let maxX = Math.max(startPos[0], endPos[0])
+    let minY = Math.min(startPos[1], endPos[1])
+    let maxY = Math.max(startPos[1], endPos[1])
+
+    // Include control points if they exist (for spline links)
+    if (linkData.controlPoints) {
+      for (const cp of linkData.controlPoints) {
+        minX = Math.min(minX, cp.x)
+        maxX = Math.max(maxX, cp.x)
+        minY = Math.min(minY, cp.y)
+        maxY = Math.max(maxY, cp.y)
+      }
+    }
+
+    // Add padding for line width and hit tolerance
+    const padding = 20
+
+    return {
+      x: minX - padding,
+      y: minY - padding,
+      width: maxX - minX + 2 * padding,
+      height: maxY - minY + 2 * padding
+    }
+  }
+
+  /**
+   * Check if two bounds are equal
+   */
+  private boundsEqual(a: Bounds, b: Bounds): boolean {
+    return (
+      a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
+    )
+  }
+
+  /**
+   * Check if two points are equal
+   */
+  private pointEqual(a: Point, b: Point): boolean {
+    return a.x === b.x && a.y === b.y
   }
 }
