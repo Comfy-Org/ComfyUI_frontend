@@ -25,7 +25,6 @@ jobs:
         path: |
           .cache
           coverage
-          node_modules/.cache
           .vitest-cache
         key: vitest-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', 'vitest.config.*', 'tsconfig.json') }}
         restore-keys: |

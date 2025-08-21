@@ -71,7 +71,6 @@ jobs:
         with:
           path: |
             ComfyUI_frontend/.cache
-            ComfyUI_frontend/node_modules/.cache
             ComfyUI_frontend/tsconfig.tsbuildinfo
           key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ hashFiles('ComfyUI_frontend/src/**/*.{ts,vue,js}', 'ComfyUI_frontend/*.config.*') }}
           restore-keys: |

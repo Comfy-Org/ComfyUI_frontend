@@ -31,7 +31,6 @@ jobs:
           path: |
             .cache
             .eslintcache
-            node_modules/.cache
             tsconfig.tsbuildinfo
             .prettierCache
             .knip-cache
