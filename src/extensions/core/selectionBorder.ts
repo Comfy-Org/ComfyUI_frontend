@@ -1,4 +1,4 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { type LGraphCanvas, createBounds } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
 /**
@@ -14,32 +14,11 @@ function drawSelectionBorder(
   // Only draw if multiple items selected
   if (selectedItems.size <= 1) return
 
-  // Calculate bounds of all selected items
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
+  // Use the same bounds calculation as the toolbox
+  const bounds = createBounds(selectedItems, 10)
+  if (!bounds) return
 
-  for (const item of selectedItems) {
-    if ('pos' in item && 'size' in item) {
-      // It's a node
-      const node = item as any
-      minX = Math.min(minX, node.pos[0])
-      minY = Math.min(minY, node.pos[1])
-      maxX = Math.max(maxX, node.pos[0] + node.size[0])
-      maxY = Math.max(maxY, node.pos[1] + node.size[1])
-    }
-  }
-
-  // No valid bounds found
-  if (!isFinite(minX)) return
-
-  // Add padding
-  const padding = 10
-  minX -= padding
-  minY -= padding
-  maxX += padding
-  maxY += padding
+  const [x, y, width, height] = bounds
 
   // Save context state
   ctx.save()
@@ -56,9 +35,9 @@ function drawSelectionBorder(
   const dashSize = 5 / canvas.ds.scale
   ctx.setLineDash([dashSize, dashSize])
 
-  // Draw the border
+  // Draw the border using the bounds directly
   ctx.beginPath()
-  ctx.roundRect(minX, minY, maxX - minX, maxY - minY, 8 / canvas.ds.scale)
+  ctx.roundRect(x, y, width, height, 8 / canvas.ds.scale)
   ctx.stroke()
 
   // Restore context
