@@ -61,9 +61,10 @@ let listenerController: AbortController | null = null
 let disconnectOnReset = false
 
 const settingStore = useSettingStore()
+const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
 
-const { visible, newSearchBoxEnabled } = storeToRefs(useSearchBoxStore())
+const { visible, newSearchBoxEnabled } = storeToRefs(searchBoxStore)
 const dismissable = ref(true)
 const getNewNodeLocation = (): Point => {
   return triggerEvent
@@ -107,9 +108,9 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   window.requestAnimationFrame(closeDialog)
 }
 
-const showSearchBox = (e: CanvasPointerEvent) => {
+const showSearchBox = (e: CanvasPointerEvent | null) => {
   if (newSearchBoxEnabled.value) {
-    if (e.pointerType === 'touch') {
+    if (e?.pointerType === 'touch') {
       setTimeout(() => {
         showNewSearchBox(e)
       }, 128)
@@ -125,7 +126,7 @@ const getFirstLink = () =>
   canvasStore.getCanvas().linkConnector.renderLinks.at(0)
 
 const nodeDefStore = useNodeDefStore()
-const showNewSearchBox = (e: CanvasPointerEvent) => {
+const showNewSearchBox = (e: CanvasPointerEvent | null) => {
   const firstLink = getFirstLink()
   if (firstLink) {
     const filter =
@@ -301,6 +302,7 @@ watch(visible, () => {
 })
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
+defineExpose({ showSearchBox })
 </script>
 
 <style>
