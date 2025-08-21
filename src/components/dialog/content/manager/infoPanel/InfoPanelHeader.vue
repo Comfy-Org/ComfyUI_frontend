@@ -16,9 +16,16 @@
         <PackUninstallButton
           v-if="isAllInstalled"
           v-bind="$attrs"
+          size="md"
           :node-packs="nodePacks"
         />
-        <PackInstallButton v-else v-bind="$attrs" :node-packs="nodePacks" />
+        <PackInstallButton
+          v-else
+          v-bind="$attrs"
+          size="md"
+          :is-installing="isInstalling"
+          :node-packs="nodePacks"
+        />
       </slot>
     </div>
   </div>
@@ -31,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -56,4 +63,10 @@ watch(
   },
   { immediate: true }
 )
+
+// Check if any of the packs are currently being installed
+const isInstalling = computed(() => {
+  if (!nodePacks?.length) return false
+  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
+})
 </script>

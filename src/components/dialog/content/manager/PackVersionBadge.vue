@@ -12,11 +12,10 @@
     >
       <i
         v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-blue-600"
-        style="font-size: 8px"
+        class="pi pi-arrow-circle-up text-blue-600 text-xs"
       />
       <span>{{ installedVersion }}</span>
-      <i class="pi pi-chevron-right" style="font-size: 8px" />
+      <i class="pi pi-chevron-right text-xxs" />
     </div>
 
     <Popover

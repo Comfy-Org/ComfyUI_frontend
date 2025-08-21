@@ -10,7 +10,11 @@
           {{ $t('manager.packsSelected') }}
         </template>
         <template #install-button>
-          <PackInstallButton :full-width="true" :node-packs="nodePacks" />
+          <PackInstallButton
+            size="md"
+            :is-installing="isInstalling"
+            :node-packs="nodePacks"
+          />
         </template>
       </InfoPanelHeader>
       <div class="mb-6">
@@ -38,6 +42,7 @@ import PackInstallButton from '@/components/dialog/content/manager/button/PackIn
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components } from '@/types/comfyRegistryTypes'
 
@@ -46,6 +51,13 @@ const { nodePacks } = defineProps<{
 }>()
 
 const { getNodeDefs } = useComfyRegistryStore()
+const comfyManagerStore = useComfyManagerStore()
+
+// Check if any of the packs are currently being installed
+const isInstalling = computed(() => {
+  if (!nodePacks?.length) return false
+  return nodePacks.some((pack) => comfyManagerStore.isPackInstalling(pack.id))
+})
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
   if (!pack.latest_version?.version) return []
