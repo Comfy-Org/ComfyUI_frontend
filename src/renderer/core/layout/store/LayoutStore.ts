@@ -885,7 +885,21 @@ class LayoutStoreImpl implements LayoutStore {
 
     yreroute.set('position', operation.position)
 
-    // The observer will automatically update the spatial index
+    const pos = operation.position
+    const layout: RerouteLayout = {
+      id: operation.rerouteId,
+      position: pos,
+      radius: 8,
+      bounds: {
+        x: pos.x - 8,
+        y: pos.y - 8,
+        width: 16,
+        height: 16
+      }
+    }
+    this.updateRerouteLayout(operation.rerouteId, layout)
+
+    // Mark as update for listeners
     change.type = 'update'
   }
 
