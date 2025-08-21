@@ -32,6 +32,7 @@ jobs:
 
       - name: Comment PR - Build Started
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -68,6 +69,7 @@ jobs:
 
       - name: Comment PR - Build Complete
         if: github.event_name == 'pull_request' && always()
+        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
