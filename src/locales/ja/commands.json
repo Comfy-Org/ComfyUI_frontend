@@ -191,12 +191,6 @@
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "選択したノードのマスクエディタを開く"
   },
-  "Comfy_Memory_UnloadModels": {
-    "label": "モデルのアンロード"
-  },
-  "Comfy_Memory_UnloadModelsAndExecutionCache": {
-    "label": "モデルと実行キャッシュのアンロード"
-  },
   "Comfy_NewBlankWorkflow": {
     "label": "新しい空のワークフロー"
   },

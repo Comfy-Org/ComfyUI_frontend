@@ -191,12 +191,6 @@
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir editor de máscara para el nodo seleccionado"
   },
-  "Comfy_Memory_UnloadModels": {
-    "label": "Descargar modelos"
-  },
-  "Comfy_Memory_UnloadModelsAndExecutionCache": {
-    "label": "Descargar modelos y caché de ejecución"
-  },
   "Comfy_NewBlankWorkflow": {
     "label": "Nuevo flujo de trabajo en blanco"
   },

@@ -191,12 +191,6 @@
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
   },
-  "Comfy_Memory_UnloadModels": {
-    "label": "Décharger les modèles"
-  },
-  "Comfy_Memory_UnloadModelsAndExecutionCache": {
-    "label": "Décharger les modèles et le cache d'exécution"
-  },
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
   },

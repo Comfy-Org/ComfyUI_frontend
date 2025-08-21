@@ -191,12 +191,6 @@
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
   },
-  "Comfy_Memory_UnloadModels": {
-    "label": "卸载模型"
-  },
-  "Comfy_Memory_UnloadModelsAndExecutionCache": {
-    "label": "卸载模型和执行缓存"
-  },
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
   },

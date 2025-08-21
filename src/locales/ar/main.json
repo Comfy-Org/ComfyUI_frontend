@@ -82,12 +82,6 @@
       "title": "إنشاء حساب"
     }
   },
-  "breadcrumbsMenu": {
-    "clearWorkflow": "مسح سير العمل",
-    "deleteWorkflow": "حذف سير العمل",
-    "duplicate": "تكرار",
-    "enterNewName": "أدخل اسمًا جديدًا"
-  },
   "chatHistory": {
     "cancelEdit": "إلغاء",
     "cancelEditTooltip": "إلغاء التعديل",
@@ -273,11 +267,11 @@
     "choose_file_to_upload": "اختر ملفاً للرفع",
     "clear": "مسح",
     "clearAll": "مسح الكل",
-    "clearFilters": "مسح الفلاتر",
     "close": "إغلاق",
     "color": "اللون",
     "comingSoon": "قريباً",
     "command": "أمر",
+    "commandProhibited": "الأمر {command} محظور. يرجى التواصل مع المسؤول لمزيد من المعلومات.",
     "community": "المجتمع",
     "completed": "اكتمل",
     "confirm": "تأكيد",
@@ -298,9 +292,7 @@
     "devices": "الأجهزة",
     "disableAll": "تعطيل الكل",
     "disabling": "جارٍ التعطيل",
-    "dismiss": "تجاهل",
     "download": "تنزيل",
-    "duplicate": "تكرار",
     "edit": "تعديل",
     "empty": "فارغ",
     "enableAll": "تمكين الكل",
@@ -314,8 +306,6 @@
     "filter": "تصفية",
     "findIssues": "العثور على مشاكل",
     "firstTimeUIMessage": "هذه هي المرة الأولى التي تستخدم فيها واجهة المستخدم الجديدة. اختر \"القائمة > استخدام القائمة الجديدة > تعطيل\" لاستعادة الواجهة القديمة.",
-    "frontendNewer": "إصدار الواجهة الأمامية {frontendVersion} قد لا يكون متوافقاً مع الإصدار الخلفي {backendVersion}.",
-    "frontendOutdated": "إصدار الواجهة الأمامية {frontendVersion} قديم. يتطلب الإصدار الخلفي {requiredVersion} أو أحدث.",
     "goToNode": "الانتقال إلى العقدة",
     "help": "مساعدة",
     "icon": "أيقونة",
@@ -397,14 +387,11 @@
     "unknownError": "خطأ غير معروف",
     "update": "تحديث",
     "updateAvailable": "تحديث متاح",
-    "updateFrontend": "تحديث الواجهة الأمامية",
     "updated": "تم التحديث",
     "updating": "جارٍ التحديث",
     "upload": "رفع",
     "usageHint": "تلميح الاستخدام",
     "user": "المستخدم",
-    "versionMismatchWarning": "تحذير توافق الإصدارات",
-    "versionMismatchWarningMessage": "{warning}: {detail} زر https://docs.comfy.org/installation/update_comfyui#common-update-issues للحصول على تعليمات التحديث.",
     "videoFailedToLoad": "فشل تحميل الفيديو",
     "workflow": "سير العمل"
   },
@@ -414,7 +401,6 @@
     "resetView": "إعادة تعيين العرض",
     "selectMode": "وضع التحديد",
     "toggleLinkVisibility": "تبديل ظهور الروابط",
-    "toggleMinimap": "تبديل الخريطة المصغرة",
     "zoomIn": "تكبير",
     "zoomOut": "تصغير"
   },
@@ -573,10 +559,6 @@
     "applyingTexture": "جارٍ تطبيق الخامة...",
     "backgroundColor": "لون الخلفية",
     "camera": "الكاميرا",
-    "cameraType": {
-      "orthographic": "أرثوغرافي",
-      "perspective": "منظور"
-    },
     "clearRecording": "مسح التسجيل",
     "edgeThreshold": "عتبة الحواف",
     "export": "تصدير",
@@ -597,7 +579,6 @@
       "wireframe": "إطار سلكي"
     },
     "model": "النموذج",
-    "openIn3DViewer": "افتح في عارض ثلاثي الأبعاد",
     "previewOutput": "معاينة المخرج",
     "removeBackgroundImage": "إزالة صورة الخلفية",
     "resizeNodeMatchOutput": "تغيير حجم العقدة لتتناسب مع المخرج",
@@ -608,22 +589,8 @@
     "switchCamera": "تبديل الكاميرا",
     "switchingMaterialMode": "جارٍ تبديل وضع المادة...",
     "upDirection": "اتجاه الأعلى",
-    "upDirections": {
-      "original": "الأصلي"
-    },
     "uploadBackgroundImage": "رفع صورة خلفية",
-    "uploadTexture": "رفع الخامة",
-    "viewer": {
-      "apply": "تطبيق",
-      "cameraSettings": "إعدادات الكاميرا",
-      "cameraType": "نوع الكاميرا",
-      "cancel": "إلغاء",
-      "exportSettings": "إعدادات التصدير",
-      "lightSettings": "إعدادات الإضاءة",
-      "modelSettings": "إعدادات النموذج",
-      "sceneSettings": "إعدادات المشهد",
-      "title": "عارض ثلاثي الأبعاد (بيتا)"
-    }
+    "uploadTexture": "رفع الخامة"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "يتطلب ComfyUI {version}:",
@@ -651,12 +618,15 @@
     "title": "الصيانة"
   },
   "manager": {
+    "applyChanges": "تطبيق التغييرات",
     "changingVersion": "تغيير الإصدار من {from} إلى {to}",
+    "clickToFinishSetup": "انقر",
     "createdBy": "تم الإنشاء بواسطة",
     "dependencies": "التبعيات",
     "discoverCommunityContent": "استكشف حزم العقد والامتدادات والمزيد من إبداعات المجتمع...",
     "downloads": "التنزيلات",
     "errorConnecting": "خطأ في الاتصال بسجل عقد Comfy.",
+    "extensionsSuccessfullyInstalled": "تم تثبيت الإضافة/الإضافات بنجاح وهي جاهزة للاستخدام!",
     "failed": "فشل ({count})",
     "filter": {
       "disabled": "معطّل",
@@ -668,8 +638,12 @@
     "installAllMissingNodes": "تثبيت جميع العقد المفقودة",
     "installSelected": "تثبيت المحدد",
     "installationQueue": "قائمة التثبيت",
+    "installingDependencies": "يتم تثبيت المتطلبات...",
     "lastUpdated": "آخر تحديث",
     "latestVersion": "الأحدث",
+    "legacyManagerUI": "استخدام الواجهة القديمة",
+    "legacyManagerUIDescription": "لاستخدام واجهة مدير النسخة القديمة، ابدأ ComfyUI مع ‎--enable-manager-legacy-ui",
+    "legacyMenuNotAvailable": "قائمة مدير النسخة القديمة غير متوفرة، سيتم التحويل إلى قائمة المدير الجديدة.",
     "license": "الرخصة",
     "loadingVersions": "جاري تحميل الإصدارات...",
     "nightlyVersion": "ليلي",
@@ -681,6 +655,7 @@
     "packsSelected": "الحزم المحددة",
     "repository": "المستودع",
     "restartToApplyChanges": "لـتطبيق التغييرات، يرجى إعادة تشغيل ComfyUI",
+    "restartingBackend": "يتم إعادة تشغيل الخلفية لتطبيق التغييرات...",
     "searchPlaceholder": "بحث",
     "selectVersion": "اختر الإصدار",
     "sort": {
@@ -698,6 +673,7 @@
       "unknown": "غير معروف"
     },
     "title": "مدير العقد المخصصة",
+    "toFinishSetup": "لإكمال الإعداد",
     "totalNodes": "إجمالي العقد",
     "tryAgainLater": "يرجى المحاولة مرة أخرى لاحقاً.",
     "tryDifferentSearch": "يرجى تجربة استعلام بحث مختلف.",
@@ -739,28 +715,21 @@
     "batchCountTooltip": "عدد المرات التي يجب فيها وضع توليد سير العمل في قائمة الانتظار",
     "clear": "مسح سير العمل",
     "clipspace": "فتح Clipspace",
-    "dark": "داكن",
     "disabled": "معطل",
     "disabledTooltip": "لن يتم وضع سير العمل في قائمة الانتظار تلقائيًا",
     "execute": "تنفيذ",
-    "help": "مساعدة",
     "hideMenu": "إخفاء القائمة",
     "instant": "فوري",
     "instantTooltip": "سيتم وضع سير العمل في قائمة الانتظار فور انتهاء التوليد",
     "interrupt": "إلغاء التشغيل الحالي",
-    "light": "فاتح",
-    "manageExtensions": "إدارة الإضافات",
     "onChange": "عند التغيير",
     "onChangeTooltip": "سيتم وضع سير العمل في قائمة الانتظار عند إجراء تغيير",
-    "queue": "لوحة الانتظار",
     "refresh": "تحديث تعريفات العقد",
     "resetView": "إعادة تعيين عرض اللوحة",
     "run": "تشغيل",
     "runWorkflow": "تشغيل سير العمل (Shift للانتظار في البداية)",
     "runWorkflowFront": "تشغيل سير العمل (انتظار في البداية)",
-    "settings": "الإعدادات",
     "showMenu": "عرض القائمة",
-    "theme": "المظهر",
     "toggleBottomPanel": "تبديل اللوحة السفلية"
   },
   "menuLabels": {
@@ -770,6 +739,7 @@
     "Bypass/Unbypass Selected Nodes": "تجاوز/إلغاء تجاوز العقد المحددة",
     "Canvas Performance": "أداء اللوحة",
     "Canvas Toggle Lock": "تبديل قفل اللوحة",
+    "Check for Custom Node Updates": "التحقق من تحديثات العقد المخصصة",
     "Check for Updates": "التحقق من التحديثات",
     "Clear Pending Tasks": "مسح المهام المعلقة",
     "Clear Workflow": "مسح سير العمل",
@@ -783,6 +753,8 @@
     "Contact Support": "الاتصال بالدعم",
     "Convert Selection to Subgraph": "تحويل التحديد إلى رسم فرعي",
     "Convert selected nodes to group node": "تحويل العقد المحددة إلى عقدة مجموعة",
+    "Custom Nodes (Legacy)": "العقد المخصصة (قديم)",
+    "Custom Nodes Manager": "مدير العقد المخصصة",
     "Decrease Brush Size in MaskEditor": "تقليل حجم الفرشاة في محرر القناع",
     "Delete Selected Items": "حذف العناصر المحددة",
     "Desktop User Guide": "دليل المستخدم لسطح المكتب",
@@ -799,10 +771,12 @@
     "Help": "مساعدة",
     "Help Center": "مركز المساعدة",
     "Increase Brush Size in MaskEditor": "زيادة حجم الفرشاة في محرر القناع",
+    "Install Missing Custom Nodes": "تثبيت العقد المخصصة المفقودة",
     "Interrupt": "إيقاف مؤقت",
     "Load Default Workflow": "تحميل سير العمل الافتراضي",
     "Manage group nodes": "إدارة عقد المجموعة",
     "Manager": "المدير",
+    "Manager Menu (Legacy)": "قائمة المدير (قديم)",
     "Minimap": "خريطة مصغرة",
     "Model Library": "مكتبة النماذج",
     "Move Selected Nodes Down": "تحريك العقد المحددة للأسفل",
@@ -828,7 +802,6 @@
     "Pin/Unpin Selected Items": "تثبيت/إلغاء تثبيت العناصر المحددة",
     "Pin/Unpin Selected Nodes": "تثبيت/إلغاء تثبيت العقد المحددة",
     "Previous Opened Workflow": "سير العمل السابق المفتوح",
-    "Queue Panel": "لوحة الانتظار",
     "Queue Prompt": "قائمة انتظار التعليمات",
     "Queue Prompt (Front)": "قائمة انتظار التعليمات (أمامي)",
     "Queue Selected Output Nodes": "قائمة انتظار عقد المخرجات المحددة",
@@ -845,13 +818,12 @@
     "Show Model Selector (Dev)": "إظهار منتقي النماذج (للمطورين)",
     "Show Settings Dialog": "عرض نافذة الإعدادات",
     "Sign Out": "تسجيل خروج",
-    "Toggle Essential Bottom Panel": "تبديل لوحة العناصر الأساسية السفلية",
     "Toggle Logs Bottom Panel": "تبديل لوحة السجلات السفلية",
     "Toggle Search Box": "تبديل مربع البحث",
     "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Theme (Dark/Light)": "تبديل السمة (داكن/فاتح)",
-    "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",
-    "Toggle the Custom Nodes Manager": "تبديل مدير العقد المخصصة",
+    "Toggle shortcuts_essentials Bottom Panel": "تبديل لوحة الاختصارات الأساسية السفلية",
+    "Toggle shortcuts_viewControls Bottom Panel": "تبديل لوحة اختصارات عرض التحكم السفلية",
     "Toggle the Custom Nodes Manager Progress Bar": "تبديل شريط تقدم مدير العقد المخصصة",
     "Undo": "تراجع",
     "Ungroup selected group nodes": "فك تجميع عقد المجموعة المحددة",
@@ -859,14 +831,8 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب"
-  },
-  "minimap": {
-    "nodeColors": "ألوان العقد",
-    "renderBypassState": "عرض حالة التجاوز",
-    "renderErrorState": "عرض حالة الخطأ",
-    "showGroups": "إظهار الإطارات/المجموعات",
-    "showLinks": "إظهار الروابط"
+    "Zoom to fit": "تكبير لتناسب",
+    "sideToolbar_queue": "شريط الأدوات الجانبي - قائمة الانتظار"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "عدم العرض مرة أخرى",
@@ -1186,31 +1152,10 @@
     "Window": "النافذة",
     "Workflow": "سير العمل"
   },
-  "shortcuts": {
-    "essentials": "أساسي",
-    "keyboardShortcuts": "اختصارات لوحة المفاتيح",
-    "manageShortcuts": "إدارة الاختصارات",
-    "noKeybinding": "لا يوجد ارتباط مفتاح",
-    "subcategories": {
-      "node": "العقدة",
-      "panelControls": "عناصر تحكم اللوحة",
-      "queue": "قائمة الانتظار",
-      "view": "العرض",
-      "workflow": "سير العمل"
-    },
-    "viewControls": "عناصر تحكم العرض"
-  },
   "sideToolbar": {
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
     "helpCenter": "مركز المساعدة",
-    "labels": {
-      "models": "النماذج",
-      "nodes": "العُقَد",
-      "queue": "قائمة الانتظار",
-      "templates": "القوالب",
-      "workflows": "سير العمل"
-    },
     "logout": "تسجيل الخروج",
     "modelLibrary": "مكتبة النماذج",
     "newBlankWorkflow": "إنشاء سير عمل جديد فارغ",
@@ -1248,7 +1193,7 @@
       },
       "showFlatList": "عرض القائمة المسطحة"
     },
-    "templates": "القوالب",
+    "themeToggle": "تبديل السمة",
     "workflowTab": {
       "confirmDelete": "هل أنت متأكد من رغبتك في حذف هذا السير؟",
       "confirmDeleteTitle": "حذف سير العمل؟",
@@ -1295,8 +1240,6 @@
       "Video": "فيديو",
       "Video API": "واجهة برمجة تطبيقات الفيديو"
     },
-    "loadingMore": "تحميل المزيد من القوالب...",
-    "searchPlaceholder": "ابحث في القوالب...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",
@@ -1619,7 +1562,6 @@
     "failedToExportModel": "فشل في تصدير النموذج بصيغة {format}",
     "failedToFetchBalance": "فشل في جلب الرصيد: {error}",
     "failedToFetchLogs": "فشل في جلب سجلات الخادم",
-    "failedToInitializeLoad3dViewer": "فشل في تهيئة عارض ثلاثي الأبعاد",
     "failedToInitiateCreditPurchase": "فشل في بدء شراء الرصيد: {error}",
     "failedToPurchaseCredits": "فشل في شراء الرصيد: {error}",
     "fileLoadError": "غير قادر على إيجاد سير العمل في {fileName}",
@@ -1674,13 +1616,6 @@
     "personalDataConsentRequired": "يجب أن توافق على معالجة بياناتك الشخصية.",
     "prefix": "يجب أن يبدأ بـ {prefix}",
     "required": "مطلوب"
-  },
-  "versionMismatchWarning": {
-    "dismiss": "رفض",
-    "frontendNewer": "إصدار الواجهة الأمامية {frontendVersion} قد لا يكون متوافقًا مع إصدار الواجهة الخلفية {backendVersion}.",
-    "frontendOutdated": "إصدار الواجهة الأمامية {frontendVersion} قديم. الواجهة الخلفية تتطلب الإصدار {requiredVersion} أو أعلى.",
-    "title": "تحذير توافق الإصدار",
-    "updateFrontend": "تحديث الواجهة الأمامية"
   },
   "welcome": {
     "getStarted": "ابدأ الآن",
