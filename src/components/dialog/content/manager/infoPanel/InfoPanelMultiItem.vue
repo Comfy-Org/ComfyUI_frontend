@@ -10,7 +10,15 @@
           {{ $t('manager.packsSelected') }}
         </template>
         <template #install-button>
+          <PackUninstallButton
+            v-if="isAllInstalled"
+            v-bind="$attrs"
+            size="md"
+            :node-packs="nodePacks"
+          />
           <PackInstallButton
+            v-else
+            v-bind="$attrs"
             size="md"
             :is-installing="isInstalling"
             :node-packs="nodePacks"
@@ -35,10 +43,11 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import PackUninstallButton from '@/components/dialog/content/manager/button/PackUninstallButton.vue'
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
@@ -51,12 +60,23 @@ const { nodePacks } = defineProps<{
 }>()
 
 const { getNodeDefs } = useComfyRegistryStore()
-const comfyManagerStore = useComfyManagerStore()
+const managerStore = useComfyManagerStore()
+
+const isAllInstalled = ref(false)
+watch(
+  [() => nodePacks, () => managerStore.installedPacks],
+  () => {
+    isAllInstalled.value = nodePacks.every((nodePack) =>
+      managerStore.isPackInstalled(nodePack.id)
+    )
+  },
+  { immediate: true }
+)
 
 // Check if any of the packs are currently being installed
 const isInstalling = computed(() => {
   if (!nodePacks?.length) return false
-  return nodePacks.some((pack) => comfyManagerStore.isPackInstalling(pack.id))
+  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
 })
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
