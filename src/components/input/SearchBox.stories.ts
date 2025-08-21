@@ -10,6 +10,10 @@ const meta: Meta<typeof SearchBox> = {
   argTypes: {
     placeHolder: {
       control: 'text'
+    },
+    hasBorder: {
+      control: 'boolean',
+      description: 'Toggle border prop'
     }
   }
 }
