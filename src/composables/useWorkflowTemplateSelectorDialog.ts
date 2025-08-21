@@ -2,7 +2,7 @@ import WorkflowTemplateSelector from '@/components/custom/widget/WorkflowTemplat
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const DIALOG_KEY = 'global-workflow-template-selector'
+const DIALOG_KEY = 'global-workflow-template-selector';
 
 export const useWorkflowTemplateSelectorDialog = () => {
   const dialogService = useDialogService()
