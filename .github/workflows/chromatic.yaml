@@ -58,8 +58,11 @@ jobs:
             node_modules/.cache
             .cache
             storybook-static
-          key: storybook-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+            tsconfig.tsbuildinfo
+          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
           restore-keys: |
+            storybook-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            storybook-cache-${{ runner.os }}-
             storybook-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies

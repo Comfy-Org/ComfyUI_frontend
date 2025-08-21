@@ -33,9 +33,12 @@ jobs:
             .eslintcache
             .cache
             tsconfig.tsbuildinfo
-          key: ci-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.vue', '*.config.*') }}
+            .prettierCache
+            .knip-cache
+          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
           restore-keys: |
-            ci-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            lint-format-cache-${{ runner.os }}-
             ci-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies

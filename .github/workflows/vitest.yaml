@@ -26,8 +26,11 @@ jobs:
           node_modules/.cache
           .cache
           coverage
-        key: test-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          .vitest-cache
+        key: vitest-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', 'vitest.config.*', 'tsconfig.json') }}
         restore-keys: |
+          vitest-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+          vitest-cache-${{ runner.os }}-
           test-tools-cache-${{ runner.os }}-
 
     - name: Install dependencies

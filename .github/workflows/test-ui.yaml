@@ -72,8 +72,11 @@ jobs:
           path: |
             ComfyUI_frontend/node_modules/.cache
             ComfyUI_frontend/.cache
-          key: playwright-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
+            ComfyUI_frontend/tsconfig.tsbuildinfo
+          key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ hashFiles('ComfyUI_frontend/src/**/*.{ts,vue,js}', 'ComfyUI_frontend/*.config.*') }}
           restore-keys: |
+            playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
+            playwright-setup-cache-${{ runner.os }}-
             playwright-tools-cache-${{ runner.os }}-
 
       - name: Build ComfyUI_frontend
@@ -176,8 +179,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ matrix.browser }}
           restore-keys: |
+            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
             playwright-browsers-${{ runner.os }}-
 
       - name: Install Playwright Browsers
