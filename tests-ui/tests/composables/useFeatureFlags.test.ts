@@ -59,6 +59,21 @@ describe('useFeatureFlags', () => {
       )
     })
 
+    it('should access supportsManagerV4', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.MANAGER_SUPPORTS_V4) return true as any
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.supportsManagerV4).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.MANAGER_SUPPORTS_V4
+      )
+    })
+
     it('should return undefined when features are not available and no default provided', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue as any
@@ -67,6 +82,7 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.supportsPreviewMetadata).toBeUndefined()
       expect(flags.maxUploadSize).toBeUndefined()
+      expect(flags.supportsManagerV4).toBeUndefined()
     })
   })
 
