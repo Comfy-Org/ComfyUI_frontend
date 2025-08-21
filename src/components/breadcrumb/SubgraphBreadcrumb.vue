@@ -40,6 +40,7 @@ import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbIt
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { SubgraphBlueprint } from '@/stores/subgraphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
 
@@ -52,6 +53,9 @@ const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
+const workflowIsBlueprint = computed(
+  () => workflowStore.activeWorkflow instanceof SubgraphBlueprint
+)
 const collapseTabs = ref(false)
 const overflowingTabs = ref(false)
 
@@ -89,6 +93,7 @@ const home = computed(() => ({
   label: workflowName.value,
   icon: 'pi pi-home',
   key: 'root',
+  isBlueprint: workflowIsBlueprint.value,
   command: () => {
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')

@@ -921,6 +921,10 @@
     "enterFilename": "Enter the filename",
     "saveWorkflow": "Save workflow"
   },
+  "subgraphStore": {
+    "saveBlueprint": "Save Subgraph to Library",
+    "blueprintName": "Subgraph name"
+  },
   "electronFileDownload": {
     "inProgress": "In Progress",
     "pause": "Pause Download",

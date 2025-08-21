@@ -42,12 +42,14 @@
     @keydown.enter="inputBlur(true)"
     @keydown.esc="inputBlur(false)"
   />
+  <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
 </template>
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import Menu, { MenuState } from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
+import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

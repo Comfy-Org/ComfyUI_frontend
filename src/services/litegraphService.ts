@@ -41,6 +41,7 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
@@ -948,6 +949,19 @@ export const useLitegraphService = () => {
     options: Record<string, any> = {}
   ): LGraphNode {
     options.pos ??= getCanvasCenter()
+    if (nodeDef.name.startsWith('SubgraphBlueprint')) {
+      const canvas = canvasStore.getCanvas()
+      const bp = useSubgraphStore().getBlueprint(nodeDef.name)
+      const items = { nodes: bp.nodes, subgraphs: bp.definitions?.subgraphs }
+      //FIXME
+      const strippedItems = JSON.parse(JSON.stringify(items))
+      const results = canvas._deserializeItems(strippedItems, {
+        position: options.pos
+      })
+      if (!results) throw new Error('Failed to add subgraph blueprint')
+      const node = results.nodes.values().next().value
+      return node
+    }
 
     const node = LiteGraph.createNode(
       nodeDef.name,

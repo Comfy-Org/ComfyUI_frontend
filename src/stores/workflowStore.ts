@@ -24,7 +24,7 @@ import { isSubgraph } from '@/utils/typeGuardUtil'
 import { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {
-  static readonly basePath = 'workflows/'
+  static readonly basePath: string = 'workflows/'
 
   /**
    * The change tracker for the workflow. Non-reactive raw object.
@@ -647,6 +647,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   return {
     activeWorkflow,
+    attachWorkflow,
     isActive,
     openWorkflows,
     openedWorkflowIndexShift,
