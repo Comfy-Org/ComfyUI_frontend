@@ -154,8 +154,8 @@ const stringifiedMinimapStyles = computed(() => {
     border: 'none',
     width: '35px',
     height: '35px',
-    'margin-right': '4px',
-    'margin-left': '4px'
+    'margin-right': '2px',
+    'margin-left': '2px'
   }
 
   const containerStyles = minimap.containerStyles.value
