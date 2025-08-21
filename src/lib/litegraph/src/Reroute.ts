@@ -1,3 +1,5 @@
+import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode, NodeId } from './LGraphNode'
 import { LLink, type LinkId } from './LLink'
@@ -407,8 +409,17 @@ export class Reroute
 
   /** @inheritdoc */
   move(deltaX: number, deltaY: number) {
+    const previousPos = { x: this.#pos[0], y: this.#pos[1] }
     this.#pos[0] += deltaX
     this.#pos[1] += deltaY
+
+    // Update Layout Store with new position
+    layoutMutations.setSource('canvas')
+    layoutMutations.moveReroute(
+      String(this.id),
+      { x: this.#pos[0], y: this.#pos[1] },
+      previousPos
+    )
   }
 
   /** @inheritdoc */

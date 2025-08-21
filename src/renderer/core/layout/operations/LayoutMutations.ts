@@ -144,6 +144,95 @@ class LayoutMutationsImpl implements LayoutMutations {
     // Set this node's z-index to be one higher than the current max
     this.setNodeZIndex(nodeId, maxZIndex + 1)
   }
+
+  /**
+   * Create a new link
+   */
+  createLink(
+    linkId: string,
+    sourceNodeId: string,
+    sourceSlot: number,
+    targetNodeId: string,
+    targetSlot: number
+  ): void {
+    layoutStore.applyOperation({
+      type: 'createLink',
+      linkId,
+      sourceNodeId,
+      sourceSlot,
+      targetNodeId,
+      targetSlot,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Delete a link
+   */
+  deleteLink(linkId: string): void {
+    layoutStore.applyOperation({
+      type: 'deleteLink',
+      linkId,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Create a new reroute
+   */
+  createReroute(
+    rerouteId: string,
+    position: Point,
+    parentId?: string,
+    linkIds: string[] = []
+  ): void {
+    layoutStore.applyOperation({
+      type: 'createReroute',
+      rerouteId,
+      position,
+      parentId,
+      linkIds,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Delete a reroute
+   */
+  deleteReroute(rerouteId: string): void {
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      rerouteId,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Move a reroute
+   */
+  moveReroute(
+    rerouteId: string,
+    position: Point,
+    previousPosition: Point
+  ): void {
+    layoutStore.applyOperation({
+      type: 'moveReroute',
+      rerouteId,
+      position,
+      previousPosition,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
 }
 
 // Create singleton instance
