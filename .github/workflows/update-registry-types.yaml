@@ -28,8 +28,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            node_modules/.cache
             .cache
+            node_modules/.cache
           key: update-registry-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             update-registry-tools-cache-${{ runner.os }}-
