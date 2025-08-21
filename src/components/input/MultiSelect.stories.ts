@@ -29,6 +29,13 @@ const meta: Meta<typeof MultiSelect> = {
     searchPlaceholder: {
       control: 'text'
     }
+  },
+  args: {
+    label: 'Select',
+    hasSearchBox: false,
+    showSelectedCount: false,
+    hasClearButton: false,
+    searchPlaceholder: 'Search...'
   }
 }
 
@@ -163,4 +170,42 @@ export const MultipleSelectors: Story = {
       </div>
     `
   })
+}
+
+export const WithSearchBox: Story = {
+  ...Default,
+  args: {
+    hasSearchBox: true
+  }
+}
+
+export const WithSelectedCount: Story = {
+  ...Default,
+  args: {
+    showSelectedCount: true
+  }
+}
+
+export const WithClearButton: Story = {
+  ...Default,
+  args: {
+    hasClearButton: true
+  }
+}
+
+export const AllHeaderFeatures: Story = {
+  ...Default,
+  args: {
+    hasSearchBox: true,
+    showSelectedCount: true,
+    hasClearButton: true
+  }
+}
+
+export const CustomSearchPlaceholder: Story = {
+  ...Default,
+  args: {
+    hasSearchBox: true,
+    searchPlaceholder: 'Filter packages...'
+  }
 }

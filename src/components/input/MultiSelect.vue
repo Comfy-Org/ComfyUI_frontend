@@ -13,14 +13,18 @@
         v-if="hasSearchBox || showSelectedCount || hasClearButton"
         #header
       >
-        <div class="p-2 flex flex-col gap-y-4 pb-0">
+        <div class="p-2 flex flex-col pb-0">
           <SearchBox
             v-if="hasSearchBox"
             v-model="searchQuery"
+            :class="showSelectedCount || hasClearButton ? 'mb-2' : ''"
             :has-border="true"
             :place-holder="searchPlaceholder"
           />
-          <div class="flex items-center justify-between">
+          <div
+            v-if="showSelectedCount || hasClearButton"
+            class="mt-2 flex items-center justify-between"
+          >
             <span
               v-if="showSelectedCount"
               class="text-sm text-neutral-400 dark-theme:text-zinc-500 px-1"
@@ -40,7 +44,7 @@
               @click.stop="selectedItems = []"
             />
           </div>
-          <div class="h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+          <div class="mt-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
         </div>
       </template>
 
