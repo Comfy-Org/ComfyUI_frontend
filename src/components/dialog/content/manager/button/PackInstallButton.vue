@@ -5,10 +5,10 @@
     :label="computedLabel"
     :border="true"
     :size="size"
-    :disabled="isInstalling"
+    :disabled="isLoading || isInstalling"
     @click="installAllPacks"
   >
-    <template v-if="isInstalling" #icon>
+    <template v-if="isLoading || isInstalling" #icon>
       <DotSpinner duration="1s" :size="size === 'sm' ? 12 : 16" />
     </template>
   </IconTextButton>
@@ -33,11 +33,13 @@ type NodePack = components['schemas']['Node']
 
 const {
   nodePacks,
-  isInstalling,
-  label,
+  isLoading = false,
+  isInstalling = false,
+  label = 'Install',
   size = 'sm'
 } = defineProps<{
   nodePacks: NodePack[]
+  isLoading?: boolean
   isInstalling?: boolean
   label?: string
   size?: ButtonSize

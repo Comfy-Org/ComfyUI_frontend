@@ -34,7 +34,8 @@
   </ListBox>
   <div v-if="!isLegacyManager" class="flex justify-end py-3">
     <PackInstallButton
-      :disabled="isLoading || !!error || missingNodePacks.length === 0"
+      :disabled="!!error || missingNodePacks.length === 0"
+      :is-loading="isLoading"
       :is-installing="isInstalling"
       :node-packs="missingNodePacks"
       :label="$t('manager.installAllMissingNodes')"
