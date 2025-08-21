@@ -1,11 +1,14 @@
+import { useMouse } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
 
 export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()
+  const { x, y } = useMouse()
 
   const newSearchBoxEnabled = computed(
     () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
@@ -28,7 +31,14 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
       return
     }
     if (!popoverRef.value) return
-    popoverRef.value.showSearchBox(null)
+    popoverRef.value.showSearchBox(
+      new MouseEvent('click', {
+        clientX: x.value,
+        clientY: y.value,
+        // @ts-expect-error layerY is a nonstandard property
+        layerY: y.value
+      }) as unknown as CanvasPointerEvent
+    )
   }
 
   return {
