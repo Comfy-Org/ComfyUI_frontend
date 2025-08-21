@@ -1,7 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useSettingStore } from '@/stores/settingStore'
+import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
+import type { useSettingStore } from '@/stores/settingStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 // Mock dependencies
@@ -12,24 +13,30 @@ vi.mock('@vueuse/core', () => ({
   }))
 }))
 
+const mockSettingStore = createMockSettingStore()
 vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: vi.fn()
+  useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
-describe('useSearchBoxStore', () => {
-  let store: ReturnType<typeof useSearchBoxStore>
-  let mockSettingStore: any
+function createMockPopover(): InstanceType<typeof NodeSearchBoxPopover> {
+  return { showSearchBox: vi.fn() } satisfies Partial<
+    InstanceType<typeof NodeSearchBoxPopover>
+  > as unknown as InstanceType<typeof NodeSearchBoxPopover>
+}
 
+function createMockSettingStore(): ReturnType<typeof useSettingStore> {
+  return {
+    get: vi.fn()
+  } satisfies Partial<
+    ReturnType<typeof useSettingStore>
+  > as unknown as ReturnType<typeof useSettingStore>
+}
+
+describe('useSearchBoxStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
 
-    mockSettingStore = {
-      get: vi.fn()
-    }
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
-
-    store = useSearchBoxStore()
-    vi.clearAllMocks()
+    vi.restoreAllMocks()
   })
 
   describe('when user has new search box enabled', () => {
@@ -38,10 +45,13 @@ describe('useSearchBoxStore', () => {
     })
 
     it('should show new search box is enabled', () => {
+      const store = useSearchBoxStore()
       expect(store.newSearchBoxEnabled).toBe(true)
     })
 
     it('should toggle search box visibility when user presses shortcut', () => {
+      const store = useSearchBoxStore()
+
       expect(store.visible).toBe(false)
 
       store.toggleVisible()
@@ -58,14 +68,20 @@ describe('useSearchBoxStore', () => {
     })
 
     it('should show new search box is disabled', () => {
+      const store = useSearchBoxStore()
       expect(store.newSearchBoxEnabled).toBe(false)
     })
 
     it('should open legacy search box at mouse position when user presses shortcut', () => {
-      const mockPopover = { showSearchBox: vi.fn() }
-      store.setPopoverRef(mockPopover as any)
+      const store = useSearchBoxStore()
+      const mockPopover = createMockPopover()
+      store.setPopoverRef(mockPopover)
+
+      expect(vi.mocked(store.visible)).toBe(false)
 
       store.toggleVisible()
+
+      expect(vi.mocked(store.visible)).toBe(false) // Doesn't become visible in legacy mode.
 
       expect(vi.mocked(mockPopover.showSearchBox)).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -76,6 +92,7 @@ describe('useSearchBoxStore', () => {
     })
 
     it('should do nothing when user presses shortcut but popover is not ready', () => {
+      const store = useSearchBoxStore()
       store.setPopoverRef(null)
 
       store.toggleVisible()
@@ -90,8 +107,9 @@ describe('useSearchBoxStore', () => {
     })
 
     it('should enable legacy search when popover is set', () => {
-      const mockPopover = { showSearchBox: vi.fn() }
-      store.setPopoverRef(mockPopover as any)
+      const store = useSearchBoxStore()
+      const mockPopover = createMockPopover()
+      store.setPopoverRef(mockPopover)
 
       store.toggleVisible()
 
@@ -99,8 +117,9 @@ describe('useSearchBoxStore', () => {
     })
 
     it('should disable legacy search when popover is cleared', () => {
-      const mockPopover = { showSearchBox: vi.fn() }
-      store.setPopoverRef(mockPopover as any)
+      const store = useSearchBoxStore()
+      const mockPopover = createMockPopover()
+      store.setPopoverRef(mockPopover)
       store.setPopoverRef(null)
 
       store.toggleVisible()
@@ -111,6 +130,7 @@ describe('useSearchBoxStore', () => {
 
   describe('when user first loads the application', () => {
     it('should have search box hidden by default', () => {
+      const store = useSearchBoxStore()
       expect(store.visible).toBe(false)
     })
   })
