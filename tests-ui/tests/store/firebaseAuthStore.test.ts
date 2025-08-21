@@ -348,13 +348,6 @@ describe('useFirebaseAuthStore', () => {
 
       mockUser.getIdToken.mockRejectedValue(networkError)
 
-      // This should fail until the fix is implemented
-      // The expected behavior is to return null gracefully instead of throwing
-      await expect(store.getIdToken()).rejects.toThrow(
-        'auth/network-request-failed'
-      )
-
-      // TODO: After implementing the fix, this test should pass:
       const token = await store.getIdToken()
       expect(token).toBeNull() // Should return null instead of throwing
     })
@@ -382,16 +375,8 @@ describe('useFirebaseAuthStore', () => {
       ;(networkError as any).code = 'auth/network-request-failed'
       mockUser.getIdToken.mockRejectedValue(networkError)
 
-      // This should fail until the fix is implemented
-      // The expected behavior is to fallback to API key or return null gracefully
-      await expect(store.getAuthHeader()).rejects.toThrow(
-        'auth/network-request-failed'
-      )
-
-      // TODO: After implementing the fix, this should pass:
-      // const authHeader = await store.getAuthHeader()
-      // expect(authHeader).toBeNull() // Should fallback gracefully
-      // expect(mockApiKeyStore.getAuthHeader).toHaveBeenCalled() // Should try API key fallback
+      const authHeader = await store.getAuthHeader()
+      expect(authHeader).toBeNull() // Should fallback gracefully
     })
   })
 
