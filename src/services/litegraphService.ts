@@ -960,6 +960,7 @@ export const useLitegraphService = () => {
       })
       if (!results) throw new Error('Failed to add subgraph blueprint')
       const node = results.nodes.values().next().value
+      if (!node) throw new Error('Failed to add subgraph blueprint')
       return node
     }
 
