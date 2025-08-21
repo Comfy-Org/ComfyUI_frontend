@@ -3,6 +3,8 @@ import { ref } from 'vue'
 
 import { api } from '@/scripts/api'
 import {
+  type ImportFailInfoBulkRequest,
+  type ImportFailInfoBulkResponse,
   type InstallPackParams,
   type InstalledPacksResponse,
   type ManagerPackInfo,
@@ -31,6 +33,7 @@ enum ManagerRoute {
   FIX_NODE = 'manager/queue/fix',
   LIST_INSTALLED = 'customnode/installed',
   IMPORT_FAIL_INFO = 'customnode/import_fail_info',
+  IMPORT_FAIL_INFO_BULK = 'customnode/import_fail_info_bulk',
   REBOOT = 'manager/reboot',
   IS_LEGACY_MANAGER_UI = 'manager/is_legacy_manager_ui'
 }
@@ -154,6 +157,21 @@ export const useComfyManagerService = () => {
     )
   }
 
+  const getImportFailInfoBulk = async (
+    params: ImportFailInfoBulkRequest = {},
+    signal?: AbortSignal
+  ) => {
+    const errorContext = 'Fetching bulk import failure information'
+
+    return executeRequest<ImportFailInfoBulkResponse>(
+      () =>
+        managerApiClient.post(ManagerRoute.IMPORT_FAIL_INFO_BULK, params, {
+          signal
+        }),
+      { errorContext }
+    )
+  }
+
   const installPack = async (
     params: InstallPackParams,
     signal?: AbortSignal
@@ -269,6 +287,7 @@ export const useComfyManagerService = () => {
     // Pack management
     listInstalledPacks,
     getImportFailInfo,
+    getImportFailInfoBulk,
     installPack,
     uninstallPack,
     enablePack: installPack, // enable is done via install
