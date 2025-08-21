@@ -1,4 +1,8 @@
 /** @type {import('tailwindcss').Config} */
+import { addDynamicIconSelectors } from '@iconify/tailwind'
+
+import { iconCollection } from './build/customIconCollection.js'
+
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
 
@@ -219,6 +223,11 @@ export default {
   },
 
   plugins: [
+    addDynamicIconSelectors({
+      iconSets: {
+        comfy: iconCollection
+      }
+    }),
     function ({ addVariant }) {
       addVariant('dark-theme', '.dark-theme &')
     },
