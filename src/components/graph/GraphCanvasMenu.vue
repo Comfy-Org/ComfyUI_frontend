@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical p-1 absolute bottom-[0px] right-[10px] md:right-[90px] z-[1000]"
+      class="p-buttongroup-vertical p-1 absolute bottom-4 right-2 md:right-4 z-[1000]"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
@@ -62,7 +62,7 @@
 
       <Button
         ref="zoomButton"
-        v-tooltip.top="t('zoomControls.labelsave the re')"
+        v-tooltip.top="t('zoomControls.label')"
         severity="secondary"
         :label="t('zoomControls.label')"
         :class="zoomButtonClass"
@@ -97,14 +97,14 @@
       <Button
         v-tooltip.top="linkVisibilityTooltip"
         severity="secondary"
+        :class="linkVisibleClass"
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       >
         <template #icon>
-          <i-lucide:route v-if="!linkHidden" />
-          <i-lucide:route-off v-else />
+          <i-lucide:route-off />
         </template>
       </Button>
     </ButtonGroup>
@@ -124,6 +124,7 @@ import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import ZoomControlsModal from './modals/ZoomControlsModal.vue'
 
@@ -133,7 +134,9 @@ const { formatKeySequence } = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
+const workspaceStore = useWorkspaceStore()
 const minimap = useMinimap()
+
 const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
 
@@ -208,9 +211,11 @@ const zoomButtonClass = computed(() => [
   'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]'
 ])
 
-const focusButtonClass = computed(
-  () => 'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]'
-)
+const focusButtonClass = computed(() => ({
+  'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]': true,
+  'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]':
+    workspaceStore.focusMode
+}))
 
 // Computed properties for tooltip and aria-label texts
 const selectTooltip = computed(
@@ -235,6 +240,13 @@ const linkVisibilityAriaLabel = computed(() =>
     ? t('graphCanvasMenu.showLinks')
     : t('graphCanvasMenu.hideLinks')
 )
+const linkVisibleClass = computed(() => [
+  '!w-16',
+  linkHidden.value
+    ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
+    : '',
+  'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]'
+])
 
 onMounted(() => {
   canvasStore.initScaleSync()
