@@ -1303,8 +1303,16 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    let comfyOrgAuthToken =
-      (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    let comfyOrgAuthToken = await useFirebaseAuthStore()
+      .getIdToken()
+      .catch((error: unknown) => {
+        useDialogService().showErrorDialog(error, {
+          title: t('errorDialog.defaultTitle'),
+          reportType: 'authenticationError'
+        })
+        console.error(error)
+      })
+
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
@@ -1321,7 +1329,7 @@ export class ComfyApp {
 
           const p = await this.graphToPrompt(this.graph)
           try {
-            api.authToken = comfyOrgAuthToken
+            api.authToken = comfyOrgAuthToken ?? undefined
             api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds

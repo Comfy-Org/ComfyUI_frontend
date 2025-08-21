@@ -90,7 +90,17 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   const getIdToken = async (): Promise<string | null> => {
     if (currentUser.value) {
-      return currentUser.value.getIdToken()
+      try {
+        return await currentUser.value.getIdToken()
+      } catch (error: any) {
+        if (error?.code === 'auth/network-request-failed') {
+          console.warn(
+            'Could not authenticate with Firebase. Features requiring authentication might not work.'
+          )
+          return null // handle gracefully
+        }
+        throw error
+      }
     }
     return null
   }
