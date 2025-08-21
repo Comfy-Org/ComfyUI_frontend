@@ -17,17 +17,13 @@
           v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
         />
       </div>
-
-      <MiniMap
-        v-if="comfyAppReady && minimapEnabled"
-        class="pointer-events-auto"
-      />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <GraphCanvasMenu
     v-if="!betaMenuEnabled || canvasMenuEnabled"
     class="pointer-events-auto"
   />
+  <MiniMap v-if="comfyAppReady && minimapEnabled" class="pointer-events-auto" />
   <canvas
     id="graph-canvas"
     ref="canvasRef"
