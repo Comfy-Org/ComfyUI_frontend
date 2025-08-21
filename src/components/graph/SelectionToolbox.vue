@@ -1,7 +1,7 @@
 <template>
   <Panel
     v-show="visible"
-    class="selection-toolbox rounded-lg"
+    class="selection-toolbox rounded-lg z-40"
     :class="{ 'animate-slide-up': shouldAnimate }"
     :style="style"
     :pt="{
