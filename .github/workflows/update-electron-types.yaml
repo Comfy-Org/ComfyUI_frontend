@@ -24,8 +24,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            node_modules/.cache
             .cache
+            node_modules/.cache
           key: electron-types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             electron-types-tools-cache-${{ runner.os }}-
