@@ -1,5 +1,4 @@
 import axios from 'axios'
-import get from 'lodash/get'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
@@ -1087,7 +1086,7 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
-    return get(this.serverFeatureFlags, featureName) === true
+    return this.serverFeatureFlags[featureName] === true
   }
 
   /**
@@ -1097,7 +1096,7 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    return get(this.serverFeatureFlags, featureName, defaultValue) as T
+    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
   }
 
   /**
