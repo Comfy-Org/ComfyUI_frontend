@@ -333,6 +333,24 @@ const initializeNodeManager = () => {
   }))
   layoutStore.initializeFromLiteGraph(nodes)
 
+  // Seed reroutes into the Layout Store so hit-testing uses the new path
+  try {
+    for (const reroute of comfyApp.graph.reroutes.values()) {
+      const [x, y] = reroute.pos
+      const parent =
+        reroute.parentId != null ? String(reroute.parentId) : undefined
+      const linkIds = Array.from(reroute.linkIds).map((id) => String(id))
+      layoutMutations.createReroute(
+        String(reroute.id),
+        { x, y },
+        parent,
+        linkIds
+      )
+    }
+  } catch {
+    // Best-effort; non-fatal if layout store seeding fails
+  }
+
   // Initialize layout sync (one-way: Layout Store → LiteGraph)
   const { startSync } = useLayoutSync()
   startSync(canvasStore.canvas)
