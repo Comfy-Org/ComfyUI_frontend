@@ -5,12 +5,12 @@
     <!-- Backdrop -->
     <div
       v-if="hasActivePopup"
-      class="fixed inset-0 z-[1000]"
+      class="fixed inset-0 z-[1200]"
       @click="hideModal"
     ></div>
 
     <ButtonGroup
-      class="p-buttongroup-vertical p-1 absolute bottom-4 right-2 md:right-4 z-[1000]"
+      class="p-buttongroup-vertical p-1 absolute bottom-4 right-2 md:right-4"
       :style="stringifiedMinimapStyles.buttonGroupStyles"
       @wheel="canvasInteractions.handleWheel"
     >
@@ -95,7 +95,14 @@
       </Button>
 
       <Button
-        v-tooltip.top="linkVisibilityTooltip"
+        v-tooltip.top="{
+          value: linkVisibilityTooltip,
+          pt: {
+            root: {
+              style: 'z-index: 2; transform: translateY(-20px);'
+            }
+          }
+        }"
         severity="secondary"
         :class="linkVisibleClass"
         :aria-label="linkVisibilityAriaLabel"
@@ -141,15 +148,17 @@ const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
 
 const stringifiedMinimapStyles = computed(() => {
-  const buttonGroupKeys = ['backgroundColor', 'borderRadius', 'width']
+  const buttonGroupKeys = ['backgroundColor', 'borderRadius', '']
   const buttonKeys = ['backgroundColor', 'borderRadius']
-  const additionalButtonStyles = { border: 'none' }
+  const additionalButtonStyles = {
+    border: 'none',
+    width: '35px',
+    height: '35px',
+    'margin-right': '4px',
+    'margin-left': '4px'
+  }
 
   const containerStyles = minimap.containerStyles.value
-
-  const buttonGroupStyles = Object.entries(containerStyles)
-    .filter(([key]) => buttonGroupKeys.includes(key))
-    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
 
   const buttonStyles = {
     ...Object.fromEntries(
@@ -159,6 +168,9 @@ const stringifiedMinimapStyles = computed(() => {
     ),
     ...additionalButtonStyles
   }
+  const buttonGroupStyles = Object.entries(containerStyles)
+    .filter(([key]) => buttonGroupKeys.includes(key))
+    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
 
   return { buttonStyles, buttonGroupStyles }
 })
@@ -241,7 +253,6 @@ const linkVisibilityAriaLabel = computed(() =>
     : t('graphCanvasMenu.hideLinks')
 )
 const linkVisibleClass = computed(() => [
-  '!w-16',
   linkHidden.value
     ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
     : '',
