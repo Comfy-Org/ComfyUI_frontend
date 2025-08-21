@@ -38,9 +38,9 @@
   canvasStore.canvas to be initialized. -->
   <template v-if="comfyAppReady">
     <TitleEditor />
-    <SelectionOverlay v-if="selectionToolboxEnabled">
-      <SelectionToolbox />
-    </SelectionOverlay>
+    <!-- SelectionToolbox is now standalone, no parent overlay needed -->
+    <!-- LiteGraph already draws selection borders in canvas -->
+    <SelectionToolboxStandalone v-if="selectionToolboxEnabled" />
     <DomWidgets />
   </template>
 </template>
@@ -55,8 +55,7 @@ import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
-import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import SelectionToolboxStandalone from '@/components/graph/SelectionToolboxStandalone.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'

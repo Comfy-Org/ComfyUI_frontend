@@ -14,16 +14,16 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import { provide, readonly, ref, watch } from 'vue'
+import { onUnmounted, provide, readonly, ref, watch } from 'vue'
 
+import { useHybridPositioning } from '@/composables/canvas/useHybridPositioning'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 const canvasStore = useCanvasStore()
-const { style, updatePosition } = useAbsolutePosition()
+const { style, updatePosition, isTransforming } = useHybridPositioning()
 const { getSelectableItems } = useSelectedLiteGraphItems()
 
 const visible = ref(false)
@@ -67,11 +67,24 @@ whenever(
   { immediate: true }
 )
 
-canvasStore.getCanvas().ds.onChanged = positionSelectionOverlay
+// For testing: uncomment this line to use old absolute-only positioning
+// canvasStore.getCanvas().ds.onChanged = positionSelectionOverlay
+
+// Clean up on unmount
+onUnmounted(() => {
+  // Hybrid positioning handles its own cleanup
+  // If testing with old method, clean up:
+  // canvasStore.getCanvas().ds.onChanged = null
+})
 
 watch(
   () => canvasStore.canvas?.state?.draggingItems,
   (draggingItems) => {
+    // Don't hide during canvas transform - only when dragging nodes
+    if (isTransforming.value) {
+      return
+    }
+
     // Litegraph draggingItems state can end early before the bounding boxes of
     // the selected items are updated. Delay to make sure we put the overlay in
     // the correct position.
