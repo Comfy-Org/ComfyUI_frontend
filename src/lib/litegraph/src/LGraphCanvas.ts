@@ -3499,8 +3499,8 @@ export class LGraphCanvas
     // Detect if this is a trackpad gesture or mouse wheel
     const isTrackpad = this.pointer.isTrackpadGesture(e)
 
-    if (e.ctrlKey || LiteGraph.canvasNavigationMode === 'legacy') {
-      // Legacy mode or standard mode with ctrl - use wheel for zoom
+    if (e.ctrlKey || e.metaKey || LiteGraph.canvasNavigationMode === 'legacy') {
+      // Legacy mode or standard mode with ctrl/cmd - use wheel for zoom
       if (isTrackpad) {
         // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
