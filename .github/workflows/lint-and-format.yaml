@@ -29,9 +29,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            node_modules/.cache
-            .eslintcache
             .cache
+            .eslintcache
+            node_modules/.cache
             tsconfig.tsbuildinfo
             .prettierCache
             .knip-cache
