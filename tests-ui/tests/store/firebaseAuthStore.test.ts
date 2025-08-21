@@ -351,6 +351,23 @@ describe('useFirebaseAuthStore', () => {
       const token = await store.getIdToken()
       expect(token).toBeNull() // Should return null instead of throwing
     })
+
+    it('should throw error when getIdToken fails with non-network error', async () => {
+      // This test verifies that non-network errors are thrown instead of handled gracefully
+      mockUser.getIdToken.mockReset()
+
+      // Mock a non-network error using actual Firebase Auth error code
+      const authError = new Error('User account is disabled.')
+      authError.name = 'FirebaseError'
+      ;(authError as any).code = 'auth/user-disabled'
+
+      mockUser.getIdToken.mockRejectedValue(authError)
+
+      // Should throw the error instead of returning null
+      await expect(store.getIdToken()).rejects.toThrow(
+        'User account is disabled.'
+      )
+    })
   })
 
   describe('getAuthHeader', () => {
