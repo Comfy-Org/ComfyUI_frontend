@@ -18,6 +18,10 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('@/stores/subgraphStore', () => ({
+  useSubgraphStore: vi.fn(() => ({}))
+}))
+
 const { useWorkflowThumbnail } = await import(
   '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 )

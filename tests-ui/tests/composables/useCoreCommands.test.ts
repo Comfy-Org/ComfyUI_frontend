@@ -65,6 +65,10 @@ vi.mock('@/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({}))
 }))
 
+vi.mock('@/stores/subgraphStore', () => ({
+  useSubgraphStore: vi.fn(() => ({}))
+}))
+
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: vi.fn(() => ({}))
 }))
