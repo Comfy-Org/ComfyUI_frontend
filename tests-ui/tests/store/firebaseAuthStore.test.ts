@@ -363,9 +363,10 @@ describe('useFirebaseAuthStore', () => {
       mockUser.getIdToken.mockReset()
 
       // Mock a non-network error using actual Firebase Auth error code
-      const authError = new Error('User account is disabled.')
-      authError.name = 'FirebaseError'
-      ;(authError as any).code = 'auth/user-disabled'
+      const authError = new FirebaseError(
+        /** whichever one is 'auth/user-disabled' */,
+        'User account is disabled.'
+      )
 
       mockUser.getIdToken.mockRejectedValue(authError)
 
