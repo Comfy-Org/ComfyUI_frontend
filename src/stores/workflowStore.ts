@@ -357,7 +357,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const persistedWorkflows = computed(() =>
-    Array.from(workflows.value).filter((workflow) => workflow.isPersisted)
+    Array.from(workflows.value).filter(
+      (workflow) =>
+        workflow.isPersisted && !workflow.path.startsWith('subgraphs/')
+    )
   )
   const syncWorkflows = async (dir: string = '') => {
     await syncEntities(
