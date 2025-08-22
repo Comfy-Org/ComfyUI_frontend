@@ -53,6 +53,7 @@ import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
@@ -796,6 +797,7 @@ export class ComfyApp {
     this.resizeCanvas()
 
     await useWorkspaceStore().workflow.syncWorkflows()
+    await useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
     this.#addProcessKeyHandler()

@@ -16,6 +16,7 @@
     @click="handleClick"
   >
     <span class="p-breadcrumb-item-label">{{ item.label }}</span>
+    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu
@@ -48,6 +49,7 @@
 import InputText from 'primevue/inputtext'
 import Menu, { MenuState } from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
+import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

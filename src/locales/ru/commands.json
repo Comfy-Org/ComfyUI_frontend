@@ -197,6 +197,9 @@
   "Comfy_OpenWorkflow": {
     "label": "Открыть рабочий процесс"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "Опубликовать подграф"
+  },
   "Comfy_QueuePrompt": {
     "label": "Очередь запросов"
   },

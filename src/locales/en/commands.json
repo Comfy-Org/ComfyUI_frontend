@@ -197,6 +197,9 @@
   "Comfy_OpenWorkflow": {
     "label": "Open Workflow"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "Publish Subgraph"
+  },
   "Comfy_QueuePrompt": {
     "label": "Queue Prompt"
   },

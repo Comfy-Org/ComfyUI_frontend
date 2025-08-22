@@ -834,6 +834,7 @@
     "Pin/Unpin Selected Items": "Épingler/Désépingler les éléments sélectionnés",
     "Pin/Unpin Selected Nodes": "Épingler/Désépingler les nœuds sélectionnés",
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
+    "Publish": "Publier",
     "Queue Panel": "Panneau de file d’attente",
     "Queue Prompt": "Invite de file d'attente",
     "Queue Prompt (Front)": "Invite de file d'attente (Front)",
@@ -1274,6 +1275,10 @@
       }
     },
     "workflows": "Flux de travail"
+  },
+  "subgraphStore": {
+    "blueprintName": "Nom du sous-graphe",
+    "saveBlueprint": "Enregistrer le sous-graphe dans la bibliothèque"
   },
   "tabMenu": {
     "addToBookmarks": "Ajouter aux Favoris",

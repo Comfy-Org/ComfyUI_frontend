@@ -197,6 +197,9 @@
   "Comfy_OpenWorkflow": {
     "label": "워크플로 열기"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "서브그래프 게시"
+  },
   "Comfy_QueuePrompt": {
     "label": "실행 큐에 프롬프트 추가"
   },

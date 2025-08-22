@@ -24,7 +24,7 @@ import { isSubgraph } from '@/utils/typeGuardUtil'
 import { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {
-  static readonly basePath = 'workflows/'
+  static readonly basePath: string = 'workflows/'
 
   /**
    * The change tracker for the workflow. Non-reactive raw object.
@@ -139,6 +139,7 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
  */
 export interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
+  attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean
   openWorkflows: ComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
@@ -309,6 +310,20 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
+    //TODO: Reconsider. Referencing subgraph constants outside
+    //the subgraphStore is icky
+    const existingWorkflow = workflows.value.find((w) => w.fullFilename == path)
+    if (
+      path &&
+      existingWorkflow?.directory == 'subgraphs' &&
+      workflowData &&
+      //Always true. Sadly, isLoaded can't be used as guard
+      existingWorkflow.changeTracker
+    ) {
+      existingWorkflow.changeTracker.reset(workflowData)
+      return existingWorkflow
+    }
+
     const workflow = new ComfyWorkflow({
       path: fullPath,
       modified: Date.now(),
@@ -357,7 +372,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const persistedWorkflows = computed(() =>
-    Array.from(workflows.value).filter((workflow) => workflow.isPersisted)
+    Array.from(workflows.value).filter(
+      (workflow) =>
+        workflow.isPersisted && !workflow.path.startsWith('subgraphs/')
+    )
   )
   const syncWorkflows = async (dir: string = '') => {
     await syncEntities(
@@ -647,6 +665,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   return {
     activeWorkflow,
+    attachWorkflow,
     isActive,
     openWorkflows,
     openedWorkflowIndexShift,

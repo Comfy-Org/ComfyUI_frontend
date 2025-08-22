@@ -834,6 +834,7 @@
     "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
     "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
     "Previous Opened Workflow": "Flujo de trabajo abierto anterior",
+    "Publish": "Publicar",
     "Queue Panel": "Panel de cola",
     "Queue Prompt": "Indicador de cola",
     "Queue Prompt (Front)": "Indicador de cola (Frente)",
@@ -1274,6 +1275,10 @@
       }
     },
     "workflows": "Flujos de trabajo"
+  },
+  "subgraphStore": {
+    "blueprintName": "Nombre del subgrafo",
+    "saveBlueprint": "Guardar subgrafo en la biblioteca"
   },
   "tabMenu": {
     "addToBookmarks": "Agregar a marcadores",
