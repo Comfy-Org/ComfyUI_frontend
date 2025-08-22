@@ -834,6 +834,7 @@
     "Pin/Unpin Selected Items": "선택한 항목 고정/고정 해제",
     "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",
     "Previous Opened Workflow": "이전 열린 워크플로",
+    "Publish": "게시",
     "Queue Panel": "대기열 패널",
     "Queue Prompt": "실행 대기열에 프롬프트 추가",
     "Queue Prompt (Front)": "실행 대기열 맨 앞에 프롬프트 추가",
@@ -1274,6 +1275,10 @@
       }
     },
     "workflows": "워크플로"
+  },
+  "subgraphStore": {
+    "blueprintName": "서브그래프 이름",
+    "saveBlueprint": "서브그래프를 라이브러리에 저장"
   },
   "tabMenu": {
     "addToBookmarks": "북마크에 추가",

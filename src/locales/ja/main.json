@@ -834,6 +834,7 @@
     "Pin/Unpin Selected Items": "選択したアイテムのピン留め/ピン留め解除",
     "Pin/Unpin Selected Nodes": "選択したノードのピン留め/ピン留め解除",
     "Previous Opened Workflow": "前に開いたワークフロー",
+    "Publish": "公開",
     "Queue Panel": "キューパネル",
     "Queue Prompt": "キューのプロンプト",
     "Queue Prompt (Front)": "キューのプロンプト (前面)",
@@ -1274,6 +1275,10 @@
       }
     },
     "workflows": "ワークフロー"
+  },
+  "subgraphStore": {
+    "blueprintName": "サブグラフ名",
+    "saveBlueprint": "サブグラフをライブラリに保存"
   },
   "tabMenu": {
     "addToBookmarks": "ブックマークに追加",

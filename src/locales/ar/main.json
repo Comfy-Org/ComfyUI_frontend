@@ -834,6 +834,7 @@
     "Pin/Unpin Selected Items": "تثبيت/إلغاء تثبيت العناصر المحددة",
     "Pin/Unpin Selected Nodes": "تثبيت/إلغاء تثبيت العقد المحددة",
     "Previous Opened Workflow": "سير العمل السابق المفتوح",
+    "Publish": "نشر",
     "Queue Panel": "لوحة الانتظار",
     "Queue Prompt": "قائمة انتظار التعليمات",
     "Queue Prompt (Front)": "قائمة انتظار التعليمات (أمامي)",
@@ -1274,6 +1275,10 @@
       }
     },
     "workflows": "سير العمل"
+  },
+  "subgraphStore": {
+    "blueprintName": "اسم المخطط الفرعي",
+    "saveBlueprint": "احفظ المخطط الفرعي في المكتبة"
   },
   "tabMenu": {
     "addToBookmarks": "إضافة إلى العلامات",

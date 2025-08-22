@@ -197,6 +197,9 @@
   "Comfy_OpenWorkflow": {
     "label": "ワークフローを開く"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "サブグラフを公開"
+  },
   "Comfy_QueuePrompt": {
     "label": "キュープロンプト"
   },
