@@ -77,6 +77,7 @@ export class SubgraphBlueprint extends ComfyWorkflow {
       this.hasPromptedSave = true
       this.updatePath(SubgraphBlueprint.basePath + newname + '.json')
     }
+    useSubgraphStore().updateDef(this as LoadedComfyWorkflow)
     return super.save()
   }
 
@@ -85,6 +86,7 @@ export class SubgraphBlueprint extends ComfyWorkflow {
   override async saveAs(path: string) {
     this.validateSubgraph()
     this.hasPromptedSave = true
+    useSubgraphStore().updateDef(this as LoadedComfyWorkflow)
     return await super.saveAs(path)
   }
 }
@@ -92,6 +94,7 @@ export class SubgraphBlueprint extends ComfyWorkflow {
 const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
 
 export const useSubgraphStore = defineStore('subgraph', () => {
+  const typePrefix = 'SubgraphBlueprint'
   const subgraphDefCache = ref<Map<string, ComfyNodeDefImpl>>(new Map())
   const canvasStore = useCanvasStore()
   const dialogService = useDialogService()
@@ -111,17 +114,15 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         f.path = SubgraphBlueprint.basePath + f.path
         const bp = await new SubgraphBlueprint(f).load()
         useWorkflowStore().attachWorkflow(bp)
-        const nodeDef = convertToNodeDef(bp, name)
+        const nodeDef = convertToNodeDef(bp)
 
         subgraphDefCache.value.set(name, nodeDef)
         subgraphCache[name] = bp
       })
     )
   }
-  function convertToNodeDef(
-    workflow: LoadedComfyWorkflow,
-    name: string
-  ): ComfyNodeDefImpl {
+  function convertToNodeDef(workflow: LoadedComfyWorkflow): ComfyNodeDefImpl {
+    const name = workflow.filename
     const subgraphNode = workflow.changeTracker.initialState.nodes[0]
     if (!subgraphNode) throw new Error('Invalid Subgraph Blueprint')
     const uuid = subgraphNode.type
@@ -139,7 +140,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       input: { required: inputs },
       output: subgraphNode.outputs.map((o) => '' + o.type),
       output_name: subgraphNode.outputs.map((o) => o.name),
-      name: 'SubgraphBlueprint' + name,
+      name: typePrefix + name,
       display_name: name,
       description: 'User generated subgraph blueprint',
       category: 'Subgraph Blueprints',
@@ -200,11 +201,14 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     await workflow.save()
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
-    subgraphDefCache.value.set(name, convertToNodeDef(loadedWorkflow, name))
+    subgraphDefCache.value.set(name, convertToNodeDef(loadedWorkflow))
     //initiate refetch for simplicity
   }
+  function updateDef(blueprint: LoadedComfyWorkflow) {
+    subgraphDefCache.value.set(blueprint.filename, convertToNodeDef(blueprint))
+  }
   function editBlueprint(nodeType: string) {
-    const name = nodeType.slice(17)
+    const name = nodeType.slice(typePrefix.length)
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
@@ -212,14 +216,14 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     void useWorkflowService().openWorkflow(subgraphCache[name])
   }
   function getBlueprint(nodeType: string): ComfyWorkflowJSON {
-    const name = nodeType.slice(17)
+    const name = nodeType.slice(typePrefix.length)
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
     return subgraphCache[name].changeTracker.initialState
   }
   function deleteBlueprint(nodeType: string) {
-    const name = nodeType.slice(17)
+    const name = nodeType.slice(typePrefix.length)
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
@@ -229,11 +233,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
 
   return {
-    fetchSubgraphs,
     deleteBlueprint,
-    subgraphBlueprints,
-    publishSubgraph,
     editBlueprint,
-    getBlueprint
+    fetchSubgraphs,
+    getBlueprint,
+    publishSubgraph,
+    subgraphBlueprints,
+    updateDef
   }
 })

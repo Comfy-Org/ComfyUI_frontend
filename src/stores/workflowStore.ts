@@ -139,6 +139,7 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
  */
 export interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
+  attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean
   openWorkflows: ComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
