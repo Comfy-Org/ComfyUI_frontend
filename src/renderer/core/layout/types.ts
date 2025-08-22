@@ -146,10 +146,11 @@ export type AnyLayoutMutation =
   | BatchMutation
 
 // CRDT Operation Types
+
 /**
- * Base operation interface that all operations extend
+ * Meta-only base for all operations - contains common fields
  */
-export interface BaseOperation {
+export interface OperationMeta {
   /** Unique operation ID for deduplication */
   id?: string
   /** Timestamp for ordering operations */
@@ -158,8 +159,18 @@ export interface BaseOperation {
   actor: string
   /** Source system that initiated the operation */
   source: LayoutSource
-  /** Node this operation affects */
-  nodeId: NodeId
+  /** Operation type discriminator */
+  type: OperationType
+}
+
+/**
+ * Entity-specific base types for proper type discrimination
+ */
+export type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
+export type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
+export type RerouteOpBase = OperationMeta & {
+  entity: 'reroute'
+  rerouteId: RerouteId
 }
 
 /**
@@ -182,7 +193,7 @@ export type OperationType =
 /**
  * Move node operation
  */
-export interface MoveNodeOperation extends BaseOperation {
+export interface MoveNodeOperation extends NodeOpBase {
   type: 'moveNode'
   position: Point
   previousPosition: Point
@@ -191,7 +202,7 @@ export interface MoveNodeOperation extends BaseOperation {
 /**
  * Resize node operation
  */
-export interface ResizeNodeOperation extends BaseOperation {
+export interface ResizeNodeOperation extends NodeOpBase {
   type: 'resizeNode'
   size: { width: number; height: number }
   previousSize: { width: number; height: number }
@@ -200,7 +211,7 @@ export interface ResizeNodeOperation extends BaseOperation {
 /**
  * Set node z-index operation
  */
-export interface SetNodeZIndexOperation extends BaseOperation {
+export interface SetNodeZIndexOperation extends NodeOpBase {
   type: 'setNodeZIndex'
   zIndex: number
   previousZIndex: number
@@ -209,7 +220,7 @@ export interface SetNodeZIndexOperation extends BaseOperation {
 /**
  * Create node operation
  */
-export interface CreateNodeOperation extends BaseOperation {
+export interface CreateNodeOperation extends NodeOpBase {
   type: 'createNode'
   layout: NodeLayout
 }
@@ -217,7 +228,7 @@ export interface CreateNodeOperation extends BaseOperation {
 /**
  * Delete node operation
  */
-export interface DeleteNodeOperation extends BaseOperation {
+export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
   previousLayout: NodeLayout
 }
@@ -225,7 +236,7 @@ export interface DeleteNodeOperation extends BaseOperation {
 /**
  * Set node visibility operation
  */
-export interface SetNodeVisibilityOperation extends BaseOperation {
+export interface SetNodeVisibilityOperation extends NodeOpBase {
   type: 'setNodeVisibility'
   visible: boolean
   previousVisible: boolean
@@ -234,7 +245,7 @@ export interface SetNodeVisibilityOperation extends BaseOperation {
 /**
  * Batch update operation for atomic multi-property changes
  */
-export interface BatchUpdateOperation extends BaseOperation {
+export interface BatchUpdateOperation extends NodeOpBase {
   type: 'batchUpdate'
   updates: Partial<NodeLayout>
   previousValues: Partial<NodeLayout>
@@ -243,65 +254,45 @@ export interface BatchUpdateOperation extends BaseOperation {
 /**
  * Create link operation
  */
-export interface CreateLinkOperation {
+export interface CreateLinkOperation extends LinkOpBase {
   type: 'createLink'
-  linkId: LinkId
   sourceNodeId: NodeId
   sourceSlot: number
   targetNodeId: NodeId
   targetSlot: number
-  timestamp: number
-  actor: string
-  source: LayoutSource
 }
 
 /**
  * Delete link operation
  */
-export interface DeleteLinkOperation {
+export interface DeleteLinkOperation extends LinkOpBase {
   type: 'deleteLink'
-  linkId: LinkId
-  timestamp: number
-  actor: string
-  source: LayoutSource
 }
 
 /**
  * Create reroute operation
  */
-export interface CreateRerouteOperation {
+export interface CreateRerouteOperation extends RerouteOpBase {
   type: 'createReroute'
-  rerouteId: RerouteId
   position: Point
   parentId?: RerouteId
   linkIds: LinkId[]
-  timestamp: number
-  actor: string
-  source: LayoutSource
 }
 
 /**
  * Delete reroute operation
  */
-export interface DeleteRerouteOperation {
+export interface DeleteRerouteOperation extends RerouteOpBase {
   type: 'deleteReroute'
-  rerouteId: RerouteId
-  timestamp: number
-  actor: string
-  source: LayoutSource
 }
 
 /**
  * Move reroute operation
  */
-export interface MoveRerouteOperation {
+export interface MoveRerouteOperation extends RerouteOpBase {
   type: 'moveReroute'
-  rerouteId: RerouteId
   position: Point
   previousPosition: Point
-  timestamp: number
-  actor: string
-  source: LayoutSource
 }
 
 /**
@@ -327,15 +318,30 @@ export type AnyLayoutOperation = LayoutOperation
 /**
  * Type guards for operations
  */
-export const isBaseOperation = (op: unknown): op is BaseOperation => {
+export const isOperationMeta = (op: unknown): op is OperationMeta => {
   return (
     typeof op === 'object' &&
     op !== null &&
     'timestamp' in op &&
     'actor' in op &&
     'source' in op &&
-    'nodeId' in op
+    'type' in op
   )
+}
+
+/**
+ * Entity-specific helper functions
+ */
+export const isNodeOperation = (op: LayoutOperation): boolean => {
+  return 'entity' in op && (op as any).entity === 'node'
+}
+
+export const isLinkOperation = (op: LayoutOperation): boolean => {
+  return 'entity' in op && (op as any).entity === 'link'
+}
+
+export const isRerouteOperation = (op: LayoutOperation): boolean => {
+  return 'entity' in op && (op as any).entity === 'reroute'
 }
 
 export const isMoveNodeOperation = (
@@ -353,6 +359,65 @@ export const isCreateNodeOperation = (
 export const isDeleteNodeOperation = (
   op: LayoutOperation
 ): op is DeleteNodeOperation => op.type === 'deleteNode'
+
+export const isSetNodeVisibilityOperation = (
+  op: LayoutOperation
+): op is SetNodeVisibilityOperation => op.type === 'setNodeVisibility'
+
+export const isBatchUpdateOperation = (
+  op: LayoutOperation
+): op is BatchUpdateOperation => op.type === 'batchUpdate'
+
+export const isCreateLinkOperation = (
+  op: LayoutOperation
+): op is CreateLinkOperation => op.type === 'createLink'
+
+export const isDeleteLinkOperation = (
+  op: LayoutOperation
+): op is DeleteLinkOperation => op.type === 'deleteLink'
+
+export const isCreateRerouteOperation = (
+  op: LayoutOperation
+): op is CreateRerouteOperation => op.type === 'createReroute'
+
+export const isDeleteRerouteOperation = (
+  op: LayoutOperation
+): op is DeleteRerouteOperation => op.type === 'deleteReroute'
+
+export const isMoveRerouteOperation = (
+  op: LayoutOperation
+): op is MoveRerouteOperation => op.type === 'moveReroute'
+
+/**
+ * Helper function to get affected node IDs from any operation
+ * Useful for change notifications and cache invalidation
+ */
+export const getAffectedNodeIds = (op: LayoutOperation): NodeId[] => {
+  switch (op.type) {
+    case 'moveNode':
+    case 'resizeNode':
+    case 'setNodeZIndex':
+    case 'createNode':
+    case 'deleteNode':
+    case 'setNodeVisibility':
+    case 'batchUpdate':
+      return [(op as NodeOpBase).nodeId]
+    case 'createLink': {
+      const createLink = op as CreateLinkOperation
+      return [createLink.sourceNodeId, createLink.targetNodeId]
+    }
+    case 'deleteLink':
+      // Link deletion doesn't directly affect nodes
+      return []
+    case 'createReroute':
+    case 'deleteReroute':
+    case 'moveReroute':
+      // Reroute operations don't directly affect nodes
+      return []
+    default:
+      return []
+  }
+}
 
 /**
  * Operation application interface

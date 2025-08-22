@@ -26,6 +26,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.setSource(LayoutSource.External)
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -45,6 +46,7 @@ describe('layoutStore CRDT operations', () => {
     // Create node first
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -56,6 +58,7 @@ describe('layoutStore CRDT operations', () => {
     const newPosition = { x: 200, y: 300 }
     layoutStore.applyOperation({
       type: 'moveNode',
+      entity: 'node',
       nodeId,
       position: newPosition,
       previousPosition: layout.position,
@@ -76,6 +79,7 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -87,6 +91,7 @@ describe('layoutStore CRDT operations', () => {
     const newSize = { width: 300, height: 150 }
     layoutStore.applyOperation({
       type: 'resizeNode',
+      entity: 'node',
       nodeId,
       size: newSize,
       previousSize: layout.size,
@@ -107,6 +112,7 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -117,6 +123,7 @@ describe('layoutStore CRDT operations', () => {
     // Delete node
     layoutStore.applyOperation({
       type: 'deleteNode',
+      entity: 'node',
       nodeId,
       previousLayout: layout,
       timestamp: Date.now(),
@@ -146,6 +153,7 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -185,6 +193,7 @@ describe('layoutStore CRDT operations', () => {
       }
       layoutStore.applyOperation({
         type: 'createNode',
+        entity: 'node',
         nodeId: id,
         layout,
         timestamp: Date.now(),
@@ -217,6 +226,7 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: startTime,
@@ -227,6 +237,7 @@ describe('layoutStore CRDT operations', () => {
     // Move node
     layoutStore.applyOperation({
       type: 'moveNode',
+      entity: 'node',
       nodeId,
       position: { x: 150, y: 150 },
       previousPosition: { x: 100, y: 100 },

@@ -38,6 +38,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'moveNode',
+      entity: 'node',
       nodeId,
       position,
       previousPosition: existing.position,
@@ -56,6 +57,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'resizeNode',
+      entity: 'node',
       nodeId,
       size,
       previousSize: existing.size,
@@ -74,6 +76,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'setNodeZIndex',
+      entity: 'node',
       nodeId,
       zIndex,
       previousZIndex: existing.zIndex,
@@ -103,6 +106,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout: fullLayout,
       timestamp: Date.now(),
@@ -120,6 +124,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'deleteNode',
+      entity: 'node',
       nodeId,
       previousLayout: existing,
       timestamp: Date.now(),
@@ -158,6 +163,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   ): void {
     layoutStore.applyOperation({
       type: 'createLink',
+      entity: 'link',
       linkId,
       sourceNodeId,
       sourceSlot,
@@ -175,6 +181,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   deleteLink(linkId: string): void {
     layoutStore.applyOperation({
       type: 'deleteLink',
+      entity: 'link',
       linkId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -193,6 +200,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   ): void {
     layoutStore.applyOperation({
       type: 'createReroute',
+      entity: 'reroute',
       rerouteId,
       position,
       parentId,
@@ -209,6 +217,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   deleteReroute(rerouteId: string): void {
     layoutStore.applyOperation({
       type: 'deleteReroute',
+      entity: 'reroute',
       rerouteId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -226,6 +235,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   ): void {
     layoutStore.applyOperation({
       type: 'moveReroute',
+      entity: 'reroute',
       rerouteId,
       position,
       previousPosition,
