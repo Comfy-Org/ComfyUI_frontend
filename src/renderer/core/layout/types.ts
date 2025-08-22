@@ -35,8 +35,8 @@ export interface Bounds {
 export type NodeId = string
 export type SlotId = string
 export type ConnectionId = string
-export type LinkId = string
-export type RerouteId = string
+export type LinkId = number // Aligned with Litegraph's numeric LinkId
+export type RerouteId = number // Aligned with Litegraph's numeric RerouteId
 
 // Layout data structures
 export interface NodeLayout {
@@ -66,6 +66,15 @@ export interface LinkLayout {
   targetNodeId: NodeId
   sourceSlot: number
   targetSlot: number
+}
+
+// Layout for individual link segments (for precise hit-testing)
+export interface LinkSegmentLayout {
+  linkId: LinkId
+  rerouteId: RerouteId | null // null for final segment to target
+  path: Path2D
+  bounds: Bounds
+  centerPos: Point
 }
 
 export interface RerouteLayout {
@@ -468,6 +477,10 @@ export interface LayoutStore {
 
   // Hit testing queries for links, slots, and reroutes
   queryLinkAtPoint(point: Point, ctx?: CanvasRenderingContext2D): LinkId | null
+  queryLinkSegmentAtPoint(
+    point: Point,
+    ctx?: CanvasRenderingContext2D
+  ): { linkId: LinkId; rerouteId: RerouteId | null } | null
   querySlotAtPoint(point: Point): SlotLayout | null
   queryRerouteAtPoint(point: Point): RerouteLayout | null
   queryItemsInBounds(bounds: Bounds): {
@@ -479,11 +492,17 @@ export interface LayoutStore {
 
   // Update methods for link, slot, and reroute layouts
   updateLinkLayout(linkId: LinkId, layout: LinkLayout): void
+  updateLinkSegmentLayout(
+    linkId: LinkId,
+    rerouteId: RerouteId | null,
+    layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
+  ): void
   updateSlotLayout(key: string, layout: SlotLayout): void
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
 
   // Delete methods for cleanup
   deleteLinkLayout(linkId: LinkId): void
+  deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
   deleteSlotLayout(key: string): void
   deleteNodeSlotLayouts(nodeId: NodeId): void
   deleteRerouteLayout(rerouteId: RerouteId): void
@@ -518,9 +537,33 @@ export interface LayoutMutations {
   resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
 
-  // Lifecycle operations
+  // Node lifecycle operations
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
   deleteNode(nodeId: NodeId): void
+
+  // Link operations
+  createLink(
+    linkId: string | number,
+    sourceNodeId: string,
+    sourceSlot: number,
+    targetNodeId: string,
+    targetSlot: number
+  ): void
+  deleteLink(linkId: string | number): void
+
+  // Reroute operations
+  createReroute(
+    rerouteId: string | number,
+    position: Point,
+    parentId?: string | number,
+    linkIds?: (string | number)[]
+  ): void
+  deleteReroute(rerouteId: string | number): void
+  moveReroute(
+    rerouteId: string | number,
+    position: Point,
+    previousPosition: Point
+  ): void
 
   // Stacking operations
   bringNodeToFront(nodeId: NodeId): void

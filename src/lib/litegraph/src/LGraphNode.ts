@@ -2837,7 +2837,7 @@ export class LGraphNode
     // Register link in Layout Store for spatial tracking
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.createLink(
-      String(link.id),
+      link.id,
       String(this.id),
       outputIndex,
       String(inputNode.id),

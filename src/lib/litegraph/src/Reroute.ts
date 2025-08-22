@@ -417,7 +417,7 @@ export class Reroute
     // Update Layout Store with new position
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.moveReroute(
-      String(this.id),
+      this.id,
       { x: this.#pos[0], y: this.#pos[1] },
       previousPos
     )
