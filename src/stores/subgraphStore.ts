@@ -26,6 +26,15 @@ import {
   useWorkflowStore
 } from '@/stores/workflowStore'
 
+async function confirmOverwrite(name: string): Promise<boolean | null> {
+  return await useDialogService().confirm({
+    title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
+    type: 'overwrite',
+    message: t('sideToolbar.workflowTab.confirmOverwrite'),
+    itemList: [name]
+  })
+}
+
 export class SubgraphBlueprint extends ComfyWorkflow {
   static override readonly basePath = 'subgraphs/'
 
@@ -184,10 +193,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       defaultValue: subgraphNode.title
     })
     if (!name) return
-    //check for duplicates
     if (subgraphDefCache.value.has(name))
-      //insuficient. reconsider
-      throw new Error('not implemented')
+      if (!(await confirmOverwrite(name)))
+        //A blueprint already exists with the current name and will be overwritten
+        return
+
     //upload file
     const path = SubgraphBlueprint.basePath + name + '.json'
     const workflow = new SubgraphBlueprint({
