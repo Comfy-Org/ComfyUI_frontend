@@ -202,7 +202,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
     subgraphDefCache.value.set(name, convertToNodeDef(loadedWorkflow))
-    //initiate refetch for simplicity
+    subgraphCache[name] = loadedWorkflow
   }
   function updateDef(blueprint: LoadedComfyWorkflow) {
     subgraphDefCache.value.set(blueprint.filename, convertToNodeDef(blueprint))
