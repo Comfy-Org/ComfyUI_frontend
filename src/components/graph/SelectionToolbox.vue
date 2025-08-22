@@ -1,37 +1,45 @@
 <template>
   <Transition name="slide-up">
-    <Panel
+    <!-- Wrapping panel in div to get correct ref because panel ref is not of raw dom el -->
+    <div
       v-show="visible"
-      class="selection-toolbox fixed left-0 top-0 rounded-lg z-40"
-      :style="style"
-      :pt="{
-        header: 'hidden',
-        content: 'p-0 flex flex-row'
-      }"
-      @wheel="canvasInteractions.handleWheel"
+      ref="toolboxRef"
+      style="
+        transform: translate(calc(var(--tb-x) - 50%), calc(var(--tb-y) - 120%));
+      "
+      class="selection-toolbox fixed left-0 top-0 z-40"
     >
-      <ExecuteButton />
-      <ColorPickerButton />
-      <BypassButton />
-      <PinButton />
-      <Load3DViewerButton />
-      <MaskEditorButton />
-      <ConvertToSubgraphButton />
-      <DeleteButton />
-      <RefreshSelectionButton />
-      <ExtensionCommandButton
-        v-for="command in extensionToolboxCommands"
-        :key="command.id"
-        :command="command"
-      />
-      <HelpButton />
-    </Panel>
+      <Panel
+        class="rounded-lg"
+        :pt="{
+          header: 'hidden',
+          content: 'p-0 flex flex-row'
+        }"
+        @wheel="canvasInteractions.handleWheel"
+      >
+        <ExecuteButton />
+        <ColorPickerButton />
+        <BypassButton />
+        <PinButton />
+        <Load3DViewerButton />
+        <MaskEditorButton />
+        <ConvertToSubgraphButton />
+        <DeleteButton />
+        <RefreshSelectionButton />
+        <ExtensionCommandButton
+          v-for="command in extensionToolboxCommands"
+          :key="command.id"
+          :command="command"
+        />
+        <HelpButton />
+      </Panel>
+    </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -55,7 +63,8 @@ const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
-const { style, visible } = useSelectionToolboxPosition()
+const toolboxRef = ref<HTMLElement | undefined>()
+const { visible } = useSelectionToolboxPosition(toolboxRef)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -75,13 +84,13 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 </script>
 
 <style scoped>
-.selection-toolbox {
-  transform: translateY(-120%);
+.slide-up-enter-active {
+  opacity: 1;
+  transition: all 0.3s ease-out;
 }
 
-.slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.3s ease-out;
+  transition: none;
 }
 
 .slide-up-enter-from {
@@ -90,7 +99,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 }
 
 .slide-up-leave-to {
-  transform: translateY(-100%);
+  transform: translateY(0);
   opacity: 0;
 }
 </style>

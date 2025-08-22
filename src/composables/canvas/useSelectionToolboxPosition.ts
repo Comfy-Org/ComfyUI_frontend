@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue'
-import type { CSSProperties } from 'vue'
+import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -8,19 +8,19 @@ import { useCanvasStore } from '@/stores/graphStore'
 
 /**
  * Manages the position of the selection toolbox independently.
- * Uses transform for all positioning to avoid layout.
+ * Uses CSS custom properties for performant transform updates.
  */
-export function useSelectionToolboxPosition() {
+export function useSelectionToolboxPosition(
+  toolboxRef: Ref<HTMLElement | undefined>
+) {
   const canvasStore = useCanvasStore()
   const lgCanvas = canvasStore.getCanvas()
   const { getSelectableItems } = useSelectedLiteGraphItems()
 
   // World position of selection center
-  const worldPosition = ref({ x: 0, y: 0, width: 0, height: 0 })
+  const worldPosition = ref({ x: 0, y: 0 })
 
   const visible = ref(false)
-
-  const style = ref<CSSProperties>({})
 
   /**
    * Update position based on selection
@@ -40,11 +40,11 @@ export function useSelectionToolboxPosition() {
       return
     }
 
+    const [xBase, y, width] = bounds
+
     worldPosition.value = {
-      x: bounds[0] + bounds[2] / 2,
-      y: bounds[1],
-      width: bounds[2],
-      height: bounds[3]
+      x: xBase + width / 2,
+      y: y
     }
 
     updateTransform()
@@ -56,18 +56,14 @@ export function useSelectionToolboxPosition() {
     const { scale, offset } = lgCanvas.ds
     const canvasRect = lgCanvas.canvas.getBoundingClientRect()
 
-    // Transform world to screen coordinates
-    // Position toolbox at top-center of selection
     const screenX =
       (worldPosition.value.x + offset[0]) * scale + canvasRect.left
     const screenY = (worldPosition.value.y + offset[1]) * scale + canvasRect.top
 
-    // Position the toolbox above the selection bounds
-    // The -50% centers it horizontally,
-    const toolboxOffset = 45
-
-    style.value = {
-      transform: `translate(${screenX}px, ${screenY - toolboxOffset}px) translateX(-50%)`
+    // Update CSS custom properties directly for best performance
+    if (toolboxRef.value) {
+      toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
+      toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
     }
   }
 
@@ -101,12 +97,9 @@ export function useSelectionToolboxPosition() {
     (dragging) => {
       if (dragging) {
         // Hide during node dragging
-        style.value = {
-          ...style.value,
-          visibility: 'hidden'
-        }
-      } else if (visible.value) {
-        // Show after dragging ends
+        visible.value = false
+      } else {
+        // Update after dragging ends
         requestAnimationFrame(() => {
           updateSelectionBounds()
         })
@@ -115,8 +108,6 @@ export function useSelectionToolboxPosition() {
   )
 
   return {
-    style,
-    visible,
-    updateSelectionBounds
+    visible
   }
 }
