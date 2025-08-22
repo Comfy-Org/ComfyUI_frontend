@@ -16,6 +16,7 @@
     @click="handleClick"
   >
     <span class="p-breadcrumb-item-label">{{ item.label }}</span>
+    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu
@@ -42,7 +43,6 @@
     @keydown.enter="inputBlur(true)"
     @keydown.esc="inputBlur(false)"
   />
-  <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
 </template>
 
 <script setup lang="ts">
