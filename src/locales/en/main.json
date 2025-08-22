@@ -431,6 +431,20 @@
       "error": "Unable to start ComfyUI Desktop"
     }
   },
+  "shortcuts": {
+    "essentials": "Essential",
+    "viewControls": "View Controls",
+    "manageShortcuts": "Manage Shortcuts",
+    "noKeybinding": "No keybinding",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "subcategories": {
+      "workflow": "Workflow",
+      "node": "Node",
+      "queue": "Queue",
+      "view": "View",
+      "panelControls": "Panel Controls"
+    }
+  },
   "serverConfig": {
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
