@@ -92,26 +92,25 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   })
 
   const getIdToken = async (): Promise<string | undefined> => {
-    if (currentUser.value) {
-      try {
-        return await currentUser.value.getIdToken()
-      } catch (error: unknown) {
-        if (
-          error instanceof FirebaseError &&
-          error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
-        ) {
-          console.warn(
-            'Could not authenticate with Firebase. Features requiring authentication might not work.'
-          )
-          return
-        }
-
-        useDialogService().showErrorDialog(error, {
-          title: t('errorDialog.defaultTitle'),
-          reportType: 'authenticationError'
-        })
-        console.error(error)
+    if (!currentUser.value) return
+    try {
+      return await currentUser.value.getIdToken()
+    } catch (error: unknown) {
+      if (
+        error instanceof FirebaseError &&
+        error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
+      ) {
+        console.warn(
+          'Could not authenticate with Firebase. Features requiring authentication might not work.'
+        )
+        return
       }
+
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.defaultTitle'),
+        reportType: 'authenticationError'
+      })
+      console.error(error)
     }
   }
 

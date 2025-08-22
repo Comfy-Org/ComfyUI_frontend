@@ -364,7 +364,7 @@ describe('useFirebaseAuthStore', () => {
 
       // Mock a non-network error using actual Firebase Auth error code
       const authError = new FirebaseError(
-        /** whichever one is 'auth/user-disabled' */,
+        firebaseAuth.AuthErrorCodes.USER_DISABLED,
         'User account is disabled.'
       )
 
@@ -372,10 +372,9 @@ describe('useFirebaseAuthStore', () => {
 
       // Should call the error dialog instead of throwing
       const token = await store.getIdToken()
+      const dialogService = useDialogService()
 
-      expect(
-        vi.mocked(useDialogService)().showErrorDialog
-      ).toHaveBeenCalledWith(authError, {
+      expect(dialogService.showErrorDialog).toHaveBeenCalledWith(authError, {
         title: 'errorDialog.defaultTitle',
         reportType: 'authenticationError'
       })
