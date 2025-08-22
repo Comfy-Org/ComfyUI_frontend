@@ -5,19 +5,20 @@
  * Operations are synchronous and applied directly to the store.
  */
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
-import type {
-  LayoutMutations,
-  NodeId,
-  NodeLayout,
-  Point,
-  Size
+import {
+  type LayoutMutations,
+  LayoutSource,
+  type NodeId,
+  type NodeLayout,
+  type Point,
+  type Size
 } from '@/renderer/core/layout/types'
 
 class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Set the current mutation source
    */
-  setSource(source: 'canvas' | 'vue' | 'external'): void {
+  setSource(source: LayoutSource): void {
     layoutStore.setSource(source)
   }
 

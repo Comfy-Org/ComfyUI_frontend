@@ -5,6 +5,7 @@
 import { nextTick, reactive, readonly } from 'vue'
 
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
@@ -564,7 +565,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     let sizeUpdates = 0
 
     // Set source for all canvas-driven updates
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
 
     // Process each node for changes
     for (const node of graph._nodes) {
@@ -624,7 +625,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     spatialIndex.insert(id, bounds, id)
 
     // Add node to layout store
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
     void layoutMutations.createNode(id, {
       position: { x: node.pos[0], y: node.pos[1] },
       size: { width: node.size[0], height: node.size[1] },
@@ -651,7 +652,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     spatialIndex.remove(id)
 
     // Remove node from layout store
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
     void layoutMutations.deleteNode(id)
 
     // Clean up all tracking references
