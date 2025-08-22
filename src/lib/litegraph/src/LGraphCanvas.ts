@@ -135,7 +135,7 @@ interface ICreateDefaultNodeOptions extends ICreateNodeOptions {
 interface HasShowSearchCallback {
   /** See {@link LGraphCanvas.showSearchBox} */
   showSearchBox: (
-    event: MouseEvent,
+    event: MouseEvent | null,
     options?: IShowSearchOptions
   ) => HTMLDivElement | void
 }
@@ -6870,7 +6870,7 @@ export class LGraphCanvas
   }
 
   showSearchBox(
-    event: MouseEvent,
+    event: MouseEvent | null,
     searchOptions?: IShowSearchOptions
   ): HTMLDivElement {
     // proposed defaults
@@ -7105,14 +7105,25 @@ export class LGraphCanvas
     // compute best position
     const rect = canvas.getBoundingClientRect()
 
-    const left = (event ? event.clientX : rect.left + rect.width * 0.5) - 80
-    const top = (event ? event.clientY : rect.top + rect.height * 0.5) - 20
+    // Handles cases where the searchbox is initiated by
+    // non-click events. e.g. Keyboard shortcuts
+    const safeEvent =
+      event ??
+      new MouseEvent('click', {
+        clientX: rect.left + rect.width * 0.5,
+        clientY: rect.top + rect.height * 0.5,
+        // @ts-expect-error layerY is a nonstandard property
+        layerY: rect.top + rect.height * 0.5
+      })
+
+    const left = safeEvent.clientX - 80
+    const top = safeEvent.clientY - 20
     dialog.style.left = `${left}px`
     dialog.style.top = `${top}px`
 
     // To avoid out of screen problems
-    if (event.layerY > rect.height - 200) {
-      helper.style.maxHeight = `${rect.height - event.layerY - 20}px`
+    if (safeEvent.layerY > rect.height - 200) {
+      helper.style.maxHeight = `${rect.height - safeEvent.layerY - 20}px`
     }
     requestAnimationFrame(function () {
       input.focus()
@@ -7122,14 +7133,14 @@ export class LGraphCanvas
     function select(name: string) {
       if (name) {
         if (that.onSearchBoxSelection) {
-          that.onSearchBoxSelection(name, event, graphcanvas)
+          that.onSearchBoxSelection(name, safeEvent, graphcanvas)
         } else {
           if (!graphcanvas.graph) throw new NullGraphError()
 
           graphcanvas.graph.beforeChange()
           const node = LiteGraph.createNode(name)
           if (node) {
-            node.pos = graphcanvas.convertEventToCanvasOffset(event)
+            node.pos = graphcanvas.convertEventToCanvasOffset(safeEvent)
             graphcanvas.graph.add(node, false)
           }
 
