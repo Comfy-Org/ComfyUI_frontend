@@ -4,6 +4,7 @@
  * Centralized configuration values for the layout system.
  * These values control spatial indexing, performance, and behavior.
  */
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 /**
  * QuadTree configuration for spatial indexing
@@ -57,5 +58,5 @@ export const ACTOR_CONFIG = {
   /** Length of random suffix for actor IDs */
   ID_LENGTH: 9,
   /** Default source when not specified */
-  DEFAULT_SOURCE: 'external' as const
+  DEFAULT_SOURCE: LayoutSource.External
 } as const

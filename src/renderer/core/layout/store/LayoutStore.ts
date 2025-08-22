@@ -21,18 +21,19 @@ import type {
   ResizeNodeOperation,
   SetNodeZIndexOperation
 } from '@/renderer/core/layout/types'
-import type {
-  Bounds,
-  LayoutChange,
-  LayoutStore,
-  LinkId,
-  LinkLayout,
-  NodeId,
-  NodeLayout,
-  Point,
-  RerouteId,
-  RerouteLayout,
-  SlotLayout
+import {
+  type Bounds,
+  type LayoutChange,
+  LayoutSource,
+  type LayoutStore,
+  type LinkId,
+  type LinkLayout,
+  type NodeId,
+  type NodeLayout,
+  type Point,
+  type RerouteId,
+  type RerouteLayout,
+  type SlotLayout
 } from '@/renderer/core/layout/types'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
@@ -46,8 +47,8 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue reactivity layer
   private version = 0
-  private currentSource: 'canvas' | 'vue' | 'external' =
-    ACTOR_CONFIG.DEFAULT_SOURCE
+  private currentSource: LayoutSource =
+    ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -658,7 +659,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Set the current operation source
    */
-  setSource(source: 'canvas' | 'vue' | 'external'): void {
+  setSource(source: LayoutSource): void {
     this.currentSource = source
   }
 
@@ -672,7 +673,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get the current operation source
    */
-  getCurrentSource(): 'canvas' | 'vue' | 'external' {
+  getCurrentSource(): LayoutSource {
     return this.currentSource
   }
 

@@ -10,7 +10,7 @@ import { registerNodeSlots } from '@/renderer/core/canvas/litegraph/SlotCalculat
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
-import type { Point } from '@/renderer/core/layout/types'
+import { LayoutSource, type Point } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 
 /**
@@ -69,7 +69,7 @@ export function useNodeLayout(nodeId: string) {
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
     // Set mutation source
-    mutations.setSource('vue')
+    mutations.setSource(LayoutSource.Vue)
 
     // Capture pointer
     const target = event.target as HTMLElement
@@ -127,7 +127,7 @@ export function useNodeLayout(nodeId: string) {
    * Update node position directly (without drag)
    */
   function moveTo(position: Point) {
-    mutations.setSource('vue')
+    mutations.setSource(LayoutSource.Vue)
     mutations.moveNode(nodeId, position)
   }
 
@@ -135,7 +135,7 @@ export function useNodeLayout(nodeId: string) {
    * Update node size
    */
   function resize(newSize: { width: number; height: number }) {
-    mutations.setSource('vue')
+    mutations.setSource(LayoutSource.Vue)
     mutations.resizeNode(nodeId, newSize)
   }
 

@@ -6,6 +6,13 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
+// Enum for layout source types
+export enum LayoutSource {
+  Canvas = 'canvas',
+  Vue = 'vue',
+  External = 'external'
+}
+
 // Basic geometric types
 export interface Point {
   x: number
@@ -88,7 +95,7 @@ export type LayoutMutationType =
 export interface LayoutMutation {
   type: LayoutMutationType
   timestamp: number
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
 }
 
 export interface MoveNodeMutation extends LayoutMutation {
@@ -150,7 +157,7 @@ export interface BaseOperation {
   /** Actor who performed the operation (for CRDT) */
   actor: string
   /** Source system that initiated the operation */
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
   /** Node this operation affects */
   nodeId: NodeId
 }
@@ -245,7 +252,7 @@ export interface CreateLinkOperation {
   targetSlot: number
   timestamp: number
   actor: string
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
 }
 
 /**
@@ -256,7 +263,7 @@ export interface DeleteLinkOperation {
   linkId: LinkId
   timestamp: number
   actor: string
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
 }
 
 /**
@@ -270,7 +277,7 @@ export interface CreateRerouteOperation {
   linkIds: LinkId[]
   timestamp: number
   actor: string
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
 }
 
 /**
@@ -281,7 +288,7 @@ export interface DeleteRerouteOperation {
   rerouteId: RerouteId
   timestamp: number
   actor: string
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
 }
 
 /**
@@ -294,7 +301,7 @@ export interface MoveRerouteOperation {
   previousPosition: Point
   timestamp: number
   actor: string
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
 }
 
 /**
@@ -378,7 +385,7 @@ export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
   nodeIds: NodeId[]
   timestamp: number
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
   operation: LayoutOperation
 }
 
@@ -433,9 +440,9 @@ export interface LayoutStore {
   ): void
 
   // Source and actor management
-  setSource(source: 'canvas' | 'vue' | 'external'): void
+  setSource(source: LayoutSource): void
   setActor(actor: string): void
-  getCurrentSource(): 'canvas' | 'vue' | 'external'
+  getCurrentSource(): LayoutSource
   getCurrentActor(): string
 }
 
@@ -454,7 +461,7 @@ export interface LayoutMutations {
   bringNodeToFront(nodeId: NodeId): void
 
   // Source tracking
-  setSource(source: 'canvas' | 'vue' | 'external'): void
+  setSource(source: LayoutSource): void
   setActor(actor: string): void // For CRDT
 }
 

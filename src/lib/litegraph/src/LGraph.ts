@@ -7,6 +7,7 @@ import {
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -1352,7 +1353,7 @@ export class LGraph
     this.reroutes.set(rerouteId, reroute)
 
     // Register reroute in Layout Store for spatial tracking
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.createReroute(
       String(rerouteId),
       { x: pos[0], y: pos[1] },
@@ -1435,7 +1436,7 @@ export class LGraph
     reroutes.delete(id)
 
     // Delete reroute from Layout Store
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.deleteReroute(String(id))
 
     // This does not belong here; it should be handled by the caller, or run by a remove-many API.
@@ -2262,7 +2263,7 @@ export class LGraph
         if (!reroute.validateLinks(this._links, this.floatingLinks)) {
           this.reroutes.delete(reroute.id)
           // Clean up layout store
-          layoutMutations.setSource('canvas')
+          layoutMutations.setSource(LayoutSource.Canvas)
           layoutMutations.deleteReroute(String(reroute.id))
         }
       }

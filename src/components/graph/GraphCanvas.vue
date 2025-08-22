@@ -148,6 +148,7 @@ import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import { useLayout } from '@/renderer/core/layout/sync/useLayout'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -548,7 +549,7 @@ const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
   // Bring node to front when clicked (similar to LiteGraph behavior)
   // Skip if node is pinned
   if (!node.flags?.pinned) {
-    layoutMutations.setSource('vue')
+    layoutMutations.setSource(LayoutSource.Vue)
     layoutMutations.bringNodeToFront(nodeData.id)
   }
   node.selected = true

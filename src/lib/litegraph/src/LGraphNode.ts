@@ -7,6 +7,7 @@ import {
   registerNodeSlots
 } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -2845,7 +2846,7 @@ export class LGraphNode
     graph._links.set(link.id, link)
 
     // Register link in Layout Store for spatial tracking
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.createLink(
       String(link.id),
       String(this.id),

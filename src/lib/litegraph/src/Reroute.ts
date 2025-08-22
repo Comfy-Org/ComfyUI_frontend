@@ -1,4 +1,5 @@
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode, NodeId } from './LGraphNode'
@@ -414,7 +415,7 @@ export class Reroute
     this.#pos[1] += deltaY
 
     // Update Layout Store with new position
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.moveReroute(
       String(this.id),
       { x: this.#pos[0], y: this.#pos[1] },

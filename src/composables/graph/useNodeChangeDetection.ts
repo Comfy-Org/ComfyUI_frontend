@@ -8,6 +8,7 @@ import { reactive } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 export interface ChangeDetectionMetrics {
   updateTime: number
@@ -102,7 +103,7 @@ export function useNodeChangeDetection(graph: LGraph) {
     let sizeUpdates = 0
 
     // Set source for all canvas-driven updates
-    layoutMutations.setSource('canvas')
+    layoutMutations.setSource(LayoutSource.Canvas)
 
     // Process each node for changes
     for (const node of graph._nodes) {
