@@ -168,6 +168,7 @@ class LayoutStoreImpl implements LayoutStore {
               if (existing) {
                 this.applyOperation({
                   type: 'deleteNode',
+                  entity: 'node',
                   nodeId,
                   timestamp: Date.now(),
                   source: this.currentSource,
@@ -182,6 +183,7 @@ class LayoutStoreImpl implements LayoutStore {
                 // Create operation
                 this.applyOperation({
                   type: 'createNode',
+                  entity: 'node',
                   nodeId,
                   layout: newLayout,
                   timestamp: Date.now(),
@@ -198,6 +200,7 @@ class LayoutStoreImpl implements LayoutStore {
                 ) {
                   this.applyOperation({
                     type: 'moveNode',
+                    entity: 'node',
                     nodeId,
                     position: newLayout.position,
                     previousPosition: existingLayout.position,
@@ -212,6 +215,7 @@ class LayoutStoreImpl implements LayoutStore {
                 ) {
                   this.applyOperation({
                     type: 'resizeNode',
+                    entity: 'node',
                     nodeId,
                     size: newLayout.size,
                     previousSize: existingLayout.size,
@@ -223,6 +227,7 @@ class LayoutStoreImpl implements LayoutStore {
                 if (existingLayout.zIndex !== newLayout.zIndex) {
                   this.applyOperation({
                     type: 'setNodeZIndex',
+                    entity: 'node',
                     nodeId,
                     zIndex: newLayout.zIndex,
                     previousZIndex: existingLayout.zIndex,
