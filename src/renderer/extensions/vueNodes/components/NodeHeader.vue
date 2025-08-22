@@ -1,16 +1,12 @@
 <template>
   <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-  <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
+  <div v-if="renderError" class="node-error p-4 text-red-500 text-sm">
     ⚠️ Node Header Error
   </div>
   <div
     v-else
-    class="lg-node-header flex items-center justify-between p-2 rounded-t-lg cursor-move"
+    class="lg-node-header flex items-center justify-between p-4 rounded-t-2xl cursor-move"
     :data-testid="`node-header-${nodeInfo?.id || ''}`"
-    :style="{
-      backgroundColor: headerColor,
-      color: textColor
-    }"
     @dblclick="handleDoubleClick"
   >
     <!-- Collapse/Expand Button -->
@@ -23,12 +19,12 @@
     >
       <i
         :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-        class="text-xs leading-none relative top-[1px]"
+        class="text-xs leading-none relative top-[1px] text-[#888682] dark-theme:text-[#5B5E7D]"
       ></i>
     </button>
 
     <!-- Node Title -->
-    <div class="text-sm font-medium truncate flex-1" data-testid="node-title">
+    <div class="text-sm font-bold truncate flex-1" data-testid="node-title">
       <EditableText
         :model-value="displayTitle"
         :is-editing="isEditing"
@@ -93,32 +89,32 @@ watch(
 )
 
 // Compute header color based on node color property or type
-const headerColor = computed(() => {
-  const info = nodeInfo.value
-  if (!info) return '#353535'
+// const headerColor = computed(() => {
+//   const info = nodeInfo.value
+//   if (!info) return '#353535'
 
-  if (info.mode === 4) return '#666' // Bypassed
-  if (info.mode === 2) return '#444' // Muted
-  return '#353535' // Default
-})
+//   if (info.mode === 4) return '#666' // Bypassed
+//   if (info.mode === 2) return '#444' // Muted
+//   return '#353535' // Default
+// })
 
-// Compute text color for contrast
-const textColor = computed(() => {
-  const color = headerColor.value
-  if (!color || color === '#353535' || color === '#444' || color === '#666') {
-    return '#fff'
-  }
-  const colorStr = String(color)
-  const rgb = parseInt(
-    colorStr.startsWith('#') ? colorStr.slice(1) : colorStr,
-    16
-  )
-  const r = (rgb >> 16) & 255
-  const g = (rgb >> 8) & 255
-  const b = rgb & 255
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  return brightness > 128 ? '#000' : '#fff'
-})
+// // Compute text color for contrast
+// const textColor = computed(() => {
+//   const color = headerColor.value
+//   if (!color || color === '#353535' || color === '#444' || color === '#666') {
+//     return '#fff'
+//   }
+//   const colorStr = String(color)
+//   const rgb = parseInt(
+//     colorStr.startsWith('#') ? colorStr.slice(1) : colorStr,
+//     16
+//   )
+//   const r = (rgb >> 16) & 255
+//   const g = (rgb >> 8) & 255
+//   const b = rgb & 255
+//   const brightness = (r * 299 + g * 587 + b * 114) / 1000
+//   return brightness > 128 ? '#000' : '#fff'
+// })
 
 // Event handlers
 const handleCollapse = () => {

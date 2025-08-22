@@ -7,9 +7,12 @@
     v-else
     :data-node-id="nodeData.id"
     :class="[
-      'lg-node absolute border-2 rounded-lg',
-      'contain-layout contain-style contain-paint',
-      selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-600',
+      'bg-[#FFFFFF] dark-theme:bg-[#15161A]',
+      'min-w-[445px]',
+      'lg-node absolute border-2 border-solid rounded-2xl',
+      selected
+        ? 'border-blue-500 ring-2 ring-blue-300'
+        : 'border-[#e1ded5] dark-theme:border-[#292A30]',
       executing ? 'animate-pulse' : '',
       nodeData.mode === 4 ? 'opacity-50' : '', // bypassed
       error ? 'border-red-500 bg-red-50' : '',
@@ -20,9 +23,6 @@
     :style="[
       {
         transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        width: size ? `${size.width}px` : '200px',
-        height: size ? `${size.height}px` : 'auto',
-        backgroundColor: '#353535',
         pointerEvents: 'auto'
       },
       dragStyle
@@ -31,50 +31,76 @@
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
   >
-    <!-- Header only updates on title/color changes -->
-    <NodeHeader
-      v-memo="[nodeData.title, lodLevel, isCollapsed]"
-      :node-data="nodeData"
-      :readonly="readonly"
-      :lod-level="lodLevel"
-      :collapsed="isCollapsed"
-      @collapse="handleCollapse"
-      @update:title="handleTitleUpdate"
-    />
-
-    <!-- Node Body - rendered based on LOD level and collapsed state -->
-    <div
-      v-if="!isMinimalLOD && !isCollapsed"
-      class="flex flex-col gap-2"
-      :data-testid="`node-body-${nodeData.id}`"
-    >
-      <!-- Slots only rendered at full detail -->
-      <NodeSlots
-        v-if="shouldRenderSlots"
-        v-memo="[nodeData.inputs?.length, nodeData.outputs?.length, lodLevel]"
+    <div class="flex items-center">
+      <template v-if="isCollapsed">
+        <MultiSlotPoint class="absolute left-0 -translate-x-1/2" />
+        <MultiSlotPoint class="absolute right-0 translate-x-1/2" />
+      </template>
+      <!-- Header only updates on title/color changes -->
+      <NodeHeader
+        v-memo="[nodeData.title, lodLevel, isCollapsed]"
         :node-data="nodeData"
         :readonly="readonly"
         :lod-level="lodLevel"
-        @slot-click="handleSlotClick"
-      />
-
-      <!-- Widgets rendered at reduced+ detail -->
-      <NodeWidgets
-        v-if="shouldRenderWidgets && nodeData.widgets?.length"
-        v-memo="[nodeData.widgets?.length, lodLevel]"
-        :node-data="nodeData"
-        :readonly="readonly"
-        :lod-level="lodLevel"
-      />
-
-      <!-- Custom content at reduced+ detail -->
-      <NodeContent
-        v-if="shouldRenderContent && hasCustomContent"
-        :node-data="nodeData"
-        :readonly="readonly"
-        :lod-level="lodLevel"
+        :collapsed="isCollapsed"
+        @collapse="handleCollapse"
+        @update:title="handleTitleUpdate"
       />
     </div>
+
+    <template v-if="!isMinimalLOD && !isCollapsed">
+      <div class="bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4 mb-4" />
+
+      <!-- Node Body - rendered based on LOD level and collapsed state -->
+      <div
+        class="flex flex-col gap-4 pb-4"
+        :data-testid="`node-body-${nodeData.id}`"
+      >
+        <!-- Slots only rendered at full detail -->
+        <NodeSlots
+          v-if="shouldRenderSlots"
+          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length, lodLevel]"
+          :node-data="nodeData"
+          :readonly="readonly"
+          :lod-level="lodLevel"
+          @slot-click="handleSlotClick"
+        />
+
+        <div
+          v-if="
+            shouldRenderWidgets && nodeData.widgets?.length && shouldRenderSlots
+          "
+          class="bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4"
+        />
+
+        <!-- Widgets rendered at reduced+ detail -->
+        <NodeWidgets
+          v-if="shouldRenderWidgets && nodeData.widgets?.length"
+          v-memo="[nodeData.widgets?.length, lodLevel]"
+          :node-data="nodeData"
+          :readonly="readonly"
+          :lod-level="lodLevel"
+        />
+
+        <div
+          v-if="
+            shouldRenderContent &&
+            hasCustomContent &&
+            (shouldRenderWidgets ||
+              (nodeData.widgets?.length && shouldRenderSlots))
+          "
+          class="bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4"
+        />
+
+        <!-- Custom content at reduced+ detail -->
+        <NodeContent
+          v-if="shouldRenderContent && hasCustomContent"
+          :node-data="nodeData"
+          :readonly="readonly"
+          :lod-level="lodLevel"
+        />
+      </div>
+    </template>
 
     <!-- Progress bar for executing state -->
     <div
@@ -95,6 +121,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 
+import MultiSlotPoint from './MultiSlotPoint.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'

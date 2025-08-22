@@ -59,3 +59,4 @@ When referencing Comfy-Org repos:
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
+- NEVER use `dark:` prefix - always use `dark-theme:` for dark mode styles, for example: `dark-theme:text-white dark-theme:bg-black`

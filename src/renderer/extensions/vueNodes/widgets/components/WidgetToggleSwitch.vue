@@ -1,15 +1,12 @@
 <template>
-  <div class="flex items-center justify-between gap-4">
-    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
-      widget.name
-    }}</label>
+  <WidgetLayoutField :widget="widget">
     <ToggleSwitch
       v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
       @update:model-value="onChange"
     />
-  </div>
+  </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
@@ -22,6 +19,8 @@ import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+
+import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<boolean>

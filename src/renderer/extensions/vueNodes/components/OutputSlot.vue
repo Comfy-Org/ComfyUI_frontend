@@ -17,14 +17,17 @@
     @pointerdown="handleClick"
   >
     <!-- Slot Name -->
-    <span v-if="!dotOnly" class="text-xs text-surface-700 whitespace-nowrap">
+    <span
+      v-if="!dotOnly"
+      class="whitespace-nowrap text-sm font-normal dark-theme:text-[#9FA2BD] text-[#888682]"
+    >
       {{ slotData.name || `Output ${index}` }}
     </span>
 
     <!-- Connection Dot -->
     <div class="w-5 h-5 flex items-center justify-center group/slot">
       <div
-        class="w-2 h-2 rounded-full bg-white transition-all duration-150 group-hover/slot:w-2.5 group-hover/slot:h-2.5 group-hover/slot:border-2 group-hover/slot:border-white"
+        class="w-2.5 h-2.5 rounded-full bg-white transition-all duration-150 group-hover/slot:w-3 group-hover/slot:h-3 group-hover/slot:border-2 group-hover/slot:border-white"
         :style="{
           backgroundColor: slotColor
         }"

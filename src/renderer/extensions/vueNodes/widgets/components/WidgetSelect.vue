@@ -1,24 +1,18 @@
 <template>
-  <div
-    class="flex items-center justify-between gap-4"
-    :style="{ height: widgetHeight + 'px' }"
-  >
-    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
-      widget.name
-    }}</label>
+  <WidgetLayoutField :widget>
     <Select
       v-model="localValue"
       :options="selectOptions"
       v-bind="filteredProps"
       :disabled="readonly"
-      class="flex-grow min-w-[8em] max-w-[20em] text-xs"
+      class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
       size="small"
       :pt="{
         option: 'text-xs'
       }"
       @update:model-value="onChange"
     />
-  </div>
+  </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
@@ -26,12 +20,13 @@ import Select from 'primevue/select'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import { COMFY_VUE_NODE_DIMENSIONS } from '@/lib/litegraph/src/litegraph'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+
+import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
@@ -50,9 +45,6 @@ const { localValue, onChange } = useWidgetValue({
   defaultValue: props.widget.options?.values?.[0] || '',
   emit
 })
-
-// Get widget height from litegraph constants
-const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
