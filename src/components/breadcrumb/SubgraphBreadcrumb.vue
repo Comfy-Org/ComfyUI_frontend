@@ -53,7 +53,7 @@ const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
-const workflowIsBlueprint = computed(
+const isBlueprint = computed(
   () => workflowStore.activeWorkflow instanceof SubgraphBlueprint
 )
 const collapseTabs = ref(false)
@@ -93,7 +93,7 @@ const home = computed(() => ({
   label: workflowName.value,
   icon: 'pi pi-home',
   key: 'root',
-  isBlueprint: workflowIsBlueprint.value,
+  isBlueprint,
   command: () => {
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
