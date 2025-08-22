@@ -2,27 +2,33 @@
   <Panel
     class="selection-toolbox absolute left-1/2 rounded-lg"
     :class="{ 'animate-slide-up': shouldAnimate }"
+    :style="`backgroundColor: ${containerStyles.backgroundColor};`"
     :pt="{
       header: 'hidden',
-      content: 'p-0 flex flex-row'
+      content: 'p-[4px] flex flex-row gap-[4px]'
     }"
     @wheel="canvasInteractions.handleWheel"
   >
-    <ExecuteButton />
+    <InfoButton />
+    <VerticalDivider />
     <ColorPickerButton />
+    <ConvertToSubgraphButton />
+    <BookmarkButton />
     <BypassButton />
     <PinButton />
     <Load3DViewerButton />
     <MaskEditorButton />
-    <ConvertToSubgraphButton />
+    <FrameNodes />
+
     <DeleteButton />
     <RefreshSelectionButton />
+    <ExecuteButton />
+
     <ExtensionCommandButton
       v-for="command in extensionToolboxCommands"
       :key="command.id"
       :command="command"
     />
-    <HelpButton />
   </Panel>
 </template>
 
@@ -36,22 +42,29 @@ import ConvertToSubgraphButton from '@/components/graph/selectionToolbox/Convert
 import DeleteButton from '@/components/graph/selectionToolbox/DeleteButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ExtensionCommandButton from '@/components/graph/selectionToolbox/ExtensionCommandButton.vue'
-import HelpButton from '@/components/graph/selectionToolbox/HelpButton.vue'
+import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
+import BookmarkButton from './selectionToolbox/BookmarkButton.vue'
+import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
+import FrameNodes from './selectionToolbox/FrameNodes.vue'
+
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
+const minimap = useMinimap()
+const containerStyles = minimap.containerStyles
 
 const selectionOverlayState = inject(SelectionOverlayInjectionKey)
 const { shouldAnimate } = useRetriggerableAnimation(

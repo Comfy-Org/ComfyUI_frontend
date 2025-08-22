@@ -1,15 +1,16 @@
 <template>
   <Button
-    v-show="isSingleImageNode"
+    f-show="isSingleImageNode"
     v-tooltip.top="{
       value: t('commands.Comfy_MaskEditor_OpenMaskEditor.label'),
       showDelay: 1000
     }"
     severity="secondary"
     text
-    icon="pi pi-pencil"
     @click="openMaskEditor"
-  />
+  >
+  <i-comfy:mask />
+  </Button>
 </template>
 
 <script setup lang="ts">

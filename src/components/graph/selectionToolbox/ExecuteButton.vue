@@ -7,14 +7,14 @@
         : t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
-    :severity="isDisabled ? 'secondary' : 'success'"
     text
     :disabled="isDisabled"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
+    class="dark-mode:bg-[#0B8CE9] bg-[#31B9F4]"
   >
-    <i-lucide:play />
+    <i-lucide:play class="!fill-red-400 fill-path-white" />
   </Button>
 </template>
 
@@ -70,3 +70,9 @@ const handleClick = async () => {
   await commandStore.execute('Comfy.QueueSelectedOutputNodes')
 }
 </script>
+<style scoped>
+:deep.fill-path-white > path {
+  fill: white;
+  stroke: unset;
+}
+</style>
