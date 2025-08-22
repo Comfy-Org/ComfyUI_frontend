@@ -14,7 +14,7 @@ const meta: Meta<typeof MultiSelect> = {
     options: {
       control: 'object'
     },
-    hasSearchBox: {
+    showSearchBox: {
       control: 'boolean',
       description: 'Toggle searchBar visibility'
     },
@@ -22,7 +22,7 @@ const meta: Meta<typeof MultiSelect> = {
       control: 'boolean',
       description: 'Toggle selected count visibility'
     },
-    hasClearButton: {
+    showClearButton: {
       control: 'boolean',
       description: 'Toggle clear button visibility'
     },
@@ -32,9 +32,9 @@ const meta: Meta<typeof MultiSelect> = {
   },
   args: {
     label: 'Select',
-    hasSearchBox: false,
+    showSearchBox: false,
     showSelectedCount: false,
-    hasClearButton: false,
+    showClearButton: false,
     searchPlaceholder: 'Search...'
   }
 }
@@ -175,7 +175,7 @@ export const MultipleSelectors: Story = {
 export const WithSearchBox: Story = {
   ...Default,
   args: {
-    hasSearchBox: true
+    showSearchBox: true
   }
 }
 
@@ -189,23 +189,23 @@ export const WithSelectedCount: Story = {
 export const WithClearButton: Story = {
   ...Default,
   args: {
-    hasClearButton: true
+    showClearButton: true
   }
 }
 
 export const AllHeaderFeatures: Story = {
   ...Default,
   args: {
-    hasSearchBox: true,
+    showSearchBox: true,
     showSelectedCount: true,
-    hasClearButton: true
+    showClearButton: true
   }
 }
 
 export const CustomSearchPlaceholder: Story = {
   ...Default,
   args: {
-    hasSearchBox: true,
+    showSearchBox: true,
     searchPlaceholder: 'Filter packages...'
   }
 }
