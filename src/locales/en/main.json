@@ -98,6 +98,12 @@
     "nodes": "Nodes",
     "community": "Community",
     "all": "All",
+    "versionMismatchWarning": "Version Compatibility Warning",
+    "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
+    "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
+    "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "updateFrontend": "Update Frontend",
+    "dismiss": "Dismiss",
     "update": "Update",
     "updated": "Updated",
     "resultsCount": "Found {count} Results",
@@ -429,6 +435,20 @@
       "starting-server": "Starting ComfyUI server...",
       "ready": "Finishing...",
       "error": "Unable to start ComfyUI Desktop"
+    }
+  },
+  "shortcuts": {
+    "essentials": "Essential",
+    "viewControls": "View Controls",
+    "manageShortcuts": "Manage Shortcuts",
+    "noKeybinding": "No keybinding",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "subcategories": {
+      "workflow": "Workflow",
+      "node": "Node",
+      "queue": "Queue",
+      "view": "View",
+      "panelControls": "Panel Controls"
     }
   },
   "serverConfig": {
@@ -1361,6 +1381,13 @@
     "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
     "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Requires ComfyUI {version}:"
+  },
+  "versionMismatchWarning": {
+    "title": "Version Compatibility Warning",
+    "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires version {requiredVersion} or higher.",
+    "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "updateFrontend": "Update Frontend",
+    "dismiss": "Dismiss"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",
