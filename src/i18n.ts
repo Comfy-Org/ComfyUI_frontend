@@ -58,10 +58,26 @@ const messages = {
   ar: buildLocale(ar, arNodes, arCommands, arSettings)
 }
 
+function getDefaultLocale(): string {
+  const lang = navigator.language
+
+  // Handle Chinese variants specifically to distinguish between simplified and traditional
+  if (lang.startsWith('zh-')) {
+    return lang.startsWith('zh-TW') ||
+      lang.startsWith('zh-HK') ||
+      lang.startsWith('zh-Hant')
+      ? 'zh-TW'
+      : 'zh'
+  }
+
+  // For other languages, use the existing logic
+  return lang.split('-')[0] || 'en'
+}
+
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
-  locale: navigator.language.split('-')[0] || 'en',
+  locale: getDefaultLocale(),
   fallbackLocale: 'en',
   messages,
   // Ignore warnings for locale options as each option is in its own language.
