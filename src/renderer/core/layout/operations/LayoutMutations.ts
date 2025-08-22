@@ -155,7 +155,7 @@ class LayoutMutationsImpl implements LayoutMutations {
    * Create a new link
    */
   createLink(
-    linkId: string,
+    linkId: string | number,
     sourceNodeId: string,
     sourceSlot: number,
     targetNodeId: string,
@@ -164,7 +164,7 @@ class LayoutMutationsImpl implements LayoutMutations {
     layoutStore.applyOperation({
       type: 'createLink',
       entity: 'link',
-      linkId,
+      linkId: Number(linkId),
       sourceNodeId,
       sourceSlot,
       targetNodeId,
@@ -178,11 +178,11 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Delete a link
    */
-  deleteLink(linkId: string): void {
+  deleteLink(linkId: string | number): void {
     layoutStore.applyOperation({
       type: 'deleteLink',
       entity: 'link',
-      linkId,
+      linkId: Number(linkId),
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -193,18 +193,18 @@ class LayoutMutationsImpl implements LayoutMutations {
    * Create a new reroute
    */
   createReroute(
-    rerouteId: string,
+    rerouteId: string | number,
     position: Point,
-    parentId?: string,
-    linkIds: string[] = []
+    parentId?: string | number,
+    linkIds: (string | number)[] = []
   ): void {
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
-      rerouteId,
+      rerouteId: Number(rerouteId),
       position,
-      parentId,
-      linkIds,
+      parentId: parentId != null ? Number(parentId) : undefined,
+      linkIds: linkIds.map((id) => Number(id)),
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -214,11 +214,11 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Delete a reroute
    */
-  deleteReroute(rerouteId: string): void {
+  deleteReroute(rerouteId: string | number): void {
     layoutStore.applyOperation({
       type: 'deleteReroute',
       entity: 'reroute',
-      rerouteId,
+      rerouteId: Number(rerouteId),
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -229,14 +229,14 @@ class LayoutMutationsImpl implements LayoutMutations {
    * Move a reroute
    */
   moveReroute(
-    rerouteId: string,
+    rerouteId: string | number,
     position: Point,
     previousPosition: Point
   ): void {
     layoutStore.applyOperation({
       type: 'moveReroute',
       entity: 'reroute',
-      rerouteId,
+      rerouteId: Number(rerouteId),
       position,
       previousPosition,
       timestamp: Date.now(),

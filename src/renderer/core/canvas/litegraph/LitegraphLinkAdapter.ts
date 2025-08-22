@@ -150,19 +150,16 @@ export class LitegraphLinkAdapter {
         y: (startPos[1] + endPos[1]) / 2
       }
 
-      // Use type-safe composite key for regular links
-      const layoutKey = `link:${link.id}`
-
       // Check if geometry changed
-      const existing = layoutStore.getLinkLayout(layoutKey)
+      const existing = layoutStore.getLinkLayout(link.id)
       if (
         !existing ||
         !this.boundsEqual(existing.bounds, bounds) ||
         !this.pointEqual(existing.centerPos, centerPos)
       ) {
-        // Geometry changed, update layout store
-        layoutStore.updateLinkLayout(layoutKey, {
-          id: layoutKey,
+        // Geometry changed, update layout store with numeric LinkId
+        layoutStore.updateLinkLayout(link.id, {
+          id: link.id,
           path: path,
           bounds: bounds,
           centerPos: centerPos,
@@ -170,6 +167,13 @@ export class LitegraphLinkAdapter {
           targetNodeId: String(link.target_id),
           sourceSlot: link.origin_slot,
           targetSlot: link.target_slot
+        })
+
+        // Also update segment layout for the whole link (null rerouteId means final segment)
+        layoutStore.updateLinkSegmentLayout(link.id, null, {
+          path: path,
+          bounds: bounds,
+          centerPos: centerPos
         })
       }
     }
@@ -482,32 +486,35 @@ export class LitegraphLinkAdapter {
           y: (linkData.startPoint.y + linkData.endPoint.y) / 2
         }
 
-        // Use type-safe composite keys to avoid ID collisions
-        // Reroute segments use: segment:linkId:rerouteId
-        // Regular links use: link:linkId
-        const layoutKey = extras.reroute
-          ? `segment:${link.id}:${extras.reroute.id}`
-          : `link:${link.id}`
-
-        // Check if geometry changed
-        const existing = layoutStore.getLinkLayout(layoutKey)
-        if (
-          !existing ||
-          !this.boundsEqual(existing.bounds, bounds) ||
-          !this.pointEqual(existing.centerPos, centerPos)
-        ) {
-          // Geometry changed, update layout store
-          layoutStore.updateLinkLayout(layoutKey, {
-            id: layoutKey,
-            path: path,
-            bounds: bounds,
-            centerPos: centerPos,
-            sourceNodeId: String(link.origin_id),
-            targetNodeId: String(link.target_id),
-            sourceSlot: link.origin_slot,
-            targetSlot: link.target_slot
-          })
+        // Update whole link layout (only if not a reroute segment)
+        if (!extras.reroute) {
+          const existing = layoutStore.getLinkLayout(link.id)
+          if (
+            !existing ||
+            !this.boundsEqual(existing.bounds, bounds) ||
+            !this.pointEqual(existing.centerPos, centerPos)
+          ) {
+            // Geometry changed, update layout store with numeric LinkId
+            layoutStore.updateLinkLayout(link.id, {
+              id: link.id,
+              path: path,
+              bounds: bounds,
+              centerPos: centerPos,
+              sourceNodeId: String(link.origin_id),
+              targetNodeId: String(link.target_id),
+              sourceSlot: link.origin_slot,
+              targetSlot: link.target_slot
+            })
+          }
         }
+
+        // Always update segment layout (for both regular links and reroute segments)
+        const rerouteId = extras.reroute ? extras.reroute.id : null
+        layoutStore.updateLinkSegmentLayout(link.id, rerouteId, {
+          path: path,
+          bounds: bounds,
+          centerPos: centerPos
+        })
       }
     }
   }

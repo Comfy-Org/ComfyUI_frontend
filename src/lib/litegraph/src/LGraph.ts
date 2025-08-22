@@ -2264,7 +2264,7 @@ export class LGraph
           this.reroutes.delete(reroute.id)
           // Clean up layout store
           layoutMutations.setSource(LayoutSource.Canvas)
-          layoutMutations.deleteReroute(String(reroute.id))
+          layoutMutations.deleteReroute(reroute.id)
         }
       }
 

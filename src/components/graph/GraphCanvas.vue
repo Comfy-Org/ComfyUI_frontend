@@ -339,15 +339,9 @@ const initializeNodeManager = () => {
   try {
     for (const reroute of comfyApp.graph.reroutes.values()) {
       const [x, y] = reroute.pos
-      const parent =
-        reroute.parentId != null ? String(reroute.parentId) : undefined
-      const linkIds = Array.from(reroute.linkIds).map((id) => String(id))
-      layoutMutations.createReroute(
-        String(reroute.id),
-        { x, y },
-        parent,
-        linkIds
-      )
+      const parent = reroute.parentId ?? undefined
+      const linkIds = Array.from(reroute.linkIds)
+      layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
     }
   } catch {
     // Best-effort; non-fatal if layout store seeding fails
@@ -357,7 +351,7 @@ const initializeNodeManager = () => {
   try {
     for (const link of comfyApp.graph._links.values()) {
       layoutMutations.createLink(
-        String(link.id),
+        link.id,
         String(link.origin_id),
         link.origin_slot,
         String(link.target_id),

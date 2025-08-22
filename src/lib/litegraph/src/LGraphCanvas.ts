@@ -2206,7 +2206,7 @@ export class LGraphCanvas
 
           let reroute
           if (rerouteLayout) {
-            reroute = graph.getReroute(Number(rerouteLayout.id))
+            reroute = graph.getReroute(rerouteLayout.id)
           } else {
             reroute = graph.getRerouteOnPos(
               e.canvasX,
@@ -2414,35 +2414,29 @@ export class LGraphCanvas
       this.ctx.lineWidth = this.connections_width + 7
       const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
 
-      // Try layout store for link hit testing first
-      const hitLinkId = layoutStore.queryLinkAtPoint({ x, y }, this.ctx)
+      // Try layout store for segment hit testing first (more precise)
+      const hitSegment = layoutStore.queryLinkSegmentAtPoint({ x, y }, this.ctx)
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
         if (!centre) continue
 
-        // Check if this link was hit (using layout store or fallback to old method)
+        // Check if this link segment was hit
         let isLinkHit = false
-        if (hitLinkId) {
-          // Build the expected key for this segment
-          // Reroute segments use: segment:linkId:rerouteId
-          // Regular links use: link:linkId
-          const isReroute = 'linkIds' in linkSegment // Reroute has linkIds property
-          let expectedKey: string
+        if (hitSegment) {
+          // Match the exact segment returned by the layout store
+          const isReroute = linkSegment instanceof Reroute
           if (isReroute) {
-            // linkSegment is a Reroute, get first link ID from the Set
-            const rerouteSegment = linkSegment as any // Type assertion since we know it's a Reroute
-            const firstLinkId = rerouteSegment.linkIds.values().next().value
-            expectedKey = `segment:${firstLinkId}:${linkSegment.id}`
+            // For reroutes: compare the reroute's id to hitSegment.rerouteId
+            isLinkHit = linkSegment.id === hitSegment.rerouteId
           } else {
-            expectedKey = `link:${linkSegment.id}`
+            // For normal links: compare the link id to hitSegment.linkId
+            isLinkHit = linkSegment.id === hitSegment.linkId
           }
-
-          isLinkHit = expectedKey === hitLinkId
         }
 
         if (!isLinkHit && linkSegment.path) {
-          // Fallback to old method if not found in layout store
+          // Fallback to direct path hit testing if not found in layout store
           isLinkHit = this.ctx.isPointInStroke(
             linkSegment.path,
             x * dpi,
@@ -8197,7 +8191,7 @@ export class LGraphCanvas
           console.debug('✅ Using LayoutStore for reroute query', {
             rerouteLayout
           })
-          reroute = this.graph.getReroute(Number(rerouteLayout.id))
+          reroute = this.graph.getReroute(rerouteLayout.id)
         } else {
           console.debug('⚠️ Falling back to old reroute query method')
           reroute = this.graph.getRerouteOnPos(

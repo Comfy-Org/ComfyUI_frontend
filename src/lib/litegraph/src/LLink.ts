@@ -463,13 +463,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
         network.reroutes.delete(reroute.id)
         // Delete reroute from Layout Store
         layoutMutations.setSource(LayoutSource.Canvas)
-        layoutMutations.deleteReroute(String(reroute.id))
+        layoutMutations.deleteReroute(reroute.id)
       }
     }
     network.links.delete(this.id)
     // Delete link from Layout Store
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteLink(String(this.id))
+    layoutMutations.deleteLink(this.id)
   }
 
   /**
