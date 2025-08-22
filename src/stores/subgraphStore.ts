@@ -117,7 +117,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const res = (
       await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
     ).filter((f) => f.path.endsWith('.json'))
-    await Promise.all(
+    await Promise.allSettled(
       res.map(async (f) => {
         const name = f.path.slice(0, -5)
         f.path = SubgraphBlueprint.basePath + f.path
