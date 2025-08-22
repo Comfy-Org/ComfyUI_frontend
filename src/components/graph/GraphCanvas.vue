@@ -353,6 +353,21 @@ const initializeNodeManager = () => {
     // Best-effort; non-fatal if layout store seeding fails
   }
 
+  // Seed existing links into the Layout Store (topology only)
+  try {
+    for (const link of comfyApp.graph._links.values()) {
+      layoutMutations.createLink(
+        String(link.id),
+        String(link.origin_id),
+        link.origin_slot,
+        String(link.target_id),
+        link.target_slot
+      )
+    }
+  } catch {
+    // Best-effort; non-fatal if layout store seeding fails
+  }
+
   // Initialize layout sync (one-way: Layout Store → LiteGraph)
   const { startSync } = useLayoutSync()
   startSync(canvasStore.canvas)
