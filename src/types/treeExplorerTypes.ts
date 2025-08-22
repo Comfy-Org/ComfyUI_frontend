@@ -17,6 +17,11 @@ export interface TreeExplorerNode<T = any> extends TreeNode {
    */
   getIcon?: (this: TreeExplorerNode<T>) => string | undefined
   /**
+   * Function to get preview image URL for the node.
+   * Returns undefined if no preview is available.
+   */
+  getPreviewImageUrl?: (this: TreeExplorerNode<T>) => string | undefined
+  /**
    * Function to override what text to use for the leaf-count badge on a folder node.
    * Return undefined to fallback to default badge text, which is the subtree's leaf count.
    * Return empty string to hide the badge.
@@ -64,6 +69,8 @@ export interface TreeExplorerNode<T = any> extends TreeNode {
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
   children?: this[]
   icon: string
+  /** Preview image URL computed from getPreviewImageUrl if available */
+  previewImageUrl?: string
   type: 'folder' | 'node'
   /** Total number of leaves in the subtree */
   totalLeaves: number
