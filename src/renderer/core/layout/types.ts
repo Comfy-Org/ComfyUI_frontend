@@ -51,7 +51,7 @@ export interface SlotLayout {
 }
 
 export interface LinkLayout {
-  id: string
+  id: LinkId
   path: Path2D
   bounds: Bounds
   centerPos: Point
