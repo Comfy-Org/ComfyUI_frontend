@@ -38,8 +38,6 @@
   canvasStore.canvas to be initialized. -->
   <template v-if="comfyAppReady">
     <TitleEditor />
-    <!-- SelectionToolbox is now standalone, no parent overlay needed -->
-    <!-- LiteGraph already draws selection borders in canvas -->
     <SelectionToolbox v-if="selectionToolboxEnabled" />
     <DomWidgets />
   </template>

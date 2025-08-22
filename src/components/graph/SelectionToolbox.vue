@@ -1,36 +1,37 @@
 <template>
-  <Panel
-    v-show="visible"
-    class="selection-toolbox rounded-lg z-40"
-    :class="{ 'animate-slide-up': shouldAnimate }"
-    :style="style"
-    :pt="{
-      header: 'hidden',
-      content: 'p-0 flex flex-row'
-    }"
-    @wheel="canvasInteractions.handleWheel"
-  >
-    <ExecuteButton />
-    <ColorPickerButton />
-    <BypassButton />
-    <PinButton />
-    <Load3DViewerButton />
-    <MaskEditorButton />
-    <ConvertToSubgraphButton />
-    <DeleteButton />
-    <RefreshSelectionButton />
-    <ExtensionCommandButton
-      v-for="command in extensionToolboxCommands"
-      :key="command.id"
-      :command="command"
-    />
-    <HelpButton />
-  </Panel>
+  <Transition name="slide-up">
+    <Panel
+      v-show="visible"
+      class="selection-toolbox fixed left-0 top-0 rounded-lg z-40"
+      :style="style"
+      :pt="{
+        header: 'hidden',
+        content: 'p-0 flex flex-row'
+      }"
+      @wheel="canvasInteractions.handleWheel"
+    >
+      <ExecuteButton />
+      <ColorPickerButton />
+      <BypassButton />
+      <PinButton />
+      <Load3DViewerButton />
+      <MaskEditorButton />
+      <ConvertToSubgraphButton />
+      <DeleteButton />
+      <RefreshSelectionButton />
+      <ExtensionCommandButton
+        v-for="command in extensionToolboxCommands"
+        :key="command.id"
+        :command="command"
+      />
+      <HelpButton />
+    </Panel>
+  </Transition>
 </template>
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -44,7 +45,6 @@ import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButt
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
-import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
@@ -55,18 +55,7 @@ const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
-// Get position and visibility from the new composable
 const { style, visible } = useSelectionToolboxPosition()
-
-// Track selection changes for animation
-const selectionUpdateCount = ref(0)
-watch(visible, () => {
-  selectionUpdateCount.value++
-})
-
-const { shouldAnimate } = useRetriggerableAnimation(selectionUpdateCount, {
-  animateOnMount: true
-})
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -84,3 +73,24 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })
 </script>
+
+<style scoped>
+.selection-toolbox {
+  transform: translateY(-120%);
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-up-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+</style>
