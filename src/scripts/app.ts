@@ -1303,8 +1303,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    let comfyOrgAuthToken =
-      (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
