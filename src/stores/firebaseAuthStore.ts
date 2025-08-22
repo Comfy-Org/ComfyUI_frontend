@@ -1,3 +1,4 @@
+import axios from 'axios'
 import {
   type Auth,
   GithubAuthProvider,
@@ -43,6 +44,14 @@ export class FirebaseAuthStoreError extends Error {
     this.name = 'FirebaseAuthStoreError'
   }
 }
+
+// Customer API client - follows the same pattern as other services
+const customerApiClient = axios.create({
+  baseURL: COMFY_API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   // State
@@ -129,27 +138,27 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         )
       }
 
-      const response = await fetch(`${COMFY_API_BASE_URL}/customers/balance`, {
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
+      let balanceData
+      try {
+        const response = await customerApiClient.get('/customers/balance', {
+          headers: authHeader
+        })
+        balanceData = response.data
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+          if (error.response.status === 404) {
+            // Customer not found is expected for new users
+            return null
+          }
+          const errorData = error.response.data
+          throw new FirebaseAuthStoreError(
+            t('toastMessages.failedToFetchBalance', {
+              error: errorData.message
+            })
+          )
         }
-      })
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          // Customer not found is expected for new users
-          return null
-        }
-        const errorData = await response.json()
-        throw new FirebaseAuthStoreError(
-          t('toastMessages.failedToFetchBalance', {
-            error: errorData.message
-          })
-        )
+        throw error
       }
-
-      const balanceData = await response.json()
       // Update the last balance update time
       lastBalanceUpdateTime.value = new Date()
       balance.value = balanceData
@@ -165,23 +174,26 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const createCustomerRes = await fetch(`${COMFY_API_BASE_URL}/customers`, {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      }
-    })
-    if (!createCustomerRes.ok) {
-      throw new FirebaseAuthStoreError(
-        t('toastMessages.failedToCreateCustomer', {
-          error: createCustomerRes.statusText
-        })
+    let createCustomerResJson: CreateCustomerResponse
+    try {
+      const createCustomerRes = await customerApiClient.post(
+        '/customers',
+        {},
+        {
+          headers: authHeader
+        }
       )
+      createCustomerResJson = createCustomerRes.data
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new FirebaseAuthStoreError(
+          t('toastMessages.failedToCreateCustomer', {
+            error: error.response?.statusText || error.message
+          })
+        )
+      }
+      throw error
     }
-
-    const createCustomerResJson: CreateCustomerResponse =
-      await createCustomerRes.json()
     if (!createCustomerResJson?.id) {
       throw new FirebaseAuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
@@ -282,25 +294,26 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       customerCreated.value = true
     }
 
-    const response = await fetch(`${COMFY_API_BASE_URL}/customers/credit`, {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBodyContent)
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new FirebaseAuthStoreError(
-        t('toastMessages.failedToInitiateCreditPurchase', {
-          error: errorData.message
-        })
+    try {
+      const response = await customerApiClient.post(
+        '/customers/credit',
+        requestBodyContent,
+        {
+          headers: authHeader
+        }
       )
+      return response.data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorData = error.response.data
+        throw new FirebaseAuthStoreError(
+          t('toastMessages.failedToInitiateCreditPurchase', {
+            error: errorData.message
+          })
+        )
+      }
+      throw error
     }
-
-    return response.json()
   }
 
   const initiateCreditPurchase = async (
@@ -316,27 +329,26 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetch(`${COMFY_API_BASE_URL}/customers/billing`, {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      },
-      ...(requestBody && {
-        body: JSON.stringify(requestBody)
-      })
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new FirebaseAuthStoreError(
-        t('toastMessages.failedToAccessBillingPortal', {
-          error: errorData.message
-        })
+    try {
+      const response = await customerApiClient.post(
+        '/customers/billing',
+        requestBody,
+        {
+          headers: authHeader
+        }
       )
+      return response.data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        const errorData = error.response.data
+        throw new FirebaseAuthStoreError(
+          t('toastMessages.failedToAccessBillingPortal', {
+            error: errorData.message
+          })
+        )
+      }
+      throw error
     }
-
-    return response.json()
   }
 
   return {

@@ -4,6 +4,7 @@ import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
 import { t } from '@/i18n'
+import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
 
 export class ModelExporter {
@@ -36,7 +37,18 @@ export class ModelExporter {
     desiredFilename: string
   ): Promise<void> {
     try {
-      const response = await fetch(url)
+      // Check if this is a ComfyUI relative URL
+      const isComfyUrl = url.startsWith('/') || url.includes('/view?')
+
+      let response: Response
+      if (isComfyUrl) {
+        // Use ComfyUI API client for internal URLs
+        response = await fetch(api.apiURL(url))
+      } else {
+        // Use direct fetch for external URLs
+        response = await fetch(url)
+      }
+
       const blob = await response.blob()
 
       const link = document.createElement('a')
