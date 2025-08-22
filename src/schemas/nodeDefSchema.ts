@@ -232,7 +232,13 @@ export const zComfyNodeDef = z.object({
    * Comfy Org account.
    * https://docs.comfy.org/tutorials/api-nodes/overview
    */
-  api_node: z.boolean().optional()
+  api_node: z.boolean().optional(),
+  /**
+   * Specifies the order of inputs for each input category.
+   * Used to ensure consistent widget ordering regardless of JSON serialization.
+   * Keys are 'required', 'optional', etc., values are arrays of input names.
+   */
+  input_order: z.record(z.array(z.string())).optional()
 })
 
 // `/object_info`

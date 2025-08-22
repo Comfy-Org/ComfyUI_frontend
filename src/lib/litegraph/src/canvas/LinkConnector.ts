@@ -314,6 +314,27 @@ export class LinkConnector {
         this.outputLinks.push(link)
 
         try {
+          if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+            if (!(network instanceof Subgraph)) {
+              console.warn(
+                'Subgraph output link found in non-subgraph network.'
+              )
+              continue
+            }
+
+            const output = network.outputs.at(link.target_slot)
+            if (!output) throw new Error('No subgraph output found for link.')
+
+            const renderLink = new ToOutputFromIoNodeLink(
+              network,
+              network.outputNode,
+              output
+            )
+            renderLink.fromDirection = LinkDirection.NONE
+            renderLinks.push(renderLink)
+
+            continue
+          }
           const renderLink = new MovingOutputLink(
             network,
             link,

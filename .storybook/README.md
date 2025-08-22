@@ -93,6 +93,44 @@ export const WithVariant: Story = {
 
 ## Development Tips
 
+## ComfyUI Storybook Guidelines
+
+### Scope – When to Create Stories
+- **PrimeVue components**:  
+  No need to create stories. Just refer to the official PrimeVue documentation.
+- **Custom shared components (design system components)**:  
+  Always create stories. These components are built in collaboration with designers, and Storybook serves as both documentation and a communication tool.
+- **Container components (logic-heavy)**:  
+  Do not create stories. Only the underlying pure UI components should be included in Storybook.
+
+### Maintenance Philosophy
+- Stories are lightweight and generally stable.  
+  Once created, they rarely need updates unless:
+  - The design changes
+  - New props (e.g. size, color variants) are introduced
+- For existing usage patterns, simply copy real code examples into Storybook to create stories.
+
+### File Placement
+- Keep `*.stories.ts` files at the **same level as the component** (similar to test files).  
+- This makes it easier to check usage examples without navigating to another directory.
+
+### Developer/Designer Workflow
+- **UI vs Container**: Separate pure UI components from container components.  
+  Only UI components should live in Storybook.
+- **Communication Tool**: Storybook is not just about code quality—it enables designers and developers to see:
+  - Which props exist
+  - What cases are covered
+  - How variants (e.g. size, colors) look in isolation
+- **Example**:  
+  `PackActionButton.vue` wraps a PrimeVue button with additional logic.  
+  → Only create a story for the base UI button, not for the wrapper.
+
+### Suggested Workflow
+1. Use PrimeVue docs for standard components  
+2. Use Storybook for **shared/custom components** that define our design system  
+3. Keep story files alongside components  
+4. When in doubt, focus on components reused across the app or those that need to be showcased to designers
+
 ### Best Practices
 
 1. **Keep Stories Simple**: Each story should demonstrate one specific use case
@@ -135,6 +173,7 @@ export const WithLongText: Story = {
 - **`main.ts`**: Core Storybook configuration and Vite integration
 - **`preview.ts`**: Global decorators, parameters, and Vue app setup
 - **`manager.ts`**: Storybook UI customization (if needed)
+- **`preview-head.html`**: Injects custom HTML into the `<head>` of every Storybook iframe (used for global styles, fonts, or fixes for iframe-specific issues)
 
 ## Chromatic Visual Testing
 
@@ -170,4 +209,22 @@ This Storybook setup includes:
 - PrimeVue component library integration
 - Proper alias resolution for `@/` imports
 
-For component-specific examples, see the NodePreview stories in `src/components/node/`.
+## Icon Usage in Storybook
+
+In this project, the `<i-lucide:... />` syntax from unplugin-icons is not supported in Storybook.  
+
+**Example:**
+
+```vue
+<script setup lang="ts">
+import { Trophy, Settings } from 'lucide-vue-next'
+</script>
+
+<template>
+  <Trophy :size="16" class="text-neutral" />
+  <Settings :size="16" class="text-neutral" />
+</template>
+```
+
+This approach ensures icons render correctly in Storybook and remain consistent with the rest of the app.
+

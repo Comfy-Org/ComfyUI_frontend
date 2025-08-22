@@ -36,6 +36,7 @@ import type {
   INodeSlot,
   INodeSlotContextItem,
   ISlotType,
+  LinkNetwork,
   LinkSegment,
   NullableProperties,
   Point,
@@ -2575,16 +2576,27 @@ export class LGraphCanvas
     } else if (!node.flags.collapsed) {
       const { inputs, outputs } = node
 
+      function hasRelevantOutputLinks(
+        output: INodeOutputSlot,
+        network: LinkNetwork
+      ): boolean {
+        const outputLinks = [
+          ...(output.links ?? []),
+          ...[...(output._floatingLinks ?? new Set())]
+        ]
+        return outputLinks.some(
+          (linkId) =>
+            typeof linkId === 'number' && network.getLink(linkId) !== undefined
+        )
+      }
+
       // Outputs
       if (outputs) {
         for (const [i, output] of outputs.entries()) {
           const link_pos = node.getOutputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
-            if (
-              e.shiftKey &&
-              (output.links?.length || output._floatingLinks?.size)
-            ) {
+            if (e.shiftKey && hasRelevantOutputLinks(output, graph)) {
               linkConnector.moveOutputLink(graph, output)
               this.#linkConnectorDrop()
               return
@@ -3486,8 +3498,11 @@ export class LGraphCanvas
 
     // Detect if this is a trackpad gesture or mouse wheel
     const isTrackpad = this.pointer.isTrackpadGesture(e)
+    const isCtrlOrMacMeta =
+      e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
+    const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (e.ctrlKey || LiteGraph.canvasNavigationMode === 'legacy') {
+    if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
       // Legacy mode or standard mode with ctrl - use wheel for zoom
       if (isTrackpad) {
         // Trackpad gesture - use smooth scaling

@@ -16,7 +16,6 @@ import {
 import { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -774,17 +773,6 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Move Selected Nodes Right',
       versionAdded: moveSelectedNodesVersionAdded,
       function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
-    },
-    {
-      id: 'Comfy.Canvas.AddEditModelStep',
-      icon: 'pi pi-pen-to-square',
-      label: 'Add Edit Model Step',
-      versionAdded: '1.23.3',
-      function: async () => {
-        const node = app.canvas.selectedItems.values().next().value
-        if (!(node instanceof LGraphNode)) return
-        await addFluxKontextGroupNode(node)
-      }
     },
     {
       id: 'Comfy.Graph.ConvertToSubgraph',

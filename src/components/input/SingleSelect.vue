@@ -99,7 +99,7 @@ const pt = computed(() => ({
   overlay: {
     class: [
       // dropdown panel
-      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg'
+      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700'
     ]
   },
   list: {
