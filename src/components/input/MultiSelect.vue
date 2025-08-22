@@ -10,19 +10,19 @@
       :pt="pt"
     >
       <template
-        v-if="hasSearchBox || showSelectedCount || hasClearButton"
+        v-if="showSearchBox || showSelectedCount || showClearButton"
         #header
       >
         <div class="p-2 flex flex-col pb-0">
           <SearchBox
-            v-if="hasSearchBox"
+            v-if="showSearchBox"
             v-model="searchQuery"
-            :class="showSelectedCount || hasClearButton ? 'mb-2' : ''"
+            :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
             :has-border="true"
             :place-holder="searchPlaceholder"
           />
           <div
-            v-if="showSelectedCount || hasClearButton"
+            v-if="showSelectedCount || showClearButton"
             class="mt-2 flex items-center justify-between"
           >
             <span
@@ -36,7 +36,7 @@
               }}
             </span>
             <TextButton
-              v-if="hasClearButton"
+              v-if="showClearButton"
               :label="$t('g.clearAll')"
               type="transparent"
               size="fit-content"
@@ -109,20 +109,20 @@ interface Props {
   /** Static options for the multiselect (when not using async search) */
   options: Option[]
   /** Show search box in the panel header */
-  hasSearchBox?: boolean
+  showSearchBox?: boolean
   /** Show selected count text in the panel header */
   showSelectedCount?: boolean
   /** Show "Clear all" action in the panel header */
-  hasClearButton?: boolean
+  showClearButton?: boolean
   /** Placeholder for the search input */
   searchPlaceholder?: string
 }
 const {
   label,
   options,
-  hasSearchBox = false,
+  showSearchBox = false,
   showSelectedCount = false,
-  hasClearButton = false,
+  showClearButton = false,
   searchPlaceholder = 'Search...'
 } = defineProps<Props>()
 
@@ -157,7 +157,7 @@ const pt = computed(() => ({
   },
   header: () => ({
     class:
-      hasSearchBox || showSelectedCount || hasClearButton ? 'block' : 'hidden'
+      showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
   }),
   // Overlay & list visuals unchanged
   overlay:
