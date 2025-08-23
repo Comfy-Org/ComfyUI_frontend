@@ -36,20 +36,13 @@
       <!-- Always show icon initially, hide it when image loads successfully -->
       <i
         v-show="
-          !imageLoadStatus[node.key] ||
-          imageLoadStatus[node.key] === 'new' ||
-          imageLoadStatus[node.key] === 'failed'
+          !imageLoadStatus[node.key] || imageLoadStatus[node.key] === 'failed'
         "
         :class="node.icon"
       />
       <!-- Load image in background if preview exists and hasn't failed -->
       <img
-        v-if="
-          node.previewImageUrl &&
-          (!imageLoadStatus[node.key] ||
-            imageLoadStatus[node.key] === 'new' ||
-            imageLoadStatus[node.key] === 'loaded')
-        "
+        v-if="node.previewImageUrl && imageLoadStatus[node.key] !== 'failed'"
         v-show="imageLoadStatus[node.key] === 'loaded'"
         :src="node.previewImageUrl"
         class="tree-node-preview-image"
@@ -132,7 +125,7 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
 // Track image loading states using a single record with status
-type ImageLoadStatus = 'new' | 'loaded' | 'failed'
+type ImageLoadStatus = 'loaded' | 'failed'
 const imageLoadStatus = ref<Record<string, ImageLoadStatus>>({})
 
 const handleImageLoad = (_e: Event, key: string) => {
