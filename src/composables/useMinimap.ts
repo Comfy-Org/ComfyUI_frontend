@@ -685,9 +685,10 @@ export function useMinimap() {
 
     const originalCallbacks = originalCallbacksMap.get(g.id)
     if (!originalCallbacks) {
-      throw new Error(
+      console.error(
         'Attempted to cleanup event listeners for graph that was never set up'
       )
+      return
     }
 
     g.onNodeAdded = originalCallbacks.onNodeAdded
