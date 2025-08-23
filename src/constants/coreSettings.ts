@@ -790,11 +790,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: [
       { value: 'standard', text: 'Standard (New)' },
-      { value: 'legacy', text: 'Left-Click Pan (Legacy)' }
+      { value: 'legacy', text: 'Drag Navigation' }
     ],
     versionAdded: '1.25.0',
     defaultsByInstallVersion: {
-      '1.25.0': 'standard'
+      '1.25.0': 'legacy'
     }
   },
   {
