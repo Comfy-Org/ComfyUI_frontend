@@ -14,20 +14,19 @@ test.describe('Selection Toolbox', () => {
 
   test('shows selection toolbox', async ({ comfyPage }) => {
     // By default, selection toolbox should be enabled
-    expect(
-      await comfyPage.page.locator('.selection-overlay-container').isVisible()
-    ).toBe(false)
+    expect(await comfyPage.page.locator('.selection-toolbox').isVisible()).toBe(
+      false
+    )
 
     // Select multiple nodes
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
     // Selection toolbox should be visible with multiple nodes selected
-    await expect(
-      comfyPage.page.locator('.selection-overlay-container')
-    ).toBeVisible()
-    await expect(
-      comfyPage.page.locator('.selection-overlay-container.show-border')
-    ).toBeVisible()
+    await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+    // Border is now drawn on canvas, check via screenshot
+    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+      'selection-toolbox-multiple-nodes-border.png'
+    )
   })
 
   test('shows at correct position when node is pasted', async ({
@@ -39,13 +38,11 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.page.mouse.move(100, 100)
     await comfyPage.ctrlV()
 
-    const overlayContainer = comfyPage.page.locator(
-      '.selection-overlay-container'
-    )
-    await expect(overlayContainer).toBeVisible()
+    const toolboxContainer = comfyPage.page.locator('.selection-toolbox')
+    await expect(toolboxContainer).toBeVisible()
 
     // Verify the absolute position
-    const boundingBox = await overlayContainer.boundingBox()
+    const boundingBox = await toolboxContainer.boundingBox()
     expect(boundingBox).not.toBeNull()
     // 10px offset for the pasted node
     expect(Math.round(boundingBox!.x)).toBeCloseTo(90, -1) // Allow ~10px tolerance
@@ -65,38 +62,35 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(nodePos.x + 200, nodePos.y + 200)
     await comfyPage.nextFrame()
-    await expect(
-      comfyPage.page.locator('.selection-overlay-container')
-    ).not.toBeVisible()
+    await expect(comfyPage.page.locator('.selection-toolbox')).not.toBeVisible()
   })
 
   test('shows border only with multiple selections', async ({ comfyPage }) => {
     // Select single node
     await comfyPage.selectNodes(['KSampler'])
 
-    // Selection overlay should be visible but without border
-    await expect(
-      comfyPage.page.locator('.selection-overlay-container')
-    ).toBeVisible()
-    await expect(
-      comfyPage.page.locator('.selection-overlay-container.show-border')
-    ).not.toBeVisible()
+    // Selection toolbox should be visible but without border
+    await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+    // Border is now drawn on canvas, check via screenshot
+    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+      'selection-toolbox-single-node-no-border.png'
+    )
 
     // Select multiple nodes
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
-    // Selection overlay should show border with multiple selections
-    await expect(
-      comfyPage.page.locator('.selection-overlay-container.show-border')
-    ).toBeVisible()
+    // Selection border should show with multiple selections (canvas-based)
+    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+      'selection-toolbox-multiple-selections-border.png'
+    )
 
     // Deselect to single node
     await comfyPage.selectNodes(['CLIP Text Encode (Prompt)'])
 
-    // Border should be hidden again
-    await expect(
-      comfyPage.page.locator('.selection-overlay-container.show-border')
-    ).not.toBeVisible()
+    // Border should be hidden again (canvas-based)
+    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+      'selection-toolbox-single-selection-no-border.png'
+    )
   })
 
   test('displays bypass button in toolbox when nodes are selected', async ({
