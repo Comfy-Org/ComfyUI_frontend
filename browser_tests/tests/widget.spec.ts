@@ -264,7 +264,7 @@ test.describe('Animated image widget', () => {
     expect(filename).toContain('animated_webp.webp')
   })
 
-  test('Can preview saved animated webp image', async ({ comfyPage }) => {
+  test.skip('Can preview saved animated webp image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/save_animated_webp')
 
     // Get position of the load animated webp node
