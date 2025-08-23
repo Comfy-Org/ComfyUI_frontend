@@ -88,34 +88,6 @@ watch(
   }
 )
 
-// Compute header color based on node color property or type
-// const headerColor = computed(() => {
-//   const info = nodeInfo.value
-//   if (!info) return '#353535'
-
-//   if (info.mode === 4) return '#666' // Bypassed
-//   if (info.mode === 2) return '#444' // Muted
-//   return '#353535' // Default
-// })
-
-// // Compute text color for contrast
-// const textColor = computed(() => {
-//   const color = headerColor.value
-//   if (!color || color === '#353535' || color === '#444' || color === '#666') {
-//     return '#fff'
-//   }
-//   const colorStr = String(color)
-//   const rgb = parseInt(
-//     colorStr.startsWith('#') ? colorStr.slice(1) : colorStr,
-//     16
-//   )
-//   const r = (rgb >> 16) & 255
-//   const g = (rgb >> 8) & 255
-//   const b = rgb & 255
-//   const brightness = (r * 299 + g * 587 + b * 114) / 1000
-//   return brightness > 128 ? '#000' : '#fff'
-// })
-
 // Event handlers
 const handleCollapse = () => {
   emit('collapse')

@@ -6,20 +6,23 @@
   <div
     v-else
     :data-node-id="nodeData.id"
-    :class="[
-      'bg-white dark-theme:bg-[#15161A]',
-      'min-w-[445px]',
-      'lg-node absolute border-2 border-solid rounded-2xl',
-      selected
-        ? 'border-blue-500 ring-2 ring-blue-300'
-        : 'border-[#e1ded5] dark-theme:border-[#292A30]',
-      executing ? 'animate-pulse' : '',
-      nodeData.mode === 4 ? 'opacity-50' : '', // bypassed
-      error ? 'border-red-500 bg-red-50' : '',
-      isDragging ? 'will-change-transform' : '',
-      lodCssClass,
-      'hover:border-green-500' // Debug: visual feedback on hover
-    ]"
+    :class="
+      cn(
+        'bg-white dark-theme:bg-[#15161A]',
+        'min-w-[445px]',
+        'lg-node absolute border-2 border-solid rounded-2xl',
+        {
+          'border-blue-500 ring-2 ring-blue-300': selected,
+          'border-[#e1ded5] dark-theme:border-[#292A30]': !selected,
+          'animate-pulse': executing,
+          'opacity-50': nodeData.mode === 4,
+          'border-red-500 bg-red-50': error,
+          'will-change-transform': isDragging
+        },
+        lodCssClass,
+        'hover:border-green-500'
+      )
+    "
     :style="[
       {
         transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
@@ -49,7 +52,7 @@
     </div>
 
     <template v-if="!isMinimalLOD && !isCollapsed">
-      <div class="bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4 mb-4" />
+      <div :class="cn(separatorClasses, 'mb-4')" />
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
@@ -67,15 +70,13 @@
         />
 
         <div
-          v-if="
-            shouldRenderWidgets && nodeData.widgets?.length && shouldRenderSlots
-          "
-          class="bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4"
+          v-if="shouldRenderSlots && shouldShowWidgets"
+          :class="separatorClasses"
         />
 
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
-          v-if="shouldRenderWidgets && nodeData.widgets?.length"
+          v-if="shouldShowWidgets"
           v-memo="[nodeData.widgets?.length, lodLevel]"
           :node-data="nodeData"
           :readonly="readonly"
@@ -83,18 +84,13 @@
         />
 
         <div
-          v-if="
-            shouldRenderContent &&
-            hasCustomContent &&
-            (shouldRenderWidgets ||
-              (nodeData.widgets?.length && shouldRenderSlots))
-          "
-          class="bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4"
+          v-if="(shouldRenderSlots || shouldShowWidgets) && shouldShowContent"
+          :class="separatorClasses"
         />
 
         <!-- Custom content at reduced+ detail -->
         <NodeContent
-          v-if="shouldRenderContent && hasCustomContent"
+          v-if="shouldShowContent"
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
@@ -120,6 +116,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { cn } from '@/utils/tailwindUtil'
 
 import MultiSlotPoint from './MultiSlotPoint.vue'
 import NodeContent from './NodeContent.vue'
@@ -210,6 +207,20 @@ const hasCustomContent = computed(() => {
   // This remains false but provides extensibility point
   return false
 })
+
+// Computed classes and conditions for better reusability
+const separatorClasses = computed(
+  () => 'bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4'
+)
+
+// Common condition computations to avoid repetition
+const shouldShowWidgets = computed(
+  () => shouldRenderWidgets.value && props.nodeData.widgets?.length
+)
+
+const shouldShowContent = computed(
+  () => shouldRenderContent.value && hasCustomContent.value
+)
 
 // Event handlers
 const handlePointerDown = (event: PointerEvent) => {
