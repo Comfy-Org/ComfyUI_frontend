@@ -14,15 +14,13 @@ test.describe('Selection Toolbox', () => {
 
   test('shows selection toolbox', async ({ comfyPage }) => {
     // By default, selection toolbox should be enabled
-    expect(await comfyPage.page.locator('.selection-toolbox').isVisible()).toBe(
-      false
-    )
+    await expect(comfyPage.selectionToolbox).not.toBeVisible()
 
     // Select multiple nodes
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
     // Selection toolbox should be visible with multiple nodes selected
-    await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeVisible()
     // Border is now drawn on canvas, check via screenshot
     await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
       'selection-toolbox-multiple-nodes-border.png'
@@ -38,7 +36,7 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.page.mouse.move(100, 100)
     await comfyPage.ctrlV()
 
-    const toolboxContainer = comfyPage.page.locator('.selection-toolbox')
+    const toolboxContainer = comfyPage.selectionToolbox
     await expect(toolboxContainer).toBeVisible()
 
     // Verify toolbox is positioned (canvas-based positioning has different coordinates)
@@ -62,7 +60,7 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(nodePos.x + 200, nodePos.y + 200)
     await comfyPage.nextFrame()
-    await expect(comfyPage.page.locator('.selection-toolbox')).not.toBeVisible()
+    await expect(comfyPage.selectionToolbox).not.toBeVisible()
   })
 
   test('shows border only with multiple selections', async ({ comfyPage }) => {
@@ -70,7 +68,7 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.selectNodes(['KSampler'])
 
     // Selection toolbox should be visible but without border
-    await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeVisible()
     // Border is now drawn on canvas, check via screenshot
     await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
       'selection-toolbox-single-node-no-border.png'

@@ -42,11 +42,11 @@ test.describe('Node Help', () => {
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       // Wait for selection toolbox to appear
-      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+      await expect(comfyPage.selectionToolbox).toBeVisible()
 
       // Click the help button in the selection toolbox
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button:has(.pi-question-circle)'
+      const helpButton = comfyPage.selectionToolbox.locator(
+        'button:has(.pi-question-circle)'
       )
       await expect(helpButton).toBeVisible()
       await helpButton.click()
