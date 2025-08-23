@@ -162,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { filter, flatMap, map, some } from 'lodash'
+import { filter, flatMap, map, some } from 'es-toolkit/compat'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
