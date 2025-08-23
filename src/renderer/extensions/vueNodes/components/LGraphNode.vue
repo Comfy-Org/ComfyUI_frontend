@@ -7,7 +7,7 @@
     v-else
     :data-node-id="nodeData.id"
     :class="[
-      'bg-[#FFFFFF] dark-theme:bg-[#15161A]',
+      'bg-white dark-theme:bg-[#15161A]',
       'min-w-[445px]',
       'lg-node absolute border-2 border-solid rounded-2xl',
       selected
