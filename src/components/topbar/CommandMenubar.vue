@@ -177,7 +177,7 @@ const showManageExtensions = () => {
   }
 }
 
-const extraMenuItems: MenuItem[] = [
+const extraMenuItems = computed<MenuItem[]>(() => [
   { separator: true },
   {
     key: 'theme',
@@ -202,15 +202,15 @@ const extraMenuItems: MenuItem[] = [
     icon: 'mdi mdi-puzzle-outline',
     command: showManageExtensions
   }
-]
+])
 
-const lightLabel = t('menu.light')
-const darkLabel = t('menu.dark')
+const lightLabel = computed(() => t('menu.light'))
+const darkLabel = computed(() => t('menu.dark'))
 
 const activeTheme = computed(() => {
   return colorPaletteStore.completedActivePalette.light_theme
-    ? lightLabel
-    : darkLabel
+    ? lightLabel.value
+    : darkLabel.value
 })
 
 const onThemeChange = async () => {
@@ -243,7 +243,7 @@ const translatedItems = computed(() => {
   items.splice(
     helpIndex,
     0,
-    ...extraMenuItems,
+    ...extraMenuItems.value,
     ...(helpItem
       ? [
           {
