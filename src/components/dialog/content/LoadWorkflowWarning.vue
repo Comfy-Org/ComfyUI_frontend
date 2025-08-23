@@ -1,4 +1,3 @@
-<!-- eslint-disable prettier/prettier -->
 <template>
   <NoResultsPlaceholder
     class="pb-0"
@@ -39,7 +38,11 @@
       :is-loading="isLoading"
       :is-installing="isInstalling"
       :node-packs="missingNodePacks"
-      :label="isLoading ? $t('manager.gettingInfo') : $t('manager.installAllMissingNodes')"
+      :label="
+        isLoading
+          ? $t('manager.gettingInfo')
+          : $t('manager.installAllMissingNodes')
+      "
     />
     <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
