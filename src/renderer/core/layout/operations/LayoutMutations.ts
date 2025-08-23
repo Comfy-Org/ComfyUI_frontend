@@ -4,6 +4,8 @@
  * Provides a clean API for layout operations that are CRDT-ready.
  * Operations are synchronous and applied directly to the store.
  */
+import log from 'loglevel'
+
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import {
   type LayoutMutations,
@@ -13,6 +15,8 @@ import {
   type Point,
   type Size
 } from '@/renderer/core/layout/types'
+
+const logger = log.getLogger('LayoutMutations')
 
 class LayoutMutationsImpl implements LayoutMutations {
   /**
@@ -161,6 +165,11 @@ class LayoutMutationsImpl implements LayoutMutations {
     targetNodeId: string,
     targetSlot: number
   ): void {
+    logger.debug('Creating link:', {
+      linkId: Number(linkId),
+      from: `${sourceNodeId}[${sourceSlot}]`,
+      to: `${targetNodeId}[${targetSlot}]`
+    })
     layoutStore.applyOperation({
       type: 'createLink',
       entity: 'link',
@@ -179,6 +188,7 @@ class LayoutMutationsImpl implements LayoutMutations {
    * Delete a link
    */
   deleteLink(linkId: string | number): void {
+    logger.debug('Deleting link:', Number(linkId))
     layoutStore.applyOperation({
       type: 'deleteLink',
       entity: 'link',
@@ -198,6 +208,12 @@ class LayoutMutationsImpl implements LayoutMutations {
     parentId?: string | number,
     linkIds: (string | number)[] = []
   ): void {
+    logger.debug('Creating reroute:', {
+      rerouteId: Number(rerouteId),
+      position,
+      parentId: parentId != null ? Number(parentId) : undefined,
+      linkCount: linkIds.length
+    })
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
@@ -215,6 +231,7 @@ class LayoutMutationsImpl implements LayoutMutations {
    * Delete a reroute
    */
   deleteReroute(rerouteId: string | number): void {
+    logger.debug('Deleting reroute:', Number(rerouteId))
     layoutStore.applyOperation({
       type: 'deleteReroute',
       entity: 'reroute',
@@ -233,6 +250,11 @@ class LayoutMutationsImpl implements LayoutMutations {
     position: Point,
     previousPosition: Point
   ): void {
+    logger.debug('Moving reroute:', {
+      rerouteId: Number(rerouteId),
+      from: previousPosition,
+      to: position
+    })
     layoutStore.applyOperation({
       type: 'moveReroute',
       entity: 'reroute',
