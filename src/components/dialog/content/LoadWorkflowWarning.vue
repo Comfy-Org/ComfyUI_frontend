@@ -33,10 +33,16 @@
   </ListBox>
   <div v-if="!isLegacyManager" class="flex justify-end py-3">
     <PackInstallButton
-      :disabled="isLoading || !!error || missingNodePacks.length === 0"
+      size="md"
+      :disabled="!!error || missingNodePacks.length === 0"
+      :is-loading="isLoading"
+      :is-installing="isInstalling"
       :node-packs="missingNodePacks"
-      variant="black"
-      :label="$t('manager.installAllMissingNodes')"
+      :label="
+        isLoading
+          ? $t('manager.gettingInfo')
+          : $t('manager.installAllMissingNodes')
+      "
     />
     <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
@@ -48,11 +54,15 @@ import ListBox from 'primevue/listbox'
 import { computed, onMounted, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
+
+import PackInstallButton from './manager/button/PackInstallButton.vue'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
@@ -62,7 +72,16 @@ const props = defineProps<{
 const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
+const comfyManagerStore = useComfyManagerStore()
 const isLegacyManager = ref(false)
+
+// Check if any of the missing packs are currently being installed
+const isInstalling = computed(() => {
+  if (!missingNodePacks.value?.length) return false
+  return missingNodePacks.value.some((pack) =>
+    comfyManagerStore.isPackInstalling(pack.id)
+  )
+})
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()

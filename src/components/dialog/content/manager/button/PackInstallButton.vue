@@ -1,25 +1,28 @@
 <template>
-  <PackActionButton
+  <IconTextButton
     v-bind="$attrs"
-    :label="
-      label ??
-      (nodePacks.length > 1 ? $t('manager.installSelected') : $t('g.install'))
-    "
-    :severity="variant === 'black' ? undefined : 'secondary'"
-    :variant="variant"
-    :loading="isInstalling"
-    :loading-message="$t('g.installing')"
-    @action="installAllPacks"
-  />
+    type="transparent"
+    :label="computedLabel"
+    :border="true"
+    :size="size"
+    :disabled="isLoading || isInstalling"
+    @click="installAllPacks"
+  >
+    <template v-if="isLoading || isInstalling" #icon>
+      <DotSpinner duration="1s" :size="size === 'sm' ? 12 : 16" />
+    </template>
+  </IconTextButton>
 </template>
 
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { computed } from 'vue'
 
-import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import DotSpinner from '@/components/common/DotSpinner.vue'
+import { t } from '@/i18n'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { ButtonSize } from '@/types/buttonTypes'
 import {
-  IsInstallingKey,
   ManagerChannel,
   ManagerDatabaseSource,
   SelectedVersion
@@ -28,13 +31,19 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks, variant, label } = defineProps<{
+const {
+  nodePacks,
+  isLoading = false,
+  isInstalling = false,
+  label = 'Install',
+  size = 'sm'
+} = defineProps<{
   nodePacks: NodePack[]
-  variant?: 'default' | 'black'
+  isLoading?: boolean
+  isInstalling?: boolean
   label?: string
+  size?: ButtonSize
 }>()
-
-const isInstalling = inject(IsInstallingKey, ref(false))
 
 const managerStore = useComfyManagerStore()
 
@@ -68,4 +77,11 @@ const installAllPacks = async () => {
   await Promise.all(uninstalledPacks.map(installPack))
   managerStore.installPack.clear()
 }
+
+const computedLabel = computed(() =>
+  isInstalling
+    ? t('g.installing')
+    : label ??
+      (nodePacks.length > 1 ? t('manager.installSelected') : t('g.install'))
+)
 </script>

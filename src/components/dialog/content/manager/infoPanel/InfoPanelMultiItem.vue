@@ -10,7 +10,19 @@
           {{ $t('manager.packsSelected') }}
         </template>
         <template #install-button>
-          <PackInstallButton :full-width="true" :node-packs="nodePacks" />
+          <PackUninstallButton
+            v-if="isAllInstalled"
+            v-bind="$attrs"
+            size="md"
+            :node-packs="nodePacks"
+          />
+          <PackInstallButton
+            v-else
+            v-bind="$attrs"
+            size="md"
+            :is-installing="isInstalling"
+            :node-packs="nodePacks"
+          />
         </template>
       </InfoPanelHeader>
       <div class="mb-6">
@@ -31,13 +43,15 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import PackUninstallButton from '@/components/dialog/content/manager/button/PackUninstallButton.vue'
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components } from '@/types/comfyRegistryTypes'
 
@@ -46,6 +60,24 @@ const { nodePacks } = defineProps<{
 }>()
 
 const { getNodeDefs } = useComfyRegistryStore()
+const managerStore = useComfyManagerStore()
+
+const isAllInstalled = ref(false)
+watch(
+  [() => nodePacks, () => managerStore.installedPacks],
+  () => {
+    isAllInstalled.value = nodePacks.every((nodePack) =>
+      managerStore.isPackInstalled(nodePack.id)
+    )
+  },
+  { immediate: true }
+)
+
+// Check if any of the packs are currently being installed
+const isInstalling = computed(() => {
+  if (!nodePacks?.length) return false
+  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
+})
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
   if (!pack.latest_version?.version) return []

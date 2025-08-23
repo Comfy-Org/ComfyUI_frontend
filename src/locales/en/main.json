@@ -189,6 +189,7 @@
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
     "tryAgainLater": "Please try again later.",
+    "gettingInfo": "Getting info...",
     "nodePack": "Node Pack",
     "searchPlaceholder": "Search",
     "version": "Version",
@@ -571,6 +572,8 @@
   },
   "templateWorkflows": {
     "title": "Get Started with a Template",
+    "loadingMore": "Loading more templates...",
+    "searchPlaceholder": "Search templates...",
     "category": {
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
