@@ -4,6 +4,7 @@
  * Uses Yjs for efficient local state management and future collaboration.
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
+import log from 'loglevel'
 import { type ComputedRef, type Ref, computed, customRef } from 'vue'
 import * as Y from 'yjs'
 
@@ -37,6 +38,8 @@ import {
   type SlotLayout
 } from '@/renderer/core/layout/types'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
+
+const logger = log.getLogger('LayoutStore')
 
 class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
@@ -384,6 +387,15 @@ class LayoutStoreImpl implements LayoutStore {
   updateSlotLayout(key: string, layout: SlotLayout): void {
     const existing = this.slotLayouts.get(key)
 
+    if (!existing) {
+      logger.debug('Adding slot:', {
+        nodeId: layout.nodeId,
+        type: layout.type,
+        index: layout.index,
+        bounds: layout.bounds
+      })
+    }
+
     if (existing) {
       // Update spatial index
       this.slotSpatialIndex.update(key, layout.bounds)
@@ -428,6 +440,14 @@ class LayoutStoreImpl implements LayoutStore {
    */
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void {
     const existing = this.rerouteLayouts.get(rerouteId)
+
+    if (!existing) {
+      logger.debug('Adding reroute layout:', {
+        rerouteId,
+        position: layout.position,
+        bounds: layout.bounds
+      })
+    }
 
     if (existing) {
       // Update spatial index
@@ -498,6 +518,15 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     const existing = this.linkSegmentLayouts.get(key)
+    if (!existing) {
+      logger.debug('Adding link segment:', {
+        linkId,
+        rerouteId,
+        bounds: layout.bounds,
+        hasPath: !!layout.path
+      })
+    }
+
     if (existing) {
       // Update spatial index
       this.linkSegmentSpatialIndex.update(key, layout.bounds)
@@ -543,6 +572,14 @@ class LayoutStoreImpl implements LayoutStore {
     }
     const candidateKeys = this.linkSegmentSpatialIndex.query(searchArea)
 
+    if (candidateKeys.length > 0) {
+      logger.debug('Checking link segments at point:', {
+        point,
+        candidateCount: candidateKeys.length,
+        tolerance: hitWidth
+      })
+    }
+
     // Precise hit test only on candidates
     for (const key of candidateKeys) {
       const segmentLayout = this.linkSegmentLayouts.get(key)
@@ -559,6 +596,11 @@ class LayoutStoreImpl implements LayoutStore {
         )
 
         if (hit) {
+          logger.debug('Link segment hit:', {
+            linkId: segmentLayout.linkId,
+            rerouteId: segmentLayout.rerouteId,
+            point
+          })
           return {
             linkId: segmentLayout.linkId,
             rerouteId: segmentLayout.rerouteId
@@ -625,6 +667,13 @@ class LayoutStoreImpl implements LayoutStore {
     }
     const candidateRerouteKeys = this.rerouteSpatialIndex.query(searchArea)
 
+    if (candidateRerouteKeys.length > 0) {
+      logger.debug('Checking reroutes at point:', {
+        point,
+        candidateCount: candidateRerouteKeys.length
+      })
+    }
+
     // Check precise distance for candidates
     for (const rerouteKey of candidateRerouteKeys) {
       const rerouteId = Number(rerouteKey) as RerouteId // Convert string key back to numeric
@@ -635,6 +684,11 @@ class LayoutStoreImpl implements LayoutStore {
         const distance = Math.sqrt(dx * dx + dy * dy)
 
         if (distance <= rerouteLayout.radius) {
+          logger.debug('Reroute hit:', {
+            rerouteId: rerouteLayout.id,
+            position: rerouteLayout.position,
+            distance
+          })
           return rerouteLayout
         }
       }
