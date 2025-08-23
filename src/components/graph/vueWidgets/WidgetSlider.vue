@@ -1,14 +1,11 @@
 <template>
-  <div class="flex items-center gap-4" :style="{ height: widgetHeight + 'px' }">
-    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
-      widget.name
-    }}</label>
-    <div class="flex items-center gap-2 flex-1 justify-end">
+  <WidgetLayoutField :widget="widget">
+    <div class="flex items-center gap-2 w-full">
       <Slider
         v-model="localValue"
         v-bind="filteredProps"
         :disabled="readonly"
-        class="flex-grow min-w-[8em] max-w-[20em] text-xs"
+        class="flex-grow text-xs"
         @update:model-value="onChange"
       />
       <InputText
@@ -24,7 +21,7 @@
         @keydown="handleInputKeydown"
       />
     </div>
-  </div>
+  </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
@@ -33,13 +30,12 @@ import Slider from 'primevue/slider'
 import { computed, ref, watch } from 'vue'
 
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
+import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-
-import { COMFY_VUE_NODE_DIMENSIONS } from '../../../lib/litegraph/src/litegraph'
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
@@ -57,9 +53,6 @@ const { localValue, onChange } = useNumberWidgetValue(
   props.modelValue,
   emit
 )
-
-// Get widget height from litegraph constants
-const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)

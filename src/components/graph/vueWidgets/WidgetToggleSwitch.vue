@@ -1,15 +1,12 @@
 <template>
-  <div class="flex items-center justify-between gap-4">
-    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
-      widget.name
-    }}</label>
+  <WidgetLayoutField :widget="widget">
     <ToggleSwitch
       v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
       @update:model-value="onChange"
     />
-  </div>
+  </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
@@ -17,6 +14,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 
 import { useBooleanWidgetValue } from '@/composables/graph/useWidgetValue'
+import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   STANDARD_EXCLUDED_PROPS,
