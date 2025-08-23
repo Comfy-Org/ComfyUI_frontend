@@ -1383,6 +1383,38 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     ViduStartEndToVideoNode: {
       displayPrice: '$0.4/Run'
+    },
+    ByteDanceImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+
+        if (!modelWidget) return 'Token-based'
+
+        const model = String(modelWidget.value)
+
+        if (model.includes('seedream-3-0-t2i')) {
+          return '$0.03/Run'
+        }
+        return 'Token-based'
+      }
+    },
+    ByteDanceImageEditNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+
+        if (!modelWidget) return 'Token-based'
+
+        const model = String(modelWidget.value)
+
+        if (model.includes('seededit-3-0-i2i')) {
+          return '$0.03/Run'
+        }
+        return 'Token-based'
+      }
     }
   }
 
@@ -1470,7 +1502,10 @@ export const useNodePricing = () => {
       // Google/Gemini nodes
       GeminiNode: ['model'],
       // OpenAI nodes
-      OpenAIChatNode: ['model']
+      OpenAIChatNode: ['model'],
+      // ByteDance
+      ByteDanceImageNode: ['model'],
+      ByteDanceImageEditNode: ['model']
     }
     return widgetMap[nodeType] || []
   }

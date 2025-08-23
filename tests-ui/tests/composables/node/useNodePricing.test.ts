@@ -1694,6 +1694,30 @@ describe('useNodePricing', () => {
           '$0.1-0.4/Run (varies with quad, style, texture & quality)'
         )
       })
+
+      it('should return correct pricing for exposed ByteDance models', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+
+        const testCases = [
+          {
+            node_name: 'ByteDanceImageNode',
+            model: 'seedream-3-0-t2i-250415',
+            expected: '$0.03/Run'
+          },
+          {
+            node_name: 'ByteDanceImageEditNode',
+            model: 'seededit-3-0-i2i-250628',
+            expected: '$0.03/Run'
+          }
+        ]
+
+        testCases.forEach(({ node_name, model, expected }) => {
+          const node = createMockNode(node_name, [
+            { name: 'model', value: model }
+          ])
+          expect(getNodeDisplayPrice(node)).toBe(expected)
+        })
+      })
     })
   })
 })

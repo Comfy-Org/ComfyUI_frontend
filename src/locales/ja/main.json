@@ -410,12 +410,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
+    "focusMode": "フォーカスモード",
+    "hand": "手のひら",
+    "hideLinks": "リンクを非表示",
     "panMode": "パンモード",
     "resetView": "ビューをリセット",
+    "select": "選択",
     "selectMode": "選択モード",
-    "toggleLinkVisibility": "リンクの表示切り替え",
+    "showLinks": "リンクを表示",
     "toggleMinimap": "ミニマップの切り替え",
     "zoomIn": "拡大",
+    "zoomOptions": "ズームオプション",
     "zoomOut": "縮小"
   },
   "groupNode": {
@@ -801,6 +806,7 @@
     "Increase Brush Size in MaskEditor": "マスクエディタでブラシサイズを大きくする",
     "Interrupt": "中断",
     "Load Default Workflow": "デフォルトワークフローを読み込む",
+    "Lock Canvas": "キャンバスをロック",
     "Manage group nodes": "グループノードを管理",
     "Manager": "マネージャー",
     "Minimap": "ミニマップ",
@@ -855,6 +861,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "カスタムノードマネージャーの進行状況バーを切り替え",
     "Undo": "元に戻す",
     "Ungroup selected group nodes": "選択したグループノードのグループ解除",
+    "Unlock Canvas": "キャンバスのロックを解除",
     "Unpack the selected Subgraph": "選択したサブグラフを展開",
     "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
@@ -1694,5 +1701,11 @@
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
+  },
+  "zoomControls": {
+    "hideMinimap": "ミニマップを非表示",
+    "label": "ズームコントロール",
+    "showMinimap": "ミニマップを表示",
+    "zoomToFit": "全体表示にズーム"
   }
 }
