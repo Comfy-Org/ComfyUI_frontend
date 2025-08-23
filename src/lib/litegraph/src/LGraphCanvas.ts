@@ -2379,8 +2379,18 @@ export class LGraphCanvas
 
       // Reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+        // Try layout store first for hit detection
+        const rerouteLayout = layoutStore.queryRerouteAtPoint({ x, y })
+        let foundReroute: Reroute | undefined
+
+        if (rerouteLayout) {
+          foundReroute = graph.getReroute(rerouteLayout.id)
+        }
+
+        // Fallback to checking visible reroutes directly
         for (const reroute of this.#visibleReroutes) {
-          const overReroute = reroute.containsPoint([x, y])
+          const overReroute =
+            foundReroute === reroute || reroute.containsPoint([x, y])
           if (!reroute.isSlotHovered && !overReroute) continue
 
           if (overReroute) {
