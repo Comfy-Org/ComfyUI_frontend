@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "وضع تنقل اللوحة",
     "options": {
-      "Left-Click Pan (Legacy)": "سحب بالنقر الأيسر (قديم)",
+      "Drag Navigation": "سحب للتنقل",
       "Standard (New)": "قياسي (جديد)"
     }
   },

@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Mode de navigation sur le canvas",
     "options": {
-      "Left-Click Pan (Legacy)": "Panoramique clic gauche (Hérité)",
+      "Drag Navigation": "Navigation par glisser-déposer",
       "Standard (New)": "Standard (Nouveau)"
     }
   },
