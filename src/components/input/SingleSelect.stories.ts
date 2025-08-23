@@ -9,7 +9,18 @@ const meta: Meta<typeof SingleSelect> = {
   component: SingleSelect,
   tags: ['autodocs'],
   argTypes: {
-    label: { control: 'text' }
+    label: { control: 'text' },
+    options: { control: 'object' }
+  },
+  args: {
+    label: 'Sorting Type',
+    options: [
+      { name: 'Popular', value: 'popular' },
+      { name: 'Newest', value: 'newest' },
+      { name: 'Oldest', value: 'oldest' },
+      { name: 'A → Z', value: 'az' },
+      { name: 'Z → A', value: 'za' }
+    ]
   }
 }
 
@@ -29,19 +40,18 @@ export const Default: Story = {
     components: { SingleSelect },
     setup() {
       const selected = ref<string | null>(null)
-      const options = sampleOptions
+      const options = args.options || sampleOptions
       return { selected, options, args }
     },
     template: `
       <div>
-        <SingleSelect v-model="selected" :options="options" :label="args.label || 'Sorting Type'" />
+        <SingleSelect v-model="selected" :options="options" :label="args.label" />
         <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
           <p class="text-sm">Selected: {{ selected ?? 'None' }}</p>
         </div>
       </div>
     `
-  }),
-  args: { label: 'Sorting Type' }
+  })
 }
 
 export const WithIcon: Story = {

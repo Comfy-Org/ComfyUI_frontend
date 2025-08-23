@@ -11,14 +11,14 @@ const meta: Meta<typeof SearchBox> = {
     placeHolder: {
       control: 'text'
     },
-    hasBorder: {
+    showBorder: {
       control: 'boolean',
       description: 'Toggle border prop'
     }
   },
   args: {
     placeHolder: 'Search...',
-    hasBorder: false
+    showBorder: false
   }
 }
 
@@ -43,13 +43,13 @@ export const Default: Story = {
 export const WithBorder: Story = {
   ...Default,
   args: {
-    hasBorder: true
+    showBorder: true
   }
 }
 
 export const NoBorder: Story = {
   ...Default,
   args: {
-    hasBorder: false
+    showBorder: false
   }
 }
