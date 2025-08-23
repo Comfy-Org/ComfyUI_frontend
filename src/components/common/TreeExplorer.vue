@@ -34,16 +34,28 @@
     </template>
     <template #nodeicon="{ node }">
       <!-- Always show icon initially, hide it when image loads successfully -->
-      <i v-show="!loadedImages[node.key]" :class="node.icon" />
+      <i
+        v-show="
+          !imageLoadStatus[node.key] ||
+          imageLoadStatus[node.key] === 'new' ||
+          imageLoadStatus[node.key] === 'failed'
+        "
+        :class="node.icon"
+      />
       <!-- Load image in background if preview exists and hasn't failed -->
       <img
-        v-if="node.previewImageUrl && !failedImages[node.key]"
-        v-show="loadedImages[node.key]"
+        v-if="
+          node.previewImageUrl &&
+          (!imageLoadStatus[node.key] ||
+            imageLoadStatus[node.key] === 'new' ||
+            imageLoadStatus[node.key] === 'loaded')
+        "
+        v-show="imageLoadStatus[node.key] === 'loaded'"
         :src="node.previewImageUrl"
         class="tree-node-preview-image"
         :alt="node.label"
-        @load="(e) => handleImageLoad(e, node as RenderedTreeExplorerNode)"
-        @error="(e) => handleImageError(e, node as RenderedTreeExplorerNode)"
+        @load="(e) => handleImageLoad(e, node.key)"
+        @error="(e) => handleImageError(e, node.key)"
       />
     </template>
   </Tree>
@@ -119,16 +131,16 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
-// Track image loading states using reactive Records for better performance
-const loadedImages = ref<Record<string, boolean>>({})
-const failedImages = ref<Record<string, boolean>>({})
+// Track image loading states using a single record with status
+type ImageLoadStatus = 'new' | 'loaded' | 'failed'
+const imageLoadStatus = ref<Record<string, ImageLoadStatus>>({})
 
-const handleImageLoad = (_e: Event, node: TreeExplorerNode) => {
-  loadedImages.value[node.key] = true
+const handleImageLoad = (_e: Event, key: string) => {
+  imageLoadStatus.value[key] = 'loaded'
 }
 
-const handleImageError = (_e: Event, node: TreeExplorerNode) => {
-  failedImages.value[node.key] = true
+const handleImageError = (_e: Event, key: string) => {
+  imageLoadStatus.value[key] = 'failed'
 }
 
 const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
