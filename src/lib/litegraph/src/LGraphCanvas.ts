@@ -3,6 +3,7 @@ import {
   type LinkRenderContext,
   LitegraphLinkAdapter
 } from '@/renderer/core/canvas/litegraph/LitegraphLinkAdapter'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -2194,11 +2195,22 @@ export class LGraphCanvas
           this.processSelect(node, e, true)
         } else if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
           // Reroutes
-          const reroute = graph.getRerouteOnPos(
-            e.canvasX,
-            e.canvasY,
-            this.#visibleReroutes
-          )
+          // Try layout store first, fallback to old method
+          const rerouteLayout = layoutStore.queryRerouteAtPoint({
+            x: e.canvasX,
+            y: e.canvasY
+          })
+
+          let reroute
+          if (rerouteLayout) {
+            reroute = graph.getReroute(rerouteLayout.id)
+          } else {
+            reroute = graph.getRerouteOnPos(
+              e.canvasX,
+              e.canvasY,
+              this.#visibleReroutes
+            )
+          }
           if (reroute) {
             if (e.altKey) {
               pointer.onClick = (upEvent) => {
@@ -2362,8 +2374,18 @@ export class LGraphCanvas
 
       // Reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+        // Try layout store first for hit detection
+        const rerouteLayout = layoutStore.queryRerouteAtPoint({ x, y })
+        let foundReroute: Reroute | undefined
+
+        if (rerouteLayout) {
+          foundReroute = graph.getReroute(rerouteLayout.id)
+        }
+
+        // Fallback to checking visible reroutes directly
         for (const reroute of this.#visibleReroutes) {
-          const overReroute = reroute.containsPoint([x, y])
+          const overReroute =
+            foundReroute === reroute || reroute.containsPoint([x, y])
           if (!reroute.isSlotHovered && !overReroute) continue
 
           if (overReroute) {
@@ -2397,16 +2419,38 @@ export class LGraphCanvas
       this.ctx.lineWidth = this.connections_width + 7
       const dpi = window?.devicePixelRatio || 1
 
+      // Try layout store for segment hit testing first (more precise)
+      const hitSegment = layoutStore.queryLinkSegmentAtPoint({ x, y }, this.ctx)
+
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
         if (!centre) continue
 
+        // Check if this link segment was hit
+        let isLinkHit = false
+        if (hitSegment) {
+          // Match the exact segment returned by the layout store
+          const isReroute = linkSegment instanceof Reroute
+          if (isReroute) {
+            // For reroutes: compare the reroute's id to hitSegment.rerouteId
+            isLinkHit = linkSegment.id === hitSegment.rerouteId
+          } else {
+            // For normal links: compare the link id to hitSegment.linkId
+            isLinkHit = linkSegment.id === hitSegment.linkId
+          }
+        }
+
+        if (!isLinkHit && linkSegment.path) {
+          // Fallback to direct path hit testing if not found in layout store
+          isLinkHit = this.ctx.isPointInStroke(
+            linkSegment.path,
+            x * dpi,
+            y * dpi
+          )
+        }
+
         // If we shift click on a link then start a link from that input
-        if (
-          (e.shiftKey || e.altKey) &&
-          linkSegment.path &&
-          this.ctx.isPointInStroke(linkSegment.path, x * dpi, y * dpi)
-        ) {
+        if ((e.shiftKey || e.altKey) && isLinkHit) {
           this.ctx.lineWidth = lineWidth
 
           if (e.shiftKey && !e.altKey) {
@@ -3106,8 +3150,27 @@ export class LGraphCanvas
         // For input/output hovering
         // to store the output of isOverNodeInput
         const pos: Point = [0, 0]
-        const inputId = isOverNodeInput(node, x, y, pos)
-        const outputId = isOverNodeOutput(node, x, y, pos)
+
+        // Try to use layout store for hit testing first, fallback to old method
+        let inputId: number = -1
+        let outputId: number = -1
+
+        const slotLayout = layoutStore.querySlotAtPoint({ x, y })
+        if (slotLayout && slotLayout.nodeId === String(node.id)) {
+          if (slotLayout.type === 'input') {
+            inputId = slotLayout.index
+            pos[0] = slotLayout.position.x
+            pos[1] = slotLayout.position.y
+          } else {
+            outputId = slotLayout.index
+            pos[0] = slotLayout.position.x
+            pos[1] = slotLayout.position.y
+          }
+        } else {
+          // Fallback to old method
+          inputId = isOverNodeInput(node, x, y, pos)
+          outputId = isOverNodeOutput(node, x, y, pos)
+        }
         const overWidget = node.getWidgetOnPos(x, y, true) ?? undefined
 
         if (!node.mouseOver) {
@@ -5990,6 +6053,8 @@ export class LGraphCanvas
 
         case 'Delete':
           graph.removeLink(segment.id)
+          // Clean up layout store
+          layoutStore.deleteLinkLayout(segment.id)
           break
         default:
       }
@@ -8034,11 +8099,26 @@ export class LGraphCanvas
 
       // Check for reroutes
       if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-        const reroute = this.graph.getRerouteOnPos(
-          event.canvasX,
-          event.canvasY,
-          this.#visibleReroutes
-        )
+        // Try layout store first, fallback to old method
+        const rerouteLayout = layoutStore.queryRerouteAtPoint({
+          x: event.canvasX,
+          y: event.canvasY
+        })
+
+        let reroute
+        if (rerouteLayout) {
+          console.debug('✅ Using LayoutStore for reroute query', {
+            rerouteLayout
+          })
+          reroute = this.graph.getReroute(rerouteLayout.id)
+        } else {
+          console.debug('⚠️ Falling back to old reroute query method')
+          reroute = this.graph.getRerouteOnPos(
+            event.canvasX,
+            event.canvasY,
+            this.#visibleReroutes
+          )
+        }
         if (reroute) {
           menu_info.unshift(
             {

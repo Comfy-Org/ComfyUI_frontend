@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import { LayoutSource, type NodeLayout } from '@/renderer/core/layout/types'
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -23,13 +23,14 @@ describe('layoutStore CRDT operations', () => {
     const layout = createTestNode(nodeId)
 
     // Create node
-    layoutStore.setSource('external')
+    layoutStore.setSource(LayoutSource.External)
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: 'external',
+      source: LayoutSource.External,
       actor: 'test'
     })
 
@@ -45,10 +46,11 @@ describe('layoutStore CRDT operations', () => {
     // Create node first
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: 'external',
+      source: LayoutSource.External,
       actor: 'test'
     })
 
@@ -56,11 +58,12 @@ describe('layoutStore CRDT operations', () => {
     const newPosition = { x: 200, y: 300 }
     layoutStore.applyOperation({
       type: 'moveNode',
+      entity: 'node',
       nodeId,
       position: newPosition,
       previousPosition: layout.position,
       timestamp: Date.now(),
-      source: 'vue',
+      source: LayoutSource.Vue,
       actor: 'test'
     })
 
@@ -76,10 +79,11 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: 'external',
+      source: LayoutSource.External,
       actor: 'test'
     })
 
@@ -87,11 +91,12 @@ describe('layoutStore CRDT operations', () => {
     const newSize = { width: 300, height: 150 }
     layoutStore.applyOperation({
       type: 'resizeNode',
+      entity: 'node',
       nodeId,
       size: newSize,
       previousSize: layout.size,
       timestamp: Date.now(),
-      source: 'canvas',
+      source: LayoutSource.Canvas,
       actor: 'test'
     })
 
@@ -107,20 +112,22 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
-      source: 'external',
+      source: LayoutSource.External,
       actor: 'test'
     })
 
     // Delete node
     layoutStore.applyOperation({
       type: 'deleteNode',
+      entity: 'node',
       nodeId,
       previousLayout: layout,
       timestamp: Date.now(),
-      source: 'external',
+      source: LayoutSource.External,
       actor: 'test'
     })
 
@@ -134,7 +141,7 @@ describe('layoutStore CRDT operations', () => {
     const layout = createTestNode(nodeId)
 
     // Set source and actor
-    layoutStore.setSource('vue')
+    layoutStore.setSource(LayoutSource.Vue)
     layoutStore.setActor('user-123')
 
     // Track change notifications AFTER setting source/actor
@@ -146,6 +153,7 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: Date.now(),
@@ -185,10 +193,11 @@ describe('layoutStore CRDT operations', () => {
       }
       layoutStore.applyOperation({
         type: 'createNode',
+        entity: 'node',
         nodeId: id,
         layout,
         timestamp: Date.now(),
-        source: 'external',
+        source: LayoutSource.External,
         actor: 'test'
       })
     })
@@ -217,21 +226,23 @@ describe('layoutStore CRDT operations', () => {
     // Create node
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout,
       timestamp: startTime,
-      source: 'external',
+      source: LayoutSource.External,
       actor: 'test-actor'
     })
 
     // Move node
     layoutStore.applyOperation({
       type: 'moveNode',
+      entity: 'node',
       nodeId,
       position: { x: 150, y: 150 },
       previousPosition: { x: 100, y: 100 },
       timestamp: startTime + 100,
-      source: 'vue',
+      source: LayoutSource.Vue,
       actor: 'test-actor'
     })
 

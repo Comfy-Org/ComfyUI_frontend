@@ -6,9 +6,12 @@
  */
 import { computed, inject } from 'vue'
 
+import { registerNodeSlots } from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
-import type { Point } from '@/renderer/core/layout/types'
+import { LayoutSource, type Point } from '@/renderer/core/layout/types'
+import { app } from '@/scripts/app'
 
 /**
  * Composable for individual Vue node components
@@ -66,7 +69,7 @@ export function useNodeLayout(nodeId: string) {
     dragStartMouse = { x: event.clientX, y: event.clientY }
 
     // Set mutation source
-    mutations.setSource('vue')
+    mutations.setSource(LayoutSource.Vue)
 
     // Capture pointer
     const target = event.target as HTMLElement
@@ -124,7 +127,7 @@ export function useNodeLayout(nodeId: string) {
    * Update node position directly (without drag)
    */
   function moveTo(position: Point) {
-    mutations.setSource('vue')
+    mutations.setSource(LayoutSource.Vue)
     mutations.moveNode(nodeId, position)
   }
 
@@ -132,8 +135,36 @@ export function useNodeLayout(nodeId: string) {
    * Update node size
    */
   function resize(newSize: { width: number; height: number }) {
-    mutations.setSource('vue')
+    mutations.setSource(LayoutSource.Vue)
     mutations.resizeNode(nodeId, newSize)
+  }
+
+  /**
+   * Update slot layouts for this node
+   * Should be called whenever the node's slots or position changes
+   */
+  function updateSlotLayouts() {
+    if (!layoutRef.value || !app.graph) return
+
+    const node = app.graph.getNodeById(Number(nodeId))
+    if (!node) return
+
+    // Create context for slot position calculation
+    const context: SlotPositionContext = {
+      nodeX: layoutRef.value.position.x,
+      nodeY: layoutRef.value.position.y,
+      nodeWidth: layoutRef.value.size.width,
+      nodeHeight: layoutRef.value.size.height,
+      collapsed: node.flags?.collapsed || false,
+      collapsedWidth: node._collapsed_width,
+      slotStartY: node.constructor.slot_start_y,
+      inputs: node.inputs || [],
+      outputs: node.outputs || [],
+      widgets: node.widgets
+    }
+
+    // Register all slots for this node
+    registerNodeSlots(nodeId, context)
   }
 
   return {
@@ -148,6 +179,7 @@ export function useNodeLayout(nodeId: string) {
     // Mutations
     moveTo,
     resize,
+    updateSlotLayouts,
 
     // Drag handlers
     startDrag,
