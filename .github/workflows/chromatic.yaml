@@ -3,14 +3,15 @@ name: 'Chromatic'
 # - [Automate Chromatic with GitHub Actions • Chromatic docs]( https://www.chromatic.com/docs/github-actions/ )
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch: # Allow manual triggering
   pull_request:
     branches: [main]
 
 jobs:
   chromatic-deployment:
     runs-on: ubuntu-latest
+    # Only run for PRs from version-bump-* branches or manual triggers
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'version-bump-')
     permissions:
       pull-requests: write
       issues: write
