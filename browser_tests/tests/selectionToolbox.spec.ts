@@ -22,7 +22,7 @@ test.describe('Selection Toolbox', () => {
     // Selection toolbox should be visible with multiple nodes selected
     await expect(comfyPage.selectionToolbox).toBeVisible()
     // Border is now drawn on canvas, check via screenshot
-    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+    await expect(comfyPage.canvas).toHaveScreenshot(
       'selection-toolbox-multiple-nodes-border.png'
     )
   })
@@ -70,7 +70,7 @@ test.describe('Selection Toolbox', () => {
     // Selection toolbox should be visible but without border
     await expect(comfyPage.selectionToolbox).toBeVisible()
     // Border is now drawn on canvas, check via screenshot
-    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+    await expect(comfyPage.canvas).toHaveScreenshot(
       'selection-toolbox-single-node-no-border.png'
     )
 
@@ -78,7 +78,7 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
     // Selection border should show with multiple selections (canvas-based)
-    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+    await expect(comfyPage.canvas).toHaveScreenshot(
       'selection-toolbox-multiple-selections-border.png'
     )
 
@@ -86,7 +86,7 @@ test.describe('Selection Toolbox', () => {
     await comfyPage.selectNodes(['CLIP Text Encode (Prompt)'])
 
     // Border should be hidden again (canvas-based)
-    await expect(comfyPage.page.locator('canvas')).toHaveScreenshot(
+    await expect(comfyPage.canvas).toHaveScreenshot(
       'selection-toolbox-single-selection-no-border.png'
     )
   })
