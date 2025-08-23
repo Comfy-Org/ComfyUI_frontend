@@ -1,20 +1,17 @@
 <template>
-  <div class="flex items-center justify-between gap-4">
-    <label v-if="widget.name" class="text-xs opacity-80 min-w-[4em] truncate">{{
-      widget.name
-    }}</label>
+  <WidgetLayoutField :widget="widget">
     <MultiSelect
       v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
-      class="flex-grow min-w-[8em] max-w-[20em] text-xs"
+      class="w-full text-xs"
       size="small"
       :pt="{
         option: 'text-xs'
       }"
       @update:model-value="onChange"
     />
-  </div>
+  </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
@@ -27,6 +24,8 @@ import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+
+import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<any[]>
