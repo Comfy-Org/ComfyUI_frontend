@@ -209,9 +209,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = computed(
-  () => 'bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4'
-)
+const separatorClasses = 'bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-4'
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
