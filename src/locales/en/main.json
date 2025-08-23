@@ -572,6 +572,8 @@
   },
   "templateWorkflows": {
     "title": "Get Started with a Template",
+    "loadingMore": "Loading more templates...",
+    "searchPlaceholder": "Search templates...",
     "category": {
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
