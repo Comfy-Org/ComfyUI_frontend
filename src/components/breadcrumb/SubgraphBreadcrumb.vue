@@ -93,7 +93,7 @@ const home = computed(() => ({
   label: workflowName.value,
   icon: 'pi pi-home',
   key: 'root',
-  isBlueprint,
+  isBlueprint: isBlueprint.value,
   command: () => {
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
