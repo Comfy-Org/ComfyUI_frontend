@@ -124,14 +124,35 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       data: node.data,
       getIcon() {
         if (model) {
-          return model.image ? 'pi pi-image' : 'pi pi-file'
+          return 'pi pi-image'
         }
         if (folder) {
           return folder.state === ResourceState.Loading
             ? 'pi pi-spin pi-spinner'
             : 'pi pi-folder'
         }
-        return 'pi pi-folder'
+        return 'pi pi-file'
+      },
+      getPreviewImageUrl() {
+        if (!model) {
+          return undefined
+        }
+
+        // Check for explicit model image first
+        if (model.image) {
+          return model.image
+        }
+
+        // Construct preview URL
+        const folder = model.directory
+        const path_index = model.path_index
+        const extension = model.file_name.split('.').pop()
+        const filename = model.file_name.replace(`.${extension}`, '.webp')
+        const encodedFilename = encodeURIComponent(filename).replace(
+          /%2F/g,
+          '/'
+        )
+        return `/api/experiment/models/preview/${folder}/${path_index}/${encodedFilename}`
       },
       getBadgeText() {
         // Return undefined to apply default badge text

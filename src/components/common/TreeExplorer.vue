@@ -32,6 +32,25 @@
         <TreeExplorerTreeNode :node="node" />
       </slot>
     </template>
+    <template #nodeicon="{ node }">
+      <!-- Always show icon initially, hide it when image loads successfully -->
+      <i
+        v-show="
+          !imageLoadStatus[node.key] || imageLoadStatus[node.key] === 'failed'
+        "
+        :class="node.icon"
+      />
+      <!-- Load image in background if preview exists and hasn't failed -->
+      <img
+        v-if="node.previewImageUrl && imageLoadStatus[node.key] !== 'failed'"
+        v-show="imageLoadStatus[node.key] === 'loaded'"
+        :src="node.previewImageUrl"
+        class="tree-node-preview-image"
+        :alt="node.label"
+        @load="(e) => handleImageLoad(e, node.key)"
+        @error="(e) => handleImageError(e, node.key)"
+      />
+    </template>
   </Tree>
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
@@ -101,9 +120,22 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.leaf) {
     return 'pi pi-file'
   }
+
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
+// Track image loading states using a single record with status
+type ImageLoadStatus = 'loaded' | 'failed'
+const imageLoadStatus = ref<Record<string, ImageLoadStatus>>({})
+
+const handleImageLoad = (_e: Event, key: string) => {
+  imageLoadStatus.value[key] = 'loaded'
+}
+
+const handleImageError = (_e: Event, key: string) => {
+  imageLoadStatus.value[key] = 'failed'
+}
+
 const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   const children = node.children?.map(fillNodeInfo) ?? []
   const totalLeaves = node.leaf
@@ -112,10 +144,11 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   return {
     ...node,
     icon: getTreeNodeIcon(node),
+    previewImageUrl: node.getPreviewImageUrl?.(),
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
-    badgeText: node.getBadgeText ? node.getBadgeText() : undefined,
+    badgeText: node.getBadgeText?.(),
     isEditingLabel: node.key === renameEditingNode.value?.key
   }
 }
@@ -269,5 +302,13 @@ defineExpose({
   bottom: 0;
   border: 1px solid var(--p-content-color);
   pointer-events: none;
+}
+
+.tree-node-preview-image {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: cover;
+  border-radius: 2px;
+  vertical-align: middle;
 }
 </style>
