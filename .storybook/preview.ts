@@ -65,7 +65,6 @@ export const withTheme = (Story: any, context: any) => {
 
   return Story()
 }
-
 const preview: Preview = {
   parameters: {
     controls: {
