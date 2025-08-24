@@ -169,8 +169,8 @@ defineExpose({
 .help-center-arrow {
   position: absolute;
   bottom: calc(
-    var(--sidebar-width, 4rem) * 2 + 0.25rem
-  ); /* Position toward center of help center icon (accounting for 2 icons below) */
+    var(--sidebar-width, 4rem) * 2 + var(--sidebar-width, 4rem) / 2
+  ); /* Position to center of help center icon (2 icons below + half icon height for center) */
   transform: none;
   z-index: 999;
   pointer-events: none;
@@ -183,7 +183,9 @@ defineExpose({
 
 .whats-new-popup-container.sidebar-left.small-sidebar .help-center-arrow {
   left: -14px; /* Overlap with popup outline */
-  bottom: calc(2.5rem + 0.25rem); /* Adjust for small sidebar */
+  bottom: calc(
+    var(--sidebar-width) * 2 + var(--sidebar-width) / 2
+  ); /* Position to center of help center icon (2 icons below + half icon height for center) */
 }
 
 /* Sidebar positioning classes applied by parent */
