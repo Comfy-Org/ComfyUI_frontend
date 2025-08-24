@@ -390,39 +390,6 @@ export const downloadUrlToHfRepoUrl = (url: string): string => {
   }
 }
 
-export const isSemVer = (
-  version: string
-): version is `${number}.${number}.${number}` => {
-  const regex = /^\d+\.\d+\.\d+$/
-  return regex.test(version)
-}
-
-const normalizeVersion = (version: string) =>
-  version
-    .split(/[+.-]/)
-    .map(Number)
-    .filter((part) => !Number.isNaN(part))
-
-export function compareVersions(
-  versionA: string | undefined,
-  versionB: string | undefined
-): number {
-  versionA ??= '0.0.0'
-  versionB ??= '0.0.0'
-
-  const aParts = normalizeVersion(versionA)
-  const bParts = normalizeVersion(versionB)
-
-  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-    const aPart = aParts[i] ?? 0
-    const bPart = bParts[i] ?? 0
-    if (aPart < bPart) return -1
-    if (aPart > bPart) return 1
-  }
-
-  return 0
-}
-
 /**
  * Converts a currency amount to Metronome's integer representation.
  * For USD, converts to cents (multiplied by 100).

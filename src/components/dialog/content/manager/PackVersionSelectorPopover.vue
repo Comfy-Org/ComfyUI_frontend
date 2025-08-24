@@ -75,7 +75,7 @@ import {
   SelectedVersion
 } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import { isSemVer } from '@/utils/formatUtil'
+import { isValidSemver } from '@/utils/versionUtil'
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -95,9 +95,9 @@ const isQueueing = ref(false)
 const selectedVersion = ref<string>(SelectedVersion.LATEST)
 onMounted(() => {
   const initialVersion = getInitialSelectedVersion() ?? SelectedVersion.LATEST
-  selectedVersion.value =
-    // Use NIGHTLY when version is a Git hash
-    isSemVer(initialVersion) ? initialVersion : SelectedVersion.NIGHTLY
+  selectedVersion.value = isValidSemver(initialVersion)
+    ? initialVersion
+    : SelectedVersion.NIGHTLY
 })
 
 const getInitialSelectedVersion = () => {

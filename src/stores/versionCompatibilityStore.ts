@@ -1,10 +1,11 @@
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import * as semver from 'semver'
+import { gt } from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { isValidSemver } from '@/utils/versionUtil'
 
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
@@ -26,13 +27,13 @@ export const useVersionCompatibilityStore = defineStore(
       if (
         !frontendVersion.value ||
         !requiredFrontendVersion.value ||
-        !semver.valid(frontendVersion.value) ||
-        !semver.valid(requiredFrontendVersion.value)
+        !isValidSemver(frontendVersion.value) ||
+        !isValidSemver(requiredFrontendVersion.value)
       ) {
         return false
       }
       // Returns true if required version is greater than frontend version
-      return semver.gt(requiredFrontendVersion.value, frontendVersion.value)
+      return gt(requiredFrontendVersion.value, frontendVersion.value)
     })
 
     const isFrontendNewer = computed(() => {
