@@ -11,7 +11,18 @@ jobs:
     if: github.event.label.name == 'New Browser Test Expectations'
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
+    - name: Get Playwright version
+      id: playwright-version
+      run: echo "version=$(npm list @playwright/test --depth=0 --json | jq -r '.dependencies["@playwright/test"].version')" >> $GITHUB_OUTPUT
+      working-directory: ComfyUI_frontend
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ steps.playwright-version.outputs.version }}-chromium
     - name: Install Playwright Browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests and update snapshots
