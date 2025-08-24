@@ -45,8 +45,8 @@ export class SubgraphBlueprint extends ComfyWorkflow {
       throw new Error(
         'The root graph of a subgraph blueprint must consist of only a single subgraph node'
       )
-    const subgraphs = this.activeState.definitions.subgraphs
-    const nodes = this.activeState.nodes
+    const { subgraphs } = this.activeState.definitions
+    const { nodes } = this.activeState
     //Instanceof doesn't funciton as nodes are serialized
     function isSubgraphNode(node: ComfyNode) {
       return node && subgraphs.some((s) => s.id == node.type)
@@ -77,16 +77,16 @@ export class SubgraphBlueprint extends ComfyWorkflow {
     this.validateSubgraph()
     if (!this.hasPromptedSave) {
       //Swap to saveAs?
-      const newname = await useDialogService().prompt({
+      const newName = await useDialogService().prompt({
         title: t('subgraphStore.saveBlueprint'),
         message: t('subgraphStore.blueprintName') + ':',
         defaultValue: this.filename
       })
-      if (!newname) return this
+      if (!newName) return this
       this.hasPromptedSave = true
-      this.updatePath(SubgraphBlueprint.basePath + newname + '.json')
+      this.updatePath(SubgraphBlueprint.basePath + newName + '.json')
     }
-    useSubgraphStore().updateDef(this as LoadedComfyWorkflow)
+    useSubgraphStore().updateDef(await this.load())
     return super.save()
   }
 
@@ -95,7 +95,7 @@ export class SubgraphBlueprint extends ComfyWorkflow {
   override async saveAs(path: string) {
     this.validateSubgraph()
     this.hasPromptedSave = true
-    useSubgraphStore().updateDef(this as LoadedComfyWorkflow)
+    useSubgraphStore().updateDef(await this.load())
     return await super.saveAs(path)
   }
 }
@@ -134,20 +134,18 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const name = workflow.filename
     const subgraphNode = workflow.changeTracker.initialState.nodes[0]
     if (!subgraphNode) throw new Error('Invalid Subgraph Blueprint')
-    const uuid = subgraphNode.type
-    if (!uuid) throw new Error('')
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
     //NOTE: Types are cast to string. This is only used for input coloring on previews
     const inputs = Object.fromEntries(
       subgraphNode.inputs.map((i) => [
         i.name,
-        ['' + i.type, undefined] satisfies InputSpec
+        [`${i.type}`, undefined] satisfies InputSpec
       ])
     )
     const nodedefv1: ComfyNodeDefV1 = {
       input: { required: inputs },
-      output: subgraphNode.outputs.map((o) => '' + o.type),
+      output: subgraphNode.outputs.map((o) => `${o.type}`),
       output_name: subgraphNode.outputs.map((o) => o.name),
       name: typePrefix + name,
       display_name: name,
@@ -193,10 +191,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       defaultValue: subgraphNode.title
     })
     if (!name) return
-    if (subgraphDefCache.value.has(name))
-      if (!(await confirmOverwrite(name)))
-        //A blueprint already exists with the current name and will be overwritten
-        return
+    if (subgraphDefCache.value.has(name) && !(await confirmOverwrite(name)))
+      //User has chosen not to overwrite.
+      return
 
     //upload file
     const path = SubgraphBlueprint.basePath + name + '.json'
