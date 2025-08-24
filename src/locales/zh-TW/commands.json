@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "將視圖適應至所選節點"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "鎖定畫布"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "將選取的節點下移"
   },
@@ -88,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "釘選/取消釘選已選項目"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "解鎖畫布"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "放大"

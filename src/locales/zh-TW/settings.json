@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "畫布導航模式",
     "options": {
-      "Left-Click Pan (Legacy)": "左鍵拖曳平移（舊版）",
+      "Drag Navigation": "拖曳導覽",
       "Standard (New)": "標準（新）"
     }
   },

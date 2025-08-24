@@ -410,12 +410,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",
+    "focusMode": "Режим фокуса",
+    "hand": "Рука",
+    "hideLinks": "Скрыть связи",
     "panMode": "Режим панорамирования",
     "resetView": "Сбросить вид",
+    "select": "Выбрать",
     "selectMode": "Выбрать режим",
-    "toggleLinkVisibility": "Переключить видимость ссылок",
+    "showLinks": "Показать связи",
     "toggleMinimap": "Показать/скрыть миникарту",
     "zoomIn": "Увеличить",
+    "zoomOptions": "Параметры масштабирования",
     "zoomOut": "Уменьшить"
   },
   "groupNode": {
@@ -801,6 +806,7 @@
     "Increase Brush Size in MaskEditor": "Увеличить размер кисти в MaskEditor",
     "Interrupt": "Прервать",
     "Load Default Workflow": "Загрузить стандартный рабочий процесс",
+    "Lock Canvas": "Заблокировать холст",
     "Manage group nodes": "Управление групповыми нодами",
     "Manager": "Менеджер",
     "Minimap": "Мини-карта",
@@ -855,6 +861,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
+    "Unlock Canvas": "Разблокировать холст",
     "Unpack the selected Subgraph": "Распаковать выбранный подграф",
     "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
@@ -1694,5 +1701,11 @@
     "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
+  },
+  "zoomControls": {
+    "hideMinimap": "Скрыть миникарту",
+    "label": "Элементы управления масштабом",
+    "showMinimap": "Показать миникарту",
+    "zoomToFit": "Масштабировать по размеру"
   }
 }

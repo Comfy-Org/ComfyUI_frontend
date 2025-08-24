@@ -918,7 +918,7 @@ export class ComfyApp {
         output_is_list: [],
         output_node: false,
         python_module: 'custom_nodes.frontend_only',
-        description: `Frontend only node for ${name}`
+        description: node.description ?? `Frontend only node for ${name}`
       } as ComfyNodeDefV1
     }
 
@@ -1303,8 +1303,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    let comfyOrgAuthToken =
-      (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {

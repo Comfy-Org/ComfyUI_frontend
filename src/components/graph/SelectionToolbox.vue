@@ -1,34 +1,45 @@
 <template>
-  <Panel
-    class="selection-toolbox absolute left-1/2 rounded-lg"
-    :class="{ 'animate-slide-up': shouldAnimate }"
-    :pt="{
-      header: 'hidden',
-      content: 'p-0 flex flex-row'
-    }"
-    @wheel="canvasInteractions.handleWheel"
-  >
-    <ExecuteButton />
-    <ColorPickerButton />
-    <BypassButton />
-    <PinButton />
-    <Load3DViewerButton />
-    <MaskEditorButton />
-    <ConvertToSubgraphButton />
-    <DeleteButton />
-    <RefreshSelectionButton />
-    <ExtensionCommandButton
-      v-for="command in extensionToolboxCommands"
-      :key="command.id"
-      :command="command"
-    />
-    <HelpButton />
-  </Panel>
+  <Transition name="slide-up">
+    <!-- Wrapping panel in div to get correct ref because panel ref is not of raw dom el -->
+    <div
+      v-show="visible"
+      ref="toolboxRef"
+      style="
+        transform: translate(calc(var(--tb-x) - 50%), calc(var(--tb-y) - 120%));
+      "
+      class="selection-toolbox fixed left-0 top-0 z-40"
+    >
+      <Panel
+        class="rounded-lg"
+        :pt="{
+          header: 'hidden',
+          content: 'p-0 flex flex-row'
+        }"
+        @wheel="canvasInteractions.handleWheel"
+      >
+        <ExecuteButton />
+        <ColorPickerButton />
+        <BypassButton />
+        <PinButton />
+        <Load3DViewerButton />
+        <MaskEditorButton />
+        <ConvertToSubgraphButton />
+        <DeleteButton />
+        <RefreshSelectionButton />
+        <ExtensionCommandButton
+          v-for="command in extensionToolboxCommands"
+          :key="command.id"
+          :command="command"
+        />
+        <HelpButton />
+      </Panel>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed, inject } from 'vue'
+import { computed, ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -41,23 +52,19 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
-import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
+import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 
-const selectionOverlayState = inject(SelectionOverlayInjectionKey)
-const { shouldAnimate } = useRetriggerableAnimation(
-  selectionOverlayState?.updateCount,
-  { animateOnMount: true }
-)
+const toolboxRef = ref<HTMLElement | undefined>()
+const { visible } = useSelectionToolboxPosition(toolboxRef)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -77,23 +84,22 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 </script>
 
 <style scoped>
-.selection-toolbox {
-  transform: translateX(-50%) translateY(-120%);
+.slide-up-enter-active {
+  opacity: 1;
+  transition: all 0.3s ease-out;
 }
 
-/* Slide up animation using CSS animation */
-@keyframes slideUp {
-  from {
-    transform: translateX(-50%) translateY(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(-50%) translateY(-120%);
-    opacity: 1;
-  }
+.slide-up-leave-active {
+  transition: none;
 }
 
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out;
+.slide-up-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateY(0);
+  opacity: 0;
 }
 </style>

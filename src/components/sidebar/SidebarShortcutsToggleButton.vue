@@ -1,11 +1,6 @@
 <template>
   <SidebarIcon
-    :tooltip="
-      $t('shortcuts.keyboardShortcuts') +
-      ' (' +
-      formatKeySequence(command.keybinding!.combo.getKeySequences()) +
-      ')'
-    "
+    :tooltip="tooltipText"
     :selected="isShortcutsPanelVisible"
     @click="toggleShortcutsPanel"
   >
@@ -17,28 +12,28 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 
+const { t } = useI18n()
 const bottomPanelStore = useBottomPanelStore()
-const command = useCommandStore().getCommand(
-  'Workspace.ToggleBottomPanel.Shortcuts'
-)
+const commandStore = useCommandStore()
+const command = commandStore.getCommand('Workspace.ToggleBottomPanel.Shortcuts')
+const { formatKeySequence } = commandStore
 
 const isShortcutsPanelVisible = computed(
   () => bottomPanelStore.activePanel === 'shortcuts'
 )
 
+const tooltipText = computed(
+  () => `${t('shortcuts.keyboardShortcuts')} (${formatKeySequence(command)})`
+)
+
 const toggleShortcutsPanel = () => {
   bottomPanelStore.togglePanel('shortcuts')
-}
-
-const formatKeySequence = (sequences: string[]): string => {
-  return sequences
-    .map((seq) => seq.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Shift'))
-    .join(' + ')
 }
 </script>

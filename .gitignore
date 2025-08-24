@@ -23,7 +23,6 @@ dist-ssr
 *.local
 # Claude configuration
 .claude/*.local.json
-.claude/settings.json
 
 # Editor directories and files
 .vscode/*

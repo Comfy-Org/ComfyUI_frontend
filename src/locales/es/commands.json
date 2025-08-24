@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "Ajustar vista a los nodos seleccionados"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "Bloquear lienzo"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Mover nodos seleccionados hacia abajo"
   },
@@ -88,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Anclar/Desanclar elementos seleccionados"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Desbloquear lienzo"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Acercar"

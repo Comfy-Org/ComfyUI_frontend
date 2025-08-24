@@ -193,6 +193,7 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.menu.topbar.saveWorkflowAs('workflow5.json')
     await comfyPage.confirmDialog.click('overwrite')
+    await comfyPage.page.waitForTimeout(200)
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow5.json'
     ])

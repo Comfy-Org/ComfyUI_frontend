@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Modo de navegación del lienzo",
     "options": {
-      "Left-Click Pan (Legacy)": "Desplazamiento con clic izquierdo (Legado)",
+      "Drag Navigation": "Navegación por arrastre",
       "Standard (New)": "Estándar (Nuevo)"
     }
   },

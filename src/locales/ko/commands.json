@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "선택한 노드에 뷰 맞추기"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "캔버스 잠금"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "선택한 노드 아래로 이동"
   },
@@ -88,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "선택한 항목 고정/고정 해제"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "캔버스 잠금 해제"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "확대"

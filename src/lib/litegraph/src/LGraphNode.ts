@@ -218,6 +218,7 @@ export class LGraphNode
   static MAX_CONSOLE?: number
   static type?: string
   static category?: string
+  static description?: string
   static filter?: string
   static skip_list?: boolean
 

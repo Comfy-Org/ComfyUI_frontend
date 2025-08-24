@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "Fit view to selected nodes"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "Lock Canvas"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Move Selected Nodes Down"
   },
@@ -88,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "Pin/Unpin Selected Nodes"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Unlock Canvas"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom In"

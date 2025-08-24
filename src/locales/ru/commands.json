@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "Подогнать вид к выбранным нодам"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "Заблокировать холст"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Переместить выбранные узлы вниз"
   },
@@ -88,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Закрепить/Открепить выбранных нод"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Разблокировать Canvas"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Увеличить"

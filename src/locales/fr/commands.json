@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "Ajuster la vue aux nœuds sélectionnés"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "Verrouiller la toile"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Déplacer les nœuds sélectionnés vers le bas"
   },
@@ -88,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Épingler/Désépingler les éléments sélectionnés"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Déverrouiller le Canvas"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom avant"
