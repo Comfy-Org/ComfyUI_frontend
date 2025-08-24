@@ -25,6 +25,21 @@ jobs:
           node-version: 'lts/*'
           cache: 'npm'
 
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            .eslintcache
+            tsconfig.tsbuildinfo
+            .prettierCache
+            .knip-cache
+          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
+          restore-keys: |
+            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            lint-format-cache-${{ runner.os }}-
+            ci-tools-cache-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
 
