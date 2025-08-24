@@ -2,7 +2,7 @@
   <div class="relative inline-block">
     <MultiSelect
       v-model="selectedItems"
-      :options="options"
+      :options="filteredOptions"
       option-label="name"
       unstyled
       :placeholder="label"
@@ -72,7 +72,9 @@
               class="text-xs text-bold text-white"
             />
           </div>
-          <span>{{ slotProps.option.name }}</span>
+          <span class="truncate" :title="slotProps.option.name">{{
+            slotProps.option.name
+          }}</span>
         </div>
       </template>
     </MultiSelect>
@@ -88,6 +90,7 @@
 </template>
 
 <script setup lang="ts">
+import Fuse from 'fuse.js'
 import MultiSelect, {
   MultiSelectPassThroughMethodOptions
 } from 'primevue/multiselect'
@@ -128,6 +131,36 @@ const selectedItems = defineModel<Option[]>({
 const searchQuery = defineModel<string>('searchQuery')
 const selectedCount = computed(() => selectedItems.value.length)
 
+// Fuse.js configuration for fuzzy search
+const fuseOptions = {
+  keys: ['name', 'value'],
+  threshold: 0.3,
+  includeScore: true
+}
+
+// Create Fuse instance
+const fuse = computed(() => new Fuse(options, fuseOptions))
+
+// Filtered options based on search
+const filteredOptions = computed(() => {
+  if (!hasSearchBox || !searchQuery.value?.trim()) {
+    return options
+  }
+
+  const searchResults = fuse.value.search(searchQuery.value)
+  const matchingOptions = searchResults.map((result) => result.item)
+
+  // Always include selected items, even if they don't match the search
+  const selectedValues = selectedItems.value.map((item) => item.value)
+  const selectedOptionsNotInResults = options.filter(
+    (option) =>
+      selectedValues.includes(option.value) &&
+      !matchingOptions.some((matching) => matching.value === option.value)
+  )
+
+  return [...selectedOptionsNotInResults, ...matchingOptions]
+})
+
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: [
@@ -157,9 +190,10 @@ const pt = computed(() => ({
   }),
   // Overlay & list visuals unchanged
   overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700',
+    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 shadow-lg max-h-64 overflow-hidden',
   list: {
-    class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
+    class:
+      'flex flex-col gap-1 p-0 list-none border-none text-xs max-h-52 overflow-y-auto'
   },
   // Option row hover tone identical
   option:
