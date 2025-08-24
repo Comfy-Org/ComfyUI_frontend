@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   lint-and-format:
@@ -43,14 +44,12 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT  
           fi
 
+      # commit prettier fixed code
       - name: Commit changes
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "[auto-fix] Apply ESLint and Prettier fixes"
-          git push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: '[auto-fix] Apply ESLint and Prettier fix'
 
       - name: Final validation
         run: |
