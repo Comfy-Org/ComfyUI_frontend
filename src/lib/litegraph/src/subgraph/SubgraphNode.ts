@@ -3,6 +3,7 @@ import { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
 import {
@@ -23,6 +24,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
 import {
   type ExecutableLGraphNode,
@@ -192,6 +194,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!widget) return
 
         this.#setWidget(subgraphInput, input, widget)
+
+        if (!('link' in input)) return
+        const link = this.graph.links[input.link ?? -1]
+        if (!link) return
+        if (link.origin_id == SUBGRAPH_INPUT_ID) {
+          //propogate?
+          return
+        }
+        const originNode = this.graph.getNodeById(link.origin_id)
+        if (!originNode) return
+        if (isPrimitiveNode(originNode)) {
+          originNode.recreateWidget()
+        }
       },
       { signal }
     )
@@ -370,7 +385,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       subgraphNode: this
     })
 
-    input.widget = { name: subgraphInput.name }
+    const backingInput =
+      (widget as { node?: LGraphNode }).node?.findInputSlot(widget.name, true)
+        ?.widget ?? {}
+    input.widget = { ...backingInput, name: subgraphInput.name }
     input._widget = promotedWidget
   }
 
