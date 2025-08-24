@@ -1,4 +1,10 @@
 {
+  "Comfy_SoundNotification_AfterAllPrompts": {
+    "name": "모든 프롬프트를 실행한 후"
+  },
+  "Comfy_SoundNotification_AfterOnePrompt": {
+    "name": "프롬프트를 실행한 후"
+  },
   "Comfy-Desktop_AutoUpdate": {
     "name": "자동 업데이트 확인"
   },
