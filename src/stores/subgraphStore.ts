@@ -223,7 +223,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
     useWorkflowStore().attachWorkflow(subgraphCache[name])
-    void useWorkflowService().openWorkflow(subgraphCache[name])
+    void useWorkflowService()
+      .openWorkflow(subgraphCache[name])
+      .then(() => {
+        const canvas = useCanvasStore().getCanvas()
+        if (canvas.graph && 'subgraph' in canvas.graph.nodes[0])
+          canvas.setGraph(canvas.graph.nodes[0].subgraph)
+      })
   }
   function getBlueprint(nodeType: string): ComfyWorkflowJSON {
     const name = nodeType.slice(typePrefix.length)
