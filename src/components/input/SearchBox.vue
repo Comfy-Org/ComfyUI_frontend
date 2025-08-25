@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { computed, defineModel } from 'vue'
+import { computed } from 'vue'
 
 const { placeHolder, hasBorder = false } = defineProps<{
   placeHolder?: string

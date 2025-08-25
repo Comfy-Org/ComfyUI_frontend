@@ -136,7 +136,8 @@ export default defineConfig({
       ],
       dirs: ['src/components', 'src/layout', 'src/views'],
       deep: true,
-      extensions: ['vue']
+      extensions: ['vue'],
+      directoryAsNamespace: true
     })
   ],
 
