@@ -9,6 +9,7 @@ import { ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 import { getStorageValue, setStorageValue } from '../../scripts/utils'
 import { hexToRgb } from '../../utils/colorUtil'
+import { parseToRgb } from '../../utils/colorUtil'
 import { ClipspaceDialog } from './clipspace'
 import {
   imageLayerFilenamesByTimestamp,
@@ -2052,6 +2053,10 @@ class BrushTool {
   brushStrokeCanvas: HTMLCanvasElement | null = null
   brushStrokeCtx: CanvasRenderingContext2D | null = null
 
+  private static readonly SMOOTHING_MAX_STEPS = 30
+  private static readonly SMOOTHING_MIN_STEPS = 2
+  //private static readonly SOFT_BRUSH_STEPS = 20
+
   //brush adjustment
   isBrushAdjusting: boolean = false
   brushPreviewGradient: HTMLElement | null = null
@@ -2254,6 +2259,10 @@ class BrushTool {
     }
   }
 
+  private clampSmoothingPrecision(value: number): number {
+    return Math.min(Math.max(value, 1), 100)
+  }
+
   private drawWithBetterSmoothing(point: Point) {
     // Add current point to the smoothing array
     if (!this.smoothingCordsArray) {
@@ -2285,19 +2294,17 @@ class BrushTool {
       totalLength += Math.sqrt(dx * dx + dy * dy)
     }
 
-    const maxSteps = 30
-    const minSteps = 2
+    const maxSteps = BrushTool.SMOOTHING_MAX_STEPS
+    const minSteps = BrushTool.SMOOTHING_MIN_STEPS
 
-    // Convert 1-100 range to 0-1 range
-    const smoothing = Math.min(
-      Math.max(this.brushSettings.smoothingPrecision, 1),
-      100
-    ) // clamp 1-100
+    const smoothing = this.clampSmoothingPrecision(
+      this.brushSettings.smoothingPrecision
+    )
     const normalizedSmoothing = (smoothing - 1) / 99 // Convert to 0-1 range
 
     // Optionality to use exponential curve
     const stepNr = Math.round(
-      minSteps + (maxSteps - minSteps) * Math.pow(normalizedSmoothing, 1)
+      Math.round(minSteps + (maxSteps - minSteps) * normalizedSmoothing)
     )
 
     // Calculate step distance capped by brush size
@@ -2462,24 +2469,56 @@ class BrushTool {
       color: string,
       centerOpacity: number
     ) => {
-      const steps = 10
+      const tempCanvas = document.createElement('canvas')
+      const tempCtx = tempCanvas.getContext('2d')
+
+      if (!tempCtx) return
+
+      const size = brushRadius * 2
+      tempCanvas.width = size
+      tempCanvas.height = size
+
+      const centerX = size / 2
+      const centerY = size / 2
       const hardRadius = brushRadius * hardness
 
-      for (let i = 0; i < steps; i++) {
-        const progress = i / (steps - 1)
-        const currentRadius = hardRadius + (brushRadius - hardRadius) * progress
-        const currentOpacity = centerOpacity * (1 - progress)
+      // Create ImageData to manually set pixel opacities
+      const imageData = tempCtx.createImageData(size, size)
+      const data = imageData.data
 
-        ctx.fillStyle = color.replace(/[\d.]+\)$/, `${currentOpacity})`)
-        ctx.beginPath()
-        ctx.rect(
-          x - currentRadius,
-          y - currentRadius,
-          currentRadius * 2,
-          currentRadius * 2
-        )
-        ctx.fill()
+      // Use parseToRgb from colorUtil
+      const { r, g, b } = parseToRgb(color)
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const index = (y * size + x) * 4
+
+          // Calculate distance from center to edge of square
+          const distFromCenterX = Math.abs(x - centerX)
+          const distFromCenterY = Math.abs(y - centerY)
+          const distFromEdge = Math.max(distFromCenterX, distFromCenterY) // Square distance
+
+          let opacity = 0
+
+          if (distFromEdge <= hardRadius) {
+            // Inside hard area - full opacity
+            opacity = centerOpacity
+          } else if (distFromEdge <= brushRadius) {
+            // In soft area - fade out
+            const fadeProgress =
+              (distFromEdge - hardRadius) / (brushRadius - hardRadius)
+            opacity = centerOpacity * (1 - fadeProgress)
+          }
+
+          data[index] = r // Red
+          data[index + 1] = g // Green
+          data[index + 2] = b // Blue
+          data[index + 3] = opacity * 255 // Alpha
+        }
       }
+
+      tempCtx.putImageData(imageData, 0, 0)
+      ctx.drawImage(tempCanvas, x - brushRadius, y - brushRadius)
     }
 
     // RGB brush logic
