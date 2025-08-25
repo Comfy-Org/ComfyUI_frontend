@@ -4,7 +4,7 @@ import type {
   SearchResponse
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { memoize, omit } from 'lodash'
+import { memoize, omit } from 'es-toolkit/compat'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,

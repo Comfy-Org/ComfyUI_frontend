@@ -1,6 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 
+import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutedWsMessage,
   ResultItem,
@@ -21,7 +21,10 @@ const createOutputs = (
 ): ExecutedWsMessage['output'] => {
   return {
     images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map((image) => isAnimated && image.endsWith('.webp'))
+    animated: filenames.map(
+      (image) =>
+        isAnimated && (image.endsWith('.webp') || image.endsWith('.png'))
+    )
   }
 }
 
@@ -265,6 +268,20 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     app.nodePreviewImages = {}
   }
 
+  /**
+   * Revoke all preview of a subgraph node and the graph it contains.
+   * Does not recurse to contents of nested subgraphs.
+   */
+  function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
+    const graphId = subgraphNode.graph.isRootGraph
+      ? ''
+      : subgraphNode.graph.id + ':'
+    revokePreviewsByLocatorId(graphId + subgraphNode.id)
+    for (const node of subgraphNode.subgraph.nodes) {
+      revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
+    }
+  }
+
   return {
     getNodeOutputs,
     getNodeImageUrls,
@@ -276,6 +293,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setNodePreviewsByNodeId,
     revokePreviewsByExecutionId,
     revokeAllPreviews,
+    revokeSubgraphPreviews,
     getPreviewParam
   }
 })

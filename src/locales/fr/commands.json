@@ -35,17 +35,20 @@
   "Comfy-Desktop_Restart": {
     "label": "Redémarrer"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
-  },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "Ajouter/Modifier une étape de modèle"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },
   "Comfy_Canvas_FitView": {
     "label": "Ajuster la vue aux nœuds sélectionnés"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Verrouiller la toile"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Déplacer les nœuds sélectionnés vers le bas"
@@ -71,6 +74,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Basculer le verrouillage du canevas"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Basculer la mini-carte du canevas"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Contourner/Ne pas contourner les nœuds sélectionnés"
   },
@@ -85,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Épingler/Désépingler les éléments sélectionnés"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Déverrouiller le Canvas"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom avant"
@@ -101,6 +110,9 @@
   "Comfy_ContactSupport": {
     "label": "Contacter le support"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Afficher le sélecteur de modèle (Dev)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Dupliquer le flux de travail actuel"
   },
@@ -116,11 +128,17 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir la sélection en sous-graphe"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Quitter le sous-graphe"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajuster le groupe au contenu"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Grouper les nœuds sélectionnés"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Décompresser le sous-graphe sélectionné"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Convertir les nœuds sélectionnés en nœud de groupe"
@@ -173,6 +191,9 @@
   "Comfy_OpenClipspace": {
     "label": "Espace de clip"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Gestionnaire"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Ouvrir le flux de travail"
   },
@@ -199,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Afficher la boîte de dialogue des paramètres"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Performance du canvas"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Centre d'aide"
   },
   "Comfy_ToggleTheme": {
     "label": "Changer de thème (Sombre/Clair)"
@@ -232,6 +259,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Basculer le panneau inférieur des journaux"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Afficher/Masquer le panneau inférieur essentiel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Afficher/Masquer le panneau inférieur des contrôles de vue"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Afficher la boîte de dialogue des raccourcis clavier"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Basculer le mode focus"

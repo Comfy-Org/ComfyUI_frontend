@@ -8,7 +8,7 @@ This guide covers patterns and examples for unit testing utilities, composables,
 2. [Working with LiteGraph and Nodes](#working-with-litegraph-and-nodes)
 3. [Working with Workflow JSON Files](#working-with-workflow-json-files)
 4. [Mocking the API Object](#mocking-the-api-object)
-5. [Mocking Lodash Functions](#mocking-lodash-functions)
+5. [Mocking Utility Functions](#mocking-utility-functions)
 6. [Testing with Debounce and Throttle](#testing-with-debounce-and-throttle)
 7. [Mocking Node Definitions](#mocking-node-definitions)
 
@@ -58,7 +58,7 @@ Testing LiteGraph-related functionality:
 
 ```typescript
 // Example from: tests-ui/tests/litegraph.test.ts
-import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph'
 import { describe, expect, it } from 'vitest'
 
 // Create dummy node for testing
@@ -147,17 +147,17 @@ it('should subscribe to logs API', () => {
 
 ## Mocking Lodash Functions
 
-Mocking lodash functions like debounce:
+Mocking utility functions like debounce:
 
 ```typescript
 // Mock debounce to execute immediately
-import { debounce } from 'lodash-es'
+import { debounce } from 'es-toolkit/compat'
 
-vi.mock('lodash-es', () => ({
+vi.mock('es-toolkit/compat', () => ({
   debounce: vi.fn((fn) => {
     // Return function that calls the input function immediately
     const mockDebounced = (...args: any[]) => fn(...args)
-    // Add cancel method that lodash debounced functions have
+    // Add cancel method that debounced functions have
     mockDebounced.cancel = vi.fn()
     return mockDebounced
   })

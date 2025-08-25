@@ -272,6 +272,8 @@
     "category": "Catégorie",
     "choose_file_to_upload": "choisissez le fichier à télécharger",
     "clear": "Effacer",
+    "clearAll": "Tout effacer",
+    "clearFilters": "Effacer les filtres",
     "close": "Fermer",
     "color": "Couleur",
     "comingSoon": "Bientôt disponible",
@@ -296,7 +298,9 @@
     "devices": "Appareils",
     "disableAll": "Désactiver tout",
     "disabling": "Désactivation",
+    "dismiss": "Fermer",
     "download": "Télécharger",
+    "duplicate": "Dupliquer",
     "edit": "Modifier",
     "empty": "Vide",
     "enableAll": "Activer tout",
@@ -310,6 +314,8 @@
     "filter": "Filtrer",
     "findIssues": "Trouver des problèmes",
     "firstTimeUIMessage": "C'est la première fois que vous utilisez la nouvelle interface utilisateur. Choisissez \"Menu > Utiliser le nouveau menu > Désactivé\" pour restaurer l'ancienne interface utilisateur.",
+    "frontendNewer": "La version du frontend {frontendVersion} peut ne pas être compatible avec la version du backend {backendVersion}.",
+    "frontendOutdated": "La version du frontend {frontendVersion} est obsolète. Le backend requiert la version {requiredVersion} ou supérieure.",
     "goToNode": "Aller au nœud",
     "help": "Aide",
     "icon": "Icône",
@@ -322,6 +328,8 @@
     "installed": "Installé",
     "installing": "Installation",
     "interrupted": "Interrompu",
+    "itemSelected": "{selectedCount} élément sélectionné",
+    "itemsSelected": "{selectedCount} éléments sélectionnés",
     "keybinding": "Raccourci clavier",
     "keybindingAlreadyExists": "Le raccourci clavier existe déjà",
     "learnMore": "En savoir plus",
@@ -389,21 +397,30 @@
     "unknownError": "Erreur inconnue",
     "update": "Mettre à jour",
     "updateAvailable": "Mise à jour disponible",
+    "updateFrontend": "Mettre à jour le frontend",
     "updated": "Mis à jour",
     "updating": "Mise à jour",
     "upload": "Téléverser",
     "usageHint": "Conseil d'utilisation",
     "user": "Utilisateur",
+    "versionMismatchWarning": "Avertissement de compatibilité de version",
+    "versionMismatchWarningMessage": "{warning} : {detail} Consultez https://docs.comfy.org/installation/update_comfyui#common-update-issues pour les instructions de mise à jour.",
     "videoFailedToLoad": "Échec du chargement de la vidéo",
     "workflow": "Flux de travail"
   },
   "graphCanvasMenu": {
     "fitView": "Adapter la vue",
+    "focusMode": "Mode focus",
+    "hand": "Main",
+    "hideLinks": "Masquer les liens",
     "panMode": "Mode panoramique",
     "resetView": "Réinitialiser la vue",
+    "select": "Sélectionner",
     "selectMode": "Mode sélection",
-    "toggleLinkVisibility": "Basculer la visibilité des liens",
+    "showLinks": "Afficher les liens",
+    "toggleMinimap": "Afficher/Masquer la mini-carte",
     "zoomIn": "Zoom avant",
+    "zoomOptions": "Options de zoom",
     "zoomOut": "Zoom arrière"
   },
   "groupNode": {
@@ -561,6 +578,10 @@
     "applyingTexture": "Application de la texture...",
     "backgroundColor": "Couleur de fond",
     "camera": "Caméra",
+    "cameraType": {
+      "orthographic": "Orthographique",
+      "perspective": "Perspective"
+    },
     "clearRecording": "Effacer l'enregistrement",
     "edgeThreshold": "Seuil de Bordure",
     "export": "Exportation",
@@ -581,6 +602,7 @@
       "wireframe": "Fil de fer"
     },
     "model": "Modèle",
+    "openIn3DViewer": "Ouvrir dans la visionneuse 3D",
     "previewOutput": "Aperçu de la sortie",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "resizeNodeMatchOutput": "Redimensionner le nœud pour correspondre à la sortie",
@@ -591,8 +613,22 @@
     "switchCamera": "Changer de caméra",
     "switchingMaterialMode": "Changement de mode de matériau...",
     "upDirection": "Direction Haut",
+    "upDirections": {
+      "original": "Original"
+    },
     "uploadBackgroundImage": "Télécharger l'image de fond",
-    "uploadTexture": "Télécharger Texture"
+    "uploadTexture": "Télécharger Texture",
+    "viewer": {
+      "apply": "Appliquer",
+      "cameraSettings": "Paramètres de la caméra",
+      "cameraType": "Type de caméra",
+      "cancel": "Annuler",
+      "exportSettings": "Paramètres d’exportation",
+      "lightSettings": "Paramètres de l’éclairage",
+      "modelSettings": "Paramètres du modèle",
+      "sceneSettings": "Paramètres de la scène",
+      "title": "Visionneuse 3D (Bêta)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nécessite ComfyUI {version} :",
@@ -721,6 +757,7 @@
     "manageExtensions": "Gérer les extensions",
     "onChange": "Sur modification",
     "onChangeTooltip": "Le flux de travail sera mis en file d'attente une fois une modification effectuée",
+    "queue": "Panneau de file d’attente",
     "refresh": "Actualiser les définitions des nœuds",
     "resetView": "Réinitialiser la vue du canevas",
     "run": "Exécuter",
@@ -733,10 +770,10 @@
   },
   "menuLabels": {
     "About ComfyUI": "À propos de ComfyUI",
-    "Add Edit Model Step": "Ajouter une étape d’édition de modèle",
+    "Bottom Panel": "Panneau inférieur",
     "Browse Templates": "Parcourir les modèles",
     "Bypass/Unbypass Selected Nodes": "Contourner/Ne pas contourner les nœuds sélectionnés",
-    "Canvas Toggle Link Visibility": "Basculer la visibilité du lien de la toile",
+    "Canvas Performance": "Performance du canevas",
     "Canvas Toggle Lock": "Basculer le verrouillage de la toile",
     "Check for Updates": "Vérifier les mises à jour",
     "Clear Pending Tasks": "Effacer les tâches en attente",
@@ -756,17 +793,24 @@
     "Desktop User Guide": "Guide de l'utilisateur de bureau",
     "Duplicate Current Workflow": "Dupliquer le flux de travail actuel",
     "Edit": "Éditer",
+    "Exit Subgraph": "Quitter le sous-graphe",
     "Export": "Exporter",
     "Export (API)": "Exporter (API)",
+    "File": "Fichier",
     "Fit Group To Contents": "Ajuster le groupe au contenu",
-    "Fit view to selected nodes": "Ajuster la vue aux nœuds sélectionnés",
+    "Focus Mode": "Mode focus",
     "Give Feedback": "Donnez votre avis",
     "Group Selected Nodes": "Grouper les nœuds sélectionnés",
     "Help": "Aide",
+    "Help Center": "Centre d’aide",
     "Increase Brush Size in MaskEditor": "Augmenter la taille du pinceau dans MaskEditor",
     "Interrupt": "Interrompre",
     "Load Default Workflow": "Charger le flux de travail par défaut",
+    "Lock Canvas": "Verrouiller le canevas",
     "Manage group nodes": "Gérer les nœuds de groupe",
+    "Manager": "Gestionnaire",
+    "Minimap": "Minicarte",
+    "Model Library": "Bibliothèque de modèles",
     "Move Selected Nodes Down": "Déplacer les nœuds sélectionnés vers le bas",
     "Move Selected Nodes Left": "Déplacer les nœuds sélectionnés vers la gauche",
     "Move Selected Nodes Right": "Déplacer les nœuds sélectionnés vers la droite",
@@ -774,7 +818,10 @@
     "Mute/Unmute Selected Nodes": "Mettre en sourdine/Activer le son des nœuds sélectionnés",
     "New": "Nouveau",
     "Next Opened Workflow": "Prochain flux de travail ouvert",
+    "Node Library": "Bibliothèque de nœuds",
+    "Node Links": "Liens de nœuds",
     "Open": "Ouvrir",
+    "Open 3D Viewer (Beta) for Selected Node": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné",
     "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
     "Open DevTools": "Ouvrir DevTools",
     "Open Inputs Folder": "Ouvrir le dossier des entrées",
@@ -787,6 +834,7 @@
     "Pin/Unpin Selected Items": "Épingler/Désépingler les éléments sélectionnés",
     "Pin/Unpin Selected Nodes": "Épingler/Désépingler les nœuds sélectionnés",
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
+    "Queue Panel": "Panneau de file d’attente",
     "Queue Prompt": "Invite de file d'attente",
     "Queue Prompt (Front)": "Invite de file d'attente (Front)",
     "Queue Selected Output Nodes": "Mettre en file d’attente les nœuds de sortie sélectionnés",
@@ -799,25 +847,33 @@
     "Restart": "Redémarrer",
     "Save": "Enregistrer",
     "Save As": "Enregistrer sous",
+    "Show Keybindings Dialog": "Afficher la boîte de dialogue des raccourcis clavier",
+    "Show Model Selector (Dev)": "Afficher le sélecteur de modèle (Dev)",
     "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
     "Sign Out": "Se déconnecter",
-    "Toggle Bottom Panel": "Basculer le panneau inférieur",
-    "Toggle Focus Mode": "Basculer le mode focus",
+    "Toggle Essential Bottom Panel": "Basculer le panneau inférieur essentiel",
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
-    "Toggle Model Library Sidebar": "Afficher/Masquer la barre latérale de la bibliothèque de modèles",
-    "Toggle Node Library Sidebar": "Afficher/Masquer la barre latérale de la bibliothèque de nœuds",
-    "Toggle Queue Sidebar": "Afficher/Masquer la barre latérale de la file d’attente",
     "Toggle Search Box": "Basculer la boîte de recherche",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
-    "Toggle Workflows Sidebar": "Afficher/Masquer la barre latérale des workflows",
+    "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
     "Toggle the Custom Nodes Manager": "Basculer le gestionnaire de nœuds personnalisés",
     "Toggle the Custom Nodes Manager Progress Bar": "Basculer la barre de progression du gestionnaire de nœuds personnalisés",
     "Undo": "Annuler",
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
-    "Workflow": "Flux de travail",
+    "Unlock Canvas": "Déverrouiller le canevas",
+    "Unpack the selected Subgraph": "Décompresser le Subgraph sélectionné",
+    "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
-    "Zoom Out": "Zoom arrière"
+    "Zoom Out": "Zoom arrière",
+    "Zoom to fit": "Ajuster à l’écran"
+  },
+  "minimap": {
+    "nodeColors": "Couleurs des nœuds",
+    "renderBypassState": "Afficher l’état de contournement",
+    "renderErrorState": "Afficher l’état d’erreur",
+    "showGroups": "Afficher les cadres/groupes",
+    "showLinks": "Afficher les liens"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
@@ -1085,6 +1141,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "Visionneuse 3D",
     "API Nodes": "Nœuds API",
     "About": "À Propos",
     "Appearance": "Apparence",
@@ -1136,10 +1193,31 @@
     "Window": "Fenêtre",
     "Workflow": "Flux de Travail"
   },
+  "shortcuts": {
+    "essentials": "Essentiel",
+    "keyboardShortcuts": "Raccourcis clavier",
+    "manageShortcuts": "Gérer les raccourcis",
+    "noKeybinding": "Aucun raccourci",
+    "subcategories": {
+      "node": "Nœud",
+      "panelControls": "Contrôles du panneau",
+      "queue": "File d’attente",
+      "view": "Vue",
+      "workflow": "Flux de travail"
+    },
+    "viewControls": "Contrôles d’affichage"
+  },
   "sideToolbar": {
     "browseTemplates": "Parcourir les modèles d'exemple",
     "downloads": "Téléchargements",
     "helpCenter": "Centre d'aide",
+    "labels": {
+      "models": "Modèles",
+      "nodes": "Nœuds",
+      "queue": "File d’attente",
+      "templates": "Modèles",
+      "workflows": "Flux de travail"
+    },
     "logout": "Déconnexion",
     "modelLibrary": "Bibliothèque de modèles",
     "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
@@ -1177,6 +1255,7 @@
       },
       "showFlatList": "Afficher la liste plate"
     },
+    "templates": "Modèles",
     "workflowTab": {
       "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce flux de travail ?",
       "confirmDeleteTitle": "Supprimer le flux de travail ?",
@@ -1223,6 +1302,8 @@
       "Video": "Vidéo",
       "Video API": "API vidéo"
     },
+    "loadingMore": "Chargement de plus de modèles...",
+    "searchPlaceholder": "Rechercher des modèles...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",
@@ -1545,6 +1626,7 @@
     "failedToExportModel": "Échec de l'exportation du modèle en {format}",
     "failedToFetchBalance": "Échec de la récupération du solde : {error}",
     "failedToFetchLogs": "Échec de la récupération des journaux du serveur",
+    "failedToInitializeLoad3dViewer": "Échec de l'initialisation du visualiseur 3D",
     "failedToInitiateCreditPurchase": "Échec de l'initiation de l'achat de crédits : {error}",
     "failedToPurchaseCredits": "Échec de l'achat de crédits : {error}",
     "fileLoadError": "Impossible de trouver le flux de travail dans {fileName}",
@@ -1600,6 +1682,13 @@
     "prefix": "Doit commencer par {prefix}",
     "required": "Requis"
   },
+  "versionMismatchWarning": {
+    "dismiss": "Ignorer",
+    "frontendNewer": "La version du frontend {frontendVersion} peut ne pas être compatible avec la version du backend {backendVersion}.",
+    "frontendOutdated": "La version du frontend {frontendVersion} est obsolète. Le backend nécessite la version {requiredVersion} ou supérieure.",
+    "title": "Avertissement de compatibilité de version",
+    "updateFrontend": "Mettre à jour le frontend"
+  },
   "welcome": {
     "getStarted": "Commencer",
     "title": "Bienvenue sur ComfyUI"
@@ -1612,5 +1701,11 @@
     "enterFilename": "Entrez le nom du fichier",
     "exportWorkflow": "Exporter le flux de travail",
     "saveWorkflow": "Enregistrer le flux de travail"
+  },
+  "zoomControls": {
+    "hideMinimap": "Masquer la mini-carte",
+    "label": "Contrôles de zoom",
+    "showMinimap": "Afficher la mini-carte",
+    "zoomToFit": "Ajuster à l’écran"
   }
 }

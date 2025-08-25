@@ -1,4 +1,3 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
@@ -8,6 +7,7 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 export type Load3DNodeType = 'Load3D' | 'Preview3D'
@@ -37,6 +37,8 @@ export interface EventCallback {
 export interface Load3DOptions {
   node?: LGraphNode
   inputSpec?: CustomInputSpec
+  disablePreview?: boolean
+  isViewerMode?: boolean
 }
 
 export interface CaptureResult {
@@ -159,6 +161,7 @@ export interface ModelManagerInterface {
   clearModel(): void
   reset(): void
   setupModel(model: THREE.Object3D): Promise<void>
+  addModelToScene(model: THREE.Object3D): void
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
   setUpDirection(direction: UpDirection): void
   materialMode: MaterialMode

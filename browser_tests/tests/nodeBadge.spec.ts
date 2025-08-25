@@ -66,7 +66,7 @@ test.describe('Node source badge', () => {
   Object.values(NodeBadgeMode).forEach(async (mode) => {
     test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
       // Execution error workflow has both custom node and core node.
-      await comfyPage.loadWorkflow('execution_error')
+      await comfyPage.loadWorkflow('nodes/execution_error')
       await comfyPage.setSetting('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
       await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', mode)
       await comfyPage.nextFrame()

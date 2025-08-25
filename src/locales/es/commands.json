@@ -35,17 +35,20 @@
   "Comfy-Desktop_Restart": {
     "label": "Reiniciar"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Abrir visor 3D (Beta) para el nodo seleccionado"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Explorar plantillas"
-  },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "Agregar paso de edición de modelo"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Eliminar elementos seleccionados"
   },
   "Comfy_Canvas_FitView": {
     "label": "Ajustar vista a los nodos seleccionados"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Bloquear lienzo"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Mover nodos seleccionados hacia abajo"
@@ -71,6 +74,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Alternar bloqueo en lienzo"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Lienzo Alternar Minimapa"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "Omitir/No omitir nodos seleccionados"
   },
@@ -85,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Anclar/Desanclar elementos seleccionados"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Desbloquear lienzo"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Acercar"
@@ -101,6 +110,9 @@
   "Comfy_ContactSupport": {
     "label": "Contactar soporte"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Mostrar selector de modelo (Dev)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Duplicar flujo de trabajo actual"
   },
@@ -116,11 +128,17 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir selección en subgrafo"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Salir de subgrafo"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Ajustar grupo al contenido"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Agrupar nodos seleccionados"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Desempaquetar el subgrafo seleccionado"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Convertir nodos seleccionados en nodo de grupo"
@@ -173,6 +191,9 @@
   "Comfy_OpenClipspace": {
     "label": "Abrir espacio de clips"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Administrador"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Abrir Flujo de Trabajo"
   },
@@ -199,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Mostrar Diálogo de Configuraciones"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Rendimiento del lienzo"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Centro de ayuda"
   },
   "Comfy_ToggleTheme": {
     "label": "Cambiar Tema (Oscuro/Claro)"
@@ -232,6 +259,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Alternar Panel Inferior de Registros"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Alternar panel inferior esencial"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Alternar panel inferior de controles de vista"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Mostrar diálogo de atajos de teclado"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Alternar Modo de Enfoque"

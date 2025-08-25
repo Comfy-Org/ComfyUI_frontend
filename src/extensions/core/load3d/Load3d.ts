@@ -1,6 +1,6 @@
-import { LGraphNode } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { CameraManager } from './CameraManager'
@@ -9,11 +9,11 @@ import { EventManager } from './EventManager'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
-import { ModelManager } from './ModelManager'
 import { NodeStorage } from './NodeStorage'
 import { PreviewManager } from './PreviewManager'
 import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
+import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
 import {
   CameraState,
@@ -29,21 +29,27 @@ class Load3d {
   protected animationFrameId: number | null = null
   node: LGraphNode
 
-  protected eventManager: EventManager
-  protected nodeStorage: NodeStorage
-  protected sceneManager: SceneManager
-  protected cameraManager: CameraManager
-  protected controlsManager: ControlsManager
-  protected lightingManager: LightingManager
-  protected viewHelperManager: ViewHelperManager
-  protected previewManager: PreviewManager
-  protected loaderManager: LoaderManager
-  protected modelManager: ModelManager
-  protected recordingManager: RecordingManager
+  eventManager: EventManager
+  nodeStorage: NodeStorage
+  sceneManager: SceneManager
+  cameraManager: CameraManager
+  controlsManager: ControlsManager
+  lightingManager: LightingManager
+  viewHelperManager: ViewHelperManager
+  previewManager: PreviewManager
+  loaderManager: LoaderManager
+  modelManager: SceneModelManager
+  recordingManager: RecordingManager
 
   STATUS_MOUSE_ON_NODE: boolean
   STATUS_MOUSE_ON_SCENE: boolean
+  STATUS_MOUSE_ON_VIEWER: boolean
   INITIAL_RENDER_DONE: boolean = false
+
+  targetWidth: number = 512
+  targetHeight: number = 512
+  targetAspectRatio: number = 1
+  isViewerMode: boolean = false
 
   constructor(
     container: Element | HTMLElement,
@@ -54,6 +60,16 @@ class Load3d {
   ) {
     this.node = options.node || ({} as LGraphNode)
     this.clock = new THREE.Clock()
+    this.isViewerMode = options.isViewerMode || false
+
+    const widthWidget = this.node.widgets?.find((w) => w.name === 'width')
+    const heightWidget = this.node.widgets?.find((w) => w.name === 'height')
+
+    if (widthWidget && heightWidget) {
+      this.targetWidth = widthWidget.value as number
+      this.targetHeight = heightWidget.value as number
+      this.targetAspectRatio = this.targetWidth / this.targetHeight
+    }
 
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
     this.renderer.setSize(300, 300)
@@ -109,7 +125,11 @@ class Load3d {
       this.sceneManager.backgroundCamera
     )
 
-    this.modelManager = new ModelManager(
+    if (options.disablePreview) {
+      this.previewManager.togglePreview(false)
+    }
+
+    this.modelManager = new SceneModelManager(
       this.sceneManager.scene,
       this.renderer,
       this.eventManager,
@@ -142,6 +162,7 @@ class Load3d {
 
     this.STATUS_MOUSE_ON_NODE = false
     this.STATUS_MOUSE_ON_SCENE = false
+    this.STATUS_MOUSE_ON_VIEWER = false
 
     this.handleResize()
     this.startAnimation()
@@ -149,6 +170,41 @@ class Load3d {
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  getEventManager(): EventManager {
+    return this.eventManager
+  }
+
+  getNodeStorage(): NodeStorage {
+    return this.nodeStorage
+  }
+  getSceneManager(): SceneManager {
+    return this.sceneManager
+  }
+  getCameraManager(): CameraManager {
+    return this.cameraManager
+  }
+  getControlsManager(): ControlsManager {
+    return this.controlsManager
+  }
+  getLightingManager(): LightingManager {
+    return this.lightingManager
+  }
+  getViewHelperManager(): ViewHelperManager {
+    return this.viewHelperManager
+  }
+  getPreviewManager(): PreviewManager {
+    return this.previewManager
+  }
+  getLoaderManager(): LoaderManager {
+    return this.loaderManager
+  }
+  getModelManager(): SceneModelManager {
+    return this.modelManager
+  }
+  getRecordingManager(): RecordingManager {
+    return this.recordingManager
   }
 
   forceRender(): void {
@@ -172,12 +228,43 @@ class Load3d {
   }
 
   renderMainScene(): void {
-    const width = this.renderer.domElement.clientWidth
-    const height = this.renderer.domElement.clientHeight
+    const containerWidth = this.renderer.domElement.clientWidth
+    const containerHeight = this.renderer.domElement.clientHeight
 
-    this.renderer.setViewport(0, 0, width, height)
-    this.renderer.setScissor(0, 0, width, height)
-    this.renderer.setScissorTest(true)
+    if (this.isViewerMode) {
+      const containerAspectRatio = containerWidth / containerHeight
+
+      let renderWidth: number
+      let renderHeight: number
+      let offsetX: number = 0
+      let offsetY: number = 0
+
+      if (containerAspectRatio > this.targetAspectRatio) {
+        renderHeight = containerHeight
+        renderWidth = renderHeight * this.targetAspectRatio
+        offsetX = (containerWidth - renderWidth) / 2
+      } else {
+        renderWidth = containerWidth
+        renderHeight = renderWidth / this.targetAspectRatio
+        offsetY = (containerHeight - renderHeight) / 2
+      }
+
+      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
+      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
+      this.renderer.setScissorTest(true)
+      this.renderer.setClearColor(0x0a0a0a)
+      this.renderer.clear()
+
+      this.renderer.setViewport(offsetX, offsetY, renderWidth, renderHeight)
+      this.renderer.setScissor(offsetX, offsetY, renderWidth, renderHeight)
+
+      const renderAspectRatio = renderWidth / renderHeight
+      this.cameraManager.updateAspectRatio(renderAspectRatio)
+    } else {
+      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
+      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
+      this.renderer.setScissorTest(true)
+    }
 
     this.sceneManager.renderBackground()
     this.renderer.render(
@@ -243,10 +330,15 @@ class Load3d {
     this.STATUS_MOUSE_ON_SCENE = onScene
   }
 
+  updateStatusMouseOnViewer(onViewer: boolean): void {
+    this.STATUS_MOUSE_ON_VIEWER = onViewer
+  }
+
   isActive(): boolean {
     return (
       this.STATUS_MOUSE_ON_NODE ||
       this.STATUS_MOUSE_ON_SCENE ||
+      this.STATUS_MOUSE_ON_VIEWER ||
       this.isRecording() ||
       !this.INITIAL_RENDER_DONE
     )
@@ -308,6 +400,34 @@ class Load3d {
       this.sceneManager.backgroundTexture
     )
 
+    if (
+      this.isViewerMode &&
+      this.sceneManager.backgroundTexture &&
+      this.sceneManager.backgroundMesh
+    ) {
+      const containerWidth = this.renderer.domElement.clientWidth
+      const containerHeight = this.renderer.domElement.clientHeight
+      const containerAspectRatio = containerWidth / containerHeight
+
+      let renderWidth: number
+      let renderHeight: number
+
+      if (containerAspectRatio > this.targetAspectRatio) {
+        renderHeight = containerHeight
+        renderWidth = renderHeight * this.targetAspectRatio
+      } else {
+        renderWidth = containerWidth
+        renderHeight = renderWidth / this.targetAspectRatio
+      }
+
+      this.sceneManager.updateBackgroundSize(
+        this.sceneManager.backgroundTexture,
+        this.sceneManager.backgroundMesh,
+        renderWidth,
+        renderHeight
+      )
+    }
+
     this.forceRender()
   }
 
@@ -338,6 +458,10 @@ class Load3d {
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
     return this.cameraManager.getCurrentCameraType()
+  }
+
+  getCurrentModel(): THREE.Object3D | null {
+    return this.modelManager.currentModel
   }
 
   setCameraState(state: CameraState): void {
@@ -397,6 +521,9 @@ class Load3d {
   }
 
   setTargetSize(width: number, height: number): void {
+    this.targetWidth = width
+    this.targetHeight = height
+    this.targetAspectRatio = width / height
     this.previewManager.setTargetSize(width, height)
     this.forceRender()
   }
@@ -422,13 +549,30 @@ class Load3d {
       return
     }
 
-    const width = parentElement.clientWidth
-    const height = parentElement.clientHeight
+    const containerWidth = parentElement.clientWidth
+    const containerHeight = parentElement.clientHeight
 
-    this.cameraManager.handleResize(width, height)
-    this.sceneManager.handleResize(width, height)
+    if (this.isViewerMode) {
+      const containerAspectRatio = containerWidth / containerHeight
+      let renderWidth: number
+      let renderHeight: number
 
-    this.renderer.setSize(width, height)
+      if (containerAspectRatio > this.targetAspectRatio) {
+        renderHeight = containerHeight
+        renderWidth = renderHeight * this.targetAspectRatio
+      } else {
+        renderWidth = containerWidth
+        renderHeight = renderWidth / this.targetAspectRatio
+      }
+
+      this.cameraManager.handleResize(renderWidth, renderHeight)
+      this.sceneManager.handleResize(renderWidth, renderHeight)
+    } else {
+      this.cameraManager.handleResize(containerWidth, containerHeight)
+      this.sceneManager.handleResize(containerWidth, containerHeight)
+    }
+
+    this.renderer.setSize(containerWidth, containerHeight)
 
     this.previewManager.handleResize()
     this.forceRender()

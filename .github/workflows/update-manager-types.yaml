@@ -3,6 +3,11 @@ name: Update ComfyUI-Manager API Types
 on:
   # Manual trigger
   workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Target branch for the PR'
+        required: true
+        default: 'main'
 
 jobs:
   update-manager-types:
@@ -56,6 +61,11 @@ jobs:
             exit 1
           fi
 
+      - name: Lint generated types
+        run: |
+          echo "Linting generated ComfyUI-Manager API types..."
+          npm run lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts
+
       - name: Check for changes
         id: check-changes
         run: |
@@ -70,7 +80,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           commit-message: '[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}'
@@ -85,7 +95,7 @@ jobs:
 
             These types are automatically generated using openapi-typescript.
           branch: update-manager-types-${{ steps.manager-info.outputs.commit }}
-          base: main
+          base: ${{ inputs.target_branch }}
           labels: Manager
           delete-branch: true
           add-paths: |

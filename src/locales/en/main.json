@@ -25,6 +25,7 @@
     "confirmed": "Confirmed",
     "reset": "Reset",
     "resetAll": "Reset All",
+    "clearFilters": "Clear Filters",
     "resetAllKeybindingsTooltip": "Reset all keybindings to default",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
@@ -98,6 +99,12 @@
     "nodes": "Nodes",
     "community": "Community",
     "all": "All",
+    "versionMismatchWarning": "Version Compatibility Warning",
+    "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
+    "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
+    "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "updateFrontend": "Update Frontend",
+    "dismiss": "Dismiss",
     "update": "Update",
     "updated": "Updated",
     "resultsCount": "Found {count} Results",
@@ -130,15 +137,19 @@
     "copy": "Copy",
     "imageUrl": "Image URL",
     "clear": "Clear",
+    "clearAll": "Clear all",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
+    "itemSelected": "{selectedCount} item selected",
+    "itemsSelected": "{selectedCount} items selected",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "micPermissionDenied": "Microphone permission denied",
     "noAudioRecorded": "No audio recorded",
-    "nodesRunning": "nodes running"
+    "nodesRunning": "nodes running",
+    "duplicate": "Duplicate"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -429,6 +440,14 @@
     "queue": "Queue",
     "nodeLibrary": "Node Library",
     "workflows": "Workflows",
+    "templates": "Templates",
+    "labels": {
+      "queue": "Queue",
+      "nodes": "Nodes",
+      "models": "Models",
+      "workflows": "Workflows",
+      "templates": "Templates"
+    },
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
@@ -530,7 +549,8 @@
     "light": "Light",
     "manageExtensions": "Manage Extensions",
     "settings": "Settings",
-    "help": "Help"
+    "help": "Help",
+    "queue": "Queue Panel"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -543,6 +563,8 @@
   },
   "templateWorkflows": {
     "title": "Get Started with a Template",
+    "loadingMore": "Loading more templates...",
+    "searchPlaceholder": "Search templates...",
     "category": {
       "ComfyUI Examples": "ComfyUI Examples",
       "Custom Nodes": "Custom Nodes",
@@ -872,7 +894,19 @@
     "fitView": "Fit View",
     "selectMode": "Select Mode",
     "panMode": "Pan Mode",
-    "toggleLinkVisibility": "Toggle Link Visibility"
+    "toggleMinimap": "Toggle Minimap",
+    "select": "Select",
+    "hand": "Hand",
+    "zoomOptions": "Zoom Options",
+    "focusMode": "Focus Mode",
+    "hideLinks": "Hide Links",
+    "showLinks": "Show Links"
+  },
+  "zoomControls": {
+    "label": "Zoom Controls",
+    "zoomToFit": "Zoom To Fit",
+    "showMinimap": "Show Minimap",
+    "hideMinimap": "Hide Minimap"
   },
   "groupNode": {
     "create": "Create group node",
@@ -921,7 +955,7 @@
     "Image Layer": "Image Layer"
   },
   "menuLabels": {
-    "Workflow": "Workflow",
+    "File": "File",
     "Edit": "Edit",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
@@ -936,35 +970,41 @@
     "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
+    "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Browse Templates": "Browse Templates",
-    "Add Edit Model Step": "Add Edit Model Step",
     "Delete Selected Items": "Delete Selected Items",
-    "Fit view to selected nodes": "Fit view to selected nodes",
+    "Zoom to fit": "Zoom to fit",
+    "Lock Canvas": "Lock Canvas",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
-    "Canvas Toggle Link Visibility": "Canvas Toggle Link Visibility",
+    "Node Links": "Node Links",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
+    "Minimap": "Minimap",
     "Pin/Unpin Selected Items": "Pin/Unpin Selected Items",
     "Bypass/Unbypass Selected Nodes": "Bypass/Unbypass Selected Nodes",
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
     "Mute/Unmute Selected Nodes": "Mute/Unmute Selected Nodes",
     "Pin/Unpin Selected Nodes": "Pin/Unpin Selected Nodes",
+    "Unlock Canvas": "Unlock Canvas",
     "Zoom In": "Zoom In",
     "Zoom Out": "Zoom Out",
     "Clear Pending Tasks": "Clear Pending Tasks",
     "Clear Workflow": "Clear Workflow",
     "Contact Support": "Contact Support",
+    "Show Model Selector (Dev)": "Show Model Selector (Dev)",
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
     "Give Feedback": "Give Feedback",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
+    "Exit Subgraph": "Exit Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
+    "Unpack the selected Subgraph": "Unpack the selected Subgraph",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
     "Manage group nodes": "Manage group nodes",
     "Ungroup selected group nodes": "Ungroup selected group nodes",
@@ -982,6 +1022,7 @@
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
     "New": "New",
     "Clipspace": "Clipspace",
+    "Manager": "Manager",
     "Open": "Open",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
@@ -991,6 +1032,8 @@
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
+    "Canvas Performance": "Canvas Performance",
+    "Help Center": "Help Center",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
@@ -999,14 +1042,17 @@
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
     "Toggle Search Box": "Toggle Search Box",
-    "Toggle Bottom Panel": "Toggle Bottom Panel",
+    "Bottom Panel": "Bottom Panel",
+    "Show Keybindings Dialog": "Show Keybindings Dialog",
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
-    "Toggle Focus Mode": "Toggle Focus Mode",
-    "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
-    "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
-    "Toggle Queue Sidebar": "Toggle Queue Sidebar",
-    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar"
+    "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
+    "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
+    "Focus Mode": "Focus Mode",
+    "Model Library": "Model Library",
+    "Node Library": "Node Library",
+    "Queue Panel": "Queue Panel",
+    "Workflows": "Workflows"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
@@ -1065,7 +1111,8 @@
     "User": "User",
     "Credits": "Credits",
     "API Nodes": "API Nodes",
-    "Notification Preferences": "Notification Preferences"
+    "Notification Preferences": "Notification Preferences",
+    "3DViewer": "3DViewer"
   },
   "serverConfigItems": {
     "listen": {
@@ -1349,6 +1396,13 @@
     "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Requires ComfyUI {version}:"
   },
+  "versionMismatchWarning": {
+    "title": "Version Compatibility Warning",
+    "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires version {requiredVersion} or higher.",
+    "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "updateFrontend": "Update Frontend",
+    "dismiss": "Dismiss"
+  },
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
@@ -1410,12 +1464,31 @@
       "depth": "Depth",
       "lineart": "Lineart"
     },
+    "upDirections": {
+      "original": "Original"
+    },
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "exportRecording": "Export Recording",
     "clearRecording": "Clear Recording",
     "resizeNodeMatchOutput": "Resize Node to match output",
-    "loadingBackgroundImage": "Loading Background Image"
+    "loadingBackgroundImage": "Loading Background Image",
+    "cameraType": {
+      "perspective": "Perspective",
+      "orthographic": "Orthographic"
+    },
+    "viewer": {
+      "title": "3D Viewer (Beta)",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "cameraType": "Camera Type",
+      "sceneSettings": "Scene Settings",
+      "cameraSettings": "Camera Settings",
+      "lightSettings": "Light Settings",
+      "exportSettings": "Export Settings",
+      "modelSettings": "Model Settings"
+    },
+    "openIn3DViewer": "Open in 3D Viewer"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -1453,7 +1526,8 @@
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
-    "failedToConvertToSubgraph": "Failed to convert items to subgraph"
+    "failedToConvertToSubgraph": "Failed to convert items to subgraph",
+    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer"
   },
   "auth": {
     "apiKey": {
@@ -1612,5 +1686,26 @@
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "enterNewName": "Enter new name"
+  },
+  "shortcuts": {
+    "essentials": "Essential",
+    "viewControls": "View Controls",
+    "manageShortcuts": "Manage Shortcuts",
+    "noKeybinding": "No keybinding",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "subcategories": {
+      "workflow": "Workflow",
+      "node": "Node",
+      "queue": "Queue",
+      "view": "View",
+      "panelControls": "Panel Controls"
+    }
+  },
+  "minimap": {
+    "nodeColors": "Node Colors",
+    "showLinks": "Show Links",
+    "showGroups": "Show Frames/Groups",
+    "renderBypassState": "Render Bypass State",
+    "renderErrorState": "Render Error State"
   }
 }

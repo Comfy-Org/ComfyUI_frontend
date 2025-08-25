@@ -58,8 +58,19 @@
       @export-model="handleExportModel"
     />
     <div
-      v-if="showRecordingControls"
+      v-if="enable3DViewer"
       class="absolute top-12 right-2 z-20 pointer-events-auto"
+    >
+      <ViewerControls :node="node" />
+    </div>
+
+    <div
+      v-if="showRecordingControls"
+      class="absolute right-2 z-20 pointer-events-auto"
+      :class="{
+        'top-12': !enable3DViewer,
+        'top-24': enable3DViewer
+      }"
     >
       <RecordingControls
         :node="node"
@@ -82,6 +93,7 @@ import { useI18n } from 'vue-i18n'
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
+import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   CameraType,
@@ -91,6 +103,7 @@ import {
 } from '@/extensions/core/load3d/interfaces'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 
 const { t } = useI18n()
@@ -121,6 +134,9 @@ const isRecording = ref(false)
 const hasRecording = ref(false)
 const recordingDuration = ref(0)
 const showRecordingControls = ref(!inputSpec.isPreview)
+const enable3DViewer = computed(() =>
+  useSettingStore().get('Comfy.Load3D.3DViewerEnable')
+)
 
 const showPreviewButton = computed(() => {
   return !type.includes('Preview')

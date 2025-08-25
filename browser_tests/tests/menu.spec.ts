@@ -73,9 +73,80 @@ test.describe('Menu', () => {
       expect(isTextCutoff).toBe(false)
     })
 
+    test('Clicking on active state items does not close menu', async ({
+      comfyPage
+    }) => {
+      // Open the menu
+      await comfyPage.menu.topbar.openTopbarMenu()
+      const menu = comfyPage.page.locator('.comfy-command-menu')
+
+      // Navigate to View menu
+      const viewMenuItem = comfyPage.page.locator(
+        '.p-menubar-item-label:text-is("View")'
+      )
+      await viewMenuItem.hover()
+
+      // Wait for submenu to appear
+      const viewSubmenu = comfyPage.page
+        .locator('.p-tieredmenu-submenu:visible')
+        .first()
+      await viewSubmenu.waitFor({ state: 'visible' })
+
+      // Find Bottom Panel menu item
+      const bottomPanelMenuItem = viewSubmenu
+        .locator('.p-tieredmenu-item:has-text("Bottom Panel")')
+        .first()
+      const bottomPanelItem = bottomPanelMenuItem.locator(
+        '.p-menubar-item-label:text-is("Bottom Panel")'
+      )
+      await bottomPanelItem.waitFor({ state: 'visible' })
+
+      // Get checkmark icon element
+      const checkmark = bottomPanelMenuItem.locator('.pi-check')
+
+      // Check initial state of bottom panel (it's initially hidden)
+      const bottomPanel = comfyPage.page.locator('.bottom-panel')
+      await expect(bottomPanel).not.toBeVisible()
+
+      // Checkmark should be invisible initially (panel is hidden)
+      await expect(checkmark).toHaveClass(/invisible/)
+
+      // Click Bottom Panel to toggle it on
+      await bottomPanelItem.click()
+
+      // Verify menu is still visible after clicking
+      await expect(menu).toBeVisible()
+      await expect(viewSubmenu).toBeVisible()
+
+      // Verify bottom panel is now visible
+      await expect(bottomPanel).toBeVisible()
+
+      // Checkmark should now be visible (panel is shown)
+      await expect(checkmark).not.toHaveClass(/invisible/)
+
+      // Click Bottom Panel again to toggle it off
+      await bottomPanelItem.click()
+
+      // Verify menu is still visible after second click
+      await expect(menu).toBeVisible()
+      await expect(viewSubmenu).toBeVisible()
+
+      // Verify bottom panel is hidden again
+      await expect(bottomPanel).not.toBeVisible()
+
+      // Checkmark should be invisible again (panel is hidden)
+      await expect(checkmark).toHaveClass(/invisible/)
+
+      // Click outside to close menu
+      await comfyPage.page.locator('body').click({ position: { x: 10, y: 10 } })
+
+      // Verify menu is now closed
+      await expect(menu).not.toBeVisible()
+    })
+
     test('Displays keybinding next to item', async ({ comfyPage }) => {
       await comfyPage.menu.topbar.openTopbarMenu()
-      const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('Workflow')
+      const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('File')
       await workflowMenuItem.hover()
       const exportTag = comfyPage.page.locator('.keybinding-tag', {
         hasText: 'Ctrl + s'

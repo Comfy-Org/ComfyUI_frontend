@@ -74,7 +74,7 @@ test.describe('Workflows sidebar', () => {
 
   test('Can open workflow after insert', async ({ comfyPage }) => {
     await comfyPage.setupWorkflowsDirectory({
-      'workflow1.json': 'single_ksampler.json'
+      'workflow1.json': 'nodes/single_ksampler.json'
     })
 
     const tab = comfyPage.menu.workflowsTab
@@ -193,6 +193,7 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.menu.topbar.saveWorkflowAs('workflow5.json')
     await comfyPage.confirmDialog.click('overwrite')
+    await comfyPage.page.waitForTimeout(200)
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow5.json'
     ])
@@ -241,7 +242,7 @@ test.describe('Workflows sidebar', () => {
   test('Does not report warning when switching between opened workflows', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('missing_nodes')
+    await comfyPage.loadWorkflow('missing/missing_nodes')
     await comfyPage.closeDialog()
 
     // Load blank workflow
@@ -314,6 +315,25 @@ test.describe('Workflows sidebar', () => {
     await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
     expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
       '*Unsaved Workflow.json'
+    ])
+  })
+
+  test('Can duplicate workflow from context menu', async ({ comfyPage }) => {
+    await comfyPage.setupWorkflowsDirectory({
+      'workflow1.json': 'default.json'
+    })
+
+    const { workflowsTab } = comfyPage.menu
+    await workflowsTab.open()
+
+    await workflowsTab
+      .getPersistedItem('workflow1.json')
+      .click({ button: 'right' })
+    await comfyPage.clickContextMenuItem('Duplicate')
+
+    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
+      '*Unsaved Workflow.json',
+      '*workflow1 (Copy).json'
     ])
   })
 

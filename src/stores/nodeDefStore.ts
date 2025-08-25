@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
 import axios from 'axios'
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -63,6 +63,10 @@ export class ComfyNodeDefImpl
    * @deprecated Use `outputs[n].tooltip` instead
    */
   readonly output_tooltips?: string[]
+  /**
+   * Order of inputs for each category (required, optional, hidden)
+   */
+  readonly input_order?: Record<string, string[]>
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -130,6 +134,7 @@ export class ComfyNodeDefImpl
     this.output_is_list = obj.output_is_list
     this.output_name = obj.output_name
     this.output_tooltips = obj.output_tooltips
+    this.input_order = obj.input_order
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -334,8 +339,10 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
-    // @ts-expect-error Optional chaining used in index
-    return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
+    const nodeTypeName = node.constructor?.nodeData?.name
+    if (!nodeTypeName) return null
+    const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
+    return nodeDef
   }
 
   /**

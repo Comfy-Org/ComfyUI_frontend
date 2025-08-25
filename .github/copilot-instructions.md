@@ -18,7 +18,7 @@ Use Tailwind CSS for styling
 
 Leverage VueUse functions for performance-enhancing styles
 
-Use lodash for utility functions
+Use es-toolkit for utility functions
 
 Use TypeScript for type safety
 

@@ -272,6 +272,8 @@
     "category": "Категория",
     "choose_file_to_upload": "выберите файл для загрузки",
     "clear": "Очистить",
+    "clearAll": "Очистить всё",
+    "clearFilters": "Сбросить фильтры",
     "close": "Закрыть",
     "color": "Цвет",
     "comingSoon": "Скоро будет",
@@ -296,7 +298,9 @@
     "devices": "Устройства",
     "disableAll": "Отключить все",
     "disabling": "Отключение",
+    "dismiss": "Закрыть",
     "download": "Скачать",
+    "duplicate": "Дублировать",
     "edit": "Редактировать",
     "empty": "Пусто",
     "enableAll": "Включить все",
@@ -310,6 +314,8 @@
     "filter": "Фильтр",
     "findIssues": "Найти проблемы",
     "firstTimeUIMessage": "Вы впервые используете новый интерфейс. Выберите \"Меню > Использовать новое меню > Отключено\", чтобы восстановить старый интерфейс.",
+    "frontendNewer": "Версия интерфейса {frontendVersion} может быть несовместима с версией сервера {backendVersion}.",
+    "frontendOutdated": "Версия интерфейса {frontendVersion} устарела. Требуется версия не ниже {requiredVersion} для работы с сервером.",
     "goToNode": "Перейти к ноде",
     "help": "Помощь",
     "icon": "Иконка",
@@ -322,6 +328,8 @@
     "installed": "Установлено",
     "installing": "Установка",
     "interrupted": "Прервано",
+    "itemSelected": "Выбран {selectedCount} элемент",
+    "itemsSelected": "Выбрано {selectedCount} элементов",
     "keybinding": "Привязка клавиш",
     "keybindingAlreadyExists": "Горячая клавиша уже существует",
     "learnMore": "Узнать больше",
@@ -389,21 +397,30 @@
     "unknownError": "Неизвестная ошибка",
     "update": "Обновить",
     "updateAvailable": "Доступно обновление",
+    "updateFrontend": "Обновить интерфейс",
     "updated": "Обновлено",
     "updating": "Обновление",
     "upload": "Загрузить",
     "usageHint": "Подсказка по использованию",
     "user": "Пользователь",
+    "versionMismatchWarning": "Предупреждение о несовместимости версий",
+    "versionMismatchWarningMessage": "{warning}: {detail} Посетите https://docs.comfy.org/installation/update_comfyui#common-update-issues для инструкций по обновлению.",
     "videoFailedToLoad": "Не удалось загрузить видео",
     "workflow": "Рабочий процесс"
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",
+    "focusMode": "Режим фокуса",
+    "hand": "Рука",
+    "hideLinks": "Скрыть связи",
     "panMode": "Режим панорамирования",
     "resetView": "Сбросить вид",
+    "select": "Выбрать",
     "selectMode": "Выбрать режим",
-    "toggleLinkVisibility": "Переключить видимость ссылок",
+    "showLinks": "Показать связи",
+    "toggleMinimap": "Показать/скрыть миникарту",
     "zoomIn": "Увеличить",
+    "zoomOptions": "Параметры масштабирования",
     "zoomOut": "Уменьшить"
   },
   "groupNode": {
@@ -561,6 +578,10 @@
     "applyingTexture": "Применение текстуры...",
     "backgroundColor": "Цвет фона",
     "camera": "Камера",
+    "cameraType": {
+      "orthographic": "Ортографическая",
+      "perspective": "Перспективная"
+    },
     "clearRecording": "Очистить запись",
     "edgeThreshold": "Пороговое значение края",
     "export": "Экспорт",
@@ -581,6 +602,7 @@
       "wireframe": "Каркас"
     },
     "model": "Модель",
+    "openIn3DViewer": "Открыть в 3D просмотрщике",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
@@ -591,8 +613,22 @@
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
     "upDirection": "Направление Вверх",
+    "upDirections": {
+      "original": "Оригинал"
+    },
     "uploadBackgroundImage": "Загрузить фоновое изображение",
-    "uploadTexture": "Загрузить текстуру"
+    "uploadTexture": "Загрузить текстуру",
+    "viewer": {
+      "apply": "Применить",
+      "cameraSettings": "Настройки камеры",
+      "cameraType": "Тип камеры",
+      "cancel": "Отмена",
+      "exportSettings": "Настройки экспорта",
+      "lightSettings": "Настройки освещения",
+      "modelSettings": "Настройки модели",
+      "sceneSettings": "Настройки сцены",
+      "title": "3D Просмотрщик (Бета)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Требуется ComfyUI {version}:",
@@ -721,6 +757,7 @@
     "manageExtensions": "Управление расширениями",
     "onChange": "При изменении",
     "onChangeTooltip": "Рабочий процесс будет поставлен в очередь после внесения изменений",
+    "queue": "Панель очереди",
     "refresh": "Обновить определения нод",
     "resetView": "Сбросить вид холста",
     "run": "Запустить",
@@ -733,10 +770,10 @@
   },
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
-    "Add Edit Model Step": "Добавить или изменить шаг модели",
+    "Bottom Panel": "Нижняя панель",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
-    "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
+    "Canvas Performance": "Производительность холста",
     "Canvas Toggle Lock": "Переключение блокировки холста",
     "Check for Updates": "Проверить наличие обновлений",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
@@ -756,17 +793,24 @@
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
+    "Exit Subgraph": "Выйти из подграфа",
     "Export": "Экспортировать",
     "Export (API)": "Экспорт (API)",
+    "File": "Файл",
     "Fit Group To Contents": "Подогнать группу под содержимое",
-    "Fit view to selected nodes": "Подогнать вид под выбранные ноды",
+    "Focus Mode": "Режим фокуса",
     "Give Feedback": "Оставить отзыв",
     "Group Selected Nodes": "Сгруппировать выбранные ноды",
     "Help": "Помощь",
+    "Help Center": "Центр поддержки",
     "Increase Brush Size in MaskEditor": "Увеличить размер кисти в MaskEditor",
     "Interrupt": "Прервать",
     "Load Default Workflow": "Загрузить стандартный рабочий процесс",
+    "Lock Canvas": "Заблокировать холст",
     "Manage group nodes": "Управление групповыми нодами",
+    "Manager": "Менеджер",
+    "Minimap": "Мини-карта",
+    "Model Library": "Библиотека моделей",
     "Move Selected Nodes Down": "Переместить выбранные узлы вниз",
     "Move Selected Nodes Left": "Переместить выбранные узлы влево",
     "Move Selected Nodes Right": "Переместить выбранные узлы вправо",
@@ -774,7 +818,10 @@
     "Mute/Unmute Selected Nodes": "Отключить/включить звук для выбранных нод",
     "New": "Новый",
     "Next Opened Workflow": "Следующий открытый рабочий процесс",
+    "Node Library": "Библиотека узлов",
+    "Node Links": "Связи узлов",
     "Open": "Открыть",
+    "Open 3D Viewer (Beta) for Selected Node": "Открыть 3D-просмотрщик (бета) для выбранного узла",
     "Open Custom Nodes Folder": "Открыть папку пользовательских нод",
     "Open DevTools": "Открыть инструменты разработчика",
     "Open Inputs Folder": "Открыть папку входных данных",
@@ -787,6 +834,7 @@
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
+    "Queue Panel": "Панель очереди",
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
     "Queue Selected Output Nodes": "Добавить выбранные выходные узлы в очередь",
@@ -799,25 +847,33 @@
     "Restart": "Перезапустить",
     "Save": "Сохранить",
     "Save As": "Сохранить как",
+    "Show Keybindings Dialog": "Показать диалог клавиш быстрого доступа",
+    "Show Model Selector (Dev)": "Показать выбор модели (Dev)",
     "Show Settings Dialog": "Показать диалог настроек",
     "Sign Out": "Выйти",
-    "Toggle Bottom Panel": "Переключить нижнюю панель",
-    "Toggle Focus Mode": "Переключить режим фокуса",
-    "Toggle Logs Bottom Panel": "Переключение нижней панели журналов",
-    "Toggle Model Library Sidebar": "Показать/скрыть боковую панель библиотеки моделей",
-    "Toggle Node Library Sidebar": "Показать/скрыть боковую панель библиотеки узлов",
-    "Toggle Queue Sidebar": "Показать/скрыть боковую панель очереди",
+    "Toggle Essential Bottom Panel": "Показать/скрыть нижнюю панель основных элементов",
+    "Toggle Logs Bottom Panel": "Показать/скрыть нижнюю панель логов",
     "Toggle Search Box": "Переключить поисковую панель",
-    "Toggle Terminal Bottom Panel": "Переключение нижней панели терминала",
+    "Toggle Terminal Bottom Panel": "Показать/скрыть нижнюю панель терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
-    "Toggle Workflows Sidebar": "Показать/скрыть боковую панель рабочих процессов",
+    "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",
     "Toggle the Custom Nodes Manager": "Переключить менеджер пользовательских узлов",
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
-    "Workflow": "Рабочий процесс",
+    "Unlock Canvas": "Разблокировать холст",
+    "Unpack the selected Subgraph": "Распаковать выбранный подграф",
+    "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
-    "Zoom Out": "Уменьшить"
+    "Zoom Out": "Уменьшить",
+    "Zoom to fit": "Масштабировать по размеру"
+  },
+  "minimap": {
+    "nodeColors": "Цвета узлов",
+    "renderBypassState": "Отображать состояние обхода",
+    "renderErrorState": "Отображать состояние ошибки",
+    "showGroups": "Показать фреймы/группы",
+    "showLinks": "Показать связи"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
@@ -1085,6 +1141,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3D-просмотрщик",
     "API Nodes": "API-узлы",
     "About": "О программе",
     "Appearance": "Внешний вид",
@@ -1136,10 +1193,31 @@
     "Window": "Окно",
     "Workflow": "Рабочий процесс"
   },
+  "shortcuts": {
+    "essentials": "Основные",
+    "keyboardShortcuts": "Горячие клавиши",
+    "manageShortcuts": "Управление горячими клавишами",
+    "noKeybinding": "Нет сочетания клавиш",
+    "subcategories": {
+      "node": "Узел",
+      "panelControls": "Управление панелью",
+      "queue": "Очередь",
+      "view": "Просмотр",
+      "workflow": "Рабочий процесс"
+    },
+    "viewControls": "Управление просмотром"
+  },
   "sideToolbar": {
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
     "helpCenter": "Центр поддержки",
+    "labels": {
+      "models": "Модели",
+      "nodes": "Узлы",
+      "queue": "Очередь",
+      "templates": "Шаблоны",
+      "workflows": "Воркфлоу"
+    },
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
@@ -1177,6 +1255,7 @@
       },
       "showFlatList": "Показать плоский список"
     },
+    "templates": "Шаблоны",
     "workflowTab": {
       "confirmDelete": "Вы уверены, что хотите удалить этот рабочий процесс?",
       "confirmDeleteTitle": "Удалить рабочий процесс?",
@@ -1223,6 +1302,8 @@
       "Video": "Видео",
       "Video API": "Video API"
     },
+    "loadingMore": "Загрузка дополнительных шаблонов...",
+    "searchPlaceholder": "Поиск шаблонов...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",
@@ -1545,6 +1626,7 @@
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
     "failedToFetchBalance": "Не удалось получить баланс: {error}",
     "failedToFetchLogs": "Не удалось получить серверные логи",
+    "failedToInitializeLoad3dViewer": "Не удалось инициализировать 3D просмотрщик",
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",
@@ -1600,6 +1682,13 @@
     "prefix": "Должно начинаться с {prefix}",
     "required": "Обязательно"
   },
+  "versionMismatchWarning": {
+    "dismiss": "Закрыть",
+    "frontendNewer": "Версия интерфейса {frontendVersion} может быть несовместима с версией сервера {backendVersion}.",
+    "frontendOutdated": "Версия интерфейса {frontendVersion} устарела. Для работы с сервером требуется версия {requiredVersion} или новее.",
+    "title": "Предупреждение о несовместимости версий",
+    "updateFrontend": "Обновить интерфейс"
+  },
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
@@ -1612,5 +1701,11 @@
     "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
+  },
+  "zoomControls": {
+    "hideMinimap": "Скрыть миникарту",
+    "label": "Элементы управления масштабом",
+    "showMinimap": "Показать миникарту",
+    "zoomToFit": "Масштабировать по размеру"
   }
 }

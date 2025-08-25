@@ -1,34 +1,43 @@
-import {
-  LGraphEventMode,
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@comfyorg/litegraph'
-import { Point } from '@comfyorg/litegraph'
-
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
 import { t } from '@/i18n'
+import {
+  LGraphEventMode,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { addFluxKontextGroupNode } from '@/scripts/fluxKontextEditNode'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import { useHelpCenterStore } from '@/stores/helpCenterStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useToastStore } from '@/stores/toastStore'
 import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import {
+  getAllNonIoNodesInSubgraph,
+  getExecutionIdsForSelectedNodes
+} from '@/utils/graphTraversalUtil'
+import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 
@@ -41,29 +50,12 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+
+  const bottomPanelStore = useBottomPanelStore()
+
+  const { getSelectedNodes, toggleSelectedNodesMode } =
+    useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
-
-  const getSelectedNodes = (): LGraphNode[] => {
-    const selectedNodes = app.canvas.selected_nodes
-    const result: LGraphNode[] = []
-    if (selectedNodes) {
-      for (const i in selectedNodes) {
-        const node = selectedNodes[i]
-        result.push(node)
-      }
-    }
-    return result
-  }
-
-  const toggleSelectedNodesMode = (mode: LGraphEventMode) => {
-    getSelectedNodes().forEach((node) => {
-      if (node.mode === mode) {
-        node.mode = LGraphEventMode.ALWAYS
-      } else {
-        node.mode = mode
-      }
-    })
-  }
 
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
@@ -85,6 +77,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-plus',
       label: 'New Blank Workflow',
       menubarLabel: 'New',
+      category: 'essentials' as const,
       function: () => workflowService.loadBlankWorkflow()
     },
     {
@@ -92,6 +85,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-folder-open',
       label: 'Open Workflow',
       menubarLabel: 'Open',
+      category: 'essentials' as const,
       function: () => {
         app.ui.loadFile()
       }
@@ -107,6 +101,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-save',
       label: 'Save Workflow',
       menubarLabel: 'Save',
+      category: 'essentials' as const,
       function: async () => {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
         if (!workflow) return
@@ -119,6 +114,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-save',
       label: 'Save Workflow As',
       menubarLabel: 'Save As',
+      category: 'essentials' as const,
       function: async () => {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
         if (!workflow) return
@@ -131,6 +127,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-download',
       label: 'Export Workflow',
       menubarLabel: 'Export',
+      category: 'essentials' as const,
       function: async () => {
         await workflowService.exportWorkflow('workflow', 'workflow')
       }
@@ -148,6 +145,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Undo',
       icon: 'pi pi-undo',
       label: 'Undo',
+      category: 'essentials' as const,
       function: async () => {
         await getTracker()?.undo?.()
       }
@@ -156,6 +154,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Redo',
       icon: 'pi pi-refresh',
       label: 'Redo',
+      category: 'essentials' as const,
       function: async () => {
         await getTracker()?.redo?.()
       }
@@ -164,15 +163,21 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.ClearWorkflow',
       icon: 'pi pi-trash',
       label: 'Clear Workflow',
+      category: 'essentials' as const,
       function: () => {
         const settingStore = useSettingStore()
         if (
-          !settingStore.get('Comfy.ComfirmClear') ||
+          !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
           app.clean()
           if (app.canvas.subgraph) {
-            app.canvas.subgraph.clear()
+            // `clear` is not implemented on subgraphs and the parent class's
+            // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
+            // just clear the nodes but preserve input/output nodes and structure
+            const subgraph = app.canvas.subgraph
+            const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
+            nonIoNodes.forEach((node) => subgraph.remove(node))
           } else {
             app.graph.clear()
           }
@@ -200,6 +205,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.RefreshNodeDefinitions',
       icon: 'pi pi-refresh',
       label: 'Refresh Node Definitions',
+      category: 'essentials' as const,
       function: async () => {
         await app.refreshComboInNodes()
       }
@@ -208,6 +214,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Interrupt',
       icon: 'pi pi-stop',
       label: 'Interrupt',
+      category: 'essentials' as const,
       function: async () => {
         await api.interrupt(executionStore.activePromptId)
         toastStore.add({
@@ -222,6 +229,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.ClearPendingTasks',
       icon: 'pi pi-stop',
       label: 'Clear Pending Tasks',
+      category: 'essentials' as const,
       function: async () => {
         await useQueueStore().clear(['queue'])
         toastStore.add({
@@ -244,6 +252,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.ZoomIn',
       icon: 'pi pi-plus',
       label: 'Zoom In',
+      category: 'view-controls' as const,
       function: () => {
         const ds = app.canvas.ds
         ds.changeScale(
@@ -257,6 +266,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.ZoomOut',
       icon: 'pi pi-minus',
       label: 'Zoom Out',
+      category: 'view-controls' as const,
       function: () => {
         const ds = app.canvas.ds
         ds.changeScale(
@@ -270,6 +280,8 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.FitView',
       icon: 'pi pi-expand',
       label: 'Fit view to selected nodes',
+      menubarLabel: 'Zoom to fit',
+      category: 'view-controls' as const,
       function: () => {
         if (app.canvas.empty) {
           toastStore.add({
@@ -286,14 +298,33 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.ToggleLock',
       icon: 'pi pi-lock',
       label: 'Canvas Toggle Lock',
+      category: 'view-controls' as const,
       function: () => {
-        app.canvas['read_only'] = !app.canvas['read_only']
+        app.canvas.state.readOnly = !app.canvas.state.readOnly
+      }
+    },
+    {
+      id: 'Comfy.Canvas.Lock',
+      icon: 'pi pi-lock',
+      label: 'Lock Canvas',
+      category: 'view-controls' as const,
+      function: () => {
+        app.canvas.state.readOnly = true
+      }
+    },
+    {
+      id: 'Comfy.Canvas.Unlock',
+      icon: 'pi pi-lock-open',
+      label: 'Unlock Canvas',
+      function: () => {
+        app.canvas.state.readOnly = false
       }
     },
     {
       id: 'Comfy.Canvas.ToggleLinkVisibility',
       icon: 'pi pi-eye',
       label: 'Canvas Toggle Link Visibility',
+      menubarLabel: 'Node Links',
       versionAdded: '1.3.6',
 
       function: (() => {
@@ -315,13 +346,31 @@ export function useCoreCommands(): ComfyCommand[] {
             )
           }
         }
-      })()
+      })(),
+      active: () =>
+        useSettingStore().get('Comfy.LinkRenderMode') !== LiteGraph.HIDDEN_LINK
+    },
+    {
+      id: 'Comfy.Canvas.ToggleMinimap',
+      icon: 'pi pi-map',
+      label: 'Canvas Toggle Minimap',
+      menubarLabel: 'Minimap',
+      versionAdded: '1.24.1',
+      function: async () => {
+        const settingStore = useSettingStore()
+        await settingStore.set(
+          'Comfy.Minimap.Visible',
+          !settingStore.get('Comfy.Minimap.Visible')
+        )
+      },
+      active: () => useSettingStore().get('Comfy.Minimap.Visible')
     },
     {
       id: 'Comfy.QueuePrompt',
       icon: 'pi pi-play',
       label: 'Queue Prompt',
       versionAdded: '1.3.7',
+      category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
         await app.queuePrompt(0, batchCount)
@@ -332,6 +381,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-play',
       label: 'Queue Prompt (Front)',
       versionAdded: '1.3.7',
+      category: 'essentials' as const,
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
         await app.queuePrompt(-1, batchCount)
@@ -344,10 +394,10 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.19.6',
       function: async () => {
         const batchCount = useQueueSettingsStore().batchCount
-        const queueNodeIds = getSelectedNodes()
-          .filter((node) => node.constructor.nodeData?.output_node)
-          .map((node) => node.id)
-        if (queueNodeIds.length === 0) {
+        const selectedNodes = getSelectedNodes()
+        const selectedOutputNodes = filterOutputNodes(selectedNodes)
+
+        if (selectedOutputNodes.length === 0) {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToQueue'),
@@ -356,7 +406,11 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        await app.queuePrompt(0, batchCount, queueNodeIds)
+
+        // Get execution IDs for all selected output nodes and their descendants
+        const executionIds =
+          getExecutionIdsForSelectedNodes(selectedOutputNodes)
+        await app.queuePrompt(0, batchCount, executionIds)
       }
     },
     {
@@ -364,6 +418,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-cog',
       label: 'Show Settings Dialog',
       versionAdded: '1.3.7',
+      category: 'view-controls' as const,
       function: () => {
         dialogService.showSettingsDialog()
       }
@@ -373,6 +428,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-sitemap',
       label: 'Group Selected Nodes',
       versionAdded: '1.3.7',
+      category: 'essentials' as const,
       function: () => {
         const { canvas } = app
         if (!canvas.selectedItems?.size) {
@@ -416,6 +472,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-volume-off',
       label: 'Mute/Unmute Selected Nodes',
       versionAdded: '1.3.11',
+      category: 'essentials' as const,
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.NEVER)
         app.canvas.setDirty(true, true)
@@ -426,6 +483,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-shield',
       label: 'Bypass/Unbypass Selected Nodes',
       versionAdded: '1.3.11',
+      category: 'essentials' as const,
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
@@ -436,6 +494,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-pin',
       label: 'Pin/Unpin Selected Nodes',
       versionAdded: '1.3.11',
+      category: 'essentials' as const,
       function: () => {
         getSelectedNodes().forEach((node) => {
           node.pin(!node.pinned)
@@ -508,19 +567,25 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Workspace.ToggleBottomPanel',
       icon: 'pi pi-list',
       label: 'Toggle Bottom Panel',
+      menubarLabel: 'Bottom Panel',
       versionAdded: '1.3.22',
+      category: 'view-controls' as const,
       function: () => {
-        useBottomPanelStore().toggleBottomPanel()
-      }
+        bottomPanelStore.toggleBottomPanel()
+      },
+      active: () => bottomPanelStore.bottomPanelVisible
     },
     {
       id: 'Workspace.ToggleFocusMode',
       icon: 'pi pi-eye',
       label: 'Toggle Focus Mode',
+      menubarLabel: 'Focus Mode',
       versionAdded: '1.3.27',
+      category: 'view-controls' as const,
       function: () => {
         useWorkspaceStore().toggleFocusMode()
-      }
+      },
+      active: () => useWorkspaceStore().focusMode
     },
     {
       id: 'Comfy.Graph.FitGroupToContents',
@@ -728,21 +793,11 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
     },
     {
-      id: 'Comfy.Canvas.AddEditModelStep',
-      icon: 'pi pi-pen-to-square',
-      label: 'Add Edit Model Step',
-      versionAdded: '1.23.3',
-      function: async () => {
-        const node = app.canvas.selectedItems.values().next().value
-        if (!(node instanceof LGraphNode)) return
-        await addFluxKontextGroupNode(node)
-      }
-    },
-    {
       id: 'Comfy.Graph.ConvertToSubgraph',
       icon: 'pi pi-sitemap',
       label: 'Convert Selection to Subgraph',
       versionAdded: '1.20.1',
+      category: 'essentials' as const,
       function: () => {
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
@@ -760,6 +815,88 @@ export function useCoreCommands(): ComfyCommand[] {
         }
         const { node } = res
         canvas.select(node)
+        canvasStore.updateSelectedItems()
+      }
+    },
+    {
+      id: 'Comfy.Graph.UnpackSubgraph',
+      icon: 'pi pi-sitemap',
+      label: 'Unpack the selected Subgraph',
+      versionAdded: '1.20.1',
+      category: 'essentials' as const,
+      function: () => {
+        const canvas = canvasStore.getCanvas()
+        const graph = canvas.subgraph ?? canvas.graph
+        if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
+
+        const subgraphNode = app.canvas.selectedItems.values().next().value
+        if (!(subgraphNode instanceof SubgraphNode)) return
+        useNodeOutputStore().revokeSubgraphPreviews(subgraphNode)
+        graph.unpackSubgraph(subgraphNode)
+      }
+    },
+    {
+      id: 'Comfy.OpenManagerDialog',
+      icon: 'mdi mdi-puzzle-outline',
+      label: 'Manager',
+      function: () => {
+        dialogService.showManagerDialog()
+      }
+    },
+    {
+      id: 'Comfy.ToggleHelpCenter',
+      icon: 'pi pi-question-circle',
+      label: 'Help Center',
+      function: () => {
+        useHelpCenterStore().toggle()
+      },
+      active: () => useHelpCenterStore().isVisible
+    },
+    {
+      id: 'Comfy.ToggleCanvasInfo',
+      icon: 'pi pi-info-circle',
+      label: 'Canvas Performance',
+      function: async () => {
+        const settingStore = useSettingStore()
+        const currentValue = settingStore.get('Comfy.Graph.CanvasInfo')
+        await settingStore.set('Comfy.Graph.CanvasInfo', !currentValue)
+      },
+      active: () => useSettingStore().get('Comfy.Graph.CanvasInfo')
+    },
+    {
+      id: 'Workspace.ToggleBottomPanel.Shortcuts',
+      icon: 'pi pi-key',
+      label: 'Show Keybindings Dialog',
+      versionAdded: '1.24.1',
+      category: 'view-controls' as const,
+      function: () => {
+        bottomPanelStore.togglePanel('shortcuts')
+      }
+    },
+    {
+      id: 'Comfy.Graph.ExitSubgraph',
+      icon: 'pi pi-arrow-up',
+      label: 'Exit Subgraph',
+      versionAdded: '1.20.1',
+      function: () => {
+        const canvas = useCanvasStore().getCanvas()
+        const navigationStore = useSubgraphNavigationStore()
+        if (!canvas.graph) return
+
+        canvas.setGraph(
+          navigationStore.navigationStack.at(-2) ?? canvas.graph.rootGraph
+        )
+      }
+    },
+    {
+      id: 'Comfy.Dev.ShowModelSelector',
+      icon: 'pi pi-box',
+      label: 'Show Model Selector (Dev)',
+      versionAdded: '1.26.2',
+      category: 'view-controls' as const,
+      function: () => {
+        const modelSelectorDialog = useModelSelectorDialog()
+        modelSelectorDialog.show()
       }
     }
   ]

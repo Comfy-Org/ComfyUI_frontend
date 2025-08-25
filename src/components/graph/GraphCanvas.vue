@@ -2,13 +2,11 @@
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay
-    v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
-  >
-    <template #side-bar-panel>
+  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
+    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
       <SideToolbar />
     </template>
-    <template #bottom-panel>
+    <template v-if="!workspaceStore.focusMode" #bottom-panel>
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
@@ -18,6 +16,11 @@
         />
       </div>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
+
+      <MiniMap
+        v-if="comfyAppReady && minimapEnabled"
+        class="pointer-events-auto"
+      />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
@@ -29,30 +32,27 @@
   />
 
   <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover />
+  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
   canvasStore.canvas to be initialized. -->
   <template v-if="comfyAppReady">
     <TitleEditor />
-    <SelectionOverlay v-if="selectionToolboxEnabled">
-      <SelectionToolbox />
-    </SelectionOverlay>
+    <SelectionToolbox v-if="selectionToolboxEnabled" />
     <DomWidgets />
   </template>
 </template>
 
 <script setup lang="ts">
-import type { LGraphNode } from '@comfyorg/litegraph'
 import { useEventListener, whenever } from '@vueuse/core'
-import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
@@ -70,6 +70,7 @@ import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -85,12 +86,16 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const nodeSearchboxPopoverRef = shallowRef<InstanceType<
+  typeof NodeSearchboxPopover
+> | null>(null)
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
@@ -110,6 +115,8 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(() =>
   settingStore.get('Comfy.Canvas.SelectionToolbox')
 )
+
+const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -312,6 +319,7 @@ onMounted(async () => {
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
+  useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
   window.app = comfyApp
   window.graph = comfyApp.graph

@@ -35,17 +35,20 @@
   "Comfy-Desktop_Restart": {
     "label": "重启"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "为所选节点开启 3D 浏览器（Beta 版）"
+  },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
-  },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "添加编辑模型步骤"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "删除选定的项目"
   },
   "Comfy_Canvas_FitView": {
     "label": "适应视图到选中节点"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "鎖定畫布"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "下移选中的节点"
@@ -71,6 +74,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "锁定视图"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "画布切换小地图"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
     "label": "忽略/取消忽略选中节点"
   },
@@ -85,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "固定/取消固定选中项"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "解鎖畫布"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "放大"
@@ -101,6 +110,9 @@
   "Comfy_ContactSupport": {
     "label": "联系支持"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "顯示模型選擇器（開發）"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
   },
@@ -116,11 +128,17 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "将选区转换为子图"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "退出子图"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "添加框到选中节点"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "解开所选子图"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "将选中节点转换为组节点"
@@ -159,10 +177,10 @@
     "label": "切换进度对话框"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
-    "label": "減小 MaskEditor 中的筆刷大小"
+    "label": "减小 MaskEditor 中的笔刷大小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
-    "label": "增加 MaskEditor 畫筆大小"
+    "label": "增加 MaskEditor 画笔大小"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
@@ -172,6 +190,9 @@
   },
   "Comfy_OpenClipspace": {
     "label": "打开剪贴板"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "管理器"
   },
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
@@ -199,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "显示设置对话框"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "画布性能"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "说明中心"
   },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
@@ -232,6 +259,15 @@
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "切换日志底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "切换基础底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "切换视图控制底部面板"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "显示快捷键对话框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

@@ -1,5 +1,4 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 

@@ -33,18 +33,18 @@
 </template>
 
 <script setup lang="ts">
-import {
-  LGraphNode,
-  LiteGraph,
-  LiteGraphCanvasEvent
-} from '@comfyorg/litegraph'
-import { Point } from '@comfyorg/litegraph/dist/interfaces'
-import type { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
+import { Point } from '@/lib/litegraph/src/interfaces'
+import {
+  LGraphNode,
+  LiteGraph,
+  LiteGraphCanvasEvent
+} from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -61,9 +61,10 @@ let listenerController: AbortController | null = null
 let disconnectOnReset = false
 
 const settingStore = useSettingStore()
+const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
 
-const { visible } = storeToRefs(useSearchBoxStore())
+const { visible, newSearchBoxEnabled } = storeToRefs(searchBoxStore)
 const dismissable = ref(true)
 const getNewNodeLocation = (): Point => {
   return triggerEvent
@@ -90,18 +91,16 @@ const closeDialog = () => {
 const canvasStore = useCanvasStore()
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
-  if (!triggerEvent) {
-    console.warn('The trigger event was undefined when addNode was called.')
-    return
-  }
-
   const node = litegraphService.addNodeOnGraph(nodeDef, {
     pos: getNewNodeLocation()
   })
 
-  if (disconnectOnReset) {
+  if (disconnectOnReset && triggerEvent) {
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
+  } else if (!triggerEvent) {
+    console.warn('The trigger event was undefined when addNode was called.')
   }
+
   disconnectOnReset = false
 
   // Notify changeTracker - new step should be added
@@ -109,12 +108,9 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   window.requestAnimationFrame(closeDialog)
 }
 
-const newSearchBoxEnabled = computed(
-  () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
-)
-const showSearchBox = (e: CanvasPointerEvent) => {
+const showSearchBox = (e: CanvasPointerEvent | null) => {
   if (newSearchBoxEnabled.value) {
-    if (e.pointerType === 'touch') {
+    if (e?.pointerType === 'touch') {
       setTimeout(() => {
         showNewSearchBox(e)
       }, 128)
@@ -130,7 +126,7 @@ const getFirstLink = () =>
   canvasStore.getCanvas().linkConnector.renderLinks.at(0)
 
 const nodeDefStore = useNodeDefStore()
-const showNewSearchBox = (e: CanvasPointerEvent) => {
+const showNewSearchBox = (e: CanvasPointerEvent | null) => {
   const firstLink = getFirstLink()
   if (firstLink) {
     const filter =
@@ -306,6 +302,7 @@ watch(visible, () => {
 })
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
+defineExpose({ showSearchBox })
 </script>
 
 <style>

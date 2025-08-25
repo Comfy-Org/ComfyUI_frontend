@@ -1,8 +1,8 @@
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import _ from 'es-toolkit/compat'
 import * as jsondiffpatch from 'jsondiffpatch'
-import _ from 'lodash'
 import log from 'loglevel'
 
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -73,7 +73,8 @@ export class ChangeTracker {
       offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
     }
     const navigation = useSubgraphNavigationStore().exportState()
-    this.subgraphState = navigation.length ? { navigation } : undefined
+    // Always store the navigation state, even if empty (root level)
+    this.subgraphState = { navigation }
   }
 
   restore() {
@@ -90,8 +91,14 @@ export class ChangeTracker {
 
       const activeId = navigation.at(-1)
       if (activeId) {
+        // Navigate to the saved subgraph
         const subgraph = app.graph.subgraphs.get(activeId)
-        if (subgraph) app.canvas.setGraph(subgraph)
+        if (subgraph) {
+          app.canvas.setGraph(subgraph)
+        }
+      } else {
+        // Empty navigation array means root level
+        app.canvas.setGraph(app.graph)
       }
     }
   }

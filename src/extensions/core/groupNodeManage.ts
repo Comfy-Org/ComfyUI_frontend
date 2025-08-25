@@ -1,9 +1,9 @@
+import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import {
   type LGraphNode,
   type LGraphNodeConstructor,
   LiteGraph
-} from '@comfyorg/litegraph'
-
+} from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/stores/toastStore'
 
 import { type ComfyApp, app } from '../../scripts/app'
@@ -14,8 +14,6 @@ import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import './groupNodeManage.css'
 
 const ORDER: symbol = Symbol()
-const PREFIX = 'workflow'
-const SEPARATOR = '>'
 
 // @ts-expect-error fixme ts strict error
 function merge(target, source) {

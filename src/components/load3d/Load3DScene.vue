@@ -5,7 +5,6 @@
 </template>
 
 <script setup lang="ts">
-import { LGraphNode } from '@comfyorg/litegraph'
 import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
@@ -17,6 +16,7 @@ import {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -42,12 +42,14 @@ const load3d = ref<Load3d | Load3dAnimation | null>(null)
 const loadingOverlayRef = ref<InstanceType<typeof LoadingOverlay> | null>(null)
 
 const eventConfig = {
-  materialModeChange: (value: string) => emit('materialModeChange', value),
+  materialModeChange: (value: string) =>
+    emit('materialModeChange', value as MaterialMode),
   backgroundColorChange: (value: string) =>
     emit('backgroundColorChange', value),
   lightIntensityChange: (value: number) => emit('lightIntensityChange', value),
   fovChange: (value: number) => emit('fovChange', value),
-  cameraTypeChange: (value: string) => emit('cameraTypeChange', value),
+  cameraTypeChange: (value: string) =>
+    emit('cameraTypeChange', value as CameraType),
   showGridChange: (value: boolean) => emit('showGridChange', value),
   showPreviewChange: (value: boolean) => emit('showPreviewChange', value),
   backgroundImageChange: (value: string) =>
@@ -55,7 +57,8 @@ const eventConfig = {
   backgroundImageLoadingStart: () =>
     loadingOverlayRef.value?.startLoading(t('load3d.loadingBackgroundImage')),
   backgroundImageLoadingEnd: () => loadingOverlayRef.value?.endLoading(),
-  upDirectionChange: (value: string) => emit('upDirectionChange', value),
+  upDirectionChange: (value: string) =>
+    emit('upDirectionChange', value as UpDirection),
   edgeThresholdChange: (value: number) => emit('edgeThresholdChange', value),
   modelLoadingStart: () =>
     loadingOverlayRef.value?.startLoading(t('load3d.loadingModel')),
@@ -184,15 +187,15 @@ watch(
 )
 
 const emit = defineEmits<{
-  (e: 'materialModeChange', materialMode: string): void
+  (e: 'materialModeChange', materialMode: MaterialMode): void
   (e: 'backgroundColorChange', color: string): void
   (e: 'lightIntensityChange', lightIntensity: number): void
   (e: 'fovChange', fov: number): void
-  (e: 'cameraTypeChange', cameraType: string): void
+  (e: 'cameraTypeChange', cameraType: CameraType): void
   (e: 'showGridChange', showGrid: boolean): void
   (e: 'showPreviewChange', showPreview: boolean): void
   (e: 'backgroundImageChange', backgroundImage: string): void
-  (e: 'upDirectionChange', upDirection: string): void
+  (e: 'upDirectionChange', upDirection: UpDirection): void
   (e: 'edgeThresholdChange', threshold: number): void
   (e: 'recordingStatusChange', status: boolean): void
 }>()

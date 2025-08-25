@@ -1,99 +1,105 @@
 name: Bug Report
-description: 'Something is not behaving as expected.'
-title: '[Bug]: '
+description: 'Report something that is not working correctly'
 labels: ['Potential Bug']
 type: Bug
 
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Before submitting a **Bug Report**, please ensure the following:
-
-        - **1:** You are running the latest version of ComfyUI.
-        - **2:** You have looked at the existing bug reports and made sure this isn't already reported.
-
   - type: checkboxes
-    id: custom-nodes-test
     attributes:
-      label: Custom Node Testing
-      description: Please confirm you have tried to reproduce the issue with all custom nodes disabled.
+      label: Prerequisites
       options:
-        - label: I have tried disabling custom nodes and the issue persists (see [how to disable custom nodes](https://docs.comfy.org/troubleshooting/custom-node-issues#step-1%3A-test-with-all-custom-nodes-disabled) if you need help)
+        - label: I am running the latest version of ComfyUI
+          required: true
+        - label: I have searched existing issues to make sure this isn't a duplicate
+          required: true
+        - label: I have tested with all custom nodes disabled ([see how](https://docs.comfy.org/troubleshooting/custom-node-issues#step-1%3A-test-with-all-custom-nodes-disabled))
           required: true
 
   - type: textarea
+    id: description
     attributes:
-      label: Frontend Version
-      description: |
-        What is the frontend version you are using? You can check this in the settings dialog.
-
-        <details>
-
-        <summary>Click to show where to find the version</summary>
-
-        Open the setting by clicking the cog icon in the bottom-left of the screen, then click `About`.
-
-        ![Frontend version](https://github.com/user-attachments/assets/561fb7c3-3012-457c-a494-9bdc1ff035c0)
-
-        </details>
+      label: What happened?
+      description: A clear and concise description of the bug. Include screenshots or videos if helpful.
+      placeholder: |
+        Example: "When I connect a VAE Decode node to a KSampler, the connection line appears but the workflow fails to execute with an error message..."
     validations:
       required: true
+
   - type: textarea
-    attributes:
-      label: Expected Behavior
-      description: 'What you expected to happen.'
-    validations:
-      required: true
-  - type: textarea
-    attributes:
-      label: Actual Behavior
-      description: 'What actually happened. Please include a screenshot / video clip of the issue if possible.'
-    validations:
-      required: true
-  - type: textarea
+    id: reproduce
     attributes:
       label: Steps to Reproduce
-      description: "Describe how to reproduce the issue. Please be sure to attach a workflow JSON or PNG, ideally one that doesn't require custom nodes to test. If the bug open happens when certain custom nodes are used, most likely that custom node is what has the bug rather than ComfyUI, in which case it should be reported to the node's author."
+      description: How can we reproduce this issue? Please attach your workflow (JSON or PNG).
+      placeholder: |
+        1. Add a KSampler node
+        2. Connect it to...
+        3. Click Queue Prompt
+        4. See error
+      value: |
+        1. 
+        2. 
+        3. 
     validations:
       required: true
-  - type: textarea
-    attributes:
-      label: Debug Logs
-      description: 'Please copy the output from your terminal logs here.'
-      render: powershell
-    validations:
-      required: true
-  - type: textarea
-    attributes:
-      label: Browser Logs
-      description: 'Please copy the output from your browser logs here. You can access this by pressing F12 to toggle the developer tools, then navigating to the Console tab.'
-    validations:
-      required: true
-  - type: textarea
-    attributes:
-      label: Setting JSON
-      description: 'Please upload the setting file here. The setting file is located at `user/default/comfy.settings.json`'
-    validations:
-      required: true
+
   - type: dropdown
-    id: browsers
+    id: severity
     attributes:
-      label: What browsers do you use to access the UI ?
-      multiple: true
+      label: How is this affecting you?
       options:
-        - Mozilla Firefox
-        - Google Chrome
-        - Brave
-        - Apple Safari
-        - Microsoft Edge
-        - Android
-        - iOS
-        - Other
-  - type: textarea
-    attributes:
-      label: Other Information
-      description: 'Any other context, details, or screenshots that might help solve the issue.'
-      placeholder: 'Add any other relevant information here...'
+        - Crashes ComfyUI completely
+        - Workflow won't execute
+        - Feature doesn't work as expected
+        - Visual/UI issue only
+        - Minor inconvenience
     validations:
-      required: false
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: ComfyUI Frontend Version
+      description: Found in Settings > About (e.g., "1.3.45")
+      placeholder: "1.3.45"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: Which browser are you using?
+      options:
+        - Chrome/Chromium
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Additional Information (Optional)
+        *The following fields help us debug complex issues but are not required for most bug reports.*
+
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: Console Errors
+      description: If you see red error messages in the browser console (F12), paste them here
+      render: javascript
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: If relevant, paste any terminal/server logs here
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might help (OS, GPU, specific nodes involved, etc.)

@@ -8,9 +8,10 @@ import { isElectron } from '@/utils/envUtil'
 export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
   return {
     id: 'model-library',
-    icon: 'pi pi-box',
+    icon: 'icon-[comfy--ai-model]',
     title: 'sideToolbar.modelLibrary',
     tooltip: 'sideToolbar.modelLibrary',
+    label: 'sideToolbar.labels.models',
     component: markRaw(ModelLibrarySidebarTab),
     type: 'vue',
     iconBadge: () => {

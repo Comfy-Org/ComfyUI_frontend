@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts" generic="TFilter extends SearchFilter">
-import { debounce } from 'lodash'
+import { debounce } from 'es-toolkit/compat'
 import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'

@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
-import type { INumericWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   type InputSpec,
   isFloatInputSpec

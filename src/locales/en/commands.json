@@ -35,17 +35,20 @@
   "Comfy-Desktop_Restart": {
     "label": "Restart"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Open 3D Viewer (Beta) for Selected Node"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Browse Templates"
-  },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "Add Edit Model Step"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Delete Selected Items"
   },
   "Comfy_Canvas_FitView": {
     "label": "Fit view to selected nodes"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Lock Canvas"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Move Selected Nodes Down"
@@ -71,6 +74,9 @@
   "Comfy_Canvas_ToggleLock": {
     "label": "Canvas Toggle Lock"
   },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Canvas Toggle Minimap"
+  },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Pin/Unpin Selected Items"
   },
@@ -85,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "Pin/Unpin Selected Nodes"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Unlock Canvas"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom In"
@@ -101,6 +110,9 @@
   "Comfy_ContactSupport": {
     "label": "Contact Support"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Show Model Selector (Dev)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Duplicate Current Workflow"
   },
@@ -116,11 +128,17 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Exit Subgraph"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Fit Group To Contents"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Group Selected Nodes"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Unpack the selected Subgraph"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Convert selected nodes to group node"
@@ -173,6 +191,9 @@
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Manager"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Open Workflow"
   },
@@ -199,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Show Settings Dialog"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Canvas Performance"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Help Center"
   },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
@@ -227,11 +254,20 @@
   "Workspace_ToggleBottomPanel": {
     "label": "Toggle Bottom Panel"
   },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Show Keybindings Dialog"
+  },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "Toggle Terminal Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Toggle Logs Bottom Panel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Toggle Essential Bottom Panel"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Toggle View Controls Bottom Panel"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Toggle Focus Mode"

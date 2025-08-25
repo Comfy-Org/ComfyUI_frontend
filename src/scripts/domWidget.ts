@@ -1,12 +1,16 @@
-import { LGraphNode, LegacyWidget, LiteGraph } from '@comfyorg/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@comfyorg/litegraph/dist/types/widgets'
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import {
+  LGraphNode,
+  LegacyWidget,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
@@ -186,6 +190,9 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       options: this.options
     })
     cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
     return cloned
   }
 }
@@ -217,6 +224,9 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       options: this.options
     })
     cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
     return cloned
   }
 
