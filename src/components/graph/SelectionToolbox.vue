@@ -1,7 +1,7 @@
 <template>
   <div
     ref="toolboxRef"
-    style="transform: translate(calc(var(--tb-x)), calc(var(--tb-y)))"
+    style="transform: translate(var(--tb-x), var(--tb-y))"
     class="fixed left-0 top-0 z-40"
   >
     <Transition name="slide-up" appear>
@@ -91,22 +91,25 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 }
 
 @keyframes slideUp {
-  from {
+  0% {
     transform: translateX(-50%) translateY(-100%);
     opacity: 0;
   }
-  to {
+  50% {
+    transform: translateX(-50%) translateY(-125%);
+    opacity: 0.5;
+  }
+  100% {
     transform: translateX(-50%) translateY(-120%);
     opacity: 1;
   }
 }
 
 .slide-up-enter-active {
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 75ms ease-out;
 }
 
 .slide-up-leave-active {
-  animation: slideUp 0.2s ease-in reverse;
-  opacity: 0;
+  animation: slideUp 50ms reverse;
 }
 </style>
