@@ -120,7 +120,7 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
 }
 
 const handleSearch = (query: string) => {
-  handleSearchBase(query)
+  handleSearchBase(query.trim())
   activeCategory.value = query ? null : defaultCategory.value
 }
 
