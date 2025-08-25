@@ -103,7 +103,7 @@ export class SubgraphBlueprint extends ComfyWorkflow {
 const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
 
 export const useSubgraphStore = defineStore('subgraph', () => {
-  const typePrefix = 'SubgraphBlueprint'
+  const typePrefix = 'SubgraphBlueprint.'
   const subgraphDefCache = ref<Map<string, ComfyNodeDefImpl>>(new Map())
   const canvasStore = useCanvasStore()
   const dialogService = useDialogService()
@@ -252,6 +252,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     getBlueprint,
     publishSubgraph,
     subgraphBlueprints,
+    typePrefix,
     updateDef
   }
 })

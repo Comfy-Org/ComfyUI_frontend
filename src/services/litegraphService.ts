@@ -949,9 +949,13 @@ export const useLitegraphService = () => {
     options: Record<string, any> = {}
   ): LGraphNode {
     options.pos ??= getCanvasCenter()
-    if (nodeDef.name.startsWith('SubgraphBlueprint')) {
+
+    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
+      bp.nodes[0].title = nodeDef.name.slice(
+        useSubgraphStore().typePrefix.length
+      )
       const items = { nodes: bp.nodes, subgraphs: bp.definitions?.subgraphs }
       //FIXME
       const strippedItems = JSON.parse(JSON.stringify(items))
