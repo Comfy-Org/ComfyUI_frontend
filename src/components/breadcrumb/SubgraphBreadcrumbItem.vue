@@ -139,7 +139,9 @@ const menuItems = computed<MenuItem[]>(() => {
       visible: props.item.key === 'root'
     },
     {
-      label: t('breadcrumbsMenu.deleteWorkflow'),
+      label: props.item.isBlueprint
+        ? t('breadcrumbsMenu.deleteBlueprint')
+        : t('breadcrumbsMenu.deleteWorkflow'),
       icon: 'pi pi-times',
       command: async () => {
         await workflowService.deleteWorkflow(workflowStore.activeWorkflow!)

@@ -1690,6 +1690,7 @@
     "duplicate": "Duplicate",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
+    "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name"
   },
   "shortcuts": {
