@@ -4,7 +4,7 @@
     style="transform: translate(var(--tb-x), var(--tb-y))"
     class="fixed left-0 top-0 z-40"
   >
-    <Transition name="slide-up" appear>
+    <Transition name="slide-up">
       <div v-if="isVisible" class="selection-toolbox">
         <Panel
           class="rounded-lg"
@@ -89,18 +89,15 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 .selection-toolbox {
   transform: translateX(-50%) translateY(-120%);
   will-change: transform, opacity;
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-  transform-style: preserve-3d;
 }
 
 @keyframes slideUp {
   0% {
-    transform: translate3d(-50%, -100%, 0);
+    transform: translateX(-50%) translateY(-100%);
     opacity: 0;
   }
   50% {
-    transform: translate3d(-50%, -125%, 0);
+    transform: translateX(-50%) translateY(-125%);
     opacity: 0.5;
   }
   100% {
@@ -114,6 +111,6 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 }
 
 .slide-up-leave-active {
-  animation: slideUp 50ms reverse;
+  animation: slideUp 25ms ease-out reverse;
 }
 </style>
