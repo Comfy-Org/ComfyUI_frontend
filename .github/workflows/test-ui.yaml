@@ -41,6 +41,7 @@ jobs:
         with:
           node-version: lts/*
           cache: 'npm'
+          cache-dependency-path: 'ComfyUI_frontend/package-lock.json'
 
       - name: Get current time
         id: current-time
