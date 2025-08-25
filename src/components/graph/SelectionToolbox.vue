@@ -1,40 +1,39 @@
 <template>
-  <Transition name="slide-up">
-    <!-- Wrapping panel in div to get correct ref because panel ref is not of raw dom el -->
-    <div
-      v-show="visible"
-      ref="toolboxRef"
-      style="
-        transform: translate(calc(var(--tb-x) - 50%), calc(var(--tb-y) - 120%));
-      "
-      class="selection-toolbox fixed left-0 top-0 z-40"
-    >
-      <Panel
-        class="rounded-lg"
-        :pt="{
-          header: 'hidden',
-          content: 'p-0 flex flex-row'
-        }"
-        @wheel="canvasInteractions.handleWheel"
-      >
-        <ExecuteButton />
-        <ColorPickerButton />
-        <BypassButton />
-        <PinButton />
-        <Load3DViewerButton />
-        <MaskEditorButton />
-        <ConvertToSubgraphButton />
-        <DeleteButton />
-        <RefreshSelectionButton />
-        <ExtensionCommandButton
-          v-for="command in extensionToolboxCommands"
-          :key="command.id"
-          :command="command"
-        />
-        <HelpButton />
-      </Panel>
-    </div>
-  </Transition>
+  <div
+    ref="toolboxRef"
+    style="transform: translate(calc(var(--tb-x)), calc(var(--tb-y)))"
+    class="fixed left-0 top-0 z-40"
+  >
+    <Transition name="slide-up" appear>
+      <div v-if="isVisible" class="selection-toolbox">
+        <Panel
+          class="rounded-lg"
+          :pt="{
+            header: 'hidden',
+            content: 'p-0 flex flex-row'
+          }"
+          @wheel="canvasInteractions.handleWheel"
+        >
+          <ExecuteButton />
+          <ColorPickerButton />
+          <BypassButton />
+          <PinButton />
+          <EditModelButton />
+          <Load3DViewerButton />
+          <MaskEditorButton />
+          <ConvertToSubgraphButton />
+          <DeleteButton />
+          <RefreshSelectionButton />
+          <ExtensionCommandButton
+            v-for="command in extensionToolboxCommands"
+            :key="command.id"
+            :command="command"
+          />
+          <HelpButton />
+        </Panel>
+      </div>
+    </Transition>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -66,6 +65,9 @@ const canvasInteractions = useCanvasInteractions()
 const toolboxRef = ref<HTMLElement | undefined>()
 const { visible } = useSelectionToolboxPosition(toolboxRef)
 
+// Use the visible state directly from the composable
+const isVisible = computed(() => visible.value)
+
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
     canvasStore.selectedItems
@@ -84,22 +86,27 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 </script>
 
 <style scoped>
+.selection-toolbox {
+  transform: translateX(-50%) translateY(-120%);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(-120%);
+    opacity: 1;
+  }
+}
+
 .slide-up-enter-active {
-  opacity: 1;
-  transition: all 0.3s ease-out;
+  animation: slideUp 0.3s ease-out;
 }
 
 .slide-up-leave-active {
-  transition: none;
-}
-
-.slide-up-enter-from {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.slide-up-leave-to {
-  transform: translateY(0);
+  animation: slideUp 0.2s ease-in reverse;
   opacity: 0;
 }
 </style>
