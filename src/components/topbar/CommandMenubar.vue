@@ -166,17 +166,14 @@ const showManageExtensions = async () => {
 
   switch (state) {
     case ManagerUIState.DISABLED:
-      // When manager is disabled, open the extensions panel in settings
       showSettings('extension')
       break
 
     case ManagerUIState.LEGACY_UI:
-      // For legacy UI, invoke the old manager command
       await commandStore.execute('Comfy.Manager.Menu.ToggleVisibility')
       break
 
     case ManagerUIState.NEW_UI:
-      // For new UI, show the new manager dialog
       useDialogService().showManagerDialog()
       break
   }

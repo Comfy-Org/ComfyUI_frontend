@@ -31,12 +31,10 @@
       </div>
     </template>
   </ListBox>
-  <!-- Manager buttons - only show if manager is not disabled -->
   <div
     v-if="managerState && managerState !== ManagerUIState.DISABLED"
     class="flex justify-end py-3"
   >
-    <!-- Install button only for new UI -->
     <PackInstallButton
       v-if="managerState === ManagerUIState.NEW_UI"
       :disabled="isLoading || !!error || missingNodePacks.length === 0"
@@ -44,7 +42,6 @@
       variant="black"
       :label="$t('manager.installAllMissingNodes')"
     />
-    <!-- Open manager button for both new and legacy UI -->
     <Button
       label="Open Manager"
       size="small"
@@ -111,15 +108,12 @@ const uniqueNodes = computed(() => {
 
 const handleOpenManager = async () => {
   if (managerState.value === ManagerUIState.NEW_UI) {
-    // New UI: Show manager dialog
     useDialogService().showManagerDialog({
       initialTab: ManagerTab.Missing
     })
   } else if (managerState.value === ManagerUIState.LEGACY_UI) {
-    // Legacy UI: Execute the legacy manager command
     await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
   }
-  // If DISABLED, the button shouldn't be shown, so nothing to do
 }
 </script>
 

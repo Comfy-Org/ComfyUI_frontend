@@ -726,12 +726,10 @@ export function useCoreCommands(): ComfyCommand[] {
 
         switch (state) {
           case ManagerUIState.DISABLED:
-            // When manager is disabled, open the extensions panel in settings
             dialogService.showSettingsDialog('extension')
             break
 
           case ManagerUIState.LEGACY_UI:
-            // For legacy UI, invoke the old manager command
             useCommandStore()
               .execute('Comfy.Manager.Menu.ToggleVisibility')
               .catch(() => {
@@ -745,7 +743,6 @@ export function useCoreCommands(): ComfyCommand[] {
             break
 
           case ManagerUIState.NEW_UI:
-            // For new UI, show the new manager dialog
             dialogService.showManagerDialog()
             break
         }
@@ -762,22 +759,16 @@ export function useCoreCommands(): ComfyCommand[] {
 
         switch (state) {
           case ManagerUIState.DISABLED:
-            // When manager is disabled, open the extensions panel in settings
             dialogService.showSettingsDialog('extension')
             break
 
           case ManagerUIState.LEGACY_UI:
-            // For legacy UI, show toast that this feature requires new manager
-            toastStore.add({
-              severity: 'info',
-              summary: t('manager.featureRequiresNewManager'),
-              detail: t('manager.pleaseUpdateManager'),
-              life: 3000
-            })
+            await useCommandStore().execute(
+              'Comfy.Manager.Menu.ToggleVisibility'
+            )
             break
 
           case ManagerUIState.NEW_UI:
-            // For new UI, show the manager dialog with update tab
             dialogService.showManagerDialog({
               initialTab: ManagerTab.UpdateAvailable
             })
@@ -801,17 +792,12 @@ export function useCoreCommands(): ComfyCommand[] {
             break
 
           case ManagerUIState.LEGACY_UI:
-            // For legacy UI, show toast that this feature requires new manager
-            toastStore.add({
-              severity: 'info',
-              summary: t('manager.featureRequiresNewManager'),
-              detail: t('manager.pleaseUpdateManager'),
-              life: 3000
-            })
+            await useCommandStore().execute(
+              'Comfy.Manager.Menu.ToggleVisibility'
+            )
             break
 
           case ManagerUIState.NEW_UI:
-            // For new UI, show the manager dialog with missing tab
             dialogService.showManagerDialog({
               initialTab: ManagerTab.Missing
             })
