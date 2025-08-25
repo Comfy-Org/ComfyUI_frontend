@@ -147,6 +147,7 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import { useLayout } from '@/renderer/core/layout/sync/useLayout'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -294,6 +295,7 @@ let cleanupNodeManager: (() => void) | null = null
 
 // Slot layout sync management
 let slotSync: ReturnType<typeof useSlotLayoutSync> | null = null
+let linkSync: ReturnType<typeof useLinkLayoutSync> | null = null
 const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
 const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
 const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
@@ -360,7 +362,15 @@ const initializeNodeManager = () => {
 
   // Initialize slot layout sync for hit detection
   slotSync = useSlotLayoutSync()
-  slotSync.start(canvasStore.canvas)
+  if (canvasStore.canvas) {
+    slotSync.start(canvasStore.canvas as LGraphCanvas)
+  }
+
+  // Initialize link layout sync for event-driven updates
+  linkSync = useLinkLayoutSync()
+  if (canvasStore.canvas) {
+    linkSync.start(canvasStore.canvas as LGraphCanvas)
+  }
 
   // Force computed properties to re-evaluate
   nodeDataTrigger.value++
@@ -380,6 +390,12 @@ const disposeNodeManagerAndSyncs = () => {
   if (slotSync) {
     slotSync.stop()
     slotSync = null
+  }
+
+  // Clean up link layout sync
+  if (linkSync) {
+    linkSync.stop()
+    linkSync = null
   }
 
   // Reset reactive maps to inert defaults
@@ -873,6 +889,12 @@ onUnmounted(() => {
   if (slotSync) {
     slotSync.stop()
     slotSync = null
+  }
+
+  // Clean up link layout sync
+  if (linkSync) {
+    linkSync.stop()
+    linkSync = null
   }
 })
 </script>

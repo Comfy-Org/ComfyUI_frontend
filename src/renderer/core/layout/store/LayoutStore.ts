@@ -358,6 +358,25 @@ class LayoutStoreImpl implements LayoutStore {
    * Update link layout data (for geometry/debug, no separate spatial index)
    */
   updateLinkLayout(linkId: LinkId, layout: LinkLayout): void {
+    const existing = this.linkLayouts.get(linkId)
+
+    // Short-circuit if bounds and centerPos unchanged
+    if (
+      existing &&
+      existing.bounds.x === layout.bounds.x &&
+      existing.bounds.y === layout.bounds.y &&
+      existing.bounds.width === layout.bounds.width &&
+      existing.bounds.height === layout.bounds.height &&
+      existing.centerPos.x === layout.centerPos.x &&
+      existing.centerPos.y === layout.centerPos.y
+    ) {
+      // Only update path if provided (for hit detection)
+      if (layout.path) {
+        existing.path = layout.path
+      }
+      return
+    }
+
     this.linkLayouts.set(linkId, layout)
   }
 
@@ -511,13 +530,31 @@ class LayoutStoreImpl implements LayoutStore {
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void {
     const key = this.makeLinkSegmentKey(linkId, rerouteId)
+    const existing = this.linkSegmentLayouts.get(key)
+
+    // Short-circuit if bounds and centerPos unchanged (prevents spatial index churn)
+    if (
+      existing &&
+      existing.bounds.x === layout.bounds.x &&
+      existing.bounds.y === layout.bounds.y &&
+      existing.bounds.width === layout.bounds.width &&
+      existing.bounds.height === layout.bounds.height &&
+      existing.centerPos.x === layout.centerPos.x &&
+      existing.centerPos.y === layout.centerPos.y
+    ) {
+      // Only update path if provided (for hit detection)
+      if (layout.path) {
+        existing.path = layout.path
+      }
+      return
+    }
+
     const fullLayout: LinkSegmentLayout = {
       ...layout,
       linkId,
       rerouteId
     }
 
-    const existing = this.linkSegmentLayouts.get(key)
     if (!existing) {
       logger.debug('Adding link segment:', {
         linkId,
