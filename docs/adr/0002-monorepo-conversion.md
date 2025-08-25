@@ -38,6 +38,7 @@ There's a [whole list here](https://monorepo.tools/#tools-review) if you're inte
 - Adding new projects with shared dependencies becomes really easy
 - Makes the process of forking and customizing projects more structured, if not strictly easier
 - It *could* speed up the build and development process (not guaranteed)
+- It would let us cleanly organize and release packages like `comfyui-frontend-types`
 
 ### Negative
 
