@@ -23,7 +23,6 @@ jobs:
       with:
         path: |
           ComfyUI_frontend/.cache
-          ComfyUI_frontend/node_modules/.cache
           ComfyUI_frontend/.cache
         key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
         restore-keys: |

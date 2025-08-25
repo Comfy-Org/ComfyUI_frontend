@@ -25,7 +25,6 @@ jobs:
         with:
           path: |
             .cache
-            node_modules/.cache
           key: electron-types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             electron-types-tools-cache-${{ runner.os }}-
