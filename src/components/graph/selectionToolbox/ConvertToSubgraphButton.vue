@@ -7,7 +7,6 @@
     }"
     severity="secondary"
     text
-    data-testid="unpack-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
     <template #icon>
@@ -22,7 +21,6 @@
     }"
     severity="secondary"
     text
-    data-testid="convert-to-subgraph-button"
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
     <template #icon>
@@ -50,20 +48,11 @@ const isUnpackVisible = computed(() => {
     canvasStore.selectedItems[0] instanceof SubgraphNode
   )
 })
-
 const isConvertVisible = computed(() => {
-  // Don't show if no nodes/reroutes are selected (only groups, reroutes, etc.)
-  if (!canvasStore.nodeSelected) return false
-
-  // Don't show if exactly one SubgraphNode is selected (unpack button handles that)
-  if (
-    canvasStore.selectedItems.length === 1 &&
-    canvasStore.selectedItems[0] instanceof SubgraphNode
-  ) {
-    return false
-  }
-
-  // Show in all other cases (including multiple SubgraphNodes)
-  return true
+  return (
+    canvasStore.groupSelected ||
+    canvasStore.rerouteSelected ||
+    canvasStore.nodeSelected
+  )
 })
 </script>
