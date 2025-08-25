@@ -5,33 +5,32 @@
     class="fixed left-0 top-0 z-40"
   >
     <Transition name="slide-up">
-      <div v-if="isVisible" class="selection-toolbox">
-        <Panel
-          class="rounded-lg"
-          :pt="{
-            header: 'hidden',
-            content: 'p-0 flex flex-row'
-          }"
-          @wheel="canvasInteractions.handleWheel"
-        >
-          <ExecuteButton />
-          <ColorPickerButton />
-          <BypassButton />
-          <PinButton />
-          <EditModelButton />
-          <Load3DViewerButton />
-          <MaskEditorButton />
-          <ConvertToSubgraphButton />
-          <DeleteButton />
-          <RefreshSelectionButton />
-          <ExtensionCommandButton
-            v-for="command in extensionToolboxCommands"
-            :key="command.id"
-            :command="command"
-          />
-          <HelpButton />
-        </Panel>
-      </div>
+      <Panel
+        v-if="visible"
+        class="rounded-lg selection-toolbox"
+        :pt="{
+          header: 'hidden',
+          content: 'p-0 flex flex-row'
+        }"
+        @wheel="canvasInteractions.handleWheel"
+      >
+        <ExecuteButton />
+        <ColorPickerButton />
+        <BypassButton />
+        <PinButton />
+        <EditModelButton />
+        <Load3DViewerButton />
+        <MaskEditorButton />
+        <ConvertToSubgraphButton />
+        <DeleteButton />
+        <RefreshSelectionButton />
+        <ExtensionCommandButton
+          v-for="command in extensionToolboxCommands"
+          :key="command.id"
+          :command="command"
+        />
+        <HelpButton />
+      </Panel>
     </Transition>
   </div>
 </template>
@@ -64,9 +63,6 @@ const canvasInteractions = useCanvasInteractions()
 
 const toolboxRef = ref<HTMLElement | undefined>()
 const { visible } = useSelectionToolboxPosition(toolboxRef)
-
-// Use the visible state directly from the composable
-const isVisible = computed(() => visible.value)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
