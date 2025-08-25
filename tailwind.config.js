@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 import { addDynamicIconSelectors } from '@iconify/tailwind'
 
-import { iconCollection } from './build/customIconCollection.js'
+import { iconCollection } from './build/customIconCollection.ts'
 
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],

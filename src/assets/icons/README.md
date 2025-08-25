@@ -247,9 +247,29 @@ Icons are automatically imported using `unplugin-icons` - no manual imports need
 
 ### Configuration
 
-The icon system is configured in `vite.config.mts`:
+The icon system has two layers:
+
+1. **Build-time Processing** (`build/customIconCollection.ts`):
+   - Scans `src/assets/icons/custom/` for SVG files
+   - Validates SVG content and structure
+   - Creates Iconify collection for Tailwind CSS
+   - Provides error handling for malformed files
+
+2. **Vite Runtime** (`vite.config.mts`):
+   - Enables direct SVG import as Vue components
+   - Supports dynamic icon loading
 
 ```typescript
+// Build script creates Iconify collection
+export const iconCollection: IconifyCollection = {
+  prefix: 'comfy',
+  icons: {
+    'workflow': { body: '<svg>...</svg>' },
+    'node': { body: '<svg>...</svg>' }
+  }
+}
+
+// Vite configuration for component-based usage
 Icons({
   compiler: 'vue3',
   customCollections: {
@@ -271,8 +291,9 @@ Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
 ### Icon Not Showing
 1. **Check filename**: Must be kebab-case without special characters
 2. **Restart dev server**: Required after adding new icons
-3. **Verify SVG**: Ensure it's valid SVG syntax
+3. **Verify SVG**: Ensure it's valid SVG syntax (build script validates automatically)
 4. **Check console**: Look for Vue component resolution errors
+5. **Build script errors**: Check console during build - malformed SVGs are logged but don't break builds
 
 ### Icon Wrong Color
 - Replace hardcoded colors with `currentColor`
