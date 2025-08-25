@@ -106,7 +106,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 }
 
 .slide-up-enter-active {
-  animation: slideUp 75ms ease-out;
+  animation: slideUp 125ms ease-out;
 }
 
 .slide-up-leave-active {
