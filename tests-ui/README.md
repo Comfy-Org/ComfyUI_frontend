@@ -33,13 +33,13 @@ To run the tests locally:
 
 ```bash
 # Run unit tests
-npm run test:unit
+pnpm test:unit
 
 # Run unit tests in watch mode
-npm run test:unit:dev
+pnpm test:unit:dev
 
 # Run component tests with browser-native environment
-npm run test:component
+pnpm test:component
 ```
 
 Refer to the specific guides for more detailed information on each testing type.

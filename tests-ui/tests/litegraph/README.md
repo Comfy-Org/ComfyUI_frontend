@@ -18,13 +18,13 @@ litegraph/
 
 ```bash
 # Run all litegraph tests
-npm run test:unit -- tests-ui/tests/litegraph/
+pnpm test:unit -- tests-ui/tests/litegraph/
 
 # Run specific subdirectory
-npm run test:unit -- tests-ui/tests/litegraph/core/
+pnpm test:unit -- tests-ui/tests/litegraph/core/
 
 # Run single test file
-npm run test:unit -- tests-ui/tests/litegraph/core/LGraph.test.ts
+pnpm test:unit -- tests-ui/tests/litegraph/core/LGraph.test.ts
 ```
 
 ## Migration Status

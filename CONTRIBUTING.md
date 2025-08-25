@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (v16 or later; v20/v22 strongly recommended) and npm
+  - Node.js (v16 or later; v24 strongly recommended) and pnpm
   - Git for version control
   - A running ComfyUI backend instance
   
@@ -155,7 +155,7 @@ For ComfyUI_frontend development, you can ask coding assistants to use Playwrigh
 
 ##### Setup for Claude Code
 
-After installing dependencies with `npm i`, the Playwright MCP server will be automatically available when you start Claude Code locally.
+After installing dependencies with `pnpm i`, the Playwright MCP server will be automatically available when you start Claude Code locally.
 
 Here's how Claude Code can use the Playwright MCP server to inspect the interface of the local development server (assuming you're running the dev server at `localhost:5173`):
 
@@ -210,7 +210,7 @@ Here's how Claude Code can use the Playwright MCP server to inspect the interfac
 
 ### Unit Tests
 
-- `npm i` to install all dependencies
+- `pnpm i` to install all dependencies
 - `pnpm test:unit` to execute all unit tests
 
 ### Component Tests
