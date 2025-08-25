@@ -488,7 +488,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```bash
    # Check npm availability
    for i in {1..10}; do
-     if npm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
+     if pnpm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
        echo "✅ npm package available"
        break
      fi

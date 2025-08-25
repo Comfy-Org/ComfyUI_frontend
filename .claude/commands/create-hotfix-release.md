@@ -197,7 +197,7 @@ For each commit:
 5. Track progress:
    - GitHub release draft/publication
    - PyPI upload
-   - npm types publication
+   - pnpm types publication
 
 ### Step 12: Post-Release Verification
 
@@ -211,7 +211,7 @@ For each commit:
    ```
 3. Verify npm package:
    ```bash
-   npm view @comfyorg/comfyui-frontend-types@1.23.5
+   pnpm view @comfyorg/comfyui-frontend-types@1.23.5
    ```
 4. Generate release summary with:
    - Version released
