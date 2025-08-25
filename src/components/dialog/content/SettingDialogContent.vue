@@ -41,7 +41,6 @@
         >
           <template #header>
             <CurrentUserMessage v-if="tabValue === 'Comfy'" />
-            <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
             <ColorPaletteMessage v-if="tabValue === 'Appearance'" />
           </template>
           <SettingsPanel :setting-groups="sortedGroups(category)" />
@@ -76,7 +75,6 @@ import { flattenTree } from '@/utils/treeUtil'
 
 import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
 import CurrentUserMessage from './setting/CurrentUserMessage.vue'
-import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
 

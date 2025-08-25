@@ -313,7 +313,6 @@
     "feedback": "意見回饋",
     "filter": "篩選",
     "findIssues": "尋找問題",
-    "firstTimeUIMessage": "這是您第一次使用新介面。若要返回舊介面，請前往「選單」>「使用新介面」>「關閉」。",
     "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
     "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 或更高版本。",
     "goToNode": "前往節點",

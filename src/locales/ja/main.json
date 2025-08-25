@@ -313,7 +313,6 @@
     "feedback": "フィードバック",
     "filter": "フィルタ",
     "findIssues": "問題を見つける",
-    "firstTimeUIMessage": "新しいUIを初めて使用しています。「メニュー > 新しいメニューを使用 > 無効」を選択することで古いUIに戻すことが可能です。",
     "frontendNewer": "フロントエンドのバージョン {frontendVersion} はバックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
     "frontendOutdated": "フロントエンドのバージョン {frontendVersion} は古くなっています。バックエンドは {requiredVersion} 以上が必要です。",
     "goToNode": "ノードに移動",

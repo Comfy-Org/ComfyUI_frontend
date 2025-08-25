@@ -313,7 +313,6 @@
     "feedback": "Commentaires",
     "filter": "Filtrer",
     "findIssues": "Trouver des problèmes",
-    "firstTimeUIMessage": "C'est la première fois que vous utilisez la nouvelle interface utilisateur. Choisissez \"Menu > Utiliser le nouveau menu > Désactivé\" pour restaurer l'ancienne interface utilisateur.",
     "frontendNewer": "La version du frontend {frontendVersion} peut ne pas être compatible avec la version du backend {backendVersion}.",
     "frontendOutdated": "La version du frontend {frontendVersion} est obsolète. Le backend requiert la version {requiredVersion} ou supérieure.",
     "goToNode": "Aller au nœud",
