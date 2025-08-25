@@ -23,6 +23,7 @@
     <DeleteButton />
     <RefreshSelectionButton />
     <ExecuteButton />
+    <MoreOptions />
 
     <ExtensionCommandButton
       v-for="command in extensionToolboxCommands"
@@ -56,8 +57,9 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 import BookmarkButton from './selectionToolbox/BookmarkButton.vue'
-import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
+import MoreOptions from './selectionToolbox/MoreOptions.vue'
+import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
@@ -87,6 +89,11 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     .map((commandId) => commandStore.getCommand(commandId))
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })
+
+// single subgraph toollist = [info,color,expand,bookmark,ban,refresh,play,options]
+// single node toolist = [info,color,expand,ban,refresh,play,options]
+// single image node toolist = [info, color, expand, mask,ban,refresh, play options]
+//  multiple nodes toollist = [color, frame, expand,ban,play,options ]
 </script>
 
 <style scoped>

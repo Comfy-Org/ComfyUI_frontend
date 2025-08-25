@@ -2,7 +2,8 @@
   <Button
     v-tooltip.top="t('g.refreshNode')"
     v-show="isRefreshable"
-    severity="info"
+    severity="secondary"
+    text
     @click="refreshSelected"
   >
     <i-lucide:refresh-cw :size="16" />
