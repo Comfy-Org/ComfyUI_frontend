@@ -41,13 +41,13 @@ const isVideoType =
 
 const baseImageClass = computed(() => {
   const sizeClasses = isVideoType
-    ? 'w-full h-full object-cover'
-    : 'w-full h-full object-contain'
+    ? 'size-full object-cover'
+    : 'size-full object-contain'
   return sizeClasses
 })
 
 const overlayImageClass = computed(() => {
-  const baseClasses = 'w-full h-full transition-opacity duration-300'
+  const baseClasses = 'size-full transition-opacity duration-300'
   const sizeClasses = isVideoType ? 'object-cover' : 'object-contain'
   const opacityClasses = isHovered ? 'opacity-100' : 'opacity-0'
   return `${baseClasses} ${sizeClasses} ${opacityClasses}`
