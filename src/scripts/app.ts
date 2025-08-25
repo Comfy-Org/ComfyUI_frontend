@@ -906,7 +906,7 @@ export class ComfyApp {
       LiteGraph.registered_node_types
     )) {
       // Skip if we already have a backend definition or system definition
-      if (name in defs || name in SYSTEM_NODE_DEFS) {
+      if (name in defs || name in SYSTEM_NODE_DEFS || node.skip_list) {
         continue
       }
 
