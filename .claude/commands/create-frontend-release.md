@@ -244,21 +244,21 @@ echo "Last stable release: $LAST_STABLE"
 
 1. Run complete test suite:
    ```bash
-   npm run test:unit
-   npm run test:component
+   pnpm test:unit
+   pnpm test:component
    ```
 2. Run type checking:
    ```bash
-   npm run typecheck
+   pnpm typecheck
    ```
 3. Run linting (may have issues with missing packages):
    ```bash
-   npm run lint || echo "Lint issues - verify if critical"
+   pnpm lint || echo "Lint issues - verify if critical"
    ```
 4. Test build process:
    ```bash
-   npm run build
-   npm run build:types
+   pnpm build
+   pnpm build:types
    ```
 5. **QUALITY GATE**: All tests and builds passing?
 

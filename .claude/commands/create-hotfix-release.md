@@ -80,7 +80,7 @@ For each commit:
    - **CONFIRMATION REQUIRED**: Conflicts resolved correctly?
 3. After successful cherry-pick:
    - Show the changes: `git show HEAD`
-   - Run validation: `npm run typecheck && npm run lint`
+   - Run validation: `pnpm typecheck && pnpm lint`
 4. **CONFIRMATION REQUIRED**: Cherry-pick successful and valid?
 
 ### Step 6: Create PR to Core Branch
