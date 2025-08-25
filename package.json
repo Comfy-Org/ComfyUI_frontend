@@ -39,6 +39,7 @@
     "@eslint/js": "^9.8.0",
     "@executeautomation/playwright-mcp-server": "^1.0.5",
     "@iconify/json": "^2.2.245",
+    "@iconify/tailwind": "^1.2.0",
     "@intlify/eslint-plugin-vue-i18n": "^3.2.0",
     "@lobehub/i18n-cli": "^1.20.0",
     "@pinia/testing": "^0.1.5",
@@ -68,6 +69,7 @@
     "identity-obj-proxy": "^3.0.0",
     "knip": "^5.62.0",
     "lint-staged": "^15.2.7",
+    "lucide-vue-next": "^0.540.0",
     "postcss": "^8.4.39",
     "prettier": "^3.3.2",
     "storybook": "^9.1.1",
@@ -84,8 +86,7 @@
     "vitest": "^2.0.0",
     "vue-tsc": "^2.1.10",
     "zip-dir": "^2.0.0",
-    "zod-to-json-schema": "^3.24.1",
-    "lucide-vue-next": "^0.540.0"
+    "zod-to-json-schema": "^3.24.1"
   },
   "dependencies": {
     "@alloc/quick-lru": "^5.2.0",
