@@ -1,5 +1,5 @@
 import axios from 'axios'
-import get from 'lodash/get'
+import { get } from 'es-toolkit/compat'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
