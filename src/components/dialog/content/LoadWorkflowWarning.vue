@@ -31,26 +31,45 @@
       </div>
     </template>
   </ListBox>
-  <div v-if="!isLegacyManager" class="flex justify-end py-3">
+  <!-- Manager buttons - only show if manager is not disabled -->
+  <div
+    v-if="managerState && managerState !== ManagerUIState.DISABLED"
+    class="flex justify-end py-3"
+  >
+    <!-- Install button only for new UI -->
     <PackInstallButton
+      v-if="managerState === ManagerUIState.NEW_UI"
       :disabled="isLoading || !!error || missingNodePacks.length === 0"
       :node-packs="missingNodePacks"
       variant="black"
       :label="$t('manager.installAllMissingNodes')"
     />
-    <Button label="Open Manager" size="small" outlined @click="openManager" />
+    <!-- Open manager button for both new and legacy UI -->
+    <Button
+      label="Open Manager"
+      size="small"
+      outlined
+      @click="handleOpenManager"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
+import { useCommandStore } from '@/stores/commandStore'
+import {
+  ManagerUIState,
+  useManagerStateStore
+} from '@/stores/managerStateStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
@@ -62,7 +81,12 @@ const props = defineProps<{
 const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
-const isLegacyManager = ref(false)
+// Get manager state asynchronously
+const managerStateStore = useManagerStateStore()
+const { state: managerState } = useAsyncState(
+  () => managerStateStore.getManagerUIState(),
+  null
+)
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()
@@ -85,18 +109,18 @@ const uniqueNodes = computed(() => {
     })
 })
 
-const openManager = () => {
-  useDialogService().showManagerDialog({
-    initialTab: ManagerTab.Missing
-  })
-}
-
-onMounted(async () => {
-  const isLegacyResponse = await useComfyManagerService().isLegacyManagerUI()
-  if (isLegacyResponse?.is_legacy_manager_ui) {
-    isLegacyManager.value = true
+const handleOpenManager = async () => {
+  if (managerState.value === ManagerUIState.NEW_UI) {
+    // New UI: Show manager dialog
+    useDialogService().showManagerDialog({
+      initialTab: ManagerTab.Missing
+    })
+  } else if (managerState.value === ManagerUIState.LEGACY_UI) {
+    // Legacy UI: Execute the legacy manager command
+    await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
   }
-})
+  // If DISABLED, the button shouldn't be shown, so nothing to do
+}
 </script>
 
 <style scoped>

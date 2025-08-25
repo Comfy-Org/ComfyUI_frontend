@@ -726,15 +726,12 @@ export function useCoreCommands(): ComfyCommand[] {
 
         switch (state) {
           case ManagerUIState.DISABLED:
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('manager.notAvailable'),
-              life: 3000
-            })
+            // When manager is disabled, open the extensions panel in settings
+            dialogService.showSettingsDialog('extension')
             break
 
           case ManagerUIState.LEGACY_UI:
+            // For legacy UI, invoke the old manager command
             useCommandStore()
               .execute('Comfy.Manager.Menu.ToggleVisibility')
               .catch(() => {
@@ -748,6 +745,7 @@ export function useCoreCommands(): ComfyCommand[] {
             break
 
           case ManagerUIState.NEW_UI:
+            // For new UI, show the new manager dialog
             dialogService.showManagerDialog()
             break
         }
@@ -758,10 +756,33 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-sync',
       label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
-      function: () => {
-        dialogService.showManagerDialog({
-          initialTab: ManagerTab.UpdateAvailable
-        })
+      function: async () => {
+        const managerStore = useManagerStateStore()
+        const state = await managerStore.getManagerUIState()
+
+        switch (state) {
+          case ManagerUIState.DISABLED:
+            // When manager is disabled, open the extensions panel in settings
+            dialogService.showSettingsDialog('extension')
+            break
+
+          case ManagerUIState.LEGACY_UI:
+            // For legacy UI, show toast that this feature requires new manager
+            toastStore.add({
+              severity: 'info',
+              summary: t('manager.featureRequiresNewManager'),
+              detail: t('manager.pleaseUpdateManager'),
+              life: 3000
+            })
+            break
+
+          case ManagerUIState.NEW_UI:
+            // For new UI, show the manager dialog with update tab
+            dialogService.showManagerDialog({
+              initialTab: ManagerTab.UpdateAvailable
+            })
+            break
+        }
       }
     },
     {
@@ -769,10 +790,33 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-exclamation-circle',
       label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
-      function: () => {
-        dialogService.showManagerDialog({
-          initialTab: ManagerTab.Missing
-        })
+      function: async () => {
+        const managerStore = useManagerStateStore()
+        const state = await managerStore.getManagerUIState()
+
+        switch (state) {
+          case ManagerUIState.DISABLED:
+            // When manager is disabled, open the extensions panel in settings
+            dialogService.showSettingsDialog('extension')
+            break
+
+          case ManagerUIState.LEGACY_UI:
+            // For legacy UI, show toast that this feature requires new manager
+            toastStore.add({
+              severity: 'info',
+              summary: t('manager.featureRequiresNewManager'),
+              detail: t('manager.pleaseUpdateManager'),
+              life: 3000
+            })
+            break
+
+          case ManagerUIState.NEW_UI:
+            // For new UI, show the manager dialog with missing tab
+            dialogService.showManagerDialog({
+              initialTab: ManagerTab.Missing
+            })
+            break
+        }
       }
     },
     {

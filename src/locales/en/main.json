@@ -146,6 +146,8 @@
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
+    "featureRequiresNewManager": "This feature requires the new Custom Nodes Manager",
+    "pleaseUpdateManager": "Please update to the latest version of ComfyUI Manager to access this feature",
     "failed": "Failed ({count})",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
