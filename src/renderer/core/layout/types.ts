@@ -544,9 +544,9 @@ export interface LayoutMutations {
   // Link operations
   createLink(
     linkId: string | number,
-    sourceNodeId: string,
+    sourceNodeId: string | number,
     sourceSlot: number,
-    targetNodeId: string,
+    targetNodeId: string | number,
     targetSlot: number
   ): void
   deleteLink(linkId: string | number): void

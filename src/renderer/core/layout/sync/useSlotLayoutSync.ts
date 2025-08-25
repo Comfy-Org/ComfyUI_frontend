@@ -7,10 +7,8 @@
 import { onUnmounted } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  type SlotPositionContext,
-  registerNodeSlots
-} from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import { type SlotPositionContext } from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import { registerNodeSlots } from '@/renderer/core/layout/slots/register'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 /**

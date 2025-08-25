@@ -336,30 +336,22 @@ const initializeNodeManager = () => {
   layoutStore.initializeFromLiteGraph(nodes)
 
   // Seed reroutes into the Layout Store so hit-testing uses the new path
-  try {
-    for (const reroute of comfyApp.graph.reroutes.values()) {
-      const [x, y] = reroute.pos
-      const parent = reroute.parentId ?? undefined
-      const linkIds = Array.from(reroute.linkIds)
-      layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
-    }
-  } catch {
-    // Best-effort; non-fatal if layout store seeding fails
+  for (const reroute of comfyApp.graph.reroutes.values()) {
+    const [x, y] = reroute.pos
+    const parent = reroute.parentId ?? undefined
+    const linkIds = Array.from(reroute.linkIds)
+    layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
   }
 
   // Seed existing links into the Layout Store (topology only)
-  try {
-    for (const link of comfyApp.graph._links.values()) {
-      layoutMutations.createLink(
-        link.id,
-        String(link.origin_id),
-        link.origin_slot,
-        String(link.target_id),
-        link.target_slot
-      )
-    }
-  } catch {
-    // Best-effort; non-fatal if layout store seeding fails
+  for (const link of comfyApp.graph._links.values()) {
+    layoutMutations.createLink(
+      link.id,
+      link.origin_id,
+      link.origin_slot,
+      link.target_id,
+      link.target_slot
+    )
   }
 
   // Initialize layout sync (one-way: Layout Store → LiteGraph)
@@ -374,7 +366,7 @@ const initializeNodeManager = () => {
   nodeDataTrigger.value++
 }
 
-const disposeNodeManager = () => {
+const disposeNodeManagerAndSyncs = () => {
   if (!nodeManager) return
   try {
     cleanupNodeManager?.()
@@ -409,7 +401,7 @@ watch(
     if (enabled) {
       initializeNodeManager()
     } else {
-      disposeNodeManager()
+      disposeNodeManagerAndSyncs()
     }
   },
   { immediate: true }

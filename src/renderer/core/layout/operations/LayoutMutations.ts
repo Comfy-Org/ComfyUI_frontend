@@ -160,23 +160,27 @@ class LayoutMutationsImpl implements LayoutMutations {
    */
   createLink(
     linkId: string | number,
-    sourceNodeId: string,
+    sourceNodeId: string | number,
     sourceSlot: number,
-    targetNodeId: string,
+    targetNodeId: string | number,
     targetSlot: number
   ): void {
+    // Normalize node IDs to strings
+    const normalizedSourceNodeId = String(sourceNodeId)
+    const normalizedTargetNodeId = String(targetNodeId)
+
     logger.debug('Creating link:', {
       linkId: Number(linkId),
-      from: `${sourceNodeId}[${sourceSlot}]`,
-      to: `${targetNodeId}[${targetSlot}]`
+      from: `${normalizedSourceNodeId}[${sourceSlot}]`,
+      to: `${normalizedTargetNodeId}[${targetSlot}]`
     })
     layoutStore.applyOperation({
       type: 'createLink',
       entity: 'link',
       linkId: Number(linkId),
-      sourceNodeId,
+      sourceNodeId: normalizedSourceNodeId,
       sourceSlot,
-      targetNodeId,
+      targetNodeId: normalizedTargetNodeId,
       targetSlot,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),

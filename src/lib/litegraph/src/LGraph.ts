@@ -1358,7 +1358,7 @@ export class LGraph
       String(rerouteId),
       { x: pos[0], y: pos[1] },
       before.parentId ? String(before.parentId) : undefined,
-      Array.from(linkIds).map((id) => String(id))
+      Array.from(linkIds)
     )
 
     for (const linkId of linkIds) {
@@ -1437,7 +1437,7 @@ export class LGraph
 
     // Delete reroute from Layout Store
     layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteReroute(String(id))
+    layoutMutations.deleteReroute(id)
 
     // This does not belong here; it should be handled by the caller, or run by a remove-many API.
     // https://github.com/Comfy-Org/litegraph.js/issues/898

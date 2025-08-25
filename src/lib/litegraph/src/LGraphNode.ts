@@ -3,8 +3,7 @@ import {
   type SlotPositionContext,
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
-  calculateOutputSlotPos,
-  registerNodeSlots
+  calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -2849,9 +2848,9 @@ export class LGraphNode
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.createLink(
       link.id,
-      String(this.id),
+      this.id,
       outputIndex,
-      String(inputNode.id),
+      inputNode.id,
       inputIndex
     )
 
@@ -4120,13 +4119,6 @@ export class LGraphNode
       : 0
     this.#arrangeWidgets(widgetStartY)
     this.#arrangeWidgetInputSlots()
-  }
-
-  /**
-   * Register all slots with the layout store for hit detection
-   */
-  registerSlots(): void {
-    registerNodeSlots(String(this.id), this.#getSlotPositionContext())
   }
 
   /**

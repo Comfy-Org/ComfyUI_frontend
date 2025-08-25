@@ -2204,7 +2204,7 @@ export class LGraphCanvas
             y: e.canvasY
           })
 
-          let reroute
+          let reroute: Reroute | undefined
           if (rerouteLayout) {
             reroute = graph.getReroute(rerouteLayout.id)
           } else {
@@ -2432,18 +2432,12 @@ export class LGraphCanvas
         if (!centre) continue
 
         // Check if this link segment was hit
-        let isLinkHit = false
-        if (hitSegment) {
-          // Match the exact segment returned by the layout store
-          const isReroute = linkSegment instanceof Reroute
-          if (isReroute) {
-            // For reroutes: compare the reroute's id to hitSegment.rerouteId
-            isLinkHit = linkSegment.id === hitSegment.rerouteId
-          } else {
-            // For normal links: compare the link id to hitSegment.linkId
-            isLinkHit = linkSegment.id === hitSegment.linkId
-          }
-        }
+        let isLinkHit =
+          hitSegment &&
+          linkSegment.id ===
+            (linkSegment instanceof Reroute
+              ? hitSegment.rerouteId
+              : hitSegment.linkId)
 
         if (!isLinkHit && linkSegment.path) {
           // Fallback to direct path hit testing if not found in layout store
@@ -8196,7 +8190,7 @@ export class LGraphCanvas
           y: event.canvasY
         })
 
-        let reroute
+        let reroute: Reroute | undefined
         if (rerouteLayout) {
           console.debug('✅ Using LayoutStore for reroute query', {
             rerouteLayout
