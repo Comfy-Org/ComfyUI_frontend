@@ -110,25 +110,26 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const subgraphBlueprints = computed(() => [
     ...subgraphDefCache.value.values()
   ])
-  //TODO: On initialization, send background request to resolve definitions.
-  //TODO: Find someway to actually signal that information is not ready for synchronous queries
   async function fetchSubgraphs() {
-    //TODO: lighten this call?
+    async function loadBlueprint(options: {
+      path: string
+      modified: number
+      size: number
+    }): Promise<void> {
+      const name = options.path.slice(0, -'.json'.length)
+      options.path = SubgraphBlueprint.basePath + options.path
+      const bp = await new SubgraphBlueprint(options).load()
+      useWorkflowStore().attachWorkflow(bp)
+      const nodeDef = convertToNodeDef(bp)
+
+      subgraphDefCache.value.set(name, nodeDef)
+      subgraphCache[name] = bp
+    }
+
     const res = (
       await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
     ).filter((f) => f.path.endsWith('.json'))
-    await Promise.allSettled(
-      res.map(async (f) => {
-        const name = f.path.slice(0, -5)
-        f.path = SubgraphBlueprint.basePath + f.path
-        const bp = await new SubgraphBlueprint(f).load()
-        useWorkflowStore().attachWorkflow(bp)
-        const nodeDef = convertToNodeDef(bp)
-
-        subgraphDefCache.value.set(name, nodeDef)
-        subgraphCache[name] = bp
-      })
-    )
+    await Promise.allSettled(res.map(loadBlueprint))
   }
   function convertToNodeDef(workflow: LoadedComfyWorkflow): ComfyNodeDefImpl {
     const name = workflow.filename
