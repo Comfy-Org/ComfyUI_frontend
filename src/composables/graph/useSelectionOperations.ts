@@ -115,7 +115,9 @@ export function useSelectionOperations() {
 
       if (newTitle && newTitle !== currentTitle) {
         if ('title' in item) {
-          ;(item as any).title = newTitle
+          // Type-safe assignment for items with title property
+          const titledItem = item as { title: string }
+          titledItem.title = newTitle
           app.canvas.setDirty(true, true)
           workflowStore.activeWorkflow?.changeTracker?.checkState()
         }
@@ -134,7 +136,9 @@ export function useSelectionOperations() {
       if (baseTitle) {
         selectedItems.forEach((item, index) => {
           if ('title' in item) {
-            ;(item as any).title = `${baseTitle} ${index + 1}`
+            // Type-safe assignment for items with title property
+            const titledItem = item as { title: string }
+            titledItem.title = `${baseTitle} ${index + 1}`
           }
         })
         app.canvas.setDirty(true, true)

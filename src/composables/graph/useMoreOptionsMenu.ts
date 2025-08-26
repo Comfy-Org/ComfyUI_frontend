@@ -200,8 +200,8 @@ export function useMoreOptionsMenu() {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob })
         ])
-      } catch (error) {
-        console.error('Failed to copy image:', error)
+      } catch {
+        // Silently fail - clipboard operations may not be supported
       }
     }, 'image/png')
   }
@@ -212,26 +212,28 @@ export function useMoreOptionsMenu() {
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
 
-    const a = document.createElement('a')
     try {
       const url = new URL(img.src)
       url.searchParams.delete('preview')
+
+      const a = document.createElement('a')
       a.href = url.toString()
       a.setAttribute(
         'download',
         new URLSearchParams(url.search).get('filename') ?? 'image.png'
       )
-      document.body.append(a)
+      a.style.display = 'none'
+      document.body.appendChild(a)
       a.click()
-    } finally {
-      // Ensure cleanup happens regardless of what occurs
+
+      // Clean up immediately
       requestAnimationFrame(() => {
-        try {
-          a.remove()
-        } catch {
-          // Ignore errors if element was already removed
+        if (document.body.contains(a)) {
+          document.body.removeChild(a)
         }
       })
+    } catch {
+      // Silently fail - URL construction or download may not be supported
     }
   }
 

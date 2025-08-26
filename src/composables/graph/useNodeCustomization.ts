@@ -145,7 +145,9 @@ export function useNodeCustomization() {
     const firstColorableItem = selectedItems.find((item) => isColorable(item))
     if (!firstColorableItem || !isColorable(firstColorableItem)) return null
 
-    const currentBgColor = (firstColorableItem as any).bgcolor
+    // Get the current color option from the colorable item
+    const currentColorOption = firstColorableItem.getColorOption()
+    const currentBgColor = currentColorOption?.bgcolor ?? null
 
     // Find matching color option
     return (
