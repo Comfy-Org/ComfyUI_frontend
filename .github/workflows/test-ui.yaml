@@ -134,6 +134,11 @@ jobs:
             ComfyUI_frontend
           key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
