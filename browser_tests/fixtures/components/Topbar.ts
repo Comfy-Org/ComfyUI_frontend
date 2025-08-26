@@ -25,8 +25,11 @@ export class Topbar {
    * Get a menu item by its label, optionally within a specific parent container
    */
   getMenuItem(itemLabel: string, parent?: Locator): Locator {
-    const selector = parent ? '.p-tieredmenu-item' : '.p-menubar-item-label'
-    return (parent ?? this.page).locator(`${selector}:has-text("${itemLabel}")`)
+    if (parent) {
+      return parent.locator(`.p-tieredmenu-item:has-text("${itemLabel}")`)
+    }
+
+    return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
   }
 
   /**
