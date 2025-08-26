@@ -1,4 +1,5 @@
 import { type Component, markRaw } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
 import ILucideAlignCenterVertical from '~icons/lucide/align-center-vertical'
 import ILucideAlignEndHorizontal from '~icons/lucide/align-end-horizontal'
@@ -30,31 +31,32 @@ export interface DistributeOption {
  * Composable for handling node alignment and distribution
  */
 export function useNodeArrangement() {
+  const { t } = useI18n()
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
 
   const alignOptions: AlignOption[] = [
     {
       name: 'top',
-      localizedName: 'Top',
+      localizedName: t('contextMenu.Top'),
       value: 'top',
       icon: markRaw(ILucideAlignStartVertical)
     },
     {
       name: 'bottom',
-      localizedName: 'Bottom',
+      localizedName: t('contextMenu.Bottom'),
       value: 'bottom',
       icon: markRaw(ILucideAlignEndVertical)
     },
     {
       name: 'left',
-      localizedName: 'Left',
+      localizedName: t('contextMenu.Left'),
       value: 'left',
       icon: markRaw(ILucideAlignStartHorizontal)
     },
     {
       name: 'right',
-      localizedName: 'Right',
+      localizedName: t('contextMenu.Right'),
       value: 'right',
       icon: markRaw(ILucideAlignEndHorizontal)
     }
@@ -63,13 +65,13 @@ export function useNodeArrangement() {
   const distributeOptions: DistributeOption[] = [
     {
       name: 'horizontal',
-      localizedName: 'Horizontal',
+      localizedName: t('contextMenu.Horizontal'),
       value: true,
       icon: markRaw(ILucideAlignCenterHorizontal)
     },
     {
       name: 'vertical',
-      localizedName: 'Vertical',
+      localizedName: t('contextMenu.Vertical'),
       value: false,
       icon: markRaw(ILucideAlignCenterVertical)
     }

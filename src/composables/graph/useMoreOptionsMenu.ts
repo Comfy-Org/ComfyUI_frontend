@@ -1,4 +1,5 @@
 import { type Component, computed, markRaw } from 'vue'
+import { useI18n } from 'vue-i18n'
 // Import icons
 import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
 import ILucideAlignStartHorizontal from '~icons/lucide/align-start-horizontal'
@@ -71,6 +72,7 @@ export interface NodeSelectionState {
  */
 export function useMoreOptionsMenu() {
   // Initialize composables
+  const { t } = useI18n()
   const canvasStore = useCanvasStore()
   const {
     copySelection,
@@ -211,16 +213,26 @@ export function useMoreOptionsMenu() {
     if (!img) return
 
     const a = document.createElement('a')
-    const url = new URL(img.src)
-    url.searchParams.delete('preview')
-    a.href = url.toString()
-    a.setAttribute(
-      'download',
-      new URLSearchParams(url.search).get('filename') ?? 'image.png'
-    )
-    document.body.append(a)
-    a.click()
-    requestAnimationFrame(() => a.remove())
+    try {
+      const url = new URL(img.src)
+      url.searchParams.delete('preview')
+      a.href = url.toString()
+      a.setAttribute(
+        'download',
+        new URLSearchParams(url.search).get('filename') ?? 'image.png'
+      )
+      document.body.append(a)
+      a.click()
+    } finally {
+      // Ensure cleanup happens regardless of what occurs
+      requestAnimationFrame(() => {
+        try {
+          a.remove()
+        } catch {
+          // Ignore errors if element was already removed
+        }
+      })
+    }
   }
 
   // Properties panel
@@ -283,22 +295,22 @@ export function useMoreOptionsMenu() {
     if (hasImageNode.value) {
       options.push(
         {
-          label: 'Open in Mask Editor',
+          label: t('contextMenu.Open in Mask Editor'),
           icon: markRaw(ILucidePencil),
           action: openMaskEditor
         },
         {
-          label: 'Open Image',
+          label: t('contextMenu.Open Image'),
           icon: markRaw(ILucideExternalLink),
           action: openImage
         },
         {
-          label: 'Copy Image',
+          label: t('contextMenu.Copy Image'),
           icon: markRaw(ILucideCopy),
           action: copyImage
         },
         {
-          label: 'Save Image',
+          label: t('contextMenu.Save Image'),
           icon: markRaw(ILucideDownload),
           action: saveImage
         },
@@ -312,7 +324,7 @@ export function useMoreOptionsMenu() {
     if (hasSingleNode.value) {
       options.push(
         {
-          label: 'Properties Panel',
+          label: t('contextMenu.Properties Panel'),
           icon: markRaw(ILucidePanelTop),
           action: showPropertiesPanel
         },
@@ -325,19 +337,19 @@ export function useMoreOptionsMenu() {
     // Common options for all selections
     options.push(
       {
-        label: 'Rename',
+        label: t('contextMenu.Rename'),
         action: renameSelection
       },
       {
         type: 'divider'
       },
       {
-        label: 'Copy',
+        label: t('contextMenu.Copy'),
         shortcut: 'Ctrl+C',
         action: copySelection
       },
       {
-        label: 'Duplicate',
+        label: t('contextMenu.Duplicate'),
         shortcut: 'Ctrl+D',
         action: duplicateSelection
       }
@@ -346,7 +358,7 @@ export function useMoreOptionsMenu() {
     // Add paste option if not already added (for single nodes)
     if (!hasMultipleNodes.value) {
       options.push({
-        label: 'Paste',
+        label: t('contextMenu.Paste'),
         icon: markRaw(ILucideClipboard),
         shortcut: 'Ctrl+V',
         action: pasteSelection
@@ -358,18 +370,20 @@ export function useMoreOptionsMenu() {
         type: 'divider'
       },
       {
-        label: 'Node Info',
+        label: t('contextMenu.Node Info'),
         icon: markRaw(ILucideInfo),
         action: showNodeHelp
       },
       {
-        label: 'Adjust Size',
+        label: t('contextMenu.Adjust Size'),
         icon: markRaw(ILucideMoveDiagonal2),
         action: adjustNodeSize
       },
       // Show appropriate collapse/expand option based on current state
       {
-        label: states.collapsed ? 'Expand Node' : 'Minimize Node',
+        label: states.collapsed
+          ? t('contextMenu.Expand Node')
+          : t('contextMenu.Minimize Node'),
         icon: markRaw(states.collapsed ? ILucideMaximize2 : ILucideMinimize2),
         action: toggleNodeCollapse
       },
@@ -377,14 +391,14 @@ export function useMoreOptionsMenu() {
         type: 'divider'
       },
       {
-        label: 'Shape',
+        label: t('contextMenu.Shape'),
         icon: markRaw(ILucideBox),
         hasSubmenu: true,
         submenu: shapeSubmenu.value,
         action: () => {} // No-op for submenu items
       },
       {
-        label: 'Color',
+        label: t('contextMenu.Color'),
         icon: markRaw(ILucidePalette),
         hasSubmenu: true,
         submenu: colorSubmenu.value,
@@ -394,7 +408,7 @@ export function useMoreOptionsMenu() {
         type: 'divider'
       },
       {
-        label: 'Add Subgraph to Library',
+        label: t('contextMenu.Add Subgraph to Library'),
         icon: markRaw(ILucideFolderPlus),
         action: addSubgraphToLibrary
       }
@@ -403,13 +417,13 @@ export function useMoreOptionsMenu() {
     // Add appropriate subgraph option based on selection
     if (hasSubgraphsSelected) {
       options.push({
-        label: 'Unpack Subgraph',
+        label: t('contextMenu.Unpack Subgraph'),
         icon: markRaw(ILucideExpand),
         action: unpackSubgraph
       })
     } else {
       options.push({
-        label: 'Convert to Subgraph',
+        label: t('contextMenu.Convert to Subgraph'),
         icon: markRaw(ILucideShrink),
         action: convertToSubgraph
       })
@@ -422,7 +436,7 @@ export function useMoreOptionsMenu() {
       },
       // Show appropriate pin option based on current state
       {
-        label: states.pinned ? 'Unpin' : 'Pin',
+        label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
         icon: markRaw(states.pinned ? ILucidePinOff : ILucidePin),
         action: toggleNodePin
       },
@@ -435,14 +449,14 @@ export function useMoreOptionsMenu() {
     if (hasMultipleNodes.value) {
       options.push(
         {
-          label: 'Align Selected To',
+          label: t('contextMenu.Align Selected To'),
           icon: markRaw(ILucideAlignStartHorizontal),
           hasSubmenu: true,
           submenu: alignSubmenu.value,
           action: () => {} // No-op for submenu items
         },
         {
-          label: 'Distribute Nodes',
+          label: t('contextMenu.Distribute Nodes'),
           icon: markRaw(ILucideAlignCenterHorizontal),
           hasSubmenu: true,
           submenu: distributeSubmenu.value,
@@ -457,13 +471,15 @@ export function useMoreOptionsMenu() {
     options.push(
       // Show appropriate bypass option based on current state
       {
-        label: states.bypassed ? 'Remove Bypass' : 'Bypass',
+        label: states.bypassed
+          ? t('contextMenu.Remove Bypass')
+          : t('contextMenu.Bypass'),
         icon: markRaw(states.bypassed ? ILucideZapOff : ILucideBan),
         shortcut: 'Ctrl+B',
         action: toggleNodeBypass
       },
       {
-        label: 'Run Branch',
+        label: t('contextMenu.Run Branch'),
         icon: markRaw(ILucidePlay),
         action: runBranch
       },
@@ -476,13 +492,13 @@ export function useMoreOptionsMenu() {
     if (hasMultipleNodes.value) {
       options.push(
         {
-          label: 'Paste',
+          label: t('contextMenu.Paste'),
           icon: markRaw(ILucideClipboard),
           shortcut: 'Ctrl+V',
           action: pasteSelection
         },
         {
-          label: 'Convert to Group Nodes',
+          label: t('contextMenu.Convert to Group Nodes'),
           icon: markRaw(ILucideGroup),
           action: convertToGroupNodes
         },
@@ -493,7 +509,7 @@ export function useMoreOptionsMenu() {
     }
 
     options.push({
-      label: 'Delete',
+      label: t('contextMenu.Delete'),
       icon: markRaw(ILucideTrash2),
       shortcut: 'Delete',
       action: deleteSelection

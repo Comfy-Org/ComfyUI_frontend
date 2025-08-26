@@ -63,7 +63,7 @@ import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
 
 const popover = ref<InstanceType<typeof Popover>>()
-const submenuRefs = ref<Record<string, any>>({}) // SubmenuPopover component instances
+const submenuRefs = ref<Record<string, InstanceType<typeof SubmenuPopover>>>({})
 const currentSubmenu = ref<string | null>(null)
 
 // Initialize composables
