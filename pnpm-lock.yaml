@@ -17,6 +17,9 @@ importers:
       '@comfyorg/comfyui-electron-types':
         specifier: ^0.4.43
         version: 0.4.43
+      '@primeuix/styled':
+        specifier: 0.3.2
+        version: 0.3.2
       '@primevue/core':
         specifier: ^4.2.5
         version: 4.2.5(vue@3.5.13(typescript@5.9.2))
@@ -95,6 +98,9 @@ importers:
       fuse.js:
         specifier: ^7.0.0
         version: 7.0.0
+      glob:
+        specifier: ^11.0.3
+        version: 11.0.3
       jsondiffpatch:
         specifier: ^0.6.0
         version: 0.6.0
@@ -225,9 +231,6 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.2.0
-      glob:
-        specifier: ^11.0.3
-        version: 11.0.3
       globals:
         specifier: ^15.9.0
         version: 15.15.0
