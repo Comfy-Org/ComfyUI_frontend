@@ -41,6 +41,14 @@ export class SubgraphBlueprint extends ComfyWorkflow {
 
   hasPromptedSave: boolean = false
 
+  constructor(
+    options: { path: string; modified: number; size: number },
+    confirmFirstSave: boolean = false
+  ) {
+    super(options)
+    this.hasPromptedSave = !confirmFirstSave
+  }
+
   validateSubgraph() {
     if (!this.activeState?.definitions)
       throw new Error(
@@ -119,7 +127,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }): Promise<void> {
       const name = options.path.slice(0, -'.json'.length)
       options.path = SubgraphBlueprint.basePath + options.path
-      const bp = await new SubgraphBlueprint(options).load()
+      const bp = await new SubgraphBlueprint(options, true).load()
       useWorkflowStore().attachWorkflow(bp)
       const nodeDef = convertToNodeDef(bp)
 
@@ -205,7 +213,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       modified: Date.now()
     })
     workflow.originalContent = JSON.stringify(workflowData)
-    workflow.hasPromptedSave = true
     const loadedWorkflow = await workflow.load() //NOTE: Async, but not awaited
     await workflow.save()
     //add to files list?

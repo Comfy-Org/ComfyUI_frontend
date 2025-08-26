@@ -305,6 +305,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     return newPath
   }
+  const saveAs = (
+    existingWorkflow: ComfyWorkflow,
+    path: string
+  ): ComfyWorkflow => {
+    const workflow: ComfyWorkflow = new (existingWorkflow.constructor as any)({
+      path,
+      modified: Date.now(),
+      size: -1
+    })
+    workflow.originalContent = workflow.content = existingWorkflow.content
+    workflowLookup.value[workflow.path] = workflow
+    return workflow
+  }
 
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
@@ -315,8 +328,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
       path &&
       workflowData &&
       existingWorkflow?.changeTracker &&
-      'basePath' in existingWorkflow.constructor &&
-      existingWorkflow.constructor.basePath != ComfyWorkflow.basePath
+      !existingWorkflow.directory.startsWith(
+        ComfyWorkflow.basePath.slice(0, -1)
+      )
     ) {
       existingWorkflow.changeTracker.reset(workflowData)
       return existingWorkflow
@@ -675,6 +689,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createTemporary,
     renameWorkflow,
     deleteWorkflow,
+    saveAs,
     saveWorkflow,
     reorderWorkflows,
 
