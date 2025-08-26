@@ -1465,6 +1465,7 @@ export class LGraph
     const { state, revision, config } = this
     const firstChild = [...items][0]
     if (items.size === 1 && firstChild instanceof LGraphGroup) {
+      items = new Set([firstChild])
       firstChild.recomputeInsideNodes()
       firstChild.children.forEach((n) => items.add(n))
     }
