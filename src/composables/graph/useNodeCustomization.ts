@@ -1,0 +1,178 @@
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import {
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph,
+  RenderShape,
+  isColorable
+} from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { adjustColor } from '@/utils/colorUtil'
+
+export interface ColorOption {
+  name: string
+  localizedName: string
+  value: {
+    dark: string
+    light: string
+  }
+}
+
+export interface ShapeOption {
+  name: string
+  localizedName: string
+  value: RenderShape
+}
+
+/**
+ * Composable for handling node color and shape customization
+ */
+export function useNodeCustomization() {
+  const { t } = useI18n()
+  const canvasStore = useCanvasStore()
+  const workflowStore = useWorkflowStore()
+  const colorPaletteStore = useColorPaletteStore()
+
+  const isLightTheme = computed(
+    () => colorPaletteStore.completedActivePalette.light_theme
+  )
+
+  const toLightThemeColor = (color: string) =>
+    adjustColor(color, { lightness: 0.5 })
+
+  // Color options
+  const NO_COLOR_OPTION: ColorOption = {
+    name: 'noColor',
+    localizedName: t('color.noColor'),
+    value: {
+      dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
+      light: toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
+    }
+  }
+
+  const colorOptions: ColorOption[] = [
+    NO_COLOR_OPTION,
+    ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
+      name,
+      localizedName: t(`color.${name}`),
+      value: {
+        dark: color.bgcolor,
+        light: toLightThemeColor(color.bgcolor)
+      }
+    }))
+  ]
+
+  // Shape options
+  const shapeOptions: ShapeOption[] = [
+    {
+      name: 'default',
+      localizedName: t('shape.default'),
+      value: RenderShape.BOX
+    },
+    {
+      name: 'round',
+      localizedName: t('shape.round'),
+      value: RenderShape.ROUND
+    },
+    {
+      name: 'card',
+      localizedName: t('shape.CARD'),
+      value: RenderShape.CARD
+    },
+    {
+      name: 'circle',
+      localizedName: t('shape.circle'),
+      value: RenderShape.CIRCLE
+    },
+    {
+      name: 'arrow',
+      localizedName: t('shape.arrow'),
+      value: RenderShape.ARROW
+    }
+  ]
+
+  const applyColor = (colorOption: ColorOption | null) => {
+    const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
+    const canvasColorOption =
+      colorName === NO_COLOR_OPTION.name
+        ? null
+        : LGraphCanvas.node_colors[colorName]
+
+    for (const item of canvasStore.selectedItems) {
+      if (isColorable(item)) {
+        item.setColorOption(canvasColorOption)
+      }
+    }
+
+    app.canvas?.setDirty(true, true)
+    workflowStore.activeWorkflow?.changeTracker?.checkState()
+  }
+
+  const applyShape = (shapeOption: ShapeOption) => {
+    const selectedNodes = Array.from(canvasStore.selectedItems).filter(
+      (item): item is LGraphNode => item instanceof LGraphNode
+    )
+
+    if (selectedNodes.length === 0) {
+      return
+    }
+
+    selectedNodes.forEach((node) => {
+      node.shape = shapeOption.value
+    })
+
+    app.canvas?.setDirty(true, true)
+    workflowStore.activeWorkflow?.changeTracker?.checkState()
+  }
+
+  const getCurrentColor = (): ColorOption | null => {
+    const selectedItems = Array.from(canvasStore.selectedItems)
+    if (selectedItems.length === 0) return null
+
+    // Get color from first colorable item
+    const firstColorableItem = selectedItems.find((item) => isColorable(item))
+    if (!firstColorableItem || !isColorable(firstColorableItem)) return null
+
+    const currentBgColor = (firstColorableItem as any).bgcolor
+
+    // Find matching color option
+    return (
+      colorOptions.find(
+        (option) =>
+          option.value.dark === currentBgColor ||
+          option.value.light === currentBgColor
+      ) ?? NO_COLOR_OPTION
+    )
+  }
+
+  const getCurrentShape = (): ShapeOption | null => {
+    const selectedNodes = Array.from(canvasStore.selectedItems).filter(
+      (item): item is LGraphNode => item instanceof LGraphNode
+    )
+
+    if (selectedNodes.length === 0) return null
+
+    const firstNode = selectedNodes[0]
+    const currentShape = firstNode.shape ?? RenderShape.BOX
+
+    return (
+      shapeOptions.find((option) => option.value === currentShape) ??
+      shapeOptions[0]
+    )
+  }
+
+  return {
+    colorOptions,
+    shapeOptions,
+    applyColor,
+    applyShape,
+    getCurrentColor,
+    getCurrentShape,
+    isLightTheme
+  }
+}
