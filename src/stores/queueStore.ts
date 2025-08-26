@@ -437,10 +437,6 @@ export const useQueueStore = defineStore('queue', () => {
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
 
-  const lastHistoryQueueIndex = computed<number>(() =>
-    historyTasks.value.length ? historyTasks.value[0].queueIndex : -1
-  )
-
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
 
   const update = async () => {
@@ -471,11 +467,7 @@ export const useQueueStore = defineStore('queue', () => {
       const allIndex = new Set<number>(
         history.History.map((item: TaskItem) => item.prompt.priority)
       )
-      const newHistoryItems = toClassAll(
-        history.History.filter(
-          (item) => item.prompt.priority > lastHistoryQueueIndex.value
-        )
-      )
+      const newHistoryItems = toClassAll(history.History)
       const existingHistoryItems = historyTasks.value.filter((item) =>
         allIndex.has(item.queueIndex)
       )
@@ -524,7 +516,6 @@ export const useQueueStore = defineStore('queue', () => {
 
     tasks,
     flatTasks,
-    lastHistoryQueueIndex,
     hasPendingTasks,
 
     update,
