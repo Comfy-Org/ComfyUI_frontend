@@ -37,9 +37,9 @@ const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const clickRef = ref(0)
 
-const isByPassed = computed<Boolean>(() => {
+const isByPassed = computed<boolean>(() => {
   // had to do this hack cos it wasnt reactive
-  clickRef.value
+  void clickRef.value
   if (canvasStore.selectedItems.length !== 1) return false
   const item = canvasStore.selectedItems[0] as LGraphNode
   if (!isLGraphNode(item)) return false
@@ -48,6 +48,6 @@ const isByPassed = computed<Boolean>(() => {
 
 const byPass = () => {
   clickRef.value += 1
-  commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
+  void commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
 }
 </script>

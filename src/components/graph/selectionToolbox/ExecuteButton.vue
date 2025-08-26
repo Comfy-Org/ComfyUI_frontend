@@ -7,12 +7,12 @@
         : t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
+    class="dark-mode:bg-[#0B8CE9] bg-[#31B9F4]"
     text
     :disabled="isDisabled"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
-    class="dark-mode:bg-[#0B8CE9] bg-[#31B9F4]"
   >
     <i-lucide:play class="!fill-red-400 fill-path-white" />
   </Button>
