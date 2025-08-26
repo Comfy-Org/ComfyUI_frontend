@@ -40,6 +40,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: 'npm'
+          cache-dependency-path: 'ComfyUI_frontend/package-lock.json'
 
       - name: Get current time
         id: current-time
@@ -64,6 +66,18 @@ jobs:
 
             ---
             *This comment will be updated when tests complete*
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ComfyUI_frontend/.cache
+            ComfyUI_frontend/tsconfig.tsbuildinfo
+          key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ hashFiles('ComfyUI_frontend/src/**/*.{ts,vue,js}', 'ComfyUI_frontend/*.config.*') }}
+          restore-keys: |
+            playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
+            playwright-setup-cache-${{ runner.os }}-
+            playwright-tools-cache-${{ runner.os }}-
 
       - name: Build ComfyUI_frontend
         run: |
@@ -118,6 +132,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Get current time
         id: current-time
@@ -159,6 +174,15 @@ jobs:
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ matrix.browser }}
+          restore-keys: |
+            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
+            playwright-browsers-${{ runner.os }}-
 
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
