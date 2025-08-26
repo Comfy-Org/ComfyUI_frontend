@@ -123,6 +123,13 @@ export class SubgraphBlueprint extends ComfyWorkflow {
     sg.name = st.nodes[0].title = this.filename
     return loaded
   }
+  override async promptSave(): Promise<string | null> {
+    return await useDialogService().prompt({
+      title: t('subgraphStore.saveBlueprint'),
+      message: t('subgraphStore.blueprintName') + ':',
+      defaultValue: this.filename
+    })
+  }
 }
 
 const subgraphCache: Record<string, LoadedComfyWorkflow> = {}

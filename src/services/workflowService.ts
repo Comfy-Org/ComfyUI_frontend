@@ -82,11 +82,7 @@ export const useWorkflowService = () => {
    * @param workflow The workflow to save
    */
   const saveWorkflowAs = async (workflow: ComfyWorkflow) => {
-    const newFilename = await dialogService.prompt({
-      title: t('workflowService.saveWorkflow'),
-      message: t('workflowService.enterFilename') + ':',
-      defaultValue: workflow.filename
-    })
+    const newFilename = await workflow.promptSave()
     if (!newFilename) return
 
     const newPath = workflow.directory + '/' + appendJsonExt(newFilename)

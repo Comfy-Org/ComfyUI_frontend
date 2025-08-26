@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
+import { t } from '@/i18n'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
@@ -10,6 +11,7 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import { useDialogService } from '@/services/dialogService'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -119,6 +121,14 @@ export class ComfyWorkflow extends UserFile {
   override async saveAs(path: string) {
     this.content = JSON.stringify(this.activeState)
     return await super.saveAs(path)
+  }
+
+  async promptSave(): Promise<string | null> {
+    return await useDialogService().prompt({
+      title: t('workflowService.saveWorkflow'),
+      message: t('workflowService.enterFilename') + ':',
+      defaultValue: this.filename
+    })
   }
 }
 
