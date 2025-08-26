@@ -63,9 +63,9 @@ jobs:
             .cache
             storybook-static
             tsconfig.tsbuildinfo
-          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
+          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
           restore-keys: |
-            storybook-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             storybook-cache-${{ runner.os }}-
             storybook-tools-cache-${{ runner.os }}-
 

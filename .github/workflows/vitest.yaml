@@ -31,9 +31,9 @@ jobs:
           .cache
           coverage
           .vitest-cache
-        key: vitest-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', 'vitest.config.*', 'tsconfig.json') }}
+        key: vitest-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', 'vitest.config.*', 'tsconfig.json') }}
         restore-keys: |
-          vitest-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+          vitest-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
           vitest-cache-${{ runner.os }}-
           test-tools-cache-${{ runner.os }}-
 

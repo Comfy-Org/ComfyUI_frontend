@@ -24,7 +24,7 @@ jobs:
         path: |
           ComfyUI_frontend/.cache
           ComfyUI_frontend/.cache
-        key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
+        key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
         restore-keys: |
           i18n-tools-cache-${{ runner.os }}-
     - name: Install Playwright Browsers

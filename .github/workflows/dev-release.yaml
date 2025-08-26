@@ -28,7 +28,7 @@ jobs:
             .cache
             dist
             tsconfig.tsbuildinfo
-          key: dev-release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          key: dev-release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             dev-release-tools-cache-${{ runner.os }}-
 

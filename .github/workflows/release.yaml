@@ -34,7 +34,7 @@ jobs:
           path: |
             .cache
             tsconfig.tsbuildinfo
-          key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             release-tools-cache-${{ runner.os }}-
 
@@ -146,7 +146,7 @@ jobs:
             .cache
             tsconfig.tsbuildinfo
             dist
-          key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             types-tools-cache-${{ runner.os }}-
 

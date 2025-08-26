@@ -30,7 +30,7 @@ jobs:
         with:
           path: |
             .cache
-          key: electron-types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          key: electron-types-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             electron-types-tools-cache-${{ runner.os }}-
 
@@ -40,7 +40,7 @@ jobs:
       - name: Get new version
         id: get-version
         run: |
-          NEW_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./package-lock.json')).packages['node_modules/@comfyorg/comfyui-electron-types'].version)")
+          NEW_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./pnpm-lock.yaml')).packages['node_modules/@comfyorg/comfyui-electron-types'].version)")
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request

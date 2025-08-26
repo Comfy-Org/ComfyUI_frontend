@@ -34,7 +34,7 @@ jobs:
         with:
           path: |
             .cache
-          key: update-registry-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          key: update-registry-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             update-registry-tools-cache-${{ runner.os }}-
 

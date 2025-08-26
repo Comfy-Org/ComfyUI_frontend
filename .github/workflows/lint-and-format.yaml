@@ -39,9 +39,9 @@ jobs:
             tsconfig.tsbuildinfo
             .prettierCache
             .knip-cache
-          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
+          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
           restore-keys: |
-            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             lint-format-cache-${{ runner.os }}-
             ci-tools-cache-${{ runner.os }}-
 
