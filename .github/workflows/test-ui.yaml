@@ -182,6 +182,7 @@ jobs:
       - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
         id: cloudflare-deploy
         if: always()
+        continue-on-error: true
         run: |
           # Retry logic for wrangler deploy (3 attempts)
           RETRY_COUNT=0
