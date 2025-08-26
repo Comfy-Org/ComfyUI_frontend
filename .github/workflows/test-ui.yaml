@@ -181,8 +181,27 @@ jobs:
 
       - name: Start ComfyUI server
         run: |
+          echo "Starting ComfyUI server..."
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
+          SERVER_PID=$!
+          echo "Server PID: $SERVER_PID"
+          
+          # Enhanced wait with progress feedback
+          echo "Waiting for server to start (timeout: 600 seconds)..."
           wait-for-it --service 127.0.0.1:8188 -t 600
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ ComfyUI server ready"
+          else
+            echo "❌ Server startup timeout or failure"
+            echo "Checking server process..."
+            if ps -p $SERVER_PID > /dev/null; then
+              echo "Server process is still running (PID: $SERVER_PID)"
+            else
+              echo "Server process has exited"
+            fi
+            exit 1
+          fi
         working-directory: ComfyUI
 
       - name: Cache Playwright browsers
@@ -223,15 +242,17 @@ jobs:
           MAX_RETRIES=3
           SUCCESS=false
           
+          echo "Deploying to Cloudflare Pages (branch: ${{ steps.project-name.outputs.branch }})..."
+          
           while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
             
             if npx wrangler pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
               SUCCESS=true
-              echo "Deployment successful on attempt $RETRY_COUNT"
+              echo "✅ Deployment successful on attempt $RETRY_COUNT"
             else
-              echo "Deployment failed on attempt $RETRY_COUNT"
+              echo "❌ Deployment failed on attempt $RETRY_COUNT"
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
                 echo "Retrying in 10 seconds..."
                 sleep 10
@@ -247,6 +268,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Skip Cloudflare deployment for forks
+        id: skip-deployment
+        if: always() && github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "⚠️ Skipping Cloudflare Pages deployment for forked PR"
+          echo "Reason: Forked repositories do not have access to Cloudflare secrets"
+          echo "The Playwright report is available as a workflow artifact instead"
+          echo "deployment-url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
+
       - name: Save deployment info for summary
         if: always()
         run: |
@@ -257,7 +287,17 @@ jobs:
           else
             EXIT_CODE="1"
           fi
-          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
+          
+          # Determine deployment URL based on whether it was deployed or skipped
+          if [ "${{ steps.cloudflare-deploy.conclusion }}" = "success" ]; then
+            DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
+          elif [ "${{ steps.skip-deployment.conclusion }}" = "success" ]; then
+            DEPLOYMENT_URL="${{ steps.skip-deployment.outputs.deployment-url }}"
+          else
+            # Fallback for unexpected cases
+            DEPLOYMENT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          
           echo "${{ matrix.browser }}|${EXIT_CODE}|${DEPLOYMENT_URL}" > deployment-info/${{ matrix.browser }}.txt
 
       - name: Upload deployment info
@@ -283,7 +323,11 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            ${{ steps.playwright.conclusion == 'success' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.conclusion == 'success' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }})
+            ${{ steps.playwright.conclusion == 'success' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.conclusion == 'success' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ 
+              steps.cloudflare-deploy.conclusion == 'success' && (steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name)) ||
+              steps.skip-deployment.outputs.deployment-url ||
+              format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id)
+            }})
 
   comment-summary:
     needs: playwright-tests
