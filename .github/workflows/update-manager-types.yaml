@@ -29,7 +29,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            node_modules/.cache
             .cache
           key: update-manager-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |

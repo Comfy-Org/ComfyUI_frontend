@@ -56,7 +56,6 @@ jobs:
         with:
           path: |
             .cache
-            node_modules/.cache
             storybook-static
             tsconfig.tsbuildinfo
           key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}

@@ -28,7 +28,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            node_modules/.cache
             .cache
             tsconfig.tsbuildinfo
           key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
@@ -136,7 +135,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            node_modules/.cache
             .cache
             tsconfig.tsbuildinfo
             dist

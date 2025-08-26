@@ -29,7 +29,6 @@ jobs:
         with:
           path: |
             .cache
-            node_modules/.cache
           key: update-registry-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             update-registry-tools-cache-${{ runner.os }}-
