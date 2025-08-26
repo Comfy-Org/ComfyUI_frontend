@@ -925,7 +925,9 @@
     "confirmDeleteTitle": "Delete blueprint?",
     "confirmDelete": "This action will permanently remove the blueprint from your library",
     "saveBlueprint": "Save Subgraph to Library",
-    "blueprintName": "Subgraph name"
+    "blueprintName": "Subgraph name",
+    "publishSuccess": "Saved to Nodes Library",
+    "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\""
   },
   "electronFileDownload": {
     "inProgress": "In Progress",

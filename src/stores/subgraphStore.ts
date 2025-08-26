@@ -19,6 +19,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useToastStore } from '@/stores/toastStore'
 import { UserFile } from '@/stores/userFileStore'
 import {
   ComfyWorkflow,
@@ -209,6 +210,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     useWorkflowStore().attachWorkflow(loadedWorkflow)
     subgraphDefCache.value.set(name, convertToNodeDef(loadedWorkflow))
     subgraphCache[name] = loadedWorkflow
+    useToastStore().add({
+      severity: 'success',
+      summary: t('subgraphStore.publishSuccess'),
+      detail: t('subgraphStore.publishSuccessMessage'),
+      life: 4000
+    })
   }
   function updateDef(blueprint: LoadedComfyWorkflow) {
     subgraphDefCache.value.set(blueprint.filename, convertToNodeDef(blueprint))
