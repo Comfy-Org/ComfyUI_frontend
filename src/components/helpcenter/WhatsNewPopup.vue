@@ -186,7 +186,8 @@ defineExpose({
 .whats-new-popup-container.sidebar-left.small-sidebar .help-center-arrow {
   left: -14px; /* Overlap with popup outline */
   bottom: calc(
-    var(--sidebar-width) * 2 + 10px - var(--whats-new-popup-bottom)
+    var(--sidebar-width) * 2 + var(--sidebar-icon-size) / 2 -
+      var(--whats-new-popup-bottom)
   ); /* Position to center of help center icon (2 icons below + half icon height for center - whats new popup bottom position ) */
 }
 
