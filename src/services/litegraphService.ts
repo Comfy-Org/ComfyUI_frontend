@@ -956,10 +956,11 @@ export const useLitegraphService = () => {
       bp.nodes[0].title = nodeDef.name.slice(
         useSubgraphStore().typePrefix.length
       )
-      const items = { nodes: bp.nodes, subgraphs: bp.definitions?.subgraphs }
-      //FIXME
-      const strippedItems = JSON.parse(JSON.stringify(items))
-      const results = canvas._deserializeItems(strippedItems, {
+      const items: object = {
+        nodes: bp.nodes,
+        subgraphs: bp.definitions?.subgraphs
+      }
+      const results = canvas._deserializeItems(items, {
         position: options.pos
       })
       if (!results) throw new Error('Failed to add subgraph blueprint')
