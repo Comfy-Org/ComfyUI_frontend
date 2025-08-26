@@ -87,15 +87,17 @@ export class SubgraphBlueprint extends ComfyWorkflow {
       this.hasPromptedSave = true
       this.updatePath(SubgraphBlueprint.basePath + newName + '.json')
     }
+    const ret = await super.save()
     useSubgraphStore().updateDef(await this.load())
-    return super.save()
+    return ret
   }
 
   override async saveAs(path: string) {
     this.validateSubgraph()
     this.hasPromptedSave = true
+    const ret = await super.saveAs(path)
     useSubgraphStore().updateDef(await this.load())
-    return await super.saveAs(path)
+    return ret
   }
 }
 
