@@ -107,6 +107,22 @@ export class SubgraphBlueprint extends ComfyWorkflow {
     useSubgraphStore().updateDef(await this.load())
     return ret
   }
+  override async load({
+    force = false
+  }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
+    if (!force && this.isLoaded) return await super.load({ force })
+    const loaded = await super.load({ force })
+    const st = loaded.activeState
+    const sg = (st.definitions?.subgraphs ?? []).find(
+      (sg) => sg.id == st.nodes[0].type
+    )
+    if (!sg)
+      throw new Error(
+        'Loaded subgraph blueprint does not contain valid subgraph'
+      )
+    sg.name = st.nodes[0].title = this.filename
+    return loaded
+  }
 }
 
 const subgraphCache: Record<string, LoadedComfyWorkflow> = {}

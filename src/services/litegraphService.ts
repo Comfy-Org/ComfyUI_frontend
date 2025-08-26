@@ -953,9 +953,6 @@ export const useLitegraphService = () => {
     if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
-      bp.nodes[0].title = nodeDef.name.slice(
-        useSubgraphStore().typePrefix.length
-      )
       const items: object = {
         nodes: bp.nodes,
         subgraphs: bp.definitions?.subgraphs
