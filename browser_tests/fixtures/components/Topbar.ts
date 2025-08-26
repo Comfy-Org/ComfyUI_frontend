@@ -1,7 +1,13 @@
-import { Locator, Page } from '@playwright/test'
+import { Locator, Page, expect } from '@playwright/test'
 
 export class Topbar {
-  constructor(public readonly page: Page) {}
+  private readonly menuLocator: Locator
+  private readonly menuTrigger: Locator
+
+  constructor(public readonly page: Page) {
+    this.menuLocator = page.locator('.comfy-command-menu')
+    this.menuTrigger = page.locator('.comfyui-logo-wrapper')
+  }
 
   async getTabNames(): Promise<string[]> {
     return await this.page
@@ -15,8 +21,28 @@ export class Topbar {
       .innerText()
   }
 
-  getMenuItem(itemLabel: string): Locator {
-    return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
+  /**
+   * Get a menu item by its label, optionally within a specific parent container
+   */
+  getMenuItem(itemLabel: string, parent?: Locator): Locator {
+    const selector = parent ? '.p-tieredmenu-item' : '.p-menubar-item-label'
+    return (parent ?? this.page).locator(`${selector}:has-text("${itemLabel}")`)
+  }
+
+  /**
+   * Get the visible submenu (last visible submenu in case of nested menus)
+   */
+  getVisibleSubmenu(): Locator {
+    return this.page.locator('.p-tieredmenu-submenu:visible').last()
+  }
+
+  /**
+   * Check if a menu item has an active checkmark
+   */
+  async isMenuItemActive(menuItem: Locator): Promise<boolean> {
+    const checkmark = menuItem.locator('.pi-check')
+    const classes = await checkmark.getAttribute('class')
+    return classes ? !classes.includes('invisible') : false
   }
 
   getWorkflowTab(tabName: string): Locator {
@@ -66,10 +92,50 @@ export class Topbar {
 
   async openTopbarMenu() {
     await this.page.waitForTimeout(1000)
-    await this.page.locator('.comfyui-logo-wrapper').click()
-    const menu = this.page.locator('.comfy-command-menu')
-    await menu.waitFor({ state: 'visible' })
-    return menu
+    await this.menuTrigger.click()
+    await this.menuLocator.waitFor({ state: 'visible' })
+    return this.menuLocator
+  }
+
+  /**
+   * Close the topbar menu by clicking outside
+   */
+  async closeTopbarMenu() {
+    await this.page.locator('body').click({ position: { x: 10, y: 10 } })
+    await expect(this.menuLocator).not.toBeVisible()
+  }
+
+  /**
+   * Navigate to a submenu by hovering over a menu item
+   */
+  async openSubmenu(menuItemLabel: string): Promise<Locator> {
+    const menuItem = this.getMenuItem(menuItemLabel)
+    await menuItem.hover()
+    const submenu = this.getVisibleSubmenu()
+    await submenu.waitFor({ state: 'visible' })
+    return submenu
+  }
+
+  /**
+   * Get theme menu items and interact with theme switching
+   */
+  async getThemeMenuItems() {
+    const themeSubmenu = await this.openSubmenu('Theme')
+    return {
+      submenu: themeSubmenu,
+      darkTheme: this.getMenuItem('Dark (Default)', themeSubmenu),
+      lightTheme: this.getMenuItem('Light', themeSubmenu)
+    }
+  }
+
+  /**
+   * Switch to a specific theme
+   */
+  async switchTheme(theme: 'dark' | 'light') {
+    const { darkTheme, lightTheme } = await this.getThemeMenuItems()
+    const themeItem = theme === 'dark' ? darkTheme : lightTheme
+    const themeLabel = themeItem.locator('.p-menubar-item-label')
+    await themeLabel.click()
   }
 
   async triggerTopbarCommand(path: string[]) {
@@ -79,9 +145,7 @@ export class Topbar {
 
     const menu = await this.openTopbarMenu()
     const tabName = path[0]
-    const topLevelMenuItem = this.page.locator(
-      `.p-menubar-item-label:text-is("${tabName}")`
-    )
+    const topLevelMenuItem = this.getMenuItem(tabName)
     const topLevelMenu = menu
       .locator('.p-tieredmenu-item')
       .filter({ has: topLevelMenuItem })

@@ -182,70 +182,67 @@ test.describe('Menu', () => {
     test('Can navigate Theme menu and switch between Dark and Light themes', async ({
       comfyPage
     }) => {
+      const { topbar } = comfyPage.menu
+
+      // Take initial screenshot with default theme
+      await comfyPage.attachScreenshot('theme-initial')
+
       // Open the topbar menu
-      await comfyPage.menu.topbar.openTopbarMenu()
-      const menu = comfyPage.page.locator('.comfy-command-menu')
+      const menu = await topbar.openTopbarMenu()
       await expect(menu).toBeVisible()
 
-      // Navigate to Theme menu item and open its submenu
-      const themeMenuItem = comfyPage.page.locator(
-        '.p-menubar-item-label:text-is("Theme")'
-      )
-      await themeMenuItem.hover()
-
-      // Wait for theme submenu to appear
-      const themeSubmenu = comfyPage.page
-        .locator('.p-tieredmenu-submenu:visible')
-        .last()
-      await themeSubmenu.waitFor({ state: 'visible' })
-
-      // Verify that Dark (Default) and Light themes are available
-      const darkThemeItem = themeSubmenu.locator(
-        '.p-tieredmenu-item:has-text("Dark (Default)")'
-      )
-      const lightThemeItem = themeSubmenu.locator(
-        '.p-tieredmenu-item:has-text("Light")'
-      )
+      // Get theme menu items
+      const {
+        submenu: themeSubmenu,
+        darkTheme: darkThemeItem,
+        lightTheme: lightThemeItem
+      } = await topbar.getThemeMenuItems()
 
       await expect(darkThemeItem).toBeVisible()
       await expect(lightThemeItem).toBeVisible()
 
-      // Click Light theme
-      const lightThemeLabel = lightThemeItem.locator('.p-menubar-item-label')
-      await lightThemeLabel.click()
+      // Switch to Light theme
+      await topbar.switchTheme('light')
 
-      // Verify menu stays open and Light theme shows as active (has checkmark)
+      // Verify menu stays open and Light theme shows as active
       await expect(menu).toBeVisible()
       await expect(themeSubmenu).toBeVisible()
 
-      // Check for active state indicator (checkmark) on Light theme
-      const lightCheckmark = lightThemeItem.locator('.pi-check')
-      await expect(lightCheckmark).not.toHaveClass(/invisible/)
+      // Check that Light theme is active
+      expect(await topbar.isMenuItemActive(lightThemeItem)).toBe(true)
+
+      // Screenshot with light theme active
+      await comfyPage.attachScreenshot('theme-menu-light-active')
 
       // Verify ColorPalette setting is set to "light"
       expect(await comfyPage.getSetting('Comfy.ColorPalette')).toBe('light')
 
-      // Click Dark (Default) theme
-      const darkThemeLabel = darkThemeItem.locator('.p-menubar-item-label')
-      await darkThemeLabel.click()
+      // Close menu to see theme change
+      await topbar.closeTopbarMenu()
+
+      // Re-open menu and get theme items again
+      await topbar.openTopbarMenu()
+      const themeItems2 = await topbar.getThemeMenuItems()
+
+      // Switch back to Dark theme
+      await topbar.switchTheme('dark')
 
       // Verify menu stays open and Dark theme shows as active
       await expect(menu).toBeVisible()
-      await expect(themeSubmenu).toBeVisible()
+      await expect(themeItems2.submenu).toBeVisible()
 
-      // Check for active state indicator (checkmark) on Dark theme
-      const darkCheckmark = darkThemeItem.locator('.pi-check')
-      await expect(darkCheckmark).not.toHaveClass(/invisible/)
+      // Check that Dark theme is active and Light theme is not
+      expect(await topbar.isMenuItemActive(themeItems2.darkTheme)).toBe(true)
+      expect(await topbar.isMenuItemActive(themeItems2.lightTheme)).toBe(false)
 
-      // Light theme should no longer be active
-      await expect(lightCheckmark).toHaveClass(/invisible/)
+      // Screenshot with dark theme active
+      await comfyPage.attachScreenshot('theme-menu-dark-active')
 
       // Verify ColorPalette setting is set to "dark"
       expect(await comfyPage.getSetting('Comfy.ColorPalette')).toBe('dark')
 
-      // Close menu by clicking outside
-      await comfyPage.page.locator('body').click({ position: { x: 10, y: 10 } })
-      await expect(menu).not.toBeVisible()
+      // Close menu
+      await topbar.closeTopbarMenu()
     })
   })
 
