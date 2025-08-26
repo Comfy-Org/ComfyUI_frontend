@@ -33,7 +33,7 @@
     "name": "Canvas Navigation Mode",
     "options": {
       "Standard (New)": "Standard (New)",
-      "Left-Click Pan (Legacy)": "Left-Click Pan (Legacy)"
+      "Drag Navigation": "Drag Navigation"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -118,6 +118,10 @@
       "Spline": "Spline",
       "Hidden": "Hidden"
     }
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "Enable 3D Viewer (Beta)",
+    "tooltip": "Enables the 3D Viewer (Beta) for selected nodes. This feature allows you to visualize and interact with 3D models directly within the full size 3d viewer."
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "Initial Background Color",
@@ -394,7 +398,7 @@
   },
   "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
     "name": "Low quality rendering zoom threshold",
-    "tooltip": "Render low quality shapes when zoomed out"
+    "tooltip": "Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details."
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Maximum FPS",

@@ -24,16 +24,26 @@ test.describe('Minimap', () => {
     const minimapViewport = minimapContainer.locator('.minimap-viewport')
     await expect(minimapViewport).toBeVisible()
 
-    await expect(minimapContainer).toHaveCSS('position', 'absolute')
-    await expect(minimapContainer).toHaveCSS('z-index', '1000')
+    await expect(minimapContainer).toHaveCSS('position', 'relative')
+
+    // position and z-index validation moved to the parent container of the minimap
+    const minimapMainContainer = comfyPage.page.locator(
+      '.minimap-main-container'
+    )
+    await expect(minimapMainContainer).toHaveCSS('position', 'absolute')
+    await expect(minimapMainContainer).toHaveCSS('z-index', '1000')
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
+    // Open zoom controls dropdown first
+    const zoomControlsButton = comfyPage.page.getByTestId(
+      'zoom-controls-button'
+    )
+    await zoomControlsButton.click()
+
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
 
     await expect(toggleButton).toBeVisible()
-
-    await expect(toggleButton).toHaveClass(/minimap-active/)
 
     const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
     await expect(minimapContainer).toBeVisible()
@@ -41,22 +51,28 @@ test.describe('Minimap', () => {
 
   test('Validate minimap can be toggled off and on', async ({ comfyPage }) => {
     const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
+
+    // Open zoom controls dropdown first
+    const zoomControlsButton = comfyPage.page.getByTestId(
+      'zoom-controls-button'
+    )
+    await zoomControlsButton.click()
+
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
 
     await expect(minimapContainer).toBeVisible()
-    await expect(toggleButton).toHaveClass(/minimap-active/)
 
     await toggleButton.click()
     await comfyPage.nextFrame()
 
     await expect(minimapContainer).not.toBeVisible()
-    await expect(toggleButton).not.toHaveClass(/minimap-active/)
+    await expect(toggleButton).toContainText('Show Minimap')
 
     await toggleButton.click()
     await comfyPage.nextFrame()
 
     await expect(minimapContainer).toBeVisible()
-    await expect(toggleButton).toHaveClass(/minimap-active/)
+    await expect(toggleButton).toContainText('Hide Minimap')
   })
 
   test('Validate minimap keyboard shortcut Alt+M', async ({ comfyPage }) => {

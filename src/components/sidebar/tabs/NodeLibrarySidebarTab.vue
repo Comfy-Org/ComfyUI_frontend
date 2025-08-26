@@ -30,10 +30,17 @@
         />
         <Button
           v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
-          icon="pi pi-refresh"
+          icon="pi pi-filter-slash"
           text
           severity="secondary"
           @click="resetOrganization"
+        />
+        <Button
+          v-tooltip.bottom="$t('menu.refresh')"
+          icon="pi pi-refresh"
+          text
+          severity="secondary"
+          @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
         />
         <Popover ref="groupingPopover">
           <div class="flex flex-col gap-1 p-2">
@@ -139,6 +146,7 @@ import {
   DEFAULT_SORTING_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
+import { useCommandStore } from '@/stores/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
@@ -155,6 +163,7 @@ import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
 const nodeHelpStore = useNodeHelpStore()
+const commandStore = useCommandStore()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 

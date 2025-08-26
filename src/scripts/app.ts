@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive } from 'vue'
 
@@ -385,8 +385,15 @@ export class ComfyApp {
   static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
-      const combinedImgSrc =
-        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex].src
+      let combinedImgSrc: string | undefined
+      if (
+        ComfyApp.clipspace.combinedIndex !== undefined &&
+        ComfyApp.clipspace.imgs &&
+        ComfyApp.clipspace.combinedIndex < ComfyApp.clipspace.imgs.length
+      ) {
+        combinedImgSrc =
+          ComfyApp.clipspace.imgs[ComfyApp.clipspace.combinedIndex].src
+      }
       if (ComfyApp.clipspace.imgs && node.imgs) {
         if (node.images && ComfyApp.clipspace.images) {
           if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
@@ -727,7 +734,12 @@ export class ComfyApp {
       revokePreviewsByExecutionId(displayNodeId)
       const blobUrl = URL.createObjectURL(blob)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
-      setNodePreviewsByExecutionId(displayNodeId, [blobUrl])
+      const nodeParents = displayNodeId.split(':')
+      for (let i = 1; i <= nodeParents.length; i++) {
+        setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
+          blobUrl
+        ])
+      }
     })
 
     api.init()
@@ -906,7 +918,7 @@ export class ComfyApp {
         output_is_list: [],
         output_node: false,
         python_module: 'custom_nodes.frontend_only',
-        description: `Frontend only node for ${name}`
+        description: node.description ?? `Frontend only node for ${name}`
       } as ComfyNodeDefV1
     }
 
@@ -1291,8 +1303,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    let comfyOrgAuthToken =
-      (await useFirebaseAuthStore().getIdToken()) ?? undefined
+    let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
     let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {

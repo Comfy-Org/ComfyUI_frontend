@@ -10,7 +10,7 @@ export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
   const workflowStore = useWorkflowStore()
   return {
     id: 'workflows',
-    icon: 'pi pi-folder-open',
+    icon: 'icon-[comfy--workflow]',
     iconBadge: () => {
       if (
         settingStore.get('Comfy.Workflow.WorkflowTabsPosition') !== 'Sidebar'
@@ -22,6 +22,7 @@ export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
     },
     title: 'sideToolbar.workflows',
     tooltip: 'sideToolbar.workflows',
+    label: 'sideToolbar.labels.workflows',
     component: markRaw(WorkflowsSidebarTab),
     type: 'vue'
   }

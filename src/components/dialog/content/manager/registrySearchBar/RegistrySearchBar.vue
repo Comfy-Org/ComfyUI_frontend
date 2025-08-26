@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { stubTrue } from 'lodash'
+import { stubTrue } from 'es-toolkit/compat'
 import AutoComplete, {
   AutoCompleteOptionSelectEvent
 } from 'primevue/autocomplete'

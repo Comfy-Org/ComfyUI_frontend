@@ -317,6 +317,7 @@ export class LiteGraphGlobal {
   ]
 
   /**
+   * @deprecated Removed; has no effect.
    * If `true`, mouse wheel events will be interpreted as trackpad gestures.
    * Tested on MacBook M4 Pro.
    * @default false
@@ -325,6 +326,7 @@ export class LiteGraphGlobal {
   macTrackpadGestures: boolean = false
 
   /**
+   * @deprecated Removed; has no effect.
    * If both this setting and {@link macTrackpadGestures} are `true`, trackpad gestures will
    * only be enabled when the browser user agent includes "Mac".
    * @default true

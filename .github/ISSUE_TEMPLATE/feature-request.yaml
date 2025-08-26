@@ -1,7 +1,6 @@
 name: Feature Request
 description: Report a problem or limitation you're experiencing
-title: '[Feature]: '
-labels: ['enhancement']
+labels: []
 type: Feature
 
 body:

@@ -1,5 +1,6 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
@@ -49,6 +50,7 @@ import {
   isVideoNode,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
+import { getOrderedInputSpecs } from '@/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
 
@@ -63,6 +65,7 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
+  const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
 
   // TODO: Dedupe `registerNodeDef`; this should remain synchronous.
   function registerSubgraphNodeDef(
@@ -246,9 +249,14 @@ export const useLitegraphService = () => {
        * @internal Add inputs to the node.
        */
       #addInputs(inputs: Record<string, InputSpec>) {
-        for (const inputSpec of Object.values(inputs))
+        // Use input_order if available to ensure consistent widget ordering
+        const nodeDefImpl = ComfyNode.nodeData as ComfyNodeDefImpl
+        const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
+
+        // Create sockets and widgets in the determined order
+        for (const inputSpec of orderedInputSpecs)
           this.#addInputSocket(inputSpec)
-        for (const inputSpec of Object.values(inputs))
+        for (const inputSpec of orderedInputSpecs)
           this.#addInputWidget(inputSpec)
       }
 
@@ -363,6 +371,7 @@ export const useLitegraphService = () => {
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
     // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
+    node.skip_list = true
     node.title = nodeDef.display_name || nodeDef.name
   }
 
@@ -505,9 +514,14 @@ export const useLitegraphService = () => {
        * @internal Add inputs to the node.
        */
       #addInputs(inputs: Record<string, InputSpec>) {
-        for (const inputSpec of Object.values(inputs))
+        // Use input_order if available to ensure consistent widget ordering
+        const nodeDefImpl = ComfyNode.nodeData as ComfyNodeDefImpl
+        const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
+
+        // Create sockets and widgets in the determined order
+        for (const inputSpec of orderedInputSpecs)
           this.#addInputSocket(inputSpec)
-        for (const inputSpec of Object.values(inputs))
+        for (const inputSpec of orderedInputSpecs)
           this.#addInputWidget(inputSpec)
       }
 
@@ -761,15 +775,8 @@ export const useLitegraphService = () => {
       options.push({
         content: 'Bypass',
         callback: () => {
-          const mode =
-            this.mode === LGraphEventMode.BYPASS
-              ? LGraphEventMode.ALWAYS
-              : LGraphEventMode.BYPASS
-          for (const item of app.canvas.selectedItems) {
-            if (item instanceof LGraphNode) item.mode = mode
-          }
-          // @ts-expect-error fixme ts strict error
-          this.graph.change()
+          toggleSelectedNodesMode(LGraphEventMode.BYPASS)
+          app.canvas.setDirty(true, true)
         }
       })
 
@@ -803,6 +810,15 @@ export const useLitegraphService = () => {
             }
           })
         }
+      }
+      if (this instanceof SubgraphNode) {
+        options.unshift({
+          content: 'Unpack Subgraph',
+          callback: () => {
+            useNodeOutputStore().revokeSubgraphPreviews(this)
+            this.graph.unpackSubgraph(this)
+          }
+        })
       }
 
       return []

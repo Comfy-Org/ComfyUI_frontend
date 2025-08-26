@@ -3,6 +3,7 @@ import { toRaw } from 'vue'
 import { t } from '@/i18n'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -21,6 +22,7 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
+  const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
@@ -287,8 +289,14 @@ export const useWorkflowService = () => {
    */
   const beforeLoadNewGraph = () => {
     // Use workspaceStore here as it is patched in unit tests.
-    useWorkspaceStore().workflow.activeWorkflow?.changeTracker?.store()
-    domWidgetStore.clear()
+    const workflowStore = useWorkspaceStore().workflow
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (activeWorkflow) {
+      activeWorkflow.changeTracker.store()
+      // Capture thumbnail before loading new graph
+      void workflowThumbnail.storeThumbnail(activeWorkflow)
+      domWidgetStore.clear()
+    }
   }
 
   /**

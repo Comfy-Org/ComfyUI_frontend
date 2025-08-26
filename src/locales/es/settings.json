@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Modo de navegación del lienzo",
     "options": {
-      "Left-Click Pan (Legacy)": "Desplazamiento con clic izquierdo (Legado)",
+      "Drag Navigation": "Navegación por arrastre",
       "Standard (New)": "Estándar (Nuevo)"
     }
   },
@@ -118,6 +118,10 @@
       "Spline": "Spline",
       "Straight": "Recto"
     }
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "Habilitar visor 3D (Beta)",
+    "tooltip": "Activa el visor 3D (Beta) para los nodos seleccionados. Esta función te permite visualizar e interactuar con modelos 3D directamente dentro del visor 3D a tamaño completo."
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "Color de fondo inicial",

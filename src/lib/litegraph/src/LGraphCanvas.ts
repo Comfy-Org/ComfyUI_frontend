@@ -1,3 +1,6 @@
+import { toString } from 'es-toolkit/compat'
+
+import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import {
   type LinkRenderContext,
@@ -37,6 +40,7 @@ import type {
   INodeSlot,
   INodeSlotContextItem,
   ISlotType,
+  LinkNetwork,
   LinkSegment,
   NullableProperties,
   Point,
@@ -58,7 +62,6 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
-import { stringOrEmpty } from './strings'
 import { Subgraph } from './subgraph/Subgraph'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -135,7 +138,7 @@ interface ICreateDefaultNodeOptions extends ICreateNodeOptions {
 interface HasShowSearchCallback {
   /** See {@link LGraphCanvas.showSearchBox} */
   showSearchBox: (
-    event: MouseEvent,
+    event: MouseEvent | null,
     options?: IShowSearchOptions
   ) => HTMLDivElement | void
 }
@@ -1252,7 +1255,7 @@ export class LGraphCanvas
         value = LGraphCanvas.getPropertyPrintableValue(value, info.values)
 
       // value could contain invalid html characters, clean that
-      value = LGraphCanvas.decodeHTML(stringOrEmpty(value))
+      value = LGraphCanvas.decodeHTML(toString(value))
       entries.push({
         content:
           `<span class='property_name'>${info.label || i}</span>` +
@@ -2310,6 +2313,8 @@ export class LGraphCanvas
 
       const node_data = node.clone()?.serialize()
       if (node_data?.type != null) {
+        // Ensure the cloned node is configured against the correct type (especially for SubgraphNodes)
+        node_data.type = newType
         const cloned = LiteGraph.createNode(newType)
         if (cloned) {
           cloned.configure(node_data)
@@ -2395,7 +2400,7 @@ export class LGraphCanvas
       // Set the width of the line for isPointInStroke checks
       const { lineWidth } = this.ctx
       this.ctx.lineWidth = this.connections_width + 7
-      const dpi = window?.devicePixelRatio || 1
+      const dpi = Math.max(window?.devicePixelRatio ?? 1, 1)
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
@@ -2585,16 +2590,27 @@ export class LGraphCanvas
     } else if (!node.flags.collapsed) {
       const { inputs, outputs } = node
 
+      function hasRelevantOutputLinks(
+        output: INodeOutputSlot,
+        network: LinkNetwork
+      ): boolean {
+        const outputLinks = [
+          ...(output.links ?? []),
+          ...[...(output._floatingLinks ?? new Set())]
+        ]
+        return outputLinks.some(
+          (linkId) =>
+            typeof linkId === 'number' && network.getLink(linkId) !== undefined
+        )
+      }
+
       // Outputs
       if (outputs) {
         for (const [i, output] of outputs.entries()) {
           const link_pos = node.getOutputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
-            if (
-              e.shiftKey &&
-              (output.links?.length || output._floatingLinks?.size)
-            ) {
+            if (e.shiftKey && hasRelevantOutputLinks(output, graph)) {
               linkConnector.moveOutputLink(graph, output)
               this.#linkConnectorDrop()
               return
@@ -2692,6 +2708,26 @@ export class LGraphCanvas
           node
         })
         this.processNodeDblClicked(node)
+      }
+
+      // Check for title button clicks before calling onMouseDown
+      if (node.title_buttons?.length && !node.flags.collapsed) {
+        // pos contains the offset from the node's position, so we need to use node-relative coordinates
+        const nodeRelativeX = pos[0]
+        const nodeRelativeY = pos[1]
+
+        for (let i = 0; i < node.title_buttons.length; i++) {
+          const button = node.title_buttons[i]
+          if (
+            button.visible &&
+            button.isPointInside(nodeRelativeX, nodeRelativeY)
+          ) {
+            node.onTitleButtonClick(button, this)
+            // Set a no-op click handler to prevent fallback canvas dragging
+            pointer.onClick = () => {}
+            return
+          }
+        }
       }
 
       // Mousedown callback - can block drag
@@ -3467,10 +3503,6 @@ export class LGraphCanvas
   processMouseWheel(e: WheelEvent): void {
     if (!this.graph || !this.allow_dragcanvas) return
 
-    // TODO: Mouse wheel zoom rewrite
-    // @ts-expect-error wheelDeltaY is non-standard property on WheelEvent
-    const delta = e.wheelDeltaY ?? e.detail * -60
-
     this.adjustMouseEvent(e)
 
     const pos: Point = [e.clientX, e.clientY]
@@ -3478,35 +3510,37 @@ export class LGraphCanvas
 
     let { scale } = this.ds
 
-    if (
-      LiteGraph.canvasNavigationMode === 'legacy' ||
-      (LiteGraph.canvasNavigationMode === 'standard' && e.ctrlKey)
-    ) {
-      if (delta > 0) {
-        scale *= this.zoom_speed
-      } else if (delta < 0) {
-        scale *= 1 / this.zoom_speed
-      }
-      this.ds.changeScale(scale, [e.clientX, e.clientY])
-    } else if (
-      LiteGraph.macTrackpadGestures &&
-      (!LiteGraph.macGesturesRequireMac || navigator.userAgent.includes('Mac'))
-    ) {
-      if (e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-        if (e.deltaY > 0) {
-          scale *= 1 / this.zoom_speed
-        } else if (e.deltaY < 0) {
-          scale *= this.zoom_speed
-        }
-        this.ds.changeScale(scale, [e.clientX, e.clientY])
-      } else if (e.ctrlKey) {
+    // Detect if this is a trackpad gesture or mouse wheel
+    const isTrackpad = this.pointer.isTrackpadGesture(e)
+    const isCtrlOrMacMeta =
+      e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
+    const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
+
+    if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
+      // Legacy mode or standard mode with ctrl - use wheel for zoom
+      if (isTrackpad) {
+        // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
         this.ds.changeScale(scale, [e.clientX, e.clientY], false)
-      } else if (e.shiftKey) {
-        this.ds.offset[0] -= e.deltaY * 1.18 * (1 / scale)
       } else {
-        this.ds.offset[0] -= e.deltaX * 1.18 * (1 / scale)
-        this.ds.offset[1] -= e.deltaY * 1.18 * (1 / scale)
+        // Mouse wheel - use stepped scaling
+        if (e.deltaY < 0) {
+          scale *= this.zoom_speed
+        } else if (e.deltaY > 0) {
+          scale *= 1 / this.zoom_speed
+        }
+        this.ds.changeScale(scale, [e.clientX, e.clientY])
+      }
+    } else {
+      // Standard mode without ctrl - use wheel / gestures to pan
+      // Trackpads and mice work on significantly different scales
+      const factor = isTrackpad ? 0.18 : 0.008_333
+
+      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
+        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
+      } else {
+        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
       }
     }
 
@@ -3624,6 +3658,7 @@ export class LGraphCanvas
       subgraphs: []
     }
 
+    // NOTE: logic for traversing nested subgraphs depends on this being a set.
     const subgraphs = new Set<Subgraph>()
 
     // Create serialisable objects
@@ -3662,8 +3697,13 @@ export class LGraphCanvas
     }
 
     // Add unique subgraph entries
-    // TODO: Must find all nested subgraphs
+    // NOTE: subgraphs is appended to mid iteration.
     for (const subgraph of subgraphs) {
+      for (const node of subgraph.nodes) {
+        if (node instanceof SubgraphNode) {
+          subgraphs.add(node.subgraph)
+        }
+      }
       const cloned = subgraph.clone(true).asSerialisable()
       serialisable.subgraphs.push(cloned)
     }
@@ -3780,12 +3820,19 @@ export class LGraphCanvas
       created.push(group)
     }
 
+    // Update subgraph ids with nesting
+    function updateSubgraphIds(nodes: { type: string }[]) {
+      for (const info of nodes) {
+        const subgraph = results.subgraphs.get(info.type)
+        if (!subgraph) continue
+        info.type = subgraph.id
+        updateSubgraphIds(subgraph.nodes)
+      }
+    }
+    updateSubgraphIds(parsed.nodes)
+
     // Nodes
     for (const info of parsed.nodes) {
-      // If the subgraph was cloned, update references to use the new subgraph ID.
-      const subgraph = results.subgraphs.get(info.type)
-      if (subgraph) info.type = subgraph.id
-
       const node = info.type == null ? null : LiteGraph.createNode(info.type)
       if (!node) {
         // failedNodes.push(info)
@@ -4144,6 +4191,7 @@ export class LGraphCanvas
     const selected = this.selectedItems
     if (!selected.size) return
 
+    const initialSelectionSize = selected.size
     let wasSelected: Positionable | undefined
     for (const sel of selected) {
       if (sel === keepSelected) {
@@ -4184,8 +4232,12 @@ export class LGraphCanvas
       }
     }
 
-    this.state.selectionChanged = true
-    this.onSelectionChange?.(this.selected_nodes)
+    // Only set selectionChanged if selection actually changed
+    const finalSelectionSize = selected.size
+    if (initialSelectionSize !== finalSelectionSize) {
+      this.state.selectionChanged = true
+      this.onSelectionChange?.(this.selected_nodes)
+    }
   }
 
   /** @deprecated See {@link LGraphCanvas.deselectAll} */
@@ -5820,7 +5872,7 @@ export class LGraphCanvas
       }
       ctx.fillStyle = '#FFF'
       ctx.fillText(
-        stringOrEmpty(node.order),
+        toString(node.order),
         node.pos[0] + LiteGraph.NODE_TITLE_HEIGHT * -0.5,
         node.pos[1] - 6
       )
@@ -5988,9 +6040,17 @@ export class LGraphCanvas
           break
         }
 
-        case 'Delete':
-          graph.removeLink(segment.id)
+        case 'Delete': {
+          // segment can be a Reroute object, in which case segment.id is the reroute id
+          const linkId =
+            segment instanceof Reroute
+              ? segment.linkIds.values().next().value
+              : segment.id
+          if (linkId !== undefined) {
+            graph.removeLink(linkId)
+          }
           break
+        }
         default:
       }
     }
@@ -6572,7 +6632,7 @@ export class LGraphCanvas
   }
 
   showSearchBox(
-    event: MouseEvent,
+    event: MouseEvent | null,
     searchOptions?: IShowSearchOptions
   ): HTMLDivElement {
     // proposed defaults
@@ -6807,14 +6867,25 @@ export class LGraphCanvas
     // compute best position
     const rect = canvas.getBoundingClientRect()
 
-    const left = (event ? event.clientX : rect.left + rect.width * 0.5) - 80
-    const top = (event ? event.clientY : rect.top + rect.height * 0.5) - 20
+    // Handles cases where the searchbox is initiated by
+    // non-click events. e.g. Keyboard shortcuts
+    const safeEvent =
+      event ??
+      new MouseEvent('click', {
+        clientX: rect.left + rect.width * 0.5,
+        clientY: rect.top + rect.height * 0.5,
+        // @ts-expect-error layerY is a nonstandard property
+        layerY: rect.top + rect.height * 0.5
+      })
+
+    const left = safeEvent.clientX - 80
+    const top = safeEvent.clientY - 20
     dialog.style.left = `${left}px`
     dialog.style.top = `${top}px`
 
     // To avoid out of screen problems
-    if (event.layerY > rect.height - 200) {
-      helper.style.maxHeight = `${rect.height - event.layerY - 20}px`
+    if (safeEvent.layerY > rect.height - 200) {
+      helper.style.maxHeight = `${rect.height - safeEvent.layerY - 20}px`
     }
     requestAnimationFrame(function () {
       input.focus()
@@ -6824,14 +6895,14 @@ export class LGraphCanvas
     function select(name: string) {
       if (name) {
         if (that.onSearchBoxSelection) {
-          that.onSearchBoxSelection(name, event, graphcanvas)
+          that.onSearchBoxSelection(name, safeEvent, graphcanvas)
         } else {
           if (!graphcanvas.graph) throw new NullGraphError()
 
           graphcanvas.graph.beforeChange()
           const node = LiteGraph.createNode(name)
           if (node) {
-            node.pos = graphcanvas.convertEventToCanvasOffset(event)
+            node.pos = graphcanvas.convertEventToCanvasOffset(safeEvent)
             graphcanvas.graph.add(node, false)
           }
 
@@ -7820,29 +7891,45 @@ export class LGraphCanvas
       | IContextMenuValue<(typeof LiteGraph.VALID_SHAPES)[number]>
       | null
     )[]
-
     if (node.getMenuOptions) {
       options = node.getMenuOptions(this)
     } else {
       options = [
         {
-          content: 'Inputs',
-          has_submenu: true,
-          disabled: true
-        },
-        {
-          content: 'Outputs',
-          has_submenu: true,
-          disabled: true,
-          callback: LGraphCanvas.showMenuNodeOptionalOutputs
-        },
-        null,
-        {
           content: 'Convert to Subgraph 🆕',
           callback: () => {
-            if (!this.selectedItems.size)
+            // find groupnodes, degroup and select children
+            if (this.selectedItems.size) {
+              let hasGroups = false
+              for (const item of this.selectedItems) {
+                const node = item as LGraphNode
+                const isGroup =
+                  typeof node.type === 'string' &&
+                  node.type.startsWith(`${PREFIX}${SEPARATOR}`)
+                if (isGroup && node.convertToNodes) {
+                  hasGroups = true
+                  const nodes = node.convertToNodes()
+
+                  requestAnimationFrame(() => {
+                    this.selectItems(nodes, true)
+
+                    if (!this.selectedItems.size)
+                      throw new Error('Convert to Subgraph: Nothing selected.')
+                    this._graph.convertToSubgraph(this.selectedItems)
+                  })
+                  return
+                }
+              }
+
+              // If no groups were found, continue normally
+              if (!hasGroups) {
+                if (!this.selectedItems.size)
+                  throw new Error('Convert to Subgraph: Nothing selected.')
+                this._graph.convertToSubgraph(this.selectedItems)
+              }
+            } else {
               throw new Error('Convert to Subgraph: Nothing selected.')
-            this._graph.convertToSubgraph(this.selectedItems)
+            }
           }
         },
         {
@@ -8004,13 +8091,17 @@ export class LGraphCanvas
               'Both in put and output slots were null when processing context menu.'
             )
 
-          if (_slot.removable) {
-            menu_info.push(
-              _slot.locked ? 'Cannot remove' : { content: 'Remove Slot', slot }
-            )
-          }
           if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
             menu_info.push({ content: 'Rename Slot', slot })
+          }
+
+          if (_slot.removable) {
+            menu_info.push(null)
+            menu_info.push(
+              _slot.locked
+                ? 'Cannot remove'
+                : { content: 'Remove Slot', slot, className: 'danger' }
+            )
           }
 
           if (node.getExtraSlotMenuOptions) {

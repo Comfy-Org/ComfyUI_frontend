@@ -1,4 +1,5 @@
-import { clamp } from '@/lib/litegraph/src/litegraph'
+import { clamp } from 'es-toolkit/compat'
+
 import type { ISliderWidget } from '@/lib/litegraph/src/types/widgets'
 
 import {

@@ -272,6 +272,8 @@
     "category": "Categoría",
     "choose_file_to_upload": "elige archivo para subir",
     "clear": "Limpiar",
+    "clearAll": "Borrar todo",
+    "clearFilters": "Borrar filtros",
     "close": "Cerrar",
     "color": "Color",
     "comingSoon": "Próximamente",
@@ -299,6 +301,7 @@
     "dismiss": "Descartar",
     "download": "Descargar",
     "dropYourFileOr": "Suelta tu archivo o",
+    "duplicate": "Duplicar",
     "edit": "Editar",
     "empty": "Vacío",
     "enableAll": "Habilitar todo",
@@ -326,6 +329,8 @@
     "installed": "Instalado",
     "installing": "Instalando",
     "interrupted": "Interrumpido",
+    "itemSelected": "{selectedCount} elemento seleccionado",
+    "itemsSelected": "{selectedCount} elementos seleccionados",
     "keybinding": "Combinación de teclas",
     "keybindingAlreadyExists": "La combinación de teclas ya existe en",
     "learnMore": "Aprende más",
@@ -406,12 +411,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "Ajustar vista",
+    "focusMode": "Modo de enfoque",
+    "hand": "Mano",
+    "hideLinks": "Ocultar enlaces",
     "panMode": "Modo de desplazamiento",
     "resetView": "Restablecer vista",
+    "select": "Seleccionar",
     "selectMode": "Modo de selección",
-    "toggleLinkVisibility": "Alternar visibilidad de enlace",
+    "showLinks": "Mostrar enlaces",
     "toggleMinimap": "Alternar minimapa",
     "zoomIn": "Acercar",
+    "zoomOptions": "Opciones de zoom",
     "zoomOut": "Alejar"
   },
   "groupNode": {
@@ -569,6 +579,10 @@
     "applyingTexture": "Aplicando textura...",
     "backgroundColor": "Color de fondo",
     "camera": "Cámara",
+    "cameraType": {
+      "orthographic": "Ortográfica",
+      "perspective": "Perspectiva"
+    },
     "clearRecording": "Borrar grabación",
     "edgeThreshold": "Umbral de borde",
     "export": "Exportar",
@@ -589,6 +603,7 @@
       "wireframe": "Malla"
     },
     "model": "Modelo",
+    "openIn3DViewer": "Abrir en el visor 3D",
     "previewOutput": "Vista previa de salida",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
@@ -599,8 +614,22 @@
     "switchCamera": "Cambiar cámara",
     "switchingMaterialMode": "Cambiando modo de material...",
     "upDirection": "Dirección hacia arriba",
+    "upDirections": {
+      "original": "Original"
+    },
     "uploadBackgroundImage": "Subir imagen de fondo",
-    "uploadTexture": "Subir textura"
+    "uploadTexture": "Subir textura",
+    "viewer": {
+      "apply": "Aplicar",
+      "cameraSettings": "Configuración de la cámara",
+      "cameraType": "Tipo de cámara",
+      "cancel": "Cancelar",
+      "exportSettings": "Configuración de exportación",
+      "lightSettings": "Configuración de la luz",
+      "modelSettings": "Configuración del modelo",
+      "sceneSettings": "Configuración de la escena",
+      "title": "Visor 3D (Beta)"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Requiere ComfyUI {version}:",
@@ -729,6 +758,7 @@
     "manageExtensions": "Gestionar extensiones",
     "onChange": "Al cambiar",
     "onChangeTooltip": "El flujo de trabajo se encolará una vez que se haga un cambio",
+    "queue": "Panel de cola",
     "refresh": "Actualizar definiciones de nodos",
     "resetView": "Restablecer vista del lienzo",
     "run": "Ejecutar",
@@ -741,12 +771,11 @@
   },
   "menuLabels": {
     "About ComfyUI": "Acerca de ComfyUI",
-    "Add Edit Model Step": "Agregar paso de edición de modelo",
+    "Bottom Panel": "Panel inferior",
     "Browse Templates": "Explorar plantillas",
     "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
-    "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",
+    "Canvas Performance": "Rendimiento del lienzo",
     "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
-    "Canvas Toggle Minimap": "Lienzo: Alternar minimapa",
     "Check for Updates": "Buscar actualizaciones",
     "Clear Pending Tasks": "Borrar tareas pendientes",
     "Clear Workflow": "Borrar flujo de trabajo",
@@ -765,17 +794,24 @@
     "Desktop User Guide": "Guía de usuario de escritorio",
     "Duplicate Current Workflow": "Duplicar flujo de trabajo actual",
     "Edit": "Editar",
+    "Exit Subgraph": "Salir de subgrafo",
     "Export": "Exportar",
     "Export (API)": "Exportar (API)",
+    "File": "Archivo",
     "Fit Group To Contents": "Ajustar grupo a contenidos",
-    "Fit view to selected nodes": "Ajustar vista a los nodos seleccionados",
+    "Focus Mode": "Modo de enfoque",
     "Give Feedback": "Dar retroalimentación",
     "Group Selected Nodes": "Agrupar nodos seleccionados",
     "Help": "Ayuda",
+    "Help Center": "Centro de ayuda",
     "Increase Brush Size in MaskEditor": "Aumentar tamaño del pincel en MaskEditor",
     "Interrupt": "Interrumpir",
     "Load Default Workflow": "Cargar flujo de trabajo predeterminado",
+    "Lock Canvas": "Bloquear lienzo",
     "Manage group nodes": "Gestionar nodos de grupo",
+    "Manager": "Administrador",
+    "Minimap": "Minimapa",
+    "Model Library": "Biblioteca de modelos",
     "Move Selected Nodes Down": "Mover nodos seleccionados hacia abajo",
     "Move Selected Nodes Left": "Mover nodos seleccionados hacia la izquierda",
     "Move Selected Nodes Right": "Mover nodos seleccionados hacia la derecha",
@@ -783,7 +819,10 @@
     "Mute/Unmute Selected Nodes": "Silenciar/Activar sonido de nodos seleccionados",
     "New": "Nuevo",
     "Next Opened Workflow": "Siguiente flujo de trabajo abierto",
+    "Node Library": "Biblioteca de nodos",
+    "Node Links": "Enlaces de nodos",
     "Open": "Abrir",
+    "Open 3D Viewer (Beta) for Selected Node": "Abrir visor 3D (Beta) para el nodo seleccionado",
     "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
     "Open DevTools": "Abrir DevTools",
     "Open Inputs Folder": "Abrir carpeta de entradas",
@@ -796,6 +835,7 @@
     "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
     "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
     "Previous Opened Workflow": "Flujo de trabajo abierto anterior",
+    "Queue Panel": "Panel de cola",
     "Queue Prompt": "Indicador de cola",
     "Queue Prompt (Front)": "Indicador de cola (Frente)",
     "Queue Selected Output Nodes": "Encolar nodos de salida seleccionados",
@@ -809,15 +849,13 @@
     "Save": "Guardar",
     "Save As": "Guardar como",
     "Show Keybindings Dialog": "Mostrar diálogo de combinaciones de teclas",
+    "Show Model Selector (Dev)": "Mostrar selector de modelo (Desarrollo)",
     "Show Settings Dialog": "Mostrar diálogo de configuración",
     "Sign Out": "Cerrar sesión",
     "Toggle Bottom Panel": "Alternar panel inferior",
     "Toggle Essential Bottom Panel": "Alternar panel inferior esencial",
     "Toggle Focus Mode": "Alternar modo de enfoque",
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
-    "Toggle Model Library Sidebar": "Alternar barra lateral de la biblioteca de modelos",
-    "Toggle Node Library Sidebar": "Alternar barra lateral de la biblioteca de nodos",
-    "Toggle Queue Sidebar": "Alternar barra lateral de la cola",
     "Toggle Search Box": "Alternar caja de búsqueda",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
@@ -827,9 +865,19 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Alternar la Barra de Progreso del Administrador de Nodos Personalizados",
     "Undo": "Deshacer",
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
-    "Workflow": "Flujo de trabajo",
+    "Unlock Canvas": "Desbloquear lienzo",
+    "Unpack the selected Subgraph": "Desempaquetar el Subgrafo seleccionado",
+    "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
-    "Zoom Out": "Alejar"
+    "Zoom Out": "Alejar",
+    "Zoom to fit": "Ajustar al tamaño"
+  },
+  "minimap": {
+    "nodeColors": "Colores de nodos",
+    "renderBypassState": "Mostrar estado de omisión",
+    "renderErrorState": "Mostrar estado de error",
+    "showGroups": "Mostrar marcos/grupos",
+    "showLinks": "Mostrar enlaces"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "No mostrar esto de nuevo",
@@ -1097,6 +1145,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "Visor 3D",
     "API Nodes": "Nodos API",
     "About": "Acerca de",
     "Appearance": "Apariencia",
@@ -1167,6 +1216,13 @@
     "browseTemplates": "Explorar plantillas de ejemplo",
     "downloads": "Descargas",
     "helpCenter": "Centro de ayuda",
+    "labels": {
+      "models": "Modelos",
+      "nodes": "Nodos",
+      "queue": "Cola",
+      "templates": "Plantillas",
+      "workflows": "Flujos de trabajo"
+    },
     "logout": "Cerrar sesión",
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
@@ -1204,6 +1260,7 @@
       },
       "showFlatList": "Mostrar lista plana"
     },
+    "templates": "Plantillas",
     "workflowTab": {
       "confirmDelete": "¿Estás seguro de que quieres eliminar este flujo de trabajo?",
       "confirmDeleteTitle": "¿Eliminar flujo de trabajo?",
@@ -1250,6 +1307,8 @@
       "Video": "Video",
       "Video API": "API de Video"
     },
+    "loadingMore": "Cargando más plantillas...",
+    "searchPlaceholder": "Buscar plantillas...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",
@@ -1572,6 +1631,7 @@
     "failedToExportModel": "Error al exportar modelo como {format}",
     "failedToFetchBalance": "No se pudo obtener el saldo: {error}",
     "failedToFetchLogs": "Error al obtener los registros del servidor",
+    "failedToInitializeLoad3dViewer": "No se pudo inicializar el visor 3D",
     "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",
     "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "fileLoadError": "No se puede encontrar el flujo de trabajo en {fileName}",
@@ -1646,5 +1706,11 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo"
+  },
+  "zoomControls": {
+    "hideMinimap": "Ocultar minimapa",
+    "label": "Controles de zoom",
+    "showMinimap": "Mostrar minimapa",
+    "zoomToFit": "Ajustar al zoom"
   }
 }

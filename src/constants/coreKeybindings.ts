@@ -182,5 +182,31 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ToggleMinimap'
+  },
+  {
+    combo: {
+      ctrl: true,
+      shift: true,
+      key: 'k'
+    },
+    commandId: 'Workspace.ToggleBottomPanel.Shortcuts'
+  },
+  {
+    combo: {
+      key: 'v'
+    },
+    commandId: 'Comfy.Canvas.Unlock'
+  },
+  {
+    combo: {
+      key: 'h'
+    },
+    commandId: 'Comfy.Canvas.Lock'
+  },
+  {
+    combo: {
+      key: 'Escape'
+    },
+    commandId: 'Comfy.Graph.ExitSubgraph'
   }
 ]

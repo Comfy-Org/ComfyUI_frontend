@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "캔버스 내비게이션 모드",
     "options": {
-      "Left-Click Pan (Legacy)": "왼쪽 클릭 이동(레거시)",
+      "Drag Navigation": "드래그 내비게이션",
       "Standard (New)": "표준(신규)"
     }
   },
@@ -118,6 +118,10 @@
       "Spline": "스플라인",
       "Straight": "직선"
     }
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "3D 뷰어 활성화 (베타)",
+    "tooltip": "선택한 노드에 대해 3D 뷰어(베타)를 활성화합니다. 이 기능을 통해 전체 크기의 3D 뷰어에서 3D 모델을 직접 시각화하고 상호작용할 수 있습니다."
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "초기 배경색",

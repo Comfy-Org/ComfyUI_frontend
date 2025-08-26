@@ -10,7 +10,8 @@
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': isActive
+      'p-breadcrumb-item-link-icon-visible': isActive,
+      'active-breadcrumb-item': isActive
     }"
     @click="handleClick"
   >
@@ -111,21 +112,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       label: t('g.rename'),
       icon: 'pi pi-pencil',
-      command: async () => {
-        let initialName =
-          workflowStore.activeSubgraph?.name ??
-          workflowStore.activeWorkflow?.filename
-
-        if (!initialName) return
-
-        const newName = await dialogService.prompt({
-          title: t('g.rename'),
-          message: t('breadcrumbsMenu.enterNewName'),
-          defaultValue: initialName
-        })
-
-        await rename(newName, initialName)
-      }
+      command: startRename
     },
     {
       label: t('breadcrumbsMenu.duplicate'),
@@ -175,18 +162,22 @@ const handleClick = (event: MouseEvent) => {
     menu.value?.hide()
     event.stopPropagation()
     event.preventDefault()
-    isEditing.value = true
-    itemLabel.value = props.item.label as string
-    void nextTick(() => {
-      if (itemInputRef.value?.$el) {
-        itemInputRef.value.$el.focus()
-        itemInputRef.value.$el.select()
-        if (wrapperRef.value) {
-          itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
-        }
-      }
-    })
+    startRename()
   }
+}
+
+const startRename = () => {
+  isEditing.value = true
+  itemLabel.value = props.item.label as string
+  void nextTick(() => {
+    if (itemInputRef.value?.$el) {
+      itemInputRef.value.$el.focus()
+      itemInputRef.value.$el.select()
+      if (wrapperRef.value) {
+        itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
+      }
+    }
+  })
 }
 
 const inputBlur = async (doRename: boolean) => {
@@ -211,5 +202,9 @@ const inputBlur = async (doRename: boolean) => {
 
 .p-breadcrumb-item-label {
   @apply whitespace-nowrap text-ellipsis overflow-hidden;
+}
+
+.active-breadcrumb-item {
+  color: var(--text-primary);
 }
 </style>

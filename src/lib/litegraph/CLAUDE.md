@@ -24,3 +24,39 @@
 
 - Be sure to typecheck when you’re done making a series of code changes
 - Prefer running single tests, and not the whole test suite, for performance
+
+# Testing Guidelines
+
+## Avoiding Circular Dependencies in Tests
+
+**CRITICAL**: When writing tests for subgraph-related code, always import from the barrel export to avoid circular dependency issues:
+
+```typescript
+// ✅ CORRECT - Use barrel import
+import { LGraph, Subgraph, SubgraphNode } from "@/lib/litegraph/src/litegraph"
+
+// ❌ WRONG - Direct imports cause circular dependency
+import { LGraph } from "@/lib/litegraph/src/LGraph"
+import { Subgraph } from "@/lib/litegraph/src/subgraph/Subgraph" 
+import { SubgraphNode } from "@/lib/litegraph/src/subgraph/SubgraphNode"
+```
+
+**Root cause**: `LGraph` and `Subgraph` have a circular dependency:
+- `LGraph.ts` imports `Subgraph` (creates instances with `new Subgraph()`)
+- `Subgraph.ts` extends `LGraph` 
+
+The barrel export (`@/litegraph`) handles this properly, but direct imports cause module loading failures.
+
+## Test Setup for Subgraphs
+
+Use the provided test helpers for consistent setup:
+
+```typescript
+import { createTestSubgraph, createTestSubgraphNode } from "./fixtures/subgraphHelpers"
+
+function createTestSetup() {
+  const subgraph = createTestSubgraph()
+  const subgraphNode = createTestSubgraphNode(subgraph)
+  return { subgraph, subgraphNode }
+}
+```

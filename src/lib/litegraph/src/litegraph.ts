@@ -89,12 +89,14 @@ export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'
 export * as Constants from './constants'
+export { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from './constants'
 export { ContextMenu } from './ContextMenu'
 export { CurveEditor } from './CurveEditor'
 export { DragAndScale } from './DragAndScale'
 export { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 export { strokeShape } from './draw'
 export { Rectangle } from './infrastructure/Rectangle'
+export { RecursionError } from './infrastructure/RecursionError'
 export type {
   CanvasColour,
   ColorOption,
@@ -138,7 +140,7 @@ export {
   type ComponentHeightKey
 } from './LiteGraphGlobal'
 export { type LinkId, LLink } from './LLink'
-export { clamp, createBounds } from './measure'
+export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'
 export {
   type ExecutableLGraphNode,
@@ -151,6 +153,7 @@ export {
   CanvasItem,
   EaseFunction,
   LGraphEventMode,
+  LinkDirection,
   LinkMarkerShape,
   RenderShape,
   TitleMode
@@ -160,6 +163,7 @@ export type {
   ExportedSubgraphInstance,
   ExportedSubgraphIONode,
   ISerialisedGraph,
+  ISerialisedNode,
   SerialisableGraph,
   SerialisableLLink,
   SubgraphIO
@@ -167,6 +171,10 @@ export type {
 export type { IWidget } from './types/widgets'
 export { isColorable } from './utils/type'
 export { createUuidv4 } from './utils/uuid'
+export type { UUID } from './utils/uuid'
+export { truncateText } from './utils/textUtils'
+export { getWidgetStep } from './utils/widget'
+export { distributeSpace, type SpaceRequest } from './utils/spaceDistribution'
 export { BaseSteppedWidget } from './widgets/BaseSteppedWidget'
 export { BaseWidget } from './widgets/BaseWidget'
 export { BooleanWidget } from './widgets/BooleanWidget'
@@ -178,3 +186,21 @@ export { NumberWidget } from './widgets/NumberWidget'
 export { SliderWidget } from './widgets/SliderWidget'
 export { TextWidget } from './widgets/TextWidget'
 export { isComboWidget } from './widgets/widgetMap'
+// Additional test-specific exports
+export { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
+export { MovingOutputLink } from './canvas/MovingOutputLink'
+export { ToOutputRenderLink } from './canvas/ToOutputRenderLink'
+export { ToInputFromIoNodeLink } from './canvas/ToInputFromIoNodeLink'
+export type { TWidgetType, TWidgetValue, IWidgetOptions } from './types/widgets'
+export {
+  findUsedSubgraphIds,
+  getDirectSubgraphIds,
+  isSubgraphInput,
+  isSubgraphOutput
+} from './subgraph/subgraphUtils'
+export { NodeInputSlot } from './node/NodeInputSlot'
+export { NodeOutputSlot } from './node/NodeOutputSlot'
+export { inputAsSerialisable, outputAsSerialisable } from './node/slotUtils'
+export { MovingInputLink } from './canvas/MovingInputLink'
+export { ToInputRenderLink } from './canvas/ToInputRenderLink'
+export { LiteGraphGlobal } from './LiteGraphGlobal'

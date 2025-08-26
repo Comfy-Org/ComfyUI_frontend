@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "畫布導航模式",
     "options": {
-      "Left-Click Pan (Legacy)": "左鍵拖曳平移（舊版）",
+      "Drag Navigation": "拖曳導覽",
       "Standard (New)": "標準（新）"
     }
   },
@@ -118,6 +118,10 @@
       "Spline": "曲線",
       "Straight": "直線"
     }
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "啟用 3D 檢視器（測試版）",
+    "tooltip": "為所選節點啟用 3D 檢視器（測試版）。此功能可讓您在全尺寸 3D 檢視器中直接瀏覽與互動 3D 模型。"
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "初始背景顏色",

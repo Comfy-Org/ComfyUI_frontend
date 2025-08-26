@@ -12,7 +12,7 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import PackEnableToggle from './PackEnableToggle.vue'
 
 // Mock debounce to execute immediately
-vi.mock('lodash', () => ({
+vi.mock('es-toolkit/compat', () => ({
   debounce: <T extends (...args: any[]) => any>(fn: T) => fn
 }))
 

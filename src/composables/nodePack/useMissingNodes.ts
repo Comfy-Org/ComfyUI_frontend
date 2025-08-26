@@ -1,4 +1,4 @@
-import { groupBy } from 'lodash'
+import { groupBy } from 'es-toolkit/compat'
 import { computed, onMounted } from 'vue'
 
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'

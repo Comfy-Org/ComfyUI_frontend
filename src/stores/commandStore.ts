@@ -17,6 +17,8 @@ export interface ComfyCommand {
   versionAdded?: string
   confirmation?: string // If non-nullish, this command will prompt for confirmation
   source?: string
+  active?: () => boolean // Getter to check if the command is active/toggled on
+  category?: 'essentials' | 'view-controls' // For shortcuts panel organization
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
@@ -29,6 +31,8 @@ export class ComfyCommandImpl implements ComfyCommand {
   versionAdded?: string
   confirmation?: string
   source?: string
+  active?: () => boolean
+  category?: 'essentials' | 'view-controls'
 
   constructor(command: ComfyCommand) {
     this.id = command.id
@@ -40,6 +44,8 @@ export class ComfyCommandImpl implements ComfyCommand {
     this.versionAdded = command.versionAdded
     this.confirmation = command.confirmation
     this.source = command.source
+    this.active = command.active
+    this.category = command.category
   }
 
   get label() {
@@ -114,6 +120,13 @@ export const useCommandStore = defineStore('command', () => {
     }
   }
 
+  const formatKeySequence = (command: ComfyCommandImpl): string => {
+    const sequences = command.keybinding?.combo.getKeySequences() || []
+    return sequences
+      .map((seq) => seq.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Shift'))
+      .join(' + ')
+  }
+
   return {
     commands,
     execute,
@@ -121,6 +134,7 @@ export const useCommandStore = defineStore('command', () => {
     registerCommand,
     registerCommands,
     isRegistered,
-    loadExtensionCommands
+    loadExtensionCommands,
+    formatKeySequence
   }
 })

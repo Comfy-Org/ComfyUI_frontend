@@ -27,10 +27,6 @@ class Load3dAnimation extends Load3d {
     this.overrideAnimationLoop()
   }
 
-  private getCurrentModel(): THREE.Object3D | null {
-    return this.modelManager.currentModel
-  }
-
   private overrideAnimationLoop(): void {
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId)

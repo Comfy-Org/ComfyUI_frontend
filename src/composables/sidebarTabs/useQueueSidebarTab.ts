@@ -15,6 +15,7 @@ export const useQueueSidebarTab = (): SidebarTabExtension => {
     },
     title: 'sideToolbar.queue',
     tooltip: 'sideToolbar.queue',
+    label: 'sideToolbar.labels.queue',
     component: markRaw(QueueSidebarTab),
     type: 'vue'
   }

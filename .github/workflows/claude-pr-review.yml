@@ -19,10 +19,10 @@ jobs:
       should-proceed: ${{ steps.check-status.outputs.proceed }}
     steps:
       - name: Wait for other CI checks
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@e106e5c43e8ca1edea6383a39a01c5ca495fd812
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-regexp: '^(eslint|prettier|test|playwright-tests)'
+          check-regexp: '^(lint-and-format|test|playwright-tests)'
           wait-interval: 30
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       
@@ -30,7 +30,7 @@ jobs:
         id: check-status
         run: |
           # Get all check runs for this commit
-          CHECK_RUNS=$(gh api repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs --jq '.check_runs[] | select(.name | test("eslint|prettier|test|playwright-tests")) | {name, conclusion}')
+          CHECK_RUNS=$(gh api repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs --jq '.check_runs[] | select(.name | test("lint-and-format|test|playwright-tests")) | {name, conclusion}')
           
           # Check if any required checks failed
           if echo "$CHECK_RUNS" | grep -q '"conclusion": "failure"'; then

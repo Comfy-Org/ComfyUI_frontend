@@ -15,7 +15,7 @@ interface ColorTestCase {
 
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
 
-vi.mock('lodash', () => ({
+vi.mock('es-toolkit/compat', () => ({
   memoize: (fn: any) => fn
 }))
 

@@ -226,6 +226,7 @@ export class LGraphNode
   static MAX_CONSOLE?: number
   static type?: string
   static category?: string
+  static description?: string
   static filter?: string
   static skip_list?: boolean
 
@@ -1589,7 +1590,10 @@ export class LGraphNode
    * remove an existing output slot
    */
   removeOutput(slot: number): void {
-    this.disconnectOutput(slot)
+    // Only disconnect if node is part of a graph
+    if (this.graph) {
+      this.disconnectOutput(slot)
+    }
     const { outputs } = this
     outputs.splice(slot, 1)
 
@@ -1597,11 +1601,12 @@ export class LGraphNode
       const output = outputs[i]
       if (!output || !output.links) continue
 
-      for (const linkId of output.links) {
-        if (!this.graph) throw new NullGraphError()
-
-        const link = this.graph._links.get(linkId)
-        if (link) link.origin_slot--
+      // Only update link indices if node is part of a graph
+      if (this.graph) {
+        for (const linkId of output.links) {
+          const link = this.graph._links.get(linkId)
+          if (link) link.origin_slot--
+        }
       }
     }
 
@@ -1641,7 +1646,10 @@ export class LGraphNode
    * remove an existing input slot
    */
   removeInput(slot: number): void {
-    this.disconnectInput(slot, true)
+    // Only disconnect if node is part of a graph
+    if (this.graph) {
+      this.disconnectInput(slot, true)
+    }
     const { inputs } = this
     const slot_info = inputs.splice(slot, 1)
 
@@ -1649,9 +1657,11 @@ export class LGraphNode
       const input = inputs[i]
       if (!input?.link) continue
 
-      if (!this.graph) throw new NullGraphError()
-      const link = this.graph._links.get(input.link)
-      if (link) link.target_slot--
+      // Only update link indices if node is part of a graph
+      if (this.graph) {
+        const link = this.graph._links.get(input.link)
+        if (link) link.target_slot--
+      }
     }
     this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
@@ -1959,6 +1969,7 @@ export class LGraphNode
       }
     }
 
+    widget.onRemove?.()
     this.widgets.splice(widgetIndex, 1)
   }
 

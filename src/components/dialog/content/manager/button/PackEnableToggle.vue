@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { debounce } from 'lodash'
+import { debounce } from 'es-toolkit/compat'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 

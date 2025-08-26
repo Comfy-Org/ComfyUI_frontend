@@ -1,16 +1,26 @@
 import vue from '@vitejs/plugin-vue'
+import { FileSystemIconLoader } from 'unplugin-icons/loaders'
+import Icons from 'unplugin-icons/vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    Icons({
+      compiler: 'vue3',
+      customCollections: {
+        comfy: FileSystemIconLoader('src/assets/icons/custom')
+      }
+    })
+  ],
   test: {
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./vitest.setup.ts'],
+    retry: process.env.CI ? 2 : 0,
     include: [
       'tests-ui/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'src/components/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'src/lib/litegraph/test/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'src/components/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       reporter: ['text', 'json', 'html']

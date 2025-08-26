@@ -2,13 +2,11 @@
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay
-    v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
-  >
-    <template #side-bar-panel>
+  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
+    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
       <SideToolbar />
     </template>
-    <template #bottom-panel>
+    <template v-if="!workspaceStore.focusMode" #bottom-panel>
       <BottomPanel />
     </template>
     <template #graph-canvas-panel>
@@ -21,7 +19,6 @@
 
       <MiniMap
         v-if="comfyAppReady && minimapEnabled"
-        ref="minimapRef"
         class="pointer-events-auto"
       />
     </template>
@@ -84,7 +81,7 @@
   />
 
   <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover />
+  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
   canvasStore.canvas to be initialized. -->
@@ -117,7 +114,6 @@ import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import TransformPane from '@/components/graph/TransformPane.vue'
@@ -139,7 +135,6 @@ import { useCopy } from '@/composables/useCopy'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
-import { useMinimap } from '@/composables/useMinimap'
 import { usePaste } from '@/composables/usePaste'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
@@ -165,12 +160,16 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const nodeSearchboxPopoverRef = shallowRef<InstanceType<
+  typeof NodeSearchboxPopover
+> | null>(null)
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
@@ -192,9 +191,7 @@ const selectionToolboxEnabled = computed(() =>
   settingStore.get('Comfy.Canvas.SelectionToolbox')
 )
 
-const minimapRef = ref<InstanceType<typeof MiniMap>>()
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
-const minimap = useMinimap()
 
 // Feature flags
 const { shouldRenderVueNodes, isDevModeEnabled } = useFeatureFlags()
@@ -746,6 +743,7 @@ onMounted(async () => {
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
+  useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
   window.app = comfyApp
   window.graph = comfyApp.graph
@@ -803,13 +801,6 @@ onMounted(async () => {
     async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
       await useWorkflowService().reloadCurrentWorkflow()
-    }
-  )
-
-  whenever(
-    () => minimapRef.value,
-    (ref) => {
-      minimap.setMinimapRef(ref)
     }
   )
 

@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "キャンバスナビゲーションモード",
     "options": {
-      "Left-Click Pan (Legacy)": "左クリックパン（レガシー）",
+      "Drag Navigation": "ドラッグナビゲーション",
       "Standard (New)": "標準（新）"
     }
   },
@@ -118,6 +118,10 @@
       "Spline": "スプライン",
       "Straight": "ストレート"
     }
+  },
+  "Comfy_Load3D_3DViewerEnable": {
+    "name": "3Dビューアーを有効化（ベータ）",
+    "tooltip": "選択したノードで3Dビューアー（ベータ）を有効にします。この機能により、フルサイズの3Dビューアー内で3Dモデルを直接可視化し、操作できます。"
   },
   "Comfy_Load3D_BackgroundColor": {
     "name": "初期背景色",

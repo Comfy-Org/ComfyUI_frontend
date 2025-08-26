@@ -111,50 +111,7 @@ echo "Last stable release: $LAST_STABLE"
    ```
 7. **HUMAN ANALYSIS**: Review change summary and verify scope
 
-### Step 3: Version Preview
-
-**Version Preview:**
-- Current: `${CURRENT_VERSION}`
-- Proposed: Show exact version number
-- **CONFIRMATION REQUIRED**: Proceed with version `X.Y.Z`?
-
-### Step 4: Security and Dependency Audit
-
-1. Run security audit:
-   ```bash
-   npm audit --audit-level moderate
-   ```
-2. Check for known vulnerabilities in dependencies
-3. Scan for hardcoded secrets or credentials:
-   ```bash
-   git log -p ${BASE_TAG}..HEAD | grep -iE "(password|key|secret|token)" || echo "No sensitive data found"
-   ```
-4. Verify no sensitive data in recent commits
-5. **SECURITY REVIEW**: Address any critical findings before proceeding?
-
-### Step 5: Pre-Release Testing
-
-1. Run complete test suite:
-   ```bash
-   npm run test:unit
-   npm run test:component
-   ```
-2. Run type checking:
-   ```bash
-   npm run typecheck
-   ```
-3. Run linting (may have issues with missing packages):
-   ```bash
-   npm run lint || echo "Lint issues - verify if critical"
-   ```
-4. Test build process:
-   ```bash
-   npm run build
-   npm run build:types
-   ```
-5. **QUALITY GATE**: All tests and builds passing?
-
-### Step 6: Breaking Change Analysis
+### Step 3: Breaking Change Analysis
 
 1. Analyze API changes in:
    - Public TypeScript interfaces
@@ -169,7 +126,7 @@ echo "Last stable release: $LAST_STABLE"
 3. Generate breaking change summary
 4. **COMPATIBILITY REVIEW**: Breaking changes documented and justified?
 
-### Step 7: Analyze Dependency Updates
+### Step 4: Analyze Dependency Updates
 
 1. **Check significant dependency updates:**
    ```bash
@@ -195,7 +152,117 @@ echo "Last stable release: $LAST_STABLE"
    done
    ```
 
-### Step 8: Generate Comprehensive Release Notes
+### Step 5: Generate GTM Feature Summary
+
+1. **Collect PR data for analysis:**
+   ```bash
+   # Get list of PR numbers from commits
+   PR_NUMBERS=$(git log ${BASE_TAG}..HEAD --oneline --no-merges --first-parent | \
+     grep -oE "#[0-9]+" | tr -d '#' | sort -u)
+   
+   # Save PR data for each PR
+   echo "[" > prs-${NEW_VERSION}.json
+   first=true
+   for PR in $PR_NUMBERS; do
+     [[ "$first" == true ]] && first=false || echo "," >> prs-${NEW_VERSION}.json
+     gh pr view $PR --json number,title,author,body,labels 2>/dev/null >> prs-${NEW_VERSION}.json || echo "{}" >> prs-${NEW_VERSION}.json
+   done
+   echo "]" >> prs-${NEW_VERSION}.json
+   ```
+
+2. **Analyze for GTM-worthy features:**
+   ```
+   <task>
+   Review these PRs to identify features worthy of marketing attention.
+   
+   A feature is GTM-worthy if it meets ALL of these criteria:
+   - Introduces a NEW capability users didn't have before (not just improvements)
+   - Would be a compelling reason for users to upgrade to this version
+   - Can be demonstrated visually or has clear before/after comparison
+   - Affects a significant portion of the user base
+   
+   NOT GTM-worthy:
+   - Bug fixes (even important ones)
+   - Minor UI tweaks or color changes
+   - Performance improvements without user-visible impact
+   - Internal refactoring
+   - Small convenience features
+   - Features that only improve existing functionality marginally
+   
+   For each GTM-worthy feature, note:
+   - PR number, title, and author
+   - Media links from the PR description
+   - One compelling sentence on why users should care
+   
+   If there are no GTM-worthy features, just say "No marketing-worthy features in this release."
+   </task>
+   
+   PR data: [contents of prs-${NEW_VERSION}.json]
+   ```
+
+3. **Generate GTM notification:**
+   ```bash
+   # Save to gtm-summary-${NEW_VERSION}.md based on analysis
+   # If GTM-worthy features exist, include them with testing instructions
+   # If not, note that this is a maintenance/bug fix release
+   
+   # Check if notification is needed
+   if grep -q "No marketing-worthy features" gtm-summary-${NEW_VERSION}.md; then
+     echo "✅ No GTM notification needed for this release"
+     echo "📄 Summary saved to: gtm-summary-${NEW_VERSION}.md"
+   else
+     echo "📋 GTM summary saved to: gtm-summary-${NEW_VERSION}.md"
+     echo "📤 Share this file in #gtm channel to notify the team"
+   fi
+   ```
+
+### Step 6: Version Preview
+
+**Version Preview:**
+- Current: `${CURRENT_VERSION}`
+- Proposed: Show exact version number based on analysis:
+  - Major version if breaking changes detected
+  - Minor version if new features added
+  - Patch version if only bug fixes
+- **CONFIRMATION REQUIRED**: Proceed with version `X.Y.Z`?
+
+### Step 7: Security and Dependency Audit
+
+1. Run security audit:
+   ```bash
+   npm audit --audit-level moderate
+   ```
+2. Check for known vulnerabilities in dependencies
+3. Scan for hardcoded secrets or credentials:
+   ```bash
+   git log -p ${BASE_TAG}..HEAD | grep -iE "(password|key|secret|token)" || echo "No sensitive data found"
+   ```
+4. Verify no sensitive data in recent commits
+5. **SECURITY REVIEW**: Address any critical findings before proceeding?
+
+### Step 8: Pre-Release Testing
+
+1. Run complete test suite:
+   ```bash
+   npm run test:unit
+   npm run test:component
+   ```
+2. Run type checking:
+   ```bash
+   npm run typecheck
+   ```
+3. Run linting (may have issues with missing packages):
+   ```bash
+   npm run lint || echo "Lint issues - verify if critical"
+   ```
+4. Test build process:
+   ```bash
+   npm run build
+   npm run build:types
+   ```
+5. **QUALITY GATE**: All tests and builds passing?
+
+### Step 9: Generate Comprehensive Release Notes
 
 1. Extract commit messages since base release:
    ```bash
@@ -210,31 +277,54 @@ echo "Last stable release: $LAST_STABLE"
        echo "WARNING: PR #$PR not on main branch!"
    done
    ```
-3. Create comprehensive release notes including:
-   - **Version Change**: Show version bump details
-   - **Changelog** grouped by type:
-     - 🚀 **Features** (feat:)
-     - 🐛 **Bug Fixes** (fix:)
-     - 💥 **Breaking Changes** (BREAKING CHANGE)
-     - 📚 **Documentation** (docs:)
-     - 🔧 **Maintenance** (chore:, refactor:)
-     - ⬆️ **Dependencies** (deps:, dependency updates)
-       - **Litegraph Changes** (if version updated):
-         - 🚀 Features: ${LITEGRAPH_FEATURES}
-         - 🐛 Bug Fixes: ${LITEGRAPH_FIXES}
-         - 💥 Breaking Changes: ${LITEGRAPH_BREAKING}
-         - 🔧 Other Changes: ${LITEGRAPH_OTHER}
-       - **Other Major Dependencies**: ${OTHER_DEP_CHANGES}
-   - Include PR numbers and links
-   - Add issue references (Fixes #123)
-4. **Save release notes:**
+3. Create standardized release notes using this exact template:
    ```bash
-   # Save release notes for PR and GitHub release
-   echo "$RELEASE_NOTES" > release-notes-${NEW_VERSION}.md
-   ```
-5. **CONTENT REVIEW**: Release notes clear and comprehensive with dependency details?
+   cat > release-notes-${NEW_VERSION}.md << 'EOF'
+   ## ⚠️ Breaking Changes
+   <!-- List breaking changes if any, otherwise remove this entire section -->
+   - Breaking change description (#PR_NUMBER)
 
-### Step 9: Create Version Bump PR
+   ---
+
+   ## What's Changed
+
+   ### 🚀 Features
+   <!-- List features here, one per line with PR reference -->
+   - Feature description (#PR_NUMBER)
+
+   ### 🐛 Bug Fixes
+   <!-- List bug fixes here, one per line with PR reference -->
+   - Bug fix description (#PR_NUMBER)
+
+   ### 🔧 Maintenance
+   <!-- List refactoring, chore, and other maintenance items -->
+   - Maintenance item description (#PR_NUMBER)
+
+   ### 📚 Documentation
+   <!-- List documentation changes if any, remove section if empty -->
+   - Documentation update description (#PR_NUMBER)
+
+   ### ⬆️ Dependencies
+   <!-- List dependency updates -->
+   - Updated dependency from vX.X.X to vY.Y.Y (#PR_NUMBER)
+
+   **Full Changelog**: https://github.com/Comfy-Org/ComfyUI_frontend/compare/${BASE_TAG}...v${NEW_VERSION}
+   EOF
+   ```
+4. **Parse commits and populate template:**
+   - Group commits by conventional commit type (feat:, fix:, chore:, etc.)
+   - Extract PR numbers from commit messages
+   - For breaking changes, analyze if changes affect:
+     - Public APIs (app object, api module)
+     - Extension/workspace manager APIs
+     - Node schema, workflow schema, or other public schemas
+     - Any other public-facing interfaces
+   - For dependency updates, list version changes with PR numbers
+   - Remove empty sections (e.g., if no documentation changes)
+   - Ensure consistent bullet format: `- Description (#PR_NUMBER)`
+5. **CONTENT REVIEW**: Release notes follow standard format?
+
+### Step 10: Create Version Bump PR
 
 **For standard version bumps (patch/minor/major):**
 ```bash
@@ -273,40 +363,14 @@ echo "Workflow triggered. Waiting for PR creation..."
      --body-file release-notes-${NEW_VERSION}.md \
      --label "Release"
    ```
-3. **Add required sections to PR body:**
+3. **Update PR with release notes:**
    ```bash
-   # Create PR body with release notes plus required sections
-   cat > pr-body.md << EOF
-   ${RELEASE_NOTES}
-
-   ## Breaking Changes
-   ${BREAKING_CHANGES:-None}
-
-   ## Testing Performed
-   - ✅ Full test suite (unit, component)
-   - ✅ TypeScript compilation
-   - ✅ Linting checks
-   - ✅ Build verification
-   - ✅ Security audit
-
-   ## Distribution Channels
-   - GitHub Release (with dist.zip)
-   - PyPI Package (comfyui-frontend-package)
-   - npm Package (@comfyorg/comfyui-frontend-types)
-
-   ## Post-Release Tasks
-   - [ ] Verify all distribution channels
-   - [ ] Update external documentation
-   - [ ] Monitor for issues
-   EOF
+   # For workflow-created PRs, update the body with our release notes
+   gh pr edit ${PR_NUMBER} --body-file release-notes-${NEW_VERSION}.md
    ```
-4. Update PR with enhanced description:
-   ```bash
-   gh pr edit ${PR_NUMBER} --body-file pr-body.md
-   ```
-5. **PR REVIEW**: Version bump PR created and enhanced correctly?
+4. **PR REVIEW**: Version bump PR created with standardized release notes?
 
-### Step 10: Critical Release PR Verification
+### Step 11: Critical Release PR Verification
 
 1. **CRITICAL**: Verify PR has "Release" label:
    ```bash
@@ -328,7 +392,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```
 7. **FINAL CODE REVIEW**: Release label present and no [skip ci]?
 
-### Step 11: Pre-Merge Validation
+### Step 12: Pre-Merge Validation
 
 1. **Review Requirements**: Release PRs require approval
 2. Monitor CI checks - watch for update-locales
@@ -336,7 +400,7 @@ echo "Workflow triggered. Waiting for PR creation..."
 4. Check no new commits to main since PR creation
 5. **DEPLOYMENT READINESS**: Ready to merge?
 
-### Step 12: Execute Release
+### Step 13: Execute Release
 
 1. **FINAL CONFIRMATION**: Merge PR to trigger release?
 2. Merge the Release PR:
@@ -369,7 +433,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    gh run watch ${WORKFLOW_RUN_ID}
    ```
 
-### Step 13: Enhance GitHub Release
+### Step 14: Enhance GitHub Release
 
 1. Wait for automatic release creation:
    ```bash
@@ -397,7 +461,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    gh release view v${NEW_VERSION}
    ```
 
-### Step 14: Verify Multi-Channel Distribution
+### Step 15: Verify Multi-Channel Distribution
 
 1. **GitHub Release:**
    ```bash
@@ -435,7 +499,7 @@ echo "Workflow triggered. Waiting for PR creation..."
 
 4. **DISTRIBUTION VERIFICATION**: All channels published successfully?
 
-### Step 15: Post-Release Monitoring Setup
+### Step 16: Post-Release Monitoring Setup
 
 1. **Monitor immediate release health:**
    ```bash
@@ -505,10 +569,48 @@ echo "Workflow triggered. Waiting for PR creation..."
    ## Files Generated
    - \`release-notes-${NEW_VERSION}.md\` - Comprehensive release notes
    - \`post-release-checklist.md\` - Follow-up tasks
+   - \`gtm-summary-${NEW_VERSION}.md\` - Marketing team notification
    EOF
    ```
 
 4. **RELEASE COMPLETION**: All post-release setup completed?
+
+### Step 17: Create Release Summary
+
+1. **Create comprehensive release summary:**
+   ```bash
+   cat > release-summary-${NEW_VERSION}.md << EOF
+   # Release Summary: ComfyUI Frontend v${NEW_VERSION}
+
+   **Released:** $(date)
+   **Type:** ${VERSION_TYPE}
+   **Duration:** ~${RELEASE_DURATION} minutes
+   **Release Commit:** ${RELEASE_COMMIT}
+
+   ## Metrics
+   - **Commits Included:** ${COMMITS_COUNT}
+   - **Contributors:** ${CONTRIBUTORS_COUNT}
+   - **Files Changed:** ${FILES_CHANGED}
+   - **Lines Added/Removed:** +${LINES_ADDED}/-${LINES_REMOVED}
+
+   ## Distribution Status
+   - ✅ GitHub Release: Published
+   - ✅ PyPI Package: Available
+   - ✅ npm Types: Available
+
+   ## Next Steps
+   - Monitor for 24-48 hours
+   - Address any critical issues immediately
+   - Plan next release cycle
+
+   ## Files Generated
+   - \`release-notes-${NEW_VERSION}.md\` - Comprehensive release notes
+   - \`post-release-checklist.md\` - Follow-up tasks
+   - \`gtm-summary-${NEW_VERSION}.md\` - Marketing team notification
+   EOF
+   ```
+
+2. **RELEASE COMPLETION**: All steps completed successfully?
 
 ## Advanced Safety Features
 
@@ -592,55 +694,46 @@ The command implements multiple quality gates:
 - Draft release status
 - Python package specs require that prereleases use alpha/beta/rc as the preid
 
-## Common Issues and Solutions
+## Critical Implementation Notes
 
-### Issue: Pre-release Version Confusion
-**Problem**: Not sure whether to promote pre-release or create new version
-**Solution**: 
-- Follow semver standards: a prerelease version is followed by a normal release.  It should have the same major, minor, and patch versions as the prerelease.
+When executing this release process, pay attention to these key aspects:
 
-### Issue: Wrong Commit Count
-**Problem**: Changelog includes commits from other branches
-**Solution**: Always use `--first-parent` flag with git log
+### Version Handling
+- For pre-release versions (e.g., 1.24.0-rc.1), the next stable release should be the same version without the suffix (1.24.0)
+- Never skip version numbers - follow semantic versioning strictly
 
-**Update**: Sometimes update-locales doesn't add [skip ci] - always verify!
+### Commit History Analysis
+- **ALWAYS** use `--first-parent` flag with git log to avoid including commits from merged feature branches
+- Verify PR merge targets before including them in changelogs:
+  ```bash
+  gh pr view ${PR_NUMBER} --json baseRefName
+  ```
 
-### Issue: Missing PRs in Changelog
-**Problem**: PR was merged to different branch
-**Solution**: Verify PR merge target with:
-```bash
-gh pr view ${PR_NUMBER} --json baseRefName
-```
+### Release Workflow Triggers
+- The "Release" label on the PR is **CRITICAL** - without it, PyPI/npm publishing won't occur
+- Check for `[skip ci]` in commit messages before merging - this blocks the release workflow
+- If you encounter `[skip ci]`, push an empty commit to override it:
+  ```bash
+  git commit --allow-empty -m "Trigger release workflow"
+  ```
 
-### Issue: Incomplete Dependency Changelog
-**Problem**: Litegraph or other dependency updates only show version bump, not actual changes
-**Solution**: The command now automatically:
-- Detects litegraph version changes between releases
-- Clones the litegraph repository temporarily
-- Extracts and categorizes changes between versions
-- Includes detailed litegraph changelog in release notes
-- Cleans up temporary files after analysis
+### PR Creation Details
+- Version bump PRs come from `comfy-pr-bot`, not `github-actions`
+- The workflow typically completes in 20-30 seconds
+- Always wait for the PR to be created before trying to edit it
 
-### Issue: Release Failed Due to [skip ci]
-**Problem**: Release workflow didn't trigger after merge
-**Prevention**: Always avoid this scenario
-- Ensure that `[skip ci]` or similar flags are NOT in the `HEAD` commit message of the PR
-  - Push a new, empty commit to the PR
-- Always double-check this immediately before merging
+### Breaking Changes Detection
+- Analyze changes to public-facing APIs:
+  - The `app` object and its methods
+  - The `api` module exports
+  - Extension and workspace manager interfaces
+  - Node schema, workflow schema, and other public schemas
+- Any modifications to these require marking as breaking changes
 
-**Recovery Strategy**:
-1. Revert version in a new PR (e.g., 1.24.0 → 1.24.0-1)
-2. Merge the revert PR
-3. Run version bump workflow again
-4. This creates a fresh PR without [skip ci]
-Benefits: Cleaner than creating extra version numbers
-
-## Key Learnings & Notes
-
-1. **PR Author**: Version bump PRs are created by `comfy-pr-bot`, not `github-actions`
-2. **Workflow Speed**: Version bump workflow typically completes in ~20-30 seconds
-3. **Update-locales Behavior**: Inconsistent - sometimes adds [skip ci], sometimes doesn't
-4. **Recovery Options**: Reverting version is cleaner than creating extra versions
-5. **Dependency Tracking**: Command now automatically includes litegraph and major dependency changes in changelogs
-6. **Litegraph Integration**: Temporary cloning of litegraph repo provides detailed change analysis between versions
+### Recovery Procedures
+If the release workflow fails to trigger:
+1. Create a revert PR to restore the previous version
+2. Merge the revert
+3. Re-run the version bump workflow
+4. This approach is cleaner than creating extra version numbers
 

@@ -1,33 +1,89 @@
 <template>
   <div
     v-if="visible && initialized"
-    ref="containerRef"
-    class="litegraph-minimap absolute bottom-[20px] right-[90px] z-[1000]"
-    :style="containerStyles"
-    @mousedown="handleMouseDown"
-    @mousemove="handleMouseMove"
-    @mouseup="handleMouseUp"
-    @mouseleave="handleMouseUp"
-    @wheel="handleWheel"
+    ref="minimapRef"
+    class="minimap-main-container flex absolute bottom-[66px] right-2 md:right-11 z-[1000]"
   >
-    <canvas
-      ref="canvasRef"
-      :width="width"
-      :height="height"
-      class="minimap-canvas"
+    <MiniMapPanel
+      v-if="showOptionsPanel"
+      :panel-styles="panelStyles"
+      :node-colors="nodeColors"
+      :show-links="showLinks"
+      :show-groups="showGroups"
+      :render-bypass="renderBypass"
+      :render-error="renderError"
+      @update-option="updateOption"
     />
-    <div class="minimap-viewport" :style="viewportStyles" />
+
+    <div
+      ref="containerRef"
+      class="litegraph-minimap relative"
+      :style="containerStyles"
+    >
+      <Button
+        class="absolute z-10"
+        size="small"
+        text
+        severity="secondary"
+        @click.stop="toggleOptionsPanel"
+      >
+        <template #icon>
+          <i-lucide:settings-2 />
+        </template>
+      </Button>
+      <Button
+        class="absolute z-10 right-0"
+        size="small"
+        text
+        severity="secondary"
+        data-testid="close-minmap-button"
+        @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
+      >
+        <template #icon>
+          <i-lucide:x />
+        </template>
+      </Button>
+
+      <hr
+        class="absolute top-5 bg-[#E1DED5] dark-theme:bg-[#262729] h-[1px] border-0"
+        :style="{
+          width: containerStyles.width
+        }"
+      />
+
+      <canvas
+        ref="canvasRef"
+        :width="width"
+        :height="height"
+        class="minimap-canvas"
+      />
+
+      <div class="minimap-viewport" :style="viewportStyles" />
+
+      <div
+        class="absolute inset-0"
+        @pointerdown="handlePointerDown"
+        @pointermove="handlePointerMove"
+        @pointerup="handlePointerUp"
+        @pointerleave="handlePointerUp"
+        @wheel="handleWheel"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import Button from 'primevue/button'
+import { onMounted, onUnmounted, ref } from 'vue'
 
-import { useMinimap } from '@/composables/useMinimap'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { useCommandStore } from '@/stores/commandStore'
 
-const minimap = useMinimap()
-const canvasStore = useCanvasStore()
+import MiniMapPanel from './MiniMapPanel.vue'
+
+const commandStore = useCommandStore()
+
+const minimapRef = ref<HTMLDivElement>()
 
 const {
   initialized,
@@ -38,27 +94,30 @@ const {
   viewportStyles,
   width,
   height,
-  init,
+  panelStyles,
+  nodeColors,
+  showLinks,
+  showGroups,
+  renderBypass,
+  renderError,
+  updateOption,
   destroy,
-  handleMouseDown,
-  handleMouseMove,
-  handleMouseUp,
-  handleWheel
-} = minimap
+  handlePointerDown,
+  handlePointerMove,
+  handlePointerUp,
+  handleWheel,
+  setMinimapRef
+} = useMinimap()
 
-watch(
-  () => canvasStore.canvas,
-  async (canvas) => {
-    if (canvas && !initialized.value) {
-      await init()
-    }
-  },
-  { immediate: true }
-)
+const showOptionsPanel = ref(false)
 
-onMounted(async () => {
-  if (canvasStore.canvas) {
-    await init()
+const toggleOptionsPanel = () => {
+  showOptionsPanel.value = !showOptionsPanel.value
+}
+
+onMounted(() => {
+  if (minimapRef.value) {
+    setMinimapRef(minimapRef.value)
   }
 })
 

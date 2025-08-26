@@ -261,7 +261,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
             return '$0.14-2.80/Run (varies with model, mode & duration)'
 
           const modelValue = String(modelWidget.value)
-          if (modelValue.includes('v2-master')) {
+          if (
+            modelValue.includes('v2-1-master') ||
+            modelValue.includes('v2-master')
+          ) {
             return '$1.40/Run'
           } else if (
             modelValue.includes('v1-6') ||
@@ -280,12 +283,19 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         console.log('durationValue', durationValue)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (modelValue.includes('v2-master')) {
+        if (
+          modelValue.includes('v2-1-master') ||
+          modelValue.includes('v2-master')
+        ) {
           if (durationValue.includes('10')) {
             return '$2.80/Run'
           }
           return '$1.40/Run' // 5s default
-        } else if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
+        } else if (
+          modelValue.includes('v2-1') ||
+          modelValue.includes('v1-6') ||
+          modelValue.includes('v1-5')
+        ) {
           if (modeValue.includes('pro')) {
             return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
           } else {
@@ -418,7 +428,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Pricing matrix from CSV data based on mode string content
-        if (modeValue.includes('v2-master')) {
+        if (modeValue.includes('v2-1-master')) {
+          if (modeValue.includes('10s')) {
+            return '$2.80/Run' // price is the same as for v2-master model
+          }
+          return '$1.40/Run' // price is the same as for v2-master model
+        } else if (modeValue.includes('v2-master')) {
           if (modeValue.includes('10s')) {
             return '$2.80/Run'
           }
@@ -557,6 +572,32 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     MinimaxTextToVideoNode: {
       displayPrice: '$0.43/Run'
+    },
+    MinimaxHailuoVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+
+        if (!resolutionWidget || !durationWidget) {
+          return '$0.28-0.56/Run (varies with resolution & duration)'
+        }
+
+        const resolution = String(resolutionWidget.value)
+        const duration = String(durationWidget.value)
+
+        if (resolution.includes('768P')) {
+          if (duration.includes('6')) return '$0.28/Run'
+          if (duration.includes('10')) return '$0.56/Run'
+        } else if (resolution.includes('1080P')) {
+          if (duration.includes('6')) return '$0.49/Run'
+        }
+
+        return '$0.43/Run' // default median
+      }
     },
     OpenAIDalle2: {
       displayPrice: (node: LGraphNode): string => {
@@ -1278,9 +1319,13 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         // Google Veo video generation
         if (model.includes('veo-2.0')) {
           return '$0.5/second'
-        } else if (model.includes('gemini-2.5-pro-preview-05-06')) {
-          return '$0.00016/$0.0006 per 1K tokens'
         } else if (model.includes('gemini-2.5-flash-preview-04-17')) {
+          return '$0.0003/$0.0025 per 1K tokens'
+        } else if (model.includes('gemini-2.5-flash')) {
+          return '$0.0003/$0.0025 per 1K tokens'
+        } else if (model.includes('gemini-2.5-pro-preview-05-06')) {
+          return '$0.00125/$0.01 per 1K tokens'
+        } else if (model.includes('gemini-2.5-pro')) {
           return '$0.00125/$0.01 per 1K tokens'
         }
         // For other Gemini models, show token-based pricing info
@@ -1317,6 +1362,56 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           return '$0.0004/$0.0016 per 1K tokens'
         } else if (model.includes('gpt-4.1')) {
           return '$0.002/$0.008 per 1K tokens'
+        } else if (model.includes('gpt-5-nano')) {
+          return '$0.00005/$0.0004 per 1K tokens'
+        } else if (model.includes('gpt-5-mini')) {
+          return '$0.00025/$0.002 per 1K tokens'
+        } else if (model.includes('gpt-5')) {
+          return '$0.00125/$0.01 per 1K tokens'
+        }
+        return 'Token-based'
+      }
+    },
+    ViduTextToVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduImageToVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduReferenceVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ViduStartEndToVideoNode: {
+      displayPrice: '$0.4/Run'
+    },
+    ByteDanceImageNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+
+        if (!modelWidget) return 'Token-based'
+
+        const model = String(modelWidget.value)
+
+        if (model.includes('seedream-3-0-t2i')) {
+          return '$0.03/Run'
+        }
+        return 'Token-based'
+      }
+    },
+    ByteDanceImageEditNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+
+        if (!modelWidget) return 'Token-based'
+
+        const model = String(modelWidget.value)
+
+        if (model.includes('seededit-3-0-i2i')) {
+          return '$0.03/Run'
         }
         return 'Token-based'
       }
@@ -1358,6 +1453,7 @@ export const useNodePricing = () => {
       KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
       KlingSingleImageVideoEffectNode: ['effect_scene'],
       KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
+      MinimaxHailuoVideoNode: ['resolution', 'duration'],
       OpenAIDalle3: ['size', 'quality'],
       OpenAIDalle2: ['size', 'n'],
       OpenAIGPTImage1: ['quality', 'n'],
@@ -1406,7 +1502,10 @@ export const useNodePricing = () => {
       // Google/Gemini nodes
       GeminiNode: ['model'],
       // OpenAI nodes
-      OpenAIChatNode: ['model']
+      OpenAIChatNode: ['model'],
+      // ByteDance
+      ByteDanceImageNode: ['model'],
+      ByteDanceImageEditNode: ['model']
     }
     return widgetMap[nodeType] || []
   }

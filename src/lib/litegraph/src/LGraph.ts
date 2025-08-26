@@ -1,3 +1,5 @@
+import { toString } from 'es-toolkit/compat'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -18,6 +20,7 @@ import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
   DefaultConnectionColors,
   Dictionary,
+  HasBoundingRect,
   IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
@@ -26,7 +29,8 @@ import type {
   MethodNames,
   OptionalProps,
   Point,
-  Positionable
+  Positionable,
+  Size
 } from './interfaces'
 import { LiteGraph, SubgraphNode } from './litegraph'
 import {
@@ -34,7 +38,6 @@ import {
   alignToContainer,
   createBounds
 } from './measure'
-import { stringOrEmpty } from './strings'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -1551,10 +1554,12 @@ export class LGraph
 
     // Create subgraph node object
     const subgraphNode = LiteGraph.createNode(subgraph.id, subgraph.name, {
-      inputs: structuredClone(inputs),
       outputs: structuredClone(outputs)
     })
     if (!subgraphNode) throw new Error('Failed to create subgraph node')
+    for (let i = 0; i < inputs.length; i++) {
+      Object.assign(subgraphNode.inputs[i], inputs[i])
+    }
 
     // Resize to inputs/outputs
     subgraphNode.setSize(subgraphNode.computeSize())
@@ -1565,6 +1570,9 @@ export class LGraph
       Alignment.Centre | Alignment.Middle,
       boundingRect
     )
+
+    //Correct for title height. It's included in bounding box, but not _posSize
+    subgraphNode.pos[1] += LiteGraph.NODE_TITLE_HEIGHT / 2
 
     // Add the subgraph node to the graph
     this.add(subgraphNode)
@@ -1656,7 +1664,274 @@ export class LGraph
       }
     }
 
+    subgraphNode._setConcreteSlots()
+    subgraphNode.arrange()
     return { subgraph, node: subgraphNode as SubgraphNode }
+  }
+
+  unpackSubgraph(subgraphNode: SubgraphNode) {
+    if (!(subgraphNode instanceof SubgraphNode))
+      throw new Error('Can only unpack Subgraph Nodes')
+    this.beforeChange()
+    //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
+    //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
+    const positionables = [
+      ...subgraphNode.subgraph.nodes,
+      ...subgraphNode.subgraph.reroutes.values(),
+      ...subgraphNode.subgraph.groups
+    ].map((p: { pos: Point; size?: Size }): HasBoundingRect => {
+      return {
+        boundingRect: [p.pos[0], p.pos[1], p.size?.[0] ?? 0, p.size?.[1] ?? 0]
+      }
+    })
+    const bounds = createBounds(positionables) ?? [0, 0, 0, 0]
+    const center = [bounds[0] + bounds[2] / 2, bounds[1] + bounds[3] / 2]
+
+    const toSelect: Positionable[] = []
+    const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
+    const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
+    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
+    const nodeIdMap = new Map<NodeId, NodeId>()
+    for (const n_info of movedNodes) {
+      const node = LiteGraph.createNode(String(n_info.type), n_info.title)
+      if (!node) {
+        throw new Error('Node not found')
+      }
+
+      nodeIdMap.set(n_info.id, ++this.last_node_id)
+      node.id = this.last_node_id
+      n_info.id = this.last_node_id
+
+      this.add(node, true)
+      node.configure(n_info)
+      node.pos[0] += offsetX
+      node.pos[1] += offsetY
+      for (const input of node.inputs) {
+        input.link = null
+      }
+      for (const output of node.outputs) {
+        output.links = []
+      }
+      toSelect.push(node)
+    }
+    const groups = structuredClone(
+      [...subgraphNode.subgraph.groups].map((g) => g.serialize())
+    )
+    for (const g_info of groups) {
+      const group = new LGraphGroup(g_info.title, g_info.id)
+      this.add(group, true)
+      group.configure(g_info)
+      group.pos[0] += offsetX
+      group.pos[1] += offsetY
+      toSelect.push(group)
+    }
+    //cleanup reoute.linkIds now, but leave link.parentIds dangling
+    for (const islot of subgraphNode.inputs) {
+      if (!islot.link) continue
+      const link = this.links.get(islot.link)
+      if (!link) {
+        console.warn('Broken link', islot, islot.link)
+        continue
+      }
+      for (const reroute of LLink.getReroutes(this, link)) {
+        reroute.linkIds.delete(link.id)
+      }
+    }
+    for (const oslot of subgraphNode.outputs) {
+      for (const linkId of oslot.links ?? []) {
+        const link = this.links.get(linkId)
+        if (!link) {
+          console.warn('Broken link', oslot, linkId)
+          continue
+        }
+        for (const reroute of LLink.getReroutes(this, link)) {
+          reroute.linkIds.delete(link.id)
+        }
+      }
+    }
+    const newLinks: {
+      oid: NodeId
+      oslot: number
+      tid: NodeId
+      tslot: number
+      id: LinkId
+      iparent?: RerouteId
+      eparent?: RerouteId
+      externalFirst: boolean
+    }[] = []
+    for (const [, link] of subgraphNode.subgraph._links) {
+      let externalParentId: RerouteId | undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
+        if (!outerLinkId) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        const outerLink = this.links[outerLinkId]
+        link.origin_id = outerLink.origin_id
+        link.origin_slot = outerLink.origin_slot
+        externalParentId = outerLink.parentId
+      } else {
+        const origin_id = nodeIdMap.get(link.origin_id)
+        if (!origin_id) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        link.origin_id = origin_id
+      }
+      if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
+          []) {
+          const sublink = this.links[linkId]
+          newLinks.push({
+            oid: link.origin_id,
+            oslot: link.origin_slot,
+            tid: sublink.target_id,
+            tslot: sublink.target_slot,
+            id: link.id,
+            iparent: link.parentId,
+            eparent: sublink.parentId,
+            externalFirst: true
+          })
+          sublink.parentId = undefined
+        }
+        continue
+      } else {
+        const target_id = nodeIdMap.get(link.target_id)
+        if (!target_id) {
+          console.error('Missing Link ID when unpacking')
+          continue
+        }
+        link.target_id = target_id
+      }
+      newLinks.push({
+        oid: link.origin_id,
+        oslot: link.origin_slot,
+        tid: link.target_id,
+        tslot: link.target_slot,
+        id: link.id,
+        iparent: link.parentId,
+        eparent: externalParentId,
+        externalFirst: false
+      })
+    }
+    this.remove(subgraphNode)
+    this.subgraphs.delete(subgraphNode.subgraph.id)
+    const linkIdMap = new Map<LinkId, LinkId[]>()
+    for (const newLink of newLinks) {
+      let created: LLink | null | undefined
+      if (newLink.oid == SUBGRAPH_INPUT_ID) {
+        if (!(this instanceof Subgraph)) {
+          console.error('Ignoring link to subgraph outside subgraph')
+          continue
+        }
+        const tnode = this._nodes_by_id[newLink.tid]
+        created = this.inputNode.slots[newLink.oslot].connect(
+          tnode.inputs[newLink.tslot],
+          tnode
+        )
+      } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
+        if (!(this instanceof Subgraph)) {
+          console.error('Ignoring link to subgraph outside subgraph')
+          continue
+        }
+        const tnode = this._nodes_by_id[newLink.oid]
+        created = this.outputNode.slots[newLink.tslot].connect(
+          tnode.outputs[newLink.oslot],
+          tnode
+        )
+      } else {
+        created = this._nodes_by_id[newLink.oid].connect(
+          newLink.oslot,
+          this._nodes_by_id[newLink.tid],
+          newLink.tslot
+        )
+      }
+      if (!created) {
+        console.error('Failed to create link')
+        continue
+      }
+      //This is a little unwieldy since Map.has isn't a type guard
+      const linkIds = linkIdMap.get(newLink.id) ?? []
+      linkIds.push(created.id)
+      if (!linkIdMap.has(newLink.id)) {
+        linkIdMap.set(newLink.id, linkIds)
+      }
+      newLink.id = created.id
+    }
+    const rerouteIdMap = new Map<RerouteId, RerouteId>()
+    for (const reroute of subgraphNode.subgraph.reroutes.values()) {
+      if (
+        reroute.parentId !== undefined &&
+        rerouteIdMap.get(reroute.parentId) === undefined
+      ) {
+        console.error('Missing Parent ID')
+      }
+      const migratedReroute = new Reroute(++this.state.lastRerouteId, this, [
+        reroute.pos[0] + offsetX,
+        reroute.pos[1] + offsetY
+      ])
+      rerouteIdMap.set(reroute.id, migratedReroute.id)
+      this.reroutes.set(migratedReroute.id, migratedReroute)
+      toSelect.push(migratedReroute)
+    }
+    //iterate over newly created links to update reroute parentIds
+    for (const newLink of newLinks) {
+      const linkInstance = this.links.get(newLink.id)
+      if (!linkInstance) {
+        continue
+      }
+      let instance: Reroute | LLink | undefined = linkInstance
+      let parentId: RerouteId | undefined = undefined
+      if (newLink.externalFirst) {
+        parentId = newLink.eparent
+        //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
+        while (parentId) {
+          instance.parentId = parentId
+          instance = this.reroutes.get(parentId)
+          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (instance.linkIds.has(linkInstance.id))
+            throw new Error('Infinite parentId loop')
+          instance.linkIds.add(linkInstance.id)
+          parentId = instance.parentId
+        }
+      }
+      parentId = newLink.iparent
+      while (parentId) {
+        const migratedId = rerouteIdMap.get(parentId)
+        if (!migratedId) throw new Error('Broken Id link when unpacking')
+        instance.parentId = migratedId
+        instance = this.reroutes.get(migratedId)
+        if (!instance) throw new Error('Broken Id link when unpacking')
+        if (instance.linkIds.has(linkInstance.id))
+          throw new Error('Infinite parentId loop')
+        instance.linkIds.add(linkInstance.id)
+        const oldReroute = subgraphNode.subgraph.reroutes.get(parentId)
+        if (!oldReroute) throw new Error('Broken Id link when unpacking')
+        parentId = oldReroute.parentId
+      }
+      if (!newLink.externalFirst) {
+        parentId = newLink.eparent
+        while (parentId) {
+          instance.parentId = parentId
+          instance = this.reroutes.get(parentId)
+          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (instance.linkIds.has(linkInstance.id))
+            throw new Error('Infinite parentId loop')
+          instance.linkIds.add(linkInstance.id)
+          parentId = instance.parentId
+        }
+      }
+    }
+
+    for (const nodeId of nodeIdMap.values()) {
+      const node = this._nodes_by_id[nodeId]
+      node._setConcreteSlots()
+      node.arrange()
+    }
+
+    this.canvasAction((c) => c.selectItems(toSelect))
+    this.afterChange()
   }
 
   /**
@@ -2023,7 +2298,7 @@ export class LGraph
     if (url instanceof Blob || url instanceof File) {
       const reader = new FileReader()
       reader.addEventListener('load', (event) => {
-        const result = stringOrEmpty(event.target?.result)
+        const result = toString(event.target?.result)
         const data = JSON.parse(result)
         this.configure(data)
         callback?.()
@@ -2327,6 +2602,9 @@ export class Subgraph
       nodes: this.nodes.map((node) => node.serialize()),
       groups: this.groups.map((group) => group.serialize()),
       links: [...this.links.values()].map((x) => x.asSerialisable()),
+      reroutes: this.reroutes.size
+        ? [...this.reroutes.values()].map((x) => x.asSerialisable())
+        : undefined,
       extra: this.extra
     }
   }

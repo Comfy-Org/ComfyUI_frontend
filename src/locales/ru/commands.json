@@ -35,17 +35,20 @@
   "Comfy-Desktop_Restart": {
     "label": "Перезагрузить"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Открыть 3D-просмотрщик (бета) для выбранного узла"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Просмотр шаблонов"
-  },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "Добавить или изменить шаг модели"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Удалить выбранные элементы"
   },
   "Comfy_Canvas_FitView": {
     "label": "Подогнать вид к выбранным нодам"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Заблокировать холст"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Переместить выбранные узлы вниз"
@@ -89,6 +92,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Закрепить/Открепить выбранных нод"
   },
+  "Comfy_Canvas_Unlock": {
+    "label": "Разблокировать Canvas"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Увеличить"
   },
@@ -103,6 +109,9 @@
   },
   "Comfy_ContactSupport": {
     "label": "Связаться с поддержкой"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Показать выбор модели (Dev)"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "Дублировать текущий рабочий процесс"
@@ -119,11 +128,17 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Преобразовать выделенное в подграф"
   },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Выйти из подграфа"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Подогнать группу к содержимому"
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Группировать выбранные ноды"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Распаковать выбранный подграф"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Преобразовать выбранные ноды в групповую ноду"
@@ -176,6 +191,9 @@
   "Comfy_OpenClipspace": {
     "label": "Клипспейс"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Менеджер"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Открыть рабочий процесс"
   },
@@ -202,6 +220,12 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Показать диалог настроек"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Производительность холста"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Центр поддержки"
   },
   "Comfy_ToggleTheme": {
     "label": "Переключить тему (Тёмная/Светлая)"
@@ -240,7 +264,7 @@
     "label": "Показать/скрыть основную нижнюю панель"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "Показать/скрыть нижнюю панель управления просмотром"
+    "label": "Показать или скрыть нижнюю панель управления просмотром"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
     "label": "Показать диалог клавиш"

@@ -149,14 +149,14 @@ watch(
 
 const emit = defineEmits<{
   (e: 'animationListChange', animationList: string): void
-  (e: 'materialModeChange', materialMode: string): void
+  (e: 'materialModeChange', materialMode: MaterialMode): void
   (e: 'backgroundColorChange', color: string): void
   (e: 'lightIntensityChange', lightIntensity: number): void
   (e: 'fovChange', fov: number): void
-  (e: 'cameraTypeChange', cameraType: string): void
+  (e: 'cameraTypeChange', cameraType: CameraType): void
   (e: 'showGridChange', showGrid: boolean): void
   (e: 'showPreviewChange', showPreview: boolean): void
-  (e: 'upDirectionChange', direction: string): void
+  (e: 'upDirectionChange', direction: UpDirection): void
   (e: 'recording-status-change', status: boolean): void
 }>()
 
