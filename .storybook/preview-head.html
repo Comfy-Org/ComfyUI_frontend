@@ -31,4 +31,12 @@
   .dark-theme .docblock-argstable-body {
     color: #e5e5e5;
   }
+
+  /* Override Storybook's problematic & selector styles */
+  /* Reset only the specific properties that Storybook injects */
+  #storybook-root li+li,
+  #storybook-docs li+li {
+    margin: inherit;
+    padding: inherit;
+  }
 </style>
