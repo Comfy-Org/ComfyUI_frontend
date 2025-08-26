@@ -27,6 +27,15 @@
       "title": "Clave API",
       "whitelistInfo": "Acerca de los sitios no incluidos en la lista blanca"
     },
+    "deleteAccount": {
+      "cancel": "Cancelar",
+      "confirm": "Eliminar cuenta",
+      "confirmMessage": "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y eliminará permanentemente todos tus datos.",
+      "confirmTitle": "Eliminar cuenta",
+      "deleteAccount": "Eliminar cuenta",
+      "success": "Cuenta eliminada",
+      "successDetail": "Tu cuenta ha sido eliminada exitosamente."
+    },
     "login": {
       "andText": "y",
       "confirmPasswordLabel": "Confirmar contraseña",

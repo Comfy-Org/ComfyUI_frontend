@@ -27,6 +27,15 @@
       "title": "API 密钥",
       "whitelistInfo": "关于非白名单网站"
     },
+    "deleteAccount": {
+      "cancel": "取消",
+      "confirm": "删除账户",
+      "confirmMessage": "您确定要删除您的账户吗？此操作无法撤销，并且会永久删除您的所有数据。",
+      "confirmTitle": "删除账户",
+      "deleteAccount": "删除账户",
+      "success": "账户已删除",
+      "successDetail": "您的账户已成功删除。"
+    },
     "login": {
       "andText": "和",
       "confirmPasswordLabel": "确认密码",

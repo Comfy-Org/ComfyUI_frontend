@@ -27,6 +27,15 @@
       "title": "API 키",
       "whitelistInfo": "비허용 사이트에 대하여"
     },
+    "deleteAccount": {
+      "cancel": "취소",
+      "confirm": "계정 삭제",
+      "confirmMessage": "정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며 모든 데이터가 영구적으로 삭제됩니다.",
+      "confirmTitle": "계정 삭제",
+      "deleteAccount": "계정 삭제",
+      "success": "계정이 삭제되었습니다",
+      "successDetail": "계정이 성공적으로 삭제되었습니다."
+    },
     "login": {
       "andText": "및",
       "confirmPasswordLabel": "비밀번호 확인",
