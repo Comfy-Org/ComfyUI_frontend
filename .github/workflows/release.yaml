@@ -150,7 +150,6 @@ jobs:
           restore-keys: |
             types-tools-cache-${{ runner.os }}-
 
-          cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:types
       - name: Publish package
