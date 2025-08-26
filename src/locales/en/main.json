@@ -154,7 +154,8 @@
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
     "subgraphCreated": "Subgraph created successfully",
-    "pleaseSelectNodesToSave": "Please select nodes to save to library"
+    "pleaseSelectNodesToSave": "Please select nodes to save to library",
+    "frameNodes": "Frame Nodes"
   },
   "manager": {
     "title": "Custom Nodes Manager",

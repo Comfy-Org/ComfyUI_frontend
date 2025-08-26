@@ -1,14 +1,14 @@
 <template>
   <Button
-    v-show="nodeDef"
+    v-show="hasSelectedItems"
     v-tooltip.top="{
-      value: $t('g.info'),
+      value: $t('g.frameNodes'),
       showDelay: 1000
     }"
-    class="help-button"
+    class="frame-nodes-button"
     text
     severity="secondary"
-    @click="showHelp"
+    @click="frameNodes"
   >
     <i-lucide:frame :size="16" />
   </Button>
@@ -18,33 +18,39 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import { t } from '@/i18n'
+import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
+import { useTitleEditorStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
 
 const canvasStore = useCanvasStore()
-const nodeDefStore = useNodeDefStore()
-const sidebarTabStore = useSidebarTabStore()
-const nodeHelpStore = useNodeHelpStore()
-const { id: nodeLibraryTabId } = useNodeLibrarySidebarTab()
+const titleEditorStore = useTitleEditorStore()
+const settingStore = useSettingStore()
+const toastStore = useToastStore()
 
-const nodeDef = computed<ComfyNodeDefImpl | null>(() => {
-  if (canvasStore.selectedItems.length !== 1) return null
-  const item = canvasStore.selectedItems[0]
-  if (!isLGraphNode(item)) return null
-  return nodeDefStore.fromLGraphNode(item)
+const hasSelectedItems = computed(() => {
+  return canvasStore.selectedItems.length > 0
 })
 
-const showHelp = () => {
-  const def = nodeDef.value
-  if (!def) return
-  if (sidebarTabStore.activeSidebarTabId !== nodeLibraryTabId) {
-    sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
+const frameNodes = () => {
+  const { canvas } = app
+  if (!canvas.selectedItems?.size) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('toastMessages.nothingToGroup'),
+      detail: t('toastMessages.pleaseSelectNodesToGroup'),
+      life: 3000
+    })
+    return
   }
-  nodeHelpStore.openHelp(def)
+
+  const group = new LGraphGroup()
+  const padding = settingStore.get('Comfy.GroupSelectedNodes.Padding')
+  group.resizeTo(canvas.selectedItems, padding)
+  canvas.graph?.add(group)
+  titleEditorStore.titleEditorTarget = group
 }
 </script>
