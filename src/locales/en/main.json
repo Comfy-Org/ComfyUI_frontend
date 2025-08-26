@@ -923,7 +923,7 @@
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
-    "confirmDelete": "Are you sure you want to delete this blueprint?",
+    "confirmDelete": "This action will permanently remove the blueprint from your library",
     "saveBlueprint": "Save Subgraph to Library",
     "blueprintName": "Subgraph name"
   },
