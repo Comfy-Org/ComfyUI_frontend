@@ -1,7 +1,7 @@
 <template>
   <Button
-    v-tooltip.top="t('g.refreshNode')"
     v-show="isRefreshable"
+    v-tooltip.top="t('g.refreshNode')"
     severity="secondary"
     text
     @click="refreshSelected"
