@@ -16,6 +16,14 @@
       <template v-if="nodeDef.name.startsWith('SubgraphBlueprint')" #actions>
         <Button
           size="small"
+          icon="pi pi-trash"
+          text
+          severity="danger"
+          @click.stop="deleteBlueprint"
+        >
+        </Button>
+        <Button
+          size="small"
           text
           severity="secondary"
           @click.stop="editBlueprint"
@@ -112,16 +120,18 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
-      command: () => {
-        if (!props.node.data) return
-        useSubgraphStore().deleteBlueprint(props.node.data.name)
-      }
+      severity: 'error',
+      command: deleteBlueprint
     }
   ]
   return items
 })
 function handleContextMenu(event: Event) {
   menu.value?.show(event)
+}
+function deleteBlueprint() {
+  if (!props.node.data) return
+  void useSubgraphStore().deleteBlueprint(props.node.data.name)
 }
 
 const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)

@@ -922,6 +922,8 @@
     "saveWorkflow": "Save workflow"
   },
   "subgraphStore": {
+    "confirmDeleteTitle": "Delete blueprint?",
+    "confirmDelete": "Are you sure you want to delete this blueprint?",
     "saveBlueprint": "Save Subgraph to Library",
     "blueprintName": "Subgraph name"
   },

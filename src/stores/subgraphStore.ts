@@ -90,8 +90,6 @@ export class SubgraphBlueprint extends ComfyWorkflow {
     return super.save()
   }
 
-  //TODO: reconsider semantics here with promptonce
-  //Should update current name, but keep true?
   override async saveAs(path: string) {
     this.validateSubgraph()
     this.hasPromptedSave = true
@@ -236,12 +234,22 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       throw new Error('not yet loaded')
     return subgraphCache[name].changeTracker.initialState
   }
-  function deleteBlueprint(nodeType: string) {
+  async function deleteBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
-    void subgraphCache[name].delete()
+    if (
+      !(await useDialogService().confirm({
+        title: t('subgraphStore.confirmDeleteTitle'),
+        type: 'delete',
+        message: t('subgraphStore.confirmDelete'),
+        itemList: [name]
+      }))
+    )
+      return
+
+    await subgraphCache[name].delete()
     delete subgraphCache[name]
     subgraphDefCache.value.delete(name)
   }
