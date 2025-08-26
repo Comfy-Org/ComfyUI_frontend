@@ -13,7 +13,10 @@
           severity="danger"
         />
       </template>
-      <template v-if="nodeDef.name.startsWith('SubgraphBlueprint')" #actions>
+      <template
+        v-if="nodeDef.name.startsWith(useSubgraphStore().typePrefix)"
+        #actions
+      >
         <Button
           size="small"
           icon="pi pi-trash"
@@ -127,6 +130,7 @@ const menuItems = computed<MenuItem[]>(() => {
   return items
 })
 function handleContextMenu(event: Event) {
+  if (!nodeDef.value.name.startsWith(useSubgraphStore().typePrefix)) return
   menu.value?.show(event)
 }
 function deleteBlueprint() {
