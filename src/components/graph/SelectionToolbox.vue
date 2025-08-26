@@ -18,7 +18,6 @@
         <ColorPickerButton />
         <BypassButton />
         <PinButton />
-        <EditModelButton />
         <Load3DViewerButton />
         <MaskEditorButton />
         <ConvertToSubgraphButton />
