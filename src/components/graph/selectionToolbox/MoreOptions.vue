@@ -24,8 +24,8 @@
     >
       <div class="flex flex-col p-2 min-w-48">
         <MenuOptionItem
-          v-for="option in menuOptions"
-          :key="option.label || 'divider'"
+          v-for="(option, index) in menuOptions"
+          :key="option.label || `divider-${index}`"
           :option="option"
           @click="handleOptionClick"
         />
@@ -36,7 +36,7 @@
     <SubmenuPopover
       v-for="option in menuOptionsWithSubmenu"
       :key="`submenu-${option.label}`"
-      :ref="`submenu-${option.label}`"
+      :ref="(el) => setSubmenuRef(`submenu-${option.label}`, el)"
       :option="option"
       :container-styles="containerStyles"
       @submenu-click="handleSubmenuClick"
@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import { computed, getCurrentInstance, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 // Import composables
 import {
@@ -99,7 +99,9 @@ const handleOptionClick = (option: MenuOption, event: Event) => {
     hide()
   } else if (option.hasSubmenu) {
     event.stopPropagation()
-    const submenu = submenuRefs.value[`submenu-${option.label}`]
+    const submenuKey = `submenu-${option.label}`
+    const submenu = submenuRefs.value[submenuKey]
+
     if (submenu) {
       void toggleSubmenu(
         option,
@@ -118,22 +120,14 @@ const handleSubmenuClick = (subOption: SubMenuOption) => {
   hide()
 }
 
-// Set up submenu refs on mount
-onMounted(() => {
-  const instance = getCurrentInstance()
-  if (!instance) return
-
-  menuOptionsWithSubmenu.value.forEach((option) => {
-    if (option.label) {
-      const submenuRef = instance.refs[`submenu-${option.label}`] as any
-      if (Array.isArray(submenuRef) && submenuRef[0]) {
-        submenuRefs.value[`submenu-${option.label}`] = submenuRef[0]
-      } else if (submenuRef && !Array.isArray(submenuRef)) {
-        submenuRefs.value[`submenu-${option.label}`] = submenuRef
-      }
-    }
-  })
-})
+// Function to set submenu refs dynamically
+const setSubmenuRef = (key: string, el: any) => {
+  if (el) {
+    submenuRefs.value[key] = el
+  } else {
+    delete submenuRefs.value[key]
+  }
+}
 
 const pt = computed(() => ({
   root: {
