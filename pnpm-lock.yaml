@@ -17,14 +17,23 @@ importers:
       '@comfyorg/comfyui-electron-types':
         specifier: ^0.4.43
         version: 0.4.43
+      '@primeuix/forms':
+        specifier: 0.0.2
+        version: 0.0.2
       '@primeuix/styled':
         specifier: 0.3.2
+        version: 0.3.2
+      '@primeuix/utils':
+        specifier: ^0.3.2
         version: 0.3.2
       '@primevue/core':
         specifier: ^4.2.5
         version: 4.2.5(vue@3.5.13(typescript@5.9.2))
       '@primevue/forms':
         specifier: ^4.2.5
+        version: 4.2.5(vue@3.5.13(typescript@5.9.2))
+      '@primevue/icons':
+        specifier: 4.2.5
         version: 4.2.5(vue@3.5.13(typescript@5.9.2))
       '@primevue/themes':
         specifier: ^4.2.5
