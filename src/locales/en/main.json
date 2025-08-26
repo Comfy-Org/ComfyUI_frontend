@@ -148,7 +148,8 @@
     "micPermissionDenied": "Microphone permission denied",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "moreWorkflows": "More workflows"
   },
   "manager": {
     "title": "Custom Nodes Manager",
