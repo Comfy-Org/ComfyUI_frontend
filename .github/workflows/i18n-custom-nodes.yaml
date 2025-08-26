@@ -42,9 +42,14 @@ jobs:
       with:
         repository: ${{ inputs.owner }}/${{ inputs.repository }}
         path: 'ComfyUI/custom_nodes/${{ inputs.repository }}'
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
     - uses: actions/setup-node@v4
       with:
         node-version: 'lts/*'
+        cache: 'pnpm'
     - uses: actions/setup-python@v4
       with:
         python-version: '3.10'
