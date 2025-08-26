@@ -35,7 +35,7 @@ jobs:
       - name: Bump version
         id: bump-version
         run: |
-          npm version ${{ github.event.inputs.version_type }} --preid ${{ github.event.inputs.pre_release }} --no-git-tag-version
+          pnpm version ${{ github.event.inputs.version_type }} --preid ${{ github.event.inputs.pre_release }} --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 

@@ -53,9 +53,9 @@ jobs:
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
           USE_PROD_CONFIG: 'true'
         run: |
-          npm ci
-          npm run build
-          npm run zipdist
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm zipdist
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -142,10 +142,10 @@ jobs:
           restore-keys: |
             types-tools-cache-${{ runner.os }}-
 
-      - run: npm ci
-      - run: npm run build:types
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:types
       - name: Publish package
-        run: npm publish --access public
+        run: pnpm publish --access public
         working-directory: dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

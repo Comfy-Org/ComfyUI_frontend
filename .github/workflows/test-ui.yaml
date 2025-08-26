@@ -81,8 +81,8 @@ jobs:
 
       - name: Build ComfyUI_frontend
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
         working-directory: ComfyUI_frontend
 
       - name: Generate cache key
@@ -189,7 +189,7 @@ jobs:
         working-directory: ComfyUI_frontend
 
       - name: Install Wrangler
-        run: npm install -g wrangler
+        run: pnpm install -g wrangler
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright

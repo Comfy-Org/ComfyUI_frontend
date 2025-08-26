@@ -30,7 +30,7 @@ jobs:
             electron-types-tools-cache-${{ runner.os }}-
 
       - name: Update electron types
-        run: npm install @comfyorg/comfyui-electron-types@latest
+        run: pnpm install @comfyorg/comfyui-electron-types@latest
 
       - name: Get new version
         id: get-version

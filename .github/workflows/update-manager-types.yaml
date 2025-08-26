@@ -35,7 +35,7 @@ jobs:
             update-manager-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Cache ComfyUI-Manager repository
         uses: actions/cache@v4
@@ -81,7 +81,7 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated ComfyUI-Manager API types..."
-          npm run lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts
+          pnpm lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts
 
       - name: Check for changes
         id: check-changes

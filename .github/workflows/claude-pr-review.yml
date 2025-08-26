@@ -60,7 +60,7 @@ jobs:
 
       - name: Install dependencies for analysis tools
         run: |
-          npm install -g typescript @vue/compiler-sfc
+          pnpm install -g typescript @vue/compiler-sfc
 
       - name: Run Claude PR Review
         uses: anthropics/claude-code-action@main

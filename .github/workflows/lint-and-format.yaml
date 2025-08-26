@@ -41,13 +41,13 @@ jobs:
             ci-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run ESLint with auto-fix
-        run: npm run lint:fix
+        run: pnpm lint:fix
 
       - name: Run Prettier with auto-format
-        run: npm run format
+        run: pnpm format
 
       - name: Check for changes
         id: verify-changed-files
@@ -69,9 +69,9 @@ jobs:
 
       - name: Final validation
         run: |
-          npm run lint
-          npm run format:check
-          npm run knip
+          pnpm lint
+          pnpm format:check
+          pnpm knip
 
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
@@ -96,5 +96,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## ⚠️ Linting/Formatting Issues Found\n\nThis PR has linting or formatting issues that need to be fixed.\n\n**Since this PR is from a fork, auto-fix cannot be applied automatically.**\n\n### Option 1: Set up pre-commit hooks (recommended)\nRun this once to automatically format code on every commit:\n```bash\nnpm run prepare\n```\n\n### Option 2: Fix manually\nRun these commands and push the changes:\n```bash\nnpm run lint:fix\nnpm run format\n```\n\nSee [CONTRIBUTING.md](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/CONTRIBUTING.md#git-pre-commit-hooks) for more details.'
+              body: '## ⚠️ Linting/Formatting Issues Found\n\nThis PR has linting or formatting issues that need to be fixed.\n\n**Since this PR is from a fork, auto-fix cannot be applied automatically.**\n\n### Option 1: Set up pre-commit hooks (recommended)\nRun this once to automatically format code on every commit:\n```bash\npnpm prepare\n```\n\n### Option 2: Fix manually\nRun these commands and push the changes:\n```bash\npnpm lint:fix\npnpm format\n```\n\nSee [CONTRIBUTING.md](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/CONTRIBUTING.md#git-pre-commit-hooks) for more details.'
             })

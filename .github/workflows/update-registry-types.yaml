@@ -34,7 +34,7 @@ jobs:
             update-registry-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Cache comfy-api repository
         uses: actions/cache@v4
@@ -81,7 +81,7 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated Comfy Registry API types..."
-          npm run lint:fix:no-cache -- ./src/types/comfyRegistryTypes.ts
+          pnpm lint:fix:no-cache -- ./src/types/comfyRegistryTypes.ts
 
       - name: Check for changes
         id: check-changes
