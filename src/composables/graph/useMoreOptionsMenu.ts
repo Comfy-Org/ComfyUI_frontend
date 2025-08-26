@@ -52,11 +52,6 @@ export interface SubMenuOption {
   color?: string
 }
 
-// Helper to convert shape names to Pascal case
-export const toPascalCase = (str: string): string => {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
-
 export interface NodeSelectionState {
   collapsed: boolean
   pinned: boolean
@@ -144,8 +139,7 @@ export function useMoreOptionsMenu() {
   // Create shape submenu options (no icons)
   const shapeSubmenu = computed((): SubMenuOption[] =>
     shapeOptions.map((shape) => ({
-      // Use Pascal case for shape names
-      label: toPascalCase(shape.name === 'default' ? 'Default' : shape.name),
+      label: shape.localizedName,
       action: () => applyShape(shape)
     }))
   )

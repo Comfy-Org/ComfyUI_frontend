@@ -56,8 +56,7 @@ import ILucideCheck from '~icons/lucide/check'
 
 import {
   type MenuOption,
-  type SubMenuOption,
-  toPascalCase
+  type SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 
@@ -109,10 +108,8 @@ const isShapeSelected = (subOption: SubMenuOption): boolean => {
   const currentShape = getCurrentShape()
   if (!currentShape) return false
 
-  // Compare using Pascal case for consistency with label generation
-  const shapeName =
-    currentShape.name === 'default' ? 'Default' : currentShape.name
-  return toPascalCase(shapeName) === subOption.label
+  // Compare using the localized name directly
+  return currentShape.localizedName === subOption.label
 }
 
 // Check if this is a color submenu (all items have colors, no icons)
