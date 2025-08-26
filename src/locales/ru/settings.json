@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Режим навигации по холсту",
     "options": {
-      "Left-Click Pan (Legacy)": "Перемещение левой кнопкой (устаревший)",
+      "Drag Navigation": "Перетаскивание",
       "Standard (New)": "Стандартный (новый)"
     }
   },
