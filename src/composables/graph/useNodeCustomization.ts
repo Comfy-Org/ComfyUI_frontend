@@ -8,7 +8,6 @@ import {
   RenderShape,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -109,7 +108,11 @@ export function useNodeCustomization() {
       }
     }
 
-    app.canvas?.setDirty(true, true)
+    // Use canvasStore.canvas for consistency and add proper change events
+    canvasStore.canvas?.emitBeforeChange()
+    canvasStore.canvas?.setDirty(true, true)
+    canvasStore.canvas?.graph?.afterChange()
+    canvasStore.canvas?.emitAfterChange()
     workflowStore.activeWorkflow?.changeTracker?.checkState()
   }
 
@@ -126,7 +129,11 @@ export function useNodeCustomization() {
       node.shape = shapeOption.value
     })
 
-    app.canvas?.setDirty(true, true)
+    // Use canvasStore.canvas for consistency and add proper change events
+    canvasStore.canvas?.emitBeforeChange()
+    canvasStore.canvas?.setDirty(true, true)
+    canvasStore.canvas?.graph?.afterChange()
+    canvasStore.canvas?.emitAfterChange()
     workflowStore.activeWorkflow?.changeTracker?.checkState()
   }
 

@@ -1,14 +1,23 @@
 import { type Component, computed, markRaw } from 'vue'
 // Import icons
+import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
+import ILucideAlignStartHorizontal from '~icons/lucide/align-start-horizontal'
 import ILucideBan from '~icons/lucide/ban'
 import ILucideBox from '~icons/lucide/box'
+import ILucideClipboard from '~icons/lucide/clipboard'
+import ILucideCopy from '~icons/lucide/copy'
+import ILucideDownload from '~icons/lucide/download'
 import ILucideExpand from '~icons/lucide/expand'
+import ILucideExternalLink from '~icons/lucide/external-link'
 import ILucideFolderPlus from '~icons/lucide/folder-plus'
+import ILucideGroup from '~icons/lucide/group'
 import ILucideInfo from '~icons/lucide/info'
 import ILucideMaximize2 from '~icons/lucide/maximize-2'
 import ILucideMinimize2 from '~icons/lucide/minimize-2'
 import ILucideMoveDiagonal2 from '~icons/lucide/move-diagonal-2'
 import ILucidePalette from '~icons/lucide/palette'
+import ILucidePanelTop from '~icons/lucide/panel-top'
+import ILucidePencil from '~icons/lucide/pencil'
 import ILucidePin from '~icons/lucide/pin'
 import ILucidePinOff from '~icons/lucide/pin-off'
 import ILucidePlay from '~icons/lucide/play'
@@ -16,23 +25,22 @@ import ILucideShrink from '~icons/lucide/shrink'
 import ILucideTrash2 from '~icons/lucide/trash-2'
 import ILucideZapOff from '~icons/lucide/zap-off'
 
+import { useNodeArrangement } from '@/composables/graph/useNodeArrangement'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useNodeInfo } from '@/composables/graph/useNodeInfo'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { adjustColor } from '@/utils/colorUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 export interface MenuOption {
@@ -64,15 +72,19 @@ export interface NodeSelectionState {
 export function useMoreOptionsMenu() {
   // Initialize composables
   const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
   const {
     copySelection,
     duplicateSelection,
     deleteSelection,
-    renameSelection
+    renameSelection,
+    pasteSelection
   } = useSelectionOperations()
 
-  const { shapeOptions, applyShape, isLightTheme } = useNodeCustomization()
+  const { shapeOptions, applyShape, applyColor, colorOptions, isLightTheme } =
+    useNodeCustomization()
+
+  const { alignOptions, distributeOptions, applyAlign, applyDistribute } =
+    useNodeArrangement()
 
   const { convertToSubgraph, unpackSubgraph, addSubgraphToLibrary } =
     useSubgraphOperations()
@@ -120,6 +132,23 @@ export function useMoreOptionsMenu() {
     )
   })
 
+  // Check if we have an image node selected
+  const hasImageNode = computed(() => {
+    if (selectedNodes.value.length !== 1) return false
+    const node = selectedNodes.value[0]
+    return node.imgs && node.imgs.length > 0
+  })
+
+  // Check if we have multiple nodes selected
+  const hasMultipleNodes = computed(() => {
+    return selectedNodes.value.length > 1
+  })
+
+  // Check if we have a single node selected
+  const hasSingleNode = computed(() => {
+    return selectedNodes.value.length === 1
+  })
+
   const selectedNodesStates = computed((): NodeSelectionState => {
     const nodes = selectedNodes.value
     if (nodes.length === 0)
@@ -132,9 +161,98 @@ export function useMoreOptionsMenu() {
     return { collapsed, pinned, bypassed }
   })
 
-  // Helper to convert dark colors to light theme colors
-  const toLightThemeColor = (color: string) =>
-    adjustColor(color, { lightness: 0.5 })
+  // Image node operations
+  const openMaskEditor = () => {
+    const commandStore = useCommandStore()
+    void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
+  }
+
+  const openImage = () => {
+    const node = selectedNodes.value[0]
+    if (!node?.imgs?.length) return
+    const img = node.imgs[node.imageIndex ?? 0]
+    if (!img) return
+    const url = new URL(img.src)
+    url.searchParams.delete('preview')
+    window.open(url.toString(), '_blank')
+  }
+
+  const copyImage = async () => {
+    const node = selectedNodes.value[0]
+    if (!node?.imgs?.length) return
+    const img = node.imgs[node.imageIndex ?? 0]
+    if (!img) return
+
+    // Use canvas to copy image to clipboard
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    ctx.drawImage(img, 0, 0)
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ])
+      } catch (error) {
+        console.error('Failed to copy image:', error)
+      }
+    }, 'image/png')
+  }
+
+  const saveImage = () => {
+    const node = selectedNodes.value[0]
+    if (!node?.imgs?.length) return
+    const img = node.imgs[node.imageIndex ?? 0]
+    if (!img) return
+
+    const a = document.createElement('a')
+    const url = new URL(img.src)
+    url.searchParams.delete('preview')
+    a.href = url.toString()
+    a.setAttribute(
+      'download',
+      new URLSearchParams(url.search).get('filename') ?? 'image.png'
+    )
+    document.body.append(a)
+    a.click()
+    requestAnimationFrame(() => a.remove())
+  }
+
+  // Properties panel
+  const showPropertiesPanel = () => {
+    const node = selectedNodes.value[0]
+    if (!node) return
+    canvasStore.canvas?.showShowNodePanel(node)
+  }
+
+  // Convert to group nodes
+  const convertToGroupNodes = () => {
+    const commandStore = useCommandStore()
+    void commandStore.execute('Comfy.GroupNode.ConvertSelectedNodesToGroupNode')
+  }
+
+  // Create align submenu options
+  const alignSubmenu = computed((): SubMenuOption[] =>
+    alignOptions.map((align) => ({
+      label: align.localizedName,
+      icon: align.icon,
+      action: () => applyAlign(align)
+    }))
+  )
+
+  // Create distribute submenu options
+  const distributeSubmenu = computed((): SubMenuOption[] =>
+    distributeOptions.map((distribute) => ({
+      label: distribute.localizedName,
+      icon: distribute.icon,
+      action: () => applyDistribute(distribute)
+    }))
+  )
 
   // Create shape submenu options (no icons)
   const shapeSubmenu = computed((): SubMenuOption[] =>
@@ -144,61 +262,68 @@ export function useMoreOptionsMenu() {
     }))
   )
 
-  // Create color submenu options (matching ColorPickerButton)
+  // Create color submenu options using colorOptions from useNodeCustomization
   const colorSubmenu = computed((): SubMenuOption[] => {
-    // Start with "No Color" option
-    const options: SubMenuOption[] = [
-      {
-        label: 'No Color',
-        color: isLightTheme.value
-          ? toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
-          : LiteGraph.NODE_DEFAULT_BGCOLOR,
-        action: () => {
-          // Apply no color (null) to reset to default
-          for (const item of canvasStore.selectedItems) {
-            if (
-              'setColorOption' in item &&
-              typeof item.setColorOption === 'function'
-            ) {
-              ;(item as any).setColorOption(null)
-            }
-          }
-          canvasStore.canvas?.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.checkState()
-        }
-      }
-    ]
-
-    // Add all available node colors from LGraphCanvas
-    Object.entries(LGraphCanvas.node_colors).forEach(([name, colorOption]) => {
-      options.push({
-        label: name,
-        color: isLightTheme.value
-          ? toLightThemeColor(colorOption.bgcolor)
-          : colorOption.bgcolor,
-        action: () => {
-          for (const item of canvasStore.selectedItems) {
-            if (
-              'setColorOption' in item &&
-              typeof item.setColorOption === 'function'
-            ) {
-              ;(item as any).setColorOption(colorOption)
-            }
-          }
-          canvasStore.canvas?.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.checkState()
-        }
-      })
-    })
-
-    return options
+    return colorOptions.map((colorOption) => ({
+      label: colorOption.localizedName,
+      color: isLightTheme.value
+        ? colorOption.value.light
+        : colorOption.value.dark,
+      action: () =>
+        applyColor(colorOption.name === 'noColor' ? null : colorOption)
+    }))
   })
 
   const menuOptions = computed((): MenuOption[] => {
     const states = selectedNodesStates.value
     const hasSubgraphsSelected = hasSubgraphs.value
+    const options: MenuOption[] = []
 
-    const baseOptions: MenuOption[] = [
+    // Image node specific options (only for single image node)
+    if (hasImageNode.value) {
+      options.push(
+        {
+          label: 'Open in Mask Editor',
+          icon: markRaw(ILucidePencil),
+          action: openMaskEditor
+        },
+        {
+          label: 'Open Image',
+          icon: markRaw(ILucideExternalLink),
+          action: openImage
+        },
+        {
+          label: 'Copy Image',
+          icon: markRaw(ILucideCopy),
+          action: copyImage
+        },
+        {
+          label: 'Save Image',
+          icon: markRaw(ILucideDownload),
+          action: saveImage
+        },
+        {
+          type: 'divider'
+        }
+      )
+    }
+
+    // Single node specific options
+    if (hasSingleNode.value) {
+      options.push(
+        {
+          label: 'Properties Panel',
+          icon: markRaw(ILucidePanelTop),
+          action: showPropertiesPanel
+        },
+        {
+          type: 'divider'
+        }
+      )
+    }
+
+    // Common options for all selections
+    options.push(
       {
         label: 'Rename',
         action: renameSelection
@@ -215,7 +340,20 @@ export function useMoreOptionsMenu() {
         label: 'Duplicate',
         shortcut: 'Ctrl+D',
         action: duplicateSelection
-      },
+      }
+    )
+
+    // Add paste option if not already added (for single nodes)
+    if (!hasMultipleNodes.value) {
+      options.push({
+        label: 'Paste',
+        icon: markRaw(ILucideClipboard),
+        shortcut: 'Ctrl+V',
+        action: pasteSelection
+      })
+    }
+
+    options.push(
       {
         type: 'divider'
       },
@@ -260,17 +398,17 @@ export function useMoreOptionsMenu() {
         icon: markRaw(ILucideFolderPlus),
         action: addSubgraphToLibrary
       }
-    ]
+    )
 
     // Add appropriate subgraph option based on selection
     if (hasSubgraphsSelected) {
-      baseOptions.push({
+      options.push({
         label: 'Unpack Subgraph',
         icon: markRaw(ILucideExpand),
         action: unpackSubgraph
       })
     } else {
-      baseOptions.push({
+      options.push({
         label: 'Convert to Subgraph',
         icon: markRaw(ILucideShrink),
         action: convertToSubgraph
@@ -278,7 +416,7 @@ export function useMoreOptionsMenu() {
     }
 
     // Add remaining options
-    baseOptions.push(
+    options.push(
       {
         type: 'divider'
       },
@@ -290,7 +428,33 @@ export function useMoreOptionsMenu() {
       },
       {
         type: 'divider'
-      },
+      }
+    )
+
+    // Add alignment and distribution options for multiple nodes
+    if (hasMultipleNodes.value) {
+      options.push(
+        {
+          label: 'Align Selected To',
+          icon: markRaw(ILucideAlignStartHorizontal),
+          hasSubmenu: true,
+          submenu: alignSubmenu.value,
+          action: () => {} // No-op for submenu items
+        },
+        {
+          label: 'Distribute Nodes',
+          icon: markRaw(ILucideAlignCenterHorizontal),
+          hasSubmenu: true,
+          submenu: distributeSubmenu.value,
+          action: () => {} // No-op for submenu items
+        },
+        {
+          type: 'divider'
+        }
+      )
+    }
+
+    options.push(
       // Show appropriate bypass option based on current state
       {
         label: states.bypassed ? 'Remove Bypass' : 'Bypass',
@@ -305,16 +469,37 @@ export function useMoreOptionsMenu() {
       },
       {
         type: 'divider'
-      },
-      {
-        label: 'Delete',
-        icon: markRaw(ILucideTrash2),
-        shortcut: 'Delete',
-        action: deleteSelection
       }
     )
 
-    return baseOptions
+    // Add paste and convert to group for multiple nodes
+    if (hasMultipleNodes.value) {
+      options.push(
+        {
+          label: 'Paste',
+          icon: markRaw(ILucideClipboard),
+          shortcut: 'Ctrl+V',
+          action: pasteSelection
+        },
+        {
+          label: 'Convert to Group Nodes',
+          icon: markRaw(ILucideGroup),
+          action: convertToGroupNodes
+        },
+        {
+          type: 'divider'
+        }
+      )
+    }
+
+    options.push({
+      label: 'Delete',
+      icon: markRaw(ILucideTrash2),
+      shortcut: 'Delete',
+      action: deleteSelection
+    })
+
+    return options
   })
 
   // Computed property to get only menu items with submenus
