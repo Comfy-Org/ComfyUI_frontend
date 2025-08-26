@@ -16,10 +16,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Cache tool outputs
         uses: actions/cache@v4
