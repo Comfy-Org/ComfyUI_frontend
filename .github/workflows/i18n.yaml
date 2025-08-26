@@ -16,7 +16,7 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
     
     - name: Cache tool outputs
       uses: actions/cache@v4
