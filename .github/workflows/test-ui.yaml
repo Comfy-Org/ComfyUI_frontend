@@ -272,9 +272,10 @@ jobs:
         id: skip-deployment
         if: always() && github.event.pull_request.head.repo.full_name != github.repository
         run: |
-          echo "⚠️ Skipping Cloudflare Pages deployment for forked PR"
-          echo "Reason: Forked repositories do not have access to Cloudflare secrets"
-          echo "The Playwright report is available as a workflow artifact instead"
+          echo "⚠️ Skipping Cloudflare Pages deployment for forked PR in this workflow"
+          echo "✅ The pull_request_target deployment workflow will handle deployment with secrets access"
+          echo "📋 The Playwright report is available as a workflow artifact"
+          echo "🚀 pull_request_target workflow will deploy to: https://${{ steps.project-name.outputs.branch }}.${{ steps.project-name.outputs.name }}.pages.dev"
           echo "deployment-url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
 
       - name: Save deployment info for summary
@@ -402,6 +403,12 @@ jobs:
             echo "🎉 Your tests are passing across all browsers!" >> comment.md
           else
             echo "⚠️ Please check the test reports for details on failures." >> comment.md
+          fi
+          
+          # Check if this is a forked PR
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "" >> comment.md
+            echo "🚀 **For forked PRs**: A separate \`pull_request_target\` workflow will deploy reports with secret access once tests complete." >> comment.md
           fi
 
       - name: Comment PR - Tests Complete
