@@ -97,7 +97,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     opacity: 0.5;
   }
   100% {
-    transform: translate3d(-50%, -120%, 0);
+    transform: translateX(-50%) translateY(-120%);
     opacity: 1;
   }
 }
