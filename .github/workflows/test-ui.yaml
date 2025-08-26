@@ -330,8 +330,45 @@ jobs:
               format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id)
             }})
 
-  comment-summary:
+  trigger-deployment:
     needs: playwright-tests
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - name: Trigger deployment workflow for cost optimization
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const runId = context.runId;
+            const branchName = context.payload.pull_request.head.ref;
+            
+            console.log(`Triggering deployment workflow for PR #${prNumber}`);
+            console.log(`Run ID: ${runId}, Branch: ${branchName}`);
+            
+            try {
+              await github.rest.repos.createDispatchEvent({
+                owner,
+                repo,
+                event_type: 'playwright-tests-completed',
+                client_payload: {
+                  run_id: runId.toString(),
+                  pr_number: prNumber,
+                  branch_name: branchName,
+                  trigger_source: 'cost-optimized-webhook'
+                }
+              });
+              console.log('✅ Successfully triggered deployment workflow via webhook');
+            } catch (error) {
+              console.error('❌ Failed to trigger deployment workflow:', error);
+              // Don't fail the job if dispatch fails
+            }
+
+  comment-summary:
+    needs: [playwright-tests, trigger-deployment]
     runs-on: ubuntu-latest
     if: always() && github.event_name == 'pull_request'
     permissions:
@@ -408,7 +445,7 @@ jobs:
           # Check if this is a forked PR
           if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
             echo "" >> comment.md
-            echo "🚀 **For forked PRs**: A separate \`pull_request_target\` workflow will deploy reports with secret access once tests complete." >> comment.md
+            echo "🚀 **Cost-Optimized Deployment**: Webhook trigger sent to deploy reports instantly (no polling wait!)" >> comment.md
           fi
 
       - name: Comment PR - Tests Complete
