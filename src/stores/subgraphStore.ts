@@ -153,13 +153,16 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         [`${i.type}`, undefined] satisfies InputSpec
       ])
     )
+    let description = 'User generated subgraph blueprint'
+    if (workflow.initialState.extra?.BlueprintDescription)
+      description = `${workflow.initialState.extra.BlueprintDescription}`
     const nodedefv1: ComfyNodeDefV1 = {
       input: { required: inputs },
       output: subgraphNode.outputs.map((o) => `${o.type}`),
       output_name: subgraphNode.outputs.map((o) => o.name),
       name: typePrefix + name,
       display_name: name,
-      description: 'User generated subgraph blueprint',
+      description,
       category: 'Subgraph Blueprints',
       output_node: false,
       python_module: 'nodes'
