@@ -23,13 +23,13 @@
     <DeleteButton />
     <RefreshSelectionButton />
     <ExecuteButton />
-    <MoreOptions />
 
     <ExtensionCommandButton
       v-for="command in extensionToolboxCommands"
       :key="command.id"
       :command="command"
     />
+    <MoreOptions />
   </Panel>
 </template>
 
