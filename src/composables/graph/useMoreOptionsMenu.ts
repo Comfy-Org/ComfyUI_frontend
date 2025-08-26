@@ -18,7 +18,6 @@ import ILucideMinimize2 from '~icons/lucide/minimize-2'
 import ILucideMoveDiagonal2 from '~icons/lucide/move-diagonal-2'
 import ILucidePalette from '~icons/lucide/palette'
 import ILucidePanelTop from '~icons/lucide/panel-top'
-import ILucidePencil from '~icons/lucide/pencil'
 import ILucidePin from '~icons/lucide/pin'
 import ILucidePinOff from '~icons/lucide/pin-off'
 import ILucidePlay from '~icons/lucide/play'
@@ -298,7 +297,6 @@ export function useMoreOptionsMenu() {
       options.push(
         {
           label: t('contextMenu.Open in Mask Editor'),
-          icon: markRaw(ILucidePencil),
           action: openMaskEditor
         },
         {
@@ -315,20 +313,6 @@ export function useMoreOptionsMenu() {
           label: t('contextMenu.Save Image'),
           icon: markRaw(ILucideDownload),
           action: saveImage
-        },
-        {
-          type: 'divider'
-        }
-      )
-    }
-
-    // Single node specific options
-    if (hasSingleNode.value) {
-      options.push(
-        {
-          label: t('contextMenu.Properties Panel'),
-          icon: markRaw(ILucidePanelTop),
-          action: showPropertiesPanel
         },
         {
           type: 'divider'
@@ -380,7 +364,19 @@ export function useMoreOptionsMenu() {
         label: t('contextMenu.Adjust Size'),
         icon: markRaw(ILucideMoveDiagonal2),
         action: adjustNodeSize
-      },
+      }
+    )
+
+    // Properties panel for single nodes (moved to middle of menu)
+    if (hasSingleNode.value) {
+      options.push({
+        label: t('contextMenu.Properties Panel'),
+        icon: markRaw(ILucidePanelTop),
+        action: showPropertiesPanel
+      })
+    }
+
+    options.push(
       // Show appropriate collapse/expand option based on current state
       {
         label: states.collapsed
