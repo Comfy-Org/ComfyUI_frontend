@@ -122,7 +122,7 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       },
-      visible: props.item.key === 'root'
+      visible: props.item.key === 'root' && !props.item.isBlueprint
     },
     {
       separator: true
@@ -133,6 +133,18 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await useCommandStore().execute('Comfy.ClearWorkflow')
       }
+    },
+    {
+      separator: true,
+      visible: props.item.key === 'root' && props.item.isBlueprint
+    },
+    {
+      label: t('subgraphStore.publish'),
+      icon: 'pi pi-copy',
+      command: async () => {
+        await workflowService.saveWorkflowAs(workflowStore.activeWorkflow!)
+      },
+      visible: props.item.key === 'root' && props.item.isBlueprint
     },
     {
       separator: true,
