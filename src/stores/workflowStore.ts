@@ -310,15 +310,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
-    //TODO: Reconsider. Referencing subgraph constants outside
-    //the subgraphStore is icky
     const existingWorkflow = workflows.value.find((w) => w.fullFilename == path)
     if (
       path &&
-      existingWorkflow?.directory == 'subgraphs' &&
       workflowData &&
-      //Always true. Sadly, isLoaded can't be used as guard
-      existingWorkflow.changeTracker
+      existingWorkflow?.changeTracker &&
+      'basePath' in existingWorkflow.constructor &&
+      existingWorkflow.constructor.basePath != ComfyWorkflow.basePath
     ) {
       existingWorkflow.changeTracker.reset(workflowData)
       return existingWorkflow
