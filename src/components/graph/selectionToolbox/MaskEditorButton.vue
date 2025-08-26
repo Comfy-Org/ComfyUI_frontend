@@ -1,6 +1,6 @@
 <template>
   <Button
-    f-show="isSingleImageNode"
+    v-show="isSingleImageNode"
     v-tooltip.top="{
       value: t('commands.Comfy_MaskEditor_OpenMaskEditor.label'),
       showDelay: 1000
