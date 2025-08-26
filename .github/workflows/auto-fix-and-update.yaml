@@ -1,0 +1,206 @@
+name: Auto-fix and Update
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-fix-and-update:
+    # Only run on PRs from the same repository (not forks) to avoid permission issues, auto fix any lint and formats, update locales, and commit the changes back
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup ComfyUI Frontend and Backend
+        uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
+
+      # Step 1: Cache ESLint for better performance
+      - name: Cache ESLint
+        uses: actions/cache@v4
+        with:
+          path: ComfyUI_frontend/.eslintcache
+          key: ${{ runner.os }}-eslint-${{ hashFiles('ComfyUI_frontend/eslint.config.js', 'ComfyUI_frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint-
+
+      # Step 2: Run lint and format fixes
+      - name: Run ESLint with auto-fix
+        run: npm run lint:fix
+        working-directory: ComfyUI_frontend
+
+      - name: Run Prettier with auto-format
+        run: npm run format
+        working-directory: ComfyUI_frontend
+
+      # Step 3: Update locales (only if there are relevant changes)
+      - name: Check if locale updates needed
+        id: check-locale-changes
+        run: |
+          # Check if there are changes to files that would affect locales
+          if git diff --name-only origin/${{ github.base_ref }}..HEAD | grep -E '\.(vue|ts|tsx)$' | grep -v test | head -1; then
+            echo "locale_updates_needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "locale_updates_needed=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: ComfyUI_frontend
+
+      - name: Install Playwright Browsers
+        if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
+        run: npx playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Start dev server
+        if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
+        run: npm run dev:electron &
+        working-directory: ComfyUI_frontend
+
+      - name: Update en.json
+        if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
+        run: npm run collect-i18n -- scripts/collect-i18n-general.ts
+        env:
+          PLAYWRIGHT_TEST_URL: http://localhost:5173
+        working-directory: ComfyUI_frontend
+
+      - name: Update translations
+        if: steps.check-locale-changes.outputs.locale_updates_needed == 'true'
+        run: npm run locale
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        working-directory: ComfyUI_frontend
+
+      # Step 4: Check for any changes from both lint-format and locale updates
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            # Show what changed for debugging
+            echo "Changed files:"
+            git status --porcelain
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT  
+          fi
+        working-directory: ComfyUI_frontend
+
+      # Step 5: Commit all changes in a single commit
+      - name: Commit auto-fixes and locale updates
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git fetch origin ${{ github.head_ref }}
+          # Stash any local changes before checkout
+          git stash -u
+          git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
+          # Apply the stashed changes if any
+          git stash pop || true
+          git add .
+          git diff --staged --quiet || git commit -m "[auto-fix] Apply ESLint, Prettier fixes and update locales"
+          git push origin HEAD:${{ github.head_ref }}
+        working-directory: ComfyUI_frontend
+
+      # Step 6: Run final validation
+      - name: Final validation
+        run: |
+          npm run lint
+          npm run format:check
+          npm run knip
+        working-directory: ComfyUI_frontend
+
+      # Step 7: Comment on PR about what was fixed
+      - name: Comment on PR about auto-fixes
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let changes = [];
+            if ('${{ steps.check-locale-changes.outputs.locale_updates_needed }}' === 'true') {
+              changes.push('Locale updates');
+            }
+            // Always include lint/format as we ran them
+            changes.push('ESLint auto-fixes', 'Prettier formatting');
+
+            const changesText = changes.join('\n- ');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔧 Auto-fixes Applied
+
+            This PR has been automatically updated with the following changes:
+
+            - ${changesText}
+
+            **⚠️ Important**: Your local branch is now behind. Run \`git pull\` before making additional changes to avoid conflicts.`
+            });
+
+  # Separate job for fork PRs that can't auto-commit, we only check lint and formats, and do not commit back
+  fork-pr-check:
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache ESLint
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: ${{ runner.os }}-eslint-fork-${{ hashFiles('eslint.config.js', 'package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-eslint-fork-
+
+      - name: Check linting and formatting
+        id: check-lint-format
+        run: |
+          # Run checks and capture exit codes
+          npm run lint || echo "lint_failed=true" >> $GITHUB_OUTPUT
+          npm run format:check || echo "format_failed=true" >> $GITHUB_OUTPUT
+          npm run knip || echo "knip_failed=true" >> $GITHUB_OUTPUT
+
+      - name: Comment on fork PR about manual fixes needed
+        if: steps.check-lint-format.outputs.lint_failed == 'true' || steps.check-lint-format.outputs.format_failed == 'true' || steps.check-lint-format.outputs.knip_failed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Linting/Formatting Issues Found
+
+            This PR has linting or formatting issues that need to be fixed.
+
+            **Since this PR is from a fork, auto-fix cannot be applied automatically.**
+
+            ### Option 1: Set up pre-commit hooks (recommended)
+            Run this once to automatically format code on every commit:
+            \`\`\`bash
+            npm run prepare
+            \`\`\`
+
+            ### Option 2: Fix manually
+            Run these commands and push the changes:
+            \`\`\`bash
+            npm run lint:fix
+            npm run format
+            \`\`\`
+
+            See [CONTRIBUTING.md](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/CONTRIBUTING.md#git-pre-commit-hooks) for more details.`
+            });
