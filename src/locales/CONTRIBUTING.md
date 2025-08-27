@@ -79,7 +79,7 @@ const messages = {
 #### Option A: Local Generation (Optional)
 ```bash
 # Only if you have OpenAI API key configured
-npm run locale
+pnpm locale
 ```
 
 #### Option B: Let CI Handle It (Recommended)
@@ -90,8 +90,8 @@ npm run locale
 ### Step 3: Test Your Changes
 
 ```bash
-npm run typecheck  # Check for TypeScript errors
-npm run dev        # Start development server
+pnpm typecheck  # Check for TypeScript errors
+pnpm dev        # Start development server
 ```
 
 **Testing checklist:**

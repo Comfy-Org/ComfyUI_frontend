@@ -244,21 +244,21 @@ echo "Last stable release: $LAST_STABLE"
 
 1. Run complete test suite:
    ```bash
-   npm run test:unit
-   npm run test:component
+   pnpm test:unit
+   pnpm test:component
    ```
 2. Run type checking:
    ```bash
-   npm run typecheck
+   pnpm typecheck
    ```
 3. Run linting (may have issues with missing packages):
    ```bash
-   npm run lint || echo "Lint issues - verify if critical"
+   pnpm lint || echo "Lint issues - verify if critical"
    ```
 4. Test build process:
    ```bash
-   npm run build
-   npm run build:types
+   pnpm build
+   pnpm build:types
    ```
 5. **QUALITY GATE**: All tests and builds passing?
 
@@ -488,7 +488,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```bash
    # Check npm availability
    for i in {1..10}; do
-     if npm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
+     if pnpm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
        echo "✅ npm package available"
        break
      fi

@@ -2,13 +2,13 @@
 
 ## Quick Commands
 
-- `npm run`: See all available commands
-- `npm run typecheck`: Type checking
-- `npm run lint`: Linting
-- `npm run format`: Prettier formatting
-- `npm run test:component`: Run component tests with browser environment
-- `npm run test:unit`: Run all unit tests
-- `npm run test:unit -- tests-ui/tests/example.test.ts`: Run single test file
+- `pnpm`: See all available commands
+- `pnpm typecheck`: Type checking
+- `pnpm lint`: Linting
+- `pnpm format`: Prettier formatting
+- `pnpm test:component`: Run component tests with browser environment
+- `pnpm test:unit`: Run all unit tests
+- `pnpm test:unit -- tests-ui/tests/example.test.ts`: Run single test file
 
 ## Development Workflow
 

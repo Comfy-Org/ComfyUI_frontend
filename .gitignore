@@ -10,7 +10,6 @@ lerna-debug.log*
 # Package manager lockfiles (allow users to use different package managers)
 bun.lock
 bun.lockb
-pnpm-lock.yaml
 yarn.lock
 
 # Cache files

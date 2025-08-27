@@ -37,11 +37,16 @@ jobs:
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
           ref: 'd05fd48dd787a4192e16802d4244cfcc0e2f9684'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm'
-          cache-dependency-path: 'ComfyUI_frontend/package-lock.json'
+          cache: 'pnpm'
+          cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
 
       - name: Get current time
         id: current-time
@@ -73,16 +78,16 @@ jobs:
           path: |
             ComfyUI_frontend/.cache
             ComfyUI_frontend/tsconfig.tsbuildinfo
-          key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ hashFiles('ComfyUI_frontend/src/**/*.{ts,vue,js}', 'ComfyUI_frontend/*.config.*') }}
+          key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ hashFiles('ComfyUI_frontend/src/**/*.{ts,vue,js}', 'ComfyUI_frontend/*.config.*') }}
           restore-keys: |
-            playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
+            playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
             playwright-setup-cache-${{ runner.os }}-
             playwright-tools-cache-${{ runner.os }}-
 
       - name: Build ComfyUI_frontend
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
         working-directory: ComfyUI_frontend
 
       - name: Generate cache key
@@ -128,6 +133,11 @@ jobs:
             ComfyUI
             ComfyUI_frontend
           key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - uses: actions/setup-python@v4
         with:
@@ -179,9 +189,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ matrix.browser }}
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ matrix.browser }}
           restore-keys: |
-            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
+            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
             playwright-browsers-${{ runner.os }}-
 
       - name: Install Playwright Browsers
@@ -189,7 +199,7 @@ jobs:
         working-directory: ComfyUI_frontend
 
       - name: Install Wrangler
-        run: npm install -g wrangler
+        run: pnpm install -g wrangler
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright

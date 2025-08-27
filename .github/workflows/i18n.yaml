@@ -16,7 +16,7 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
     
     - name: Cache tool outputs
       uses: actions/cache@v4
@@ -24,7 +24,7 @@ jobs:
         path: |
           ComfyUI_frontend/.cache
           ComfyUI_frontend/.cache
-        key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}
+        key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
         restore-keys: |
           i18n-tools-cache-${{ runner.os }}-
     - name: Install Playwright Browsers
@@ -33,15 +33,15 @@ jobs:
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server
       # We do want electron specific UIs to be translated.
-      run: npm run dev:electron &
+      run: pnpm dev:electron &
       working-directory: ComfyUI_frontend
     - name: Update en.json
-      run: npm run collect-i18n -- scripts/collect-i18n-general.ts
+      run: pnpm collect-i18n -- scripts/collect-i18n-general.ts
       env:
         PLAYWRIGHT_TEST_URL: http://localhost:5173
       working-directory: ComfyUI_frontend
     - name: Update translations
-      run: npm run locale
+      run: pnpm locale
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       working-directory: ComfyUI_frontend

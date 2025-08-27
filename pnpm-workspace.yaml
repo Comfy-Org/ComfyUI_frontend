@@ -1,0 +1,15 @@
+packages:
+  - apps/**
+  - packages/**
+
+ignoredBuiltDependencies:
+  - '@firebase/util'
+  - protobufjs
+  - vue-demi
+
+onlyBuiltDependencies:
+  - '@playwright/browser-chromium'
+  - '@playwright/browser-firefox'
+  - '@playwright/browser-webkit'
+  - esbuild
+  - oxc-resolver
