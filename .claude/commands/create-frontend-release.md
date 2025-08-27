@@ -128,7 +128,25 @@ echo "Last stable release: $LAST_STABLE"
 
 ### Step 4: Analyze Dependency Updates
 
-1. **Check significant dependency updates:**
+1. **Use pnpm's built-in dependency analysis:**
+   ```bash
+   # Get outdated dependencies with pnpm
+   pnpm outdated --format table > outdated-deps-${NEW_VERSION}.txt
+   
+   # Check for license compliance
+   pnpm licenses ls --json > licenses-${NEW_VERSION}.json
+   
+   # Analyze why specific dependencies exist
+   echo "Dependency analysis:" > dep-analysis-${NEW_VERSION}.md
+   MAJOR_DEPS=("vue" "vite" "@vitejs/plugin-vue" "typescript" "pinia")
+   for dep in "${MAJOR_DEPS[@]}"; do
+     echo -e "\n## $dep\n\`\`\`" >> dep-analysis-${NEW_VERSION}.md
+     pnpm why "$dep" >> dep-analysis-${NEW_VERSION}.md || echo "Not found" >> dep-analysis-${NEW_VERSION}.md
+     echo "\`\`\`" >> dep-analysis-${NEW_VERSION}.md
+   done
+   ```
+
+2. **Check for significant dependency updates:**
    ```bash
    # Extract all dependency changes for major version bumps
    OTHER_DEP_CHANGES=""
@@ -254,17 +272,22 @@ echo "Last stable release: $LAST_STABLE"
 
 ### Step 7: Security and Dependency Audit
 
-1. Run security audit:
+1. Run pnpm security audit:
    ```bash
-   npm audit --audit-level moderate
+   pnpm audit --audit-level moderate
+   pnpm licenses ls --summary
    ```
 2. Check for known vulnerabilities in dependencies
-3. Scan for hardcoded secrets or credentials:
+3. Run comprehensive dependency health check:
+   ```bash
+   pnpm doctor
+   ```
+4. Scan for hardcoded secrets or credentials:
    ```bash
    git log -p ${BASE_TAG}..HEAD | grep -iE "(password|key|secret|token)" || echo "No sensitive data found"
    ```
-4. Verify no sensitive data in recent commits
-5. **SECURITY REVIEW**: Address any critical findings before proceeding?
+5. Verify no sensitive data in recent commits
+6. **SECURITY REVIEW**: Address any critical findings before proceeding?
 
 ### Step 8: Pre-Release Testing
 
