@@ -12,4 +12,5 @@ onlyBuiltDependencies:
   - '@playwright/browser-firefox'
   - '@playwright/browser-webkit'
   - esbuild
+  - nx
   - oxc-resolver
