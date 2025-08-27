@@ -48,8 +48,6 @@ import ListBox from 'primevue/listbox'
 import { computed, onMounted, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
-import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'

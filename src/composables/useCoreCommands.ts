@@ -663,8 +663,8 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
-      icon: 'pi pi-puzzle',
-      label: 'Show the Custom Nodes Manager',
+      icon: 'pi pi-objects-column',
+      label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
         const { is_legacy_manager_ui } =
@@ -683,10 +683,10 @@ export function useCoreCommands(): ComfyCommand[] {
               detail: t('manager.legacyMenuNotAvailable'),
               life: 3000
             })
-            dialogService.toggleManagerDialog()
+            dialogService.showManagerDialog()
           }
         } else {
-          dialogService.toggleManagerDialog()
+          dialogService.showManagerDialog()
         }
       }
     },
