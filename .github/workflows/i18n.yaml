@@ -2,7 +2,8 @@ name: Update Locales
 
 on:
   pull_request:
-    branches: [ main, master, dev* ]
+    branches: [ main, master ]
+    types: [opened, synchronize, reopened]
     paths-ignore:
       - '.github/**'
       - '.husky/**'
@@ -13,10 +14,8 @@ on:
 
 jobs:
   update-locales:
-    # Don't run on fork PRs, only run for version-bump PRs or manual dispatch
-    if: |
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'version-bump-'))
+    # Only run on version-bump PRs from the main repo, or manual dispatch
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-'))
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
