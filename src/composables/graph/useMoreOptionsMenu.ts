@@ -191,7 +191,7 @@ export function useMoreOptionsMenu() {
           new ClipboardItem({ 'image/png': blob })
         ])
       } catch (error) {
-        console.log('Failed to copy image:', error)
+        console.error('Failed to copy image:', error)
       }
     }, 'image/png')
   }
