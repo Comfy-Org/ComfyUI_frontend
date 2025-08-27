@@ -9,11 +9,14 @@ on:
       - '.vscode/**'
       - 'browser_tests/**'
       - 'tests-ui/**'
+  workflow_dispatch:
 
 jobs:
   update-locales:
-    # Don't run on fork PRs
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Don't run on fork PRs, only run for version-bump PRs or manual dispatch
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'version-bump-'))
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.3
