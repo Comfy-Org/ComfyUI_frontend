@@ -66,7 +66,7 @@ jobs:
 
             ---
 
-            <img alt='claude-loading-gif' src="https://github.com/user-attachments/assets/5ac382c7-e004-429b-8e35-7feb3e8f9c6f" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
+            <img alt='comfy-loading-gif' src="https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
             <bold>[${{ steps.current-time.outputs.time }} UTC] Preparing browser tests across multiple browsers...</bold>
 
             ---
@@ -168,7 +168,7 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            <img alt='claude-loading-gif' src="https://github.com/user-attachments/assets/5ac382c7-e004-429b-8e35-7feb3e8f9c6f" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
+            <img alt='comfy-loading-gif' src="https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
             <bold>${{ matrix.browser }}</bold>: Running tests...
 
       - name: Install requirements
