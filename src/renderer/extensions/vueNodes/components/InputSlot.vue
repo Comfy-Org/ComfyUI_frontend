@@ -2,13 +2,13 @@
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
   <div
     v-else
-    class="lg-slot lg-slot--input flex items-center cursor-crosshair group"
+    class="lg-slot lg-slot--input flex items-center cursor-crosshair group rounded-r-lg"
     :class="{
       'opacity-70': readonly,
       'lg-slot--connected': connected,
       'lg-slot--compatible': compatible,
       'lg-slot--dot-only': dotOnly,
-      'pr-2 hover:bg-black/5': !dotOnly
+      'pr-6 hover:bg-black/5 hover:dark:bg-white/5': !dotOnly
     }"
     :style="{
       height: slotHeight + 'px'
@@ -16,14 +16,7 @@
     @pointerdown="handleClick"
   >
     <!-- Connection Dot -->
-    <div class="w-5 h-5 flex items-center justify-center group/slot">
-      <div
-        class="w-2.5 h-2.5 rounded-full bg-white transition-all duration-150 group-hover/slot:w-3 group-hover/slot:h-3 group-hover/slot:border-2 group-hover/slot:border-white"
-        :style="{
-          backgroundColor: slotColor
-        }"
-      />
-    </div>
+    <SlotConnectionDot :color="slotColor" class="-translate-x-1/2" />
 
     <!-- Slot Name -->
     <span
@@ -45,6 +38,8 @@ import {
   INodeSlot,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+
+import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface InputSlotProps {
   node?: LGraphNode
