@@ -2,7 +2,7 @@ name: Update Locales
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
     types: [opened, synchronize, reopened]
     paths-ignore:
       - '.github/**'
