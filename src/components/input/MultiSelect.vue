@@ -76,7 +76,9 @@
               class="text-xs text-bold text-white"
             />
           </div>
-          <span>{{ slotProps.option.name }}</span>
+          <Button class="border-none outline-none bg-transparent" unstyled>{{
+            slotProps.option.name
+          }}</Button>
         </div>
       </template>
     </MultiSelect>
@@ -92,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import MultiSelect, {
   MultiSelectPassThroughMethodOptions
 } from 'primevue/multiselect'
@@ -165,9 +168,17 @@ const pt = computed(() => ({
   list: {
     class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
   },
-  // Option row hover tone identical
-  option:
-    'flex gap-1 items-center p-2 hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+  // Option row hover and focus tone
+  option: ({ context }: any) => ({
+    class: [
+      'flex gap-1 items-center p-2',
+      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+      // Add focus/highlight state for keyboard navigation
+      {
+        'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context?.focused
+      }
+    ]
+  }),
   // Hide built-in checkboxes entirely via PT (no :deep)
   pcHeaderCheckbox: {
     root: { class: 'hidden' },
