@@ -21,6 +21,7 @@
       <!-- Markdown fetched successfully -->
       <div
         v-else-if="!error"
+        ref="markdownContainer"
         class="markdown-content"
         v-html="renderedHelpHtml"
       />
@@ -81,16 +82,29 @@
       </div>
     </div>
   </div>
+
+  <!-- Image Gallery for markdown images -->
+  <MarkdownImageGallery
+    v-model:activeIndex="galleryActiveIndex"
+    :image-items="imageItems"
+  />
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
+
+import MarkdownImageGallery from './MarkdownImageGallery.vue'
+
+interface ImageItem {
+  url: string
+  filename: string
+}
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
 
@@ -100,6 +114,11 @@ const { renderedHelpHtml, isLoading, error } = storeToRefs(nodeHelpStore)
 defineEmits<{
   (e: 'close'): void
 }>()
+
+// Gallery state for image preview
+const markdownContainer = ref<HTMLElement | null>(null)
+const imageItems = ref<ImageItem[]>([])
+const galleryActiveIndex = ref(-1)
 
 const inputList = computed(() =>
   Object.values(node.inputs).map((spec) => ({
@@ -116,6 +135,66 @@ const outputList = computed(() =>
     tooltip: spec.tooltip || ''
   }))
 )
+
+// Track if we've already setup image preview to avoid re-setup
+const imagePreviewSetup = ref(false)
+
+// Function to setup image preview functionality
+function setupImagePreview() {
+  if (!markdownContainer.value || imagePreviewSetup.value) return
+
+  const imgs = Array.from(markdownContainer.value.querySelectorAll('img'))
+
+  // Only setup if there are images
+  if (imgs.length === 0) return
+
+  // Update gallery items - create simple image items
+  imageItems.value = imgs.map((img, index) => {
+    // Extract filename from URL
+    const url = new URL(img.src, window.location.origin)
+    const filename = url.pathname.split('/').pop() || `image-${index}.jpg`
+
+    return {
+      url: img.src,
+      filename
+    }
+  })
+
+  // Add click handlers to images
+  imgs.forEach((img, index) => {
+    img.style.cursor = 'zoom-in'
+    img.onclick = (e) => {
+      e.preventDefault()
+      galleryActiveIndex.value = index
+    }
+  })
+
+  imagePreviewSetup.value = true
+}
+
+// Reset setup flag when content changes
+function resetImagePreviewSetup() {
+  imagePreviewSetup.value = false
+  imageItems.value = []
+  galleryActiveIndex.value = -1
+}
+
+// Watch for changes in rendered HTML and setup image preview
+watch(renderedHelpHtml, async () => {
+  resetImagePreviewSetup()
+  await nextTick()
+  setupImagePreview()
+})
+
+// Watch for loading state changes
+watch([isLoading, error], () => {
+  resetImagePreviewSetup()
+})
+
+onMounted(async () => {
+  await nextTick()
+  setupImagePreview()
+})
 </script>
 
 <style scoped lang="postcss">
@@ -239,5 +318,14 @@ const outputList = computed(() =>
     @apply bg-transparent p-0;
     color: var(--p-text-color);
   }
+}
+
+/* Add hover effect for clickable images */
+.markdown-content :deep(img) {
+  transition: opacity 0.2s ease;
+}
+
+.markdown-content :deep(img:hover) {
+  opacity: 0.8;
 }
 </style>
