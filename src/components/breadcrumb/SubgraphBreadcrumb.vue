@@ -40,7 +40,7 @@ import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbIt
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { SubgraphBlueprint } from '@/stores/subgraphStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
 
@@ -53,8 +53,8 @@ const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
-const isBlueprint = computed(
-  () => workflowStore.activeWorkflow instanceof SubgraphBlueprint
+const isBlueprint = computed(() =>
+  useSubgraphStore().isSubgraphBlueprint(workflowStore.activeWorkflow)
 )
 const collapseTabs = ref(false)
 const overflowingTabs = ref(false)

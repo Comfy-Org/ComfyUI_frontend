@@ -36,105 +36,104 @@ async function confirmOverwrite(name: string): Promise<boolean | null> {
   })
 }
 
-export class SubgraphBlueprint extends ComfyWorkflow {
-  static override readonly basePath = 'subgraphs/'
+const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
 
-  hasPromptedSave: boolean = false
+export const useSubgraphStore = defineStore('subgraph', () => {
+  class SubgraphBlueprint extends ComfyWorkflow {
+    static override readonly basePath = 'subgraphs/'
 
-  constructor(
-    options: { path: string; modified: number; size: number },
-    confirmFirstSave: boolean = false
-  ) {
-    super(options)
-    this.hasPromptedSave = !confirmFirstSave
-  }
+    hasPromptedSave: boolean = false
 
-  validateSubgraph() {
-    if (!this.activeState?.definitions)
+    constructor(
+      options: { path: string; modified: number; size: number },
+      confirmFirstSave: boolean = false
+    ) {
+      super(options)
+      this.hasPromptedSave = !confirmFirstSave
+    }
+
+    validateSubgraph() {
+      if (!this.activeState?.definitions)
+        throw new Error(
+          'The root graph of a subgraph blueprint must consist of only a single subgraph node'
+        )
+      const { subgraphs } = this.activeState.definitions
+      const { nodes } = this.activeState
+      //Instanceof doesn't funciton as nodes are serialized
+      function isSubgraphNode(node: ComfyNode) {
+        return node && subgraphs.some((s) => s.id == node.type)
+      }
+      if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
+      const errors: Record<NodeId, NodeError> = {}
+      //mark errors for all but first subgraph node
+      let firstSubgraphFound = false
+      for (let i = 0; i < nodes.length; i++) {
+        if (!firstSubgraphFound && isSubgraphNode(nodes[i])) {
+          firstSubgraphFound = true
+          continue
+        }
+        errors[nodes[i].id] = {
+          errors: [],
+          class_type: nodes[i].type,
+          dependent_outputs: []
+        }
+      }
+      useExecutionStore().lastNodeErrors = errors
+      useCanvasStore().getCanvas().draw(true, true)
       throw new Error(
         'The root graph of a subgraph blueprint must consist of only a single subgraph node'
       )
-    const { subgraphs } = this.activeState.definitions
-    const { nodes } = this.activeState
-    //Instanceof doesn't funciton as nodes are serialized
-    function isSubgraphNode(node: ComfyNode) {
-      return node && subgraphs.some((s) => s.id == node.type)
     }
-    if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
-    const errors: Record<NodeId, NodeError> = {}
-    //mark errors for all but first subgraph node
-    let firstSubgraphFound = false
-    for (let i = 0; i < nodes.length; i++) {
-      if (!firstSubgraphFound && isSubgraphNode(nodes[i])) {
-        firstSubgraphFound = true
-        continue
-      }
-      errors[nodes[i].id] = {
-        errors: [],
-        class_type: nodes[i].type,
-        dependent_outputs: []
-      }
-    }
-    useExecutionStore().lastNodeErrors = errors
-    useCanvasStore().getCanvas().draw(true, true)
-    throw new Error(
-      'The root graph of a subgraph blueprint must consist of only a single subgraph node'
-    )
-  }
 
-  override async save(): Promise<UserFile> {
-    this.validateSubgraph()
-    if (!this.hasPromptedSave) {
-      //Swap to saveAs?
-      const newName = await useDialogService().prompt({
+    override async save(): Promise<UserFile> {
+      this.validateSubgraph()
+      if (!this.hasPromptedSave) {
+        //Swap to saveAs?
+        const newName = await useDialogService().prompt({
+          title: t('subgraphStore.saveBlueprint'),
+          message: t('subgraphStore.blueprintName') + ':',
+          defaultValue: this.filename
+        })
+        if (!newName) return this
+        this.hasPromptedSave = true
+        this.updatePath(SubgraphBlueprint.basePath + newName + '.json')
+      }
+      const ret = await super.save()
+      useSubgraphStore().updateDef(await this.load())
+      return ret
+    }
+
+    override async saveAs(path: string) {
+      this.validateSubgraph()
+      this.hasPromptedSave = true
+      const ret = await super.saveAs(path)
+      useSubgraphStore().updateDef(await this.load())
+      return ret
+    }
+    override async load({
+      force = false
+    }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
+      if (!force && this.isLoaded) return await super.load({ force })
+      const loaded = await super.load({ force })
+      const st = loaded.activeState
+      const sg = (st.definitions?.subgraphs ?? []).find(
+        (sg) => sg.id == st.nodes[0].type
+      )
+      if (!sg)
+        throw new Error(
+          'Loaded subgraph blueprint does not contain valid subgraph'
+        )
+      sg.name = st.nodes[0].title = this.filename
+      return loaded
+    }
+    override async promptSave(): Promise<string | null> {
+      return await useDialogService().prompt({
         title: t('subgraphStore.saveBlueprint'),
         message: t('subgraphStore.blueprintName') + ':',
         defaultValue: this.filename
       })
-      if (!newName) return this
-      this.hasPromptedSave = true
-      this.updatePath(SubgraphBlueprint.basePath + newName + '.json')
     }
-    const ret = await super.save()
-    useSubgraphStore().updateDef(await this.load())
-    return ret
   }
-
-  override async saveAs(path: string) {
-    this.validateSubgraph()
-    this.hasPromptedSave = true
-    const ret = await super.saveAs(path)
-    useSubgraphStore().updateDef(await this.load())
-    return ret
-  }
-  override async load({
-    force = false
-  }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
-    if (!force && this.isLoaded) return await super.load({ force })
-    const loaded = await super.load({ force })
-    const st = loaded.activeState
-    const sg = (st.definitions?.subgraphs ?? []).find(
-      (sg) => sg.id == st.nodes[0].type
-    )
-    if (!sg)
-      throw new Error(
-        'Loaded subgraph blueprint does not contain valid subgraph'
-      )
-    sg.name = st.nodes[0].title = this.filename
-    return loaded
-  }
-  override async promptSave(): Promise<string | null> {
-    return await useDialogService().prompt({
-      title: t('subgraphStore.saveBlueprint'),
-      message: t('subgraphStore.blueprintName') + ':',
-      defaultValue: this.filename
-    })
-  }
-}
-
-const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
-
-export const useSubgraphStore = defineStore('subgraph', () => {
   const typePrefix = 'SubgraphBlueprint.'
   const subgraphDefCache = ref<Map<string, ComfyNodeDefImpl>>(new Map())
   const canvasStore = useCanvasStore()
@@ -295,12 +294,18 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     delete subgraphCache[name]
     subgraphDefCache.value.delete(name)
   }
+  function isSubgraphBlueprint(
+    workflow: unknown
+  ): workflow is SubgraphBlueprint {
+    return workflow instanceof SubgraphBlueprint
+  }
 
   return {
     deleteBlueprint,
     editBlueprint,
     fetchSubgraphs,
     getBlueprint,
+    isSubgraphBlueprint,
     publishSubgraph,
     subgraphBlueprints,
     typePrefix,
