@@ -1,0 +1,77 @@
+name: PR Storybook Comment
+
+on:
+  workflow_run:
+    workflows: ["Chromatic"]
+    types: [completed]
+
+jobs:
+  comment-storybook:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    permissions:
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
+            });
+            
+            if (pullRequests.length === 0) {
+              console.log('No open PR found for this branch');
+              return null;
+            }
+            
+            return pullRequests[0].number;
+
+      - name: Get workflow run details
+        if: steps.pr.outputs.result != 'null'
+        id: workflow-run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            
+            return {
+              conclusion: run.data.conclusion,
+              html_url: run.data.html_url
+            };
+
+      - name: Get completion time
+        id: completion-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Comment PR - Storybook Complete
+        if: steps.pr.outputs.result != 'null'
+        continue-on-error: true
+        uses: edumserrano/find-create-or-update-comment@v3
+        with:
+          issue-number: ${{ steps.pr.outputs.result }}
+          body-includes: '<!-- STORYBOOK_BUILD_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: replace
+          body: |
+            <!-- STORYBOOK_BUILD_STATUS -->
+            ## 🎨 Storybook Build Status
+
+            ${{ fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '✅' || '❌' }} **${{ fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && 'Build completed successfully!' || 'Build failed!' }}**
+
+            ⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC
+
+            ### 🔗 Links
+            - [📊 View Workflow Run](${{ fromJSON(steps.workflow-run.outputs.result).html_url }})
+
+            ---
+            ${{ fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '🎉 Your Storybook is ready for review!' || '⚠️ Please check the workflow logs for error details.' }}
