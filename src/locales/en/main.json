@@ -925,6 +925,8 @@
     "confirmDeleteTitle": "Delete blueprint?",
     "confirmDelete": "This action will permanently remove the blueprint from your library",
     "saveBlueprint": "Save Subgraph to Library",
+    "overwriteBlueprintTitle": "Overwrite existing blueprint?",
+    "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
     "blueprintName": "Subgraph name",
     "publish": "Publish Subgraph",
     "publishSuccess": "Saved to Nodes Library",

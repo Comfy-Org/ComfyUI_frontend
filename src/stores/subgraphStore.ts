@@ -19,6 +19,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { UserFile } from '@/stores/userFileStore'
 import {
@@ -29,9 +30,9 @@ import {
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
-    title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
-    type: 'overwrite',
-    message: t('sideToolbar.workflowTab.confirmOverwrite'),
+    title: t('subgraphStore.overwriteBlueprintTitle'),
+    type: 'overwriteBlueprint',
+    message: t('subgraphStore.overwriteBlueprint'),
     itemList: [name]
   })
 }
@@ -87,16 +88,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
     override async save(): Promise<UserFile> {
       this.validateSubgraph()
-      if (!this.hasPromptedSave) {
-        //Swap to saveAs?
-        const newName = await useDialogService().prompt({
-          title: t('subgraphStore.saveBlueprint'),
-          message: t('subgraphStore.blueprintName') + ':',
-          defaultValue: this.filename
-        })
-        if (!newName) return this
+      if (
+        !this.hasPromptedSave &&
+        useSettingStore().get('Comfy.Workflow.WarnBlueprintOverwrite')
+      ) {
+        if (!(await confirmOverwrite(this.filename))) return this
         this.hasPromptedSave = true
-        this.updatePath(SubgraphBlueprint.basePath + newName + '.json')
       }
       const ret = await super.save()
       useSubgraphStore().updateDef(await this.load())
