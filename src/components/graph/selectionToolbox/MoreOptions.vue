@@ -5,6 +5,7 @@
         value: $t('g.moreOptions'),
         showDelay: 1000
       }"
+      data-testid="more-options-button"
       text
       severity="secondary"
       @click="toggle"
