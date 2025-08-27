@@ -65,7 +65,7 @@
       </div>
     </template>
     <template #footer>
-      <PackCardFooter :node-pack="nodePack" />
+      <PackCardFooter :node-pack="nodePack" :is-installing="isInstalling" />
     </template>
   </Card>
 </template>

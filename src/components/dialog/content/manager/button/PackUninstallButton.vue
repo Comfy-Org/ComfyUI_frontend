@@ -1,5 +1,5 @@
 <template>
-  <IconTextButton
+  <TextButton
     v-bind="$attrs"
     type="transparent"
     :label="
@@ -13,11 +13,10 @@
     @click="uninstallItems"
   />
 </template>
-
 <script setup lang="ts">
+import TextButton from '@/components/button/TextButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { ButtonSize } from '@/types/buttonTypes'
-import type { ManagerPackInfo } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
@@ -29,15 +28,15 @@ const { nodePacks, size } = defineProps<{
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (uninstallItem: NodePack): ManagerPackInfo => {
-  return {
-    id: uninstallItem.id,
-    version: uninstallItem.latest_version?.version
+const uninstallPack = (item: NodePack) => {
+  if (!item.id) {
+    throw new Error('Node ID is required for uninstallation')
   }
+  return managerStore.uninstallPack({
+    id: item.id,
+    version: item.latest_version?.version ?? ''
+  })
 }
-
-const uninstallPack = (item: NodePack) =>
-  managerStore.uninstallPack(createPayload(item))
 
 const uninstallItems = async () => {
   if (!nodePacks?.length) return

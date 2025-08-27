@@ -2,20 +2,26 @@
   <template v-if="nodePack">
     <div class="flex flex-col h-full z-40 overflow-hidden relative">
       <div class="top-0 z-10 px-6 pt-6 w-full">
-        <InfoPanelHeader :node-packs="[nodePack]" />
+        <InfoPanelHeader
+          :node-packs="[nodePack]"
+          :has-conflict="hasCompatibilityIssues"
+        />
       </div>
       <div
         ref="scrollContainer"
-        class="p-6 pt-2 overflow-y-auto flex-1 text-sm hidden-scrollbar"
+        class="p-6 pt-2 overflow-y-auto flex-1 text-sm scrollbar-hide"
       >
         <div class="mb-6">
           <MetadataRow
-            v-if="isPackInstalled(nodePack.id)"
+            v-if="!importFailed && isPackInstalled(nodePack.id)"
             :label="t('manager.filter.enabled')"
             class="flex"
             style="align-items: center"
           >
-            <PackEnableToggle :node-pack="nodePack" />
+            <PackEnableToggle
+              :node-pack="nodePack"
+              :has-conflict="hasCompatibilityIssues"
+            />
           </MetadataRow>
           <MetadataRow
             v-for="item in infoItems"
@@ -29,6 +35,7 @@
               :status-type="
                 nodePack.status as components['schemas']['NodeVersionStatus']
               "
+              :has-compatibility-issues="hasCompatibilityIssues"
             />
           </MetadataRow>
           <MetadataRow :label="t('manager.version')">
@@ -36,7 +43,11 @@
           </MetadataRow>
         </div>
         <div class="mb-6 overflow-hidden">
-          <InfoTabs :node-pack="nodePack" />
+          <InfoTabs
+            :node-pack="nodePack"
+            :has-compatibility-issues="hasCompatibilityIssues"
+            :conflict-result="conflictResult"
+          />
         </div>
       </div>
     </div>
@@ -59,9 +70,14 @@ import PackEnableToggle from '@/components/dialog/content/manager/button/PackEna
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 interface InfoItem {
   key: string
@@ -75,17 +91,54 @@ const { nodePack } = defineProps<{
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
-const managerStore = useComfyManagerStore()
-const isInstalled = computed(() => managerStore.isPackInstalled(nodePack.id))
+const { isPackInstalled } = useComfyManagerStore()
+const isInstalled = computed(() => isPackInstalled(nodePack.id))
 const isInstalling = ref(false)
 provide(IsInstallingKey, isInstalling)
 whenever(isInstalled, () => {
   isInstalling.value = false
 })
 
-const { isPackInstalled } = useComfyManagerStore()
+const { checkNodeCompatibility } = useConflictDetection()
+const { getConflictsForPackageByID } = useConflictDetectionStore()
 
 const { t, d, n } = useI18n()
+
+// Check compatibility once and pass to children
+const conflictResult = computed((): ConflictDetectionResult | null => {
+  // For installed packages, use stored conflict data
+  if (isInstalled.value && nodePack.id) {
+    return getConflictsForPackageByID(nodePack.id) || null
+  }
+
+  // For non-installed packages, perform compatibility check
+  const compatibility = checkNodeCompatibility(nodePack)
+
+  if (compatibility.hasConflict) {
+    return {
+      package_id: nodePack.id || '',
+      package_name: nodePack.name || '',
+      has_conflict: true,
+      conflicts: compatibility.conflicts,
+      is_compatible: false
+    }
+  }
+
+  return null
+})
+
+const hasCompatibilityIssues = computed(() => {
+  return conflictResult.value?.has_conflict
+})
+
+const packageId = computed(() => nodePack.id || '')
+const { importFailed, showImportFailedDialog } =
+  useImportFailedDetection(packageId)
+
+provide(ImportFailedKey, {
+  importFailed,
+  showImportFailedDialog
+})
 
 const infoItems = computed<InfoItem[]>(() => [
   {
@@ -128,17 +181,3 @@ whenever(
   { immediate: true }
 )
 </script>
-<style scoped>
-.hidden-scrollbar {
-  /* Firefox */
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    width: 1px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-  }
-}
-</style>

@@ -36,7 +36,6 @@
       size="md"
       :disabled="!!error || missingNodePacks.length === 0"
       :is-loading="isLoading"
-      :is-installing="isInstalling"
       :node-packs="missingNodePacks"
       :label="
         isLoading
@@ -55,14 +54,12 @@ import { computed, onMounted, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
+import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
-
-import PackInstallButton from './manager/button/PackInstallButton.vue'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
@@ -72,16 +69,7 @@ const props = defineProps<{
 const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
-const comfyManagerStore = useComfyManagerStore()
 const isLegacyManager = ref(false)
-
-// Check if any of the missing packs are currently being installed
-const isInstalling = computed(() => {
-  if (!missingNodePacks.value?.length) return false
-  return missingNodePacks.value.some((pack) =>
-    comfyManagerStore.isPackInstalling(pack.id)
-  )
-})
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()
