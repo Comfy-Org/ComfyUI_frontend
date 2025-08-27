@@ -29,7 +29,6 @@
       <PackInstallButton
         v-if="isMissingTab && missingNodePacks.length > 0"
         :disabled="isLoading || !!error"
-        :is-installing="isInstalling"
         :node-packs="missingNodePacks"
         :label="$t('manager.installAllMissingNodes')"
       />
@@ -73,7 +72,6 @@ import PackUpdateButton from '@/components/dialog/content/manager/button/PackUpd
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
   type SearchOption,
   SortableAlgoliaField
@@ -104,15 +102,6 @@ const { t } = useI18n()
 // Get missing node packs from workflow with loading and error states
 const { missingNodePacks, isLoading, error } = useMissingNodes()
 
-const comfyManagerStore = useComfyManagerStore()
-
-// Check if any of the missing packs are currently being installed
-const isInstalling = computed(() => {
-  if (!missingNodePacks.value?.length) return false
-  return missingNodePacks.value.some((pack) =>
-    comfyManagerStore.isPackInstalling(pack.id)
-  )
-})
 // Use the composable to get update available nodes
 const { hasUpdateAvailable, updateAvailableNodePacks } =
   useUpdateAvailableNodes()

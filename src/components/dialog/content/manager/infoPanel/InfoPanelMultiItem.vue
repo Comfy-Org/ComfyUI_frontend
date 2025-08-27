@@ -24,7 +24,6 @@
             v-else
             v-bind="$attrs"
             size="md"
-            :is-installing="isInstalling"
             :node-packs="nodePacks"
           />
         </template>
@@ -76,12 +75,6 @@ watch(
   },
   { immediate: true }
 )
-
-// Check if any of the packs are currently being installed
-const isInstalling = computed(() => {
-  if (!nodePacks?.length) return false
-  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
-})
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
   if (!pack.latest_version?.version) return []

@@ -21,6 +21,12 @@ vi.mock('@/stores/dialogStore')
 vi.mock('@/stores/settingStore')
 vi.mock('@/stores/commandStore')
 vi.mock('@/services/comfyManagerService')
+vi.mock('@/composables/useConflictDetection', () => ({
+  useConflictDetection: vi.fn(() => ({
+    conflictedPackages: { value: [] },
+    performConflictDetection: vi.fn().mockResolvedValue(undefined)
+  }))
+}))
 
 // Mock useEventListener to capture the event handler
 let reconnectHandler: (() => void) | null = null

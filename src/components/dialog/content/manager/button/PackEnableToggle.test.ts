@@ -11,10 +11,14 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-// Mock debounce to execute immediately
-vi.mock('es-toolkit/compat', () => ({
-  debounce: <T extends (...args: any[]) => any>(fn: T) => fn
-}))
+// Mock debounce and memoize to execute immediately
+vi.mock('es-toolkit/compat', async (importOriginal) => {
+  const actual = (await importOriginal()) as any
+  return {
+    ...actual,
+    debounce: <T extends (...args: any[]) => any>(fn: T) => fn
+  }
+})
 
 const mockNodePack = {
   id: 'test-pack',

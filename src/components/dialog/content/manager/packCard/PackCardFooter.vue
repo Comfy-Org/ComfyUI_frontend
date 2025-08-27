@@ -22,7 +22,6 @@
         <template v-if="!isInstalled">
           <PackInstallButton
             :node-packs="[nodePack]"
-            :is-installing="isInstalling"
             :has-conflict="uninstalledPackConflict.hasConflict"
             :conflict-info="uninstalledPackConflict.conflicts"
           />
@@ -39,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
@@ -48,7 +47,6 @@ import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
 const { nodePack } = defineProps<{
@@ -57,7 +55,6 @@ const { nodePack } = defineProps<{
 
 const { isPackInstalled } = useComfyManagerStore()
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
-const isInstalling = inject(IsInstallingKey)
 
 const { n, t } = useI18n()
 

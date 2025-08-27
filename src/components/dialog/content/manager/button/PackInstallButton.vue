@@ -47,7 +47,6 @@ type NodePack = components['schemas']['Node']
 const {
   nodePacks,
   isLoading = false,
-  isInstalling = false,
   label = 'Install',
   size = 'sm',
   hasConflict,
@@ -55,7 +54,6 @@ const {
 } = defineProps<{
   nodePacks: NodePack[]
   isLoading?: boolean
-  isInstalling?: boolean
   label?: string
   size?: ButtonSize
   hasConflict?: boolean
@@ -64,6 +62,12 @@ const {
 
 const managerStore = useComfyManagerStore()
 const { showNodeConflictDialog } = useDialogService()
+
+// Check if any of the packs are currently being installed
+const isInstalling = computed(() => {
+  if (!nodePacks?.length) return false
+  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
+})
 
 const createPayload = (installItem: NodePack) => {
   if (!installItem.id) {
@@ -107,14 +111,12 @@ const installAllPacks = async () => {
       buttonText: t('manager.conflicts.installAnyway'),
       onButtonClick: async () => {
         // Proceed with installation
-        // isInstalling.value = true
         await performInstallation(nodePacks)
       }
     })
     return
   }
   // No conflicts or conflicts acknowledged - proceed with installation
-  // isInstalling.value = true
   await performInstallation(nodePacks)
 }
 
@@ -124,7 +126,7 @@ const performInstallation = async (packs: NodePack[]) => {
 }
 
 const computedLabel = computed(() =>
-  isInstalling
+  isInstalling.value
     ? t('g.installing')
     : label ??
       (nodePacks.length > 1 ? t('manager.installSelected') : t('g.install'))

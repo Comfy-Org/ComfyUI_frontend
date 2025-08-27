@@ -26,7 +26,6 @@
           v-else
           v-bind="$attrs"
           size="md"
-          :is-installing="isInstalling"
           :node-packs="nodePacks"
           :has-conflict="hasConflict"
         />
@@ -42,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
+import { inject, ref, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -73,10 +72,4 @@ watch(
   },
   { immediate: true }
 )
-
-// Check if any of the packs are currently being installed
-const isInstalling = computed(() => {
-  if (!nodePacks?.length) return false
-  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
-})
 </script>
