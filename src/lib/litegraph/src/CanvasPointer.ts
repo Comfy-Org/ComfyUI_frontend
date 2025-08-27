@@ -46,8 +46,6 @@ export class CanvasPointer {
   /** Assume that "wheel" events with both deltaX and deltaY less than this value are trackpad gestures. */
   static trackpadThreshold = 60
 
-  static isMac = /Mac/.test(navigator.platform)
-
   /**
    * The minimum time between "wheel" events to allow switching between trackpad
    * and mouse modes.
@@ -389,14 +387,6 @@ export class CanvasPointer {
    */
   #isTrackpadPattern(event: WheelEvent): boolean {
     // Two-finger panning: non-zero deltaX AND deltaY
-    // On Mac Magic trackpad deltaX and deltaY are always integer simultaneously (1, 0), (0, -1), etc when Two-finger panning
-    if (
-      CanvasPointer.isMac &&
-      Number.isInteger(event.deltaX) &&
-      Number.isInteger(event.deltaY)
-    )
-      return true
-
     if (event.deltaX !== 0 && event.deltaY !== 0) return true
 
     // Pinch-to-zoom: ctrlKey with small deltaY
@@ -413,11 +403,7 @@ export class CanvasPointer {
     const absoluteDeltaY = Math.abs(event.deltaY)
 
     // Primary threshold for switching from trackpad to mouse
-
-    // On Mac, mouse wheel events can have small deltaY values (e.g., 4 or -4)
-    const deltaYThreshold = CanvasPointer.isMac ? 1 : 80
-
-    if (absoluteDeltaY > deltaYThreshold) return true
+    if (absoluteDeltaY > 80) return true
 
     // Secondary threshold when already in mouse mode
     return (
