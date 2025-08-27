@@ -181,27 +181,8 @@ jobs:
 
       - name: Start ComfyUI server
         run: |
-          echo "Starting ComfyUI server..."
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
-          SERVER_PID=$!
-          echo "Server PID: $SERVER_PID"
-          
-          # Enhanced wait with progress feedback
-          echo "Waiting for server to start (timeout: 600 seconds)..."
           wait-for-it --service 127.0.0.1:8188 -t 600
-          
-          if [ $? -eq 0 ]; then
-            echo "✅ ComfyUI server ready"
-          else
-            echo "❌ Server startup timeout or failure"
-            echo "Checking server process..."
-            if ps -p $SERVER_PID > /dev/null; then
-              echo "Server process is still running (PID: $SERVER_PID)"
-            else
-              echo "Server process has exited"
-            fi
-            exit 1
-          fi
         working-directory: ComfyUI
 
       - name: Cache Playwright browsers
@@ -242,17 +223,15 @@ jobs:
           MAX_RETRIES=3
           SUCCESS=false
           
-          echo "Deploying to Cloudflare Pages (branch: ${{ steps.project-name.outputs.branch }})..."
-          
           while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
             
             if npx wrangler pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
               SUCCESS=true
-              echo "✅ Deployment successful on attempt $RETRY_COUNT"
+              echo "Deployment successful on attempt $RETRY_COUNT"
             else
-              echo "❌ Deployment failed on attempt $RETRY_COUNT"
+              echo "Deployment failed on attempt $RETRY_COUNT"
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
                 echo "Retrying in 10 seconds..."
                 sleep 10
@@ -268,16 +247,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Skip Cloudflare deployment for forks
-        id: skip-deployment
-        if: always() && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          echo "⚠️ Skipping Cloudflare Pages deployment for forked PR in this workflow"
-          echo "✅ The pull_request_target deployment workflow will handle deployment with secrets access"
-          echo "📋 The Playwright report is available as a workflow artifact"
-          echo "🚀 pull_request_target workflow will deploy to: https://${{ steps.project-name.outputs.branch }}.${{ steps.project-name.outputs.name }}.pages.dev"
-          echo "deployment-url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
-
       - name: Save deployment info for summary
         if: always()
         run: |
@@ -289,11 +258,9 @@ jobs:
             EXIT_CODE="1"
           fi
           
-          # Determine deployment URL based on whether it was deployed or skipped
+          # Determine deployment URL
           if [ "${{ steps.cloudflare-deploy.conclusion }}" = "success" ]; then
             DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
-          elif [ "${{ steps.skip-deployment.conclusion }}" = "success" ]; then
-            DEPLOYMENT_URL="${{ steps.skip-deployment.outputs.deployment-url }}"
           else
             # Fallback for unexpected cases
             DEPLOYMENT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -326,49 +293,11 @@ jobs:
           body: |
             ${{ steps.playwright.conclusion == 'success' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.conclusion == 'success' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ 
               steps.cloudflare-deploy.conclusion == 'success' && (steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name)) ||
-              steps.skip-deployment.outputs.deployment-url ||
               format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id)
             }})
 
-  trigger-deployment:
-    needs: playwright-tests
-    runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request'
-    permissions:
-      contents: read
-    steps:
-      - name: Trigger deployment workflow for cost optimization
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const prNumber = context.payload.pull_request.number;
-            const runId = context.runId;
-            const branchName = context.payload.pull_request.head.ref;
-            
-            console.log(`Triggering deployment workflow for PR #${prNumber}`);
-            console.log(`Run ID: ${runId}, Branch: ${branchName}`);
-            
-            try {
-              await github.rest.repos.createDispatchEvent({
-                owner,
-                repo,
-                event_type: 'playwright-tests-completed',
-                client_payload: {
-                  run_id: runId.toString(),
-                  pr_number: prNumber,
-                  branch_name: branchName,
-                  trigger_source: 'cost-optimized-webhook'
-                }
-              });
-              console.log('✅ Successfully triggered deployment workflow via webhook');
-            } catch (error) {
-              console.error('❌ Failed to trigger deployment workflow:', error);
-              // Don't fail the job if dispatch fails
-            }
-
   comment-summary:
-    needs: [playwright-tests, trigger-deployment]
+    needs: playwright-tests
     runs-on: ubuntu-latest
     if: always() && github.event_name == 'pull_request'
     permissions:
