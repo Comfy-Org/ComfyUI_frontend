@@ -288,6 +288,9 @@ importers:
       unplugin-vue-components:
         specifier: ^0.28.0
         version: 0.28.0(@babel/parser@7.27.2)(rollup@4.22.4)(vue@3.5.13(typescript@5.9.2))
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
       vite:
         specifier: ^5.4.19
         version: 5.4.19(@types/node@20.14.10)(terser@5.39.2)
