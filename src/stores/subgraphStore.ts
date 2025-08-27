@@ -137,7 +137,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   const typePrefix = 'SubgraphBlueprint.'
   const subgraphDefCache = ref<Map<string, ComfyNodeDefImpl>>(new Map())
   const canvasStore = useCanvasStore()
-  const dialogService = useDialogService()
   const subgraphBlueprints = computed(() => [
     ...subgraphDefCache.value.values()
   ])
@@ -160,7 +159,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const res = (
       await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
     ).filter((f) => f.path.endsWith('.json'))
-    await Promise.allSettled(res.map(loadBlueprint))
+    const settled = await Promise.allSettled(res.map(loadBlueprint))
+    settled
+      .filter((i) => 'reason' in i)
+      .forEach(({ reason }) =>
+        console.error('Failed to load subgraph blueprint', reason)
+      )
   }
   function convertToNodeDef(workflow: LoadedComfyWorkflow): ComfyNodeDefImpl {
     const name = workflow.filename
@@ -194,8 +198,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
   async function publishSubgraph() {
     const canvas = canvasStore.getCanvas()
-    const graph = canvas.subgraph ?? canvas.graph
-    if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
     const subgraphNode = [...canvas.selectedItems][0]
     if (
       canvas.selectedItems.size != 1 ||
@@ -220,7 +222,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       definitions: { subgraphs }
     }
     //prompt name
-    const name = await dialogService.prompt({
+    const name = await useDialogService().prompt({
       title: t('subgraphStore.saveBlueprint'),
       message: t('subgraphStore.blueprintName') + ':',
       defaultValue: subgraphNode.title
@@ -238,7 +240,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       modified: Date.now()
     })
     workflow.originalContent = JSON.stringify(workflowData)
-    const loadedWorkflow = await workflow.load() //NOTE: Async, but not awaited
+    const loadedWorkflow = await workflow.load()
     await workflow.save()
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
