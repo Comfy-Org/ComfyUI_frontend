@@ -265,7 +265,7 @@ The project supports three types of icons, all with automatic imports (no manual
 2. **Iconify Icons** - 200,000+ icons from various libraries: `<i-lucide:settings />`, `<i-mdi:folder />`
 3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
 
-Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Custom icons are stored in `src/assets/icons/custom/`.
+Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Custom icons are stored in `src/assets/icons/custom/` and processed by `build/customIconCollection.ts` with automatic validation.
 
 For detailed instructions and code examples, see [src/assets/icons/README.md](src/assets/icons/README.md).
 

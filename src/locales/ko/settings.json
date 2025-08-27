@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "캔버스 내비게이션 모드",
     "options": {
-      "Left-Click Pan (Legacy)": "왼쪽 클릭 이동(레거시)",
+      "Drag Navigation": "드래그 내비게이션",
       "Standard (New)": "표준(신규)"
     }
   },

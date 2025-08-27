@@ -25,8 +25,25 @@ jobs:
           node-version: lts/*
           cache: 'npm'
 
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+          key: update-manager-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            update-manager-tools-cache-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Cache ComfyUI-Manager repository
+        uses: actions/cache@v4
+        with:
+          path: ComfyUI-Manager
+          key: comfyui-manager-repo-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            comfyui-manager-repo-${{ runner.os }}-
 
       - name: Checkout ComfyUI-Manager repository
         uses: actions/checkout@v4

@@ -25,6 +25,21 @@ jobs:
           node-version: 'lts/*'
           cache: 'npm'
 
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            .eslintcache
+            tsconfig.tsbuildinfo
+            .prettierCache
+            .knip-cache
+          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
+          restore-keys: |
+            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            lint-format-cache-${{ runner.os }}-
+            ci-tools-cache-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
 
@@ -60,6 +75,7 @@ jobs:
 
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
@@ -72,6 +88,7 @@ jobs:
 
       - name: Comment on PR about manual fix needed
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |

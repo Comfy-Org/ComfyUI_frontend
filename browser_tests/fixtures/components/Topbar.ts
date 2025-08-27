@@ -65,6 +65,7 @@ export class Topbar {
   }
 
   async openTopbarMenu() {
+    await this.page.waitForTimeout(1000)
     await this.page.locator('.comfyui-logo-wrapper').click()
     const menu = this.page.locator('.comfy-command-menu')
     await menu.waitFor({ state: 'visible' })

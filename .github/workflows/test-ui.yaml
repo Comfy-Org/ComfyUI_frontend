@@ -40,6 +40,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: 'npm'
+          cache-dependency-path: 'ComfyUI_frontend/package-lock.json'
 
       - name: Get current time
         id: current-time
@@ -47,6 +49,7 @@ jobs:
 
       - name: Comment PR - Tests Started
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -63,6 +66,18 @@ jobs:
 
             ---
             *This comment will be updated when tests complete*
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ComfyUI_frontend/.cache
+            ComfyUI_frontend/tsconfig.tsbuildinfo
+          key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ hashFiles('ComfyUI_frontend/src/**/*.{ts,vue,js}', 'ComfyUI_frontend/*.config.*') }}
+          restore-keys: |
+            playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
+            playwright-setup-cache-${{ runner.os }}-
+            playwright-tools-cache-${{ runner.os }}-
 
       - name: Build ComfyUI_frontend
         run: |
@@ -117,6 +132,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Get current time
         id: current-time
@@ -134,6 +150,7 @@ jobs:
 
       - name: Comment PR - Browser Test Started
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -158,9 +175,21 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-${{ matrix.browser }}
+          restore-keys: |
+            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/package-lock.json') }}-
+            playwright-browsers-${{ runner.os }}-
+
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
@@ -177,11 +206,36 @@ jobs:
       - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
         id: cloudflare-deploy
         if: always()
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}
+        continue-on-error: true
+        run: |
+          # Retry logic for wrangler deploy (3 attempts)
+          RETRY_COUNT=0
+          MAX_RETRIES=3
+          SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
+            
+            if npx wrangler pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
+              SUCCESS=true
+              echo "Deployment successful on attempt $RETRY_COUNT"
+            else
+              echo "Deployment failed on attempt $RETRY_COUNT"
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "Retrying in 10 seconds..."
+                sleep 10
+              fi
+            fi
+          done
+          
+          if [ $SUCCESS = false ]; then
+            echo "All deployment attempts failed"
+            exit 1
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Save deployment info for summary
         if: always()
@@ -211,6 +265,7 @@ jobs:
 
       - name: Comment PR - Browser Test Complete
         if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -296,6 +351,7 @@ jobs:
           fi
 
       - name: Comment PR - Tests Complete
+        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
