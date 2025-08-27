@@ -6,7 +6,8 @@
  */
 import { onUnmounted } from 'vue'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { type SlotPositionContext } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { registerNodeSlots } from '@/renderer/core/layout/slots/register'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
@@ -59,7 +60,12 @@ export function useSlotLayoutSync() {
    * Start slot layout sync with full event-driven functionality
    * @param canvas LiteGraph canvas instance
    */
-  function start(canvas: any): void {
+  function start(canvas: LGraphCanvas): void {
+    // When Vue nodes are enabled, slot DOM registers exact positions.
+    // Skip calculated registration to avoid conflicts.
+    if (LiteGraph.vueNodesMode) {
+      return
+    }
     const graph = canvas?.graph
     if (!graph) return
 

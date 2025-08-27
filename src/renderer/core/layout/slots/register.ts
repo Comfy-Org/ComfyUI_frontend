@@ -15,6 +15,8 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 
+import { getSlotKey } from './SlotIdentifier'
+
 /**
  * Register slot layout with the layout store for hit testing
  * @param nodeId The node ID
@@ -28,7 +30,7 @@ export function registerSlotLayout(
   isInput: boolean,
   position: Point
 ): void {
-  const slotKey = `${nodeId}-${isInput ? 'in' : 'out'}-${slotIndex}`
+  const slotKey = getSlotKey(nodeId, slotIndex, isInput)
 
   // Calculate bounds for the slot using LiteGraph's standard slot height
   const slotSize = LiteGraph.NODE_SLOT_HEIGHT

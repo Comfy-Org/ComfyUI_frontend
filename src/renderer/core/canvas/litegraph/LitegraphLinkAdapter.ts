@@ -32,11 +32,7 @@ import {
   type Point,
   type RenderMode
 } from '@/renderer/core/canvas/PathRenderer'
-import {
-  type SlotPositionContext,
-  calculateInputSlotPos,
-  calculateOutputSlotPos
-} from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 
@@ -108,12 +104,12 @@ export class LitegraphLinkAdapter {
     }
 
     // Get positions using layout tree data if available
-    const startPos = this.getSlotPosition(
+    const startPos = getSlotPosition(
       sourceNode,
       link.origin_slot,
       false // output
     )
-    const endPos = this.getSlotPosition(
+    const endPos = getSlotPosition(
       targetNode,
       link.target_slot,
       true // input
@@ -504,42 +500,6 @@ export class LitegraphLinkAdapter {
   }
 
   /**
-   * Get slot position using layout tree if available, fallback to node's position
-   */
-  private getSlotPosition(
-    node: LGraphNode,
-    slotIndex: number,
-    isInput: boolean
-  ): ReadOnlyPoint {
-    // Try to get position from layout tree
-    const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
-
-    if (nodeLayout) {
-      // Create context from layout tree data
-      const context: SlotPositionContext = {
-        nodeX: nodeLayout.position.x,
-        nodeY: nodeLayout.position.y,
-        nodeWidth: nodeLayout.size.width,
-        nodeHeight: nodeLayout.size.height,
-        collapsed: node.flags.collapsed || false,
-        collapsedWidth: node._collapsed_width,
-        slotStartY: node.constructor.slot_start_y,
-        inputs: node.inputs,
-        outputs: node.outputs,
-        widgets: node.widgets
-      }
-
-      // Use helper to calculate position
-      return isInput
-        ? calculateInputSlotPos(context, slotIndex)
-        : calculateOutputSlotPos(context, slotIndex)
-    }
-
-    // Fallback to node's own methods if layout not available
-    return isInput ? node.getInputPos(slotIndex) : node.getOutputPos(slotIndex)
-  }
-
-  /**
    * Render a link being dragged from a slot to mouse position
    * Used during link creation/reconnection
    */
@@ -559,7 +519,7 @@ export class LitegraphLinkAdapter {
     if (!fromNode) return
 
     // Get slot position using layout tree if available
-    const slotPos = this.getSlotPosition(
+    const slotPos = getSlotPosition(
       fromNode,
       fromSlotIndex,
       options.fromInput || false

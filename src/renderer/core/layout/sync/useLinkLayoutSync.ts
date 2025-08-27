@@ -10,18 +10,13 @@ import { onUnmounted } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { ReadOnlyPoint } from '@/lib/litegraph/src/interfaces'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/LitegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/LitegraphLinkAdapter'
-import {
-  type SlotPositionContext,
-  calculateInputSlotPos,
-  calculateOutputSlotPos
-} from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 
@@ -37,39 +32,6 @@ export function useLinkLayoutSync() {
   let adapter: LitegraphLinkAdapter | null = null
   let unsubscribeLayoutChange: (() => void) | null = null
   let restoreHandlers: (() => void) | null = null
-
-  /**
-   * Get slot position using layout tree if available, fallback to node's position
-   */
-  function getSlotPosition(
-    node: LGraphNode,
-    slotIndex: number,
-    isInput: boolean
-  ): ReadOnlyPoint {
-    const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
-
-    if (nodeLayout) {
-      const context: SlotPositionContext = {
-        nodeX: nodeLayout.position.x,
-        nodeY: nodeLayout.position.y,
-        nodeWidth: nodeLayout.size.width,
-        nodeHeight: nodeLayout.size.height,
-        collapsed: node.flags.collapsed || false,
-        collapsedWidth: node._collapsed_width,
-        slotStartY: node.constructor.slot_start_y,
-        inputs: node.inputs,
-        outputs: node.outputs,
-        widgets: node.widgets
-      }
-
-      return isInput
-        ? calculateInputSlotPos(context, slotIndex)
-        : calculateOutputSlotPos(context, slotIndex)
-    }
-
-    // Fallback to node's own methods if layout not available
-    return isInput ? node.getInputPos(slotIndex) : node.getOutputPos(slotIndex)
-  }
 
   /**
    * Build link render context from canvas properties
