@@ -200,21 +200,47 @@ echo "Last stable release: $LAST_STABLE"
    PR data: [contents of prs-${NEW_VERSION}.json]
    ```
 
-3. **Generate GTM notification:**
+3. **Generate GTM notification using this EXACT Slack-compatible format:**
    ```bash
-   # Save to gtm-summary-${NEW_VERSION}.md based on analysis
-   # If GTM-worthy features exist, include them with testing instructions
-   # If not, note that this is a maintenance/bug fix release
-   
-   # Check if notification is needed
-   if grep -q "No marketing-worthy features" gtm-summary-${NEW_VERSION}.md; then
-     echo "✅ No GTM notification needed for this release"
-     echo "📄 Summary saved to: gtm-summary-${NEW_VERSION}.md"
-   else
+   # Only create file if GTM-worthy features exist:
+   if [ "$GTM_FEATURES_FOUND" = "true" ]; then
+     cat > gtm-summary-${NEW_VERSION}.md << 'EOF'
+   *GTM Summary: ComfyUI Frontend v${NEW_VERSION}*
+
+   _Disclaimer: the below is AI-generated_
+
+   1. *[Feature Title]* (#[PR_NUMBER])
+       * *Author:* @[username]
+       * *Demo:* [Media Link or "No demo available"]
+       * *Why users should care:* [One compelling sentence]
+       * *Key Features:*
+           * [Feature detail 1]
+           * [Feature detail 2]
+
+   2. *[Feature Title]* (#[PR_NUMBER])
+       * *Author:* @[username]
+       * *Demo:* [Media Link]
+       * *Why users should care:* [One compelling sentence]
+       * *Key Features:*
+           * [Feature detail 1]
+           * [Feature detail 2]
+   EOF
      echo "📋 GTM summary saved to: gtm-summary-${NEW_VERSION}.md"
      echo "📤 Share this file in #gtm channel to notify the team"
+   else
+     echo "✅ No GTM notification needed for this release"
+     echo "📄 No gtm-summary file created - no marketing-worthy features"
    fi
    ```
+
+   **CRITICAL Formatting Requirements:**
+   - Use single asterisk (*) for emphasis, NOT double (**)
+   - Use underscore (_) for italics
+   - Use 4 spaces for indentation (not tabs)
+   - Convert author names to @username format (e.g., "John Smith" → "@john")
+   - No section headers (#), no code language specifications
+   - Always include "Disclaimer: the below is AI-generated"
+   - Keep content minimal - no testing instructions, additional sections, etc.
 
 ### Step 6: Version Preview
 
