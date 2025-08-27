@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -58,6 +59,9 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
 
 // Helper function to mount component with required setup
 const mountComponent = (options: { captureError?: boolean } = {}) => {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -68,7 +72,7 @@ const mountComponent = (options: { captureError?: boolean } = {}) => {
 
   const config: any = {
     global: {
-      plugins: [PrimeVue, i18n],
+      plugins: [pinia, PrimeVue, i18n],
       mocks: {
         $t: (key: string) => key // Mock i18n translation
       }
@@ -164,6 +168,10 @@ describe('ManagerProgressFooter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Create new pinia instance for each test
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
     // Reset task logs
     mockTaskLogs.length = 0
     mockComfyManagerStore.taskLogs = mockTaskLogs
