@@ -1,19 +1,17 @@
 name: Update Locales
 
 on:
+  # Manual dispatch for urgent translation updates  
+  workflow_dispatch:
+  # Only trigger on PRs to main/master - additional branch filtering in job condition
   pull_request:
-    branches: [ main, master, dev* ]
-    paths-ignore:
-      - '.github/**'
-      - '.husky/**'
-      - '.vscode/**'
-      - 'browser_tests/**'
-      - 'tests-ui/**'
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
 
 jobs:
   update-locales:
-    # Don't run on fork PRs
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Branch detection: Only run for manual dispatch or version-bump-* branches from main repo
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-'))
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v3
