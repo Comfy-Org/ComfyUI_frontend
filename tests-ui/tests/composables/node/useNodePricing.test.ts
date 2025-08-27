@@ -1561,6 +1561,14 @@ describe('useNodePricing', () => {
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('Token-based')
       })
+
+      it('should return static price for GeminiImageNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('GeminiImageNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.03 per 1K tokens')
+      })
     })
 
     describe('Additional RunwayML edge cases', () => {
