@@ -14,28 +14,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Cache tool outputs
         uses: actions/cache@v4
         with:
           path: |
             .cache
-          key: electron-types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          key: electron-types-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             electron-types-tools-cache-${{ runner.os }}-
 
       - name: Update electron types
-        run: npm install @comfyorg/comfyui-electron-types@latest
+        run: pnpm install @comfyorg/comfyui-electron-types@latest
 
       - name: Get new version
         id: get-version
         run: |
-          NEW_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./package-lock.json')).packages['node_modules/@comfyorg/comfyui-electron-types'].version)")
+          NEW_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./pnpm-lock.yaml')).packages['node_modules/@comfyorg/comfyui-electron-types'].version)")
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
