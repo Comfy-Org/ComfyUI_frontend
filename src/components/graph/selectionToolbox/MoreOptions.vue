@@ -32,7 +32,6 @@
       </div>
     </Popover>
 
-    <!-- Submenus using SubmenuPopover component -->
     <SubmenuPopover
       v-for="option in menuOptionsWithSubmenu"
       :key="`submenu-${option.label}`"
@@ -49,7 +48,6 @@ import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-// Import composables
 import {
   type MenuOption,
   type SubMenuOption,
@@ -58,7 +56,6 @@ import {
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
-// Import components
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
 
@@ -66,15 +63,11 @@ const popover = ref<InstanceType<typeof Popover>>()
 const submenuRefs = ref<Record<string, InstanceType<typeof SubmenuPopover>>>({})
 const currentSubmenu = ref<string | null>(null)
 
-// Initialize composables
 const { menuOptions, menuOptionsWithSubmenu } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 
-// Get minimap styles for consistent background colors
 const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
-
-// All menu configuration is now in the useMoreOptionsMenu composable
 
 const toggle = (event: Event) => {
   popover.value?.toggle(event)
@@ -120,7 +113,6 @@ const handleSubmenuClick = (subOption: SubMenuOption) => {
   hide()
 }
 
-// Function to set submenu refs dynamically
 const setSubmenuRef = (key: string, el: any) => {
   if (el) {
     submenuRefs.value[key] = el

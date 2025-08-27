@@ -38,7 +38,6 @@ const canvasStore = useCanvasStore()
 const clickRef = ref(0)
 
 const isByPassed = computed<boolean>(() => {
-  // had to do this hack cos it wasnt reactive
   void clickRef.value
   if (canvasStore.selectedItems.length !== 1) return false
   const item = canvasStore.selectedItems[0] as LGraphNode

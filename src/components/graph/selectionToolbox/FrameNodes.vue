@@ -18,18 +18,15 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
-import { t } from '@/i18n'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
 
 const canvasStore = useCanvasStore()
 const titleEditorStore = useTitleEditorStore()
 const settingStore = useSettingStore()
-const toastStore = useToastStore()
 
 const hasSelectedItems = computed(() => {
   return canvasStore.selectedItems.length > 0
@@ -38,12 +35,6 @@ const hasSelectedItems = computed(() => {
 const frameNodes = () => {
   const { canvas } = app
   if (!canvas.selectedItems?.size) {
-    toastStore.add({
-      severity: 'error',
-      summary: t('toastMessages.nothingToGroup'),
-      detail: t('toastMessages.pleaseSelectNodesToGroup'),
-      life: 3000
-    })
     return
   }
 

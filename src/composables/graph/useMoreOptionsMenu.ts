@@ -1,6 +1,5 @@
 import { type Component, computed, markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
-// Import icons
 import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
 import ILucideAlignStartHorizontal from '~icons/lucide/align-start-horizontal'
 import ILucideBan from '~icons/lucide/ban'
@@ -70,7 +69,6 @@ export interface NodeSelectionState {
  * Composable for managing the More Options menu configuration
  */
 export function useMoreOptionsMenu() {
-  // Initialize composables
   const { t } = useI18n()
   const canvasStore = useCanvasStore()
   const {
@@ -98,7 +96,6 @@ export function useMoreOptionsMenu() {
     runBranch
   } = useNodeInfo()
 
-  // Info button functionality (same as InfoButton.vue)
   const nodeDefStore = useNodeDefStore()
   const sidebarTabStore = useSidebarTabStore()
   const nodeHelpStore = useNodeHelpStore()
@@ -120,7 +117,6 @@ export function useMoreOptionsMenu() {
     nodeHelpStore.openHelp(def)
   }
 
-  // Computed properties to check current state of selected items
   const selectedNodes = computed(() => {
     return canvasStore.selectedItems.filter((item) =>
       isLGraphNode(item)
@@ -133,19 +129,16 @@ export function useMoreOptionsMenu() {
     )
   })
 
-  // Check if we have an image node selected
   const hasImageNode = computed(() => {
     if (selectedNodes.value.length !== 1) return false
     const node = selectedNodes.value[0]
     return node.imgs && node.imgs.length > 0
   })
 
-  // Check if we have multiple nodes selected
   const hasMultipleNodes = computed(() => {
     return selectedNodes.value.length > 1
   })
 
-  // Check if we have a single node selected
   const hasSingleNode = computed(() => {
     return selectedNodes.value.length === 1
   })
@@ -162,7 +155,6 @@ export function useMoreOptionsMenu() {
     return { collapsed, pinned, bypassed }
   })
 
-  // Image node operations
   const openMaskEditor = () => {
     const commandStore = useCommandStore()
     void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
@@ -184,7 +176,6 @@ export function useMoreOptionsMenu() {
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
 
-    // Use canvas to copy image to clipboard
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -199,8 +190,8 @@ export function useMoreOptionsMenu() {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob })
         ])
-      } catch {
-        // Silently fail - clipboard operations may not be supported
+      } catch (error) {
+        console.log('Failed to copy image:', error)
       }
     }, 'image/png')
   }
@@ -225,31 +216,27 @@ export function useMoreOptionsMenu() {
       document.body.appendChild(a)
       a.click()
 
-      // Clean up immediately
       requestAnimationFrame(() => {
         if (document.body.contains(a)) {
           document.body.removeChild(a)
         }
       })
-    } catch {
-      // Silently fail - URL construction or download may not be supported
+    } catch (error) {
+      console.error('Failed to save image:', error)
     }
   }
 
-  // Properties panel
   const showPropertiesPanel = () => {
     const node = selectedNodes.value[0]
     if (!node) return
     canvasStore.canvas?.showShowNodePanel(node)
   }
 
-  // Convert to group nodes
   const convertToGroupNodes = () => {
     const commandStore = useCommandStore()
     void commandStore.execute('Comfy.GroupNode.ConvertSelectedNodesToGroupNode')
   }
 
-  // Create align submenu options
   const alignSubmenu = computed((): SubMenuOption[] =>
     alignOptions.map((align) => ({
       label: align.localizedName,
@@ -258,7 +245,6 @@ export function useMoreOptionsMenu() {
     }))
   )
 
-  // Create distribute submenu options
   const distributeSubmenu = computed((): SubMenuOption[] =>
     distributeOptions.map((distribute) => ({
       label: distribute.localizedName,
@@ -267,7 +253,6 @@ export function useMoreOptionsMenu() {
     }))
   )
 
-  // Create shape submenu options (no icons)
   const shapeSubmenu = computed((): SubMenuOption[] =>
     shapeOptions.map((shape) => ({
       label: shape.localizedName,
@@ -275,7 +260,6 @@ export function useMoreOptionsMenu() {
     }))
   )
 
-  // Create color submenu options using colorOptions from useNodeCustomization
   const colorSubmenu = computed((): SubMenuOption[] => {
     return colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
@@ -292,7 +276,6 @@ export function useMoreOptionsMenu() {
     const hasSubgraphsSelected = hasSubgraphs.value
     const options: MenuOption[] = []
 
-    // Image node specific options (only for single image node)
     if (hasImageNode.value) {
       options.push(
         {
@@ -320,7 +303,6 @@ export function useMoreOptionsMenu() {
       )
     }
 
-    // Common options for all selections
     options.push(
       {
         label: t('contextMenu.Rename'),
@@ -367,7 +349,6 @@ export function useMoreOptionsMenu() {
       }
     )
 
-    // Properties panel for single nodes (moved to middle of menu)
     if (hasSingleNode.value) {
       options.push({
         label: t('contextMenu.Properties Panel'),

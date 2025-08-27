@@ -9,36 +9,30 @@
     }"
     @wheel="canvasInteractions.handleWheel"
   >
-    <!-- Info Group - single subgraph/node only -->
     <InfoButton v-if="showInfoButton" />
     <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
 
-    <!-- Primary Actions Group -->
     <ColorPickerButton v-if="showColorPicker" />
     <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
     <FrameNodes v-if="showFrameNodes" />
     <BookmarkButton v-if="showBookmark" />
     <VerticalDivider v-if="showAnyPrimaryActions && showAnyControlActions" />
 
-    <!-- Control Group -->
     <BypassButton v-if="showBypass" />
     <PinButton v-if="showPin" />
     <VerticalDivider
       v-if="showAnyControlActions && showAnySpecializedActions"
     />
 
-    <!-- Specialized Group -->
     <Load3DViewerButton v-if="showLoad3DViewer" />
     <MaskEditorButton v-if="showMaskEditor" />
     <VerticalDivider v-if="showLoad3DViewer && showMaskEditor" />
 
-    <!-- Execution Group -->
     <DeleteButton v-if="showDelete" />
     <RefreshSelectionButton v-if="showRefresh" />
     <ExecuteButton v-if="showExecute" />
     <VerticalDivider v-if="showAnyExecutionActions && hasExtensionButtons" />
 
-    <!-- Extension Commands -->
     <ExtensionCommandButton
       v-for="command in extensionToolboxCommands"
       :key="command.id"
@@ -46,7 +40,6 @@
     />
     <VerticalDivider v-if="hasExtensionButtons" />
 
-    <!-- Always show more options last -->
     <MoreOptions />
   </Panel>
 </template>
@@ -109,7 +102,6 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })
 
-// Selection type detection
 const hasAnySelection = computed(() => canvasStore.selectedItems.length > 0)
 const hasSingleSelection = computed(
   () => canvasStore.selectedItems.length === 1
@@ -136,40 +128,28 @@ const isSingleImageNode = computed(() => {
   return isLGraphNode(item) && isImageNode(item)
 })
 
-// Individual button visibility based on selection types
-// single subgraph toollist = [info,color,expand,bookmark,ban,refresh,play,options]
-// single node toolist = [info,color,expand,ban,refresh,play,options]
-// single image node toolist = [info, color, expand, mask,ban,refresh, play options]
-// multiple nodes toollist = [color, frame, expand,ban,play,options]
-
-// Info Group
 const showInfoButton = computed(
   () => isSingleNode.value || isSingleSubgraph.value
 )
 
-// Primary Actions Group
-const showColorPicker = computed(() => hasAnySelection.value) // All scenarios
-const showConvertToSubgraph = computed(() => hasAnySelection.value) // All scenarios (expand/shrink)
-const showFrameNodes = computed(() => hasMultipleSelection.value) // Only multiple nodes
-const showBookmark = computed(() => isSingleSubgraph.value) // Single selections only
+const showColorPicker = computed(() => hasAnySelection.value)
+const showConvertToSubgraph = computed(() => hasAnySelection.value)
+const showFrameNodes = computed(() => hasMultipleSelection.value)
+const showBookmark = computed(() => isSingleSubgraph.value)
 
-// Control Group
 const showBypass = computed(
   () =>
     isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
-) // All scenarios (ban)
-const showPin = computed(() => hasAnySelection.value) // All scenarios
+)
+const showPin = computed(() => hasAnySelection.value)
 
-// Specialized Group
-const showLoad3DViewer = computed(() => hasAnySelection.value) // Shows when relevant (has own logic)
-const showMaskEditor = computed(() => isSingleImageNode.value) // Only single image nodes
+const showLoad3DViewer = computed(() => hasAnySelection.value)
+const showMaskEditor = computed(() => isSingleImageNode.value)
 
-// Execution Group
-const showDelete = computed(() => hasAnySelection.value) // All scenarios
-const showRefresh = computed(() => hasAnySelection.value) // All scenarios
-const showExecute = computed(() => hasAnySelection.value) // All scenarios (play)
+const showDelete = computed(() => hasAnySelection.value)
+const showRefresh = computed(() => hasAnySelection.value)
+const showExecute = computed(() => hasAnySelection.value)
 
-// Group visibility for intelligent divider logic
 const showAnyPrimaryActions = computed(
   () =>
     showColorPicker.value ||

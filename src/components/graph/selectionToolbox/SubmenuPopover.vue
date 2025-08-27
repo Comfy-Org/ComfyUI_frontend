@@ -9,7 +9,6 @@
     unstyled
     :pt="submenuPt"
   >
-    <!-- Use single column for colors, flex column for shapes -->
     <div
       :class="
         isColorSubmenu
@@ -28,13 +27,11 @@
         :title="subOption.label"
         @click="handleSubmenuClick(subOption)"
       >
-        <!-- Colors show as circles only -->
         <div
           v-if="subOption.color"
           class="w-5 h-5 rounded-full border border-gray-300 dark-theme:border-zinc-600"
           :style="{ backgroundColor: subOption.color }"
         />
-        <!-- Shapes show text with checkmark if selected -->
         <template v-else-if="!subOption.color">
           <ILucideCheck
             v-if="isShapeSelected(subOption)"
@@ -78,10 +75,8 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// Get current shape to check selection
 const { getCurrentShape } = useNodeCustomization()
 
-// Expose popover ref and methods
 const popover = ref<InstanceType<typeof Popover>>()
 
 const show = (event: Event, target?: HTMLElement) => {
@@ -101,18 +96,15 @@ const handleSubmenuClick = (subOption: SubMenuOption) => {
   emit('submenu-click', subOption)
 }
 
-// Check if a shape option is currently selected
 const isShapeSelected = (subOption: SubMenuOption): boolean => {
-  if (subOption.color) return false // Colors don't have selection state
+  if (subOption.color) return false
 
   const currentShape = getCurrentShape()
   if (!currentShape) return false
 
-  // Compare using the localized name directly
   return currentShape.localizedName === subOption.label
 }
 
-// Check if this is a color submenu (all items have colors, no icons)
 const isColorSubmenu = computed(() => {
   return (
     props.option.submenu &&
