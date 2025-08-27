@@ -115,7 +115,9 @@ const pt = computed(() => ({
       'flex items-center justify-between gap-3 px-3 py-2',
       'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
       // Selected state + check icon
-      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected }
+      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected },
+      // Add focus state for keyboard navigation
+      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.focused }
     ]
   }),
   optionLabel: {
