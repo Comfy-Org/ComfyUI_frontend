@@ -1,5 +1,7 @@
 <template>
-  <div class="relative w-64 h-64 rounded-t-lg overflow-hidden select-none">
+  <div
+    class="relative w-full aspect-square rounded-t-lg overflow-hidden select-none"
+  >
     <div
       v-if="!error"
       ref="contentRef"

@@ -118,7 +118,8 @@ export const useDialogService = () => {
       headerComponent: TemplateWorkflowsDialogHeader,
       dialogComponentProps: {
         pt: {
-          content: { class: '!px-0 overflow-y-hidden' }
+          root: { style: 'width: 90vw; height: 85vh; max-width: 1600px;' },
+          content: { class: '!px-0 overflow-x-hidden overflow-y-hidden' }
         }
       },
       props
@@ -131,14 +132,18 @@ export const useDialogService = () => {
       modal: true,
       closable: false,
       pt: {
-        content: { class: '!px-0' },
-        root: { style: 'width: 90vw; max-width: 1400px; height: 85vh;' }
+        content: { class: '!px-0 overflow-hidden' },
+        // Let internal layout manage its own max-width; prevent child from exceeding and causing scrollWidth > clientWidth
+        root: {
+          style: 'width: 90vw; height: 85vh; max-width: 1400px; display: flex;'
+        }
       }
     }
 
     showLayoutDialog({
       key: 'global-workflow-template-selector',
       component: WorkflowTemplateSelector,
+      // Pass through sizing hint so inner layout adapts to parent rather than viewport
       props: {
         onClose: () =>
           dialogStore.closeDialog({ key: 'global-workflow-template-selector' })

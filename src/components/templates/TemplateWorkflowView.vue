@@ -57,6 +57,7 @@ import { useLocalStorage } from '@vueuse/core'
 import DataView from 'primevue/dataview'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
 import TemplateWorkflowCardSkeleton from '@/components/templates/TemplateWorkflowCardSkeleton.vue'
 import TemplateWorkflowList from '@/components/templates/TemplateWorkflowList.vue'
@@ -67,7 +68,7 @@ import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 const { t } = useI18n()
 
-const { title, sourceModule, categoryTitle, loading, templates } = defineProps<{
+const { sourceModule, categoryTitle, loading, templates } = defineProps<{
   title: string
   sourceModule: string
   categoryTitle: string
@@ -85,8 +86,7 @@ const loadTrigger = ref<HTMLElement | null>(null)
 
 const templatesRef = computed(() => templates || [])
 
-const { searchQuery, filteredTemplates, filteredCount } =
-  useTemplateFiltering(templatesRef)
+const { searchQuery, filteredTemplates } = useTemplateFiltering(templatesRef)
 
 // When searching, show all results immediately without pagination
 // When not searching, use lazy pagination

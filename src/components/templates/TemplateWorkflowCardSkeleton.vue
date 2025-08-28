@@ -1,14 +1,14 @@
 <template>
   <Card
-    class="w-64 template-card rounded-2xl overflow-hidden shadow-elevation-2 dark-theme:bg-dark-elevation-1.5 h-full"
+    class="w-full template-card rounded-2xl overflow-hidden shadow-elevation-2 dark-theme:bg-dark-elevation-1.5 h-full"
     :pt="{
       body: { class: 'p-0 h-full flex flex-col' }
     }"
   >
     <template #header>
-      <div class="flex items-center justify-center">
-        <div class="relative overflow-hidden rounded-t-lg">
-          <Skeleton width="16rem" height="12rem" />
+      <div class="w-full">
+        <div class="relative w-full aspect-square overflow-hidden rounded-t-lg">
+          <Skeleton class="w-full h-full" />
         </div>
       </div>
     </template>

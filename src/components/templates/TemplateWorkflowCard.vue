@@ -2,15 +2,15 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-elevation-2 dark-theme:bg-dark-elevation-1.5 h-full"
+    class="w-full template-card rounded-2xl overflow-hidden cursor-pointer shadow-elevation-2 dark-theme:bg-dark-elevation-1.5 h-full"
     :pt="{
       body: { class: 'p-0 h-full flex flex-col' }
     }"
     @click="$emit('loadWorkflow', template.name)"
   >
     <template #header>
-      <div class="flex items-center justify-center">
-        <div class="relative overflow-hidden rounded-t-lg">
+      <div class="w-full">
+        <div class="relative w-full overflow-hidden rounded-t-lg">
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
           </template>
@@ -62,14 +62,26 @@
       </div>
     </template>
     <template #content>
-      <div class="flex items-center px-4 py-3">
-        <div class="flex-1 flex flex-col">
-          <h3 class="line-clamp-2 text-lg font-normal mb-0" :title="title">
+      <div class="flex flex-col px-4 py-3 flex-1">
+        <div class="flex-1">
+          <h3 class="line-clamp-2 text-lg font-normal mb-1" :title="title">
             {{ title }}
           </h3>
-          <p class="line-clamp-2 text-sm text-muted grow" :title="description">
+          <p class="line-clamp-2 text-sm text-muted mb-3" :title="description">
             {{ description }}
           </p>
+        </div>
+        <div
+          v-if="template.tags && template.tags.length > 0"
+          class="flex flex-wrap gap-1"
+        >
+          <span
+            v-for="tag in template.tags"
+            :key="tag"
+            class="px-2 py-1 text-xs bg-surface-100 dark-theme:bg-surface-800 text-surface-700 dark-theme:text-surface-300 rounded-full"
+          >
+            {{ tag }}
+          </span>
         </div>
       </div>
     </template>

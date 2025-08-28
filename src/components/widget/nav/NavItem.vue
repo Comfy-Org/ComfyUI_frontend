@@ -18,24 +18,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-// Import only the icons used in getCategoryIcon
-import ILucideList from '~icons/lucide/list'
-import ILucideGraduationCap from '~icons/lucide/graduation-cap'
-import ILucideImage from '~icons/lucide/image'
-import ILucideFilm from '~icons/lucide/film'
 import ILucideBox from '~icons/lucide/box'
-import ILucideVolume2 from '~icons/lucide/volume-2'
-import ILucideHandCoins from '~icons/lucide/hand-coins'
-import ILucideMessageSquareText from '~icons/lucide/message-square-text'
-import ILucideZap from '~icons/lucide/zap'
 import ILucideCommand from '~icons/lucide/command'
 import ILucideDumbbell from '~icons/lucide/dumbbell'
-import ILucidePuzzle from '~icons/lucide/puzzle'
-import ILucideWrench from '~icons/lucide/wrench'
-import ILucideMaximize2 from '~icons/lucide/maximize-2'
-import ILucideSlidersHorizontal from '~icons/lucide/sliders-horizontal'
-import ILucideLayoutGrid from '~icons/lucide/layout-grid'
+import ILucideFilm from '~icons/lucide/film'
 import ILucideFolder from '~icons/lucide/folder'
+import ILucideGraduationCap from '~icons/lucide/graduation-cap'
+import ILucideHandCoins from '~icons/lucide/hand-coins'
+import ILucideImage from '~icons/lucide/image'
+import ILucideLayoutGrid from '~icons/lucide/layout-grid'
+// Import only the icons used in getCategoryIcon
+import ILucideList from '~icons/lucide/list'
+import ILucideMaximize2 from '~icons/lucide/maximize-2'
+import ILucideMessageSquareText from '~icons/lucide/message-square-text'
+import ILucidePuzzle from '~icons/lucide/puzzle'
+import ILucideSlidersHorizontal from '~icons/lucide/sliders-horizontal'
+import ILucideVolume2 from '~icons/lucide/volume-2'
+import ILucideWrench from '~icons/lucide/wrench'
+import ILucideZap from '~icons/lucide/zap'
 
 const { icon, active, onClick } = defineProps<{
   icon?: string
@@ -46,37 +46,37 @@ const { icon, active, onClick } = defineProps<{
 // Icon map matching getCategoryIcon function exactly
 const iconMap = {
   // Main categories
-  'list': ILucideList,
+  list: ILucideList,
   'graduation-cap': ILucideGraduationCap,
-  
+
   // Generation types
-  'image': ILucideImage,
-  'film': ILucideFilm,
-  'box': ILucideBox,
+  image: ILucideImage,
+  film: ILucideFilm,
+  box: ILucideBox,
   'volume-2': ILucideVolume2,
-  
+
   // API and models
   'hand-coins': ILucideHandCoins,
-  
+
   // LLMs and AI
   'message-square-text': ILucideMessageSquareText,
-  
+
   // Performance and hardware
-  'zap': ILucideZap,
-  'command': ILucideCommand,
-  
+  zap: ILucideZap,
+  command: ILucideCommand,
+
   // Training
-  'dumbbell': ILucideDumbbell,
-  
+  dumbbell: ILucideDumbbell,
+
   // Extensions and tools
-  'puzzle': ILucidePuzzle,
-  'wrench': ILucideWrench,
-  
+  puzzle: ILucidePuzzle,
+  wrench: ILucideWrench,
+
   // Fallbacks for common patterns
   'maximize-2': ILucideMaximize2,
   'sliders-horizontal': ILucideSlidersHorizontal,
   'layout-grid': ILucideLayoutGrid,
-  'folder': ILucideFolder
+  folder: ILucideFolder
 }
 
 const iconComponent = computed(() => {

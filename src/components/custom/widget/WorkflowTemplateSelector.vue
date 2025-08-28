@@ -1,6 +1,7 @@
 <template>
   <BaseWidgetLayout
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
+    class="workflow-template-selector-root"
   >
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems">
@@ -145,7 +146,6 @@
         }}
       </div>
     </template>
-
   </BaseWidgetLayout>
 </template>
 
@@ -160,7 +160,6 @@ import SingleSelect from '@/components/input/SingleSelect.vue'
 import TemplateWorkflowView from '@/components/templates/TemplateWorkflowView.vue'
 import BaseWidgetLayout from '@/components/widget/layout/BaseWidgetLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
-import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
@@ -324,11 +323,17 @@ const sortOptions = computed(() => [
   },
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
-    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Utilization (Low to High)'),
+    name: t(
+      'templateWorkflows.sort.vramLowToHigh',
+      'VRAM Utilization (Low to High)'
+    ),
     value: 'vram-low-to-high'
   },
   {
-    name: t('templateWorkflows.sort.modelSizeLowToHigh', 'Model Size (Low to High)'),
+    name: t(
+      'templateWorkflows.sort.modelSizeLowToHigh',
+      'Model Size (Low to High)'
+    ),
     value: 'model-size-low-to-high'
   },
   {
@@ -375,3 +380,18 @@ onMounted(async () => {
   isLoading.value = false
 })
 </script>
+
+<style>
+/* Ensure the workflow template selector fits within provided dialog without horizontal overflow */
+.workflow-template-selector-root.base-widget-layout {
+  width: 100% !important;
+  max-width: 1400px; /* matches dialog max-width */
+  height: 100% !important;
+  aspect-ratio: auto !important;
+}
+@media (min-width: 1600px) {
+  .workflow-template-selector-root.base-widget-layout {
+    max-width: 1600px;
+  }
+}
+</style>

@@ -8,7 +8,12 @@ export interface TemplateFilterOptions {
   selectedModels?: string[]
   selectedUseCases?: string[] // Now represents selected tags
   selectedLicenses?: string[]
-  sortBy?: 'default' | 'alphabetical' | 'newest' | 'vram-low-to-high' | 'model-size-low-to-high'
+  sortBy?:
+    | 'default'
+    | 'alphabetical'
+    | 'newest'
+    | 'vram-low-to-high'
+    | 'model-size-low-to-high'
 }
 
 export function useTemplateFiltering(
@@ -18,7 +23,13 @@ export function useTemplateFiltering(
   const selectedModels = ref<string[]>([])
   const selectedUseCases = ref<string[]>([])
   const selectedLicenses = ref<string[]>([])
-  const sortBy = ref<'default' | 'alphabetical' | 'newest' | 'vram-low-to-high' | 'model-size-low-to-high'>('default')
+  const sortBy = ref<
+    | 'default'
+    | 'alphabetical'
+    | 'newest'
+    | 'vram-low-to-high'
+    | 'model-size-low-to-high'
+  >('default')
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
