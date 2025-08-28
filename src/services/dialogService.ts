@@ -132,7 +132,7 @@ export const useDialogService = () => {
       modal: true,
       closable: false,
       pt: {
-        content: { class: '!px-0 overflow-hidden' },
+        content: { class: '!px-0 overflow-hidden h-full !py-0' },
         // Let internal layout manage its own max-width; prevent child from exceeding and causing scrollWidth > clientWidth
         root: {
           style: 'width: 90vw; height: 85vh; max-width: 1400px; display: flex;'
