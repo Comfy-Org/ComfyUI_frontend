@@ -576,4 +576,38 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Call parent serialize method
     return super.serialize()
   }
+  addProxyWidget() {
+    function linkedWidget(graph, nodeId="", widgetName) {
+      let g = graph
+      let n = undefined
+      for (let id of nodeId.split(':')) {
+	n = g?._nodes_by_id?.[id]
+	graph = n?.subgraph
+      }
+      if (!n) return
+      return n.widgets.find((w) => w.name === widgetName)
+    }
+    const overlay: object = {}
+    const handler = Object.fromEntries(['get', 'set'].map((s) => {
+      const func = function(t,p,r) {
+	if (s == 'get' && p == '_overlay')
+	  return overlay
+	if (s == 'get' && p == 'value')
+	  return linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).value
+	if (s == 'set' && p == 'value')
+	  return linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).value = r
+	if (s == 'get' && p == 'node')
+	  return linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).node
+	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled'].includes(p))
+	  t = overlay
+	else
+	  t = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
+	  if (!t)
+	    return//TODO: pass to overlay subitem to display a disconnected state
+	return Reflect[s](t,p,r)
+      }
+      return [s, func]
+    }))
+    this.widgets.push(new Proxy(overlay, handler))
+  }
 }
