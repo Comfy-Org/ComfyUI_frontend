@@ -773,11 +773,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'LiteGraph.Canvas.MinFontSizeForLOD',
     name: 'Minimum font size until LOD simplified node rendering',
     tooltip:
-      'Minimum readable font size in pixels before switching to LOD simplified node rendering. When text becomes smaller than this size, the graph switches to simplified rendering for better performance. Higher values (12px) = performance mode sooner. Lower values (6px) = maintain quality longer.',
+      'Minimum readable font size in pixels before switching to LOD simplified node rendering. When text becomes smaller than this size, the graph switches to simplified rendering for better performance. Higher values (20px) = performance mode sooner. Lower values (4px) = maintain quality longer.',
     type: 'slider',
     attrs: {
-      min: 4,
-      max: 13, // Just under base font size to prevent LOD at normal zoom
+      min: 1,
+      max: 24,
       step: 1
     },
     defaultValue: 10,

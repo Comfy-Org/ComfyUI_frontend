@@ -211,12 +211,12 @@ export const useSettingStore = defineStore('setting', () => {
       // Convert zoom threshold to approximate font size
       // Old: 0.1 = switch to LOD at 0.1 zoom (far out, keep detail longest)
       //      1.0 = switch to LOD at 1.0 zoom (close in, switch earliest)
-      // New: Small font size (4px) = keep detail longest
-      //      Large font size (13px) = switch to LOD earliest (just under base 14px)
-      // This maps: Old range: 0.1 to 1.0 (span of 0.9) - New range: 4px to 13px (span of 9px)
-      // So: 0.1 -> 4px, 1.0 -> 13px (direct relationship)
-      const mappedFontSize = Math.round(4 + oldValue * 9)
-      const clampedFontSize = Math.max(4, Math.min(13, mappedFontSize))
+      // New: Small font size (1px) = keep detail longest
+      //      Large font size (24px) = switch to LOD earliest
+      // This maps: Old range: 0.1 to 1.0 (span of 0.9) - New range: 1px to 24px (span of 23px)
+      // So: 0.1 -> 1px, 1.0 -> 24px (direct relationship)
+      const mappedFontSize = Math.round(1 + (oldValue - 0.1) * (23 / 0.9))
+      const clampedFontSize = Math.max(1, Math.min(24, mappedFontSize))
 
       // Set the new value
       settingValues.value[newKey] = clampedFontSize
