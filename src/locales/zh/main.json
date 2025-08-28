@@ -313,7 +313,7 @@
     "feedback": "反馈",
     "filter": "过滤",
     "findIssues": "查找问题",
-    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
+    "frontendNewer": "前端版本 {frontendVersion} 可能与后端版本 {backendVersion} 不相容。",
     "frontendOutdated": "前端版本 {frontendVersion} 已过时。后端需要 {requiredVersion} 或更高版本。",
     "goToNode": "转到节点",
     "help": "帮助",
@@ -410,17 +410,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "适应视图",
-    "focusMode": "專注模式",
-    "hand": "拖曳",
-    "hideLinks": "隱藏連結",
+    "focusMode": "专注模式",
+    "hand": "拖拽",
+    "hideLinks": "隐藏链接",
     "panMode": "平移模式",
     "resetView": "重置视图",
-    "select": "選取",
+    "select": "选择",
     "selectMode": "选择模式",
-    "showLinks": "顯示連結",
+    "showLinks": "显示链接",
     "toggleMinimap": "切换小地图",
     "zoomIn": "放大",
-    "zoomOptions": "縮放選項",
+    "zoomOptions": "缩放选项",
     "zoomOut": "缩小"
   },
   "groupNode": {
@@ -806,7 +806,7 @@
     "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大笔刷大小",
     "Interrupt": "中断",
     "Load Default Workflow": "加载默认工作流",
-    "Lock Canvas": "鎖定畫布",
+    "Lock Canvas": "锁定画布",
     "Manage group nodes": "管理组节点",
     "Manager": "管理器",
     "Minimap": "小地图",
@@ -847,8 +847,8 @@
     "Restart": "重启",
     "Save": "保存",
     "Save As": "另存为",
-    "Show Keybindings Dialog": "顯示快捷鍵對話框",
-    "Show Model Selector (Dev)": "顯示模型選擇器（開發用）",
+    "Show Keybindings Dialog": "显示快捷键对话框",
+    "Show Model Selector (Dev)": "显示模型选择器（开发用）",
     "Show Settings Dialog": "显示设置对话框",
     "Sign Out": "退出登录",
     "Toggle Essential Bottom Panel": "切换基础底部面板",
@@ -861,7 +861,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
     "Ungroup selected group nodes": "解散选中组节点",
-    "Unlock Canvas": "解除鎖定畫布",
+    "Unlock Canvas": "解除锁定画布",
     "Unpack the selected Subgraph": "解包选中子图",
     "Workflows": "工作流",
     "Zoom In": "放大画面",
@@ -1684,8 +1684,8 @@
   },
   "versionMismatchWarning": {
     "dismiss": "关闭",
-    "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
-    "frontendOutdated": "前端版本 {frontendVersion} 已过时。後端需要 {requiredVersion} 版或更高版本。",
+    "frontendNewer": "前端版本 {frontendVersion} 可能与后端版本 {backendVersion} 不相容。",
+    "frontendOutdated": "前端版本 {frontendVersion} 已过时。后端需要 {requiredVersion} 版或更高版本。",
     "title": "版本相容性警告",
     "updateFrontend": "更新前端"
   },
@@ -1703,9 +1703,9 @@
     "saveWorkflow": "保存工作流"
   },
   "zoomControls": {
-    "hideMinimap": "隱藏小地圖",
-    "label": "縮放控制",
-    "showMinimap": "顯示小地圖",
-    "zoomToFit": "適合畫面"
+    "hideMinimap": "隐藏小地图",
+    "label": "缩放控制",
+    "showMinimap": "显示小地图",
+    "zoomToFit": "适合画面"
   }
 }
