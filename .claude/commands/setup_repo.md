@@ -152,7 +152,7 @@ After running the setup, manually verify:
 
 ## Environment Requirements
 
-- Node.js >= 18
+- Node.js >= 24
 - Git repository
 - Internet connection for package downloads
 - Available ports (typically 5173 for dev server)
