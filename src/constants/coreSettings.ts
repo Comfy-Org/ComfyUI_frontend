@@ -771,12 +771,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'LiteGraph.Canvas.MinFontSizeForLOD',
-    name: 'Minimum font size until LOD simplified node rendering',
+    name: 'Zoom Level of Detail (LOD) - minimum font size threshold',
     tooltip:
-      'Minimum readable font size in pixels before switching to LOD simplified node rendering. When text becomes smaller than this size, the graph switches to simplified rendering for better performance. Higher values (20px) = performance mode sooner. Lower values (4px) = maintain quality longer.',
+      'Controls node rendering quality when zooming by setting the minimum font size (in pixels) before Level of Detail (LOD) activates. When zooming out makes node text smaller than this threshold, nodes switch to simplified rendering for better performance. Set to 0 to disable zoom LOD and always show full node quality. Values 1-24 set the minimum font size threshold - higher values (20px) = switch to simplified rendering sooner when zooming out, lower values (4px) = maintain full quality longer. Think of it as: "Keep full node detail until text becomes smaller than X pixels". 0 = never use LOD, always render full node detail regardless of zoom level.',
     type: 'slider',
     attrs: {
-      min: 1,
+      min: 0,
       max: 24,
       step: 1
     },

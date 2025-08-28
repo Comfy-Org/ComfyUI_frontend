@@ -211,7 +211,8 @@ export const useSettingStore = defineStore('setting', () => {
       // Convert zoom threshold to approximate font size
       // Old: 0.1 = switch to LOD at 0.1 zoom (far out, keep detail longest)
       //      1.0 = switch to LOD at 1.0 zoom (close in, switch earliest)
-      // New: Small font size (1px) = keep detail longest
+      // New: 0 = LOD disabled (not used in migration as old setting always had LOD enabled)
+      //      Small font size (1px) = keep detail longest
       //      Large font size (24px) = switch to LOD earliest
       // This maps: Old range: 0.1 to 1.0 (span of 0.9) - New range: 1px to 24px (span of 23px)
       // So: 0.1 -> 1px, 1.0 -> 24px (direct relationship)

@@ -445,15 +445,20 @@ export class LGraphCanvas
    * Render low quality when zoomed out based on minimum readable font size.
    */
   get low_quality(): boolean {
+    // Use the user-configured minimum font size, defaulting to 10px if not set
+    const minFontSize = this.min_font_size_for_lod ?? 10
+
+    // If minFontSize is 0, LOD is disabled - never use low quality
+    if (minFontSize === 0) {
+      return false
+    }
+
     const baseFontSize = LiteGraph.NODE_TEXT_SIZE // Font size thats on the node by default at 100% or 1x zoom: 14px
     const renderedSize = baseFontSize * this.ds.scale // Ex: 14 * 0.5 (for 50%) = 7px
     const physicalPixels =
       renderedSize * Math.sqrt(window.devicePixelRatio || 1) //We are using the sqrt here because higher DPR monitors do not linearily
     //  scale the readability of the font, instead they increase the font by some heurisitc,
     // and to approximate we use sqrt to say bascially a DPR of 2 increases the readibility by 40%, 3 by 70%
-
-    // Use the user-configured minimum font size, defaulting to 10px if not set
-    const minFontSize = this.min_font_size_for_lod ?? 10
 
     return physicalPixels < minFontSize
   }
