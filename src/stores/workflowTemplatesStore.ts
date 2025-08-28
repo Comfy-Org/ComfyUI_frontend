@@ -326,15 +326,8 @@ export const useWorkflowTemplatesStore = defineStore(
           )
 
         case 'performance-small':
-          return enhancedTemplates.value.filter(
-            (t) =>
-              (typeof t.size === 'number' &&
-                t.size <= SMALL_MODEL_SIZE_LIMIT) ||
-              (typeof t.size !== 'number' && t.isPerformance)
-          )
-
         case 'performance-mac':
-          return enhancedTemplates.value.filter((t) => t.isMacCompatible)
+          return enhancedTemplates.value // deprecated filters; return all
 
         default:
           return enhancedTemplates.value
@@ -372,14 +365,7 @@ export const useWorkflowTemplatesStore = defineStore(
       const extensionCounts = enhancedTemplates.value.filter(
         (t) => t.sourceModule !== 'default'
       ).length
-      const performanceCounts = enhancedTemplates.value.filter(
-        (t) =>
-          (typeof t.size === 'number' && t.size <= SMALL_MODEL_SIZE_LIMIT) ||
-          (typeof t.size !== 'number' && t.isPerformance)
-      ).length
-      const macCompatibleCounts = enhancedTemplates.value.filter(
-        (t) => t.isMacCompatible
-      ).length
+      // Performance-related counts removed (Small Models / Mac) per request
       const loraTrainingCounts = enhancedTemplates.value.filter(
         (t) =>
           t.tags?.includes('LoRA') ||
@@ -512,33 +498,7 @@ export const useWorkflowTemplatesStore = defineStore(
         })
       }
 
-      // Performance - as a group
-      if (performanceCounts > 0) {
-        const performanceItems: NavItemData[] = [
-          {
-            id: 'performance-small',
-            label: st('templateWorkflows.category.SmallModels', 'Small Models'),
-            icon: getCategoryIcon('small-models')
-          }
-        ]
-
-        // Mac compatibility (only if there are compatible models)
-        if (macCompatibleCounts > 0) {
-          performanceItems.push({
-            id: 'performance-mac',
-            label: st(
-              'templateWorkflows.category.RunsOnMac',
-              'Runs on Mac (Silicon)'
-            ),
-            icon: getCategoryIcon('runs-on-mac')
-          })
-        }
-
-        items.push({
-          title: st('templateWorkflows.category.Performance', 'Performance'),
-          items: performanceItems
-        })
-      }
+      // Removed Performance group (Small Models / Runs on Mac) per request
 
       return items
     })
