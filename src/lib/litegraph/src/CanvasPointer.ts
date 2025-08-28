@@ -367,6 +367,8 @@ export class CanvasPointer {
     ) {
       this.#bufferLinuxEvent(event, now)
     }
+
+    console.log('Detected device:', this.detectedDevice)
   }
 
   /**
@@ -386,6 +388,7 @@ export class CanvasPointer {
    * @param event The wheel event to check
    */
   #isTrackpadPattern(event: WheelEvent): boolean {
+    console.log('trackpad pattern check:', event.deltaX, event.deltaY)
     // Two-finger panning: non-zero deltaX AND deltaY
     if (event.deltaX !== 0 && event.deltaY !== 0) return true
 
@@ -400,6 +403,7 @@ export class CanvasPointer {
    * @param event The wheel event to check
    */
   #isMousePattern(event: WheelEvent): boolean {
+    console.log('Mouse pattern check:', event.deltaX, event.deltaY)
     const absoluteDeltaY = Math.abs(event.deltaY)
 
     // Primary threshold for switching from trackpad to mouse
