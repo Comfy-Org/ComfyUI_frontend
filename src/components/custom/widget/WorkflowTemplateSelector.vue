@@ -6,7 +6,7 @@
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems">
         <template #header-icon>
-          <i-lucide:workflow class="text-neutral" />
+          <i class="icon-[comfy--template]" />
         </template>
         <template #header-title>
           <span class="text-neutral text-base">{{

@@ -2,15 +2,16 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-full template-card rounded-2xl overflow-hidden cursor-pointer shadow-elevation-2 dark-theme:bg-dark-elevation-1.5 h-full"
+    class="w-full template-card rounded-2xl overflow-hidden cursor-pointer h-full"
     :pt="{
+      root: { class: 'bg-transparent shadow-none' },
       body: { class: 'p-0 h-full flex flex-col' }
     }"
     @click="$emit('loadWorkflow', template.name)"
   >
     <template #header>
       <div class="w-full">
-        <div class="relative w-full overflow-hidden rounded-t-lg">
+        <div class="relative w-full overflow-hidden rounded-lg">
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
           </template>
@@ -53,6 +54,23 @@
                   : DEFAULT_ZOOM_SCALE
               "
             />
+            <div
+              v-if="template.tags && template.tags.length > 0"
+              class="absolute inset-0 z-10 pointer-events-none"
+            >
+              <div class="absolute inset-0 bg-black/40"></div>
+              <div
+                class="flex flex-wrap absolute bottom-4 left-4 px-1 pointer-events-auto gap-2"
+              >
+                <span
+                  v-for="tag in template.tags"
+                  :key="tag"
+                  class="px-2 py-1 text-xs bg-surface-100 dark-theme:bg-surface-800 text-surface-700 dark-theme:text-surface-300 rounded backdrop-blur-sm bg-[#D9D9D9]/40"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
           </template>
           <ProgressSpinner
             v-if="loading"
@@ -70,18 +88,6 @@
           <p class="line-clamp-2 text-sm text-muted mb-3" :title="description">
             {{ description }}
           </p>
-        </div>
-        <div
-          v-if="template.tags && template.tags.length > 0"
-          class="flex flex-wrap gap-1"
-        >
-          <span
-            v-for="tag in template.tags"
-            :key="tag"
-            class="px-2 py-1 text-xs bg-surface-100 dark-theme:bg-surface-800 text-surface-700 dark-theme:text-surface-300 rounded-full"
-          >
-            {{ tag }}
-          </span>
         </div>
       </div>
     </template>
@@ -138,9 +144,7 @@ const overlayThumbnailSrc = computed(() =>
   )
 )
 
-const description = computed(() =>
-  getTemplateDescription(template, effectiveSourceModule.value)
-)
+const description = computed(() => getTemplateDescription(template))
 const title = computed(() =>
   getTemplateTitle(template, effectiveSourceModule.value)
 )
