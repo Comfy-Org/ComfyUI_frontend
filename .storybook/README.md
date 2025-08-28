@@ -40,10 +40,10 @@ Storybook is a frontend workshop for building UI components and pages in isolati
 
 ```bash
 # Start Storybook development server
-npm run storybook
+pnpm storybook
 
 # Build static Storybook for deployment
-npm run build-storybook
+pnpm build-storybook
 ```
 
 ### Creating Stories
