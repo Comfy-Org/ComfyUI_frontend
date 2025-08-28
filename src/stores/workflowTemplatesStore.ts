@@ -303,6 +303,11 @@ export const useWorkflowTemplatesStore = defineStore(
             (t) => t.categoryType === 'audio' && !t.isAPI
           )
 
+        case 'generation-llm':
+          return enhancedTemplates.value.filter(
+            (t) => t.tags?.includes('LLM') || t.tags?.includes('Chat')
+          )
+
         case 'api-nodes':
           return enhancedTemplates.value.filter((t) => t.isAPI)
 
@@ -354,6 +359,9 @@ export const useWorkflowTemplatesStore = defineStore(
       const audioCounts = enhancedTemplates.value.filter(
         (t) => t.categoryType === 'audio' && !t.isAPI
       ).length
+      const llmCounts = enhancedTemplates.value.filter(
+        (t) => t.tags?.includes('LLM') || t.tags?.includes('Chat')
+      ).length
       const threeDCounts = enhancedTemplates.value.filter(
         (t) => t.categoryType === '3d' && !t.isAPI
       ).length
@@ -404,7 +412,8 @@ export const useWorkflowTemplatesStore = defineStore(
         imageCounts > 0 ||
         videoCounts > 0 ||
         threeDCounts > 0 ||
-        audioCounts > 0
+        audioCounts > 0 ||
+        llmCounts > 0
       ) {
         const generationTypeItems: NavItemData[] = []
 
@@ -437,6 +446,14 @@ export const useWorkflowTemplatesStore = defineStore(
             id: 'generation-audio',
             label: st('templateWorkflows.category.Audio', 'Audio'),
             icon: getCategoryIcon('generation-audio')
+          })
+        }
+
+        if (llmCounts > 0) {
+          generationTypeItems.push({
+            id: 'generation-llm',
+            label: st('templateWorkflows.category.LLMs', 'LLMs'),
+            icon: getCategoryIcon('generation-llm')
           })
         }
 

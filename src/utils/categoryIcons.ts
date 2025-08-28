@@ -16,6 +16,7 @@ export const getCategoryIcon = (categoryId: string): string => {
     '3d': 'box',
     'generation-audio': 'volume-2',
     audio: 'volume-2',
+    'generation-llm': 'message-square-text',
 
     // API and models
     'api-nodes': 'hand-coins',
@@ -24,6 +25,7 @@ export const getCategoryIcon = (categoryId: string): string => {
     // LLMs and AI
     llm: 'message-square-text',
     llms: 'message-square-text',
+    'llm-api': 'message-square-text',
 
     // Performance and hardware
     'small-models': 'zap',
