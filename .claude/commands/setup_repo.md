@@ -16,7 +16,7 @@ This command will:
 First, let's verify the environment:
 
 ```bash
-# Check Node.js version (should be >= 18)
+# Check Node.js version (should be >= 24)
 node --version
 
 # Check if we're in a git repository
