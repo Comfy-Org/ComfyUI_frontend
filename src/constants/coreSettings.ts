@@ -770,17 +770,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.8'
   },
   {
-    id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
-    name: 'Low quality rendering zoom threshold',
+    id: 'LiteGraph.Canvas.MinFontSizeForLOD',
+    name: 'Minimum font size until LOD simplified node rendering',
     tooltip:
-      'Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details.',
+      'Minimum readable font size in pixels before switching to LOD simplified node rendering. When text becomes smaller than this size, the graph switches to simplified rendering for better performance. Higher values (12px) = performance mode sooner. Lower values (6px) = maintain quality longer.',
     type: 'slider',
     attrs: {
-      min: 0.1,
-      max: 1,
-      step: 0.01
+      min: 4,
+      max: 13, // Just under base font size to prevent LOD at normal zoom
+      step: 1
     },
-    defaultValue: 0.6,
+    defaultValue: 10,
     versionAdded: '1.9.1'
   },
   {

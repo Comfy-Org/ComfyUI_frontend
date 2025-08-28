@@ -442,10 +442,20 @@ export class LGraphCanvas
   }
 
   /**
-   * Render low quality when zoomed out.
+   * Render low quality when zoomed out based on minimum readable font size.
    */
   get low_quality(): boolean {
-    return this.ds.scale < this.low_quality_zoom_threshold
+    const baseFontSize = LiteGraph.NODE_TEXT_SIZE // Font size thats on the node by default at 100% or 1x zoom: 14px
+    const renderedSize = baseFontSize * this.ds.scale // Ex: 14 * 0.5 (for 50%) = 7px
+    const physicalPixels =
+      renderedSize * Math.sqrt(window.devicePixelRatio || 1) //We are using the sqrt here because higher DPR monitors do not linearily
+    //  scale the readability of the font, instead they increase the font by some heurisitc,
+    // and to approximate we use sqrt to say bascially a DPR of 2 increases the readibility by 40%, 3 by 70%
+
+    // Use the user-configured minimum font size, defaulting to 10px if not set
+    const minFontSize = this.min_font_size_for_lod ?? 10
+
+    return physicalPixels < minFontSize
   }
 
   options: {
@@ -516,8 +526,8 @@ export class LGraphCanvas
   /** Shape of the markers shown at the midpoint of links.  Default: Circle */
   linkMarkerShape: LinkMarkerShape = LinkMarkerShape.Circle
   links_render_mode: number
-  /** Zoom threshold for low quality rendering. Zoom below this threshold will render low quality. */
-  low_quality_zoom_threshold: number = 0.6
+  /** Minimum font size in pixels before switching to low quality rendering. */
+  min_font_size_for_lod: number = 10
   /** mouse in canvas coordinates, where 0,0 is the top-left corner of the blue rectangle */
   readonly mouse: Point
   /** mouse in graph coordinates, where 0,0 is the top-left corner of the blue rectangle */
