@@ -178,6 +178,8 @@ onUnmounted(() => electron.Validation.dispose())
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 :deep(.p-tag) {
   --p-tag-gap: 0.375rem;
 }
