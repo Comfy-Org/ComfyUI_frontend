@@ -179,6 +179,14 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const numImagesWidget = node.widgets?.find(
           (w) => w.name === 'num_images'
         ) as IComboWidget
+        const characterInput = node.inputs?.find(
+          (i) => i.name === 'character_image'
+        ) as any
+        const hasCharacter =
+          (typeof characterInput?.link !== 'undefined' &&
+            characterInput.link != null) ||
+          (Array.isArray(characterInput?.links) &&
+            characterInput.links.length > 0)
 
         if (!renderingSpeedWidget)
           return '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
@@ -188,11 +196,23 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         const renderingSpeed = String(renderingSpeedWidget.value)
         if (renderingSpeed.toLowerCase().includes('quality')) {
-          basePrice = 0.09
+          if (hasCharacter) {
+            basePrice = 0.2
+          } else {
+            basePrice = 0.09
+          }
         } else if (renderingSpeed.toLowerCase().includes('balanced')) {
-          basePrice = 0.06
+          if (hasCharacter) {
+            basePrice = 0.15
+          } else {
+            basePrice = 0.06
+          }
         } else if (renderingSpeed.toLowerCase().includes('turbo')) {
-          basePrice = 0.03
+          if (hasCharacter) {
+            basePrice = 0.1
+          } else {
+            basePrice = 0.03
+          }
         }
 
         const totalCost = (basePrice * numImages).toFixed(2)
@@ -1427,7 +1447,7 @@ export const useNodePricing = () => {
       OpenAIGPTImage1: ['quality', 'n'],
       IdeogramV1: ['num_images', 'turbo'],
       IdeogramV2: ['num_images', 'turbo'],
-      IdeogramV3: ['rendering_speed', 'num_images'],
+      IdeogramV3: ['rendering_speed', 'num_images', 'character_image'],
       FluxProKontextProNode: [],
       FluxProKontextMaxNode: [],
       VeoVideoGenerationNode: ['duration_seconds'],
