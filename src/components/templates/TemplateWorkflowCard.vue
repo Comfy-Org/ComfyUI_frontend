@@ -65,7 +65,7 @@
                 <span
                   v-for="tag in template.tags"
                   :key="tag"
-                  class="px-2 py-1 text-xs bg-surface-100 dark-theme:bg-surface-800 text-surface-700 dark-theme:text-surface-300 rounded backdrop-blur-sm bg-[#D9D9D9]/40"
+                  class="px-2 py-1 text-xs bg-surface-100 dark-theme:bg-surface-800 text-surface-300 dark-theme:text-surface-300 rounded backdrop-blur-sm bg-[#D9D9D9]/40"
                 >
                   {{ tag }}
                 </span>
@@ -85,9 +85,26 @@
           <h3 class="line-clamp-2 text-lg font-normal mb-1" :title="title">
             {{ title }}
           </h3>
-          <p class="line-clamp-2 text-sm text-muted mb-3" :title="description">
-            {{ description }}
-          </p>
+          <div class="flex justify-between gap-2">
+            <p
+              class="line-clamp-2 text-sm text-muted mb-3"
+              :title="description"
+            >
+              {{ description }}
+            </p>
+            <div
+              v-if="template.tutorialUrl"
+              class="flex flex-col-reverse justify-center"
+            >
+              <Button
+                v-tooltip.bottom="$t('g.seeTutorial')"
+                class="inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer"
+                @click="openTutorial"
+              >
+                <i class="icon-[comfy--dark-info] w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -148,6 +165,12 @@ const description = computed(() => getTemplateDescription(template))
 const title = computed(() =>
   getTemplateTitle(template, effectiveSourceModule.value)
 )
+const openTutorial = (event: Event) => {
+  event.stopPropagation()
+  if (template.tutorialUrl) {
+    window.open(template.tutorialUrl, '_blank', 'noopener')
+  }
+}
 
 defineEmits<{
   loadWorkflow: [name: string]
