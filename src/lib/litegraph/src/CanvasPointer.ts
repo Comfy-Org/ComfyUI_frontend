@@ -369,6 +369,8 @@ export class CanvasPointer {
     ) {
       this.#bufferLinuxEvent(event, now)
     }
+
+    console.log(`Detected device: ${this.detectedDevice}`) // Debug log
   }
 
   /**
@@ -390,6 +392,11 @@ export class CanvasPointer {
   #isTrackpadPattern(event: WheelEvent): boolean {
     // Two-finger panning: non-zero deltaX AND deltaY
     // On Mac Magic trackpad deltaX and deltaY are always integer simultaneously (1, 0), (0, -1), etc when Two-finger panning
+
+    console.log(
+      `Wheel event deltas: deltaX=${event.deltaX}, deltaY=${event.deltaY}`
+    ) // Debug log
+
     if (
       CanvasPointer.isMac &&
       Number.isInteger(event.deltaX) &&
@@ -412,18 +419,18 @@ export class CanvasPointer {
   #isMousePattern(event: WheelEvent): boolean {
     const absoluteDeltaY = Math.abs(event.deltaY)
 
+    console.log(
+      `Wheel event deltas: deltaX=${event.deltaX}, deltaY=${event.deltaY}`
+    ) // Debug log
     // Primary threshold for switching from trackpad to mouse
     if (absoluteDeltaY > 80) return true
 
     // Secondary threshold when already in mouse mode
-    if (
+    return (
       absoluteDeltaY >= 60 &&
       event.deltaX === 0 &&
       this.detectedDevice === 'mouse'
     )
-      return true
-
-    return !this.#isTrackpadPattern(event)
   }
 
   /**
