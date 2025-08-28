@@ -43,6 +43,8 @@ const dialogStore = useDialogStore()
 </script>
 
 <style>
+@reference '../../assets/css/style.css';
+
 .global-dialog .p-dialog-header {
   @apply p-2 2xl:p-[var(--p-dialog-header-padding)];
   @apply pb-0;

@@ -1,7 +1,11 @@
-@layer primevue, tailwind-utilities;
+@layer theme, base, primevue;
 
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'tailwindcss/utilities';
+
+@plugin "tailwindcss-primeui";
+
+@config '../../../tailwind.config.ts';
 
 :root {
   --fg-color: #000;

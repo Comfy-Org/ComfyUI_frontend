@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col h-full bg-[var(--p-tree-background)] overflow-auto">
+  <div class="flex flex-col h-full bg-(--p-tree-background) overflow-auto">
     <div
-      class="px-3 py-2 flex items-center border-b border-[var(--p-divider-color)]"
+      class="px-3 py-2 flex items-center border-b border-(--p-divider-color)"
     >
       <Button
         v-tooltip.bottom="$t('g.back')"
@@ -12,7 +12,7 @@
       />
       <span class="ml-2 font-semibold">{{ node.display_name }}</span>
     </div>
-    <div class="p-4 flex-grow node-help-content w-full mx-auto">
+    <div class="p-4 grow node-help-content w-full mx-auto">
       <ProgressSpinner
         v-if="isLoading"
         class="m-auto"
@@ -118,7 +118,9 @@ const outputList = computed(() =>
 )
 </script>
 
-<style scoped lang="postcss">
+<style scoped>
+@reference './../../../../assets/css/style.css';
+
 .node-help-content :deep(:is(img, video)) {
   @apply max-w-full h-auto block mb-4;
 }

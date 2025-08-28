@@ -17,7 +17,7 @@
     <!-- Card content with icon on left and text on right -->
     <div class="flex-1 p-4 flex">
       <!-- Left icon - 64x64 -->
-      <div class="flex-shrink-0 mr-4">
+      <div class="shrink-0 mr-4">
         <Skeleton width="4rem" height="4rem" border-radius="0.5rem" />
       </div>
 

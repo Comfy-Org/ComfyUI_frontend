@@ -160,6 +160,8 @@ const pickGpu = (value: typeof selected.value) => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .p-tag {
   --p-tag-gap: 0.5rem;
 }

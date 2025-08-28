@@ -64,8 +64,8 @@ export const getIconButtonSizeClasses = (size: ButtonSize = 'md') => {
 
 export const getBaseButtonClasses = () => {
   return [
-    'flex items-center justify-center flex-shrink-0',
-    'outline-none rounded-lg cursor-pointer transition-all duration-200',
+    'flex items-center justify-center shrink-0',
+    'outline-hidden rounded-lg cursor-pointer transition-all duration-200',
     'disabled:opacity-50 disabled:pointer-events-none'
   ].join(' ')
 }
