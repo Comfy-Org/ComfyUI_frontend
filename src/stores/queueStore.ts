@@ -417,6 +417,13 @@ export class TaskItemImpl {
   }
 }
 
+function executionStartTimestamp(taskItem: TaskItem) {
+  const status = 'status' in taskItem ? taskItem.status : undefined
+  const messages = status?.messages || []
+  const message = messages.find((message) => message[0] === 'execution_start')
+  return message ? message[1].timestamp : undefined
+}
+
 export const useQueueStore = defineStore('queue', () => {
   const runningTasks = ref<TaskItemImpl[]>([])
   const pendingTasks = ref<TaskItemImpl[]>([])
@@ -436,6 +443,13 @@ export const useQueueStore = defineStore('queue', () => {
   const flatTasks = computed<TaskItemImpl[]>(() =>
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
+
+  const lastExecutionStartTimestamp = computed<number>(() => {
+    const latestItemWithTimestamp = historyTasks.value.length
+      ? historyTasks.value.find((item) => item.executionStartTimestamp != null)
+      : undefined
+    return latestItemWithTimestamp?.executionStartTimestamp ?? -1
+  })
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
 
@@ -467,7 +481,13 @@ export const useQueueStore = defineStore('queue', () => {
       const allIndex = new Set<number>(
         history.History.map((item: TaskItem) => item.prompt.priority)
       )
-      const newHistoryItems = toClassAll(history.History)
+      const newHistoryItems = toClassAll(
+        history.History.filter(
+          (item) =>
+            (executionStartTimestamp(item) ?? Number.MAX_SAFE_INTEGER) >
+            lastExecutionStartTimestamp.value
+        )
+      )
       const existingHistoryItems = historyTasks.value.filter((item) =>
         allIndex.has(item.queueIndex)
       )
