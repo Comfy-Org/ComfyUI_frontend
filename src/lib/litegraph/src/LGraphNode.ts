@@ -3998,12 +3998,10 @@ export class LGraphNode
    */
   #arrangeWidgets(widgetStartY: number): void {
     if (!this.widgets || !this.widgets.length) return
-    for (let i = 0; i < this.widgets.length; i++) {
-      if (!this.widgets[i]) {
-        console.error('Removing undefined widget in', this)
-        this.widgets.splice(i, 1)
-        i--
-      }
+    const realWidgets = this.widgets.filter((w) => w)
+    if (realWidgets.length != this.widgets.length) {
+      console.error('Removing undefined widgets from', this)
+      this.widgets.splice(0, this.widgets.length, ...realWidgets)
     }
 
     const bodyHeight = this.bodyHeight
