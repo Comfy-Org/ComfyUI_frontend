@@ -2,7 +2,7 @@
   <WidgetLayoutField :widget="widget">
     <SelectButton
       v-model="localValue"
-      v-bind="filteredProps"
+      :options="filteredProps.values || filteredProps.options || []"
       :disabled="readonly"
       class="w-full text-xs"
       :pt="{
@@ -46,9 +46,21 @@ const { localValue, onChange } = useWidgetValue({
   emit
 })
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
-)
+const filteredProps = computed(() => {
+  const filtered = filterWidgetProps(
+    props.widget.options,
+    STANDARD_EXCLUDED_PROPS
+  )
+  console.log('WidgetSelectButton filteredProps:', filtered)
+  console.log('Widget options:', props.widget.options)
+
+  // Ensure options array is available for SelectButton
+  if (filtered.values && Array.isArray(filtered.values)) {
+    filtered.options = filtered.values
+  }
+
+  return filtered
+})
 </script>
 
 <style scoped>

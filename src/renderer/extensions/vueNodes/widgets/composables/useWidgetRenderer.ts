@@ -23,6 +23,8 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   // Selection
   combo: WidgetType.COMBO,
   COMBO: WidgetType.COMBO,
+  selectbutton: WidgetType.SELECTBUTTON,
+  SELECTBUTTON: WidgetType.SELECTBUTTON,
 
   // Boolean
   toggle: WidgetType.TOGGLESWITCH,

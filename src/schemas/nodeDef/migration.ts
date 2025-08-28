@@ -101,13 +101,12 @@ export function transformInputSpecV1ToV2(
   const { name, isOptional = false } = kwargs
 
   // Extract options from the input spec
-  const options = inputSpecV1[1] || {}
 
   // Base properties for all input types
   const baseProps = {
     name,
     isOptional,
-    ...options
+    ...(inputSpecV1[1] || {})
   }
 
   // Handle different input types
@@ -121,10 +120,20 @@ export function transformInputSpecV1ToV2(
     }
   } else if (typeof inputSpecV1[0] === 'string') {
     // Handle standard types (INT, FLOAT, BOOLEAN, STRING) and custom types
-    return {
+    const result = {
       type: inputSpecV1[0],
       ...baseProps
     }
+
+    // Special handling for SELECTBUTTON to ensure options.values is properly set
+    if (inputSpecV1[0] === 'SELECTBUTTON' && (inputSpecV1[1] || {}).values) {
+      ;(result as any).options = {
+        ...(result as any).options,
+        values: (inputSpecV1[1] || {}).values
+      }
+    }
+
+    return result
   }
 
   // Fallback for any unhandled cases
