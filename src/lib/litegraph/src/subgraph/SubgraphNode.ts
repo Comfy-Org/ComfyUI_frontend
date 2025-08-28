@@ -576,7 +576,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Call parent serialize method
     return super.serialize()
   }
-  addProxyWidget() {
+  addProxyWidget(nodeId, widgetName) {
+    //TODO: Add minimal caching for linkedWidget?
+    //use a weakref and only trigger recalc on calls when undefined?
+    //TODO: call toConcrete when resolved and hold reference?
     function linkedWidget(graph, nodeId="", widgetName) {
       let g = graph
       let n = undefined
@@ -587,8 +590,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!n) return
       return n.widgets.find((w) => w.name === widgetName)
     }
-    const overlay: object = {}
-    const handler = Object.fromEntries(['get', 'set'].map((s) => {
+    const overlay: object = {nodeId, widgetName, graph: this.subgraph}
+    const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf'].map((s) => {
       const func = function(t,p,r) {
 	if (s == 'get' && p == '_overlay')
 	  return overlay
@@ -597,7 +600,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 	if (s == 'set' && p == 'value')
 	  return linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).value = r
 	if (s == 'get' && p == 'node')
-	  return linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).node
+	  return {pos: this.pos, __proto__:
+	    linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).node}
 	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled'].includes(p))
 	  t = overlay
 	else
