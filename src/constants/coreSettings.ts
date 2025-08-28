@@ -781,7 +781,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 1
     },
     defaultValue: 8,
-    versionAdded: '1.9.1'
+    versionAdded: '1.26.7'
   },
   {
     id: 'Comfy.Canvas.NavigationMode',
