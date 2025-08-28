@@ -158,9 +158,14 @@ export function useTemplateFiltering(
         // For now, keep original order
         return templates
       case 'model-size-low-to-high':
-        // TODO: Implement model size sorting when model size data is available
-        // For now, keep original order
-        return templates
+        return templates.sort((a: any, b: any) => {
+          const sizeA =
+            typeof a.size === 'number' ? a.size : Number.POSITIVE_INFINITY
+          const sizeB =
+            typeof b.size === 'number' ? b.size : Number.POSITIVE_INFINITY
+          if (sizeA === sizeB) return 0
+          return sizeA - sizeB
+        })
       case 'default':
       default:
         // Keep original order (default order)

@@ -17,6 +17,7 @@ export interface TemplateInfo {
   date?: string
   useCase?: string
   license?: string
+  size?: number
 }
 
 export interface WorkflowTemplates {

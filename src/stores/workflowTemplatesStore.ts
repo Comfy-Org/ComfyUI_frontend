@@ -2,6 +2,7 @@ import Fuse from 'fuse.js'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { SMALL_MODEL_SIZE_LIMIT } from '@/constants/templateWorkflows'
 import { i18n, st } from '@/i18n'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -181,14 +182,21 @@ export const useWorkflowTemplatesStore = defineStore(
       coreTemplates.value.forEach((category) => {
         category.templates.forEach((template) => {
           const isAPI = category.title?.includes('API') || false
+          // Determine performance ("Small Models") based primarily on explicit size prop (<=3GB)
+          // Fallback to heuristic based on model name keywords for backward compatibility.
+          const explicitSize = template.size
+          const heuristicPerformance = template.models?.some(
+            (model) =>
+              model.toLowerCase().includes('turbo') ||
+              model.toLowerCase().includes('fast') ||
+              model.toLowerCase().includes('schnell') ||
+              model.toLowerCase().includes('fp8')
+          )
           const isPerformance =
-            template.models?.some(
-              (model) =>
-                model.toLowerCase().includes('turbo') ||
-                model.toLowerCase().includes('fast') ||
-                model.toLowerCase().includes('schnell') ||
-                model.toLowerCase().includes('fp8')
-            ) || false
+            (typeof explicitSize === 'number' &&
+              explicitSize <= SMALL_MODEL_SIZE_LIMIT) ||
+            (!!explicitSize === false && heuristicPerformance) ||
+            false
 
           const isMacCompatible =
             template.models?.some(
@@ -313,7 +321,12 @@ export const useWorkflowTemplatesStore = defineStore(
           )
 
         case 'performance-small':
-          return enhancedTemplates.value.filter((t) => t.isPerformance)
+          return enhancedTemplates.value.filter(
+            (t) =>
+              (typeof t.size === 'number' &&
+                t.size <= SMALL_MODEL_SIZE_LIMIT) ||
+              (typeof t.size !== 'number' && t.isPerformance)
+          )
 
         case 'performance-mac':
           return enhancedTemplates.value.filter((t) => t.isMacCompatible)
@@ -352,7 +365,9 @@ export const useWorkflowTemplatesStore = defineStore(
         (t) => t.sourceModule !== 'default'
       ).length
       const performanceCounts = enhancedTemplates.value.filter(
-        (t) => t.isPerformance
+        (t) =>
+          (typeof t.size === 'number' && t.size <= SMALL_MODEL_SIZE_LIMIT) ||
+          (typeof t.size !== 'number' && t.isPerformance)
       ).length
       const macCompatibleCounts = enhancedTemplates.value.filter(
         (t) => t.isMacCompatible
