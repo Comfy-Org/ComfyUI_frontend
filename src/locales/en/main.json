@@ -474,7 +474,8 @@
     "round": "Round",
     "CARD": "Card",
     "circle": "Circle",
-    "arrow": "Arrow"
+    "arrow": "Arrow",
+    "box": "Box"
   },
   "sideToolbar": {
     "helpCenter": "Help Center",
