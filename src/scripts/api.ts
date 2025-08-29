@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { debounce } from 'lodash'
+import { debounce } from 'es-toolkit/compat'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
