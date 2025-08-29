@@ -1,6 +1,7 @@
 <template>
   <div class="relative inline-flex items-center">
     <Button
+      ref="buttonRef"
       v-tooltip.top="{
         value: $t('g.moreOptions'),
         showDelay: 1000
@@ -47,7 +48,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 
 import {
   type MenuOption,
@@ -56,11 +57,16 @@ import {
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
 
 const popover = ref<InstanceType<typeof Popover>>()
+const buttonRef = ref<InstanceType<typeof Button> | HTMLElement | null>(null)
+// Track open state ourselves so we can restore after drag/move
+const isOpen = ref(false)
+const wasOpenBeforeHide = ref(false)
 const submenuRefs = ref<Record<string, InstanceType<typeof SubmenuPopover>>>({})
 const currentSubmenu = ref<string | null>(null)
 
@@ -71,11 +77,17 @@ const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
 
 const toggle = (event: Event) => {
-  popover.value?.toggle(event)
+  if (isOpen.value) {
+    hide()
+  } else {
+    popover.value?.show(event)
+    isOpen.value = true
+  }
 }
 
 const hide = () => {
   popover.value?.hide()
+  isOpen.value = false
   hideAll()
 }
 
@@ -136,4 +148,29 @@ const pt = computed(() => ({
     }
   }
 }))
+
+// When selection is dragged the overlay (and toolbox) hide; ensure the popover
+// hides too so it doesn't float detached, and restore it after movement.
+const selectionOverlayState = inject(SelectionOverlayInjectionKey)
+watch(
+  () => selectionOverlayState?.updateCount.value,
+  () => {
+    if (!selectionOverlayState) return
+    const visible = selectionOverlayState.visible.value
+    if (!visible) {
+      if (isOpen.value) {
+        wasOpenBeforeHide.value = true
+        hide()
+      }
+    } else if (wasOpenBeforeHide.value) {
+      // Overlay visible again after move; reopen popover anchored to button.
+      wasOpenBeforeHide.value = false
+      const targetEl = (buttonRef.value as any)?.$el || buttonRef.value
+      if (targetEl instanceof HTMLElement) {
+        popover.value?.show(new Event('reopen'), targetEl)
+        isOpen.value = true
+      }
+    }
+  }
+)
 </script>
