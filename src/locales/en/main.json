@@ -5,7 +5,6 @@
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
-    "firstTimeUIMessage": "This is the first time you use the new UI. Choose \"Menu > Use New Menu > Disabled\" to restore the old UI.",
     "download": "Download",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
@@ -149,7 +148,8 @@
     "micPermissionDenied": "Microphone permission denied",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "moreWorkflows": "More workflows"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -894,8 +894,19 @@
     "fitView": "Fit View",
     "selectMode": "Select Mode",
     "panMode": "Pan Mode",
-    "toggleLinkVisibility": "Toggle Link Visibility",
-    "toggleMinimap": "Toggle Minimap"
+    "toggleMinimap": "Toggle Minimap",
+    "select": "Select",
+    "hand": "Hand",
+    "zoomOptions": "Zoom Options",
+    "focusMode": "Focus Mode",
+    "hideLinks": "Hide Links",
+    "showLinks": "Show Links"
+  },
+  "zoomControls": {
+    "label": "Zoom Controls",
+    "zoomToFit": "Zoom To Fit",
+    "showMinimap": "Show Minimap",
+    "hideMinimap": "Hide Minimap"
   },
   "groupNode": {
     "create": "Create group node",
@@ -963,6 +974,7 @@
     "Browse Templates": "Browse Templates",
     "Delete Selected Items": "Delete Selected Items",
     "Zoom to fit": "Zoom to fit",
+    "Lock Canvas": "Lock Canvas",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
@@ -977,6 +989,7 @@
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
     "Mute/Unmute Selected Nodes": "Mute/Unmute Selected Nodes",
     "Pin/Unpin Selected Nodes": "Pin/Unpin Selected Nodes",
+    "Unlock Canvas": "Unlock Canvas",
     "Zoom In": "Zoom In",
     "Zoom Out": "Zoom Out",
     "Clear Pending Tasks": "Clear Pending Tasks",

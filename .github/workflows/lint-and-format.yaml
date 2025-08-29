@@ -19,20 +19,40 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            .eslintcache
+            tsconfig.tsbuildinfo
+            .prettierCache
+            .knip-cache
+          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
+          restore-keys: |
+            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            lint-format-cache-${{ runner.os }}-
+            ci-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run ESLint with auto-fix
-        run: npm run lint:fix
+        run: pnpm lint:fix
 
       - name: Run Prettier with auto-format
-        run: npm run format
+        run: pnpm format
 
       - name: Check for changes
         id: verify-changed-files
@@ -54,12 +74,13 @@ jobs:
 
       - name: Final validation
         run: |
-          npm run lint
-          npm run format:check
-          npm run knip
+          pnpm lint
+          pnpm format:check
+          pnpm knip
 
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
@@ -72,6 +93,7 @@ jobs:
 
       - name: Comment on PR about manual fix needed
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
@@ -79,5 +101,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## ⚠️ Linting/Formatting Issues Found\n\nThis PR has linting or formatting issues that need to be fixed.\n\n**Since this PR is from a fork, auto-fix cannot be applied automatically.**\n\n### Option 1: Set up pre-commit hooks (recommended)\nRun this once to automatically format code on every commit:\n```bash\nnpm run prepare\n```\n\n### Option 2: Fix manually\nRun these commands and push the changes:\n```bash\nnpm run lint:fix\nnpm run format\n```\n\nSee [CONTRIBUTING.md](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/CONTRIBUTING.md#git-pre-commit-hooks) for more details.'
+              body: '## ⚠️ Linting/Formatting Issues Found\n\nThis PR has linting or formatting issues that need to be fixed.\n\n**Since this PR is from a fork, auto-fix cannot be applied automatically.**\n\n### Option 1: Set up pre-commit hooks (recommended)\nRun this once to automatically format code on every commit:\n```bash\npnpm prepare\n```\n\n### Option 2: Fix manually\nRun these commands and push the changes:\n```bash\npnpm lint:fix\npnpm format\n```\n\nSee [CONTRIBUTING.md](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/CONTRIBUTING.md#git-pre-commit-hooks) for more details.'
             })

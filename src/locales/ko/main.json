@@ -313,7 +313,6 @@
     "feedback": "피드백",
     "filter": "필터",
     "findIssues": "문제 찾기",
-    "firstTimeUIMessage": "새 UI를 처음 사용합니다. \"메뉴 > 새 메뉴 사용 > 비활성화\"를 선택하여 이전 UI로 복원하세요.",
     "frontendNewer": "프론트엔드 버전 {frontendVersion}이(가) 백엔드 버전 {backendVersion}과(와) 호환되지 않을 수 있습니다.",
     "frontendOutdated": "프론트엔드 버전 {frontendVersion}이(가) 오래되었습니다. 백엔드는 {requiredVersion} 이상이 필요합니다.",
     "goToNode": "노드로 이동",
@@ -342,6 +341,7 @@
     "micPermissionDenied": "마이크 권한이 거부되었습니다",
     "migrate": "이전(migrate)",
     "missing": "누락됨",
+    "moreWorkflows": "더 많은 워크플로우",
     "name": "이름",
     "newFolder": "새 폴더",
     "next": "다음",
@@ -410,12 +410,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",
+    "focusMode": "포커스 모드",
+    "hand": "손 도구",
+    "hideLinks": "링크 숨기기",
     "panMode": "팬 모드",
     "resetView": "보기 재설정",
+    "select": "선택",
     "selectMode": "선택 모드",
-    "toggleLinkVisibility": "링크 가시성 전환",
+    "showLinks": "링크 표시",
     "toggleMinimap": "미니맵 전환",
     "zoomIn": "확대",
+    "zoomOptions": "확대/축소 옵션",
     "zoomOut": "축소"
   },
   "groupNode": {
@@ -801,6 +806,7 @@
     "Increase Brush Size in MaskEditor": "마스크 편집기에서 브러시 크기 늘리기",
     "Interrupt": "중단",
     "Load Default Workflow": "기본 워크플로 불러오기",
+    "Lock Canvas": "캔버스 잠금",
     "Manage group nodes": "그룹 노드 관리",
     "Manager": "매니저",
     "Minimap": "미니맵",
@@ -855,6 +861,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "커스텀 노드 매니저 진행률 표시줄 전환",
     "Undo": "실행 취소",
     "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
+    "Unlock Canvas": "캔버스 잠금 해제",
     "Unpack the selected Subgraph": "선택한 서브그래프 풀기",
     "Workflows": "워크플로우",
     "Zoom In": "확대",
@@ -1694,5 +1701,11 @@
     "enterFilename": "파일 이름 입력",
     "exportWorkflow": "워크플로 내보내기",
     "saveWorkflow": "워크플로 저장"
+  },
+  "zoomControls": {
+    "hideMinimap": "미니맵 숨기기",
+    "label": "확대/축소 컨트롤",
+    "showMinimap": "미니맵 표시",
+    "zoomToFit": "화면에 맞게 확대"
   }
 }

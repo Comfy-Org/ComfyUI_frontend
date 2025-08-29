@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "适应视图到选中节点"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "锁定画布"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "下移选中的节点"
   },
@@ -89,6 +92,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "固定/取消固定选中项"
   },
+  "Comfy_Canvas_Unlock": {
+    "label": "解锁画布"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "放大"
   },
@@ -105,7 +111,7 @@
     "label": "联系支持"
   },
   "Comfy_Dev_ShowModelSelector": {
-    "label": "顯示模型選擇器（開發）"
+    "label": "显示模型选择器（开发）"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"

@@ -313,7 +313,6 @@
     "feedback": "ملاحظات",
     "filter": "تصفية",
     "findIssues": "العثور على مشاكل",
-    "firstTimeUIMessage": "هذه هي المرة الأولى التي تستخدم فيها واجهة المستخدم الجديدة. اختر \"القائمة > استخدام القائمة الجديدة > تعطيل\" لاستعادة الواجهة القديمة.",
     "frontendNewer": "إصدار الواجهة الأمامية {frontendVersion} قد لا يكون متوافقاً مع الإصدار الخلفي {backendVersion}.",
     "frontendOutdated": "إصدار الواجهة الأمامية {frontendVersion} قديم. يتطلب الإصدار الخلفي {requiredVersion} أو أحدث.",
     "goToNode": "الانتقال إلى العقدة",
@@ -342,6 +341,7 @@
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
     "missing": "مفقود",
+    "moreWorkflows": "المزيد من سير العمل",
     "name": "الاسم",
     "newFolder": "مجلد جديد",
     "next": "التالي",
@@ -410,12 +410,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "ملائمة العرض",
+    "focusMode": "وضع التركيز",
+    "hand": "يد",
+    "hideLinks": "إخفاء الروابط",
     "panMode": "وضع التحريك",
     "resetView": "إعادة تعيين العرض",
+    "select": "تحديد",
     "selectMode": "وضع التحديد",
-    "toggleLinkVisibility": "تبديل ظهور الروابط",
+    "showLinks": "إظهار الروابط",
     "toggleMinimap": "تبديل الخريطة المصغرة",
     "zoomIn": "تكبير",
+    "zoomOptions": "خيارات التكبير",
     "zoomOut": "تصغير"
   },
   "groupNode": {
@@ -801,6 +806,7 @@
     "Increase Brush Size in MaskEditor": "زيادة حجم الفرشاة في محرر القناع",
     "Interrupt": "إيقاف مؤقت",
     "Load Default Workflow": "تحميل سير العمل الافتراضي",
+    "Lock Canvas": "قفل اللوحة",
     "Manage group nodes": "إدارة عقد المجموعة",
     "Manager": "المدير",
     "Minimap": "خريطة مصغرة",
@@ -855,6 +861,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "تبديل شريط تقدم مدير العقد المخصصة",
     "Undo": "تراجع",
     "Ungroup selected group nodes": "فك تجميع عقد المجموعة المحددة",
+    "Unlock Canvas": "فتح قفل اللوحة",
     "Unpack the selected Subgraph": "فك تجميع الرسم البياني الفرعي المحدد",
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
@@ -1694,5 +1701,11 @@
     "enterFilename": "أدخل اسم الملف",
     "exportWorkflow": "تصدير سير العمل",
     "saveWorkflow": "حفظ سير العمل"
+  },
+  "zoomControls": {
+    "hideMinimap": "إخفاء الخريطة المصغرة",
+    "label": "عناصر التحكم في التكبير",
+    "showMinimap": "إظهار الخريطة المصغرة",
+    "zoomToFit": "تكبير لتناسب الشاشة"
   }
 }

@@ -128,7 +128,25 @@ echo "Last stable release: $LAST_STABLE"
 
 ### Step 4: Analyze Dependency Updates
 
-1. **Check significant dependency updates:**
+1. **Use pnpm's built-in dependency analysis:**
+   ```bash
+   # Get outdated dependencies with pnpm
+   pnpm outdated --format table > outdated-deps-${NEW_VERSION}.txt
+   
+   # Check for license compliance
+   pnpm licenses ls --json > licenses-${NEW_VERSION}.json
+   
+   # Analyze why specific dependencies exist
+   echo "Dependency analysis:" > dep-analysis-${NEW_VERSION}.md
+   MAJOR_DEPS=("vue" "vite" "@vitejs/plugin-vue" "typescript" "pinia")
+   for dep in "${MAJOR_DEPS[@]}"; do
+     echo -e "\n## $dep\n\`\`\`" >> dep-analysis-${NEW_VERSION}.md
+     pnpm why "$dep" >> dep-analysis-${NEW_VERSION}.md || echo "Not found" >> dep-analysis-${NEW_VERSION}.md
+     echo "\`\`\`" >> dep-analysis-${NEW_VERSION}.md
+   done
+   ```
+
+2. **Check for significant dependency updates:**
    ```bash
    # Extract all dependency changes for major version bumps
    OTHER_DEP_CHANGES=""
@@ -200,21 +218,47 @@ echo "Last stable release: $LAST_STABLE"
    PR data: [contents of prs-${NEW_VERSION}.json]
    ```
 
-3. **Generate GTM notification:**
+3. **Generate GTM notification using this EXACT Slack-compatible format:**
    ```bash
-   # Save to gtm-summary-${NEW_VERSION}.md based on analysis
-   # If GTM-worthy features exist, include them with testing instructions
-   # If not, note that this is a maintenance/bug fix release
-   
-   # Check if notification is needed
-   if grep -q "No marketing-worthy features" gtm-summary-${NEW_VERSION}.md; then
-     echo "✅ No GTM notification needed for this release"
-     echo "📄 Summary saved to: gtm-summary-${NEW_VERSION}.md"
-   else
+   # Only create file if GTM-worthy features exist:
+   if [ "$GTM_FEATURES_FOUND" = "true" ]; then
+     cat > gtm-summary-${NEW_VERSION}.md << 'EOF'
+   *GTM Summary: ComfyUI Frontend v${NEW_VERSION}*
+
+   _Disclaimer: the below is AI-generated_
+
+   1. *[Feature Title]* (#[PR_NUMBER])
+       * *Author:* @[username]
+       * *Demo:* [Media Link or "No demo available"]
+       * *Why users should care:* [One compelling sentence]
+       * *Key Features:*
+           * [Feature detail 1]
+           * [Feature detail 2]
+
+   2. *[Feature Title]* (#[PR_NUMBER])
+       * *Author:* @[username]
+       * *Demo:* [Media Link]
+       * *Why users should care:* [One compelling sentence]
+       * *Key Features:*
+           * [Feature detail 1]
+           * [Feature detail 2]
+   EOF
      echo "📋 GTM summary saved to: gtm-summary-${NEW_VERSION}.md"
      echo "📤 Share this file in #gtm channel to notify the team"
+   else
+     echo "✅ No GTM notification needed for this release"
+     echo "📄 No gtm-summary file created - no marketing-worthy features"
    fi
    ```
+
+   **CRITICAL Formatting Requirements:**
+   - Use single asterisk (*) for emphasis, NOT double (**)
+   - Use underscore (_) for italics
+   - Use 4 spaces for indentation (not tabs)
+   - Convert author names to @username format (e.g., "John Smith" → "@john")
+   - No section headers (#), no code language specifications
+   - Always include "Disclaimer: the below is AI-generated"
+   - Keep content minimal - no testing instructions, additional sections, etc.
 
 ### Step 6: Version Preview
 
@@ -228,37 +272,42 @@ echo "Last stable release: $LAST_STABLE"
 
 ### Step 7: Security and Dependency Audit
 
-1. Run security audit:
+1. Run pnpm security audit:
    ```bash
-   npm audit --audit-level moderate
+   pnpm audit --audit-level moderate
+   pnpm licenses ls --summary
    ```
 2. Check for known vulnerabilities in dependencies
-3. Scan for hardcoded secrets or credentials:
+3. Run comprehensive dependency health check:
+   ```bash
+   pnpm doctor
+   ```
+4. Scan for hardcoded secrets or credentials:
    ```bash
    git log -p ${BASE_TAG}..HEAD | grep -iE "(password|key|secret|token)" || echo "No sensitive data found"
    ```
-4. Verify no sensitive data in recent commits
-5. **SECURITY REVIEW**: Address any critical findings before proceeding?
+5. Verify no sensitive data in recent commits
+6. **SECURITY REVIEW**: Address any critical findings before proceeding?
 
 ### Step 8: Pre-Release Testing
 
 1. Run complete test suite:
    ```bash
-   npm run test:unit
-   npm run test:component
+   pnpm test:unit
+   pnpm test:component
    ```
 2. Run type checking:
    ```bash
-   npm run typecheck
+   pnpm typecheck
    ```
 3. Run linting (may have issues with missing packages):
    ```bash
-   npm run lint || echo "Lint issues - verify if critical"
+   pnpm lint || echo "Lint issues - verify if critical"
    ```
 4. Test build process:
    ```bash
-   npm run build
-   npm run build:types
+   pnpm build
+   pnpm build:types
    ```
 5. **QUALITY GATE**: All tests and builds passing?
 
@@ -488,7 +537,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```bash
    # Check npm availability
    for i in {1..10}; do
-     if npm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
+     if pnpm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
        echo "✅ npm package available"
        break
      fi

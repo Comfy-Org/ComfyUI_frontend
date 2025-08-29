@@ -313,7 +313,6 @@
     "feedback": "意見回饋",
     "filter": "篩選",
     "findIssues": "尋找問題",
-    "firstTimeUIMessage": "這是您第一次使用新介面。若要返回舊介面，請前往「選單」>「使用新介面」>「關閉」。",
     "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
     "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 或更高版本。",
     "goToNode": "前往節點",
@@ -342,6 +341,7 @@
     "micPermissionDenied": "麥克風權限被拒絕",
     "migrate": "遷移",
     "missing": "缺少",
+    "moreWorkflows": "更多工作流程",
     "name": "名稱",
     "newFolder": "新資料夾",
     "next": "下一步",
@@ -410,12 +410,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "適合視窗",
+    "focusMode": "專注模式",
+    "hand": "拖曳",
+    "hideLinks": "隱藏連結",
     "panMode": "平移模式",
     "resetView": "重設視圖",
+    "select": "選取",
     "selectMode": "選取模式",
-    "toggleLinkVisibility": "切換連結顯示",
+    "showLinks": "顯示連結",
     "toggleMinimap": "切換小地圖",
     "zoomIn": "放大",
+    "zoomOptions": "縮放選項",
     "zoomOut": "縮小"
   },
   "groupNode": {
@@ -801,6 +806,7 @@
     "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大筆刷大小",
     "Interrupt": "中斷",
     "Load Default Workflow": "載入預設工作流程",
+    "Lock Canvas": "鎖定畫布",
     "Manage group nodes": "管理群組節點",
     "Manager": "管理員",
     "Minimap": "縮圖地圖",
@@ -855,6 +861,7 @@
     "Toggle the Custom Nodes Manager Progress Bar": "切換自訂節點管理器進度條",
     "Undo": "復原",
     "Ungroup selected group nodes": "取消群組選取的群組節點",
+    "Unlock Canvas": "解除鎖定畫布",
     "Unpack the selected Subgraph": "解包所選子圖",
     "Workflows": "工作流程",
     "Zoom In": "放大",
@@ -1694,5 +1701,11 @@
     "enterFilename": "輸入檔案名稱",
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程"
+  },
+  "zoomControls": {
+    "hideMinimap": "隱藏小地圖",
+    "label": "縮放控制",
+    "showMinimap": "顯示小地圖",
+    "zoomToFit": "縮放至適合大小"
   }
 }

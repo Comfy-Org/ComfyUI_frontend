@@ -74,7 +74,7 @@ const config: KnipConfig = {
   // Workspace configuration for monorepo-like structure
   workspaces: {
     '.': {
-      entry: ['src/main.ts']
+      entry: ['src/main.ts', 'playwright.i18n.config.ts']
     }
   }
 }
