@@ -2,7 +2,9 @@ import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import {
+  LGraphCanvas,
   LGraphNode,
   LegacyWidget,
   LiteGraph
@@ -175,6 +177,13 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       ctx.fillStyle = originalFillStyle
     }
     this.options.onDraw?.(this)
+  }
+  override onPointerDown(
+    pointer: CanvasPointer,
+    node: LGraphNode,
+    canvas: LGraphCanvas
+  ): boolean {
+    return canvas.passPointerEvent(pointer, node)
   }
 
   override onRemove(): void {
