@@ -9,8 +9,9 @@
     }"
     @wheel="canvasInteractions.handleWheel"
   >
-    <InfoButton v-if="showInfoButton" />
+    <DeleteButton v-if="showDelete" />
     <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
+    <InfoButton v-if="showInfoButton" />
 
     <ColorPickerButton v-if="showColorPicker" />
     <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
@@ -19,7 +20,6 @@
     <VerticalDivider v-if="showAnyPrimaryActions && showAnyControlActions" />
 
     <BypassButton v-if="showBypass" />
-    <PinButton v-if="showPin" />
     <VerticalDivider
       v-if="showAnyControlActions && showAnySpecializedActions"
     />
@@ -28,7 +28,6 @@
     <MaskEditorButton v-if="showMaskEditor" />
     <VerticalDivider v-if="showLoad3DViewer && showMaskEditor" />
 
-    <DeleteButton v-if="showDelete" />
     <RefreshSelectionButton v-if="showRefresh" />
     <ExecuteButton v-if="showExecute" />
     <VerticalDivider v-if="showAnyExecutionActions && hasExtensionButtons" />
@@ -57,7 +56,6 @@ import ExtensionCommandButton from '@/components/graph/selectionToolbox/Extensio
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
-import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
@@ -141,7 +139,6 @@ const showBypass = computed(
   () =>
     isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
 )
-const showPin = computed(() => hasAnySelection.value)
 
 const showLoad3DViewer = computed(() => hasAnySelection.value)
 const showMaskEditor = computed(() => isSingleImageNode.value)
@@ -158,7 +155,7 @@ const showAnyPrimaryActions = computed(
     showBookmark.value
 )
 
-const showAnyControlActions = computed(() => showBypass.value || showPin.value)
+const showAnyControlActions = computed(() => showBypass.value)
 
 const showAnySpecializedActions = computed(
   () => showLoad3DViewer.value || showMaskEditor.value

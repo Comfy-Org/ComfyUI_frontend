@@ -1,10 +1,8 @@
 <template>
   <Button
-    v-show="canvasStore.nodeSelected"
+    v-show="canvasStore.nodeSelected && !isDisabled"
     v-tooltip.top="{
-      value: isDisabled
-        ? t('selectionToolbox.executeButton.disabledTooltip')
-        : t('selectionToolbox.executeButton.tooltip'),
+      value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
     class="dark-mode:bg-[#0B8CE9] bg-[#31B9F4]"
