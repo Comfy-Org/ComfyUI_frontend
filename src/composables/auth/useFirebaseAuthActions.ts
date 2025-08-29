@@ -100,27 +100,33 @@ export const useFirebaseAuthActions = () => {
     return await authStore.fetchBalance()
   }, reportError)
 
-  const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.loginWithGoogle()
-  }, reportError)
+  const signInWithGoogle = (errorHandler = reportError) =>
+    wrapWithErrorHandlingAsync(async () => {
+      return await authStore.loginWithGoogle()
+    }, errorHandler)
 
-  const signInWithGithub = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.loginWithGithub()
-  }, reportError)
+  const signInWithGithub = (errorHandler = reportError) =>
+    wrapWithErrorHandlingAsync(async () => {
+      return await authStore.loginWithGithub()
+    }, errorHandler)
 
-  const signInWithEmail = wrapWithErrorHandlingAsync(
-    async (email: string, password: string) => {
+  const signInWithEmail = (
+    email: string,
+    password: string,
+    errorHandler = reportError
+  ) =>
+    wrapWithErrorHandlingAsync(async () => {
       return await authStore.login(email, password)
-    },
-    reportError
-  )
+    }, errorHandler)
 
-  const signUpWithEmail = wrapWithErrorHandlingAsync(
-    async (email: string, password: string) => {
+  const signUpWithEmail = (
+    email: string,
+    password: string,
+    errorHandler = reportError
+  ) =>
+    wrapWithErrorHandlingAsync(async () => {
       return await authStore.register(email, password)
-    },
-    reportError
-  )
+    }, errorHandler)
 
   const updatePassword = wrapWithErrorHandlingAsync(
     async (newPassword: string) => {
@@ -146,6 +152,7 @@ export const useFirebaseAuthActions = () => {
     signInWithEmail,
     signUpWithEmail,
     updatePassword,
-    accessError
+    accessError,
+    reportError
   }
 }

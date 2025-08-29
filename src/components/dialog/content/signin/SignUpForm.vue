@@ -49,6 +49,11 @@
       }}</small>
     </FormField>
 
+    <!-- Auth Error Message -->
+    <Message v-if="authError" severity="error">
+      {{ authError }}
+    </Message>
+
     <!-- Submit Button -->
     <Button
       type="submit"
@@ -64,6 +69,7 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
 import { useI18n } from 'vue-i18n'
 
 import { type SignUpData, signUpSchema } from '@/schemas/signInSchema'
@@ -71,6 +77,10 @@ import { type SignUpData, signUpSchema } from '@/schemas/signInSchema'
 import PasswordFields from './PasswordFields.vue'
 
 const { t } = useI18n()
+
+defineProps<{
+  authError?: string
+}>()
 
 const emit = defineEmits<{
   submit: [values: SignUpData]

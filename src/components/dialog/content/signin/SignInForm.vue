@@ -59,6 +59,11 @@
       }}</small>
     </div>
 
+    <!-- Auth Error Message -->
+    <Message v-if="authError" severity="error">
+      {{ authError }}
+    </Message>
+
     <!-- Submit Button -->
     <ProgressSpinner v-if="loading" class="w-8 h-8" />
     <Button
@@ -75,6 +80,7 @@ import { Form, FormSubmitEvent } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
@@ -91,6 +97,10 @@ const loading = computed(() => authStore.loading)
 const toast = useToast()
 
 const { t } = useI18n()
+
+defineProps<{
+  authError?: string
+}>()
 
 const emit = defineEmits<{
   submit: [values: SignInData]

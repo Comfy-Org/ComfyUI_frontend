@@ -32,12 +32,16 @@
       </Message>
 
       <!-- Form -->
-      <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
+      <SignInForm
+        v-if="isSignIn"
+        :auth-error="authError"
+        @submit="signInWithEmail"
+      />
       <template v-else>
         <Message v-if="userIsInChina" severity="warn" class="mb-4">
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
-        <SignUpForm v-else @submit="signUpWithEmail" />
+        <SignUpForm v-else :auth-error="authError" @submit="signUpWithEmail" />
       </template>
 
       <!-- Divider -->
@@ -164,32 +168,62 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
+const authError = ref('')
 
 const toggleState = () => {
   isSignIn.value = !isSignIn.value
   showApiKeyForm.value = false
+  authError.value = ''
+}
+
+// Custom error handler for inline display
+const inlineErrorHandler = (error: unknown) => {
+  // Set inline error
+  if (error instanceof Error) {
+    authError.value = error.message || t('g.unknownError')
+  } else {
+    authError.value = t('g.unknownError')
+  }
+  // Also show toast (original behavior)
+  authActions.reportError(error)
 }
 
 const signInWithGoogle = async () => {
-  if (await authActions.signInWithGoogle()) {
+  authError.value = ''
+  if (await authActions.signInWithGoogle(inlineErrorHandler)()) {
     onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
-  if (await authActions.signInWithGithub()) {
+  authError.value = ''
+  if (await authActions.signInWithGithub(inlineErrorHandler)()) {
     onSuccess()
   }
 }
 
 const signInWithEmail = async (values: SignInData) => {
-  if (await authActions.signInWithEmail(values.email, values.password)) {
+  authError.value = ''
+  if (
+    await authActions.signInWithEmail(
+      values.email,
+      values.password,
+      inlineErrorHandler
+    )()
+  ) {
     onSuccess()
   }
 }
 
 const signUpWithEmail = async (values: SignUpData) => {
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
+  authError.value = ''
+  if (
+    await authActions.signUpWithEmail(
+      values.email,
+      values.password,
+      inlineErrorHandler
+    )()
+  ) {
     onSuccess()
   }
 }
