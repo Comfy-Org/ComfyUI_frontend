@@ -1,4 +1,4 @@
-import { type Component, computed, markRaw } from 'vue'
+import { type Component, computed, markRaw, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
 import ILucideAlignStartHorizontal from '~icons/lucide/align-start-horizontal'
@@ -96,13 +96,19 @@ export function useMoreOptionsMenu() {
     hasOutputNodesSelected,
     hasMultipleSelection,
     hasSingleSelection,
-    selectedNodesStates
+    computeSelectionFlags
   } = useSelectionState()
 
   // Backwards compatibility local aliases
   const hasSubgraphs = hasSubgraphsComputed
   const hasMultipleNodes = hasMultipleSelection
   const hasSingleNode = hasSingleSelection
+
+  // Internal version to force menu rebuild after state mutations
+  const optionsVersion = ref(0)
+  const bump = () => {
+    optionsVersion.value++
+  }
 
   const openMaskEditor = () => {
     const commandStore = useCommandStore()
@@ -221,7 +227,7 @@ export function useMoreOptionsMenu() {
   })
 
   const menuOptions = computed((): MenuOption[] => {
-    const states = selectedNodesStates.value
+    const states = computeSelectionFlags()
     const hasSubgraphsSelected = hasSubgraphs.value
     const options: MenuOption[] = []
 
@@ -314,7 +320,10 @@ export function useMoreOptionsMenu() {
           ? t('contextMenu.Expand Node')
           : t('contextMenu.Minimize Node'),
         icon: markRaw(states.collapsed ? ILucideMaximize2 : ILucideMinimize2),
-        action: toggleNodeCollapse
+        action: () => {
+          toggleNodeCollapse()
+          bump()
+        }
       },
       {
         type: 'divider'
@@ -367,7 +376,10 @@ export function useMoreOptionsMenu() {
       {
         label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
         icon: markRaw(states.pinned ? ILucidePinOff : ILucidePin),
-        action: toggleNodePin
+        action: () => {
+          toggleNodePin()
+          bump()
+        }
       },
       {
         type: 'divider'
@@ -404,7 +416,10 @@ export function useMoreOptionsMenu() {
         : t('contextMenu.Bypass'),
       icon: markRaw(states.bypassed ? ILucideZapOff : ILucideBan),
       shortcut: 'Ctrl+B',
-      action: toggleNodeBypass
+      action: () => {
+        toggleNodeBypass()
+        bump()
+      }
     })
 
     if (hasOutputNodesSelected.value) {
@@ -455,7 +470,7 @@ export function useMoreOptionsMenu() {
   return {
     menuOptions,
     menuOptionsWithSubmenu,
-    selectedNodesStates,
+    bump,
     hasSubgraphs
   }
 }

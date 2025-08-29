@@ -78,6 +78,18 @@ export function useSelectionState() {
     }
   })
 
+  // On-demand computation (non-reactive) so callers can fetch fresh flags
+  const computeSelectionFlags = (): NodeSelectionState => {
+    const nodes = selectedNodes.value
+    if (!nodes.length)
+      return { collapsed: false, pinned: false, bypassed: false }
+    return {
+      collapsed: nodes.some((n) => n.flags?.collapsed),
+      pinned: nodes.some((n) => n.pinned),
+      bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
+    }
+  }
+
   /** Toggle node help sidebar/panel for the single selected node (if any). */
   const showNodeHelp = () => {
     const def = nodeDef.value
@@ -120,6 +132,7 @@ export function useSelectionState() {
     hasImageNode,
     hasOutputNodesSelected,
     // aggregate states
-    selectedNodesStates
+    selectedNodesStates,
+    computeSelectionFlags
   }
 }

@@ -11,9 +11,9 @@
     :class="{
       'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]': true,
       'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]':
-        isByPassed.bypassed
+        isBypassed
     }"
-    @click="() => byPass()"
+    @click="byPass"
   >
     <template #icon>
       <i-lucide:ban />
@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
@@ -30,10 +31,10 @@ import { useCommandStore } from '@/stores/commandStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const { selectedNodesStates, hasAnySelection } = useSelectionState()
+const { hasAnySelection } = useSelectionState()
+const isBypassed = ref(false)
 
-const isByPassed = selectedNodesStates
-const byPass = () => {
-  void commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
+const byPass = async () => {
+  await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
 }
 </script>

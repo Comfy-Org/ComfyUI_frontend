@@ -75,7 +75,7 @@ const lastProgrammaticHideReason = ref<HideReason | null>(null)
 const submenuRefs = ref<Record<string, InstanceType<typeof SubmenuPopover>>>({})
 const currentSubmenu = ref<string | null>(null)
 
-const { menuOptions, menuOptionsWithSubmenu } = useMoreOptionsMenu()
+const { menuOptions, menuOptionsWithSubmenu, bump } = useMoreOptionsMenu()
 const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 
 const minimap = useMinimap()
@@ -86,6 +86,7 @@ const toggle = (event: Event) => {
   if (isOpen.value) {
     hide('manual')
   } else {
+    bump()
     popover.value?.show(event)
     isOpen.value = true
   }
