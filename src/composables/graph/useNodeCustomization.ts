@@ -71,6 +71,11 @@ export function useNodeCustomization() {
     {
       name: 'default',
       localizedName: t('shape.default'),
+      value: RenderShape.ROUND
+    },
+    {
+      name: 'default',
+      localizedName: t('shape.default'),
       value: RenderShape.BOX
     },
     {
@@ -82,16 +87,6 @@ export function useNodeCustomization() {
       name: 'card',
       localizedName: t('shape.CARD'),
       value: RenderShape.CARD
-    },
-    {
-      name: 'circle',
-      localizedName: t('shape.circle'),
-      value: RenderShape.CIRCLE
-    },
-    {
-      name: 'arrow',
-      localizedName: t('shape.arrow'),
-      value: RenderShape.ARROW
     }
   ]
 
