@@ -8,7 +8,7 @@
     class="help-button"
     text
     severity="secondary"
-    @click="showHelp"
+    @click="toggleHelp"
   >
     <i-lucide:info :size="16" />
   </Button>
@@ -39,10 +39,28 @@ const nodeDef = computed<ComfyNodeDefImpl | null>(() => {
   return nodeDefStore.fromLGraphNode(item)
 })
 
-const showHelp = () => {
+const toggleHelp = () => {
   const def = nodeDef.value
   if (!def) return
-  if (sidebarTabStore.activeSidebarTabId !== nodeLibraryTabId) {
+
+  const isSidebarActive =
+    sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
+  const currentHelpNode = nodeHelpStore.currentHelpNode as any
+  const isSameNodeHelpOpen =
+    isSidebarActive &&
+    nodeHelpStore.isHelpOpen &&
+    currentHelpNode &&
+    currentHelpNode.nodePath === def.nodePath
+
+  // If the sidebar is already showing this node's help, close both.
+  if (isSameNodeHelpOpen) {
+    nodeHelpStore.closeHelp()
+    sidebarTabStore.toggleSidebarTab(nodeLibraryTabId) // closes (sets null)
+    return
+  }
+
+  // Ensure sidebar is open
+  if (!isSidebarActive) {
     sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
   }
   nodeHelpStore.openHelp(def)

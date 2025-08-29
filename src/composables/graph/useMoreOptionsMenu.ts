@@ -111,7 +111,25 @@ export function useMoreOptionsMenu() {
   const showNodeHelp = () => {
     const def = nodeDef.value
     if (!def) return
-    if (sidebarTabStore.activeSidebarTabId !== nodeLibraryTabId) {
+
+    const isSidebarActive =
+      sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
+    const currentHelpNode: any = nodeHelpStore.currentHelpNode
+    const isSameNodeHelpOpen =
+      isSidebarActive &&
+      nodeHelpStore.isHelpOpen &&
+      currentHelpNode &&
+      currentHelpNode.nodePath === def.nodePath
+
+    // If already open on this node, close help and sidebar.
+    if (isSameNodeHelpOpen) {
+      nodeHelpStore.closeHelp()
+      sidebarTabStore.toggleSidebarTab(nodeLibraryTabId) // closes (sets null)
+      return
+    }
+
+    // Otherwise ensure sidebar open then show help.
+    if (!isSidebarActive) {
       sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
     }
     nodeHelpStore.openHelp(def)
@@ -333,21 +351,22 @@ export function useMoreOptionsMenu() {
       })
     }
 
-    options.push(
-      {
-        type: 'divider'
-      },
-      {
+    options.push({ type: 'divider' })
+
+    // Show Node Info only when a single node/subgraph with a definition is selected
+    if (nodeDef.value) {
+      options.push({
         label: t('contextMenu.Node Info'),
         icon: markRaw(ILucideInfo),
         action: showNodeHelp
-      },
-      {
-        label: t('contextMenu.Adjust Size'),
-        icon: markRaw(ILucideMoveDiagonal2),
-        action: adjustNodeSize
-      }
-    )
+      })
+    }
+
+    options.push({
+      label: t('contextMenu.Adjust Size'),
+      icon: markRaw(ILucideMoveDiagonal2),
+      action: adjustNodeSize
+    })
 
     if (hasSingleNode.value) {
       options.push({
