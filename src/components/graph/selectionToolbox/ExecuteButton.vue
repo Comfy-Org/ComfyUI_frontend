@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-show="canvasStore.nodeSelected && !isDisabled"
+    v-show="hasOutputNodesSelected && !isDisabled"
     v-tooltip.top="{
       value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
@@ -21,21 +21,21 @@ import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
-const canvasStore = useCanvasStore()
 const commandStore = useCommandStore()
+const { hasOutputNodesSelected, selectedNodes } = useSelectionState()
 
-const canvas = canvasStore.getCanvas()
+const canvas = app.canvas
 const buttonHovered = ref(false)
 const selectedOutputNodes = computed(
   () =>
-    canvasStore.selectedItems.filter(
-      (item) => isLGraphNode(item) && item.constructor.nodeData?.output_node
+    selectedNodes.value.filter(
+      (item) => item.constructor.nodeData?.output_node
     ) as LGraphNode[]
 )
 

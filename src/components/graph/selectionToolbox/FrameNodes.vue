@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-show="hasSelectedItems"
+    v-show="hasAnySelection"
     v-tooltip.top="{
       value: $t('g.frameNodes'),
       showDelay: 1000
@@ -16,21 +16,17 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed } from 'vue'
 
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
-const canvasStore = useCanvasStore()
 const titleEditorStore = useTitleEditorStore()
 const settingStore = useSettingStore()
 
-const hasSelectedItems = computed(() => {
-  return canvasStore.selectedItems.length > 0
-})
+const { hasAnySelection } = useSelectionState()
 
 const frameNodes = () => {
   const { canvas } = app

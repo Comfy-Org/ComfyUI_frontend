@@ -17,14 +17,14 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
+const { selectedItems } = useSelectionState()
 
 const isDeletable = computed(() =>
-  canvasStore.selectedItems.some((x) => x.removable !== false)
+  selectedItems.value.some((x: any) => x.removable !== false)
 )
 </script>

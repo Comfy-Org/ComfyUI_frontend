@@ -28,20 +28,10 @@ import { useNodeArrangement } from '@/composables/graph/useNodeArrangement'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useNodeInfo } from '@/composables/graph/useNodeInfo'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import {
-  LGraphEventMode,
-  LGraphNode,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 export interface MenuOption {
   label?: string
@@ -97,86 +87,22 @@ export function useMoreOptionsMenu() {
     runBranch
   } = useNodeInfo()
 
-  const nodeDefStore = useNodeDefStore()
-  const sidebarTabStore = useSidebarTabStore()
-  const nodeHelpStore = useNodeHelpStore()
-  const { id: nodeLibraryTabId } = useNodeLibrarySidebarTab()
+  const {
+    selectedNodes,
+    nodeDef,
+    showNodeHelp,
+    hasSubgraphs: hasSubgraphsComputed,
+    hasImageNode,
+    hasOutputNodesSelected,
+    hasMultipleSelection,
+    hasSingleSelection,
+    selectedNodesStates
+  } = useSelectionState()
 
-  const nodeDef = computed(() => {
-    if (canvasStore.selectedItems.length !== 1) return null
-    const item = canvasStore.selectedItems[0]
-    if (!isLGraphNode(item)) return null
-    return nodeDefStore.fromLGraphNode(item)
-  })
-
-  const showNodeHelp = () => {
-    const def = nodeDef.value
-    if (!def) return
-
-    const isSidebarActive =
-      sidebarTabStore.activeSidebarTabId === nodeLibraryTabId
-    const currentHelpNode: any = nodeHelpStore.currentHelpNode
-    const isSameNodeHelpOpen =
-      isSidebarActive &&
-      nodeHelpStore.isHelpOpen &&
-      currentHelpNode &&
-      currentHelpNode.nodePath === def.nodePath
-
-    // If already open on this node, close help and sidebar.
-    if (isSameNodeHelpOpen) {
-      nodeHelpStore.closeHelp()
-      sidebarTabStore.toggleSidebarTab(nodeLibraryTabId) // closes (sets null)
-      return
-    }
-
-    // Otherwise ensure sidebar open then show help.
-    if (!isSidebarActive) {
-      sidebarTabStore.toggleSidebarTab(nodeLibraryTabId)
-    }
-    nodeHelpStore.openHelp(def)
-  }
-
-  const selectedNodes = computed(() => {
-    return canvasStore.selectedItems.filter((item) =>
-      isLGraphNode(item)
-    ) as LGraphNode[]
-  })
-
-  const hasOutputNodesSelected = computed(() => {
-    return filterOutputNodes(selectedNodes.value).length > 0
-  })
-
-  const hasSubgraphs = computed(() => {
-    return canvasStore.selectedItems.some(
-      (item) => item instanceof SubgraphNode
-    )
-  })
-
-  const hasImageNode = computed(() => {
-    if (selectedNodes.value.length !== 1) return false
-    const node = selectedNodes.value[0]
-    return node.imgs && node.imgs.length > 0
-  })
-
-  const hasMultipleNodes = computed(() => {
-    return selectedNodes.value.length > 1
-  })
-
-  const hasSingleNode = computed(() => {
-    return selectedNodes.value.length === 1
-  })
-
-  const selectedNodesStates = computed((): NodeSelectionState => {
-    const nodes = selectedNodes.value
-    if (nodes.length === 0)
-      return { collapsed: false, pinned: false, bypassed: false }
-
-    const collapsed = nodes.some((node) => node.flags?.collapsed)
-    const pinned = nodes.some((node) => node.pinned)
-    const bypassed = nodes.some((node) => node.mode === LGraphEventMode.BYPASS)
-
-    return { collapsed, pinned, bypassed }
-  })
+  // Backwards compatibility local aliases
+  const hasSubgraphs = hasSubgraphsComputed
+  const hasMultipleNodes = hasMultipleSelection
+  const hasSingleNode = hasSingleSelection
 
   const openMaskEditor = () => {
     const commandStore = useCommandStore()

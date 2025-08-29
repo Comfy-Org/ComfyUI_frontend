@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-show="canvasStore.nodeSelected || canvasStore.groupSelected"
+    v-show="hasAnySelection"
     v-tooltip.top="{
       value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Pin.label'),
       showDelay: 1000
@@ -16,10 +16,10 @@
 import Button from 'primevue/button'
 import { useI18n } from 'vue-i18n'
 
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
+const { hasAnySelection } = useSelectionState()
 </script>

@@ -59,12 +59,12 @@ import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButt
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import { useRetriggerableAnimation } from '@/composables/element/useRetriggerableAnimation'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
-import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 
 import BookmarkButton from './selectionToolbox/BookmarkButton.vue'
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
@@ -100,31 +100,13 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })
 
-const hasAnySelection = computed(() => canvasStore.selectedItems.length > 0)
-const hasSingleSelection = computed(
-  () => canvasStore.selectedItems.length === 1
-)
-const hasMultipleSelection = computed(
-  () => canvasStore.selectedItems.length > 1
-)
-
-const isSingleNode = computed(() => {
-  if (!hasSingleSelection.value) return false
-  const item = canvasStore.selectedItems[0]
-  return isLGraphNode(item)
-})
-
-const isSingleSubgraph = computed(() => {
-  if (!hasSingleSelection.value) return false
-  const item = canvasStore.selectedItems[0]
-  return isLGraphNode(item) && item.isSubgraphNode?.()
-})
-
-const isSingleImageNode = computed(() => {
-  if (!hasSingleSelection.value) return false
-  const item = canvasStore.selectedItems[0]
-  return isLGraphNode(item) && isImageNode(item)
-})
+const {
+  hasAnySelection,
+  hasMultipleSelection,
+  isSingleNode,
+  isSingleSubgraph,
+  isSingleImageNode
+} = useSelectionState()
 
 const showInfoButton = computed(
   () => isSingleNode.value || isSingleSubgraph.value
