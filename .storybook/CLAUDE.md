@@ -2,9 +2,9 @@
 
 ## Quick Commands
 
-- `npm run storybook`: Start Storybook development server
-- `npm run build-storybook`: Build static Storybook
-- `npm run test:component`: Run component tests (includes Storybook components)
+- `pnpm storybook`: Start Storybook development server
+- `pnpm build-storybook`: Build static Storybook
+- `pnpm test:component`: Run component tests (includes Storybook components)
 
 ## Development Workflow for Storybook
 
@@ -19,8 +19,8 @@
    - Ensure proper theming and styling
 
 3. **Code Quality**:
-   - Run `npm run typecheck` to verify TypeScript
-   - Run `npm run lint` to check for linting issues
+   - Run `pnpm typecheck` to verify TypeScript
+   - Run `pnpm lint` to check for linting issues
    - Follow existing story patterns and conventions
 
 ## Story Creation Guidelines
@@ -138,13 +138,13 @@ The Storybook preview is configured with:
 
 ```bash
 # Check TypeScript issues
-npm run typecheck
+pnpm typecheck
 
 # Lint Storybook files
-npm run lint .storybook/
+pnpm lint .storybook/
 
 # Build to check for production issues
-npm run build-storybook
+pnpm build-storybook
 ```
 
 ## File Organization

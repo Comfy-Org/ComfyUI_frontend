@@ -19,9 +19,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
+          cache: 'pnpm'
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            tsconfig.tsbuildinfo
+          key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            release-tools-cache-${{ runner.os }}-
+
       - name: Get current version
         id: current_version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
@@ -41,9 +57,9 @@ jobs:
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
           USE_PROD_CONFIG: 'true'
         run: |
-          npm ci
-          npm run build
-          npm run zipdist
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm zipdist
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -113,14 +129,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
+          cache: 'pnpm'
           registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run build:types
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            tsconfig.tsbuildinfo
+            dist
+          key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            types-tools-cache-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:types
       - name: Publish package
-        run: npm publish --access public
+        run: pnpm publish --access public
         working-directory: dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

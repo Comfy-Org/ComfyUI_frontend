@@ -10,7 +10,6 @@ lerna-debug.log*
 # Package manager lockfiles (allow users to use different package managers)
 bun.lock
 bun.lockb
-pnpm-lock.yaml
 yarn.lock
 
 # Cache files
@@ -23,6 +22,7 @@ dist-ssr
 *.local
 # Claude configuration
 .claude/*.local.json
+CLAUDE.local.md
 
 # Editor directories and files
 .vscode/*
@@ -77,3 +77,12 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
+
+
+
+.nx/cache
+.nx/workspace-data
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
