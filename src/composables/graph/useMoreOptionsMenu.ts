@@ -41,6 +41,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 export interface MenuOption {
   label?: string
@@ -139,6 +140,10 @@ export function useMoreOptionsMenu() {
     return canvasStore.selectedItems.filter((item) =>
       isLGraphNode(item)
     ) as LGraphNode[]
+  })
+
+  const hasOutputNodesSelected = computed(() => {
+    return filterOutputNodes(selectedNodes.value).length > 0
   })
 
   const hasSubgraphs = computed(() => {
@@ -466,25 +471,25 @@ export function useMoreOptionsMenu() {
       )
     }
 
-    options.push(
+    options.push({
       // Show appropriate bypass option based on current state
-      {
-        label: states.bypassed
-          ? t('contextMenu.Remove Bypass')
-          : t('contextMenu.Bypass'),
-        icon: markRaw(states.bypassed ? ILucideZapOff : ILucideBan),
-        shortcut: 'Ctrl+B',
-        action: toggleNodeBypass
-      },
-      {
+      label: states.bypassed
+        ? t('contextMenu.Remove Bypass')
+        : t('contextMenu.Bypass'),
+      icon: markRaw(states.bypassed ? ILucideZapOff : ILucideBan),
+      shortcut: 'Ctrl+B',
+      action: toggleNodeBypass
+    })
+
+    if (hasOutputNodesSelected.value) {
+      options.push({
         label: t('contextMenu.Run Branch'),
         icon: markRaw(ILucidePlay),
         action: runBranch
-      },
-      {
-        type: 'divider'
-      }
-    )
+      })
+    }
+
+    options.push({ type: 'divider' })
 
     // Add paste and convert to group for multiple nodes
     if (hasMultipleNodes.value) {
