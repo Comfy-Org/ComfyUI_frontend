@@ -591,23 +591,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       return n.widgets.find((w) => w.name === widgetName)
     }
     const overlay: object = {nodeId, widgetName, graph: this.subgraph}
-    const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'getOwnPropertyDescriptor', 'getOwnProperty', 'ownKeys'].map((s) => {
+    const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'getOwnPropertyDescriptor', 'ownKeys', 'has'].map((s) => {
       const func = function(t,p,...rest) {
 	if (s == 'get' && p == '_overlay')
 	  return overlay
-
 	const lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
-
-	if (s.startsWith('getOwnP'))
-	  console.log("getOwnP", arguments)
 	if (s == 'ownKeys') {
-	  console.log("ownkeys", arguments)
-	  return [...Reflect.ownKeys(lw), ...Reflect.ownKeys(overlay)]
+	  return Reflect.ownKeys(lw)
 	}
-	if (s == 'get' && p == 'value')
-	  return lw.value
-	if (s == 'set' && p == 'value')
-	  return lw.value = rest[0]
 	if (s == 'get' && p == 'node')
 	  return {pos: this.pos, __proto__:
 	    linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).node}
@@ -617,7 +608,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 	  t = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
 	  if (!t)
 	    return//TODO: pass to overlay subitem to display a disconnected state
-	return Reflect[s](t,p,...rest)
+	const r = rest.at(-1)
+	const ret = Reflect[s](t,p,...rest.slice(0,-1), t)
+	if (ret instanceof Function) {
+	  return function (...args) {
+	    //console.log(r,t,r===t)
+	    return ret.apply(this === r ? t : this, args)
+	  }
+	}
+	return ret
+
       }
       return [s, func]
     }))
