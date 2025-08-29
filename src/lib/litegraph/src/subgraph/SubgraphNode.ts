@@ -600,16 +600,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 	  return Reflect.ownKeys(lw)
 	}
 	if (s == 'get' && p == 'node')
-	  return {pos: this.pos, __proto__:
-	    linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName).node}
+	  return {pos: this.pos, __proto__:lw.node}
+	const r = rest.at(-1)
 	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled'].includes(p))
-	  t = overlay
+	  r = overlay
 	else
-	  t = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
+	  r = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
 	  if (!t)
 	    return//TODO: pass to overlay subitem to display a disconnected state
-	const r = rest.at(-1)
-	const ret = Reflect[s](t,p,...rest.slice(0,-1), t)
+	const ret = Reflect[s](t,p,...rest.slice(0,-1), r)
 	if (ret instanceof Function) {
 	  return function (...args) {
 	    //console.log(r,t,r===t)
