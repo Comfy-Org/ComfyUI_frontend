@@ -2,7 +2,7 @@ name: PR Storybook Comment
 
 on:
   workflow_run:
-    workflows: ["Chromatic"]
+    workflows: ['Chromatic']
     types: [requested, completed]
 
 jobs:
@@ -24,12 +24,12 @@ jobs:
               state: 'open',
               head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
             });
-            
+
             if (pullRequests.length === 0) {
               console.log('No open PR found for this branch');
               return null;
             }
-            
+
             return pullRequests[0].number;
 
       - name: Log when no PR found
@@ -51,7 +51,7 @@ jobs:
               repo: context.repo.repo,
               run_id: context.payload.workflow_run.id,
             });
-            
+
             return {
               conclusion: run.data.conclusion,
               html_url: run.data.html_url
