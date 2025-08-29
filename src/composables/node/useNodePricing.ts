@@ -201,7 +201,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           } else {
             basePrice = 0.09
           }
-        } else if (renderingSpeed.toLowerCase().includes('balanced')) {
+        } else if (renderingSpeed.toLowerCase().includes('default')) {
           if (hasCharacter) {
             basePrice = 0.15
           } else {

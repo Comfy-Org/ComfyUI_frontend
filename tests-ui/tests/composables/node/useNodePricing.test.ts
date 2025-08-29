@@ -409,12 +409,12 @@ describe('useNodePricing', () => {
           expected: '$0.20/Run'
         },
         {
-          rendering_speed: 'Balanced',
+          rendering_speed: 'Default',
           character_image: false,
           expected: '$0.06/Run'
         },
         {
-          rendering_speed: 'Balanced',
+          rendering_speed: 'Default',
           character_image: true,
           expected: '$0.15/Run'
         },
