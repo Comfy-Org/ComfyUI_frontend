@@ -32,6 +32,14 @@ jobs:
             
             return pullRequests[0].number;
 
+      - name: Log when no PR found
+        if: steps.pr.outputs.result == 'null'
+        run: |
+          echo "⚠️ No open PR found for branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
+          echo "Repository: ${{ github.event.workflow_run.repository.full_name }}"
+          echo "Event: ${{ github.event.workflow_run.event }}"
+
       - name: Get workflow run details
         if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
         id: workflow-run

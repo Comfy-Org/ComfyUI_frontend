@@ -2,7 +2,7 @@ name: PR Playwright Comment
 
 on:
   workflow_run:
-    workflows: ["Tests CI"]
+    workflows: ['Tests CI']
     types: [requested, completed]
 
 env:
@@ -27,27 +27,21 @@ jobs:
               state: 'open',
               head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
             });
-            
+
             if (pullRequests.length === 0) {
               console.log('No open PR found for this branch');
               return null;
             }
-            
+
             return pullRequests[0].number;
 
-      - name: Download all deployment info
-        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
-        uses: actions/download-artifact@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-          pattern: deployment-info-*
-          merge-multiple: true
-          path: deployment-info
-
-      - name: Get completion time
-        id: completion-time
-        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
+      - name: Log when no PR found
+        if: steps.pr.outputs.result == 'null'
+        run: |
+          echo "⚠️ No open PR found for branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
+          echo "Repository: ${{ github.event.workflow_run.repository.full_name }}"
+          echo "Event: ${{ github.event.workflow_run.event }}"
 
       - name: Generate comment body for start
         if: steps.pr.outputs.result != 'null' && github.event.action == 'requested'
@@ -68,6 +62,20 @@ jobs:
           echo "" >> comment.md
           echo "---" >> comment.md
           echo "⏱️ Please wait while tests are running across all browsers..." >> comment.md
+
+      - name: Download all deployment info
+        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: deployment-info-*
+          merge-multiple: true
+          path: deployment-info
+
+      - name: Get completion time
+        id: completion-time
+        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
       - name: Generate comment body for completion
         if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
