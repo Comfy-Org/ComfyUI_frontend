@@ -1,4 +1,10 @@
 {
+  "Comfy_SoundNotification_AfterAllPrompts": {
+    "name": "执行完所有提示后"
+  },
+  "Comfy_SoundNotification_AfterOnePrompt": {
+    "name": "执行完一个提示后"
+  },
   "Comfy-Desktop_AutoUpdate": {
     "name": "自动检查更新"
   },
