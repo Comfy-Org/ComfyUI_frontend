@@ -200,8 +200,8 @@ export const MultipleSelectors: Story = {
         </div>
         
         <div class="p-4 bg-gray-50 dark-theme:bg-zinc-800 rounded">
-          <h4 class="font-medium mb-2">Current Selection:</h4>
-          <div class="space-y-1 text-sm">
+          <h4 class="font-medium mt-0">Current Selection:</h4>
+          <div class="flex flex-col text-sm">
             <p>Frameworks: {{ selectedFrameworks.length > 0 ? selectedFrameworks.map(s => s.name).join(', ') : 'None' }}</p>
             <p>Projects: {{ selectedProjects.length > 0 ? selectedProjects.map(s => s.name).join(', ') : 'None' }}</p>
             <p>Tags: {{ selectedTags.length > 0 ? selectedTags.map(s => s.name).join(', ') : 'None' }}</p>

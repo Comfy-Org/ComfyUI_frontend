@@ -1,49 +1,47 @@
 <template>
-  <div class="relative inline-flex items-center">
-    <Select
-      v-model="selectedItem"
-      :options="options"
-      option-label="name"
-      option-value="value"
-      unstyled
-      :placeholder="label"
-      :pt="pt"
-    >
-      <!-- Trigger value -->
-      <template #value="slotProps">
-        <div class="flex items-center gap-2 text-sm">
-          <slot name="icon" />
-          <span
-            v-if="slotProps.value !== null && slotProps.value !== undefined"
-            class="text-zinc-700 dark-theme:text-gray-200"
-          >
-            {{ getLabel(slotProps.value) }}
-          </span>
-          <span v-else class="text-zinc-700 dark-theme:text-gray-200">
-            {{ label }}
-          </span>
-        </div>
-      </template>
+  <Select
+    v-model="selectedItem"
+    :options="options"
+    option-label="name"
+    option-value="value"
+    unstyled
+    :placeholder="label"
+    :pt="pt"
+  >
+    <!-- Trigger value -->
+    <template #value="slotProps">
+      <div class="flex items-center gap-2 text-sm">
+        <slot name="icon" />
+        <span
+          v-if="slotProps.value !== null && slotProps.value !== undefined"
+          class="text-zinc-700 dark-theme:text-gray-200"
+        >
+          {{ getLabel(slotProps.value) }}
+        </span>
+        <span v-else class="text-zinc-700 dark-theme:text-gray-200">
+          {{ label }}
+        </span>
+      </div>
+    </template>
 
-      <!-- Trigger caret -->
-      <template #dropdownicon>
-        <i-lucide:chevron-down
-          class="text-base text-neutral-400 dark-theme:text-gray-300"
+    <!-- Trigger caret -->
+    <template #dropdownicon>
+      <i-lucide:chevron-down
+        class="text-base text-neutral-400 dark-theme:text-gray-300"
+      />
+    </template>
+
+    <!-- Option row -->
+    <template #option="{ option, selected }">
+      <div class="flex items-center justify-between gap-3 w-full">
+        <span class="truncate">{{ option.name }}</span>
+        <i-lucide:check
+          v-if="selected"
+          class="text-neutral-900 dark-theme:text-white"
         />
-      </template>
-
-      <!-- Option row -->
-      <template #option="{ option, selected }">
-        <div class="flex items-center justify-between gap-3 w-full">
-          <span class="truncate">{{ option.name }}</span>
-          <i-lucide:check
-            v-if="selected"
-            class="text-neutral-900 dark-theme:text-white"
-          />
-        </div>
-      </template>
-    </Select>
-  </div>
+      </div>
+    </template>
+  </Select>
 </template>
 
 <script setup lang="ts">
@@ -77,7 +75,7 @@ const pt = computed(() => ({
   }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
     class: [
       // container
-      'relative inline-flex w-full cursor-pointer select-none items-center',
+      'relative inline-flex cursor-pointer select-none items-center',
       // trigger surface
       'rounded-md',
       'bg-transparent text-neutral dark-theme:text-white',
