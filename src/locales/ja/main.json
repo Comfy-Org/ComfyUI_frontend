@@ -852,21 +852,13 @@
     "Show Model Selector (Dev)": "モデルセレクターを表示（開発用）",
     "Show Settings Dialog": "設定ダイアログを表示",
     "Sign Out": "サインアウト",
-    "Toggle Essential Bottom Panel": "エッセンシャル下部パネルの切り替え",
-    "Toggle Logs Bottom Panel": "ログ下部パネルの切り替え",
-    "Show Settings Dialog": "設定ダイアログを表示",
-    "Sign Out": "サインアウト",
     "Toggle Bottom Panel": "下部パネルの切り替え",
     "Toggle Essential Bottom Panel": "エッセンシャル下部パネルの切り替え",
     "Toggle Focus Mode": "フォーカスモードの切り替え",
     "Toggle Logs Bottom Panel": "ログパネル下部を切り替え",
-    "Toggle Model Library Sidebar": "モデルライブラリサイドバーを切り替え",
-    "Toggle Node Library Sidebar": "ノードライブラリサイドバーを切り替え",
-    "Toggle Queue Sidebar": "キューサイドバーを切り替え",
     "Toggle Search Box": "検索ボックスの切り替え",
     "Toggle Terminal Bottom Panel": "ターミナル下部パネルの切り替え",
     "Toggle Theme (Dark/Light)": "テーマを切り替え（ダーク/ライト）",
-    "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
     "Toggle Workflows Sidebar": "ワークフローサイドバーを切り替え",
     "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
     "Toggle the Custom Nodes Manager": "カスタムノードマネージャーを切り替え",
@@ -885,7 +877,11 @@
     "renderBypassState": "バイパス状態を表示",
     "renderErrorState": "エラー状態を表示",
     "showGroups": "フレーム／グループを表示",
-    "showLinks": "リンクを表示"
+    "showLinks": "リンクを表示",
+    "sideToolbar_modelLibrary": "モデルライブラリ",
+    "sideToolbar_nodeLibrary": "ノードライブラリ",
+    "sideToolbar_queue": "キュー",
+    "sideToolbar_workflows": "ワークフロー"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "再度表示しない",
@@ -1209,7 +1205,6 @@
   "shortcuts": {
     "essentials": "基本",
     "keyboardShortcuts": "キーボードショートカット",
-    "manageShortcuts": "ショートカットの管理",
     "manageShortcuts": "ショートカット管理",
     "noKeybinding": "キー割り当てなし",
     "subcategories": {

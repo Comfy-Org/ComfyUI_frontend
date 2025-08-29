@@ -18,7 +18,8 @@
     <!-- Connection Dot -->
     <div class="w-5 h-5 flex items-center justify-center group/slot">
       <div
-        class="w-2.5 h-2.5 rounded-full bg-white transition-all duration-150 group-hover/slot:w-3 group-hover/slot:h-3 group-hover/slot:border-2 group-hover/slot:border-white"
+        ref="slotElRef"
+        class="w-2 h-2 rounded-full bg-white transition-all duration-150 group-hover/slot:w-2.5 group-hover/slot:h-2.5 group-hover/slot:border-2 group-hover/slot:border-white"
         :style="{
           backgroundColor: slotColor
         }"
@@ -36,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, inject, onErrorCaptured, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
@@ -45,9 +46,15 @@ import {
   INodeSlot,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+// DOM-based slot registration for arbitrary positioning
+import {
+  type TransformState,
+  useDomSlotRegistration
+} from '@/renderer/core/layout/slots/useDomSlotRegistration'
 
 interface InputSlotProps {
   node?: LGraphNode
+  nodeId?: string
   slotData: INodeSlot
   index: number
   connected?: boolean
@@ -84,4 +91,16 @@ const handleClick = (event: PointerEvent) => {
     emit('slot-click', event)
   }
 }
+
+const transformState = inject<TransformState | undefined>(
+  'transformState',
+  undefined
+)
+
+const { slotElRef } = useDomSlotRegistration(
+  props.nodeId ?? '',
+  props.index,
+  true,
+  transformState
+)
 </script>

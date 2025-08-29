@@ -5,14 +5,18 @@
  * This allows both litegraph nodes and the layout system to use the same
  * calculation logic while providing their own position data.
  */
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot,
-  Point
+  Point,
+  ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
+import { getSlotKey } from '@/renderer/core/layout/slots/SlotIdentifier'
+import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 export interface SlotPositionContext {
   /** Node's X position in graph coordinates */
@@ -145,6 +149,54 @@ export function calculateOutputSlotPos(
 
   // TODO: Why +1?
   return [nodeX + nodeWidth + 1 - offsetX, nodeY + slotY + nodeOffsetY]
+}
+
+/**
+ * Get slot position using layout tree if available, fallback to node's position
+ * Unified implementation used by both LitegraphLinkAdapter and useLinkLayoutSync
+ * @param node The LGraphNode
+ * @param slotIndex The slot index
+ * @param isInput Whether this is an input slot
+ * @returns Position of the slot center in graph coordinates
+ */
+export function getSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): ReadOnlyPoint {
+  // Try to get precise position from slot layout (DOM-registered)
+  const slotKey = getSlotKey(String(node.id), slotIndex, isInput)
+  const slotLayout = layoutStore.getSlotLayout(slotKey)
+  if (slotLayout) {
+    return [slotLayout.position.x, slotLayout.position.y]
+  }
+
+  // Fallback: derive position from node layout tree and slot model
+  const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
+
+  if (nodeLayout) {
+    // Create context from layout tree data
+    const context: SlotPositionContext = {
+      nodeX: nodeLayout.position.x,
+      nodeY: nodeLayout.position.y,
+      nodeWidth: nodeLayout.size.width,
+      nodeHeight: nodeLayout.size.height,
+      collapsed: node.flags.collapsed || false,
+      collapsedWidth: node._collapsed_width,
+      slotStartY: node.constructor.slot_start_y,
+      inputs: node.inputs,
+      outputs: node.outputs,
+      widgets: node.widgets
+    }
+
+    // Use helper to calculate position
+    return isInput
+      ? calculateInputSlotPos(context, slotIndex)
+      : calculateOutputSlotPos(context, slotIndex)
+  }
+
+  // Fallback to node's own methods if layout not available
+  return isInput ? node.getInputPos(slotIndex) : node.getOutputPos(slotIndex)
 }
 
 /**

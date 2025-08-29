@@ -852,9 +852,6 @@
     "Show Model Selector (Dev)": "Mostrar selector de modelo (Desarrollo)",
     "Show Settings Dialog": "Mostrar diálogo de configuración",
     "Sign Out": "Cerrar sesión",
-    "Toggle Essential Bottom Panel": "Alternar panel inferior esencial",
-    "Show Settings Dialog": "Mostrar diálogo de configuración",
-    "Sign Out": "Cerrar sesión",
     "Toggle Bottom Panel": "Alternar panel inferior",
     "Toggle Essential Bottom Panel": "Alternar panel inferior esencial",
     "Toggle Focus Mode": "Alternar modo de enfoque",
@@ -880,7 +877,11 @@
     "renderBypassState": "Mostrar estado de omisión",
     "renderErrorState": "Mostrar estado de error",
     "showGroups": "Mostrar marcos/grupos",
-    "showLinks": "Mostrar enlaces"
+    "showLinks": "Mostrar enlaces",
+    "sideToolbar_modelLibrary": "sideToolbar.bibliotecaDeModelos",
+    "sideToolbar_nodeLibrary": "sideToolbar.bibliotecaDeNodos",
+    "sideToolbar_queue": "sideToolbar.cola",
+    "sideToolbar_workflows": "sideToolbar.flujosDeTrabajo"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "No mostrar esto de nuevo",

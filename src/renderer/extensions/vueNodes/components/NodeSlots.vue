@@ -9,6 +9,7 @@
         v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
         :slot-data="input"
+        :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
         :index="getActualInputIndex(input, index)"
         :readonly="readonly"
         @slot-click="
@@ -22,6 +23,7 @@
         v-for="(output, index) in filteredOutputs"
         :key="`output-${index}`"
         :slot-data="output"
+        :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
         :index="index"
         :readonly="readonly"
         @slot-click="handleOutputSlotClick(index, $event)"
@@ -52,7 +54,7 @@ interface NodeSlotsProps {
 
 const props = defineProps<NodeSlotsProps>()
 
-const nodeInfo = computed(() => props.nodeData || props.node)
+const nodeInfo = computed(() => props.nodeData || props.node || null)
 
 // Filter out input slots that have corresponding widgets
 const filteredInputs = computed(() => {

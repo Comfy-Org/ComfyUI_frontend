@@ -852,10 +852,6 @@
     "Show Model Selector (Dev)": "Показать выбор модели (Dev)",
     "Show Settings Dialog": "Показать диалог настроек",
     "Sign Out": "Выйти",
-    "Toggle Essential Bottom Panel": "Показать/скрыть нижнюю панель основных элементов",
-    "Toggle Logs Bottom Panel": "Показать/скрыть нижнюю панель логов",
-    "Show Settings Dialog": "Показать диалог настроек",
-    "Sign Out": "Выйти",
     "Toggle Bottom Panel": "Переключить нижнюю панель",
     "Toggle Essential Bottom Panel": "Показать/скрыть основную нижнюю панель",
     "Toggle Focus Mode": "Переключить режим фокуса",
@@ -866,7 +862,6 @@
     "Toggle Search Box": "Переключить поисковую панель",
     "Toggle Terminal Bottom Panel": "Показать/скрыть нижнюю панель терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
-    "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",
     "Toggle View Controls Bottom Panel": "Показать/скрыть панель управления просмотром",
     "Toggle Workflows Sidebar": "Показать/скрыть боковую панель рабочих процессов",
     "Toggle the Custom Nodes Manager": "Переключить менеджер пользовательских узлов",
@@ -885,7 +880,11 @@
     "renderBypassState": "Отображать состояние обхода",
     "renderErrorState": "Отображать состояние ошибки",
     "showGroups": "Показать фреймы/группы",
-    "showLinks": "Показать связи"
+    "showLinks": "Показать связи",
+    "sideToolbar_modelLibrary": "sideToolbar.каталогМоделей",
+    "sideToolbar_nodeLibrary": "sideToolbar.каталогУзлов",
+    "sideToolbar_queue": "sideToolbar.очередь",
+    "sideToolbar_workflows": "sideToolbar.рабочиеПроцессы"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
@@ -1210,7 +1209,6 @@
     "essentials": "Основные",
     "keyboardShortcuts": "Горячие клавиши",
     "manageShortcuts": "Управление горячими клавишами",
-    "noKeybinding": "Нет сочетания клавиш",
     "noKeybinding": "Нет привязки клавиш",
     "subcategories": {
       "node": "Узел",

@@ -6,6 +6,13 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
+// Enum for layout source types
+export enum LayoutSource {
+  Canvas = 'canvas',
+  Vue = 'vue',
+  External = 'external'
+}
+
 // Basic geometric types
 export interface Point {
   x: number
@@ -28,6 +35,8 @@ export interface Bounds {
 export type NodeId = string
 export type SlotId = string
 export type ConnectionId = string
+export type LinkId = number // Aligned with Litegraph's numeric LinkId
+export type RerouteId = number // Aligned with Litegraph's numeric RerouteId
 
 // Layout data structures
 export interface NodeLayout {
@@ -41,11 +50,38 @@ export interface NodeLayout {
 }
 
 export interface SlotLayout {
-  id: SlotId
   nodeId: NodeId
-  position: Point // Relative to node
-  type: 'input' | 'output'
   index: number
+  type: 'input' | 'output'
+  position: Point
+  bounds: Bounds
+}
+
+export interface LinkLayout {
+  id: LinkId
+  path: Path2D
+  bounds: Bounds
+  centerPos: Point
+  sourceNodeId: NodeId
+  targetNodeId: NodeId
+  sourceSlot: number
+  targetSlot: number
+}
+
+// Layout for individual link segments (for precise hit-testing)
+export interface LinkSegmentLayout {
+  linkId: LinkId
+  rerouteId: RerouteId | null // null for final segment to target
+  path: Path2D
+  bounds: Bounds
+  centerPos: Point
+}
+
+export interface RerouteLayout {
+  id: RerouteId
+  position: Point
+  radius: number
+  bounds: Bounds
 }
 
 export interface ConnectionLayout {
@@ -68,7 +104,7 @@ export type LayoutMutationType =
 export interface LayoutMutation {
   type: LayoutMutationType
   timestamp: number
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
 }
 
 export interface MoveNodeMutation extends LayoutMutation {
@@ -119,10 +155,11 @@ export type AnyLayoutMutation =
   | BatchMutation
 
 // CRDT Operation Types
+
 /**
- * Base operation interface that all operations extend
+ * Meta-only base for all operations - contains common fields
  */
-export interface BaseOperation {
+export interface OperationMeta {
   /** Unique operation ID for deduplication */
   id?: string
   /** Timestamp for ordering operations */
@@ -130,9 +167,19 @@ export interface BaseOperation {
   /** Actor who performed the operation (for CRDT) */
   actor: string
   /** Source system that initiated the operation */
-  source: 'canvas' | 'vue' | 'external'
-  /** Node this operation affects */
-  nodeId: NodeId
+  source: LayoutSource
+  /** Operation type discriminator */
+  type: OperationType
+}
+
+/**
+ * Entity-specific base types for proper type discrimination
+ */
+export type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
+export type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
+export type RerouteOpBase = OperationMeta & {
+  entity: 'reroute'
+  rerouteId: RerouteId
 }
 
 /**
@@ -146,11 +193,16 @@ export type OperationType =
   | 'deleteNode'
   | 'setNodeVisibility'
   | 'batchUpdate'
+  | 'createLink'
+  | 'deleteLink'
+  | 'createReroute'
+  | 'deleteReroute'
+  | 'moveReroute'
 
 /**
  * Move node operation
  */
-export interface MoveNodeOperation extends BaseOperation {
+export interface MoveNodeOperation extends NodeOpBase {
   type: 'moveNode'
   position: Point
   previousPosition: Point
@@ -159,7 +211,7 @@ export interface MoveNodeOperation extends BaseOperation {
 /**
  * Resize node operation
  */
-export interface ResizeNodeOperation extends BaseOperation {
+export interface ResizeNodeOperation extends NodeOpBase {
   type: 'resizeNode'
   size: { width: number; height: number }
   previousSize: { width: number; height: number }
@@ -168,7 +220,7 @@ export interface ResizeNodeOperation extends BaseOperation {
 /**
  * Set node z-index operation
  */
-export interface SetNodeZIndexOperation extends BaseOperation {
+export interface SetNodeZIndexOperation extends NodeOpBase {
   type: 'setNodeZIndex'
   zIndex: number
   previousZIndex: number
@@ -177,7 +229,7 @@ export interface SetNodeZIndexOperation extends BaseOperation {
 /**
  * Create node operation
  */
-export interface CreateNodeOperation extends BaseOperation {
+export interface CreateNodeOperation extends NodeOpBase {
   type: 'createNode'
   layout: NodeLayout
 }
@@ -185,7 +237,7 @@ export interface CreateNodeOperation extends BaseOperation {
 /**
  * Delete node operation
  */
-export interface DeleteNodeOperation extends BaseOperation {
+export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
   previousLayout: NodeLayout
 }
@@ -193,7 +245,7 @@ export interface DeleteNodeOperation extends BaseOperation {
 /**
  * Set node visibility operation
  */
-export interface SetNodeVisibilityOperation extends BaseOperation {
+export interface SetNodeVisibilityOperation extends NodeOpBase {
   type: 'setNodeVisibility'
   visible: boolean
   previousVisible: boolean
@@ -202,10 +254,54 @@ export interface SetNodeVisibilityOperation extends BaseOperation {
 /**
  * Batch update operation for atomic multi-property changes
  */
-export interface BatchUpdateOperation extends BaseOperation {
+export interface BatchUpdateOperation extends NodeOpBase {
   type: 'batchUpdate'
   updates: Partial<NodeLayout>
   previousValues: Partial<NodeLayout>
+}
+
+/**
+ * Create link operation
+ */
+export interface CreateLinkOperation extends LinkOpBase {
+  type: 'createLink'
+  sourceNodeId: NodeId
+  sourceSlot: number
+  targetNodeId: NodeId
+  targetSlot: number
+}
+
+/**
+ * Delete link operation
+ */
+export interface DeleteLinkOperation extends LinkOpBase {
+  type: 'deleteLink'
+}
+
+/**
+ * Create reroute operation
+ */
+export interface CreateRerouteOperation extends RerouteOpBase {
+  type: 'createReroute'
+  position: Point
+  parentId?: RerouteId
+  linkIds: LinkId[]
+}
+
+/**
+ * Delete reroute operation
+ */
+export interface DeleteRerouteOperation extends RerouteOpBase {
+  type: 'deleteReroute'
+}
+
+/**
+ * Move reroute operation
+ */
+export interface MoveRerouteOperation extends RerouteOpBase {
+  type: 'moveReroute'
+  position: Point
+  previousPosition: Point
 }
 
 /**
@@ -219,6 +315,11 @@ export type LayoutOperation =
   | DeleteNodeOperation
   | SetNodeVisibilityOperation
   | BatchUpdateOperation
+  | CreateLinkOperation
+  | DeleteLinkOperation
+  | CreateRerouteOperation
+  | DeleteRerouteOperation
+  | MoveRerouteOperation
 
 // Legacy alias for compatibility
 export type AnyLayoutOperation = LayoutOperation
@@ -226,15 +327,30 @@ export type AnyLayoutOperation = LayoutOperation
 /**
  * Type guards for operations
  */
-export const isBaseOperation = (op: unknown): op is BaseOperation => {
+export const isOperationMeta = (op: unknown): op is OperationMeta => {
   return (
     typeof op === 'object' &&
     op !== null &&
     'timestamp' in op &&
     'actor' in op &&
     'source' in op &&
-    'nodeId' in op
+    'type' in op
   )
+}
+
+/**
+ * Entity-specific helper functions
+ */
+export const isNodeOperation = (op: LayoutOperation): boolean => {
+  return 'entity' in op && (op as any).entity === 'node'
+}
+
+export const isLinkOperation = (op: LayoutOperation): boolean => {
+  return 'entity' in op && (op as any).entity === 'link'
+}
+
+export const isRerouteOperation = (op: LayoutOperation): boolean => {
+  return 'entity' in op && (op as any).entity === 'reroute'
 }
 
 export const isMoveNodeOperation = (
@@ -252,6 +368,65 @@ export const isCreateNodeOperation = (
 export const isDeleteNodeOperation = (
   op: LayoutOperation
 ): op is DeleteNodeOperation => op.type === 'deleteNode'
+
+export const isSetNodeVisibilityOperation = (
+  op: LayoutOperation
+): op is SetNodeVisibilityOperation => op.type === 'setNodeVisibility'
+
+export const isBatchUpdateOperation = (
+  op: LayoutOperation
+): op is BatchUpdateOperation => op.type === 'batchUpdate'
+
+export const isCreateLinkOperation = (
+  op: LayoutOperation
+): op is CreateLinkOperation => op.type === 'createLink'
+
+export const isDeleteLinkOperation = (
+  op: LayoutOperation
+): op is DeleteLinkOperation => op.type === 'deleteLink'
+
+export const isCreateRerouteOperation = (
+  op: LayoutOperation
+): op is CreateRerouteOperation => op.type === 'createReroute'
+
+export const isDeleteRerouteOperation = (
+  op: LayoutOperation
+): op is DeleteRerouteOperation => op.type === 'deleteReroute'
+
+export const isMoveRerouteOperation = (
+  op: LayoutOperation
+): op is MoveRerouteOperation => op.type === 'moveReroute'
+
+/**
+ * Helper function to get affected node IDs from any operation
+ * Useful for change notifications and cache invalidation
+ */
+export const getAffectedNodeIds = (op: LayoutOperation): NodeId[] => {
+  switch (op.type) {
+    case 'moveNode':
+    case 'resizeNode':
+    case 'setNodeZIndex':
+    case 'createNode':
+    case 'deleteNode':
+    case 'setNodeVisibility':
+    case 'batchUpdate':
+      return [(op as NodeOpBase).nodeId]
+    case 'createLink': {
+      const createLink = op as CreateLinkOperation
+      return [createLink.sourceNodeId, createLink.targetNodeId]
+    }
+    case 'deleteLink':
+      // Link deletion doesn't directly affect nodes
+      return []
+    case 'createReroute':
+    case 'deleteReroute':
+    case 'moveReroute':
+      // Reroute operations don't directly affect nodes
+      return []
+    default:
+      return []
+  }
+}
 
 /**
  * Operation application interface
@@ -284,7 +459,7 @@ export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
   nodeIds: NodeId[]
   timestamp: number
-  source: 'canvas' | 'vue' | 'external'
+  source: LayoutSource
   operation: LayoutOperation
 }
 
@@ -300,6 +475,43 @@ export interface LayoutStore {
   queryNodeAtPoint(point: Point): NodeId | null
   queryNodesInBounds(bounds: Bounds): NodeId[]
 
+  // Hit testing queries for links, slots, and reroutes
+  queryLinkAtPoint(point: Point, ctx?: CanvasRenderingContext2D): LinkId | null
+  queryLinkSegmentAtPoint(
+    point: Point,
+    ctx?: CanvasRenderingContext2D
+  ): { linkId: LinkId; rerouteId: RerouteId | null } | null
+  querySlotAtPoint(point: Point): SlotLayout | null
+  queryRerouteAtPoint(point: Point): RerouteLayout | null
+  queryItemsInBounds(bounds: Bounds): {
+    nodes: NodeId[]
+    links: LinkId[]
+    slots: string[]
+    reroutes: RerouteId[]
+  }
+
+  // Update methods for link, slot, and reroute layouts
+  updateLinkLayout(linkId: LinkId, layout: LinkLayout): void
+  updateLinkSegmentLayout(
+    linkId: LinkId,
+    rerouteId: RerouteId | null,
+    layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
+  ): void
+  updateSlotLayout(key: string, layout: SlotLayout): void
+  updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
+
+  // Delete methods for cleanup
+  deleteLinkLayout(linkId: LinkId): void
+  deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
+  deleteSlotLayout(key: string): void
+  deleteNodeSlotLayouts(nodeId: NodeId): void
+  deleteRerouteLayout(rerouteId: RerouteId): void
+
+  // Get layout data
+  getLinkLayout(linkId: LinkId): LinkLayout | null
+  getSlotLayout(key: string): SlotLayout | null
+  getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
+
   // Direct mutation API (CRDT-ready)
   applyOperation(operation: LayoutOperation): void
 
@@ -312,9 +524,9 @@ export interface LayoutStore {
   ): void
 
   // Source and actor management
-  setSource(source: 'canvas' | 'vue' | 'external'): void
+  setSource(source: LayoutSource): void
   setActor(actor: string): void
-  getCurrentSource(): 'canvas' | 'vue' | 'external'
+  getCurrentSource(): LayoutSource
   getCurrentActor(): string
 }
 
@@ -325,15 +537,39 @@ export interface LayoutMutations {
   resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
 
-  // Lifecycle operations
+  // Node lifecycle operations
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
   deleteNode(nodeId: NodeId): void
+
+  // Link operations
+  createLink(
+    linkId: string | number,
+    sourceNodeId: string | number,
+    sourceSlot: number,
+    targetNodeId: string | number,
+    targetSlot: number
+  ): void
+  deleteLink(linkId: string | number): void
+
+  // Reroute operations
+  createReroute(
+    rerouteId: string | number,
+    position: Point,
+    parentId?: string | number,
+    linkIds?: (string | number)[]
+  ): void
+  deleteReroute(rerouteId: string | number): void
+  moveReroute(
+    rerouteId: string | number,
+    position: Point,
+    previousPosition: Point
+  ): void
 
   // Stacking operations
   bringNodeToFront(nodeId: NodeId): void
 
   // Source tracking
-  setSource(source: 'canvas' | 'vue' | 'external'): void
+  setSource(source: LayoutSource): void
   setActor(actor: string): void // For CRDT
 }
 

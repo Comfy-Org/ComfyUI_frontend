@@ -4,20 +4,25 @@
  * Provides a clean API for layout operations that are CRDT-ready.
  * Operations are synchronous and applied directly to the store.
  */
+import log from 'loglevel'
+
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
-import type {
-  LayoutMutations,
-  NodeId,
-  NodeLayout,
-  Point,
-  Size
+import {
+  type LayoutMutations,
+  LayoutSource,
+  type NodeId,
+  type NodeLayout,
+  type Point,
+  type Size
 } from '@/renderer/core/layout/types'
+
+const logger = log.getLogger('LayoutMutations')
 
 class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Set the current mutation source
    */
-  setSource(source: 'canvas' | 'vue' | 'external'): void {
+  setSource(source: LayoutSource): void {
     layoutStore.setSource(source)
   }
 
@@ -37,6 +42,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'moveNode',
+      entity: 'node',
       nodeId,
       position,
       previousPosition: existing.position,
@@ -55,6 +61,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'resizeNode',
+      entity: 'node',
       nodeId,
       size,
       previousSize: existing.size,
@@ -73,6 +80,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'setNodeZIndex',
+      entity: 'node',
       nodeId,
       zIndex,
       previousZIndex: existing.zIndex,
@@ -102,6 +110,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'createNode',
+      entity: 'node',
       nodeId,
       layout: fullLayout,
       timestamp: Date.now(),
@@ -119,6 +128,7 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     layoutStore.applyOperation({
       type: 'deleteNode',
+      entity: 'node',
       nodeId,
       previousLayout: existing,
       timestamp: Date.now(),
@@ -143,6 +153,122 @@ class LayoutMutationsImpl implements LayoutMutations {
 
     // Set this node's z-index to be one higher than the current max
     this.setNodeZIndex(nodeId, maxZIndex + 1)
+  }
+
+  /**
+   * Create a new link
+   */
+  createLink(
+    linkId: string | number,
+    sourceNodeId: string | number,
+    sourceSlot: number,
+    targetNodeId: string | number,
+    targetSlot: number
+  ): void {
+    // Normalize node IDs to strings
+    const normalizedSourceNodeId = String(sourceNodeId)
+    const normalizedTargetNodeId = String(targetNodeId)
+
+    logger.debug('Creating link:', {
+      linkId: Number(linkId),
+      from: `${normalizedSourceNodeId}[${sourceSlot}]`,
+      to: `${normalizedTargetNodeId}[${targetSlot}]`
+    })
+    layoutStore.applyOperation({
+      type: 'createLink',
+      entity: 'link',
+      linkId: Number(linkId),
+      sourceNodeId: normalizedSourceNodeId,
+      sourceSlot,
+      targetNodeId: normalizedTargetNodeId,
+      targetSlot,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Delete a link
+   */
+  deleteLink(linkId: string | number): void {
+    logger.debug('Deleting link:', Number(linkId))
+    layoutStore.applyOperation({
+      type: 'deleteLink',
+      entity: 'link',
+      linkId: Number(linkId),
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Create a new reroute
+   */
+  createReroute(
+    rerouteId: string | number,
+    position: Point,
+    parentId?: string | number,
+    linkIds: (string | number)[] = []
+  ): void {
+    logger.debug('Creating reroute:', {
+      rerouteId: Number(rerouteId),
+      position,
+      parentId: parentId != null ? Number(parentId) : undefined,
+      linkCount: linkIds.length
+    })
+    layoutStore.applyOperation({
+      type: 'createReroute',
+      entity: 'reroute',
+      rerouteId: Number(rerouteId),
+      position,
+      parentId: parentId != null ? Number(parentId) : undefined,
+      linkIds: linkIds.map((id) => Number(id)),
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Delete a reroute
+   */
+  deleteReroute(rerouteId: string | number): void {
+    logger.debug('Deleting reroute:', Number(rerouteId))
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      entity: 'reroute',
+      rerouteId: Number(rerouteId),
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
+  }
+
+  /**
+   * Move a reroute
+   */
+  moveReroute(
+    rerouteId: string | number,
+    position: Point,
+    previousPosition: Point
+  ): void {
+    logger.debug('Moving reroute:', {
+      rerouteId: Number(rerouteId),
+      from: previousPosition,
+      to: position
+    })
+    layoutStore.applyOperation({
+      type: 'moveReroute',
+      entity: 'reroute',
+      rerouteId: Number(rerouteId),
+      position,
+      previousPosition,
+      timestamp: Date.now(),
+      source: layoutStore.getCurrentSource(),
+      actor: layoutStore.getCurrentActor()
+    })
   }
 }
 
