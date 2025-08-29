@@ -55,7 +55,6 @@ jobs:
 
       - name: Comment PR - Storybook Started
         if: steps.pr.outputs.result != 'null' && github.event.action == 'requested'
-        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ steps.pr.outputs.result }}
@@ -80,7 +79,6 @@ jobs:
 
       - name: Comment PR - Storybook Complete
         if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
-        continue-on-error: true
         uses: edumserrano/find-create-or-update-comment@v3
         with:
           issue-number: ${{ steps.pr.outputs.result }}
