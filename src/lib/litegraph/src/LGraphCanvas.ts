@@ -6110,7 +6110,7 @@ export class LGraphCanvas
           if (linkId !== undefined) {
             graph.removeLink(linkId)
             // Clean up layout store
-            layoutStore.deleteLinkLayout(String(linkId))
+            layoutStore.deleteLinkLayout(linkId)
           }
           break
         }

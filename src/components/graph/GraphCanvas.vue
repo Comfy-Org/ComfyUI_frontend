@@ -87,9 +87,7 @@
   canvasStore.canvas to be initialized. -->
   <template v-if="comfyAppReady">
     <TitleEditor />
-    <SelectionOverlay v-if="selectionToolboxEnabled">
-      <SelectionToolbox />
-    </SelectionOverlay>
+    <SelectionToolbox v-if="selectionToolboxEnabled" />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -114,7 +112,6 @@ import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import TransformPane from '@/components/graph/TransformPane.vue'
@@ -129,8 +126,6 @@ import type {
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
-import { useLayout } from '@/composables/graph/useLayout'
-import { useLayoutSync } from '@/composables/graph/useLayoutSync'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -161,7 +156,6 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { layoutStore } from '@/stores/layoutStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
