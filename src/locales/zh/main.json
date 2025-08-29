@@ -853,18 +853,13 @@
     "Show Settings Dialog": "显示设置对话框",
     "Sign Out": "退出登录",
     "Toggle Essential Bottom Panel": "切换基础底部面板",
-    "Show Keybindings Dialog": "顯示快捷鍵對話框",
-    "Show Settings Dialog": "显示设置对话框",
-    "Sign Out": "退出登录",
     "Toggle Bottom Panel": "切换底部面板",
-    "Toggle Essential Bottom Panel": "切換基本下方面板",
     "Toggle Focus Mode": "切换专注模式",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
-    "Toggle View Controls Bottom Panel": "切換檢視控制下方面板",
     "Toggle Workflows Sidebar": "切換工作流程側邊欄",
     "Toggle the Custom Nodes Manager": "切换自定义节点管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
@@ -1215,19 +1210,7 @@
       "view": "视图",
       "workflow": "工作流"
     },
-    "viewControls": "视图控制",
-    "essentials": "基本功能",
-    "keyboardShortcuts": "鍵盤快捷鍵",
-    "manageShortcuts": "管理快捷鍵",
-    "noKeybinding": "無快捷鍵",
-    "subcategories": {
-      "node": "節點",
-      "panelControls": "面板控制",
-      "queue": "佇列",
-      "view": "檢視",
-      "workflow": "工作流程"
-    },
-    "viewControls": "檢視控制"
+    "viewControls": "视图控制"
   },
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",
