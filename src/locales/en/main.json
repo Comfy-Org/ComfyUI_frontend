@@ -1601,6 +1601,15 @@
     "passwordUpdate": {
       "success": "Password Updated",
       "successDetail": "Your password has been updated successfully"
+    },
+    "deleteAccount": {
+      "deleteAccount": "Delete Account",
+      "confirmTitle": "Delete Account",
+      "confirmMessage": "Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.",
+      "confirm": "Delete Account",
+      "cancel": "Cancel",
+      "success": "Account Deleted",
+      "successDetail": "Your account has been successfully deleted."
     }
   },
   "validation": {
