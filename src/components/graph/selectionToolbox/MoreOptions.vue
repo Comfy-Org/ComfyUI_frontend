@@ -58,6 +58,7 @@ import {
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { useCanvasStore } from '@/stores/graphStore'
 import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
 
 import MenuOptionItem from './MenuOptionItem.vue'
@@ -79,6 +80,7 @@ const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 
 const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
+const canvasStore = useCanvasStore()
 
 const toggle = (event: Event) => {
   if (isOpen.value) {
@@ -168,12 +170,17 @@ watch(
     const visible = selectionOverlayState.visible.value
     if (!visible) {
       if (isOpen.value) {
-        // Mark that we should reopen after drag completes.
-        wasOpenBeforeHide.value = true
-        hide('drag')
+        const dragging = canvasStore.canvas?.state?.draggingItems === true
+        if (dragging) {
+          wasOpenBeforeHide.value = true
+          hide('drag')
+        } else {
+          // Any other reason (e.g., submenu overlay hide / selection cleared): close & do not restore.
+          wasOpenBeforeHide.value = false
+          hide('manual')
+        }
       }
     } else if (wasOpenBeforeHide.value) {
-      // Overlay visible again after move; reopen popover anchored to button.
       wasOpenBeforeHide.value = false
       const targetEl = (buttonRef.value as any)?.$el || buttonRef.value
       if (targetEl instanceof HTMLElement) {
