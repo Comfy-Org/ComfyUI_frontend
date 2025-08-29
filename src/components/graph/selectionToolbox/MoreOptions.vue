@@ -23,6 +23,7 @@
       :close-on-escape="true"
       unstyled
       :pt="pt"
+      @hide="onPopoverHide"
     >
       <div class="flex flex-col p-2 min-w-48">
         <MenuOptionItem
@@ -67,6 +68,9 @@ const buttonRef = ref<InstanceType<typeof Button> | HTMLElement | null>(null)
 // Track open state ourselves so we can restore after drag/move
 const isOpen = ref(false)
 const wasOpenBeforeHide = ref(false)
+// Track why the popover was hidden so we only auto-reopen after drag.
+type HideReason = 'manual' | 'drag'
+const lastProgrammaticHideReason = ref<HideReason | null>(null)
 const submenuRefs = ref<Record<string, InstanceType<typeof SubmenuPopover>>>({})
 const currentSubmenu = ref<string | null>(null)
 
@@ -78,17 +82,22 @@ const containerStyles = minimap.containerStyles
 
 const toggle = (event: Event) => {
   if (isOpen.value) {
-    hide()
+    hide('manual')
   } else {
     popover.value?.show(event)
     isOpen.value = true
   }
 }
 
-const hide = () => {
+const hide = (reason: HideReason = 'manual') => {
+  lastProgrammaticHideReason.value = reason
   popover.value?.hide()
   isOpen.value = false
   hideAll()
+  // Only the drag reason should allow reopen behavior. Manual toggles clear it.
+  if (reason !== 'drag') {
+    wasOpenBeforeHide.value = false
+  }
 }
 
 const hideAll = () => {
@@ -123,7 +132,7 @@ const handleOptionClick = (option: MenuOption, event: Event) => {
 
 const handleSubmenuClick = (subOption: SubMenuOption) => {
   subOption.action()
-  hide()
+  hide('manual')
 }
 
 const setSubmenuRef = (key: string, el: any) => {
@@ -159,8 +168,9 @@ watch(
     const visible = selectionOverlayState.visible.value
     if (!visible) {
       if (isOpen.value) {
+        // Mark that we should reopen after drag completes.
         wasOpenBeforeHide.value = true
-        hide()
+        hide('drag')
       }
     } else if (wasOpenBeforeHide.value) {
       // Overlay visible again after move; reopen popover anchored to button.
@@ -173,4 +183,16 @@ watch(
     }
   }
 )
+
+// Distinguish outside click (PrimeVue dismiss) from programmatic hides.
+const onPopoverHide = () => {
+  if (lastProgrammaticHideReason.value == null) {
+    // Outside click (or escape key) triggered the hide.
+    isOpen.value = false
+    hideAll()
+    wasOpenBeforeHide.value = false
+  }
+  // Clear the flag after each hide so next outside click can be detected.
+  lastProgrammaticHideReason.value = null
+}
 </script>
