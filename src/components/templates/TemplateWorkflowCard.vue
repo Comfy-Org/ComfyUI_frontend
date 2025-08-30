@@ -2,15 +2,16 @@
   <Card
     ref="cardRef"
     :data-testid="`template-workflow-${template.name}`"
-    class="w-64 template-card rounded-2xl overflow-hidden cursor-pointer shadow-elevation-2 dark-theme:bg-dark-elevation-1.5 h-full"
+    class="w-full template-card rounded-2xl overflow-hidden cursor-pointer h-full"
     :pt="{
+      root: { class: 'bg-transparent shadow-none' },
       body: { class: 'p-0 h-full flex flex-col' }
     }"
     @click="$emit('loadWorkflow', template.name)"
   >
     <template #header>
-      <div class="flex items-center justify-center">
-        <div class="relative overflow-hidden rounded-t-lg">
+      <div class="w-full">
+        <div class="relative w-full overflow-hidden rounded-lg">
           <template v-if="template.mediaType === 'audio'">
             <AudioThumbnail :src="baseThumbnailSrc" />
           </template>
@@ -53,6 +54,23 @@
                   : DEFAULT_ZOOM_SCALE
               "
             />
+            <div
+              v-if="template.tags && template.tags.length > 0"
+              class="absolute inset-0 z-10 pointer-events-none"
+            >
+              <div class="absolute inset-0 bg-black/40"></div>
+              <div
+                class="flex flex-wrap absolute bottom-4 left-4 px-1 pointer-events-auto gap-2"
+              >
+                <span
+                  v-for="tag in template.tags"
+                  :key="tag"
+                  class="px-2 py-1 text-xs bg-surface-100 dark-theme:bg-surface-800 text-surface-300 dark-theme:text-surface-300 rounded backdrop-blur-sm bg-[#D9D9D9]/40"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
           </template>
           <ProgressSpinner
             v-if="loading"
@@ -62,14 +80,34 @@
       </div>
     </template>
     <template #content>
-      <div class="flex items-center px-4 py-3">
-        <div class="flex-1 flex flex-col">
-          <h3 class="line-clamp-2 text-lg font-normal mb-0" :title="title">
+      <div class="flex flex-col px-4 py-3 flex-1">
+        <div class="flex-1">
+          <h3 class="line-clamp-2 text-lg font-normal mb-1" :title="title">
             {{ title }}
           </h3>
-          <p class="line-clamp-2 text-sm text-muted grow" :title="description">
-            {{ description }}
-          </p>
+          <div class="flex justify-between gap-2">
+            <p
+              class="line-clamp-2 text-sm text-muted mb-3"
+              :title="description"
+            >
+              {{ description }}
+            </p>
+            <div
+              v-if="template.tutorialUrl"
+              class="flex flex-col-reverse justify-center"
+            >
+              <Button
+                v-tooltip.bottom="$t('g.seeTutorial')"
+                :class="[
+                  'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
+                  isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                ]"
+                @click="openTutorial"
+              >
+                <i class="icon-[comfy--dark-info] w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -126,12 +164,16 @@ const overlayThumbnailSrc = computed(() =>
   )
 )
 
-const description = computed(() =>
-  getTemplateDescription(template, effectiveSourceModule.value)
-)
+const description = computed(() => getTemplateDescription(template))
 const title = computed(() =>
   getTemplateTitle(template, effectiveSourceModule.value)
 )
+const openTutorial = (event: Event) => {
+  event.stopPropagation()
+  if (template.tutorialUrl) {
+    window.open(template.tutorialUrl, '_blank', 'noopener')
+  }
+}
 
 defineEmits<{
   loadWorkflow: [name: string]

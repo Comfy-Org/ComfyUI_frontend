@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col h-[83vh] w-[90vw] relative pb-6"
+    class="flex flex-col h-full w-full relative pb-6 overflow-x-hidden"
     data-testid="template-workflows-content"
   >
     <Button
@@ -38,7 +38,7 @@
       >
         <TemplateWorkflowView
           v-if="isReady && selectedTemplate"
-          class="px-12 py-4"
+          class="h-full"
           :title="selectedTemplate.title"
           :source-module="selectedTemplate.moduleName"
           :templates="selectedTemplate.templates"

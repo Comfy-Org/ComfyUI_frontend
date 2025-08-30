@@ -19,7 +19,10 @@ const { placeHolder, hasBorder = false } = defineProps<{
   placeHolder?: string
   hasBorder?: boolean
 }>()
-const searchQuery = defineModel<string>('')
+
+const searchQuery = defineModel<string>({
+  default: ''
+})
 
 const wrapperStyle = computed(() => {
   return hasBorder

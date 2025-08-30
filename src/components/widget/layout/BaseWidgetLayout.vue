@@ -1,6 +1,7 @@
 <template>
   <div
     class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-50 dark-theme:bg-zinc-800"
+    :class="{ 'fit-parent': fitParent }"
   >
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
@@ -32,8 +33,10 @@
         </nav>
       </Transition>
 
-      <div class="flex-1 flex bg-zinc-100 dark-theme:bg-neutral-900">
-        <div class="w-full h-full flex flex-col">
+      <div
+        class="flex-1 flex bg-zinc-100 dark-theme:bg-neutral-900 min-w-0 overflow-hidden"
+      >
+        <div class="w-full h-full flex flex-col min-w-0">
           <header
             v-if="$slots.header"
             class="w-full h-16 px-6 py-4 flex justify-between gap-2"
@@ -61,13 +64,15 @@
             </div>
           </header>
 
-          <main class="flex flex-col flex-1 min-h-0">
+          <main class="flex flex-col flex-1 min-h-0 min-w-0">
             <!-- Fallback title bar when no leftPanel is provided -->
             <slot name="contentFilter"></slot>
             <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
               {{ contentTitle }}
             </h2>
-            <div class="min-h-0 px-6 pt-0 pb-10 overflow-y-auto scrollbar-hide">
+            <div
+              class="min-h-0 px-3 pt-0 pb-6 overflow-x-hidden overflow-y-auto scrollbar-hide"
+            >
               <slot name="content"></slot>
             </div>
           </main>
@@ -90,8 +95,10 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import IconButton from '@/components/button/IconButton.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
 
-const { contentTitle } = defineProps<{
+const { contentTitle, fitParent } = defineProps<{
   contentTitle: string
+  /** When true, the layout will size itself to its parent instead of using viewport-based widths. */
+  fitParent?: boolean
 }>()
 
 const BREAKPOINTS = { md: 880 }
@@ -146,9 +153,29 @@ const toggleRightPanel = () => {
   aspect-ratio: 20/13;
 }
 
+/* Modifier class to force the widget to respect parent dialog/container sizing (prevents overflow) */
+.base-widget-layout.fit-parent {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
 @media (min-width: 1450px) {
   .base-widget-layout {
     max-width: 1724px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .base-widget-layout {
+    max-width: 1920px;
+  }
+}
+
+@media (min-width: 2400px) {
+  .base-widget-layout {
+    max-width: 2200px;
   }
 }
 

@@ -245,7 +245,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: () => {
-        dialogService.showTemplateWorkflowsDialog()
+        dialogService.showWorkflowTemplateSelectorDialog()
       }
     },
     {
