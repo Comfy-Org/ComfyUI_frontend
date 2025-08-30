@@ -31,12 +31,17 @@
       </div>
     </template>
   </ListBox>
-  <div v-if="isManagerInstalled" class="flex justify-end py-3">
+  <div v-if="!isLegacyManager" class="flex justify-end py-3">
     <PackInstallButton
-      :disabled="isLoading || !!error || missingNodePacks.length === 0"
+      :disabled="
+        isLoading || !!error || missingNodePacks.length === 0 || isInstalling
+      "
       :node-packs="missingNodePacks"
-      variant="black"
-      :label="$t('manager.installAllMissingNodes')"
+      :label="
+        isLoading
+          ? $t('manager.gettingInfo')
+          : $t('manager.installAllMissingNodes')
+      "
     />
     <Button label="Open Manager" size="small" outlined @click="openManager" />
   </div>
@@ -45,35 +50,35 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
-import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
-import { useAboutPanelStore } from '@/stores/aboutPanelStore'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
+
+import PackInstallButton from './manager/button/PackInstallButton.vue'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
 }>()
 
-const aboutPanelStore = useAboutPanelStore()
-
 // Get missing node packs from workflow with loading and error states
 const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
-// Determines if ComfyUI-Manager is installed by checking for its badge in the about panel
-// This allows us to conditionally show the Manager button only when the extension is available
-// TODO: Remove this check when Manager functionality is fully migrated into core
-const isManagerInstalled = computed(() => {
-  return aboutPanelStore.badges.some(
-    (badge) =>
-      badge.label.includes('ComfyUI-Manager') ||
-      badge.url.includes('ComfyUI-Manager')
+const comfyManagerStore = useComfyManagerStore()
+const isLegacyManager = ref(false)
+
+// Check if any of the missing packs are currently being installed
+const isInstalling = computed(() => {
+  if (!missingNodePacks.value?.length) return false
+  return missingNodePacks.value.some((pack) =>
+    comfyManagerStore.isPackInstalling(pack.id)
   )
 })
 
@@ -103,6 +108,13 @@ const openManager = () => {
     initialTab: ManagerTab.Missing
   })
 }
+
+onMounted(async () => {
+  const isLegacyResponse = await useComfyManagerService().isLegacyManagerUI()
+  if (isLegacyResponse?.is_legacy_manager_ui) {
+    isLegacyManager.value = true
+  }
+})
 </script>
 
 <style scoped>

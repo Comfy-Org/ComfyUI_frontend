@@ -19,7 +19,7 @@ export const IsInstallingKey: InjectionKey<Ref<boolean>> =
   Symbol('isInstalling')
 
 export enum ManagerWsQueueStatus {
-  DONE = 'done',
+  DONE = 'all-done',
   IN_PROGRESS = 'in_progress'
 }
 
@@ -60,7 +60,7 @@ export interface UseNodePacksOptions {
   maxConcurrent?: number
 }
 
-enum ManagerPackState {
+export enum ManagerPackState {
   /** Pack is installed and enabled */
   INSTALLED = 'installed',
   /** Pack is installed but disabled */
@@ -73,7 +73,7 @@ enum ManagerPackState {
   NEEDS_UPDATE = 'needs_update'
 }
 
-enum ManagerPackInstallType {
+export enum ManagerPackInstallType {
   /** Installed via git clone */
   GIT = 'git-clone',
   /** Installed via file copy */

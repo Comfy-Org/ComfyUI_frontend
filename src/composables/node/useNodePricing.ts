@@ -1332,6 +1332,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         return 'Token-based'
       }
     },
+    GeminiImageNode: {
+      displayPrice: '$0.03 per 1K tokens'
+    },
     // OpenAI nodes
     OpenAIChatNode: {
       displayPrice: (node: LGraphNode): string => {

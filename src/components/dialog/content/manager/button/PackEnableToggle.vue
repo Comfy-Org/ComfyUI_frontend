@@ -16,11 +16,11 @@ import { computed, ref } from 'vue'
 
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import {
-  InstallPackParams,
   ManagerChannel,
-  SelectedVersion
+  ManagerDatabaseSource
 } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 
@@ -28,37 +28,42 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const { isPackEnabled, enablePack, disablePack, installedPacks } =
-  useComfyManagerStore()
+const { isPackEnabled, enablePack, disablePack } = useComfyManagerStore()
 
 const isLoading = ref(false)
 
 const isEnabled = computed(() => isPackEnabled(nodePack.id))
-const version = computed(() => {
-  const id = nodePack.id
-  if (!id) return SelectedVersion.NIGHTLY
-  return (
-    installedPacks[id]?.ver ??
-    nodePack.latest_version?.version ??
-    SelectedVersion.NIGHTLY
-  )
-})
 
-const handleEnable = () =>
-  enablePack.call({
+const handleEnable = () => {
+  if (!nodePack.id) {
+    throw new Error('Node ID is required for enabling')
+  }
+  return enablePack.call({
     id: nodePack.id,
-    version: version.value,
-    selected_version: version.value,
+    version:
+      nodePack.latest_version?.version ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
+    selected_version:
+      nodePack.latest_version?.version ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
     repository: nodePack.repository ?? '',
     channel: ManagerChannel.DEFAULT,
-    mode: 'default' as InstallPackParams['mode']
+    mode: ManagerDatabaseSource.CACHE,
+    skip_post_install: false
   })
+}
 
-const handleDisable = () =>
-  disablePack({
+const handleDisable = () => {
+  if (!nodePack.id) {
+    throw new Error('Node ID is required for disabling')
+  }
+  return disablePack({
     id: nodePack.id,
-    version: version.value
+    version:
+      nodePack.latest_version?.version ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
   })
+}
 
 const handleToggle = async (enable: boolean) => {
   if (isLoading.value) return
@@ -67,10 +72,16 @@ const handleToggle = async (enable: boolean) => {
   if (enable) {
     await handleEnable()
   } else {
-    handleDisable()
+    await handleDisable()
   }
   isLoading.value = false
 }
 
-const onToggle = debounce(handleToggle, TOGGLE_DEBOUNCE_MS, { trailing: true })
+const onToggle = debounce(
+  (enable: boolean) => {
+    void handleToggle(enable)
+  },
+  TOGGLE_DEBOUNCE_MS,
+  { trailing: true }
+)
 </script>

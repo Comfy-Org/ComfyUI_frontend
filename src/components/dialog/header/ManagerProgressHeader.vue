@@ -18,16 +18,40 @@
 
 <script setup lang="ts">
 import TabMenu from 'primevue/tabmenu'
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
+import {
+  useComfyManagerStore,
+  useManagerProgressDialogStore
+} from '@/stores/comfyManagerStore'
 
 const progressDialogContent = useManagerProgressDialogStore()
-const activeTabIndex = ref(0)
+const comfyManagerStore = useComfyManagerStore()
+const activeTabIndex = computed({
+  get: () => progressDialogContent.getActiveTabIndex(),
+  set: (value: number) => progressDialogContent.setActiveTabIndex(value)
+})
 const { t } = useI18n()
-const tabs = [
-  { label: t('manager.installationQueue') },
-  { label: t('manager.failed', { count: 0 }) }
-]
+
+const failedCount = computed(() => comfyManagerStore.failedTasksIds.length)
+
+const queueSuffix = computed(() => {
+  const queueLength = comfyManagerStore.managerQueue.queueLength
+  if (queueLength === 0) {
+    return ''
+  }
+  return ` (${queueLength})`
+})
+const failedSuffix = computed(() => {
+  if (failedCount.value === 0) {
+    return ''
+  }
+  return ` (${failedCount.value})`
+})
+
+const tabs = computed(() => [
+  { label: t('manager.installationQueue') + queueSuffix.value },
+  { label: t('manager.failed') + failedSuffix.value }
+])
 </script>

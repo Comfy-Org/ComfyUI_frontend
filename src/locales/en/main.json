@@ -24,7 +24,6 @@
     "confirmed": "Confirmed",
     "reset": "Reset",
     "resetAll": "Reset All",
-    "clearFilters": "Clear Filters",
     "resetAllKeybindingsTooltip": "Reset all keybindings to default",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
@@ -143,6 +142,7 @@
     "itemsSelected": "{selectedCount} items selected",
     "progressCountOf": "of",
     "keybindingAlreadyExists": "Keybinding already exists on",
+    "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "micPermissionDenied": "Microphone permission denied",
@@ -153,6 +153,9 @@
   },
   "manager": {
     "title": "Custom Nodes Manager",
+    "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
+    "legacyManagerUI": "Use Legacy UI",
+    "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
     "failed": "Failed ({count})",
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
@@ -161,7 +164,13 @@
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
     "infoPanelEmpty": "Click an item to see the info",
+    "applyChanges": "Apply Changes",
     "restartToApplyChanges": "To apply changes, please restart ComfyUI",
+    "clickToFinishSetup": "Click",
+    "toFinishSetup": "to finish setup",
+    "restartingBackend": "Restarting backend to apply changes...",
+    "extensionsSuccessfullyInstalled": "Extension(s) successfully installed and are ready to use!",
+    "installingDependencies": "Installing dependencies...",
     "loadingVersions": "Loading versions...",
     "selectVersion": "Select Version",
     "downloads": "Downloads",
@@ -170,6 +179,8 @@
     "uninstalling": "Uninstalling",
     "update": "Update",
     "uninstallSelected": "Uninstall Selected",
+    "updateSelected": "Update Selected",
+    "updateAll": "Update All",
     "updatingAllPacks": "Updating all packages",
     "license": "License",
     "nightlyVersion": "Nightly",
@@ -181,6 +192,7 @@
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
     "tryAgainLater": "Please try again later.",
+    "gettingInfo": "Getting info...",
     "nodePack": "Node Pack",
     "searchPlaceholder": "Search",
     "version": "Version",
@@ -429,25 +441,32 @@
       "error": "Unable to start ComfyUI Desktop"
     }
   },
+  "shortcuts": {
+    "essentials": "Essential",
+    "viewControls": "View Controls",
+    "manageShortcuts": "Manage Shortcuts",
+    "noKeybinding": "No keybinding",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "subcategories": {
+      "workflow": "Workflow",
+      "node": "Node",
+      "queue": "Queue",
+      "view": "View",
+      "panelControls": "Panel Controls"
+    }
+  },
   "serverConfig": {
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
     "restart": "Restart"
   },
   "sideToolbar": {
+    "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
     "queue": "Queue",
     "nodeLibrary": "Node Library",
     "workflows": "Workflows",
-    "templates": "Templates",
-    "labels": {
-      "queue": "Queue",
-      "nodes": "Nodes",
-      "models": "Models",
-      "workflows": "Workflows",
-      "templates": "Templates"
-    },
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
@@ -543,14 +562,7 @@
     "clipspace": "Open Clipspace",
     "resetView": "Reset canvas view",
     "clear": "Clear workflow",
-    "toggleBottomPanel": "Toggle Bottom Panel",
-    "theme": "Theme",
-    "dark": "Dark",
-    "light": "Light",
-    "manageExtensions": "Manage Extensions",
-    "settings": "Settings",
-    "help": "Help",
-    "queue": "Queue Panel"
+    "toggleBottomPanel": "Toggle Bottom Panel"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",
@@ -900,7 +912,8 @@
     "zoomOptions": "Zoom Options",
     "focusMode": "Focus Mode",
     "hideLinks": "Hide Links",
-    "showLinks": "Show Links"
+    "showLinks": "Show Links",
+    "toggleLinkVisibility": "Toggle Link Visibility"
   },
   "zoomControls": {
     "label": "Zoom Controls",
@@ -955,8 +968,9 @@
     "Image Layer": "Image Layer"
   },
   "menuLabels": {
-    "File": "File",
+    "Workflow": "Workflow",
     "Edit": "Edit",
+    "Manager": "Manager",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",
@@ -970,20 +984,19 @@
     "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
-    "Open 3D Viewer (Beta) for Selected Node": "Open 3D Viewer (Beta) for Selected Node",
     "Browse Templates": "Browse Templates",
     "Delete Selected Items": "Delete Selected Items",
     "Zoom to fit": "Zoom to fit",
     "Lock Canvas": "Lock Canvas",
+    "Fit view to selected nodes": "Fit view to selected nodes",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
     "Move Selected Nodes Right": "Move Selected Nodes Right",
     "Move Selected Nodes Up": "Move Selected Nodes Up",
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
-    "Node Links": "Node Links",
+    "Canvas Toggle Link Visibility": "Canvas Toggle Link Visibility",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
-    "Minimap": "Minimap",
     "Pin/Unpin Selected Items": "Pin/Unpin Selected Items",
     "Bypass/Unbypass Selected Nodes": "Bypass/Unbypass Selected Nodes",
     "Collapse/Expand Selected Nodes": "Collapse/Expand Selected Nodes",
@@ -1001,10 +1014,8 @@
     "Export (API)": "Export (API)",
     "Give Feedback": "Give Feedback",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
-    "Exit Subgraph": "Exit Subgraph",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
-    "Unpack the selected Subgraph": "Unpack the selected Subgraph",
     "Convert selected nodes to group node": "Convert selected nodes to group node",
     "Manage group nodes": "Manage group nodes",
     "Ungroup selected group nodes": "Ungroup selected group nodes",
@@ -1020,9 +1031,18 @@
     "Decrease Brush Size in MaskEditor": "Decrease Brush Size in MaskEditor",
     "Increase Brush Size in MaskEditor": "Increase Brush Size in MaskEditor",
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
+    "Custom Nodes (Beta)": "Custom Nodes (Beta)",
+    "Custom Nodes Manager": "Custom Nodes Manager",
+    "Install Missing": "Install Missing",
+    "Custom Nodes (Legacy)": "Custom Nodes (Legacy)",
+    "Manager Menu (Legacy)": "Manager Menu (Legacy)",
+    "Install Missing Custom Nodes": "Install Missing Custom Nodes",
+    "Check for Custom Node Updates": "Check for Custom Node Updates",
+    "Toggle Progress Dialog": "Toggle Progress Dialog",
+    "Unload Models": "Unload Models",
+    "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
     "Clipspace": "Clipspace",
-    "Manager": "Manager",
     "Open": "Open",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
@@ -1032,8 +1052,6 @@
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
-    "Canvas Performance": "Canvas Performance",
-    "Help Center": "Help Center",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
@@ -1042,17 +1060,14 @@
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
     "Toggle Search Box": "Toggle Search Box",
-    "Bottom Panel": "Bottom Panel",
-    "Show Keybindings Dialog": "Show Keybindings Dialog",
+    "Toggle Bottom Panel": "Toggle Bottom Panel",
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
-    "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
-    "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
-    "Focus Mode": "Focus Mode",
-    "Model Library": "Model Library",
-    "Node Library": "Node Library",
-    "Queue Panel": "Queue Panel",
-    "Workflows": "Workflows"
+    "Toggle Focus Mode": "Toggle Focus Mode",
+    "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
+    "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
+    "Toggle Queue Sidebar": "Toggle Queue Sidebar",
+    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
@@ -1111,8 +1126,7 @@
     "User": "User",
     "Credits": "Credits",
     "API Nodes": "API Nodes",
-    "Notification Preferences": "Notification Preferences",
-    "3DViewer": "3DViewer"
+    "Notification Preferences": "Notification Preferences"
   },
   "serverConfigItems": {
     "listen": {
@@ -1464,31 +1478,12 @@
       "depth": "Depth",
       "lineart": "Lineart"
     },
-    "upDirections": {
-      "original": "Original"
-    },
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "exportRecording": "Export Recording",
     "clearRecording": "Clear Recording",
     "resizeNodeMatchOutput": "Resize Node to match output",
-    "loadingBackgroundImage": "Loading Background Image",
-    "cameraType": {
-      "perspective": "Perspective",
-      "orthographic": "Orthographic"
-    },
-    "viewer": {
-      "title": "3D Viewer (Beta)",
-      "apply": "Apply",
-      "cancel": "Cancel",
-      "cameraType": "Camera Type",
-      "sceneSettings": "Scene Settings",
-      "cameraSettings": "Camera Settings",
-      "lightSettings": "Light Settings",
-      "exportSettings": "Export Settings",
-      "modelSettings": "Model Settings"
-    },
-    "openIn3DViewer": "Open in 3D Viewer"
+    "loadingBackgroundImage": "Loading Background Image"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -1526,8 +1521,7 @@
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
-    "failedToConvertToSubgraph": "Failed to convert items to subgraph",
-    "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer"
+    "failedToConvertToSubgraph": "Failed to convert items to subgraph"
   },
   "auth": {
     "apiKey": {
@@ -1680,32 +1674,5 @@
   "whatsNewPopup": {
     "learnMore": "Learn more",
     "noReleaseNotes": "No release notes available."
-  },
-  "breadcrumbsMenu": {
-    "duplicate": "Duplicate",
-    "clearWorkflow": "Clear Workflow",
-    "deleteWorkflow": "Delete Workflow",
-    "enterNewName": "Enter new name"
-  },
-  "shortcuts": {
-    "essentials": "Essential",
-    "viewControls": "View Controls",
-    "manageShortcuts": "Manage Shortcuts",
-    "noKeybinding": "No keybinding",
-    "keyboardShortcuts": "Keyboard Shortcuts",
-    "subcategories": {
-      "workflow": "Workflow",
-      "node": "Node",
-      "queue": "Queue",
-      "view": "View",
-      "panelControls": "Panel Controls"
-    }
-  },
-  "minimap": {
-    "nodeColors": "Node Colors",
-    "showLinks": "Show Links",
-    "showGroups": "Show Frames/Groups",
-    "renderBypassState": "Render Bypass State",
-    "renderErrorState": "Render Error State"
   }
 }

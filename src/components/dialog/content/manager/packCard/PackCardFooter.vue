@@ -6,18 +6,23 @@
       <i class="pi pi-download text-muted"></i>
       <span>{{ formattedDownloads }}</span>
     </div>
-    <PackInstallButton v-if="!isInstalled" :node-packs="[nodePack]" />
+    <PackInstallButton
+      v-if="!isInstalled"
+      :node-packs="[nodePack]"
+      :is-installing="isInstalling"
+    />
     <PackEnableToggle v-else :node-pack="nodePack" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackEnableToggle from '@/components/dialog/content/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 
 const { nodePack } = defineProps<{
@@ -26,6 +31,7 @@ const { nodePack } = defineProps<{
 
 const { isPackInstalled } = useComfyManagerStore()
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+const isInstalling = inject(IsInstallingKey)
 
 const { n } = useI18n()
 

@@ -12,11 +12,10 @@
     >
       <i
         v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-blue-600"
-        style="font-size: 8px"
+        class="pi pi-arrow-circle-up text-blue-600 text-xs"
       />
       <span>{{ installedVersion }}</span>
-      <i class="pi pi-chevron-right" style="font-size: 8px" />
+      <i class="pi pi-chevron-right text-xxs" />
     </div>
 
     <Popover
@@ -42,8 +41,7 @@ import { computed, ref, watch } from 'vue'
 import PackVersionSelectorPopover from '@/components/dialog/content/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import { isSemVer } from '@/utils/formatUtil'
 
 const TRUNCATED_HASH_LENGTH = 7
@@ -64,11 +62,11 @@ const popoverRef = ref()
 const managerStore = useComfyManagerStore()
 
 const installedVersion = computed(() => {
-  if (!nodePack.id) return SelectedVersion.NIGHTLY
+  if (!nodePack.id) return 'nightly'
   const version =
     managerStore.installedPacks[nodePack.id]?.ver ??
     nodePack.latest_version?.version ??
-    SelectedVersion.NIGHTLY
+    'nightly'
 
   // If Git hash, truncate to 7 characters
   return isSemVer(version) ? version : version.slice(0, TRUNCATED_HASH_LENGTH)
