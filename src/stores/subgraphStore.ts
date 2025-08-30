@@ -233,7 +233,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const path = SubgraphBlueprint.basePath + name + '.json'
     const workflow = new SubgraphBlueprint({
       path,
-      size: -1,
+      size: 1,
       modified: Date.now()
     })
     workflow.originalContent = JSON.stringify(workflowData)
