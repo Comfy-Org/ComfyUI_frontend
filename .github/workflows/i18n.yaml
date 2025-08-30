@@ -34,7 +34,7 @@ jobs:
       run: pnpm dev:electron &
       working-directory: ComfyUI_frontend
     - name: Update en.json
-      run: pnpm collect-i18n -- scripts/collect-i18n-general.ts
+      run: pnpm collect-i18n
       env:
         PLAYWRIGHT_TEST_URL: http://localhost:5173
       working-directory: ComfyUI_frontend
