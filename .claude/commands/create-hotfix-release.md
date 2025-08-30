@@ -3,11 +3,12 @@
 This command creates patch/hotfix releases for ComfyUI Frontend by backporting fixes to stable core branches. It handles both automated backports (preferred) and manual cherry-picking (fallback).
 
 **Process Overview:**
-1. **Try automated backports first** (via labels) 
-2. **Manual cherry-picking** if automation fails
-3. **Create patch release** with version bump
-4. **Publish GitHub release** (manually uncheck "latest")
-5. **Update ComfyUI requirements.txt** via PR
+1. **Check automated backports first** (via labels)
+2. **Skip to version bump** if backports already merged
+3. **Manual cherry-picking** if automation failed
+4. **Create patch release** with version bump  
+5. **Publish GitHub release** (manually uncheck "latest")
+6. **Update ComfyUI requirements.txt** via PR
 
 <task>
 Create a hotfix release by backporting commits/PRs from main to a core branch: $ARGUMENTS
@@ -46,20 +47,37 @@ If no arguments provided, the command will guide you through identifying commits
    gh pr edit #1234 --add-label "1.24"  # Replace with target version
    ```
 
-3. **Monitor automated backport workflow:**
+3. **Check for existing backport PRs:**
    ```bash
-   # Check for new backport PRs created by automation
-   gh pr list --author "github-actions" --label "backport" --limit 5
+   # Check for backport PRs created by automation
+   PR_NUMBER=${ARGUMENTS%%,*}  # Extract first PR number from arguments
+   PR_NUMBER=${PR_NUMBER#\#}   # Remove # prefix
+   gh pr list --search "backport-${PR_NUMBER}-to" --json number,title,state,baseRefName
    ```
 
-4. **If automated backports succeed:** 
-   - Review and merge the automated backport PRs
-   - Skip to Step 10 (Version Bump)
-   
-5. **If automated backports fail or have conflicts:** 
+4. **Handle existing backport scenarios:**
+
+   **Scenario A: Automated backports already merged**
+   ```bash
+   # Check if backport PRs were merged to core branches
+   gh pr list --search "backport-${PR_NUMBER}-to" --state merged
+   ```
+   - If backport PRs are merged → Skip to Step 10 (Version Bump)
+   - **CONFIRMATION**: Automated backports completed, proceeding to version bump?
+
+   **Scenario B: Automated backport PRs exist but not merged**
+   ```bash
+   # Show open backport PRs that need merging
+   gh pr list --search "backport-${PR_NUMBER}-to" --state open
+   ```
+   - **ACTION REQUIRED**: Merge the existing backport PRs first
+   - Use: `gh pr merge [PR_NUMBER] --merge` for each backport PR
+   - After merging, return to this command and skip to Step 10 (Version Bump)
+   - **CONFIRMATION**: Have you merged all backport PRs? Ready to proceed to version bump?
+
+   **Scenario C: No automated backports or they failed**
    - Continue to Step 2 for manual cherry-picking
-   
-6. **CONFIRMATION**: Are you proceeding because automated backports failed?
+   - **CONFIRMATION**: Proceeding with manual cherry-picking because automation failed?
 
 ### Step 2: Identify Target Core Branch
 
@@ -338,8 +356,16 @@ If something goes wrong:
 ## Modern Workflow Context
 
 **Primary Backport Method:** Automated via `needs-backport` + `X.YY` labels
-**This Command Usage:** Fallback when automated backports fail/have conflicts
-**Complete Hotfix:** Includes ComfyUI requirements.txt integration
+**This Command Usage:** 
+- Smart path detection - skip to version bump if backports already merged
+- Fallback to manual cherry-picking only when automation fails/has conflicts
+**Complete Hotfix:** Includes GitHub release publishing + ComfyUI requirements.txt integration
+
+## Workflow Paths
+
+- **Path A:** Backports already merged → Skip to Step 10 (Version Bump)
+- **Path B:** Backport PRs need merging → Merge them → Skip to Step 10 (Version Bump)  
+- **Path C:** No/failed backports → Manual cherry-picking (Steps 2-9) → Version Bump (Step 10)
 
 
 This process ensures a complete hotfix release with proper GitHub publishing, ComfyUI integration, and multiple safety checkpoints.
