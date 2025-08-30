@@ -4,7 +4,10 @@ export default {
   './**/*.{ts,tsx,vue,mts}': (stagedFiles) => [
     ...formatAndEslint(stagedFiles),
     'vue-tsc --noEmit'
-  ]
+  ],
+
+  // Run knip on any staged files to check for unused dependencies and exports
+  '*': () => 'npm run knip'
 }
 
 function formatAndEslint(fileNames) {
