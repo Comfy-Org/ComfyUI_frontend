@@ -69,11 +69,11 @@
     <template #option="slotProps">
       <div class="flex items-center gap-2">
         <div
-          class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded border-[3px] transition-all duration-200"
+          class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded transition-all duration-200"
           :class="
             slotProps.selected
-              ? 'border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
-              : 'border-neutral-300 dark-theme:border-zinc-600 bg-neutral-100 dark-theme:bg-zinc-700'
+              ? 'border-[3px] border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
+              : 'border-[1px] border-neutral-300 dark-theme:border-zinc-600 bg-neutral-100 dark-theme:bg-zinc-700'
           "
         >
           <i-lucide:check
