@@ -4956,19 +4956,19 @@ export class LGraphCanvas
           )
           ctx.fillStyle = 'transparent'
         }
-        if (this.bg_tint) {
-          ctx.fillStyle = this.bg_tint
-          ctx.fillRect(
-            this.visible_area[0],
-            this.visible_area[1],
-            this.visible_area[2],
-            this.visible_area[3]
-          )
-          ctx.fillStyle = 'transparent'
-        }
 
         ctx.globalAlpha = 1.0
         ctx.imageSmoothingEnabled = true
+      }
+      if (this.bg_tint) {
+        ctx.fillStyle = this.bg_tint
+        ctx.fillRect(
+          this.visible_area[0],
+          this.visible_area[1],
+          this.visible_area[2],
+          this.visible_area[3]
+        )
+        ctx.fillStyle = 'transparent'
       }
 
       // groups
