@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
@@ -15,7 +15,7 @@ function onFloatValueChange(this: INumericWidget, v: number) {
     const precision =
       this.options.precision ?? Math.max(0, -Math.floor(Math.log10(round)))
     const rounded = Math.round(v / round) * round
-    this.value = _.clamp(
+    this.value = clamp(
       Number(rounded.toFixed(precision)),
       this.options.min ?? -Infinity,
       this.options.max ?? Infinity
