@@ -60,11 +60,11 @@
         <MultiSelect
           v-model="selectedFrameworks"
           class="w-[250px]"
-          :has-search-box="true"
-          :show-selected-count="true"
-          :has-clear-button="true"
           label="Select Frameworks"
           :options="frameworkOptions"
+          :show-search-box="true"
+          :show-selected-count="true"
+          :show-clear-button="true"
         />
         <MultiSelect
           v-model="selectedProjects"
