@@ -316,14 +316,7 @@ export const useWorkflowTemplatesStore = defineStore(
             (t) => t.sourceModule !== 'default'
           )
 
-        case 'lora-training':
-          return enhancedTemplates.value.filter(
-            (t) =>
-              t.tags?.includes('LoRA') ||
-              t.tags?.includes('Training') ||
-              t.name?.toLowerCase().includes('lora') ||
-              t.title?.toLowerCase().includes('lora')
-          )
+        // Removed lora-training filter (deprecated)
 
         case 'performance-small':
         case 'performance-mac':
@@ -366,13 +359,7 @@ export const useWorkflowTemplatesStore = defineStore(
         (t) => t.sourceModule !== 'default'
       ).length
       // Performance-related counts removed (Small Models / Mac) per request
-      const loraTrainingCounts = enhancedTemplates.value.filter(
-        (t) =>
-          t.tags?.includes('LoRA') ||
-          t.tags?.includes('Training') ||
-          t.name?.toLowerCase().includes('lora') ||
-          t.title?.toLowerCase().includes('lora')
-      ).length
+      // Removed loraTrainingCounts (deprecated category)
 
       // All Templates - as a simple selector
       items.push({
@@ -478,25 +465,7 @@ export const useWorkflowTemplatesStore = defineStore(
         })
       }
 
-      // Model Training - as a group
-      if (loraTrainingCounts > 0) {
-        items.push({
-          title: st(
-            'templateWorkflows.category.ModelTraining',
-            'Model Training'
-          ),
-          items: [
-            {
-              id: 'lora-training',
-              label: st(
-                'templateWorkflows.category.LoRATraining',
-                'LoRA Training'
-              ),
-              icon: getCategoryIcon('lora-training')
-            }
-          ]
-        })
-      }
+      // Removed Model Training (LoRA) group
 
       // Removed Performance group (Small Models / Runs on Mac) per request
 

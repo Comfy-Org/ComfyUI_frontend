@@ -98,7 +98,10 @@
             >
               <Button
                 v-tooltip.bottom="$t('g.seeTutorial')"
-                class="inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer"
+                :class="[
+                  'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
+                  isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                ]"
                 @click="openTutorial"
               >
                 <i class="icon-[comfy--dark-info] w-4 h-4" />
