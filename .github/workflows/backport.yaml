@@ -2,12 +2,14 @@ name: Auto Backport
 
 on:
   pull_request_target:
-    types: [closed]
+    types: [closed, labeled]
     branches: [main]
 
 jobs:
   backport:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-backport')
+    if: |
+      (github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-backport')) ||
+      (github.event.action == 'labeled' && github.event.pull_request.merged == true && github.event.label.name == 'needs-backport')
     runs-on: ubuntu-latest
     permissions:
       contents: write
