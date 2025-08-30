@@ -237,7 +237,7 @@ async function removeKeybinding(commandData: ICommandData) {
 async function captureKeybinding(event: KeyboardEvent) {
   // Allow the use of keyboard shortcuts when adding keyboard shortcuts
   if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
-    switch (event.key) {
+    switch (event.code) {
       case 'Escape':
         cancelEdit()
         return

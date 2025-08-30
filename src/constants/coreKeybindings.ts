@@ -26,58 +26,58 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'r'
+      key: 'KeyR'
     },
     commandId: 'Comfy.RefreshNodeDefinitions'
   },
   {
     combo: {
-      key: 'q'
+      key: 'KeyQ'
     },
     commandId: 'Workspace.ToggleSidebarTab.queue'
   },
   {
     combo: {
-      key: 'w'
+      key: 'KeyW'
     },
     commandId: 'Workspace.ToggleSidebarTab.workflows'
   },
   {
     combo: {
-      key: 'n'
+      key: 'KeyN'
     },
     commandId: 'Workspace.ToggleSidebarTab.node-library'
   },
   {
     combo: {
-      key: 'm'
+      key: 'KeyM'
     },
     commandId: 'Workspace.ToggleSidebarTab.model-library'
   },
   {
     combo: {
-      key: 's',
+      key: 'KeyS',
       ctrl: true
     },
     commandId: 'Comfy.SaveWorkflow'
   },
   {
     combo: {
-      key: 'o',
+      key: 'KeyO',
       ctrl: true
     },
     commandId: 'Comfy.OpenWorkflow'
   },
   {
     combo: {
-      key: 'g',
+      key: 'KeyG',
       ctrl: true
     },
     commandId: 'Comfy.Graph.GroupSelectedNodes'
   },
   {
     combo: {
-      key: ',',
+      key: 'Comma',
       ctrl: true
     },
     commandId: 'Comfy.ShowSettingsDialog'
@@ -85,7 +85,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   // For '=' both holding shift and not holding shift
   {
     combo: {
-      key: '=',
+      key: 'Equal',
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
@@ -93,7 +93,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: '+',
+      key: 'Equal',
       alt: true,
       shift: true
     },
@@ -103,7 +103,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   // For number pad '+'
   {
     combo: {
-      key: '+',
+      key: 'NumpadAdd',
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
@@ -111,7 +111,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: '-',
+      key: 'Minus',
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomOut',
@@ -119,21 +119,21 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: '.'
+      key: 'Period'
     },
     commandId: 'Comfy.Canvas.FitView',
     targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
-      key: 'p'
+      key: 'KeyP'
     },
     commandId: 'Comfy.Canvas.ToggleSelected.Pin',
     targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
-      key: 'c',
+      key: 'KeyC',
       alt: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
@@ -141,7 +141,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'b',
+      key: 'KeyB',
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
@@ -149,7 +149,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'm',
+      key: 'KeyM',
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
@@ -157,20 +157,20 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: '`',
+      key: 'Backquote',
       ctrl: true
     },
     commandId: 'Workspace.ToggleBottomPanelTab.logs-terminal'
   },
   {
     combo: {
-      key: 'f'
+      key: 'KeyF'
     },
     commandId: 'Workspace.ToggleFocusMode'
   },
   {
     combo: {
-      key: 'e',
+      key: 'KeyE',
       ctrl: true,
       shift: true
     },
@@ -178,7 +178,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'm',
+      key: 'KeyM',
       alt: true
     },
     commandId: 'Comfy.Canvas.ToggleMinimap'
@@ -187,19 +187,19 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     combo: {
       ctrl: true,
       shift: true,
-      key: 'k'
+      key: 'KeyK'
     },
     commandId: 'Workspace.ToggleBottomPanel.Shortcuts'
   },
   {
     combo: {
-      key: 'v'
+      key: 'KeyV'
     },
     commandId: 'Comfy.Canvas.Unlock'
   },
   {
     combo: {
-      key: 'h'
+      key: 'KeyH'
     },
     commandId: 'Comfy.Canvas.Lock'
   },
