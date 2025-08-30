@@ -153,6 +153,7 @@ import { useI18n } from 'vue-i18n'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
 import { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -178,12 +179,8 @@ const toggleState = () => {
 
 // Custom error handler for inline display
 const inlineErrorHandler = (error: unknown) => {
-  // Set inline error
-  if (error instanceof Error) {
-    authError.value = error.message || t('g.unknownError')
-  } else {
-    authError.value = t('g.unknownError')
-  }
+  // Set inline error with auth error translation
+  authError.value = translateAuthError(error)
   // Also show toast (original behavior)
   authActions.reportError(error)
 }

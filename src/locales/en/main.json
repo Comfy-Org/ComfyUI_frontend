@@ -1601,6 +1601,20 @@
     "passwordUpdate": {
       "success": "Password Updated",
       "successDetail": "Your password has been updated successfully"
+    },
+    "errors": {
+      "auth/invalid-email": "Please enter a valid email address.",
+      "auth/user-disabled": "This account has been disabled. Please contact support.",
+      "auth/user-not-found": "No account found with this email. Would you like to create a new account?",
+      "auth/wrong-password": "The password you entered is incorrect. Please try again.",
+      "auth/email-already-in-use": "An account with this email already exists. Try signing in instead.",
+      "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
+      "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
+      "auth/operation-not-allowed": "This sign-in method is not currently supported.",
+      "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
+      "auth/network-request-failed": "Network error. Please check your connection and try again.",
+      "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
+      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again."
     }
   },
   "validation": {
