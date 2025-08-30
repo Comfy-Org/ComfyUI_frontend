@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
 /**
@@ -181,12 +181,10 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
         const characterInput = node.inputs?.find(
           (i) => i.name === 'character_image'
-        ) as any
+        ) as INodeInputSlot
         const hasCharacter =
-          (typeof characterInput?.link !== 'undefined' &&
-            characterInput.link != null) ||
-          (Array.isArray(characterInput?.links) &&
-            characterInput.links.length > 0)
+          typeof characterInput?.link !== 'undefined' &&
+          characterInput.link != null
 
         if (!renderingSpeedWidget)
           return '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
