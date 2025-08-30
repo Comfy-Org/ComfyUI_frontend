@@ -188,7 +188,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       description,
       category: 'Subgraph Blueprints',
       output_node: false,
-      python_module: 'nodes'
+      python_module: 'blueprint'
     }
     const nodeDefImpl = new ComfyNodeDefImpl(nodedefv1)
     return nodeDefImpl
