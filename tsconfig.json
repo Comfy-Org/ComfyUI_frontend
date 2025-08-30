@@ -12,16 +12,12 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "resolveJsonModule": true,
-
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "downlevelIteration": true,
     "noImplicitOverride": true,
-
-    /* AllowJs during migration phase */
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
@@ -29,7 +25,7 @@
     },
     "typeRoots": ["src/types", "node_modules/@types"],
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./"
   },
   "include": [
     "src/**/*",

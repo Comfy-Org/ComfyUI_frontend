@@ -37,9 +37,16 @@ jobs:
           path: 'ComfyUI/custom_nodes/ComfyUI_devtools'
           ref: 'd05fd48dd787a4192e16802d4244cfcc0e2f9684'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: 'pnpm'
+          cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
 
       - name: Get current time
         id: current-time
@@ -59,16 +66,28 @@ jobs:
 
             ---
 
-            <img alt='claude-loading-gif' src="https://github.com/user-attachments/assets/5ac382c7-e004-429b-8e35-7feb3e8f9c6f" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
+            <img alt='comfy-loading-gif' src="https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
             <bold>[${{ steps.current-time.outputs.time }} UTC] Preparing browser tests across multiple browsers...</bold>
 
             ---
             *This comment will be updated when tests complete*
 
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ComfyUI_frontend/.cache
+            ComfyUI_frontend/tsconfig.tsbuildinfo
+          key: playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ hashFiles('ComfyUI_frontend/src/**/*.{ts,vue,js}', 'ComfyUI_frontend/*.config.*') }}
+          restore-keys: |
+            playwright-setup-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
+            playwright-setup-cache-${{ runner.os }}-
+            playwright-tools-cache-${{ runner.os }}-
+
       - name: Build ComfyUI_frontend
         run: |
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
         working-directory: ComfyUI_frontend
 
       - name: Generate cache key
@@ -115,9 +134,15 @@ jobs:
             ComfyUI_frontend
           key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: Get current time
         id: current-time
@@ -143,7 +168,7 @@ jobs:
           comment-author: 'github-actions[bot]'
           edit-mode: append
           body: |
-            <img alt='claude-loading-gif' src="https://github.com/user-attachments/assets/5ac382c7-e004-429b-8e35-7feb3e8f9c6f" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
+            <img alt='comfy-loading-gif' src="https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
             <bold>${{ matrix.browser }}</bold>: Running tests...
 
       - name: Install requirements
@@ -160,12 +185,21 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ matrix.browser }}
+          restore-keys: |
+            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
+            playwright-browsers-${{ runner.os }}-
+
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
 
       - name: Install Wrangler
-        run: npm install -g wrangler
+        run: pnpm install -g wrangler
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
@@ -182,6 +216,7 @@ jobs:
       - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
         id: cloudflare-deploy
         if: always()
+        continue-on-error: true
         run: |
           # Retry logic for wrangler deploy (3 attempts)
           RETRY_COUNT=0

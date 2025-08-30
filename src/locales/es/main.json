@@ -27,6 +27,15 @@
       "title": "Clave API",
       "whitelistInfo": "Acerca de los sitios no incluidos en la lista blanca"
     },
+    "deleteAccount": {
+      "cancel": "Cancelar",
+      "confirm": "Eliminar cuenta",
+      "confirmMessage": "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y eliminará permanentemente todos tus datos.",
+      "confirmTitle": "Eliminar cuenta",
+      "deleteAccount": "Eliminar cuenta",
+      "success": "Cuenta eliminada",
+      "successDetail": "Tu cuenta ha sido eliminada exitosamente."
+    },
     "login": {
       "andText": "y",
       "confirmPasswordLabel": "Confirmar contraseña",
@@ -313,7 +322,6 @@
     "feedback": "Retroalimentación",
     "filter": "Filtrar",
     "findIssues": "Encontrar problemas",
-    "firstTimeUIMessage": "Esta es la primera vez que usas la nueva interfaz. Elige \"Menú > Usar nuevo menú > Desactivado\" para restaurar la antigua interfaz.",
     "frontendNewer": "La versión del frontend {frontendVersion} puede no ser compatible con la versión del backend {backendVersion}.",
     "frontendOutdated": "La versión del frontend {frontendVersion} está desactualizada. El backend requiere la versión {requiredVersion} o superior.",
     "goToNode": "Ir al nodo",
@@ -342,6 +350,7 @@
     "micPermissionDenied": "Permiso de micrófono denegado",
     "migrate": "Migrar",
     "missing": "Faltante",
+    "moreWorkflows": "Más flujos de trabajo",
     "name": "Nombre",
     "newFolder": "Nueva carpeta",
     "next": "Siguiente",
