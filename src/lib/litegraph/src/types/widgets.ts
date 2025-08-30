@@ -65,6 +65,17 @@ export type IWidget =
   | ISliderWidget
   | IButtonWidget
   | IKnobWidget
+  | IFileUploadWidget
+  | IColorWidget
+  | IMarkdownWidget
+  | IImageWidget
+  | ITreeSelectWidget
+  | IMultiSelectWidget
+  | IChartWidget
+  | IGalleriaWidget
+  | IImageCompareWidget
+  | ISelectButtonWidget
+  | ITextareaWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -136,6 +147,81 @@ export interface IButtonWidget
 export interface ICustomWidget extends IBaseWidget<string | object, 'custom'> {
   type: 'custom'
   value: string | object
+}
+
+/** File upload widget for selecting and uploading files */
+export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
+  type: 'fileupload'
+  value: string
+  label?: string
+}
+
+/** Color picker widget for selecting colors */
+export interface IColorWidget extends IBaseWidget<string, 'color'> {
+  type: 'color'
+  value: string
+}
+
+/** Markdown widget for displaying formatted text */
+export interface IMarkdownWidget extends IBaseWidget<string, 'markdown'> {
+  type: 'markdown'
+  value: string
+}
+
+/** Image display widget */
+export interface IImageWidget extends IBaseWidget<string, 'image'> {
+  type: 'image'
+  value: string
+}
+
+/** Tree select widget for hierarchical selection */
+export interface ITreeSelectWidget
+  extends IBaseWidget<string | string[], 'treeselect'> {
+  type: 'treeselect'
+  value: string | string[]
+}
+
+/** Multi-select widget for selecting multiple options */
+export interface IMultiSelectWidget
+  extends IBaseWidget<string[], 'multiselect'> {
+  type: 'multiselect'
+  value: string[]
+}
+
+/** Chart widget for displaying data visualizations */
+export interface IChartWidget extends IBaseWidget<object, 'chart'> {
+  type: 'chart'
+  value: object
+}
+
+/** Gallery widget for displaying multiple images */
+export interface IGalleriaWidget extends IBaseWidget<string[], 'galleria'> {
+  type: 'galleria'
+  value: string[]
+}
+
+/** Image comparison widget for comparing two images side by side */
+export interface IImageCompareWidget
+  extends IBaseWidget<string[], 'imagecompare'> {
+  type: 'imagecompare'
+  value: string[]
+}
+
+/** Select button widget for selecting from a group of buttons */
+export interface ISelectButtonWidget
+  extends IBaseWidget<
+    string,
+    'selectbutton',
+    RequiredProps<IWidgetOptions<string[]>, 'values'>
+  > {
+  type: 'selectbutton'
+  value: string
+}
+
+/** Textarea widget for multi-line text input */
+export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
+  type: 'textarea'
+  value: string
 }
 
 /**

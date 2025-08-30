@@ -309,6 +309,7 @@
     "disabling": "Désactivation",
     "dismiss": "Fermer",
     "download": "Télécharger",
+    "dropYourFileOr": "Déposez votre fichier ou",
     "duplicate": "Dupliquer",
     "edit": "Modifier",
     "empty": "Vide",
@@ -861,11 +862,18 @@
     "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
     "Sign Out": "Se déconnecter",
     "Toggle Essential Bottom Panel": "Basculer le panneau inférieur essentiel",
+    "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
+    "Sign Out": "Se déconnecter",
+    "Toggle Bottom Panel": "Basculer le panneau inférieur",
+    "Toggle Essential Bottom Panel": "Afficher/Masquer le panneau inférieur essentiel",
+    "Toggle Focus Mode": "Basculer le mode focus",
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
     "Toggle Search Box": "Basculer la boîte de recherche",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
     "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
+    "Toggle View Controls Bottom Panel": "Afficher/Masquer le panneau inférieur des contrôles de vue",
+    "Toggle Workflows Sidebar": "Afficher/Masquer la barre latérale des workflows",
     "Toggle the Custom Nodes Manager": "Basculer le gestionnaire de nœuds personnalisés",
     "Toggle the Custom Nodes Manager Progress Bar": "Basculer la barre de progression du gestionnaire de nœuds personnalisés",
     "Undo": "Annuler",
@@ -875,14 +883,15 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l’écran"
+    "Zoom to fit": "Ajuster à l'écran"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",
-    "renderBypassState": "Afficher l’état de contournement",
-    "renderErrorState": "Afficher l’état d’erreur",
+    "renderBypassState": "Afficher l'état de contournement",
+    "renderErrorState": "Afficher l'état d'erreur",
     "showGroups": "Afficher les cadres/groupes",
-    "showLinks": "Afficher les liens"
+    "showLinks": "Afficher les liens",
+    "Zoom Out": "Zoom arrière"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
@@ -1199,6 +1208,7 @@
     "UV": "UV",
     "User": "Utilisateur",
     "Validation": "Validation",
+    "Vue Nodes": "Nœuds Vue",
     "Window": "Fenêtre",
     "Workflow": "Flux de Travail"
   },
@@ -1212,6 +1222,7 @@
       "panelControls": "Contrôles du panneau",
       "queue": "File d’attente",
       "view": "Vue",
+      "view": "Affichage",
       "workflow": "Flux de travail"
     },
     "viewControls": "Contrôles d’affichage"

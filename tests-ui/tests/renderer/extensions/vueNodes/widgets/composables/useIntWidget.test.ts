@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { _for_testing } from '@/composables/widgets/useIntWidget'
+import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()

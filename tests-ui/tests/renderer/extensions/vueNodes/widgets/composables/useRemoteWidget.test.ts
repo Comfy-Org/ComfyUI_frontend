@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useRemoteWidget } from '@/composables/widgets/useRemoteWidget'
+import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 
 vi.mock('axios', () => {
