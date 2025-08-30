@@ -1,55 +1,67 @@
 # Create Hotfix Release
 
-This command guides you through creating a patch/hotfix release for ComfyUI Frontend. **Use this when automated backports fail or for manual hotfix creation.**
+This command creates patch/hotfix releases for ComfyUI Frontend by backporting fixes to stable core branches. It handles both automated backports (preferred) and manual cherry-picking (fallback).
+
+**Process Overview:**
+1. **Try automated backports first** (via labels) 
+2. **Manual cherry-picking** if automation fails
+3. **Create patch release** with version bump
+4. **Publish GitHub release** (manually uncheck "latest")
+5. **Update ComfyUI requirements.txt** via PR
 
 <task>
-Create a hotfix release by cherry-picking commits or PR commits from main to a core branch: $ARGUMENTS
+Create a hotfix release by backporting commits/PRs from main to a core branch: $ARGUMENTS
 
 Expected format: Comma-separated list of commits or PR numbers
 Examples: 
-- `abc123,def456,ghi789` (commits)
-- `#1234,#5678` (PRs)
-- `abc123,#1234,def456` (mixed)
+- `#1234,#5678` (PRs - preferred)
+- `abc123,def456` (commit hashes)
+- `#1234,abc123` (mixed)
 
-If no arguments provided, the command will help identify the correct core branch and guide you through selecting commits/PRs.
+If no arguments provided, the command will guide you through identifying commits/PRs to backport.
 </task>
 
 ## Prerequisites
 
-Before starting, ensure:
-- You have push access to the repository
-- GitHub CLI (`gh`) is authenticated
-- You're on a clean working tree
-- You understand the commits/PRs you're cherry-picking
+- Push access to repository
+- GitHub CLI (`gh`) authenticated  
+- Clean working tree
+- Understanding of what fixes need backporting
 
 ## Hotfix Release Process
 
-### Step 0: Check Automated Backport Status
+### Step 1: Try Automated Backports First
 
-**IMPORTANT**: Check if automated backports were already attempted:
+**Check if automated backports were attempted:**
 
-1. **For each PR, verify backport labels:**
+1. **For each PR, check existing backport labels:**
    ```bash
-   gh pr view #1234 --json labels | jq -r '.labels[].name' | grep -E "(needs-backport|[0-9]+\.[0-9]+)"
+   gh pr view #1234 --json labels | jq -r '.labels[].name'
    ```
 
-2. **Check for existing backport PRs:**
+2. **If no backport labels exist, add them now:**
    ```bash
-   gh pr list --label "backport" --state all --limit 10
+   # Add backport labels (this triggers automated backports)
+   gh pr edit #1234 --add-label "needs-backport"
+   gh pr edit #1234 --add-label "1.24"  # Replace with target version
    ```
 
-3. **CONFIRMATION REQUIRED**: 
-   - Did you already try adding `needs-backport` + `X.YY` labels to the original PRs?
-   - Did the automated backport workflow succeed, fail, or have conflicts?
-   - Are you running this because automated backports failed/had conflicts?
+3. **Monitor automated backport workflow:**
+   ```bash
+   # Check for new backport PRs created by automation
+   gh pr list --author "github-actions" --label "backport" --limit 5
+   ```
 
-**If automated backports haven't been tried yet:**
-- Stop this command
-- First add `needs-backport` and `X.YY` labels to original PRs
-- Wait for automated backport workflow to complete
-- Only proceed if automated backports fail
+4. **If automated backports succeed:** 
+   - Review and merge the automated backport PRs
+   - Skip to Step 10 (Version Bump)
+   
+5. **If automated backports fail or have conflicts:** 
+   - Continue to Step 2 for manual cherry-picking
+   
+6. **CONFIRMATION**: Are you proceeding because automated backports failed?
 
-### Step 1: Identify Target Core Branch
+### Step 2: Identify Target Core Branch
 
 1. Fetch the current ComfyUI requirements.txt from master branch:
    ```bash
@@ -61,7 +73,7 @@ Before starting, ensure:
 5. Verify the core branch exists: `git ls-remote origin refs/heads/core/*`
 6. **CONFIRMATION REQUIRED**: Is `core/X.Y` the correct target branch?
 
-### Step 2: Parse and Validate Arguments
+### Step 3: Parse and Validate Arguments
 
 1. Parse the comma-separated list of commits/PRs
 2. For each item:
@@ -74,7 +86,7 @@ Before starting, ensure:
    - **CONFIRMATION REQUIRED**: Use merge commit or cherry-pick individual commits?
 4. Validate all commit hashes exist in the repository
 
-### Step 3: Analyze Target Changes
+### Step 4: Analyze Target Changes
 
 1. For each commit/PR to cherry-pick:
    - Display commit hash, author, date
@@ -85,7 +97,7 @@ Before starting, ensure:
 2. Identify potential conflicts by checking changed files
 3. **CONFIRMATION REQUIRED**: Proceed with these commits?
 
-### Step 4: Create Hotfix Branch
+### Step 5: Create Hotfix Branch
 
 1. Checkout the core branch (e.g., `core/1.23`)
 2. Pull latest changes: `git pull origin core/X.Y`
@@ -94,7 +106,7 @@ Before starting, ensure:
    - Example: `hotfix/1.23.4-20241120`
 5. **CONFIRMATION REQUIRED**: Created branch correctly?
 
-### Step 5: Cherry-pick Changes
+### Step 6: Cherry-pick Changes
 
 For each commit:
 1. Attempt cherry-pick: `git cherry-pick <commit>`
@@ -108,7 +120,7 @@ For each commit:
    - Run validation: `pnpm typecheck && pnpm lint`
 4. **CONFIRMATION REQUIRED**: Cherry-pick successful and valid?
 
-### Step 6: Create PR to Core Branch
+### Step 7: Create PR to Core Branch
 
 1. Push the hotfix branch: `git push origin hotfix/<version>-<timestamp>`
 2. Create PR using gh CLI:
@@ -125,7 +137,7 @@ For each commit:
    - Impact assessment
 5. **CONFIRMATION REQUIRED**: PR created correctly?
 
-### Step 7: Wait for Tests
+### Step 8: Wait for Tests
 
 1. Monitor PR checks: `gh pr checks`
 2. Display test results as they complete
@@ -136,7 +148,7 @@ For each commit:
 4. Wait for all required checks to pass
 5. **CONFIRMATION REQUIRED**: All tests passing?
 
-### Step 8: Merge Hotfix PR
+### Step 9: Merge Hotfix PR
 
 1. Verify all checks have passed
 2. Check for required approvals
@@ -144,7 +156,7 @@ For each commit:
 4. Delete the hotfix branch
 5. **CONFIRMATION REQUIRED**: PR merged successfully?
 
-### Step 9: Create Version Bump
+### Step 10: Create Version Bump
 
 1. Checkout the core branch: `git checkout core/X.Y`
 2. Pull latest changes: `git pull origin core/X.Y`
@@ -156,7 +168,7 @@ For each commit:
 7. Commit: `git commit -m "[release] Bump version to 1.23.5"`
 8. **CONFIRMATION REQUIRED**: Version bump correct?
 
-### Step 10: Create Release PR
+### Step 11: Create Release PR
 
 1. Push release branch: `git push origin release/1.23.5`
 2. Create PR with Release label:
@@ -209,7 +221,7 @@ For each commit:
      ```
 5. **CONFIRMATION REQUIRED**: Release PR has "Release" label?
 
-### Step 11: Monitor Release Process
+### Step 12: Monitor Release Process
 
 1. Wait for PR checks to pass
 2. **FINAL CONFIRMATION**: Ready to trigger release by merging?
@@ -224,7 +236,7 @@ For each commit:
    - PyPI upload
    - pnpm types publication
 
-### Step 12: Manually Publish Draft Release
+### Step 13: Manually Publish Draft Release
 
 **CRITICAL**: The release workflow creates a DRAFT release. You must manually publish it:
 
@@ -237,7 +249,7 @@ For each commit:
 5. **Click "Publish release"**
 6. **CONFIRMATION REQUIRED**: Draft release published with "latest" unchecked?
 
-### Step 13: Create ComfyUI Requirements.txt Update PR
+### Step 14: Create ComfyUI Requirements.txt Update PR
 
 **IMPORTANT**: Create PR to update ComfyUI's requirements.txt:
 
@@ -271,7 +283,7 @@ python main.py --front-end-version Comfy-Org/ComfyUI_frontend@1.23.5
 2. **Submit the PR and coordinate with ComfyUI maintainers**
 3. **CONFIRMATION REQUIRED**: ComfyUI requirements.txt PR created?
 
-### Step 14: Post-Release Verification
+### Step 15: Post-Release Verification
 
 1. Verify GitHub release:
    ```bash
