@@ -31,8 +31,8 @@ const topStyle = computed(() => {
   const baseClasses = 'relative p-0'
 
   const ratioClasses = {
-    square: 'aspect-[1/1]',
-    landscape: 'aspect-[48/27]'
+    square: 'aspect-square',
+    landscape: 'aspect-48/27'
   }
 
   return `${baseClasses} ${ratioClasses[ratio]}`

@@ -33,7 +33,7 @@ const {
 } = defineProps<IconTextButtonProps>()
 
 const buttonStyle = computed(() => {
-  const baseClasses = `${getBaseButtonClasses()} !justify-start gap-2`
+  const baseClasses = `${getBaseButtonClasses()} justify-start! gap-2`
   const sizeClasses = getButtonSizeClasses(size)
   const typeClasses = getButtonTypeClasses(type)
 

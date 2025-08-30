@@ -5,7 +5,7 @@
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
   >
     <div ref="panelRef" class="actionbar-content flex items-center select-none">
-      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2 p-0!" />
+      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
       <ComfyQueueButton />
     </div>
   </Panel>
@@ -228,6 +228,8 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .actionbar {
   pointer-events: all;
   position: fixed;

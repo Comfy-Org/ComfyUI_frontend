@@ -117,7 +117,7 @@ export const useDialogService = () => {
       headerComponent: TemplateWorkflowsDialogHeader,
       dialogComponentProps: {
         pt: {
-          content: { class: '!px-0 overflow-y-hidden' }
+          content: { class: 'px-0! overflow-y-hidden' }
         }
       },
       props
@@ -150,9 +150,9 @@ export const useDialogService = () => {
                 'bg-gray-500 dark-theme:bg-neutral-700 w-9 h-9 p-1.5 rounded-full text-white'
             }
           },
-          header: { class: '!py-0 px-6 !m-0 h-[68px]' },
+          header: { class: 'py-0! px-6 m-0! h-[68px]' },
           content: {
-            class: '!p-0 h-full w-[90vw] max-w-full flex-1 overflow-hidden'
+            class: 'p-0! h-full w-[90vw] max-w-full flex-1 overflow-hidden'
           },
           root: { class: 'manager-dialog' }
         }
@@ -177,9 +177,9 @@ export const useDialogService = () => {
         position: 'bottom',
         pt: {
           root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: '!p-0' },
-          header: { class: '!p-0 border-none' },
-          footer: { class: '!p-0 border-none' }
+          content: { class: 'p-0!' },
+          header: { class: 'p-0! border-none' },
+          footer: { class: 'p-0! border-none' }
         }
       }
     })
@@ -372,7 +372,7 @@ export const useDialogService = () => {
       props: options,
       dialogComponentProps: {
         pt: {
-          header: { class: '!p-3' }
+          header: { class: 'p-3!' }
         }
       }
     })
@@ -446,10 +446,10 @@ export const useDialogService = () => {
           class: 'rounded-2xl overflow-hidden'
         },
         header: {
-          class: '!p-0 hidden'
+          class: 'p-0! hidden'
         },
         content: {
-          class: '!p-0 !m-0'
+          class: 'p-0! m-0!'
         }
       }
     }

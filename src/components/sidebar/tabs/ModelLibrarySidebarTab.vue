@@ -1,7 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="$t('sideToolbar.modelLibrary')"
-    class="bg-[var(--p-tree-background)]"
+    class="bg-(--p-tree-background)"
   >
     <template #tool-buttons>
       <Button

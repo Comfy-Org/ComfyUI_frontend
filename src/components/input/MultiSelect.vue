@@ -36,7 +36,7 @@
               :label="$t('g.clearAll')"
               type="transparent"
               size="fit-content"
-              class="text-sm !text-blue-500 !dark-theme:text-blue-600"
+              class="text-sm text-blue-500! !dark-theme:text-blue-600"
               @click.stop="selectedItems = []"
             />
           </div>
@@ -60,7 +60,7 @@
       <template #option="slotProps">
         <div class="flex items-center gap-2">
           <div
-            class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded border-[3px] transition-all duration-200"
+            class="flex h-4 w-4 p-0.5 shrink-0 items-center justify-center rounded border-[3px] transition-all duration-200"
             :class="
               slotProps.selected
                 ? 'border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
@@ -163,7 +163,7 @@ const pt = computed(() => ({
   },
   // Option row hover tone identical
   option:
-    'flex gap-1 items-center p-2 hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+    'flex gap-1 items-center p-2 hover:bg-neutral-100/50 hover:dark-theme:bg-zinc-700/50',
   // Hide built-in checkboxes entirely via PT (no :deep)
   pcHeaderCheckbox: {
     root: { class: 'hidden' },

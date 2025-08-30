@@ -33,6 +33,8 @@ const navigateTo = async (path: string) => {
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 .animated-gradient-text {
   @apply font-bold;
   font-size: clamp(2rem, 8vw, 4rem);

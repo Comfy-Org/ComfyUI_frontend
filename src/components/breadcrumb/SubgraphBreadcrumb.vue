@@ -156,6 +156,8 @@ onUpdated(() => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .subgraph-breadcrumb:not(:empty) {
   flex: auto;
   flex-shrink: 10000;
@@ -196,6 +198,8 @@ onUpdated(() => {
 </style>
 
 <style>
+@reference '../../assets/css/style.css';
+
 .subgraph-breadcrumb-collapse .p-breadcrumb-list {
   .p-breadcrumb-item,
   .p-breadcrumb-separator {
