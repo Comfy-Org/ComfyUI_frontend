@@ -269,37 +269,85 @@ For each commit:
 
 ### Step 14: Create ComfyUI Requirements.txt Update PR
 
-**IMPORTANT**: Create PR to update ComfyUI's requirements.txt:
+**IMPORTANT**: Create PR to update ComfyUI's requirements.txt via fork:
 
-1. **Create PR to `comfyanonymous/ComfyUI`** with this exact format:
+1. **Setup fork (if needed):**
+   ```bash
+   # Check if fork already exists
+   if gh repo view ComfyUI --json owner | jq -r '.owner.login' | grep -q "$(gh api user --jq .login)"; then
+     echo "Fork already exists"
+   else
+     # Fork the ComfyUI repository
+     gh repo fork comfyanonymous/ComfyUI --clone=false
+     echo "Created fork of ComfyUI"
+   fi
+   ```
 
-**PR Title:** `Bump frontend to 1.23.5`
+2. **Clone fork and create branch:**
+   ```bash
+   # Clone your fork (or use existing clone)
+   GITHUB_USER=$(gh api user --jq .login)
+   if [ ! -d "ComfyUI-fork" ]; then
+     gh repo clone ${GITHUB_USER}/ComfyUI ComfyUI-fork
+   fi
+   
+   cd ComfyUI-fork
+   git checkout master
+   git pull origin master
+   
+   # Create update branch
+   BRANCH_NAME="update-frontend-${NEW_VERSION}"
+   git checkout -b ${BRANCH_NAME}
+   ```
 
-**PR Body:**
-```markdown
-Bump frontend to 1.23.5
+3. **Update requirements.txt:**
+   ```bash
+   # Update the version in requirements.txt
+   sed -i "s/comfyui-frontend-package==[0-9].*$/comfyui-frontend-package==${NEW_VERSION}/" requirements.txt
+   
+   # Verify the change
+   grep "comfyui-frontend-package" requirements.txt
+   
+   # Commit the change
+   git add requirements.txt
+   git commit -m "Bump frontend to ${NEW_VERSION}"
+   git push origin ${BRANCH_NAME}
+   ```
 
-```
-python main.py --front-end-version Comfy-Org/ComfyUI_frontend@1.23.5
-```
+4. **Create PR from fork:**
+   ```bash
+   # Create PR using gh CLI from fork
+   gh pr create \
+     --repo comfyanonymous/ComfyUI \
+     --title "Bump frontend to ${NEW_VERSION}" \
+     --body "$(cat <<EOF
+Bump frontend to ${NEW_VERSION}
 
-- Diff: [Comfy-Org/ComfyUI_frontend: v1.23.4...v1.23.5](https://github.com/Comfy-Org/ComfyUI_frontend/compare/v1.23.4...v1.23.5)
-- PyPI Package: https://pypi.org/project/comfyui-frontend-package/1.23.5/
-- npm Types: https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types/v/1.23.5
+\`\`\`
+python main.py --front-end-version Comfy-Org/ComfyUI_frontend@${NEW_VERSION}
+\`\`\`
+
+- Diff: [Comfy-Org/ComfyUI_frontend: v${OLD_VERSION}...v${NEW_VERSION}](https://github.com/Comfy-Org/ComfyUI_frontend/compare/v${OLD_VERSION}...v${NEW_VERSION})
+- PyPI Package: https://pypi.org/project/comfyui-frontend-package/${NEW_VERSION}/
+- npm Types: https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types/v/${NEW_VERSION}
 
 ## Changes
 
 - Fix: [Brief description of hotfixes included]
-```
+EOF
+)"
+   ```
 
-**Files changed:** Update `requirements.txt`:
-```diff
-- comfyui-frontend-package==1.23.4
-+ comfyui-frontend-package==1.23.5
-```
+5. **Clean up:**
+   ```bash
+   # Return to original directory
+   cd ..
+   
+   # Keep fork directory for future updates
+   echo "Fork directory 'ComfyUI-fork' kept for future use"
+   ```
 
-2. **Submit the PR and coordinate with ComfyUI maintainers**
-3. **CONFIRMATION REQUIRED**: ComfyUI requirements.txt PR created?
+6. **CONFIRMATION REQUIRED**: ComfyUI requirements.txt PR created from fork?
 
 ### Step 15: Post-Release Verification
 
