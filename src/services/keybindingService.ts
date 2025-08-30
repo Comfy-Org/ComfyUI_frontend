@@ -36,7 +36,7 @@ export const useKeybindingService = () => {
     if (keybinding && keybinding.targetElementId !== 'graph-canvas') {
       // Special handling for Escape key - let dialogs handle it first
       if (
-        event.key === 'Escape' &&
+        event.code === 'Escape' &&
         !event.ctrlKey &&
         !event.altKey &&
         !event.metaKey
@@ -59,7 +59,7 @@ export const useKeybindingService = () => {
     }
 
     // Escape key: close the first open modal found, and all dialogs
-    if (event.key === 'Escape') {
+    if (event.code === 'Escape') {
       const modals = document.querySelectorAll<HTMLElement>('.comfy-modal')
       for (const modal of modals) {
         const modalDisplay = window
