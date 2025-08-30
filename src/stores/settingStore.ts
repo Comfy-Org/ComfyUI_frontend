@@ -188,6 +188,47 @@ export const useSettingStore = defineStore('setting', () => {
       )
     }
     settingValues.value = await api.getSettings()
+
+    // Migrate old zoom threshold setting to new font size setting
+    await migrateZoomThresholdToFontSize()
+  }
+
+  /**
+   * Migrate the old zoom threshold setting to the new font size setting.
+   * Maps zoom threshold (0.1-1.0) to font size (4-16px).
+   */
+  async function migrateZoomThresholdToFontSize() {
+    const oldKey = 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold'
+    const newKey = 'LiteGraph.Canvas.MinFontSizeForLOD'
+
+    // Only migrate if old setting exists and new setting doesn't
+    if (
+      settingValues.value[oldKey] !== undefined &&
+      settingValues.value[newKey] === undefined
+    ) {
+      const oldValue = settingValues.value[oldKey]
+
+      // Convert zoom threshold to approximate font size
+      // Old: 0.1 = switch to LOD at 0.1 zoom (far out, keep detail longest)
+      //      1.0 = switch to LOD at 1.0 zoom (close in, switch earliest)
+      // New: 0 = LOD disabled (not used in migration as old setting always had LOD enabled)
+      //      Small font size (1px) = keep detail longest
+      //      Large font size (24px) = switch to LOD earliest
+      // This maps: Old range: 0.1 to 1.0 (span of 0.9) - New range: 1px to 24px (span of 23px)
+      // So: 0.1 -> 1px, 1.0 -> 24px (direct relationship)
+      const mappedFontSize = Math.round(1 + (oldValue - 0.1) * (23 / 0.9))
+      const clampedFontSize = Math.max(1, Math.min(24, mappedFontSize))
+
+      // Set the new value
+      settingValues.value[newKey] = clampedFontSize
+
+      // Remove the old setting to prevent confusion
+      delete settingValues.value[oldKey]
+
+      // Store the migrated setting
+      await api.storeSetting(newKey as any, clampedFontSize)
+      await api.storeSetting(oldKey as any, undefined)
+    }
   }
 
   return {

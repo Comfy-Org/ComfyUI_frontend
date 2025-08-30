@@ -460,7 +460,7 @@ const zSettings = z.object({
   'Comfy.Workflow.AutoSaveDelay': z.number(),
   'Comfy.Workflow.AutoSave': z.enum(['off', 'after delay']),
   'Comfy.RerouteBeta': z.boolean(),
-  'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
+  'LiteGraph.Canvas.MinFontSizeForLOD': z.number(),
   'Comfy.Canvas.SelectionToolbox': z.boolean(),
   'LiteGraph.Node.TooltipDelay': z.number(),
   'LiteGraph.ContextMenu.Scaling': z.boolean(),
