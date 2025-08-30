@@ -395,7 +395,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (modeValue.includes('v2-master')) {
+        if (modeValue.includes('v2-1')) {
+          if (modeValue.includes('10s')) {
+            return '$0.98/Run' // pro, 10s
+          }
+          return '$0.49/Run' // pro, 5s default
+        } else if (modeValue.includes('v2-master')) {
           if (modeValue.includes('10s')) {
             return '$2.80/Run'
           }
