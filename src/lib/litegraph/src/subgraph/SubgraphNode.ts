@@ -591,32 +591,26 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       return n.widgets.find((w) => w.name === widgetName)
     }
     const overlay: object = {nodeId, widgetName, graph: this.subgraph}
-    const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'getOwnPropertyDescriptor', 'ownKeys', 'has'].map((s) => {
+    const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function(t,p,...rest) {
 	if (s == 'get' && p == '_overlay')
 	  return overlay
 	const lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
-	if (s == 'ownKeys') {
-	  return Reflect.ownKeys(lw)
-	}
 	if (s == 'get' && p == 'node')
 	  return {pos: this.pos, __proto__:lw.node}
-	const r = rest.at(-1)
-	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled'].includes(p))
-	  r = overlay
-	else
-	  r = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
+	//NOTE: p may be undefined
+	let r = rest.at(-1)
+	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled', 'afterQueued', 'beforeQueued', 'onRemove'].includes(p))
+	  t = overlay
+	else if (p == "value") {
+	  t = lw
+	  r = lw
+	} else {
+	  t = lw
 	  if (!t)
 	    return//TODO: pass to overlay subitem to display a disconnected state
-	const ret = Reflect[s](t,p,...rest.slice(0,-1), r)
-	if (ret instanceof Function) {
-	  return function (...args) {
-	    //console.log(r,t,r===t)
-	    return ret.apply(this === r ? t : this, args)
-	  }
 	}
-	return ret
-
+	return Reflect[s](t,p,...rest.slice(0,-1),r)
       }
       return [s, func]
     }))
