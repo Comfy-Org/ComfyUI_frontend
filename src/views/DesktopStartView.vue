@@ -1,11 +1,11 @@
 <template>
   <BaseViewTemplate dark>
-    <ProgressSpinner class="m-8 w-48 h-48" />
+    <InstallationProgress />
   </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
+import InstallationProgress from '@/components/desktop/InstallationProgress.vue'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 </script>
