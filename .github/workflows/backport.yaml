@@ -7,9 +7,7 @@ on:
 
 jobs:
   backport:
-    if: |
-      (github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-backport')) ||
-      (github.event.action == 'labeled' && github.event.pull_request.merged == true && github.event.label.name == 'needs-backport')
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-backport')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -27,7 +25,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Check if backports already exist
+        id: check-existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Check for existing backport PRs for this PR number
+          EXISTING_BACKPORTS=$(gh pr list --state all --search "backport-${PR_NUMBER}-to" --json title,headRefName,baseRefName | jq -r '.[].headRefName')
+          
+          if [ -n "$EXISTING_BACKPORTS" ]; then
+            echo "Found existing backport PRs:"
+            echo "$EXISTING_BACKPORTS"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::notice::Backport PRs already exist for PR #${PR_NUMBER}, skipping to avoid duplicates"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract version labels
+        if: steps.check-existing.outputs.skip != 'true'
         id: versions
         run: |
           # Extract version labels (e.g., "1.24", "1.22")
@@ -54,6 +71,7 @@ jobs:
           echo "Found version labels: ${VERSIONS}"
 
       - name: Backport commits
+        if: steps.check-existing.outputs.skip != 'true'
         id: backport
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -111,7 +129,7 @@ jobs:
           fi
 
       - name: Create PR for each successful backport
-        if: steps.backport.outputs.success
+        if: steps.check-existing.outputs.skip != 'true' && steps.backport.outputs.success
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
         run: |
@@ -143,7 +161,7 @@ jobs:
           done
 
       - name: Comment on failures
-        if: failure() && steps.backport.outputs.failed
+        if: steps.check-existing.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
