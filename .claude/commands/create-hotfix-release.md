@@ -1,6 +1,6 @@
 # Create Hotfix Release
 
-This command guides you through creating a patch/hotfix release for ComfyUI Frontend with comprehensive safety checks and human confirmations at each step.
+This command guides you through creating a patch/hotfix release for ComfyUI Frontend. **Use this when automated backports fail or for manual hotfix creation.**
 
 <task>
 Create a hotfix release by cherry-picking commits or PR commits from main to a core branch: $ARGUMENTS
@@ -23,6 +23,31 @@ Before starting, ensure:
 - You understand the commits/PRs you're cherry-picking
 
 ## Hotfix Release Process
+
+### Step 0: Check Automated Backport Status
+
+**IMPORTANT**: Check if automated backports were already attempted:
+
+1. **For each PR, verify backport labels:**
+   ```bash
+   gh pr view #1234 --json labels | jq -r '.labels[].name' | grep -E "(needs-backport|[0-9]+\.[0-9]+)"
+   ```
+
+2. **Check for existing backport PRs:**
+   ```bash
+   gh pr list --label "backport" --state all --limit 10
+   ```
+
+3. **CONFIRMATION REQUIRED**: 
+   - Did you already try adding `needs-backport` + `X.YY` labels to the original PRs?
+   - Did the automated backport workflow succeed, fail, or have conflicts?
+   - Are you running this because automated backports failed/had conflicts?
+
+**If automated backports haven't been tried yet:**
+- Stop this command
+- First add `needs-backport` and `X.YY` labels to original PRs
+- Wait for automated backport workflow to complete
+- Only proceed if automated backports fail
 
 ### Step 1: Identify Target Core Branch
 
@@ -199,7 +224,54 @@ For each commit:
    - PyPI upload
    - pnpm types publication
 
-### Step 12: Post-Release Verification
+### Step 12: Manually Publish Draft Release
+
+**CRITICAL**: The release workflow creates a DRAFT release. You must manually publish it:
+
+1. **Go to GitHub Releases:** https://github.com/Comfy-Org/ComfyUI_frontend/releases
+2. **Find the DRAFT release** (e.g., "v1.23.5 Draft")
+3. **Click "Edit release"**
+4. **UNCHECK "Set as the latest release"** ⚠️ **CRITICAL**
+   - This prevents the hotfix from showing as "latest" 
+   - Main branch should always be "latest release"
+5. **Click "Publish release"**
+6. **CONFIRMATION REQUIRED**: Draft release published with "latest" unchecked?
+
+### Step 13: Create ComfyUI Requirements.txt Update PR
+
+**IMPORTANT**: Create PR to update ComfyUI's requirements.txt:
+
+1. **Create PR to `comfyanonymous/ComfyUI`** with this exact format:
+
+**PR Title:** `Bump frontend to 1.23.5`
+
+**PR Body:**
+```markdown
+Bump frontend to 1.23.5
+
+```
+python main.py --front-end-version Comfy-Org/ComfyUI_frontend@1.23.5
+```
+
+- Diff: [Comfy-Org/ComfyUI_frontend: v1.23.4...v1.23.5](https://github.com/Comfy-Org/ComfyUI_frontend/compare/v1.23.4...v1.23.5)
+- PyPI Package: https://pypi.org/project/comfyui-frontend-package/1.23.5/
+- npm Types: https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types/v/1.23.5
+
+## Changes
+
+- Fix: [Brief description of hotfixes included]
+```
+
+**Files changed:** Update `requirements.txt`:
+```diff
+- comfyui-frontend-package==1.23.4
++ comfyui-frontend-package==1.23.5
+```
+
+2. **Submit the PR and coordinate with ComfyUI maintainers**
+3. **CONFIRMATION REQUIRED**: ComfyUI requirements.txt PR created?
+
+### Step 14: Post-Release Verification
 
 1. Verify GitHub release:
    ```bash
@@ -213,12 +285,14 @@ For each commit:
    ```bash
    pnpm view @comfyorg/comfyui-frontend-types@1.23.5
    ```
-4. Generate release summary with:
+4. Monitor ComfyUI requirements.txt PR for approval/merge
+5. Generate release summary with:
    - Version released
    - Commits included
    - Issues fixed
    - Distribution status
-5. **CONFIRMATION REQUIRED**: Release completed successfully?
+   - ComfyUI integration status
+6. **CONFIRMATION REQUIRED**: Hotfix release fully completed?
 
 ## Safety Checks
 
@@ -240,19 +314,20 @@ If something goes wrong:
 
 ## Important Notes
 
+- **Always try automated backports first** - This command is for when automation fails
 - Core branch version will be behind main - this is expected
 - The "Release" label triggers the PyPI/npm publication
+- **CRITICAL**: Always uncheck "Set as latest release" for hotfix releases
+- **Must create ComfyUI requirements.txt PR** - Hotfix isn't complete without it
 - PR numbers must include the `#` prefix
 - Mixed commits/PRs are supported but review carefully
 - Always wait for full test suite before proceeding
 
-## Expected Timeline
+## Modern Workflow Context
 
-- Step 1-3: ~10 minutes (analysis)
-- Steps 4-6: ~15-30 minutes (cherry-picking)
-- Step 7: ~10-20 minutes (tests)
-- Steps 8-10: ~10 minutes (version bump)
-- Step 11-12: ~15-20 minutes (release)
-- Total: ~60-90 minutes
+**Primary Backport Method:** Automated via `needs-backport` + `X.YY` labels
+**This Command Usage:** Fallback when automated backports fail/have conflicts
+**Complete Hotfix:** Includes ComfyUI requirements.txt integration
 
-This process ensures a safe, verified hotfix release with multiple confirmation points and clear tracking of what changes are being released.
+
+This process ensures a complete hotfix release with proper GitHub publishing, ComfyUI integration, and multiple safety checkpoints.
