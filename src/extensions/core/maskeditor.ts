@@ -2050,6 +2050,8 @@ class BrushTool {
   rgbCtx: CanvasRenderingContext2D | null = null
   initialDraw: boolean = true
 
+  private static brushTextureCache = new Map<string, HTMLCanvasElement>()
+
   brushStrokeCanvas: HTMLCanvasElement | null = null
   brushStrokeCtx: CanvasRenderingContext2D | null = null
 
@@ -2457,68 +2459,77 @@ class BrushTool {
     const x = point.x
     const y = point.y
 
-    // Keep brush size constant - only the gradient changes with hardness
     const brushRadius = size
-
     const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
     const currentTool = await this.messageBroker.pull('currentTool')
 
-    // Helper function to draw soft square brush
-    const drawSoftSquare = (
-      ctx: CanvasRenderingContext2D,
+    // Helper function to get or create cached brush texture
+    const getCachedBrushTexture = (
+      radius: number,
+      hardness: number,
       color: string,
-      centerOpacity: number
-    ) => {
+      opacity: number
+    ): HTMLCanvasElement => {
+      const cacheKey = `${radius}_${hardness}_${color}_${opacity}`
+
+      if (BrushTool.brushTextureCache.has(cacheKey)) {
+        return BrushTool.brushTextureCache.get(cacheKey)!
+      }
+
       const tempCanvas = document.createElement('canvas')
-      const tempCtx = tempCanvas.getContext('2d')
-
-      if (!tempCtx) return
-
-      const size = brushRadius * 2
+      const tempCtx = tempCanvas.getContext('2d')!
+      const size = radius * 2
       tempCanvas.width = size
       tempCanvas.height = size
 
       const centerX = size / 2
       const centerY = size / 2
-      const hardRadius = brushRadius * hardness
+      const hardRadius = radius * hardness
 
-      // Create ImageData to manually set pixel opacities
       const imageData = tempCtx.createImageData(size, size)
       const data = imageData.data
-
-      // Use parseToRgb from colorUtil
       const { r, g, b } = parseToRgb(color)
 
+      // Pre-calculate values to avoid repeated computations
+      const fadeRange = radius - hardRadius
+
       for (let y = 0; y < size; y++) {
+        const dy = y - centerY
         for (let x = 0; x < size; x++) {
+          const dx = x - centerX
           const index = (y * size + x) * 4
 
-          // Calculate distance from center to edge of square
-          const distFromCenterX = Math.abs(x - centerX)
-          const distFromCenterY = Math.abs(y - centerY)
-          const distFromEdge = Math.max(distFromCenterX, distFromCenterY) // Square distance
+          // Calculate square distance (Chebyshev distance)
+          const distFromEdge = Math.max(Math.abs(dx), Math.abs(dy))
 
-          let opacity = 0
-
+          let pixelOpacity = 0
           if (distFromEdge <= hardRadius) {
-            // Inside hard area - full opacity
-            opacity = centerOpacity
-          } else if (distFromEdge <= brushRadius) {
-            // In soft area - fade out
-            const fadeProgress =
-              (distFromEdge - hardRadius) / (brushRadius - hardRadius)
-            opacity = centerOpacity * (1 - fadeProgress)
+            pixelOpacity = opacity
+          } else if (distFromEdge <= radius) {
+            const fadeProgress = (distFromEdge - hardRadius) / fadeRange
+            pixelOpacity = opacity * (1 - fadeProgress)
           }
 
-          data[index] = r // Red
-          data[index + 1] = g // Green
-          data[index + 2] = b // Blue
-          data[index + 3] = opacity * 255 // Alpha
+          data[index] = r
+          data[index + 1] = g
+          data[index + 2] = b
+          data[index + 3] = pixelOpacity * 255
         }
       }
 
       tempCtx.putImageData(imageData, 0, 0)
-      ctx.drawImage(tempCanvas, x - brushRadius, y - brushRadius)
+
+      // Cache the texture (with reasonable cache size limit)
+      if (BrushTool.brushTextureCache.size > 50) {
+        // Remove oldest entries when cache gets too large
+        const firstKey = BrushTool.brushTextureCache.keys().next().value
+        if (firstKey) {
+          BrushTool.brushTextureCache.delete(firstKey)
+        }
+      }
+      BrushTool.brushTextureCache.set(cacheKey, tempCanvas)
+
+      return tempCanvas
     }
 
     // RGB brush logic
@@ -2529,24 +2540,42 @@ class BrushTool {
       const rgbaColor = this.formatRgba(this.rgbColor, opacity)
 
       if (brushType === BrushShape.Rect && hardness < 1) {
-        drawSoftSquare(rgbCtx, rgbaColor, opacity)
+        const brushTexture = getCachedBrushTexture(
+          brushRadius,
+          hardness,
+          rgbaColor,
+          opacity
+        )
+        rgbCtx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
         return
       }
 
-      // Original logic for circles and hard squares
-      let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
-
+      // For max hardness, use solid fill to avoid anti-aliasing
       if (hardness === 1) {
-        gradient.addColorStop(0, rgbaColor)
-        gradient.addColorStop(1, rgbaColor)
-      } else {
-        gradient.addColorStop(0, rgbaColor)
-        gradient.addColorStop(
-          hardness,
-          this.formatRgba(this.rgbColor, opacity * 0.5)
-        )
-        gradient.addColorStop(1, this.formatRgba(this.rgbColor, 0))
+        rgbCtx.fillStyle = rgbaColor
+        rgbCtx.beginPath()
+        if (brushType === BrushShape.Rect) {
+          rgbCtx.rect(
+            x - brushRadius,
+            y - brushRadius,
+            brushRadius * 2,
+            brushRadius * 2
+          )
+        } else {
+          rgbCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
+        }
+        rgbCtx.fill()
+        return
       }
+
+      // For soft brushes, use gradient
+      let gradient = rgbCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
+      gradient.addColorStop(0, rgbaColor)
+      gradient.addColorStop(
+        hardness,
+        this.formatRgba(this.rgbColor, opacity * 0.5)
+      )
+      gradient.addColorStop(1, this.formatRgba(this.rgbColor, 0))
 
       rgbCtx.fillStyle = gradient
       rgbCtx.beginPath()
@@ -2570,38 +2599,58 @@ class BrushTool {
         ? `rgba(255, 255, 255, ${opacity})`
         : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
 
-      drawSoftSquare(maskCtx, baseColor, opacity)
+      const brushTexture = getCachedBrushTexture(
+        brushRadius,
+        hardness,
+        baseColor,
+        opacity
+      )
+      maskCtx.drawImage(brushTexture, x - brushRadius, y - brushRadius)
       return
     }
 
-    // Original logic for circles and hard squares
-    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
-
+    // For max hardness, use solid fill to avoid anti-aliasing
     if (hardness === 1) {
       const solidColor = isErasing
         ? `rgba(255, 255, 255, ${opacity})`
         : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      gradient.addColorStop(0, solidColor)
-      gradient.addColorStop(1, solidColor)
-    } else {
-      if (isErasing) {
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(hardness, `rgba(255, 255, 255, ${opacity * 0.5})`)
-        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
+
+      maskCtx.fillStyle = solidColor
+      maskCtx.beginPath()
+      if (brushType === BrushShape.Rect) {
+        maskCtx.rect(
+          x - brushRadius,
+          y - brushRadius,
+          brushRadius * 2,
+          brushRadius * 2
+        )
       } else {
-        gradient.addColorStop(
-          0,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          hardness,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity * 0.5})`
-        )
-        gradient.addColorStop(
-          1,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
-        )
+        maskCtx.arc(x, y, brushRadius, 0, Math.PI * 2, false)
       }
+      maskCtx.fill()
+      return
+    }
+
+    // For soft brushes, use gradient
+    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, brushRadius)
+
+    if (isErasing) {
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
+      gradient.addColorStop(hardness, `rgba(255, 255, 255, ${opacity * 0.5})`)
+      gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
+    } else {
+      gradient.addColorStop(
+        0,
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+      )
+      gradient.addColorStop(
+        hardness,
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity * 0.5})`
+      )
+      gradient.addColorStop(
+        1,
+        `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
+      )
     }
 
     maskCtx.fillStyle = gradient
