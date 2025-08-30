@@ -98,6 +98,7 @@ describe('useSubgraphStore', () => {
           size: 2
         })
     } as Response)
+    await mockFetch({ 'testname.json': mockGraph })
     //Dialogue service already mocked
     await store.publishSubgraph()
     expect(api.storeUserData).toHaveBeenCalled()
