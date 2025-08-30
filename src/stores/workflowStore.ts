@@ -12,6 +12,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -301,6 +302,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
+    comfyApp.canvas.bg_tint = useSubgraphStore().isSubgraphBlueprint(
+      loadedWorkflow
+    )
+      ? '#22227740'
+      : undefined
     console.debug('[workflowStore] open workflow', workflow.path)
     return loadedWorkflow
   }

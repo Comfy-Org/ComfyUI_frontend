@@ -626,6 +626,7 @@ export class LGraphCanvas
   _bg_img?: HTMLImageElement
   _pattern?: CanvasPattern
   _pattern_img?: HTMLImageElement
+  bg_tint?: string | CanvasGradient | CanvasPattern
   // TODO: This looks like another panel thing
   prompt_box?: PromptDialog | null
   search_box?: HTMLDivElement
@@ -4947,6 +4948,16 @@ export class LGraphCanvas
         // I could find no documentation or explanation.  Requires that the BG image is set.
         if (pattern) {
           ctx.fillStyle = pattern
+          ctx.fillRect(
+            this.visible_area[0],
+            this.visible_area[1],
+            this.visible_area[2],
+            this.visible_area[3]
+          )
+          ctx.fillStyle = 'transparent'
+        }
+        if (this.bg_tint) {
+          ctx.fillStyle = this.bg_tint
           ctx.fillRect(
             this.visible_area[0],
             this.visible_area[1],
