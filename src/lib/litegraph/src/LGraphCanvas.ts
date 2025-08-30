@@ -2851,6 +2851,12 @@ export class LGraphCanvas
 
     this.dirty_canvas = true
   }
+  passPointerEvent(pointer: CanvasPointer, node: LGraphNode): boolean {
+    pointer.onDragStart = () => this.#startDraggingItems(node, pointer)
+    pointer.onDragEnd = (e) => this.#processDraggedItems(e)
+    this.dirty_canvas = true
+    return true
+  }
 
   #processWidgetClick(
     e: CanvasPointerEvent,
