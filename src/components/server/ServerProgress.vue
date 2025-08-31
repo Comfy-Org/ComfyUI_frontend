@@ -20,14 +20,25 @@
           <img
             src="/assets/images/comfy-brand-mark.svg"
             alt="ComfyUI Logo"
-            class="w-60 h-60"
+            class="w-60 h-60 drop-shadow-2xl"
+            style="filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.8))"
           />
           <!-- Indeterminate Progress Bar during server start -->
-          <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
+          <ProgressBar
+            v-if="isLoading"
+            mode="indeterminate"
+            class="w-90 h-2 drop-shadow-lg"
+            style="filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8))"
+          />
         </div>
         <h1
-          class="text-4xl text-white"
-          style="font-family: 'ABC ROM Black Italic', sans-serif"
+          class="text-4xl text-white drop-shadow-2xl"
+          style="
+            font-family: 'ABC ROM Black Italic', sans-serif;
+            text-shadow:
+              0 0 30px rgba(0, 0, 0, 0.9),
+              0 2px 10px rgba(0, 0, 0, 0.8);
+          "
         >
           {{ $t('serverStart.title') }}
         </h1>
