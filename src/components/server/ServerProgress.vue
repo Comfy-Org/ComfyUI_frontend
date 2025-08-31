@@ -13,7 +13,7 @@
           <!-- Indeterminate Progress Bar during server start -->
           <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
         </div>
-        <h1 class="text-4xl font-bold text-white">ComfyUI Server</h1>
+        <h1 class="text-4xl text-white" style="font-family: 'ABC ROM Black Italic', sans-serif;">ComfyUI Server</h1>
         <p class="text-lg text-neutral-400">
           {{ currentStatusLabel }}
         </p>
