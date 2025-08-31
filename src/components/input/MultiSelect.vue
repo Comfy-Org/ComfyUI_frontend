@@ -165,7 +165,7 @@ const pt = computed(() => ({
     class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
   },
   // Option row hover and focus tone
-  option: ({ context }: any) => ({
+  option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
     class: [
       'flex gap-1 items-center p-2',
       'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
