@@ -6,10 +6,9 @@
       <div class="text-center space-y-4">
         <div class="flex justify-center mb-4">
           <img
-            src="/assets/images/comfy-logo-single.svg"
+            src="/assets/images/comfy-brand-mark.svg"
             alt="ComfyUI Logo"
-            class="w-24 h-24 transform transition-transform"
-            :class="{ 'animate-pulse': isLoading }"
+            class="w-24 h-24"
           />
         </div>
         <h1 class="text-4xl font-bold text-white">ComfyUI Server</h1>
