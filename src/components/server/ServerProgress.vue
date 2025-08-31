@@ -10,6 +10,25 @@
     <!-- Semi-transparent overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
 
+    <!-- Large oval shadow behind content using box-shadow -->
+    <div
+      v-if="isLoading"
+      class="fixed z-8"
+      style="
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 400px;
+        height: 300px;
+        background: rgba(23, 23, 23, 0.5);
+        border-radius: 50%;
+        box-shadow: 
+          0 0 100px 100px rgba(23, 23, 23, 0.5),
+          0 0 200px 200px rgba(23, 23, 23, 0.4),
+          0 0 300px 300px rgba(23, 23, 23, 0.3);
+      "
+    ></div>
+
     <!-- Main Content Layer -->
     <div
       class="relative flex items-center justify-center min-h-screen px-8 z-10"
