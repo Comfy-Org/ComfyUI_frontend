@@ -1,3 +1,4 @@
+import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
 import _ from 'es-toolkit/compat'
 
@@ -755,12 +756,12 @@ styleSheet.type = 'text/css'
 styleSheet.innerText = styles
 document.head.appendChild(styleSheet)
 
-enum BrushShape {
+export enum BrushShape {
   Arc = 'arc',
   Rect = 'rect'
 }
 
-enum Tools {
+export enum Tools {
   MaskPen = 'pen',
   PaintPen = 'rgbPaint',
   Eraser = 'eraser',
@@ -2036,7 +2037,7 @@ class ColorSelectTool {
   }
 }
 
-class BrushTool {
+export class BrushTool {
   brushSettings: Brush //this saves the current brush settings
   maskBlendMode: MaskBlendMode
 
@@ -2050,7 +2051,9 @@ class BrushTool {
   rgbCtx: CanvasRenderingContext2D | null = null
   initialDraw: boolean = true
 
-  private static brushTextureCache = new Map<string, HTMLCanvasElement>()
+  private static brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
+    maxSize: 8 // Reasonable limit for brush texture variations?
+  })
 
   brushStrokeCanvas: HTMLCanvasElement | null = null
   brushStrokeCtx: CanvasRenderingContext2D | null = null
@@ -2519,14 +2522,7 @@ class BrushTool {
 
       tempCtx.putImageData(imageData, 0, 0)
 
-      // Cache the texture (with reasonable cache size limit)
-      if (BrushTool.brushTextureCache.size > 50) {
-        // Remove oldest entries when cache gets too large
-        const firstKey = BrushTool.brushTextureCache.keys().next().value
-        if (firstKey) {
-          BrushTool.brushTextureCache.delete(firstKey)
-        }
-      }
+      // Cache the texture
       BrushTool.brushTextureCache.set(cacheKey, tempCanvas)
 
       return tempCanvas
