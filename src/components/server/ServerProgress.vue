@@ -8,7 +8,7 @@
           <img
             src="/assets/images/comfy-brand-mark.svg"
             alt="ComfyUI Logo"
-            class="w-24 h-24"
+            class="w-60 h-60"
           />
         </div>
         <h1 class="text-4xl font-bold text-white">ComfyUI Server</h1>
