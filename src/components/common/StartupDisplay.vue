@@ -33,6 +33,9 @@
 
 <script setup lang="ts">
 import ProgressBar from 'primevue/progressbar'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface StartupDisplayProps {
   logoSrc?: string
@@ -44,7 +47,7 @@ interface StartupDisplayProps {
 
 const {
   logoSrc = '/assets/images/comfy-brand-mark.svg',
-  logoAlt = 'ComfyUI Logo',
+  logoAlt = t('g.logoAlt'),
   showProgress = true,
   title,
   statusText
