@@ -50,7 +50,7 @@ jobs:
           echo "<!-- PLAYWRIGHT_TEST_STATUS -->" > comment.md
           echo "## 🎭 Playwright Test Results" >> comment.md
           echo "" >> comment.md
-          echo "⏳ **Tests are starting...** " >> comment.md
+          echo "<img alt='comfy-loading-gif' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px' style='vertical-align: middle; margin-right: 4px;' /> **Tests are starting...** " >> comment.md
           echo "" >> comment.md
           echo "⏰ Started at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
           echo "" >> comment.md
