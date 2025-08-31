@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import ProgressBar from 'primevue/progressbar'
 
-interface Props {
+interface StartupDisplayProps {
   logoSrc?: string
   logoAlt?: string
   showProgress?: boolean
@@ -42,11 +42,13 @@ interface Props {
   statusText?: string
 }
 
-withDefaults(defineProps<Props>(), {
-  logoSrc: '/assets/images/comfy-brand-mark.svg',
-  logoAlt: 'ComfyUI Logo',
-  showProgress: true
-})
+const {
+  logoSrc = '/assets/images/comfy-brand-mark.svg',
+  logoAlt = 'ComfyUI Logo',
+  showProgress = true,
+  title,
+  statusText
+} = defineProps<StartupDisplayProps>()
 </script>
 
 <style scoped>
