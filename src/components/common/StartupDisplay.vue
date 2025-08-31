@@ -3,7 +3,11 @@
     <div class="grid grid-rows-2 gap-8">
       <!-- Top container: Logo -->
       <div class="flex items-center justify-center">
-        <img :src="logoSrc" :alt="logoAlt" class="w-60" />
+        <img
+          src="/assets/images/comfy-brand-mark.svg"
+          :alt="t('g.logoAlt')"
+          class="w-60"
+        />
       </div>
       <!-- Bottom container: Progress and text -->
       <div class="flex flex-col items-center justify-center gap-4">
@@ -38,16 +42,12 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 interface StartupDisplayProps {
-  logoSrc?: string
-  logoAlt?: string
   showProgress?: boolean
   title?: string
   statusText?: string
 }
 
 const {
-  logoSrc = '/assets/images/comfy-brand-mark.svg',
-  logoAlt = t('g.logoAlt'),
   showProgress = true,
   title,
   statusText
