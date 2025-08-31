@@ -6,7 +6,7 @@
         <img
           src="/assets/images/comfy-brand-mark.svg"
           :alt="t('g.logoAlt')"
-          class="w-60 h-60"
+          class="w-60"
         />
       </div>
       <!-- Bottom container: Progress and text -->
