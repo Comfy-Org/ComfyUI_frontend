@@ -13,7 +13,12 @@
           <!-- Indeterminate Progress Bar during server start -->
           <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
         </div>
-        <h1 class="text-4xl text-white" style="font-family: 'ABC ROM Black Italic', sans-serif;">ComfyUI Server</h1>
+        <h1
+          class="text-4xl text-white"
+          style="font-family: 'ABC ROM Black Italic', sans-serif"
+        >
+          {{ $t('serverStart.title') }}
+        </h1>
         <p class="text-lg text-neutral-400">
           {{ currentStatusLabel }}
         </p>
@@ -98,16 +103,15 @@ defineEmits<{
 
 // Computed properties
 
-const currentStatusLabel = computed(() => {
-  return t(`serverStart.process.${props.status}`)
-})
+const currentStatusLabel = computed(() =>
+  t(`serverStart.process.${props.status}`)
+)
 
-const isLoading = computed(() => {
-  return (
+const isLoading = computed(
+  () =>
     props.status !== ProgressStatus.READY &&
     props.status !== ProgressStatus.ERROR
-  )
-})
+)
 
 const isError = computed(() => props.status === ProgressStatus.ERROR)
 </script>
