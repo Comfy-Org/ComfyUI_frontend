@@ -1,18 +1,18 @@
 <template>
   <div class="relative min-h-screen">
     <!-- Terminal Background Layer (always visible during loading) -->
-    <div v-if="isLoading" class="fixed inset-0 overflow-hidden z-0">
+    <div v-if="!isError" class="fixed inset-0 overflow-hidden z-0">
       <div class="h-full w-full">
         <slot name="terminal"></slot>
       </div>
     </div>
 
     <!-- Semi-transparent overlay -->
-    <div v-if="isLoading" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
+    <div v-if="!isError" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
 
     <!-- Smooth radial gradient overlay -->
     <div
-      v-if="isLoading"
+      v-if="!isError"
       class="fixed inset-0 z-8"
       style="
         background: radial-gradient(
@@ -38,7 +38,7 @@
       <StartupDisplay
         :title="displayTitle"
         :status-text="displayStatusText"
-        :hide-progress="!isLoading"
+        :hide-progress="isError"
       />
 
       <!-- Error Section (positioned at bottom) -->
@@ -121,12 +121,6 @@ defineEmits<{
 // Computed properties
 const currentStatusLabel = computed(() =>
   t(`serverStart.process.${props.status}`)
-)
-
-const isLoading = computed(
-  () =>
-    props.status !== ProgressStatus.READY &&
-    props.status !== ProgressStatus.ERROR
 )
 
 const isError = computed(() => props.status === ProgressStatus.ERROR)
