@@ -138,6 +138,14 @@ const isError = computed(() => props.status === ProgressStatus.ERROR)
   background-color: #f0ff41;
 }
 
+/* Remove all padding from terminal components */
+:deep(.p-terminal) {
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
 /* Style the terminal background for aesthetic effect */
 :deep(.xterm) {
   background: transparent !important;
