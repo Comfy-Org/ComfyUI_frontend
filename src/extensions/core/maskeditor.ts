@@ -2060,7 +2060,6 @@ class BrushTool {
 
   private static readonly SMOOTHING_MAX_STEPS = 30
   private static readonly SMOOTHING_MIN_STEPS = 2
-  //private static readonly SOFT_BRUSH_STEPS = 20
 
   //brush adjustment
   isBrushAdjusting: boolean = false
