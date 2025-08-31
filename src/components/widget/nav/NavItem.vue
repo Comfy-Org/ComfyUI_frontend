@@ -9,7 +9,8 @@
     role="button"
     @click="onClick"
   >
-    <i-lucide:folder v-if="hasFolderIcon" class="text-xs text-neutral" />
+    <NavIcon v-if="iconName" :name="iconName" />
+    <i-lucide:folder v-else class="text-xs text-neutral" />
     <span class="flex items-center">
       <slot></slot>
     </span>
@@ -17,12 +18,10 @@
 </template>
 
 <script setup lang="ts">
-const {
-  hasFolderIcon = true,
-  active,
-  onClick
-} = defineProps<{
-  hasFolderIcon?: boolean
+import NavIcon from './NavIcon.vue'
+
+const { iconName, active, onClick } = defineProps<{
+  iconName?: string
   active?: boolean
   onClick: () => void
 }>()

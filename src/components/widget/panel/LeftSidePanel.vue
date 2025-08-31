@@ -14,6 +14,7 @@
           <NavItem
             v-for="subItem in item.items"
             :key="subItem.id"
+            :icon-name="subItem.iconName"
             :active="activeItem === subItem.id"
             @click="activeItem = subItem.id"
           >
@@ -22,6 +23,7 @@
         </div>
         <div v-else class="flex flex-col gap-2">
           <NavItem
+            :icon-name="item.iconName"
             :active="activeItem === item.id"
             @click="activeItem = item.id"
           >
