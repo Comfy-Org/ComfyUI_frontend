@@ -3,19 +3,15 @@
     <!-- Main Content Container -->
     <div class="w-full max-w-2xl">
       <!-- Split container with equal height sections -->
-      <div class="flex flex-col items-center">
-        <!-- Top half: Logo container -->
-        <div class="h-64 flex items-end justify-center pb-8">
-          <img
-            src="/assets/images/comfy-brand-mark.svg"
-            alt="ComfyUI Logo"
-            class="w-60 h-60"
-          />
-        </div>
-        <!-- Bottom half: Progress bar container -->
-        <div class="h-64 flex items-start justify-center pt-8">
-          <ProgressBar mode="indeterminate" class="w-90 h-2" />
-        </div>
+      <div class="flex flex-col items-center gap-16">
+        <!-- Top half: Logo -->
+        <img
+          src="/assets/images/comfy-brand-mark.svg"
+          alt="ComfyUI Logo"
+          class="w-60 h-60"
+        />
+        <!-- Bottom half: Progress bar -->
+        <ProgressBar mode="indeterminate" class="w-90 h-2" />
       </div>
     </div>
   </div>
