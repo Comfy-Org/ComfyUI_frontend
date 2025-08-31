@@ -1,9 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { MultiSelectProps } from 'primevue/multiselect'
 import { ref } from 'vue'
 
 import MultiSelect from './MultiSelect.vue'
 
-const meta: Meta<typeof MultiSelect> = {
+// Combine our component props with PrimeVue MultiSelect props
+// Since we use v-bind="$attrs", all PrimeVue props are available
+interface ExtendedProps extends Partial<MultiSelectProps> {
+  // Our custom props
+  label?: string
+  showSearchBox?: boolean
+  showSelectedCount?: boolean
+  showClearButton?: boolean
+  searchPlaceholder?: string
+  // Override modelValue type to match our Option type
+  modelValue?: Array<{ name: string; value: string }>
+}
+
+const meta: Meta<ExtendedProps> = {
   title: 'Components/Input/MultiSelect',
   component: MultiSelect,
   tags: ['autodocs'],

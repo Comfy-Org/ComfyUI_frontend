@@ -1,10 +1,18 @@
 <template>
+  <!-- 
+    Note: Unlike SingleSelect, we don't need an explicit options prop because:
+    1. Our value template only shows a static label (not dynamic based on selection)
+    2. We display a count badge instead of actual selected labels
+    3. All PrimeVue props (including options) are passed via v-bind="$attrs"
+    
+    option-label="name" is required because our option template directly accesses option.name
+    max-selected-labels="0" is required to show count badge instead of selected item labels
+  -->
   <MultiSelect
     v-model="selectedItems"
-    :options="options"
+    v-bind="$attrs"
     option-label="name"
     unstyled
-    :placeholder="label"
     :max-selected-labels="0"
     :pt="pt"
   >
@@ -102,11 +110,13 @@ import TextButton from '../button/TextButton.vue'
 
 type Option = { name: string; value: string }
 
+defineOptions({
+  inheritAttrs: false
+})
+
 interface Props {
   /** Input label shown on the trigger button */
   label?: string
-  /** Static options for the multiselect (when not using async search) */
-  options: Option[]
   /** Show search box in the panel header */
   showSearchBox?: boolean
   /** Show selected count text in the panel header */
@@ -115,10 +125,11 @@ interface Props {
   showClearButton?: boolean
   /** Placeholder for the search input */
   searchPlaceholder?: string
+  // Note: options prop is intentionally omitted.
+  // It's passed via $attrs to maximize PrimeVue API compatibility
 }
 const {
   label,
-  options,
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,

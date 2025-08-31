@@ -1,11 +1,19 @@
 <template>
+  <!-- 
+    Note: We explicitly pass options here (not just via $attrs) because:
+    1. Our custom value template needs options to look up labels from values
+    2. PrimeVue's value slot only provides 'value' and 'placeholder', not the selected item's label
+    3. We need to maintain the icon slot functionality in the value template
+    
+    option-label="name" is required because our option template directly accesses option.name
+  -->
   <Select
     v-model="selectedItem"
+    v-bind="$attrs"
     :options="options"
     option-label="name"
     option-value="value"
     unstyled
-    :placeholder="label"
     :pt="pt"
   >
     <!-- Trigger value -->
@@ -48,9 +56,18 @@
 import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
 import { computed } from 'vue'
 
+defineOptions({
+  inheritAttrs: false
+})
+
 const { label, options } = defineProps<{
   label?: string
-  options: {
+  /**
+   * Required for displaying the selected item's label.
+   * Cannot rely on $attrs alone because we need to access options
+   * in getLabel() to map values to their display names.
+   */
+  options?: {
     name: string
     value: string
   }[]
@@ -58,8 +75,14 @@ const { label, options } = defineProps<{
 
 const selectedItem = defineModel<string | null>({ required: true })
 
+/**
+ * Maps a value to its display label.
+ * Necessary because PrimeVue's value slot doesn't provide the selected item's label,
+ * only the raw value. We need this to show the correct text when an item is selected.
+ */
 const getLabel = (val: string | null | undefined) => {
   if (val == null) return label ?? ''
+  if (!options) return label ?? ''
   const found = options.find((o) => o.value === val)
   return found ? found.name : label ?? ''
 }
