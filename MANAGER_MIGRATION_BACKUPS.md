@@ -18,6 +18,18 @@ This document tracks backup branches created during the manager migration recove
   - Updated type definitions and store interfaces
   - Resolved merge conflicts and formatting fixes
 
+### `manager-migration-clean-tested`
+- **Created**: 2025-08-30
+- **Source Branch**: `manager-migration-clean`
+- **Source Commit**: `380f335bf` - "feat: Integrate ComfyUI Manager migration with v2 API and enhanced UI"
+- **Purpose**: Backup before manual testing via dev server
+- **Contains**:
+  - Single squashed commit with complete manager migration
+  - All recovered functionality from PR #3367
+  - v2 API integration and enhanced UI components
+  - Resolved TypeScript issues and quality checks passed
+  - Clean, production-ready state ready for manual testing
+
 ### `manager-migration-upstream-backup` 
 - **Created**: Earlier in recovery process
 - **Purpose**: Backup of upstream state before major changes

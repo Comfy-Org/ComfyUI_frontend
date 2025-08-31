@@ -935,12 +935,5 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Release seen timestamp',
     type: 'hidden',
     defaultValue: 0
-  },
-  {
-    id: 'Comfy.Memory.AllowManualUnload',
-    name: 'Allow manual unload of models and execution cache via user command',
-    type: 'hidden',
-    defaultValue: true,
-    versionAdded: '1.18.0'
   }
 ]

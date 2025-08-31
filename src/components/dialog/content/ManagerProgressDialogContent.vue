@@ -18,7 +18,7 @@
         'max-h-0': !isExpanded
       }"
     >
-      <div v-for="(log, index) in focusedLogs" :key="index">
+      <div v-for="(panel, index) in taskPanels" :key="index">
         <Panel
           :expanded="collapsedPanels[index] || false"
           toggleable
@@ -27,7 +27,7 @@
           <template #header>
             <div class="flex items-center justify-between w-full py-2">
               <div class="flex flex-col text-sm font-medium leading-normal">
-                <span>{{ log.taskName }}</span>
+                <span>{{ panel.taskName }}</span>
                 <span class="text-muted">
                   {{
                     isInProgress(index)
@@ -52,24 +52,24 @@
           </template>
           <div
             :ref="
-              index === focusedLogs.length - 1
+              index === taskPanels.length - 1
                 ? (el) => (lastPanelRef = el as HTMLElement)
                 : undefined
             "
             class="overflow-y-auto h-64 rounded-lg bg-black"
             :class="{
-              'h-64': index !== focusedLogs.length - 1,
-              'flex-grow': index === focusedLogs.length - 1
+              'h-64': index !== taskPanels.length - 1,
+              'flex-grow': index === taskPanels.length - 1
             }"
             @scroll="handleScroll"
           >
             <div class="h-full">
               <div
-                v-for="(logLine, logIndex) in log.logs"
+                v-for="(log, logIndex) in panel.logs"
                 :key="logIndex"
                 class="text-neutral-400 dark-theme:text-muted"
               >
-                <pre class="whitespace-pre-wrap break-words">{{ logLine }}</pre>
+                <pre class="whitespace-pre-wrap break-words">{{ log }}</pre>
               </div>
             </div>
           </div>
@@ -90,22 +90,16 @@ import {
   useManagerProgressDialogStore
 } from '@/stores/comfyManagerStore'
 
-const comfyManagerStore = useComfyManagerStore()
+const { taskLogs } = useComfyManagerStore()
 const progressDialogContent = useManagerProgressDialogStore()
+const managerStore = useComfyManagerStore()
 
 const isInProgress = (index: number) =>
-  index === comfyManagerStore.managerQueue.historyCount - 1 &&
-  comfyManagerStore.isLoading
+  index === taskPanels.value.length - 1 && managerStore.uncompletedCount > 0
 
+const taskPanels = computed(() => taskLogs)
 const isExpanded = computed(() => progressDialogContent.isExpanded)
 const isCollapsed = computed(() => !isExpanded.value)
-
-const focusedLogs = computed(() => {
-  if (progressDialogContent.getActiveTabIndex() === 0) {
-    return comfyManagerStore.succeededTasksLogs
-  }
-  return comfyManagerStore.failedTasksLogs
-})
 
 const collapsedPanels = ref<Record<number, boolean>>({})
 const togglePanel = (index: number) => {
@@ -121,7 +115,7 @@ const { y: scrollY } = useScroll(sectionsContainerRef, {
 
 const lastPanelRef = ref<HTMLElement | null>(null)
 const isUserScrolling = ref(false)
-const lastPanelLogs = computed(() => focusedLogs.value?.at(-1)?.logs)
+const lastPanelLogs = computed(() => taskPanels.value?.at(-1)?.logs)
 
 const isAtBottom = (el: HTMLElement | null) => {
   if (!el) return false

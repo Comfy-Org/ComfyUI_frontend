@@ -1,6 +1,6 @@
 import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
@@ -33,9 +33,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const isStale = ref(true)
   const taskLogs = ref<TaskLog[]>([])
 
-  const managerQueue = useManagerQueue()
   const { statusMessage, allTasksDone, enqueueTask, uncompletedCount } =
-    managerQueue
+    useManagerQueue()
 
   const setStale = () => {
     isStale.value = true
@@ -213,11 +212,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     taskLogs.value = []
   }
 
-  // Computed properties for UI components
-  const succeededTasksLogs = computed(() => taskLogs.value)
-  const failedTasksLogs = computed(() => [])
-  const failedTasksIds = computed(() => [])
-
   return {
     // Manager state
     isLoading: managerService.isLoading,
@@ -244,15 +238,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     updatePack,
     updateAllPacks,
     disablePack,
-    enablePack: installPack, // Enable is done via install endpoint with a disabled pack
-
-    // Manager queue
-    managerQueue,
-
-    // UI properties for progress dialog
-    succeededTasksLogs,
-    failedTasksLogs,
-    failedTasksIds
+    enablePack: installPack // Enable is done via install endpoint with a disabled pack
   }
 })
 
@@ -265,7 +251,6 @@ export const useManagerProgressDialogStore = defineStore(
   'managerProgressDialog',
   () => {
     const isExpanded = ref(false)
-    const activeTabIndex = ref(0)
 
     const toggle = () => {
       isExpanded.value = !isExpanded.value
@@ -278,19 +263,11 @@ export const useManagerProgressDialogStore = defineStore(
     const expand = () => {
       isExpanded.value = true
     }
-
-    const getActiveTabIndex = () => activeTabIndex.value
-    const setActiveTabIndex = (index: number) => {
-      activeTabIndex.value = index
-    }
-
     return {
       isExpanded,
       toggle,
       collapse,
-      expand,
-      getActiveTabIndex,
-      setActiveTabIndex
+      expand
     }
   }
 )
