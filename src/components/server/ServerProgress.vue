@@ -4,12 +4,16 @@
     <div class="w-full max-w-2xl space-y-8">
       <!-- ComfyUI Logo and Title -->
       <div class="text-center space-y-4">
-        <div class="flex justify-center mb-4">
+        <div class="flex flex-col items-center gap-8">
           <img
             src="/assets/images/comfy-brand-mark.svg"
             alt="ComfyUI Logo"
             class="w-60 h-60"
           />
+          <!-- Indeterminate Progress Bar during server start -->
+          <div v-if="isLoading" class="w-90 h-2 bg-neutral-800 rounded-full overflow-hidden">
+            <div class="h-full bg-[#F0FF41] rounded-full animate-indeterminate-progress"></div>
+          </div>
         </div>
         <h1 class="text-4xl font-bold text-white">ComfyUI Server</h1>
         <p class="text-lg text-neutral-400">
@@ -275,5 +279,25 @@ watch(
 
 .animate-shimmer {
   animation: shimmer 2s infinite;
+}
+
+/* Indeterminate progress animation */
+@keyframes indeterminate-progress {
+  0% {
+    transform: translateX(-100%);
+    width: 30%;
+  }
+  50% {
+    transform: translateX(100%);
+    width: 30%;
+  }
+  100% {
+    transform: translateX(250%);
+    width: 30%;
+  }
+}
+
+.animate-indeterminate-progress {
+  animation: indeterminate-progress 1.5s ease-in-out infinite;
 }
 </style>
