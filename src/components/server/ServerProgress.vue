@@ -20,24 +20,34 @@
           <img
             src="/assets/images/comfy-brand-mark.svg"
             alt="ComfyUI Logo"
-            class="w-60 h-60 drop-shadow-2xl"
-            style="filter: drop-shadow(0 0 30px rgba(255, 255, 255, 1))"
+            class="w-60 h-60"
+            style="
+              filter: drop-shadow(0 0 15px rgb(23, 23, 23))
+                drop-shadow(0 0 30px rgb(23, 23, 23))
+                drop-shadow(0 0 45px rgb(23, 23, 23));
+            "
           />
           <!-- Indeterminate Progress Bar during server start -->
           <ProgressBar
             v-if="isLoading"
             mode="indeterminate"
-            class="w-90 h-2 drop-shadow-lg"
-            style="filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1))"
+            class="w-90 h-2"
+            style="
+              filter: drop-shadow(0 0 10px rgb(23, 23, 23))
+                drop-shadow(0 0 20px rgb(23, 23, 23))
+                drop-shadow(0 0 30px rgb(23, 23, 23));
+            "
           />
         </div>
         <h1
-          class="text-4xl text-white drop-shadow-2xl"
+          class="text-4xl text-white"
           style="
             font-family: 'ABC ROM Black Italic', sans-serif;
             text-shadow:
-              0 0 30px rgba(255, 255, 255, 1),
-              0 2px 10px rgba(255, 255, 255, 1);
+              0 0 15px rgb(23, 23, 23),
+              0 0 30px rgb(23, 23, 23),
+              0 0 45px rgb(23, 23, 23),
+              0 0 60px rgb(23, 23, 23);
           "
         >
           {{ $t('serverStart.title') }}
