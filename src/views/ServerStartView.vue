@@ -78,4 +78,3 @@ onMounted(async () => {
   display: none;
 }
 </style>
-
