@@ -2,7 +2,7 @@
   <div :class="wrapperClass">
     <div class="grid grid-rows-2 gap-8">
       <!-- Top container: Logo -->
-      <div class="flex items-center justify-center">
+      <div class="flex items-end justify-center">
         <img
           src="/assets/images/comfy-brand-mark.svg"
           :alt="t('g.logoAlt')"
@@ -10,7 +10,7 @@
         />
       </div>
       <!-- Bottom container: Progress and text -->
-      <div class="flex flex-col items-center justify-center gap-4">
+      <div class="flex flex-col items-center justify-start gap-4">
         <ProgressBar
           v-if="!hideProgress"
           :mode="progressMode"
