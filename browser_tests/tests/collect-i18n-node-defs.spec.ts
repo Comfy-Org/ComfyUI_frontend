@@ -1,33 +1,39 @@
 import * as fs from 'fs'
 
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
-import type { ComfyApi } from '../src/scripts/api'
-import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
-import { normalizeI18nKey } from '../src/utils/formatUtil'
+import { normalizeI18nKey } from '../../src/utils/formatUtil'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
   // Mock view route
-  comfyPage.page.route('**/view**', async (route) => {
+  await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
   })
 
-  const nodeDefs: ComfyNodeDefImpl[] = (
-    Object.values(
-      await comfyPage.page.evaluate(async () => {
-        const api = window['app'].api as ComfyApi
-        return await api.getNodeDefs()
+  const nodeDefs = await comfyPage.page.evaluate(async () => {
+    const api = window['app'].api
+    const defs = await api.getNodeDefs()
+    // Process node definitions in the browser context where ComfyNodeDefImpl is available
+    return Object.values(defs)
+      .filter((def: any) => !def.name.startsWith('DevTools'))
+      .map((def: any) => {
+        // Create ComfyNodeDefImpl in browser context
+        const impl = new (window as any).ComfyNodeDefImpl(def)
+        // Return a plain object with the needed properties
+        return {
+          name: impl.name,
+          display_name: impl.display_name,
+          description: impl.description,
+          category: impl.category,
+          inputs: impl.inputs,
+          outputs: impl.outputs
+        }
       })
-    ) as ComfyNodeDef[]
-  )
-    // Ignore DevTools nodes (used for internal testing)
-    .filter((def) => !def.name.startsWith('DevTools'))
-    .map((def) => new ComfyNodeDefImpl(def))
+  })
 
   console.log(`Collected ${nodeDefs.length} node definitions`)
 
@@ -100,7 +106,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
 
   const nodeDefLabels = await extractWidgetLabels()
 
-  function extractInputs(nodeDef: ComfyNodeDefImpl) {
+  function extractInputs(nodeDef: any) {
     const inputs = Object.fromEntries(
       Object.values(nodeDef.inputs).flatMap((input) => {
         const name = input.name
@@ -124,7 +130,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     return Object.keys(inputs).length > 0 ? inputs : undefined
   }
 
-  function extractOutputs(nodeDef: ComfyNodeDefImpl) {
+  function extractOutputs(nodeDef: any) {
     const outputs = Object.fromEntries(
       nodeDef.outputs.flatMap((output, i) => {
         // Ignore data types if they are already translated in allDataTypesLocale.

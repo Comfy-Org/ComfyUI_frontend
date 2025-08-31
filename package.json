@@ -31,7 +31,7 @@
     "knip": "knip --cache",
     "knip:no-cache": "knip",
     "locale": "lobe-i18n locale",
-    "collect-i18n": "npx playwright test --config=playwright.i18n.config.ts",
+    "collect-i18n": "nx run @comfyorg/comfyui-frontend:e2e --grep=\"collect-i18n\"",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "storybook": "nx storybook -p 6006",
     "build-storybook": "storybook build"
