@@ -14,7 +14,7 @@
         <ProgressBar mode="indeterminate" class="w-90 h-2" />
         <h1
           class="text-4xl text-neutral-300"
-          style="font-family: 'ABC ROM Black Italic', sans-serif"
+          style="font-family: 'ABC ROM', sans-serif; font-weight: 500; font-style: italic"
         >
           {{ $t('desktopStart.initialising') }}
         </h1>
