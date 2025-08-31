@@ -1,21 +1,25 @@
 <template>
   <div class="flex flex-col items-center justify-center min-h-screen px-8">
-    <!-- Main Content Container -->
-    <div class="w-full max-w-2xl space-y-8">
-      <!-- ComfyUI Logo and Title -->
-      <div class="text-center space-y-4">
-        <div class="flex flex-col items-center gap-8">
-          <img
-            src="/assets/images/comfy-brand-mark.svg"
-            alt="ComfyUI Logo"
-            class="w-60 h-60"
-          />
-          <!-- Indeterminate Progress Bar during server start -->
-          <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
-        </div>
+    <!-- Main grid layout for logo and progress -->
+    <div class="grid grid-rows-2 gap-8">
+      <!-- Top container -->
+      <div class="flex items-center justify-center">
+        <img
+          src="/assets/images/comfy-brand-mark.svg"
+          alt="ComfyUI Logo"
+          class="w-60"
+        />
+      </div>
+      <!-- Bottom container -->
+      <div class="flex flex-col items-center justify-center gap-4">
+        <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
         <h1
-          class="text-4xl text-white"
-          style="font-family: 'ABC ROM Black Italic', sans-serif"
+          class="text-3xl text-neutral-300"
+          style="
+            font-family: 'ABC ROM', sans-serif;
+            font-weight: 500;
+            font-style: italic;
+          "
         >
           {{ $t('serverStart.title') }}
         </h1>
@@ -23,51 +27,51 @@
           {{ currentStatusLabel }}
         </p>
       </div>
+    </div>
 
-      <!-- Error Message -->
-      <div
-        v-if="isError"
-        class="bg-red-900/20 border border-red-800 rounded-lg p-4 mx-auto max-w-lg"
+    <!-- Error Message -->
+    <div
+      v-if="isError"
+      class="bg-red-900/20 border border-red-800 rounded-lg p-4 mx-auto max-w-lg mt-8"
+    >
+      <p class="text-sm text-red-400 text-center">
+        <i class="pi pi-exclamation-triangle mr-2"></i>
+        {{ $t('serverStart.errorMessage') }}
+        <span v-if="electronVersion">v{{ electronVersion }}</span>
+      </p>
+    </div>
+
+    <!-- Action Buttons (for error states) -->
+    <div v-if="isError" class="flex gap-4 justify-center">
+      <Button
+        icon="pi pi-flag"
+        :label="$t('serverStart.reportIssue')"
+        severity="secondary"
+        @click="$emit('report-issue')"
+      />
+      <Button
+        icon="pi pi-file"
+        :label="$t('serverStart.openLogs')"
+        severity="secondary"
+        @click="$emit('open-logs')"
+      />
+      <Button
+        icon="pi pi-wrench"
+        :label="$t('serverStart.troubleshoot')"
+        @click="$emit('troubleshoot')"
+      />
+    </div>
+
+    <!-- Terminal Toggle -->
+    <div class="text-center">
+      <button
+        v-if="!terminalVisible && isError"
+        class="text-sm text-neutral-500 hover:text-neutral-300 transition-colors flex items-center gap-2 mx-auto"
+        @click="$emit('toggle-terminal', true)"
       >
-        <p class="text-sm text-red-400 text-center">
-          <i class="pi pi-exclamation-triangle mr-2"></i>
-          {{ $t('serverStart.errorMessage') }}
-          <span v-if="electronVersion">v{{ electronVersion }}</span>
-        </p>
-      </div>
-
-      <!-- Action Buttons (for error states) -->
-      <div v-if="isError" class="flex gap-4 justify-center">
-        <Button
-          icon="pi pi-flag"
-          :label="$t('serverStart.reportIssue')"
-          severity="secondary"
-          @click="$emit('report-issue')"
-        />
-        <Button
-          icon="pi pi-file"
-          :label="$t('serverStart.openLogs')"
-          severity="secondary"
-          @click="$emit('open-logs')"
-        />
-        <Button
-          icon="pi pi-wrench"
-          :label="$t('serverStart.troubleshoot')"
-          @click="$emit('troubleshoot')"
-        />
-      </div>
-
-      <!-- Terminal Toggle -->
-      <div class="text-center">
-        <button
-          v-if="!terminalVisible && isError"
-          class="text-sm text-neutral-500 hover:text-neutral-300 transition-colors flex items-center gap-2 mx-auto"
-          @click="$emit('toggle-terminal', true)"
-        >
-          <i class="pi pi-search"></i>
-          {{ $t('serverStart.showTerminal') }}
-        </button>
-      </div>
+        <i class="pi pi-search"></i>
+        {{ $t('serverStart.showTerminal') }}
+      </button>
     </div>
 
     <!-- Terminal Output (passed as slot) -->
