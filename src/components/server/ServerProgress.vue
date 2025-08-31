@@ -10,12 +10,6 @@
     <!-- Semi-transparent overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
 
-    <!-- Large oval shadow behind content -->
-    <div
-      v-if="isLoading"
-      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-neutral-900 rounded-full blur-[100px] z-8"
-    ></div>
-
     <!-- Main Content Layer -->
     <div
       class="relative flex items-center justify-center min-h-screen px-8 z-10"
