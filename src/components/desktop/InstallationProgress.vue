@@ -13,7 +13,7 @@
       <div class="flex flex-col items-center justify-center gap-4">
         <ProgressBar mode="indeterminate" class="w-90 h-2" />
         <h1
-          class="text-4xl text-neutral-400"
+          class="text-4xl text-neutral-300"
           style="font-family: 'ABC ROM Black Italic', sans-serif"
         >
           {{ $t('desktopStart.initialising') }}
