@@ -10,22 +10,25 @@
     <!-- Semi-transparent overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
 
-    <!-- Large oval shadow behind content using box-shadow -->
+    <!-- Smooth radial gradient overlay -->
     <div
       v-if="isLoading"
-      class="fixed z-8"
+      class="fixed inset-0 z-8"
       style="
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 400px;
-        height: 300px;
-        background: rgba(23, 23, 23, 0.5);
-        border-radius: 50%;
-        box-shadow: 
-          0 0 100px 100px rgba(23, 23, 23, 0.5),
-          0 0 200px 200px rgba(23, 23, 23, 0.4),
-          0 0 300px 300px rgba(23, 23, 23, 0.3);
+        background: radial-gradient(
+          ellipse 800px 600px at center,
+          rgba(23, 23, 23, 0.95) 0%,
+          rgba(23, 23, 23, 0.93) 10%,
+          rgba(23, 23, 23, 0.9) 20%,
+          rgba(23, 23, 23, 0.85) 30%,
+          rgba(23, 23, 23, 0.75) 40%,
+          rgba(23, 23, 23, 0.6) 50%,
+          rgba(23, 23, 23, 0.4) 60%,
+          rgba(23, 23, 23, 0.2) 70%,
+          rgba(23, 23, 23, 0.1) 80%,
+          rgba(23, 23, 23, 0.05) 90%,
+          transparent 100%
+        );
       "
     ></div>
 
