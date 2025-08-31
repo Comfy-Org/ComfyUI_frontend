@@ -15,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import IconTextButton from '@/components/button/IconTextButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { ButtonSize } from '@/types/buttonTypes'
 import type { ManagerPackInfo } from '@/types/comfyManagerTypes'
