@@ -15,7 +15,7 @@
           v-if="!hideProgress"
           :mode="progressMode"
           :value="progressPercentage ?? 0"
-          class="w-90 h-2"
+          class="w-90 h-2 mt-8"
         />
         <h1
           v-if="title"
