@@ -33,7 +33,7 @@
     ></div>
 
     <!-- Main Content Layer -->
-    <div class="relative min-h-screen z-10">
+    <div class="relative z-10">
       <!-- Main startup display using StartupDisplay component -->
       <StartupDisplay
         :title="displayTitle"
