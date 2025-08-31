@@ -8,7 +8,10 @@ on:
 jobs:
   comment-storybook:
     runs-on: ubuntu-latest
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.event.workflow_run.event == 'pull_request'
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend'
+      && github.event.workflow_run.event == 'pull_request'
+      && startsWith(github.event.workflow_run.head_branch, 'version-bump-')
     permissions:
       pull-requests: write
       actions: read
@@ -97,7 +100,17 @@ jobs:
             <!-- STORYBOOK_BUILD_STATUS -->
             ## 🎨 Storybook Build Status
 
-            ${{ fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '✅' || '❌' }} **${{ fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && 'Build completed successfully!' || 'Build failed!' }}**
+            ${{
+              fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '✅'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'skipped' && '⏭️'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'cancelled' && '🚫'
+              || '❌'
+            }} **${{
+              fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && 'Build completed successfully!'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'skipped' && 'Build skipped.'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'cancelled' && 'Build cancelled.'
+              || 'Build failed!'
+            }}**
 
             ⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC
 
@@ -105,4 +118,9 @@ jobs:
             - [📊 View Workflow Run](${{ fromJSON(steps.workflow-run.outputs.result).html_url }})
 
             ---
-            ${{ fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '🎉 Your Storybook is ready for review!' || '⚠️ Please check the workflow logs for error details.' }}
+            ${{
+              fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '🎉 Your Storybook is ready for review!'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'skipped' && 'ℹ️ Chromatic was skipped for this PR.'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'cancelled' && 'ℹ️ The Chromatic run was cancelled.'
+              || '⚠️ Please check the workflow logs for error details.'
+            }}
