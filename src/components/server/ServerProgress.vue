@@ -33,47 +33,19 @@
     ></div>
 
     <!-- Main Content Layer -->
-    <div
-      class="relative flex items-center justify-center min-h-screen px-8 z-10"
-    >
-      <!-- Main startup display -->
-      <div class="text-center space-y-4">
-        <div class="flex flex-col items-center gap-8">
-          <img
-            src="/assets/images/comfy-brand-mark.svg"
-            alt="ComfyUI Logo"
-            class="w-60 h-60"
-          />
-          <!-- Indeterminate Progress Bar during server start -->
-          <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
-        </div>
-        <h1
-          class="text-4xl text-neutral-100"
-          style="font-family: 'ABC ROM Black Italic', sans-serif"
-        >
-          {{ $t('serverStart.title') }}
-        </h1>
-        <p class="text-lg text-neutral-400">
-          {{ currentStatusLabel }}
-        </p>
-      </div>
+    <div class="relative min-h-screen z-10">
+      <!-- Main startup display using StartupDisplay component -->
+      <StartupDisplay
+        :title="displayTitle"
+        :status-text="displayStatusText"
+        :hide-progress="!isLoading"
+      />
 
       <!-- Error Section (positioned at bottom) -->
       <div
         v-if="isError"
         class="absolute bottom-20 left-0 right-0 flex flex-col items-center gap-4"
       >
-        <!-- Error Message -->
-        <div
-          class="bg-red-900/20 border border-red-800 rounded-lg p-4 mx-auto max-w-lg"
-        >
-          <p class="text-sm text-red-400 text-center">
-            <i class="pi pi-exclamation-triangle mr-2"></i>
-            {{ $t('serverStart.errorMessage') }}
-            <span v-if="electronVersion">v{{ electronVersion }}</span>
-          </p>
-        </div>
-
         <!-- Action Buttons (for error states) -->
         <div class="flex gap-4 justify-center">
           <Button
@@ -124,9 +96,10 @@
 <script setup lang="ts">
 import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
-import ProgressBar from 'primevue/progressbar'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import StartupDisplay from '@/components/common/StartupDisplay.vue'
 
 const { t } = useI18n()
 
@@ -157,6 +130,21 @@ const isLoading = computed(
 )
 
 const isError = computed(() => props.status === ProgressStatus.ERROR)
+
+// Display properties for StartupDisplay component
+const displayTitle = computed(() => {
+  if (isError.value) {
+    return t('serverStart.errorMessage')
+  }
+  return t('serverStart.title')
+})
+
+const displayStatusText = computed(() => {
+  if (isError.value && props.electronVersion) {
+    return `v${props.electronVersion}`
+  }
+  return currentStatusLabel.value
+})
 </script>
 
 <style scoped>
