@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen">
+  <div :class="wrapperClass">
     <div class="grid grid-rows-2 gap-8">
       <!-- Top container: Logo -->
       <div class="flex items-center justify-center">
@@ -12,6 +12,7 @@
       <!-- Bottom container: Progress and text -->
       <div class="flex flex-col items-center justify-center gap-4">
         <ProgressBar
+          v-if="!hideProgress"
           :mode="progressMode"
           :value="progressPercentage ?? 0"
           class="w-90 h-2"
@@ -50,13 +51,28 @@ interface StartupDisplayProps {
   title?: string
   /** Status text shown below the title */
   statusText?: string
+  /** Hide the progress bar */
+  hideProgress?: boolean
+  /** Use full screen wrapper (default: true) */
+  fullScreen?: boolean
 }
 
-const { progressPercentage, title, statusText } =
-  defineProps<StartupDisplayProps>()
+const {
+  progressPercentage,
+  title,
+  statusText,
+  hideProgress = false,
+  fullScreen = true
+} = defineProps<StartupDisplayProps>()
 
 const progressMode = computed(() =>
   progressPercentage === undefined ? 'indeterminate' : 'determinate'
+)
+
+const wrapperClass = computed(() =>
+  fullScreen
+    ? 'flex items-center justify-center min-h-screen'
+    : 'flex items-center justify-center'
 )
 </script>
 
