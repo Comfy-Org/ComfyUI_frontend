@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen px-8">
+  <div class="flex items-center justify-center min-h-screen px-8 relative">
     <!-- Main grid layout for logo and progress -->
     <div class="grid grid-rows-2 gap-8">
       <!-- Top container -->
@@ -29,53 +29,61 @@
       </div>
     </div>
 
-    <!-- Error Message -->
+    <!-- Error Section (positioned at bottom) -->
     <div
       v-if="isError"
-      class="bg-red-900/20 border border-red-800 rounded-lg p-4 mx-auto max-w-lg mt-8"
+      class="absolute bottom-20 left-0 right-0 flex flex-col items-center gap-4"
     >
-      <p class="text-sm text-red-400 text-center">
-        <i class="pi pi-exclamation-triangle mr-2"></i>
-        {{ $t('serverStart.errorMessage') }}
-        <span v-if="electronVersion">v{{ electronVersion }}</span>
-      </p>
-    </div>
-
-    <!-- Action Buttons (for error states) -->
-    <div v-if="isError" class="flex gap-4 justify-center">
-      <Button
-        icon="pi pi-flag"
-        :label="$t('serverStart.reportIssue')"
-        severity="secondary"
-        @click="$emit('report-issue')"
-      />
-      <Button
-        icon="pi pi-file"
-        :label="$t('serverStart.openLogs')"
-        severity="secondary"
-        @click="$emit('open-logs')"
-      />
-      <Button
-        icon="pi pi-wrench"
-        :label="$t('serverStart.troubleshoot')"
-        @click="$emit('troubleshoot')"
-      />
-    </div>
-
-    <!-- Terminal Toggle -->
-    <div class="text-center">
-      <button
-        v-if="!terminalVisible && isError"
-        class="text-sm text-neutral-500 hover:text-neutral-300 transition-colors flex items-center gap-2 mx-auto"
-        @click="$emit('toggle-terminal', true)"
+      <!-- Error Message -->
+      <div
+        class="bg-red-900/20 border border-red-800 rounded-lg p-4 mx-auto max-w-lg"
       >
-        <i class="pi pi-search"></i>
-        {{ $t('serverStart.showTerminal') }}
-      </button>
+        <p class="text-sm text-red-400 text-center">
+          <i class="pi pi-exclamation-triangle mr-2"></i>
+          {{ $t('serverStart.errorMessage') }}
+          <span v-if="electronVersion">v{{ electronVersion }}</span>
+        </p>
+      </div>
+
+      <!-- Action Buttons (for error states) -->
+      <div class="flex gap-4 justify-center">
+        <Button
+          icon="pi pi-flag"
+          :label="$t('serverStart.reportIssue')"
+          severity="secondary"
+          @click="$emit('report-issue')"
+        />
+        <Button
+          icon="pi pi-file"
+          :label="$t('serverStart.openLogs')"
+          severity="secondary"
+          @click="$emit('open-logs')"
+        />
+        <Button
+          icon="pi pi-wrench"
+          :label="$t('serverStart.troubleshoot')"
+          @click="$emit('troubleshoot')"
+        />
+      </div>
+
+      <!-- Terminal Toggle -->
+      <div class="text-center">
+        <button
+          v-if="!terminalVisible"
+          class="text-sm text-neutral-500 hover:text-neutral-300 transition-colors flex items-center gap-2 mx-auto"
+          @click="$emit('toggle-terminal', true)"
+        >
+          <i class="pi pi-search"></i>
+          {{ $t('serverStart.showTerminal') }}
+        </button>
+      </div>
     </div>
 
-    <!-- Terminal Output (passed as slot) -->
-    <div v-if="terminalVisible" class="w-full max-w-4xl mt-8">
+    <!-- Terminal Output (positioned at bottom) -->
+    <div
+      v-if="terminalVisible"
+      class="absolute bottom-4 left-4 right-4 max-w-4xl mx-auto"
+    >
       <slot name="terminal"></slot>
     </div>
   </div>
