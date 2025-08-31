@@ -507,7 +507,7 @@
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",
       "starting-server": "Starting ComfyUI server...",
-      "ready": "Loading Frontend",
+      "ready": "Loading Human Interface",
       "error": "Unable to start ComfyUI Desktop"
     },
     "status": {
