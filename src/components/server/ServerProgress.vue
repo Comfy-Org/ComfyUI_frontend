@@ -10,22 +10,6 @@
     <!-- Semi-transparent overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
 
-    <!-- Large oval shadow behind content -->
-    <div
-      v-if="isLoading"
-      class="fixed z-8"
-      style="
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 800px;
-        height: 600px;
-        background: rgb(23, 23, 23);
-        border-radius: 50%;
-        filter: blur(100px);
-      "
-    ></div>
-
     <!-- Main Content Layer -->
     <div
       class="relative flex items-center justify-center min-h-screen px-8 z-10"
