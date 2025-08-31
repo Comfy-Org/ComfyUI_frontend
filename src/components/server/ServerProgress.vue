@@ -10,6 +10,12 @@
     <!-- Semi-transparent overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
 
+    <!-- Large oval shadow behind content -->
+    <div
+      v-if="isLoading"
+      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[500px] bg-neutral-900/95 rounded-full blur-3xl z-8"
+    ></div>
+
     <!-- Main Content Layer -->
     <div
       class="relative flex items-center justify-center min-h-screen px-8 z-10"
@@ -21,34 +27,13 @@
             src="/assets/images/comfy-brand-mark.svg"
             alt="ComfyUI Logo"
             class="w-60 h-60"
-            style="
-              filter: drop-shadow(0 0 15px rgb(23, 23, 23))
-                drop-shadow(0 0 30px rgb(23, 23, 23))
-                drop-shadow(0 0 45px rgb(23, 23, 23));
-            "
           />
           <!-- Indeterminate Progress Bar during server start -->
-          <ProgressBar
-            v-if="isLoading"
-            mode="indeterminate"
-            class="w-90 h-2"
-            style="
-              filter: drop-shadow(0 0 10px rgb(23, 23, 23))
-                drop-shadow(0 0 20px rgb(23, 23, 23))
-                drop-shadow(0 0 30px rgb(23, 23, 23));
-            "
-          />
+          <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
         </div>
         <h1
-          class="text-4xl text-white"
-          style="
-            font-family: 'ABC ROM Black Italic', sans-serif;
-            text-shadow:
-              0 0 15px rgb(23, 23, 23),
-              0 0 30px rgb(23, 23, 23),
-              0 0 45px rgb(23, 23, 23),
-              0 0 60px rgb(23, 23, 23);
-          "
+          class="text-4xl text-neutral-100"
+          style="font-family: 'ABC ROM Black Italic', sans-serif"
         >
           {{ $t('serverStart.title') }}
         </h1>
