@@ -756,12 +756,12 @@ styleSheet.type = 'text/css'
 styleSheet.innerText = styles
 document.head.appendChild(styleSheet)
 
-export enum BrushShape {
+enum BrushShape {
   Arc = 'arc',
   Rect = 'rect'
 }
 
-export enum Tools {
+enum Tools {
   MaskPen = 'pen',
   PaintPen = 'rgbPaint',
   Eraser = 'eraser',
@@ -813,7 +813,7 @@ interface Offset {
   y: number
 }
 
-export interface Brush {
+interface Brush {
   type: BrushShape
   size: number
   opacity: number
@@ -2037,7 +2037,7 @@ class ColorSelectTool {
   }
 }
 
-export class BrushTool {
+class BrushTool {
   brushSettings: Brush //this saves the current brush settings
   maskBlendMode: MaskBlendMode
 
