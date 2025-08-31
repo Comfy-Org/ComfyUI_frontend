@@ -17,7 +17,7 @@
           v-if="showSearchBox"
           v-model="searchQuery"
           :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
-          :has-border="true"
+          :show-order="true"
           :place-holder="searchPlaceholder"
         />
         <div
