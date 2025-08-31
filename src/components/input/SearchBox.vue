@@ -19,7 +19,8 @@ const { placeHolder, showBorder = false } = defineProps<{
   placeHolder?: string
   showBorder?: boolean
 }>()
-const searchQuery = defineModel<string>('')
+// defineModel without arguments uses 'modelValue' as the prop name
+const searchQuery = defineModel<string>()
 
 const wrapperStyle = computed(() => {
   return showBorder
