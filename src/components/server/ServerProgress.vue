@@ -1,33 +1,11 @@
 <template>
   <div class="flex items-center justify-center min-h-screen px-8 relative">
-    <!-- Main grid layout for logo and progress -->
-    <div class="grid grid-rows-2 gap-8">
-      <!-- Top container -->
-      <div class="flex items-center justify-center">
-        <img
-          src="/assets/images/comfy-brand-mark.svg"
-          alt="ComfyUI Logo"
-          class="w-60"
-        />
-      </div>
-      <!-- Bottom container -->
-      <div class="flex flex-col items-center justify-center gap-4">
-        <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
-        <h1
-          class="text-3xl text-neutral-300"
-          style="
-            font-family: 'ABC ROM', sans-serif;
-            font-weight: 500;
-            font-style: italic;
-          "
-        >
-          {{ $t('serverStart.title') }}
-        </h1>
-        <p class="text-lg text-neutral-400">
-          {{ currentStatusLabel }}
-        </p>
-      </div>
-    </div>
+    <!-- Main startup display -->
+    <StartupDisplay
+      :show-progress="isLoading"
+      :title="$t('serverStart.title')"
+      :status-text="currentStatusLabel"
+    />
 
     <!-- Error Section (positioned at bottom) -->
     <div
@@ -92,9 +70,10 @@
 <script setup lang="ts">
 import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
-import ProgressBar from 'primevue/progressbar'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import StartupDisplay from '@/components/common/StartupDisplay.vue'
 
 const { t } = useI18n()
 
@@ -114,7 +93,6 @@ defineEmits<{
 }>()
 
 // Computed properties
-
 const currentStatusLabel = computed(() =>
   t(`serverStart.process.${props.status}`)
 )
@@ -127,10 +105,3 @@ const isLoading = computed(
 
 const isError = computed(() => props.status === ProgressStatus.ERROR)
 </script>
-
-<style scoped>
-/* Override PrimeVue ProgressBar color to brand yellow */
-:deep(.p-progressbar-indeterminate .p-progressbar-value) {
-  background-color: #f0ff41;
-}
-</style>
