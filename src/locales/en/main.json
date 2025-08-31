@@ -490,6 +490,9 @@
     "metricsDisabled": "Metrics Disabled",
     "updateConsent": "You previously opted in to reporting crashes. We are now tracking event-based metrics to help identify bugs and improve the app. No personal identifiable information is collected."
   },
+  "desktopStart": {
+    "initialising": "Initialising..."
+  },
   "serverStart": {
     "title": "Starting ComfyUI",
     "troubleshoot": "Troubleshoot",
