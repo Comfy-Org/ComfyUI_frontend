@@ -20,7 +20,7 @@
 import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
 import type { Ref } from 'vue'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import ServerProgress from '@/components/server/ServerProgress.vue'
@@ -41,7 +41,6 @@ const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
 
   // Make critical error screen more obvious.
   if (newStatus === ProgressStatus.ERROR) terminalVisible.value = false
-  else xterm?.clear()
 }
 
 const terminalCreated = (
@@ -70,5 +69,9 @@ onMounted(async () => {
   electron.sendReady()
   electron.onProgressUpdate(updateProgress)
   electronVersion.value = await electron.getElectronVersion()
+})
+
+onUnmounted(() => {
+  xterm?.dispose()
 })
 </script>
