@@ -13,14 +13,7 @@
           <!-- Indeterminate Progress Bar during server start -->
           <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
         </div>
-        <h1 class="text-5xl font-black tracking-tight">
-          <span
-            class="bg-gradient-to-r from-[#F0FF41] to-[#f0ff41cc] bg-clip-text text-transparent"
-          >
-            ComfyUI
-          </span>
-          <span class="text-neutral-300 font-light ml-2">Server</span>
-        </h1>
+        <h1 class="text-4xl font-bold text-white">ComfyUI Server</h1>
         <p class="text-lg text-neutral-400">
           {{ currentStatusLabel }}
         </p>
