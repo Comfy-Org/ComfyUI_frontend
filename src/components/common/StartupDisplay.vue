@@ -10,7 +10,7 @@
         />
       </div>
       <!-- Bottom container: Progress and text -->
-      <div class="flex flex-col items-center justify-start gap-4">
+      <div class="flex flex-col items-center justify-center gap-4">
         <ProgressBar
           v-if="!hideProgress"
           :mode="progressMode"
