@@ -12,7 +12,7 @@
       <!-- Bottom container -->
       <div class="flex flex-col items-center justify-center gap-4">
         <ProgressBar mode="indeterminate" class="w-90 h-2" />
-        <p class="text-lg text-neutral-400">Initialising...</p>
+        <p class="text-lg text-neutral-400">{{ $t('desktopStart.initialising') }}</p>
       </div>
     </div>
   </div>
