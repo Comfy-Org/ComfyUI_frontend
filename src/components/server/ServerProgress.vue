@@ -1,14 +1,16 @@
 <template>
   <div class="relative min-h-screen">
     <!-- Terminal Background Layer (always visible during loading) -->
-    <div v-if="isLoading" class="absolute inset-0 opacity-20 overflow-hidden">
+    <div v-if="isLoading" class="fixed inset-0 opacity-20 overflow-hidden z-0">
       <div class="h-full w-full">
         <slot name="terminal"></slot>
       </div>
     </div>
 
     <!-- Main Content Layer -->
-    <div class="relative flex items-center justify-center min-h-screen px-8">
+    <div
+      class="relative flex items-center justify-center min-h-screen px-8 z-10"
+    >
       <!-- Main startup display -->
       <div class="text-center space-y-4">
         <div class="flex flex-col items-center gap-8">
