@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center justify-center min-h-screen">
-    <div class="grid grid-rows-2 gap-16">
+    <div class="grid grid-rows-2 gap-8">
       <!-- Top container -->
       <div class="flex items-center justify-center">
         <img
