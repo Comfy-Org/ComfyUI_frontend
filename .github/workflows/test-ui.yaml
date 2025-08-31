@@ -2,7 +2,7 @@ name: Tests CI
 
 on:
   push:
-    branches: [main, master, core/*, desktop/*]
+    branches: [main, master, core/*, desktop/*, sno-fix-playwright-pnpm]
   pull_request:
     branches-ignore:
       [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
