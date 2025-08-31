@@ -11,9 +11,7 @@
             class="w-60 h-60"
           />
           <!-- Indeterminate Progress Bar during server start -->
-          <div v-if="isLoading" class="w-90 h-2 bg-neutral-800 rounded-full overflow-hidden">
-            <div class="h-full bg-[#F0FF41] rounded-full animate-indeterminate-progress"></div>
-          </div>
+          <ProgressBar v-if="isLoading" mode="indeterminate" class="w-90 h-2" />
         </div>
         <h1 class="text-4xl font-bold text-white">ComfyUI Server</h1>
         <p class="text-lg text-neutral-400">
@@ -131,6 +129,7 @@
 <script setup lang="ts">
 import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
+import ProgressBar from 'primevue/progressbar'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -281,23 +280,8 @@ watch(
   animation: shimmer 2s infinite;
 }
 
-/* Indeterminate progress animation */
-@keyframes indeterminate-progress {
-  0% {
-    transform: translateX(-100%);
-    width: 30%;
-  }
-  50% {
-    transform: translateX(100%);
-    width: 30%;
-  }
-  100% {
-    transform: translateX(250%);
-    width: 30%;
-  }
-}
-
-.animate-indeterminate-progress {
-  animation: indeterminate-progress 1.5s ease-in-out infinite;
+/* Override PrimeVue ProgressBar color to brand yellow */
+:deep(.p-progressbar-indeterminate .p-progressbar-value) {
+  background-color: #f0ff41;
 }
 </style>
