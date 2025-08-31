@@ -1,11 +1,14 @@
 <template>
   <div class="relative min-h-screen">
     <!-- Terminal Background Layer (always visible during loading) -->
-    <div v-if="isLoading" class="fixed inset-0 opacity-20 overflow-hidden z-0">
+    <div v-if="isLoading" class="fixed inset-0 overflow-hidden z-0">
       <div class="h-full w-full">
         <slot name="terminal"></slot>
       </div>
     </div>
+
+    <!-- Semi-transparent overlay -->
+    <div v-if="isLoading" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
 
     <!-- Main Content Layer -->
     <div
@@ -150,13 +153,13 @@ const isError = computed(() => props.status === ProgressStatus.ERROR)
 
 /* Style the terminal background for aesthetic effect */
 :deep(.xterm) {
-  background: transparent !important;
+  background: black !important;
   padding: 0 !important;
   margin: 0 !important;
 }
 
 :deep(.xterm-viewport) {
-  background: transparent !important;
+  background: black !important;
   overflow: hidden !important;
   scrollbar-width: none !important; /* Firefox */
 }
@@ -166,7 +169,7 @@ const isError = computed(() => props.status === ProgressStatus.ERROR)
 }
 
 :deep(.xterm-screen) {
-  background: transparent !important;
+  background: black !important;
   padding: 0 !important;
   margin: 0 !important;
 }
