@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col min-h-screen">
+  <div class="grid grid-rows-2 min-h-screen">
     <!-- Top half container -->
-    <div class="flex-1 flex items-end justify-center pb-8">
+    <div class="flex items-center justify-center">
       <img
         src="/assets/images/comfy-brand-mark.svg"
         alt="ComfyUI Logo"
@@ -9,7 +9,7 @@
       />
     </div>
     <!-- Bottom half container -->
-    <div class="flex-1 flex items-start justify-center pt-8">
+    <div class="flex items-center justify-center">
       <ProgressBar mode="indeterminate" class="w-90 h-2" />
     </div>
   </div>
