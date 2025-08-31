@@ -19,16 +19,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Cache tool outputs
         uses: actions/cache@v4
@@ -39,20 +34,20 @@ jobs:
             tsconfig.tsbuildinfo
             .prettierCache
             .knip-cache
-          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
+          key: lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js,mts}', '*.config.*', '.eslintrc.*', '.prettierrc.*', 'tsconfig.json') }}
           restore-keys: |
-            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            lint-format-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
             lint-format-cache-${{ runner.os }}-
             ci-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Run ESLint with auto-fix
-        run: pnpm lint:fix
+        run: npm run lint:fix
 
       - name: Run Prettier with auto-format
-        run: pnpm format
+        run: npm run format
 
       - name: Check for changes
         id: verify-changed-files
@@ -74,9 +69,9 @@ jobs:
 
       - name: Final validation
         run: |
-          pnpm lint
-          pnpm format:check
-          pnpm knip
+          npm run lint
+          npm run format:check
+          npm run knip
 
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository

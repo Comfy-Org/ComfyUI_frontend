@@ -13,16 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 10
-
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 'lts/*'
-        cache: 'pnpm'
+        cache: 'npm'
 
     - name: Cache tool outputs
       uses: actions/cache@v4
@@ -31,16 +26,16 @@ jobs:
           .cache
           coverage
           .vitest-cache
-        key: vitest-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', 'vitest.config.*', 'tsconfig.json') }}
+        key: vitest-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', 'vitest.config.*', 'tsconfig.json') }}
         restore-keys: |
-          vitest-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+          vitest-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
           vitest-cache-${{ runner.os }}-
           test-tools-cache-${{ runner.os }}-
 
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: npm ci
 
     - name: Run Vitest tests
       run: |
-        pnpm test:component
-        pnpm test:unit
+        npm run test:component
+        npm run test:unit

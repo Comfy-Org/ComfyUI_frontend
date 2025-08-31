@@ -53,20 +53,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies for analysis tools
         run: |
-          pnpm install -g typescript @vue/compiler-sfc
+          npm install -g typescript @vue/compiler-sfc
 
       - name: Run Claude PR Review
         uses: anthropics/claude-code-action@main

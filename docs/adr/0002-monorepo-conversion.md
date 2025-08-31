@@ -19,14 +19,13 @@ For more information on Monorepos, check out [monorepo.tools](https://monorepo.t
 
 ## Decision
 
-- Swap out NPM for PNPM
 - Add a workspace for the PrimeVue fork
 - Move the frontend code into its own app workspace
 - Longer term: Extract and reorganize common infrastructure to take advantage of the new monorepo tooling
 
 ### Tools proposed
 
-[PNPM](https://pnpm.io/) and [PNPM workspaces](https://pnpm.io/workspaces)
+[npm workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces)
 
 For monorepo management, I'd probably go with [Nx](https://nx.dev/), but I could be conviced otherwise.
 There's a [whole list here](https://monorepo.tools/#tools-review) if you're interested.

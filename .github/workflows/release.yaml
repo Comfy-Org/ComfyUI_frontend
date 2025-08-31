@@ -19,14 +19,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Cache tool outputs
         uses: actions/cache@v4
@@ -34,7 +30,7 @@ jobs:
           path: |
             .cache
             tsconfig.tsbuildinfo
-          key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             release-tools-cache-${{ runner.os }}-
 
@@ -57,9 +53,9 @@ jobs:
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
           USE_PROD_CONFIG: 'true'
         run: |
-          pnpm install --frozen-lockfile
-          pnpm build
-          pnpm zipdist
+          npm ci
+          npm run build
+          npm run zipdist
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -129,14 +125,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'pnpm'
+          cache: 'npm'
           registry-url: https://registry.npmjs.org
 
       - name: Cache tool outputs
@@ -146,14 +138,14 @@ jobs:
             .cache
             tsconfig.tsbuildinfo
             dist
-          key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: types-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             types-tools-cache-${{ runner.os }}-
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build:types
+      - run: npm ci
+      - run: npm run build:types
       - name: Publish package
-        run: pnpm publish --access public
+        run: npm publish --access public
         working-directory: dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

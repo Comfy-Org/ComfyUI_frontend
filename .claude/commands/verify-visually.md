@@ -5,7 +5,7 @@ Follow these steps systematically to verify our changes:
 
 1. **Server Setup**
    - Check if the dev server is running on port 5173 using browser navigation or port checking
-   - If not running, start it with `pnpm dev` from the root directory
+   - If not running, start it with `npm run dev` from the root directory
    - If the server fails to start, provide detailed troubleshooting steps by reading package.json and README.md for accurate instructions
    - Wait for the server to be fully ready before proceeding
 

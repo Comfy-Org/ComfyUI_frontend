@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (v16 or later; v24 strongly recommended) and pnpm
+  - Node.js (v16 or later; v24 strongly recommended) and npm
   - Git for version control
   - A running ComfyUI backend instance
   
@@ -39,7 +39,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 
 2. Install dependencies:
    ```bash
-   pnpm install
+   npm install
    ```
 
 3. Configure environment (optional):
@@ -57,13 +57,13 @@ python main.py --port 8188
 
 ### Git pre-commit hooks
 
-Run `pnpm prepare` to install Git pre-commit hooks. Currently, the pre-commit hook is used to auto-format code on commit.
+Run `npm run prepare` to install Git pre-commit hooks. Currently, the pre-commit hook is used to auto-format code on commit.
 
 ### Dev Server
 
 - Start local ComfyUI backend at `localhost:8188`
-- Run `pnpm dev` to start the dev server
-- Run `pnpm dev:electron` to start the dev server with electron API mocked
+- Run `npm run dev` to start the dev server
+- Run `npm run dev:electron` to start the dev server with electron API mocked
 
 #### Access dev server on touch devices
 
@@ -155,7 +155,7 @@ For ComfyUI_frontend development, you can ask coding assistants to use Playwrigh
 
 ##### Setup for Claude Code
 
-After installing dependencies with `pnpm i`, the Playwright MCP server will be automatically available when you start Claude Code locally.
+After installing dependencies with `npm install`, the Playwright MCP server will be automatically available when you start Claude Code locally.
 
 Here's how Claude Code can use the Playwright MCP server to inspect the interface of the local development server (assuming you're running the dev server at `localhost:5173`):
 
@@ -210,14 +210,14 @@ Here's how Claude Code can use the Playwright MCP server to inspect the interfac
 
 ### Unit Tests
 
-- `pnpm i` to install all dependencies
-- `pnpm test:unit` to execute all unit tests
+- `npm install` to install all dependencies
+- `npm run test:unit` to execute all unit tests
 
 ### Component Tests
 
 Component tests verify Vue components in `src/components/`.
 
-- `pnpm test:component` to execute all component tests
+- `npm run test:component` to execute all component tests
 
 ### Playwright Tests
 
@@ -228,12 +228,12 @@ Playwright tests verify the whole app. See [browser_tests/README.md](browser_tes
 Before submitting a PR, ensure all tests pass:
 
 ```bash
-pnpm test:unit
-pnpm test:component
-pnpm test:browser
-pnpm typecheck
-pnpm lint
-pnpm format
+npm run test:unit
+npm run test:component
+npm run test:browser
+npm run typecheck
+npm run lint
+npm run format
 ```
 
 ## Code Style Guidelines

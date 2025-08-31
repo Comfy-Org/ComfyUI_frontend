@@ -18,16 +18,11 @@ jobs:
         with:
           fetch-depth: 0 # Required for Chromatic baseline
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
+          cache: 'npm'
 
 
       - name: Cache tool outputs
@@ -37,14 +32,14 @@ jobs:
             .cache
             storybook-static
             tsconfig.tsbuildinfo
-          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
+          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
           restore-keys: |
-            storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            storybook-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
             storybook-cache-${{ runner.os }}-
             storybook-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Build Storybook and run Chromatic
         id: chromatic

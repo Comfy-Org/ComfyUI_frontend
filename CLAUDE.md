@@ -12,18 +12,18 @@ This bootstraps the monorepo with dependencies, builds, tests, and dev server ve
 
 ## Quick Commands
 
-- `pnpm`: See all available commands
-- `pnpm dev`: Start development server (port 5173, via nx)
-- `pnpm typecheck`: Type checking
-- `pnpm build`: Build for production (via nx)
-- `pnpm lint`: Linting (via nx)
-- `pnpm format`: Prettier formatting
-- `pnpm test:component`: Run component tests with browser environment
-- `pnpm test:unit`: Run all unit tests
-- `pnpm test:browser`: Run E2E tests via Playwright
-- `pnpm test:unit -- tests-ui/tests/example.test.ts`: Run single test file
-- `pnpm storybook`: Start Storybook development server (port 6006)
-- `pnpm knip`: Detect unused code and dependencies
+- `npm run`: See all available commands
+- `npm run dev`: Start development server (port 5173, via nx)
+- `npm run typecheck`: Type checking
+- `npm run build`: Build for production (via nx)
+- `npm run lint`: Linting (via nx)
+- `npm run format`: Prettier formatting
+- `npm run test:component`: Run component tests with browser environment
+- `npm run test:unit`: Run all unit tests
+- `npm run test:browser`: Run E2E tests via Playwright
+- `npm run test:unit -- tests-ui/tests/example.test.ts`: Run single test file
+- `npm run storybook`: Start Storybook development server (port 6006)
+- `npm run knip`: Detect unused code and dependencies
 
 ## Monorepo Architecture
 

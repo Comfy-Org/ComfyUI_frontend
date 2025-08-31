@@ -128,20 +128,17 @@ echo "Last stable release: $LAST_STABLE"
 
 ### Step 4: Analyze Dependency Updates
 
-1. **Use pnpm's built-in dependency analysis:**
+1. **Use npm's built-in dependency analysis:**
    ```bash
-   # Get outdated dependencies with pnpm
-   pnpm outdated --format table > outdated-deps-${NEW_VERSION}.txt
-   
-   # Check for license compliance
-   pnpm licenses ls --json > licenses-${NEW_VERSION}.json
+   # Get outdated dependencies with npm
+   npm outdated --format table > outdated-deps-${NEW_VERSION}.txt || echo "No outdated dependencies"
    
    # Analyze why specific dependencies exist
    echo "Dependency analysis:" > dep-analysis-${NEW_VERSION}.md
    MAJOR_DEPS=("vue" "vite" "@vitejs/plugin-vue" "typescript" "pinia")
    for dep in "${MAJOR_DEPS[@]}"; do
      echo -e "\n## $dep\n\`\`\`" >> dep-analysis-${NEW_VERSION}.md
-     pnpm why "$dep" >> dep-analysis-${NEW_VERSION}.md || echo "Not found" >> dep-analysis-${NEW_VERSION}.md
+     npm ls "$dep" >> dep-analysis-${NEW_VERSION}.md 2>&1 || echo "Not found" >> dep-analysis-${NEW_VERSION}.md
      echo "\`\`\`" >> dep-analysis-${NEW_VERSION}.md
    done
    ```
@@ -272,15 +269,14 @@ echo "Last stable release: $LAST_STABLE"
 
 ### Step 7: Security and Dependency Audit
 
-1. Run pnpm security audit:
+1. Run npm security audit:
    ```bash
-   pnpm audit --audit-level moderate
-   pnpm licenses ls --summary
+   npm audit --audit-level moderate
    ```
 2. Check for known vulnerabilities in dependencies
 3. Run comprehensive dependency health check:
    ```bash
-   pnpm doctor
+   npm doctor
    ```
 4. Scan for hardcoded secrets or credentials:
    ```bash
@@ -293,21 +289,21 @@ echo "Last stable release: $LAST_STABLE"
 
 1. Run complete test suite:
    ```bash
-   pnpm test:unit
-   pnpm test:component
+   npm run test:unit
+   npm run test:component
    ```
 2. Run type checking:
    ```bash
-   pnpm typecheck
+   npm run typecheck
    ```
 3. Run linting (may have issues with missing packages):
    ```bash
-   pnpm lint || echo "Lint issues - verify if critical"
+   npm run lint || echo "Lint issues - verify if critical"
    ```
 4. Test build process:
    ```bash
-   pnpm build
-   pnpm build:types
+   npm run build
+   npm run build:types
    ```
 5. **QUALITY GATE**: All tests and builds passing?
 
@@ -537,7 +533,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```bash
    # Check npm availability
    for i in {1..10}; do
-     if pnpm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
+     if npm view @comfyorg/comfyui-frontend-types@${NEW_VERSION} version >/dev/null 2>&1; then
        echo "✅ npm package available"
        break
      fi

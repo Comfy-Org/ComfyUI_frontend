@@ -16,14 +16,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Cache tool outputs
         uses: actions/cache@v4
@@ -32,7 +28,7 @@ jobs:
             .cache
             dist
             tsconfig.tsbuildinfo
-          key: dev-release-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: dev-release-tools-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             dev-release-tools-cache-${{ runner.os }}-
 
@@ -46,9 +42,9 @@ jobs:
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
           USE_PROD_CONFIG: 'true'
         run: |
-          pnpm install --frozen-lockfile
-          pnpm build
-          pnpm zipdist
+          npm ci
+          npm run build
+          npm run zipdist
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:

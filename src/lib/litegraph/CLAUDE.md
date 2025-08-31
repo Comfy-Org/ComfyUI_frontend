@@ -9,9 +9,9 @@
 
 # Bash commands
 
-- `pnpm typecheck` Run the typechecker
-- `pnpm build` Build the project
-- `pnpm lint:fix` Run ESLint
+- `npm run typecheck` Run the typechecker
+- `npm run build` Build the project
+- `npm run lint:fix` Run ESLint
 
 # Code style
 

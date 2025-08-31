@@ -7,10 +7,14 @@
   "homepage": "https://comfy.org",
   "description": "Official front-end implementation of ComfyUI",
   "license": "GPL-3.0-only",
+  "workspaces": [
+    "apps/**",
+    "packages/**"
+  ],
   "scripts": {
     "dev": "nx serve",
     "dev:electron": "nx serve --config vite.electron.config.mts",
-    "build": "pnpm typecheck && nx build",
+    "build": "npm run typecheck && nx build",
     "build:types": "nx build --config vite.types.config.mts && node scripts/prepare-types.js",
     "zipdist": "node scripts/zipdist.js",
     "typecheck": "vue-tsc --noEmit",
@@ -21,7 +25,6 @@
     "test:browser": "npx nx e2e",
     "test:unit": "nx run test tests-ui/tests",
     "test:component": "nx run test src/components/",
-    "preinstall": "npx only-allow pnpm",
     "prepare": "husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "nx preview",
     "lint": "eslint src --cache",
