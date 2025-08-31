@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 
+import { comfyPageFixture as test } from '../../browser_tests/fixtures/ComfyPage'
 import { normalizeI18nKey } from '../../src/utils/formatUtil'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
