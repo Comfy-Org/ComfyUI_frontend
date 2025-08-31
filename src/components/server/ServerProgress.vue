@@ -8,7 +8,7 @@
     </div>
 
     <!-- Semi-transparent overlay -->
-    <div v-if="!isError" class="fixed inset-0 bg-neutral-900/90 z-5"></div>
+    <div v-if="!isError" class="fixed inset-0 bg-neutral-900/80 z-5"></div>
 
     <!-- Smooth radial gradient overlay -->
     <div
@@ -157,13 +157,11 @@ const displayStatusText = computed(() => {
 
 /* Style the terminal background for aesthetic effect */
 :deep(.xterm) {
-  background: black !important;
   padding: 0 !important;
   margin: 0 !important;
 }
 
 :deep(.xterm-viewport) {
-  background: black !important;
   overflow: hidden !important;
   scrollbar-width: none !important; /* Firefox */
 }
@@ -173,7 +171,6 @@ const displayStatusText = computed(() => {
 }
 
 :deep(.xterm-screen) {
-  background: black !important;
   padding: 0 !important;
   margin: 0 !important;
 }
