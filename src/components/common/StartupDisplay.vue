@@ -12,9 +12,7 @@
       <!-- Bottom container: Progress and text -->
       <div class="flex flex-col items-center justify-center gap-4">
         <ProgressBar
-          :mode="
-            progressPercentage === undefined ? 'indeterminate' : 'determinate'
-          "
+          :mode="progressMode"
           :value="progressPercentage ?? 0"
           class="w-90 h-2"
         />
@@ -39,6 +37,7 @@
 
 <script setup lang="ts">
 import ProgressBar from 'primevue/progressbar'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -55,6 +54,10 @@ interface StartupDisplayProps {
 
 const { progressPercentage, title, statusText } =
   defineProps<StartupDisplayProps>()
+
+const progressMode = computed(() =>
+  progressPercentage === undefined ? 'indeterminate' : 'determinate'
+)
 </script>
 
 <style scoped>
