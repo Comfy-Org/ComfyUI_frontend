@@ -12,8 +12,10 @@
       <!-- Bottom container: Progress and text -->
       <div class="flex flex-col items-center justify-center gap-4">
         <ProgressBar
-          v-if="showProgress"
-          mode="indeterminate"
+          :mode="
+            progressPercentage === undefined ? 'indeterminate' : 'determinate'
+          "
+          :value="progressPercentage ?? 0"
           class="w-90 h-2"
         />
         <h1
@@ -41,17 +43,18 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
+/** Props for the StartupDisplay component */
 interface StartupDisplayProps {
-  showProgress?: boolean
+  /** Progress: 0-100 for determinate, undefined for indeterminate */
+  progressPercentage?: number
+  /** Main title text (displayed in ABC ROM italic font) */
   title?: string
+  /** Status text shown below the title */
   statusText?: string
 }
 
-const {
-  showProgress = true,
-  title,
-  statusText
-} = defineProps<StartupDisplayProps>()
+const { progressPercentage, title, statusText } =
+  defineProps<StartupDisplayProps>()
 </script>
 
 <style scoped>
