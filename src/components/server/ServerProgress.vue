@@ -5,12 +5,12 @@
       <!-- ComfyUI Logo and Title -->
       <div class="text-center space-y-4">
         <div class="flex justify-center mb-4">
-          <div
-            class="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-2xl transform transition-transform"
+          <img
+            src="/assets/images/comfy-logo-single.svg"
+            alt="ComfyUI Logo"
+            class="w-24 h-24 transform transition-transform"
             :class="{ 'animate-pulse': isLoading }"
-          >
-            <i class="pi pi-server text-5xl text-white"></i>
-          </div>
+          />
         </div>
         <h1 class="text-4xl font-bold text-white">ComfyUI Server</h1>
         <p class="text-lg text-neutral-400">
