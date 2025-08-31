@@ -2,7 +2,7 @@
   <div class="relative min-h-screen">
     <!-- Terminal Background Layer (always visible during loading) -->
     <div v-if="isLoading" class="absolute inset-0 opacity-20 overflow-hidden">
-      <div class="h-full w-full p-8">
+      <div class="h-full w-full">
         <slot name="terminal"></slot>
       </div>
     </div>
@@ -141,13 +141,33 @@ const isError = computed(() => props.status === ProgressStatus.ERROR)
 /* Style the terminal background for aesthetic effect */
 :deep(.xterm) {
   background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 :deep(.xterm-viewport) {
   background: transparent !important;
+  overflow: hidden !important;
+  scrollbar-width: none !important; /* Firefox */
+}
+
+:deep(.xterm-viewport::-webkit-scrollbar) {
+  display: none !important; /* Chrome, Safari, Edge */
 }
 
 :deep(.xterm-screen) {
   background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Hide all scrollbars in the terminal container */
+:deep(.terminal-container) {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+}
+
+:deep(.terminal-container::-webkit-scrollbar) {
+  display: none !important;
 }
 </style>
