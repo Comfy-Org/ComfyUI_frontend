@@ -34,7 +34,7 @@
     "collect-i18n": "nx e2e --config=playwright.i18n.config.ts",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "storybook": "nx storybook -p 6006",
-    "build-storybook": "nx build-storybook"
+    "build-storybook": "storybook build"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
