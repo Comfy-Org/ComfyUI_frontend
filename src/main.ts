@@ -18,6 +18,7 @@ import router from '@/router'
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
+import './assets/css/fonts.css'
 import { i18n } from './i18n'
 
 const ComfyUIPreset = definePreset(Aura, {
