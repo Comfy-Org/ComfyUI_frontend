@@ -144,7 +144,7 @@ const props = defineProps<{
 defineEmits<{
   'report-issue': []
   'open-logs': []
-  'troubleshoot': []
+  troubleshoot: []
   'toggle-terminal': [visible: boolean]
 }>()
 
@@ -197,7 +197,8 @@ const currentStatusLabel = computed(() => {
 
 const isLoading = computed(() => {
   return (
-    props.status !== ProgressStatus.READY && props.status !== ProgressStatus.ERROR
+    props.status !== ProgressStatus.READY &&
+    props.status !== ProgressStatus.ERROR
   )
 })
 
@@ -225,8 +226,10 @@ const statusIcon = computed(() => {
 
 const statusIconClass = computed(() => {
   if (isError.value) return 'bg-red-900/50 text-red-400 border border-red-800'
-  if (isReady.value) return 'bg-green-900/50 text-green-400 border border-green-800'
-  if (isLoading.value) return 'bg-blue-900/50 text-blue-400 border border-blue-800'
+  if (isReady.value)
+    return 'bg-green-900/50 text-green-400 border border-green-800'
+  if (isLoading.value)
+    return 'bg-blue-900/50 text-blue-400 border border-blue-800'
   return 'bg-neutral-900/50 text-neutral-400 border border-neutral-800'
 })
 
@@ -246,7 +249,8 @@ watch(
       // Easing function (ease-out)
       const eased = 1 - Math.pow(1 - progress, 3)
 
-      displayProgress.value = startProgress + (endProgress - startProgress) * eased
+      displayProgress.value =
+        startProgress + (endProgress - startProgress) * eased
 
       if (progress < 1) {
         requestAnimationFrame(animate)
