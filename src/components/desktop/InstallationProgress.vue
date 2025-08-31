@@ -10,8 +10,9 @@
         />
       </div>
       <!-- Bottom container -->
-      <div class="flex items-center justify-center">
+      <div class="flex flex-col items-center justify-center gap-4">
         <ProgressBar mode="indeterminate" class="w-90 h-2" />
+        <p class="text-lg text-neutral-400">Initialising...</p>
       </div>
     </div>
   </div>
