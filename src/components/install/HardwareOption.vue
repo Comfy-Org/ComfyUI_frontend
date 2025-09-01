@@ -18,6 +18,9 @@
         class="w-full h-full object-cover"
         style="object-position: 57% center"
       />
+      <span v-else class="text-xl font-medium text-neutral-400">
+        {{ title }}
+      </span>
     </div>
 
     <!-- Text Content -->
