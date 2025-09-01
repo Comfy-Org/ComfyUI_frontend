@@ -4,7 +4,7 @@
     :class="{ 'selected': selected }"
   >
     <button
-      class="hardware-option group relative flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-200 border-neutral-700 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800"
+      class="hardware-option group relative flex flex-col items-center justify-center rounded-2xl border transition-all duration-200 border-neutral-700 bg-neutral-900/80 hover:border-neutral-600 hover:bg-neutral-800/80"
       @click="$emit('click')"
     >
       <div class="flex h-24 w-full items-center justify-center px-4">
@@ -51,9 +51,9 @@ defineEmits<{
 .hardware-option-wrapper.selected::before {
   content: '';
   position: absolute;
-  inset: -8px;
-  border: 2px solid rgb(250, 204, 21);
-  border-radius: 28px;
+  inset: -10px;
+  border: 3px solid rgb(234, 179, 8);
+  border-radius: 32px;
   pointer-events: none;
 }
 
