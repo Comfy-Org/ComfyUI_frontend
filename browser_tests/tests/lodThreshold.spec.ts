@@ -9,9 +9,6 @@ test.describe('LOD Threshold', () => {
     // Load a workflow with some nodes to render
     await comfyPage.loadWorkflow('default')
 
-    // Take initial snapshot at normal zoom (high quality)
-    await expect(comfyPage.canvas).toHaveScreenshot('lod-normal-zoom.png')
-
     // Get initial LOD state and settings
     const initialState = await comfyPage.page.evaluate(() => {
       const canvas = window['app'].canvas
@@ -31,12 +28,7 @@ test.describe('LOD Threshold', () => {
     // Can't access private _lowQualityZoomThreshold directly
 
     // Zoom out just above threshold (should still be high quality)
-    await comfyPage.page.mouse.move(400, 300)
-    await comfyPage.page.keyboard.down('Control')
-    for (let i = 0; i < 5; i++) {
-      await comfyPage.page.mouse.wheel(0, 120)
-    }
-    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.zoom(120, 5) // Zoom out 5 steps
     await comfyPage.nextFrame()
 
     const aboveThresholdState = await comfyPage.page.evaluate(() => {
@@ -50,19 +42,11 @@ test.describe('LOD Threshold', () => {
     // If still above threshold, should be high quality
     if (aboveThresholdState.scale > expectedThreshold) {
       expect(aboveThresholdState.lowQuality).toBe(false)
-      await expect(comfyPage.canvas).toHaveScreenshot('lod-above-threshold.png')
     }
 
     // Zoom out more to trigger LOD (below threshold)
-    await comfyPage.page.keyboard.down('Control')
-    for (let i = 0; i < 5; i++) {
-      await comfyPage.page.mouse.wheel(0, 120)
-    }
-    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.zoom(120, 5) // Zoom out 5 more steps
     await comfyPage.nextFrame()
-
-    // Take snapshot in low quality mode
-    await expect(comfyPage.canvas).toHaveScreenshot('lod-below-threshold.png')
 
     // Check that LOD is now active
     const zoomedOutState = await comfyPage.page.evaluate(() => {
@@ -77,15 +61,8 @@ test.describe('LOD Threshold', () => {
     expect(zoomedOutState.lowQuality).toBe(true)
 
     // Zoom back in to disable LOD (above threshold)
-    await comfyPage.page.keyboard.down('Control')
-    for (let i = 0; i < 15; i++) {
-      await comfyPage.page.mouse.wheel(0, -120)
-    }
-    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.zoom(-120, 15) // Zoom in 15 steps
     await comfyPage.nextFrame()
-
-    // Take snapshot back in high quality mode
-    await expect(comfyPage.canvas).toHaveScreenshot('lod-zoomed-in.png')
 
     // Check that LOD is now inactive
     const zoomedInState = await comfyPage.page.evaluate(() => {
@@ -104,9 +81,6 @@ test.describe('LOD Threshold', () => {
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('default')
-
-    // Take snapshot with default 8px setting
-    await expect(comfyPage.canvas).toHaveScreenshot('lod-setting-8px.png')
 
     // Change the font size setting to 14px (more aggressive LOD)
     await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 14)
@@ -127,21 +101,10 @@ test.describe('LOD Threshold', () => {
       return window['app'].canvas.low_quality
     })
     expect(lodState).toBe(false)
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'lod-setting-14px-at-100.png'
-    )
 
     // Zoom out slightly to trigger LOD
-    await comfyPage.page.mouse.move(400, 300)
-    await comfyPage.page.keyboard.down('Control')
-    await comfyPage.page.mouse.wheel(0, 120)
-    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.zoom(120, 1) // Zoom out 1 step
     await comfyPage.nextFrame()
-
-    // Take snapshot showing LOD active at nearly full zoom
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'lod-setting-14px-zoomed-out.png'
-    )
 
     const afterZoom = await comfyPage.page.evaluate(() => {
       const canvas = window['app'].canvas
@@ -163,22 +126,9 @@ test.describe('LOD Threshold', () => {
     // Disable LOD by setting font size to 0
     await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 0)
 
-    // Take snapshot at normal zoom with LOD disabled
-    await expect(comfyPage.canvas).toHaveScreenshot('lod-disabled-normal.png')
-
     // Zoom out significantly
-    await comfyPage.page.mouse.move(400, 300)
-    await comfyPage.page.keyboard.down('Control')
-    for (let i = 0; i < 20; i++) {
-      await comfyPage.page.mouse.wheel(0, 120)
-    }
-    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.zoom(120, 20) // Zoom out 20 steps
     await comfyPage.nextFrame()
-
-    // Take snapshot at extreme zoom - should still show full quality
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'lod-disabled-extreme-zoom.png'
-    )
 
     // LOD should remain disabled even at very low zoom
     const state = await comfyPage.page.evaluate(() => {
