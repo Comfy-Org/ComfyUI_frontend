@@ -18,6 +18,7 @@
           v-if="platform === 'darwin'"
           :image-path="'/assets/images/apple-mps-logo.png'"
           placeholder-text="Apple Metal"
+          subtitle=""
           value="mps"
           :selected="selected === 'mps'"
           @click="pickGpu('mps')"
@@ -25,6 +26,7 @@
         <!-- CPU -->
         <HardwareOption
           placeholder-text="CPU"
+          subtitle="Subtitle"
           value="cpu"
           :selected="selected === 'cpu'"
           @click="pickGpu('cpu')"
@@ -32,6 +34,7 @@
         <!-- Manual Install -->
         <HardwareOption
           placeholder-text="Manual Install"
+          subtitle="Subtitle"
           value="unsupported"
           :selected="selected === 'unsupported'"
           @click="pickGpu('unsupported')"

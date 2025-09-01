@@ -22,6 +22,14 @@
         {{ placeholderText }}
       </span>
     </div>
+
+    <!-- Text Content -->
+    <div class="text-center mt-4">
+      <div class="text-base font-normal text-neutral-100">{{ placeholderText }}</div>
+      <div v-if="subtitle" class="text-sm text-neutral-500 mt-1">
+        {{ subtitle }}
+      </div>
+    </div>
   </button>
 </template>
 
@@ -29,6 +37,7 @@
 interface Props {
   imagePath?: string
   placeholderText: string
+  subtitle?: string
   value: string
   selected?: boolean
 }
