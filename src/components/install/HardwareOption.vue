@@ -14,21 +14,13 @@
       <img
         v-if="imagePath"
         :src="imagePath"
-        :alt="title"
+        :alt="placeholderText"
         class="w-full h-full object-cover"
         style="object-position: 57% center"
       />
       <span v-else class="text-xl font-medium text-neutral-400">
-        {{ title }}
+        {{ placeholderText }}
       </span>
-    </div>
-
-    <!-- Text Content -->
-    <div class="text-center mt-4">
-      <div class="text-base font-normal text-neutral-100">{{ title }}</div>
-      <div v-if="subtitle" class="text-sm text-neutral-500 mt-1">
-        {{ subtitle }}
-      </div>
     </div>
   </button>
 </template>
@@ -36,8 +28,7 @@
 <script setup lang="ts">
 interface Props {
   imagePath?: string
-  title: string
-  subtitle?: string
+  placeholderText: string
   value: string
   selected?: boolean
 }
