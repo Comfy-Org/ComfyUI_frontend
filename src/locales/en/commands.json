@@ -1,40 +1,4 @@
 {
-  "Comfy-Desktop_CheckForUpdates": {
-    "label": "Check for Updates"
-  },
-  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Open Custom Nodes Folder"
-  },
-  "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Open Inputs Folder"
-  },
-  "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Open Logs Folder"
-  },
-  "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "Open extra_model_paths.yaml"
-  },
-  "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Open Models Folder"
-  },
-  "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Open Outputs Folder"
-  },
-  "Comfy-Desktop_OpenDevTools": {
-    "label": "Open DevTools"
-  },
-  "Comfy-Desktop_OpenUserGuide": {
-    "label": "Desktop User Guide"
-  },
-  "Comfy-Desktop_Quit": {
-    "label": "Quit"
-  },
-  "Comfy-Desktop_Reinstall": {
-    "label": "Reinstall"
-  },
-  "Comfy-Desktop_Restart": {
-    "label": "Restart"
-  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Open 3D Viewer (Beta) for Selected Node"
   },
@@ -173,6 +137,12 @@
   "Comfy_Manager_CustomNodesManager": {
     "label": "Toggle the Custom Nodes Manager"
   },
+  "Comfy_Manager_CustomNodesManager_ToggleVisibility": {
+    "label": "Toggle Custom Nodes Manager Visibility"
+  },
+  "Comfy_Manager_Menu_ToggleVisibility": {
+    "label": "Toggle Manager Menu Visibility"
+  },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Toggle the Custom Nodes Manager Progress Bar"
   },
@@ -256,9 +226,6 @@
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
     "label": "Show Keybindings Dialog"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Toggle Terminal Bottom Panel"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
     "label": "Toggle Logs Bottom Panel"

@@ -8,5 +8,8 @@ export default defineConfig({
   },
   reporter: 'list',
   timeout: 60000,
-  testMatch: /collect-i18n-.*\.ts/
+  testMatch: /collect-i18n-.*\.ts/,
+  // Use the same global setup as regular tests to ensure proper environment
+  globalSetup: './browser_tests/globalSetup.ts',
+  globalTeardown: './browser_tests/globalTeardown.ts'
 })

@@ -31,12 +31,16 @@
     "knip": "knip --cache",
     "knip:no-cache": "knip",
     "locale": "lobe-i18n locale",
-    "collect-i18n": "npx playwright test --config=playwright.i18n.config.ts",
+    "prebuild:litegraph": "node scripts/prebuild-litegraph.js",
+    "restore:litegraph": "node scripts/restore-litegraph.js",
+    "collect-i18n": "pnpm prebuild:litegraph && npx playwright test --config=playwright.i18n.config.ts; pnpm restore:litegraph",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "storybook": "nx storybook -p 6006",
     "build-storybook": "storybook build"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.3",
+    "@babel/preset-typescript": "^7.27.1",
     "@eslint/js": "^9.8.0",
     "@executeautomation/playwright-mcp-server": "^1.0.6",
     "@iconify/json": "^2.2.245",
