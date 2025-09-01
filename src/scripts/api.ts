@@ -522,19 +522,39 @@ export class ComfyApi extends EventTarget {
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
-  #createSocket(isReconnect?: boolean) {
+  async #createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
 
     let opened = false
     let existingSession = window.name
-    if (existingSession) {
-      existingSession = '?clientId=' + existingSession
+
+    // Get auth token if available
+    let authToken: string | undefined
+    try {
+      authToken = await useFirebaseAuthStore().getIdToken()
+    } catch (error) {
+      // Continue without auth token if there's an error
+      console.warn('Could not get auth token for WebSocket connection:', error)
     }
-    this.socket = new WebSocket(
-      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws${existingSession}`
-    )
+
+    // Build WebSocket URL with query parameters
+    let wsUrl = `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws`
+    const params = new URLSearchParams()
+
+    if (existingSession) {
+      params.set('clientId', existingSession)
+    }
+    if (authToken) {
+      params.set('token', authToken)
+    }
+
+    if (params.toString()) {
+      wsUrl += '?' + params.toString()
+    }
+
+    this.socket = new WebSocket(wsUrl)
     this.socket.binaryType = 'arraybuffer'
 
     this.socket.addEventListener('open', () => {
@@ -561,9 +581,9 @@ export class ComfyApi extends EventTarget {
     })
 
     this.socket.addEventListener('close', () => {
-      setTimeout(() => {
+      setTimeout(async () => {
         this.socket = null
-        this.#createSocket(true)
+        await this.#createSocket(true)
       }, 300)
       if (opened) {
         this.dispatchCustomEvent('status', null)
