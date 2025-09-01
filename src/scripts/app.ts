@@ -837,22 +837,27 @@ export class ComfyApp {
       (e) => {
         // Assertion: Not yet defined in litegraph.
         const { newGraph } = e.detail
-
-        const nodeSet = new Set(newGraph.nodes)
+        
+        const widgetIds = {}
         const widgetStore = useDomWidgetStore()
-
+        
+        for (const node of newGraph.nodes)
+          for (const w of node.widgets ?? [])
+            if (w.id)
+              widgetIds[w.id] = w
+        
         // Assertions: UnwrapRef
-        for (const { widget } of widgetStore.activeWidgetStates) {
-          if (!nodeSet.has(widget.node)) {
-            widgetStore.deactivateWidget(widget.id)
-          }
-        }
-
-        for (const { widget } of widgetStore.inactiveWidgetStates) {
-          if (nodeSet.has(widget.node)) {
-            widgetStore.activateWidget(widget.id)
-          }
-        }
+        for (const widgetId of widgetStore.widgetStates.keys()) {
+	  const widgetState = widgetStore
+	    .widgetStates.get(widgetId)
+	  if (widgetId in widgetIds) {
+	    widgetState.active = true
+	    widgetState.widget = widgetIds[widgetId]
+	  } else {
+	    widgetState.active = false
+	  }
+	}
+	console.log(widgetStore.widgetStates)
       }
     )
 

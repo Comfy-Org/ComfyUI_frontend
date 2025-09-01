@@ -580,6 +580,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     //TODO: Add minimal caching for linkedWidget?
     //use a weakref and only trigger recalc on calls when undefined?
     //TODO: call toConcrete when resolved and hold reference?
+    const subgraphNode = this
     function linkedWidget(graph, nodeId="", widgetName) {
       let g = graph
       let n = undefined
@@ -590,14 +591,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!n) return
       return n.widgets.find((w) => w.name === widgetName)
     }
-    const overlay: object = {nodeId, widgetName, graph: this.subgraph}
+    const overlay: object = {nodeId, widgetName, graph: subgraphNode.subgraph}
     const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function(t,p,...rest) {
 	if (s == 'get' && p == '_overlay')
 	  return overlay
 	const lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
-	if (s == 'get' && p == 'node')
-	  return {pos: this.pos, __proto__:lw.node}
+	if (s == 'get' && p == 'node') {
+	  //This is more dangerous than I would like for custom nodes. It probably breaks something
+	  return subgraphNode
+	  return {pos: subgraphNode.pos, __proto__:lw.node}
+	}
 	//NOTE: p may be undefined
 	let r = rest.at(-1)
 	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled', 'afterQueued', 'beforeQueued', 'onRemove'].includes(p))
@@ -614,6 +618,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
       return [s, func]
     }))
-    this.widgets.push(new Proxy(overlay, handler))
+    const w = new Proxy(overlay, handler)
+    //add widget to domwidgetstore
+    if (linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName))
+      "..."
+    this.widgets.push(w)
   }
 }
