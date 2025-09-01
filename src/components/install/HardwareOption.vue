@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="hardware-option-wrapper relative"
-    :class="{ 'selected': selected }"
-  >
+  <div class="hardware-option-wrapper relative" :class="{ selected: selected }">
     <button
       class="hardware-option group relative flex flex-col items-center justify-center rounded-2xl border transition-all duration-200 border-neutral-700 bg-neutral-900/80 hover:border-neutral-600 hover:bg-neutral-800/80"
       @click="$emit('click')"
