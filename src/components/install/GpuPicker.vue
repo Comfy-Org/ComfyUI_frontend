@@ -1,35 +1,35 @@
 <template>
-  <div class="flex flex-col gap-6 w-[600px] h-[30rem] select-none">
+  <div class="flex flex-col gap-8 w-full max-w-3xl mx-auto h-[30rem] select-none">
     <!-- Installation Path Section -->
-    <div class="grow flex flex-col gap-4 text-neutral-300">
-      <h2 class="text-2xl font-semibold text-neutral-100">
+    <div class="grow flex flex-col gap-6 text-neutral-300">
+      <h2 class="text-3xl font-semibold text-neutral-100 text-center italic">
         Choose your hardware setup
       </h2>
 
       <!-- GPU Selection buttons -->
-      <div class="flex gap-4 justify-center">
+      <div class="flex gap-6 justify-center mt-8">
         <!-- Apple Metal -->
         <HardwareOption
           v-if="platform === 'darwin'"
           :image-path="'/assets/images/apple-mps-logo.png'"
-          :title="'Apple Metal'"
-          :subtitle="''"
+          title="Apple Metal"
+          subtitle=""
           value="mps"
           :selected="selected === 'mps'"
           @click="pickGpu('mps')"
         />
         <!-- CPU -->
         <HardwareOption
-          :title="'CPU'"
-          :subtitle="'Subtitle'"
+          title="CPU"
+          subtitle="Subtitle"
           value="cpu"
           :selected="selected === 'cpu'"
           @click="pickGpu('cpu')"
         />
         <!-- Manual Install -->
         <HardwareOption
-          :title="'Manual Install'"
-          :subtitle="'Subtitle'"
+          title="Manual Install"
+          subtitle="Subtitle"
           value="unsupported"
           :selected="selected === 'unsupported'"
           @click="pickGpu('unsupported')"
@@ -37,22 +37,22 @@
       </div>
 
       <!-- Description text -->
-      <div class="mt-6 text-center text-sm text-neutral-400">
-        <p v-if="selected === 'mps'">
+      <div class="mt-8 text-center text-base text-neutral-300 px-12">
+        <p v-if="selected === 'mps'" class="leading-relaxed">
           Leverages your Mac's GPU for faster speed and a better overall
           experience
         </p>
-        <p v-if="selected === 'cpu'">
+        <p v-if="selected === 'cpu'" class="leading-relaxed">
           Use CPU mode for compatibility when GPU acceleration is not available
         </p>
-        <p v-if="selected === 'unsupported'">
+        <p v-if="selected === 'unsupported'" class="leading-relaxed">
           Configure ComfyUI manually for advanced setups or unsupported hardware
         </p>
       </div>
     </div>
 
     <!-- Progress dots -->
-    <div class="flex justify-center gap-2">
+    <div class="flex justify-center gap-2 mb-8">
       <div
         v-for="i in 4"
         :key="i"
