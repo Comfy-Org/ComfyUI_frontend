@@ -49,8 +49,15 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+// import { useCanvasStore } from '@/stores/graphStore'
+import {
+  forceCloseMoreOptionsSignal,
+  moreOptionsOpen,
+  moreOptionsRestorePending,
+  restoreMoreOptionsSignal
+} from '@/composables/canvas/useSelectionToolboxPosition'
 import {
   type MenuOption,
   type SubMenuOption,
@@ -58,8 +65,6 @@ import {
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-
-// import { useCanvasStore } from '@/stores/graphStore'
 
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
@@ -82,26 +87,60 @@ const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
 // const canvasStore = useCanvasStore()
 
-const toggle = (event: Event) => {
-  if (isOpen.value) {
-    hide('manual')
-  } else {
-    bump()
-    popover.value?.show(event)
-    isOpen.value = true
-  }
+function getButtonEl(): HTMLElement | null {
+  const el = (buttonRef.value as any)?.$el || buttonRef.value
+  return el instanceof HTMLElement ? el : null
 }
 
-const hide = (reason: HideReason = 'manual') => {
+function openPopover(triggerEvent?: Event): boolean {
+  const el = getButtonEl()
+  if (!el || !el.isConnected) return false
+  bump()
+  popover.value?.show(triggerEvent ?? new Event('reopen'), el)
+  isOpen.value = true
+  moreOptionsOpen.value = true
+  moreOptionsRestorePending.value = false
+  return true
+}
+
+function closePopover(reason: HideReason = 'manual') {
   lastProgrammaticHideReason.value = reason
   popover.value?.hide()
   isOpen.value = false
+  moreOptionsOpen.value = false
   hideAll()
-  // Only the drag reason should allow reopen behavior. Manual toggles clear it.
   if (reason !== 'drag') {
     wasOpenBeforeHide.value = false
+  } else {
+    if (!moreOptionsRestorePending.value) {
+      wasOpenBeforeHide.value = true
+      moreOptionsRestorePending.value = true
+    }
   }
 }
+
+let restoreAttempts = 0
+function attemptRestore() {
+  if (isOpen.value) return
+  if (!wasOpenBeforeHide.value && !moreOptionsRestorePending.value) return
+  // Try immediately
+  if (openPopover(new Event('reopen'))) {
+    wasOpenBeforeHide.value = false
+    restoreAttempts = 0
+    return
+  }
+  // Defer with limited retries (layout / mount race)
+  if (restoreAttempts >= 5) return
+  restoreAttempts++
+  requestAnimationFrame(() => attemptRestore())
+}
+
+const toggle = (event: Event) => {
+  if (isOpen.value) closePopover('manual')
+  else openPopover(event)
+}
+
+const hide = (reason: HideReason = 'manual') => closePopover(reason)
 
 const hideAll = () => {
   hideAllSubmenus(
@@ -161,46 +200,36 @@ const pt = computed(() => ({
   }
 }))
 
-// When selection is dragged the overlay (and toolbox) hide; ensure the popover
-// hides too so it doesn't float detached, and restore it after movement.
-// const selectionOverlayState = inject(SelectionOverlayInjectionKey)
-// watch(
-//   () => selectionOverlayState?.updateCount.value,
-//   () => {
-//     if (!selectionOverlayState) return
-//     const visible = selectionOverlayState.visible.value
-//     if (!visible) {
-//       if (isOpen.value) {
-//         const dragging = canvasStore.canvas?.state?.draggingItems === true
-//         if (dragging) {
-//           wasOpenBeforeHide.value = true
-//           hide('drag')
-//         } else {
-//           // Any other reason (e.g., submenu overlay hide / selection cleared): close & do not restore.
-//           wasOpenBeforeHide.value = false
-//           hide('manual')
-//         }
-//       }
-//     } else if (wasOpenBeforeHide.value) {
-//       wasOpenBeforeHide.value = false
-//       const targetEl = (buttonRef.value as any)?.$el || buttonRef.value
-//       if (targetEl instanceof HTMLElement) {
-//         popover.value?.show(new Event('reopen'), targetEl)
-//         isOpen.value = true
-//       }
-//     }
-//   }
-// )
-
 // Distinguish outside click (PrimeVue dismiss) from programmatic hides.
 const onPopoverHide = () => {
   if (lastProgrammaticHideReason.value == null) {
-    // Outside click (or escape key) triggered the hide.
     isOpen.value = false
     hideAll()
     wasOpenBeforeHide.value = false
+    moreOptionsOpen.value = false
   }
-  // Clear the flag after each hide so next outside click can be detected.
   lastProgrammaticHideReason.value = null
 }
+
+// Watch for forced close (drag start)
+watch(
+  () => forceCloseMoreOptionsSignal.value,
+  () => {
+    if (isOpen.value) hide('drag')
+    else
+      wasOpenBeforeHide.value =
+        wasOpenBeforeHide.value || moreOptionsRestorePending.value
+  }
+)
+
+watch(
+  () => restoreMoreOptionsSignal.value,
+  () => attemptRestore()
+)
+
+onMounted(() => {
+  if (moreOptionsRestorePending.value && !isOpen.value) {
+    requestAnimationFrame(() => attemptRestore())
+  }
+})
 </script>

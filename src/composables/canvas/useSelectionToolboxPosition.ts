@@ -10,6 +10,19 @@ import { useCanvasStore } from '@/stores/graphStore'
  * Manages the position of the selection toolbox independently.
  * Uses CSS custom properties for performant transform updates.
  */
+// Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
+export const moreOptionsOpen = ref(false)
+// Emitted (counter increment) when a drag starts and more options was open; component should hide popover.
+export const forceCloseMoreOptionsSignal = ref(0)
+// Emitted (counter increment) after drag ends & selection toolbox reappears and previous more options wanted restore.
+export const restoreMoreOptionsSignal = ref(0)
+// Indicates a previous open MoreOptions should be restored after drag completes
+export const moreOptionsRestorePending = ref(false)
+// For debugging / ensuring we don't restore stale sessions
+export const moreOptionsRestoreSession = ref(0)
+
+let moreOptionsWasOpenBeforeDrag = false
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -98,10 +111,33 @@ export function useSelectionToolboxPosition(
       if (dragging) {
         // Hide during node dragging
         visible.value = false
+        if (moreOptionsOpen.value) {
+          // Signal MoreOptions to close itself but remember to restore later.
+          moreOptionsWasOpenBeforeDrag = true
+          moreOptionsOpen.value = false
+          moreOptionsRestorePending.value = true
+          moreOptionsRestoreSession.value++
+          forceCloseMoreOptionsSignal.value++
+        } else {
+          moreOptionsRestorePending.value = false
+          moreOptionsWasOpenBeforeDrag = false
+        }
       } else {
         // Update after dragging ends
         requestAnimationFrame(() => {
           updateSelectionBounds()
+          // Restore more options if it was open before drag and selection toolbox is visible again
+          if (
+            moreOptionsWasOpenBeforeDrag &&
+            visible.value &&
+            moreOptionsRestorePending.value
+          ) {
+            restoreMoreOptionsSignal.value++
+          } else {
+            // No restore happened; clear pending if any.
+            moreOptionsRestorePending.value = false
+          }
+          moreOptionsWasOpenBeforeDrag = false
         })
       }
     }
