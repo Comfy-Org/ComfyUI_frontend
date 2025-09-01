@@ -15,6 +15,7 @@ import { ref } from 'vue'
 import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
@@ -26,10 +27,16 @@ const isUpdating = ref<boolean>(false)
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (updateItem: NodePack) => {
+const createPayload = (
+  updateItem: NodePack
+): ManagerComponents['schemas']['ManagerPackInfo'] => {
+  if (!updateItem.id) {
+    throw new Error('Node ID is required for update')
+  }
+
   return {
-    id: updateItem.id!,
-    version: updateItem.latest_version!.version!
+    id: updateItem.id,
+    version: updateItem.latest_version?.version || 'latest'
   }
 }
 

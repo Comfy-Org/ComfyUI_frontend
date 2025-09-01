@@ -35,7 +35,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
-import { type ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useToastStore } from '@/stores/toastStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'

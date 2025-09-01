@@ -8,8 +8,16 @@
     :disabled="isLoading || isInstalling"
     @click="installAllPacks"
   >
-    <template v-if="isLoading || isInstalling" #icon>
-      <DotSpinner duration="1s" :size="size === 'sm' ? 12 : 16" />
+    <template #icon>
+      <i
+        v-if="hasConflict && !isInstalling && !isLoading"
+        class="pi pi-exclamation-triangle text-yellow-500"
+      />
+      <DotSpinner
+        v-else-if="isLoading || isInstalling"
+        duration="1s"
+        :size="size === 'sm' ? 12 : 16"
+      />
     </template>
   </IconTextButton>
 </template>
@@ -19,29 +27,44 @@ import { computed } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import {
+  type ConflictDetail,
+  ConflictDetectionResult
+} from '@/types/conflictDetectionTypes'
 
 type NodePack = components['schemas']['Node']
 
 const {
   nodePacks,
   isLoading = false,
-  isInstalling = false,
   label = 'Install',
-  size = 'sm'
+  size = 'sm',
+  hasConflict,
+  conflictInfo
 } = defineProps<{
   nodePacks: NodePack[]
   isLoading?: boolean
-  isInstalling?: boolean
   label?: string
   size?: ButtonSize
+  hasConflict?: boolean
+  conflictInfo?: ConflictDetail[]
 }>()
 
 const managerStore = useComfyManagerStore()
+const { showNodeConflictDialog } = useDialogService()
+
+// Check if any of the packs are currently being installed
+const isInstalling = computed(() => {
+  if (!nodePacks?.length) return false
+  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
+})
 
 const createPayload = (installItem: NodePack) => {
   if (!installItem.id) {
@@ -70,17 +93,52 @@ const installPack = (item: NodePack) =>
 const installAllPacks = async () => {
   if (!nodePacks?.length) return
 
+  if (hasConflict && conflictInfo) {
+    // Check each package individually for conflicts
+    const { checkNodeCompatibility } = useConflictDetection()
+    const conflictedPackages: ConflictDetectionResult[] = nodePacks
+      .map((pack) => {
+        const compatibilityCheck = checkNodeCompatibility(pack)
+        return {
+          package_id: pack.id || '',
+          package_name: pack.name || '',
+          has_conflict: compatibilityCheck.hasConflict,
+          conflicts: compatibilityCheck.conflicts,
+          is_compatible: !compatibilityCheck.hasConflict
+        }
+      })
+      .filter((result) => result.has_conflict) // Only show packages with conflicts
+
+    showNodeConflictDialog({
+      conflictedPackages,
+      buttonText: t('manager.conflicts.installAnyway'),
+      onButtonClick: async () => {
+        // Proceed with installation of uninstalled packages
+        const uninstalledPacks = nodePacks.filter(
+          (pack) => !managerStore.isPackInstalled(pack.id)
+        )
+        if (!uninstalledPacks.length) return
+        await performInstallation(uninstalledPacks)
+      }
+    })
+    return
+  }
+  
+  // No conflicts or conflicts acknowledged - proceed with installation
   const uninstalledPacks = nodePacks.filter(
     (pack) => !managerStore.isPackInstalled(pack.id)
   )
   if (!uninstalledPacks.length) return
+  await performInstallation(uninstalledPacks)
+}
 
-  await Promise.all(uninstalledPacks.map(installPack))
+const performInstallation = async (packs: NodePack[]) => {
+  await Promise.all(packs.map(installPack))
   managerStore.installPack.clear()
 }
 
 const computedLabel = computed(() =>
-  isInstalling
+  isInstalling.value
     ? t('g.installing')
     : label ??
       (nodePacks.length > 1 ? t('manager.installSelected') : t('g.install'))

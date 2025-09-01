@@ -44,8 +44,114 @@ export interface paths {
           }
           content?: never
         }
-        /** @description Internal server error */
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v2/customnode/import_fail_info_bulk': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Get import failure info for multiple nodes
+     * @description Retrieves recorded import failure information for a list of custom nodes.
+     */
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      /** @description A list of CNR IDs or repository URLs to check. */
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['ImportFailInfoBulkRequest']
+        }
+      }
+      responses: {
+        /** @description A dictionary containing the import failure information. */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ImportFailInfoBulkResponse']
+          }
+        }
+        /** @description Bad Request. The request body is invalid. */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Internal Server Error. */
         500: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/customnode/install/git_url': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Install custom node via Git URL
+     * @description Installs a custom node from a Git repository URL
+     */
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'text/plain': string
+        }
+      }
+      responses: {
+        /** @description Installation successful or already installed */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Installation failed */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Security policy violation */
+        403: {
           headers: {
             [name: string]: unknown
           }
@@ -1759,6 +1865,20 @@ export interface components {
        */
       skipped_operations: number
     }
+    ImportFailInfoBulkRequest: {
+      /** @description A list of CNR IDs to check. */
+      cnr_ids?: string[]
+      /** @description A list of repository URLs to check. */
+      urls?: string[]
+    }
+    /** @description A dictionary where each key is a cnr_id or url from the request, and the value is the corresponding error info. */
+    ImportFailInfoBulkResponse: {
+      [key: string]: components['schemas']['ImportFailInfoItem']
+    }
+    ImportFailInfoItem: {
+      error?: string
+      traceback?: string
+    } | null
   }
   responses: never
   parameters: {

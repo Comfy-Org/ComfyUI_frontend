@@ -6,28 +6,40 @@
           <PackIconStacked :node-packs="nodePacks" />
         </template>
         <template #title>
-          {{ nodePacks.length }}
-          {{ $t('manager.packsSelected') }}
+          <div class="mt-5">
+            <span class="inline-block mr-2 text-blue-500 text-base">{{
+              nodePacks.length
+            }}</span>
+            <span class="text-base">{{ $t('manager.packsSelected') }}</span>
+          </div>
         </template>
         <template #install-button>
+          <!-- Mixed: Don't show any button -->
+          <div v-if="isMixed" class="text-sm text-neutral-500">
+            {{ $t('manager.mixedSelectionMessage') }}
+          </div>
+          <!-- All installed: Show uninstall button -->
           <PackUninstallButton
-            v-if="isAllInstalled"
-            v-bind="$attrs"
+            v-else-if="isAllInstalled"
             size="md"
-            :node-packs="nodePacks"
+            :node-packs="installedPacks"
           />
+          <!-- None installed: Show install button -->
           <PackInstallButton
-            v-else
-            v-bind="$attrs"
+            v-else-if="isNoneInstalled"
             size="md"
-            :is-installing="isInstalling"
-            :node-packs="nodePacks"
+            :node-packs="notInstalledPacks"
+            :has-conflict="hasConflicts"
+            :conflict-info="conflictInfo"
           />
         </template>
       </InfoPanelHeader>
       <div class="mb-6">
         <MetadataRow :label="$t('g.status')">
-          <PackStatusMessage status-type="NodeVersionStatusActive" />
+          <PackStatusMessage
+            :status-type="overallStatus"
+            :has-compatibility-issues="hasConflicts"
+          />
         </MetadataRow>
         <MetadataRow
           :label="$t('manager.totalNodes')"
@@ -43,7 +55,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, provide, toRef } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -51,33 +63,71 @@ import PackUninstallButton from '@/components/dialog/content/manager/button/Pack
 import InfoPanelHeader from '@/components/dialog/content/manager/infoPanel/InfoPanelHeader.vue'
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIconStacked.vue'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
+import { usePacksStatus } from '@/composables/nodePack/usePacksStatus'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components } from '@/types/comfyRegistryTypes'
+import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]
 }>()
 
+const nodePacksRef = toRef(() => nodePacks)
+
+// Use new composables for cleaner code
+const {
+  installedPacks,
+  notInstalledPacks,
+  isAllInstalled,
+  isNoneInstalled,
+  isMixed
+} = usePacksSelection(nodePacksRef)
+
+const { hasImportFailed, overallStatus } = usePacksStatus(nodePacksRef)
+
+const { checkNodeCompatibility } = useConflictDetection()
 const { getNodeDefs } = useComfyRegistryStore()
-const managerStore = useComfyManagerStore()
 
-const isAllInstalled = ref(false)
-watch(
-  [() => nodePacks, () => managerStore.installedPacks],
-  () => {
-    isAllInstalled.value = nodePacks.every((nodePack) =>
-      managerStore.isPackInstalled(nodePack.id)
-    )
-  },
-  { immediate: true }
-)
-
-// Check if any of the packs are currently being installed
-const isInstalling = computed(() => {
-  if (!nodePacks?.length) return false
-  return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
+// Provide import failed context for PackStatusMessage
+provide(ImportFailedKey, {
+  importFailed: hasImportFailed,
+  showImportFailedDialog: () => {} // No-op for multi-selection
 })
+
+// Check for conflicts in not-installed packages - keep original logic but simplified
+const packageConflicts = computed(() => {
+  const conflictsByPackage = new Map<string, ConflictDetail[]>()
+
+  for (const pack of notInstalledPacks.value) {
+    const compatibilityCheck = checkNodeCompatibility(pack)
+    if (compatibilityCheck.hasConflict && pack.id) {
+      conflictsByPackage.set(pack.id, compatibilityCheck.conflicts)
+    }
+  }
+
+  return conflictsByPackage
+})
+
+// Aggregate all unique conflicts for display
+const conflictInfo = computed<ConflictDetail[]>(() => {
+  const conflictMap = new Map<string, ConflictDetail>()
+
+  packageConflicts.value.forEach((conflicts) => {
+    conflicts.forEach((conflict) => {
+      const key = `${conflict.type}-${conflict.current_value}-${conflict.required_value}`
+      if (!conflictMap.has(key)) {
+        conflictMap.set(key, conflict)
+      }
+    })
+  })
+
+  return Array.from(conflictMap.values())
+})
+
+const hasConflicts = computed(() => conflictInfo.value.length > 0)
 
 const getPackNodes = async (pack: components['schemas']['Node']) => {
   if (!pack.latest_version?.version) return []

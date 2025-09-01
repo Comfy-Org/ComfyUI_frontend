@@ -74,6 +74,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -90,6 +91,7 @@ const dialogStore = useDialogStore()
 const progressDialogContent = useManagerProgressDialogStore()
 const comfyManagerStore = useComfyManagerStore()
 const settingStore = useSettingStore()
+const { performConflictDetection } = useConflictDetection()
 
 // State management for restart process
 const isRestarting = ref<boolean>(false)
@@ -151,6 +153,9 @@ const handleRestart = async () => {
         await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
 
         await useWorkflowService().reloadCurrentWorkflow()
+
+        // Run conflict detection after restart completion
+        await performConflictDetection()
       } finally {
         await settingStore.set(
           'Comfy.Toast.DisableReconnectingToast',

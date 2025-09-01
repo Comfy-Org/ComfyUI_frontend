@@ -34,9 +34,11 @@
   <div v-if="showManagerButtons" class="flex justify-end py-3">
     <PackInstallButton
       v-if="showInstallAllButton"
+      size="md"
       :disabled="
         isLoading || !!error || missingNodePacks.length === 0 || isInstalling
       "
+      :is-loading="isLoading"
       :node-packs="missingNodePacks"
       :label="
         isLoading
@@ -51,12 +53,13 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -79,6 +82,7 @@ const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
 const comfyManagerStore = useComfyManagerStore()
+const isLegacyManager = ref(false)
 
 // Check if any of the missing packs are currently being installed
 const isInstalling = computed(() => {
@@ -151,6 +155,13 @@ const openManager = async () => {
       break
   }
 }
+
+onMounted(async () => {
+  const isLegacyResponse = await useComfyManagerService().isLegacyManagerUI()
+  if (isLegacyResponse?.is_legacy_manager_ui) {
+    isLegacyManager.value = true
+  }
+})
 </script>
 
 <style scoped>

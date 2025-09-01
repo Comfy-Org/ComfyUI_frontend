@@ -29,9 +29,12 @@
       <PackInstallButton
         v-if="isMissingTab && missingNodePacks.length > 0"
         :disabled="isLoading || !!error"
-        :is-installing="isInstalling"
         :node-packs="missingNodePacks"
         :label="$t('manager.installAllMissingNodes')"
+      />
+      <PackUpdateButton
+        v-if="isUpdateAvailableTab && hasUpdateAvailable"
+        :node-packs="updateAvailableNodePacks"
       />
     </div>
     <div class="flex mt-3 text-sm">
@@ -65,9 +68,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
+import PackUpdateButton from '@/components/dialog/content/manager/button/PackUpdateButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
 import {
   type SearchOption,
   SortableAlgoliaField
@@ -84,6 +88,7 @@ const { searchResults, sortOptions } = defineProps<{
   suggestions?: QuerySuggestion[]
   sortOptions?: SortableField[]
   isMissingTab?: boolean
+  isUpdateAvailableTab?: boolean
 }>()
 
 const searchQuery = defineModel<string>('searchQuery')
@@ -97,15 +102,9 @@ const { t } = useI18n()
 // Get missing node packs from workflow with loading and error states
 const { missingNodePacks, isLoading, error } = useMissingNodes()
 
-const comfyManagerStore = useComfyManagerStore()
-
-// Check if any of the missing packs are currently being installed
-const isInstalling = computed(() => {
-  if (!missingNodePacks.value?.length) return false
-  return missingNodePacks.value.some((pack) =>
-    comfyManagerStore.isPackInstalling(pack.id)
-  )
-})
+// Use the composable to get update available nodes
+const { hasUpdateAvailable, updateAvailableNodePacks } =
+  useUpdateAvailableNodes()
 
 const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length

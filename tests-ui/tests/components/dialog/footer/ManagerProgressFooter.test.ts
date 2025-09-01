@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -21,6 +22,12 @@ vi.mock('@/stores/dialogStore')
 vi.mock('@/stores/settingStore')
 vi.mock('@/stores/commandStore')
 vi.mock('@/services/comfyManagerService')
+vi.mock('@/composables/useConflictDetection', () => ({
+  useConflictDetection: vi.fn(() => ({
+    conflictedPackages: { value: [] },
+    performConflictDetection: vi.fn().mockResolvedValue(undefined)
+  }))
+}))
 
 // Mock useEventListener to capture the event handler
 let reconnectHandler: (() => void) | null = null
@@ -52,6 +59,9 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
 
 // Helper function to mount component with required setup
 const mountComponent = (options: { captureError?: boolean } = {}) => {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -62,7 +72,7 @@ const mountComponent = (options: { captureError?: boolean } = {}) => {
 
   const config: any = {
     global: {
-      plugins: [PrimeVue, i18n],
+      plugins: [pinia, PrimeVue, i18n],
       mocks: {
         $t: (key: string) => key // Mock i18n translation
       }
@@ -158,6 +168,10 @@ describe('ManagerProgressFooter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Create new pinia instance for each test
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
     // Reset task logs
     mockTaskLogs.length = 0
     mockComfyManagerStore.taskLogs = mockTaskLogs
@@ -183,9 +197,9 @@ describe('ManagerProgressFooter', () => {
       // Setup queue running state
       mockComfyManagerStore.uncompletedCount = 3
       mockTaskLogs.push(
-        { taskName: 'Installing pack1', taskId: 'task-1', logs: [] },
-        { taskName: 'Installing pack2', taskId: 'task-2', logs: [] },
-        { taskName: 'Installing pack3', taskId: 'task-3', logs: [] }
+        { taskName: 'Installing pack1', logs: [] },
+        { taskName: 'Installing pack2', logs: [] },
+        { taskName: 'Installing pack3', logs: [] }
       )
 
       const wrapper = mountComponent()
@@ -209,11 +223,7 @@ describe('ManagerProgressFooter', () => {
 
     it('should toggle expansion when expand button is clicked', async () => {
       mockComfyManagerStore.uncompletedCount = 1
-      mockTaskLogs.push({
-        taskName: 'Installing',
-        taskId: 'task-install',
-        logs: []
-      })
+      mockTaskLogs.push({ taskName: 'Installing', logs: [] })
 
       const wrapper = mountComponent()
 
@@ -229,8 +239,8 @@ describe('ManagerProgressFooter', () => {
       // Setup tasks completed state
       mockComfyManagerStore.uncompletedCount = 0
       mockTaskLogs.push(
-        { taskName: 'Installed pack1', taskId: 'task-done-1', logs: [] },
-        { taskName: 'Installed pack2', taskId: 'task-done-2', logs: [] }
+        { taskName: 'Installed pack1', logs: [] },
+        { taskName: 'Installed pack2', logs: [] }
       )
       mockComfyManagerStore.allTasksDone = true
 

@@ -16,6 +16,7 @@ import {
 import { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -739,9 +740,38 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
-      icon: 'pi pi-objects-column',
+      icon: 'pi pi-puzzle',
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
+      function: async () => {
+        const { is_legacy_manager_ui } =
+          (await useComfyManagerService().isLegacyManagerUI()) ?? {}
+
+        if (is_legacy_manager_ui === true) {
+          try {
+            await useCommandStore().execute(
+              'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
+            )
+          } catch (error) {
+            console.error('error', error)
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+            dialogService.showManagerDialog()
+          }
+        } else {
+          dialogService.showManagerDialog()
+        }
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowUpdateAvailablePacks',
+      icon: 'pi pi-sync',
+      label: 'Check for Custom Node Updates',
+      versionAdded: '1.17.0',
       function: () => {
         const managerStore = useManagerStateStore()
         const state = managerStore.managerUIState
@@ -767,39 +797,6 @@ export function useCoreCommands(): ComfyCommand[] {
 
           case ManagerUIState.NEW_UI:
             dialogService.showManagerDialog()
-            break
-        }
-      }
-    },
-    {
-      id: 'Comfy.Manager.ShowUpdateAvailablePacks',
-      icon: 'pi pi-sync',
-      label: 'Check for Custom Node Updates',
-      versionAdded: '1.17.0',
-      function: async () => {
-        const managerStore = useManagerStateStore()
-        const state = managerStore.managerUIState
-
-        switch (state) {
-          case ManagerUIState.DISABLED:
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility'
-              )
-            } catch {
-              // If legacy command doesn't exist, fall back to extensions panel
-              dialogService.showSettingsDialog('extension')
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog({
-              initialTab: ManagerTab.UpdateAvailable
-            })
             break
         }
       }
