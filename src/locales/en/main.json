@@ -503,6 +503,9 @@
     "copySelectionTooltip": "Copy selection",
     "copyAllTooltip": "Copy all",
     "errorMessage": "Unable to start ComfyUI Desktop",
+    "installation": {
+      "title": "Installing ComfyUI"
+    },
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",

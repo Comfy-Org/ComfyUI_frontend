@@ -94,14 +94,21 @@
 </template>
 
 <script setup lang="ts">
-import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
+import {
+  type InstallStageInfo,
+  type InstallStageType,
+  ProgressStatus
+} from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import StartupDisplay from '@/components/common/StartupDisplay.vue'
+import { STAGE_METADATA } from '@/types/installStageTypes'
+import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
+const electron = electronAPI()
 
 // Props
 const props = defineProps<{
@@ -109,6 +116,10 @@ const props = defineProps<{
   electronVersion?: string
   terminalVisible?: boolean
 }>()
+
+// Local state for installation stages
+const installStage = ref<InstallStageType | null>(null)
+const installStageMessage = ref<string>('')
 
 // Emits
 defineEmits<{
@@ -118,17 +129,47 @@ defineEmits<{
   'toggle-terminal': [visible: boolean]
 }>()
 
-// Computed properties
-const currentStatusLabel = computed(() =>
-  t(`serverStart.process.${props.status}`)
-)
+// Handle installation stage updates
+const updateInstallStage = (stageInfo: InstallStageInfo) => {
+  installStage.value = stageInfo.stage
+  installStageMessage.value = stageInfo.message || ''
+}
 
-const isError = computed(() => props.status === ProgressStatus.ERROR)
+// Computed properties
+const currentStatusLabel = computed(() => {
+  // If we have an installation stage, use its metadata
+  if (installStage.value && STAGE_METADATA[installStage.value]) {
+    const metadata = STAGE_METADATA[installStage.value]
+    // Use custom message if provided, otherwise use the stage description
+    return installStageMessage.value || metadata.description || metadata.label
+  }
+  // Fallback to the old progress status message
+  return t(`serverStart.process.${props.status}`)
+})
+
+const isError = computed(
+  () => props.status === ProgressStatus.ERROR || installStage.value === 'error'
+)
 
 // Display properties for StartupDisplay component
 const displayTitle = computed(() => {
   if (isError.value) {
     return t('serverStart.errorMessage')
+  }
+  // Use the stage label as title if we're in an installation stage
+  if (installStage.value && STAGE_METADATA[installStage.value]) {
+    // For certain installation stages, use custom titles
+    const installationStages = [
+      'install_options_selection',
+      'creating_directories',
+      'initializing_config',
+      'python_environment_setup',
+      'installing_requirements',
+      'migrating_custom_nodes'
+    ]
+    if (installationStages.includes(installStage.value)) {
+      return t('serverStart.installation.title')
+    }
   }
   return t('serverStart.title')
 })
@@ -138,6 +179,21 @@ const displayStatusText = computed(() => {
     return `v${props.electronVersion}`
   }
   return currentStatusLabel.value
+})
+
+// Lifecycle hooks
+onMounted(() => {
+  // Listen for installation stage updates
+  if (electron.InstallStage?.onUpdate) {
+    electron.InstallStage.onUpdate(updateInstallStage)
+  }
+})
+
+onUnmounted(() => {
+  // Clean up InstallStage listener
+  if (electron.InstallStage?.dispose) {
+    electron.InstallStage.dispose()
+  }
 })
 </script>
 
