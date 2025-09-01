@@ -181,18 +181,22 @@ const displayStatusText = computed(() => {
   return currentStatusLabel.value
 })
 
+// Store cleanup function for InstallStage listener
+let cleanupInstallStageListener: (() => void) | undefined
+
 // Lifecycle hooks
 onMounted(() => {
   // Listen for installation stage updates
   if (electron.InstallStage?.onUpdate) {
-    electron.InstallStage.onUpdate(updateInstallStage)
+    cleanupInstallStageListener =
+      electron.InstallStage.onUpdate(updateInstallStage)
   }
 })
 
 onUnmounted(() => {
-  // Clean up InstallStage listener
-  if (electron.InstallStage?.dispose) {
-    electron.InstallStage.dispose()
+  // Clean up InstallStage listener using the returned cleanup function
+  if (cleanupInstallStageListener) {
+    cleanupInstallStageListener()
   }
 })
 </script>
