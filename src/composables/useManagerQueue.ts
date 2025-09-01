@@ -1,5 +1,5 @@
 import { useEventListener } from '@vueuse/core'
-import { pickBy } from 'lodash'
+import { pickBy } from 'es-toolkit/compat'
 import { Ref, computed, ref } from 'vue'
 
 import { app } from '@/scripts/app'
@@ -61,6 +61,14 @@ export const useManagerQueue = (
     task.client_id === app.api.clientId
 
   /**
+   * Check if a history task is associated with this client.
+   * @param task - The history task to check
+   * @returns True if the task belongs to this client
+   */
+  const isHistoryTaskFromThisClient = (task: HistoryTaskItem): boolean =>
+    task.client_id === app.api.clientId
+
+  /**
    * Filter queue tasks by client id.
    * Ensures that only tasks associated with this client are processed and
    * added to client state.
@@ -71,13 +79,13 @@ export const useManagerQueue = (
     tasks.filter(isTaskFromThisClient)
 
   /**
-   * Filter history tasks by client id using lodash pickBy for optimal performance.
+   * Filter history tasks by client id using pickBy for optimal performance.
    * Returns a new object containing only tasks associated with this client.
    * @param history - The history object to filter
    * @returns Filtered history object containing only tasks from this client
    */
   const filterHistoryByClientId = (history: ManagerTaskHistory) =>
-    pickBy(history, isTaskFromThisClient)
+    pickBy(history, isHistoryTaskFromThisClient)
 
   /**
    * Update task queue and history state with filtered data from server.
