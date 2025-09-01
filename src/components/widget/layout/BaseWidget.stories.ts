@@ -21,6 +21,7 @@ import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
+import CardGridList from '@/components/card/CardGridList.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
@@ -91,6 +92,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     IconButton,
     IconTextButton,
     MoreButton,
+    CardGridList,
     CardContainer,
     CardTop,
     CardBottom,
@@ -193,6 +195,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasHeader" #header>
           <SearchBox
             class="max-w-[384px]"
+            size="lg"
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -235,7 +238,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pb-4 flex gap-2">
+          <div class="relative px-6 py-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
@@ -264,7 +267,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+          <CardGridList>
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -295,7 +298,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <CardBottom />
               </template>
             </CardContainer>
-          </div>
+          </CardGridList>
         </template>
       </BaseWidgetLayout>
 
@@ -317,6 +320,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasHeader" #header>
           <SearchBox
             class="max-w-[384px]"
+            size="lg"
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -359,7 +363,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pb-4 flex gap-2">
+          <div class="relative px-6 py-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
@@ -385,7 +389,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+          <CardGridList>
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -416,7 +420,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <CardBottom />
               </template>
             </CardContainer>
-          </div>
+          </CardGridList>
         </template>
 
         <!-- Right Panel - Only when hasRightPanel is true -->
