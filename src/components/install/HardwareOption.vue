@@ -52,7 +52,7 @@ defineEmits<{
   content: '';
   position: absolute;
   inset: -10px;
-  border: 3px solid rgb(234, 179, 8);
+  border: 3px solid rgb(250, 204, 21);
   border-radius: 32px;
   pointer-events: none;
 }
