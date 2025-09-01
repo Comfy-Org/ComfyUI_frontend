@@ -3,8 +3,7 @@
     class="hardware-option flex flex-col items-center rounded-3xl transition-all duration-200"
     :class="{
       'selected-border bg-neutral-900/70': selected,
-      'border-4 border-neutral-700 bg-neutral-900/70 hover:border-neutral-600':
-        !selected
+      'border-4 border-transparent bg-neutral-900/70': !selected
     }"
     @click="$emit('click')"
   >
