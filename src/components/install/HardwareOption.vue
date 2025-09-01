@@ -60,6 +60,7 @@ defineEmits<{
 .icon-container {
   width: 110px;
   height: 110px;
+  flex-shrink: 0;
 }
 
 .hardware-option:focus {
