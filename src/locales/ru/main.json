@@ -880,7 +880,11 @@
     "renderBypassState": "Отображать состояние обхода",
     "renderErrorState": "Отображать состояние ошибки",
     "showGroups": "Показать фреймы/группы",
-    "showLinks": "Показать связи"
+    "showLinks": "Показать связи",
+    "sideToolbar_modelLibrary": "sideToolbar.каталогМоделей",
+    "sideToolbar_nodeLibrary": "sideToolbar.каталогУзлов",
+    "sideToolbar_queue": "sideToolbar.очередь",
+    "sideToolbar_workflows": "sideToolbar.рабочиеПроцессы"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",

@@ -32,12 +32,9 @@ import {
   type Point,
   type RenderMode
 } from '@/renderer/core/canvas/PathRenderer'
-import {
-  type SlotPositionContext,
-  calculateInputSlotPos,
-  calculateOutputSlotPos
-} from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/SlotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import type { Bounds } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -71,6 +68,7 @@ export interface LinkRenderOptions {
 export class LitegraphLinkAdapter {
   private graph: LGraph
   private pathRenderer: CanvasPathRenderer
+  public enableLayoutStoreWrites = true
 
   constructor(graph: LGraph) {
     this.graph = graph
@@ -106,12 +104,12 @@ export class LitegraphLinkAdapter {
     }
 
     // Get positions using layout tree data if available
-    const startPos = this.getSlotPosition(
+    const startPos = getSlotPosition(
       sourceNode,
       link.origin_slot,
       false // output
     )
-    const endPos = this.getSlotPosition(
+    const endPos = getSlotPosition(
       targetNode,
       link.target_slot,
       true // input
@@ -139,6 +137,34 @@ export class LitegraphLinkAdapter {
 
     // Store path for hit detection
     link.path = path
+
+    // Update layout store when writes are enabled (event-driven path)
+    if (this.enableLayoutStoreWrites && link.id !== -1) {
+      // Calculate bounds and center only when writing
+      const bounds = this.calculateLinkBounds(startPos, endPos, linkData)
+      const centerPos = linkData.centerPos || {
+        x: (startPos[0] + endPos[0]) / 2,
+        y: (startPos[1] + endPos[1]) / 2
+      }
+
+      layoutStore.updateLinkLayout(link.id, {
+        id: link.id,
+        path: path,
+        bounds: bounds,
+        centerPos: centerPos,
+        sourceNodeId: String(link.origin_id),
+        targetNodeId: String(link.target_id),
+        sourceSlot: link.origin_slot,
+        targetSlot: link.target_slot
+      })
+
+      // Also update segment layout for the whole link (null rerouteId means final segment)
+      layoutStore.updateLinkSegmentLayout(link.id, null, {
+        path: path,
+        bounds: bounds,
+        centerPos: centerPos
+      })
+    }
   }
 
   /**
@@ -434,43 +460,43 @@ export class LitegraphLinkAdapter {
           linkSegment._centreAngle = linkData.centerAngle
         }
       }
-    }
-  }
 
-  /**
-   * Get slot position using layout tree if available, fallback to node's position
-   */
-  private getSlotPosition(
-    node: LGraphNode,
-    slotIndex: number,
-    isInput: boolean
-  ): ReadOnlyPoint {
-    // Try to get position from layout tree
-    const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
+      // Update layout store when writes are enabled (event-driven path)
+      if (this.enableLayoutStoreWrites && link && link.id !== -1) {
+        // Calculate bounds and center only when writing
+        const bounds = this.calculateLinkBounds(
+          [linkData.startPoint.x, linkData.startPoint.y] as ReadOnlyPoint,
+          [linkData.endPoint.x, linkData.endPoint.y] as ReadOnlyPoint,
+          linkData
+        )
+        const centerPos = linkData.centerPos || {
+          x: (linkData.startPoint.x + linkData.endPoint.x) / 2,
+          y: (linkData.startPoint.y + linkData.endPoint.y) / 2
+        }
 
-    if (nodeLayout) {
-      // Create context from layout tree data
-      const context: SlotPositionContext = {
-        nodeX: nodeLayout.position.x,
-        nodeY: nodeLayout.position.y,
-        nodeWidth: nodeLayout.size.width,
-        nodeHeight: nodeLayout.size.height,
-        collapsed: node.flags.collapsed || false,
-        collapsedWidth: node._collapsed_width,
-        slotStartY: node.constructor.slot_start_y,
-        inputs: node.inputs,
-        outputs: node.outputs,
-        widgets: node.widgets
+        // Update whole link layout (only if not a reroute segment)
+        if (!extras.reroute) {
+          layoutStore.updateLinkLayout(link.id, {
+            id: link.id,
+            path: path,
+            bounds: bounds,
+            centerPos: centerPos,
+            sourceNodeId: String(link.origin_id),
+            targetNodeId: String(link.target_id),
+            sourceSlot: link.origin_slot,
+            targetSlot: link.target_slot
+          })
+        }
+
+        // Always update segment layout (for both regular links and reroute segments)
+        const rerouteId = extras.reroute ? extras.reroute.id : null
+        layoutStore.updateLinkSegmentLayout(link.id, rerouteId, {
+          path: path,
+          bounds: bounds,
+          centerPos: centerPos
+        })
       }
-
-      // Use helper to calculate position
-      return isInput
-        ? calculateInputSlotPos(context, slotIndex)
-        : calculateOutputSlotPos(context, slotIndex)
     }
-
-    // Fallback to node's own methods if layout not available
-    return isInput ? node.getInputPos(slotIndex) : node.getOutputPos(slotIndex)
   }
 
   /**
@@ -493,7 +519,7 @@ export class LitegraphLinkAdapter {
     if (!fromNode) return
 
     // Get slot position using layout tree if available
-    const slotPos = this.getSlotPosition(
+    const slotPos = getSlotPosition(
       fromNode,
       fromSlotIndex,
       options.fromInput || false
@@ -524,5 +550,40 @@ export class LitegraphLinkAdapter {
 
     // Render using pure renderer
     this.pathRenderer.drawDraggingLink(ctx, dragData, pathContext)
+  }
+
+  /**
+   * Calculate bounding box for a link
+   * Includes padding for line width and control points
+   */
+  private calculateLinkBounds(
+    startPos: ReadOnlyPoint,
+    endPos: ReadOnlyPoint,
+    linkData: LinkRenderData
+  ): Bounds {
+    let minX = Math.min(startPos[0], endPos[0])
+    let maxX = Math.max(startPos[0], endPos[0])
+    let minY = Math.min(startPos[1], endPos[1])
+    let maxY = Math.max(startPos[1], endPos[1])
+
+    // Include control points if they exist (for spline links)
+    if (linkData.controlPoints) {
+      for (const cp of linkData.controlPoints) {
+        minX = Math.min(minX, cp.x)
+        maxX = Math.max(maxX, cp.x)
+        minY = Math.min(minY, cp.y)
+        maxY = Math.max(maxY, cp.y)
+      }
+    }
+
+    // Add padding for line width and hit tolerance
+    const padding = 20
+
+    return {
+      x: minX - padding,
+      y: minY - padding,
+      width: maxX - minX + 2 * padding,
+      height: maxY - minY + 2 * padding
+    }
   }
 }

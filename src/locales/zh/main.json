@@ -877,7 +877,11 @@
     "renderBypassState": "渲染绕过状态",
     "renderErrorState": "渲染错误状态",
     "showGroups": "显示框架/分组",
-    "showLinks": "显示连接"
+    "showLinks": "显示连接",
+    "sideToolbar_modelLibrary": "侧边工具栏.模型库",
+    "sideToolbar_nodeLibrary": "侧边工具栏.节点库",
+    "sideToolbar_queue": "侧边工具栏.队列",
+    "sideToolbar_workflows": "侧边工具栏.工作流"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",

@@ -19,7 +19,8 @@
             type: widget.type,
             boundingRect: [0, 0, 0, 0]
           }"
-          :index="index"
+          :node-id="nodeInfo?.id != null ? String(nodeInfo.id) : ''"
+          :index="getWidgetInputIndex(widget)"
           :readonly="readonly"
           :dot-only="true"
           @slot-click="handleWidgetSlotClick($event, widget)"
@@ -150,6 +151,21 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
   return result
 })
+
+// TODO: Refactor to avoid O(n) lookup - consider storing input index on widget creation
+// or restructuring data model to unify widgets and inputs
+// Map a widget to its corresponding input slot index
+const getWidgetInputIndex = (widget: ProcessedWidget): number => {
+  const inputs = nodeInfo.value?.inputs
+  if (!inputs) return 0
+
+  const idx = inputs.findIndex((input: any) => {
+    if (!input || typeof input !== 'object') return false
+    if (!('name' in input && 'type' in input)) return false
+    return 'widget' in input && input.widget?.name === widget.name
+  })
+  return idx >= 0 ? idx : 0
+}
 
 // Handle widget slot click
 const handleWidgetSlotClick = (

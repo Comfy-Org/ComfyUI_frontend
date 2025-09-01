@@ -142,6 +142,9 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import { useLayout } from '@/renderer/core/layout/sync/useLayout'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
+import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -283,6 +286,10 @@ watch(canvasRef, () => {
 // Vue node lifecycle management - initialize after graph is ready
 let nodeManager: ReturnType<typeof useGraphNodeManager> | null = null
 let cleanupNodeManager: (() => void) | null = null
+
+// Slot layout sync management
+let slotSync: ReturnType<typeof useSlotLayoutSync> | null = null
+let linkSync: ReturnType<typeof useLinkLayoutSync> | null = null
 const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
 const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
 const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
@@ -324,15 +331,46 @@ const initializeNodeManager = () => {
   }))
   layoutStore.initializeFromLiteGraph(nodes)
 
+  // Seed reroutes into the Layout Store so hit-testing uses the new path
+  for (const reroute of comfyApp.graph.reroutes.values()) {
+    const [x, y] = reroute.pos
+    const parent = reroute.parentId ?? undefined
+    const linkIds = Array.from(reroute.linkIds)
+    layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
+  }
+
+  // Seed existing links into the Layout Store (topology only)
+  for (const link of comfyApp.graph._links.values()) {
+    layoutMutations.createLink(
+      link.id,
+      link.origin_id,
+      link.origin_slot,
+      link.target_id,
+      link.target_slot
+    )
+  }
+
   // Initialize layout sync (one-way: Layout Store → LiteGraph)
   const { startSync } = useLayoutSync()
   startSync(canvasStore.canvas)
+
+  // Initialize slot layout sync for hit detection
+  slotSync = useSlotLayoutSync()
+  if (canvasStore.canvas) {
+    slotSync.start(canvasStore.canvas as LGraphCanvas)
+  }
+
+  // Initialize link layout sync for event-driven updates
+  linkSync = useLinkLayoutSync()
+  if (canvasStore.canvas) {
+    linkSync.start(canvasStore.canvas as LGraphCanvas)
+  }
 
   // Force computed properties to re-evaluate
   nodeDataTrigger.value++
 }
 
-const disposeNodeManager = () => {
+const disposeNodeManagerAndSyncs = () => {
   if (!nodeManager) return
   try {
     cleanupNodeManager?.()
@@ -341,6 +379,19 @@ const disposeNodeManager = () => {
   }
   nodeManager = null
   cleanupNodeManager = null
+
+  // Clean up slot layout sync
+  if (slotSync) {
+    slotSync.stop()
+    slotSync = null
+  }
+
+  // Clean up link layout sync
+  if (linkSync) {
+    linkSync.stop()
+    linkSync = null
+  }
+
   // Reset reactive maps to inert defaults
   vueNodeData.value = new Map()
   nodeState.value = new Map()
@@ -360,7 +411,7 @@ watch(
     if (enabled) {
       initializeNodeManager()
     } else {
-      disposeNodeManager()
+      disposeNodeManagerAndSyncs()
     }
   },
   { immediate: true }
@@ -509,7 +560,7 @@ const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
   // Bring node to front when clicked (similar to LiteGraph behavior)
   // Skip if node is pinned
   if (!node.flags?.pinned) {
-    layoutMutations.setSource('vue')
+    layoutMutations.setSource(LayoutSource.Vue)
     layoutMutations.bringNodeToFront(nodeData.id)
   }
   node.selected = true
@@ -826,6 +877,18 @@ onUnmounted(() => {
   if (nodeManager) {
     nodeManager.cleanup()
     nodeManager = null
+  }
+
+  // Clean up slot layout sync
+  if (slotSync) {
+    slotSync.stop()
+    slotSync = null
+  }
+
+  // Clean up link layout sync
+  if (linkSync) {
+    linkSync.stop()
+    linkSync = null
   }
 })
 </script>

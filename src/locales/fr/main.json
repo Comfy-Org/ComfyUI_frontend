@@ -878,7 +878,11 @@
     "renderErrorState": "Afficher l'état d'erreur",
     "showGroups": "Afficher les cadres/groupes",
     "showLinks": "Afficher les liens",
-    "Zoom Out": "Zoom arrière"
+    "Zoom Out": "Zoom arrière",
+    "sideToolbar_modelLibrary": "Bibliothèque de modèles",
+    "sideToolbar_nodeLibrary": "Bibliothèque de nœuds",
+    "sideToolbar_queue": "File d'attente",
+    "sideToolbar_workflows": "Flux de travail"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Ne plus afficher ce message",
