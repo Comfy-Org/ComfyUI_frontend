@@ -18,7 +18,7 @@
           v-if="platform === 'darwin'"
           :image-path="'/assets/images/apple-mps-logo.png'"
           placeholder-text="Apple Metal"
-          subtitle=""
+          subtitle="Apple Silicon"
           value="mps"
           :selected="selected === 'mps'"
           @click="pickGpu('mps')"
