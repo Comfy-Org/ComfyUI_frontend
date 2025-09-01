@@ -207,10 +207,16 @@ onMounted(async () => {
   @apply bg-transparent;
 }
 
+/* Ensure stepper container is positioned */
+:deep(.p-stepper) {
+  @apply relative;
+}
+
 /* Custom dot indicator styling */
 :deep(.p-steplist) {
-  @apply fixed bottom-20 left-1/2 transform -translate-x-1/2;
-  @apply flex items-center gap-3;
+  @apply absolute left-1/2 transform -translate-x-1/2;
+  @apply flex items-center justify-center gap-3;
+  bottom: 5rem;
   z-index: 10;
   pointer-events: none;
 }
