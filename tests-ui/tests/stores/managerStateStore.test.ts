@@ -13,7 +13,8 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 // Mock dependencies
 vi.mock('@/scripts/api', () => ({
   api: {
-    getClientFeatureFlags: vi.fn()
+    getClientFeatureFlags: vi.fn(),
+    getServerFeature: vi.fn()
   }
 }))
 
@@ -78,6 +79,7 @@ describe('useManagerStateStore', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
@@ -98,6 +100,7 @@ describe('useManagerStateStore', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: false
       })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
@@ -134,6 +137,7 @@ describe('useManagerStateStore', () => {
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: undefined },
         featureFlag: vi.fn()
@@ -152,6 +156,7 @@ describe('useManagerStateStore', () => {
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: false },
         featureFlag: vi.fn()
@@ -172,6 +177,7 @@ describe('useManagerStateStore', () => {
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()

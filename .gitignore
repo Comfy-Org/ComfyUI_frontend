@@ -76,3 +76,4 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
+.nx/

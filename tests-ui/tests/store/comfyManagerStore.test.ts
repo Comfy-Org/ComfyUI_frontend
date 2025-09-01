@@ -31,7 +31,7 @@ vi.mock('@/composables/useManagerQueue', () => {
       statusMessage: ref(''),
       allTasksDone: ref(false),
       enqueueTask: enqueueTaskMock,
-      uncompletedCount: ref(0)
+      isProcessingTasks: ref(false)
     }),
     enqueueTask: enqueueTaskMock
   }

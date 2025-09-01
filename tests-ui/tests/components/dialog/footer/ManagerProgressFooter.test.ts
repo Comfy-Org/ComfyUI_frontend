@@ -66,16 +66,27 @@ const mountComponent = (options: { captureError?: boolean } = {}) => {
     legacy: false,
     locale: 'en',
     messages: {
-      en: {}
+      en: {
+        g: {
+          progressCountOf: 'of'
+        },
+        manager: {
+          clickToFinishSetup: 'Click',
+          applyChanges: 'Apply Changes',
+          toFinishSetup: 'to finish setup',
+          restartingBackend: 'Restarting backend to apply changes...',
+          extensionsSuccessfullyInstalled:
+            'Extension(s) successfully installed and are ready to use!',
+          restartToApplyChanges: 'To apply changes, please restart ComfyUI',
+          installingDependencies: 'Installing dependencies...'
+        }
+      }
     }
   })
 
   const config: any = {
     global: {
-      plugins: [pinia, PrimeVue, i18n],
-      mocks: {
-        $t: (key: string) => key // Mock i18n translation
-      }
+      plugins: [pinia, PrimeVue, i18n]
     }
   }
 
@@ -95,9 +106,14 @@ describe('ManagerProgressFooter', () => {
   const mockTaskLogs: TaskLog[] = []
 
   const mockComfyManagerStore = {
-    uncompletedCount: 0,
     taskLogs: mockTaskLogs,
     allTasksDone: true,
+    isProcessingTasks: false,
+    succeededTasksIds: [] as string[],
+    failedTasksIds: [] as string[],
+    taskHistory: {} as Record<string, any>,
+    taskQueue: null,
+    resetTaskState: vi.fn(),
     clearLogs: vi.fn(),
     setStale: vi.fn(),
     // Add other required properties
@@ -195,7 +211,14 @@ describe('ManagerProgressFooter', () => {
   describe('State 1: Queue Running', () => {
     it('should display loading spinner and progress counter when queue is running', async () => {
       // Setup queue running state
-      mockComfyManagerStore.uncompletedCount = 3
+      mockComfyManagerStore.isProcessingTasks = true
+      mockComfyManagerStore.succeededTasksIds = ['1', '2']
+      mockComfyManagerStore.failedTasksIds = []
+      mockComfyManagerStore.taskHistory = {
+        '1': { taskName: 'Installing pack1' },
+        '2': { taskName: 'Installing pack2' },
+        '3': { taskName: 'Installing pack3' }
+      }
       mockTaskLogs.push(
         { taskName: 'Installing pack1', taskId: '1', logs: [] },
         { taskName: 'Installing pack2', taskId: '2', logs: [] },
@@ -211,18 +234,18 @@ describe('ManagerProgressFooter', () => {
       expect(wrapper.text()).toContain('Installing pack3')
 
       // Check progress counter (completed: 2 of 3)
-      expect(wrapper.text()).toMatch(/2.*3/)
+      expect(wrapper.text()).toMatch(/2.*of.*3/)
 
       // Check expand/collapse button exists
       const expandButton = wrapper.find('[aria-label="Expand"]')
       expect(expandButton.exists()).toBe(true)
 
       // Check Apply Changes button is NOT shown
-      expect(wrapper.text()).not.toContain('manager.applyChanges')
+      expect(wrapper.text()).not.toContain('Apply Changes')
     })
 
     it('should toggle expansion when expand button is clicked', async () => {
-      mockComfyManagerStore.uncompletedCount = 1
+      mockComfyManagerStore.isProcessingTasks = true
       mockTaskLogs.push({ taskName: 'Installing', taskId: '1', logs: [] })
 
       const wrapper = mountComponent()
@@ -237,7 +260,7 @@ describe('ManagerProgressFooter', () => {
   describe('State 2: Tasks Completed (Waiting for Restart)', () => {
     it('should display check mark and Apply Changes button when all tasks are done', async () => {
       // Setup tasks completed state
-      mockComfyManagerStore.uncompletedCount = 0
+      mockComfyManagerStore.isProcessingTasks = false
       mockTaskLogs.push(
         { taskName: 'Installed pack1', taskId: '1', logs: [] },
         { taskName: 'Installed pack2', taskId: '2', logs: [] }
@@ -249,15 +272,16 @@ describe('ManagerProgressFooter', () => {
       // Check check mark emoji
       expect(wrapper.text()).toContain('✅')
 
-      // Check restart message (split into 3 parts)
-      expect(wrapper.text()).toContain('manager.clickToFinishSetup')
-      expect(wrapper.text()).toContain('manager.applyChanges')
-      expect(wrapper.text()).toContain('manager.toFinishSetup')
+      // Check restart message
+      expect(wrapper.text()).toContain(
+        'To apply changes, please restart ComfyUI'
+      )
+      expect(wrapper.text()).toContain('Apply Changes')
 
       // Check Apply Changes button exists
       const applyButton = wrapper
         .findAll('button')
-        .find((btn) => btn.text().includes('manager.applyChanges'))
+        .find((btn) => btn.text().includes('Apply Changes'))
       expect(applyButton).toBeTruthy()
 
       // Check no progress counter
@@ -268,7 +292,7 @@ describe('ManagerProgressFooter', () => {
   describe('State 3: Restarting', () => {
     it('should display restarting message and spinner during restart', async () => {
       // Setup completed state first
-      mockComfyManagerStore.uncompletedCount = 0
+      mockComfyManagerStore.isProcessingTasks = false
       mockComfyManagerStore.allTasksDone = true
 
       const wrapper = mountComponent()
@@ -276,20 +300,20 @@ describe('ManagerProgressFooter', () => {
       // Click Apply Changes to trigger restart
       const applyButton = wrapper
         .findAll('button')
-        .find((btn) => btn.text().includes('manager.applyChanges'))
+        .find((btn) => btn.text().includes('Apply Changes'))
       await applyButton?.trigger('click')
 
       // Wait for state update
       await nextTick()
 
       // Check restarting message
-      expect(wrapper.text()).toContain('manager.restartingBackend')
+      expect(wrapper.text()).toContain('Restarting backend to apply changes...')
 
       // Check loading spinner during restart
       expect(wrapper.find('.inline-flex').exists()).toBe(true)
 
       // Check Apply Changes button is hidden
-      expect(wrapper.text()).not.toContain('manager.applyChanges')
+      expect(wrapper.text()).not.toContain('Apply Changes')
     })
   })
 
@@ -298,7 +322,7 @@ describe('ManagerProgressFooter', () => {
       vi.useFakeTimers()
 
       // Setup completed state
-      mockComfyManagerStore.uncompletedCount = 0
+      mockComfyManagerStore.isProcessingTasks = false
       mockComfyManagerStore.allTasksDone = true
 
       const wrapper = mountComponent()
@@ -306,7 +330,7 @@ describe('ManagerProgressFooter', () => {
       // Trigger restart
       const applyButton = wrapper
         .findAll('button')
-        .find((btn) => btn.text().includes('manager.applyChanges'))
+        .find((btn) => btn.text().includes('Apply Changes'))
       await applyButton?.trigger('click')
 
       // Wait for event listener to be set up
@@ -323,7 +347,7 @@ describe('ManagerProgressFooter', () => {
       // Check success message
       expect(wrapper.text()).toContain('🎉')
       expect(wrapper.text()).toContain(
-        'manager.extensionsSuccessfullyInstalled'
+        'Extension(s) successfully installed and are ready to use!'
       )
 
       // Check dialog closes after 3 seconds
@@ -334,7 +358,7 @@ describe('ManagerProgressFooter', () => {
       expect(mockDialogStore.closeDialog).toHaveBeenCalledWith({
         key: 'global-manager-progress-dialog'
       })
-      expect(mockComfyManagerStore.clearLogs).toHaveBeenCalled()
+      expect(mockComfyManagerStore.resetTaskState).toHaveBeenCalled()
 
       vi.useRealTimers()
     })
@@ -362,7 +386,7 @@ describe('ManagerProgressFooter', () => {
 
   describe('Toast Management', () => {
     it('should suppress reconnection toasts during restart', async () => {
-      mockComfyManagerStore.uncompletedCount = 0
+      mockComfyManagerStore.isProcessingTasks = false
       mockComfyManagerStore.allTasksDone = true
       mockSettingStore.get.mockReturnValue(false) // Original setting
 
@@ -371,7 +395,7 @@ describe('ManagerProgressFooter', () => {
       // Click Apply Changes
       const applyButton = wrapper
         .findAll('button')
-        .find((btn) => btn.text().includes('manager.applyChanges'))
+        .find((btn) => btn.text().includes('Apply Changes'))
       await applyButton?.trigger('click')
 
       // Check toast setting was disabled
@@ -382,7 +406,7 @@ describe('ManagerProgressFooter', () => {
     })
 
     it('should restore toast settings after restart completes', async () => {
-      mockComfyManagerStore.uncompletedCount = 0
+      mockComfyManagerStore.isProcessingTasks = false
       mockComfyManagerStore.allTasksDone = true
       mockSettingStore.get.mockReturnValue(false) // Original setting
 
@@ -391,7 +415,7 @@ describe('ManagerProgressFooter', () => {
       // Click Apply Changes
       const applyButton = wrapper
         .findAll('button')
-        .find((btn) => btn.text().includes('manager.applyChanges'))
+        .find((btn) => btn.text().includes('Apply Changes'))
       await applyButton?.trigger('click')
 
       // Wait for event listener to be set up
@@ -414,7 +438,7 @@ describe('ManagerProgressFooter', () => {
 
   describe('Error Handling', () => {
     it('should restore state and close dialog on restart error', async () => {
-      mockComfyManagerStore.uncompletedCount = 0
+      mockComfyManagerStore.isProcessingTasks = false
       mockComfyManagerStore.allTasksDone = true
 
       // Mock restart to throw error
@@ -427,7 +451,7 @@ describe('ManagerProgressFooter', () => {
       // Click Apply Changes
       const applyButton = wrapper
         .findAll('button')
-        .find((btn) => btn.text().includes('manager.applyChanges'))
+        .find((btn) => btn.text().includes('Apply Changes'))
 
       expect(applyButton).toBeTruthy()
 

@@ -60,6 +60,7 @@ const toRegistryLatestVersion = (
 ): RegistryNodePack['latest_version'] => {
   return {
     version: algoliaNode.latest_version,
+    createdAt: algoliaNode.update_time,
     status: algoliaNode.latest_version_status,
     comfy_node_extract_status:
       algoliaNode.comfy_node_extract_status ?? undefined
