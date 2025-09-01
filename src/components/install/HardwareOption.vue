@@ -16,8 +16,7 @@
         v-if="imagePath"
         :src="imagePath"
         :alt="title"
-        class="scale-150 object-contain"
-        style="width: 140%; height: 140%"
+        class="w-full h-full object-cover"
       />
     </div>
 
