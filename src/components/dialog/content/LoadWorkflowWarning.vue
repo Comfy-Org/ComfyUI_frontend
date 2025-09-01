@@ -56,6 +56,7 @@ import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
@@ -67,6 +68,7 @@ import {
   ManagerUIState,
   useManagerStateStore
 } from '@/stores/managerStateStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
@@ -112,7 +114,18 @@ const handleOpenManager = async () => {
       initialTab: ManagerTab.Missing
     })
   } else if (managerState.value === ManagerUIState.LEGACY_UI) {
-    await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
+    try {
+      await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
+    } catch {
+      // If legacy command doesn't exist, show toast
+      const { t } = useI18n()
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('manager.legacyMenuNotAvailable'),
+        life: 3000
+      })
+    }
   }
 }
 </script>

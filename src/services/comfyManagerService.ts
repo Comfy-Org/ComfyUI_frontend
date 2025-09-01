@@ -39,7 +39,7 @@ enum ManagerRoute {
 // Create axios client with conditional v2 prefix based on manager v4 support
 const createManagerApiClient = () => {
   const supportsV4 = api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
-  const baseURL = supportsV4 ? api.apiURL('v2/') : api.apiURL('/')
+  const baseURL = supportsV4 ? api.apiURL('/v2/') : api.apiURL('/')
 
   return axios.create({
     baseURL,

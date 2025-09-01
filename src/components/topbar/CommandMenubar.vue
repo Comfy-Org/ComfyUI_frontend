@@ -170,7 +170,12 @@ const showManageExtensions = async () => {
       break
 
     case ManagerUIState.LEGACY_UI:
-      await commandStore.execute('Comfy.Manager.Menu.ToggleVisibility')
+      try {
+        await commandStore.execute('Comfy.Manager.Menu.ToggleVisibility')
+      } catch {
+        // If legacy command doesn't exist, fall back to extensions panel
+        showSettings('extension')
+      }
       break
 
     case ManagerUIState.NEW_UI:

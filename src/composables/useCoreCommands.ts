@@ -733,12 +733,8 @@ export function useCoreCommands(): ComfyCommand[] {
             useCommandStore()
               .execute('Comfy.Manager.Menu.ToggleVisibility')
               .catch(() => {
-                toastStore.add({
-                  severity: 'error',
-                  summary: t('g.error'),
-                  detail: t('manager.legacyMenuNotAvailable'),
-                  life: 3000
-                })
+                // If legacy command doesn't exist, fall back to extensions panel
+                dialogService.showSettingsDialog('extension')
               })
             break
 
@@ -763,9 +759,14 @@ export function useCoreCommands(): ComfyCommand[] {
             break
 
           case ManagerUIState.LEGACY_UI:
-            await useCommandStore().execute(
-              'Comfy.Manager.Menu.ToggleVisibility'
-            )
+            try {
+              await useCommandStore().execute(
+                'Comfy.Manager.Menu.ToggleVisibility'
+              )
+            } catch {
+              // If legacy command doesn't exist, fall back to extensions panel
+              dialogService.showSettingsDialog('extension')
+            }
             break
 
           case ManagerUIState.NEW_UI:
@@ -792,9 +793,14 @@ export function useCoreCommands(): ComfyCommand[] {
             break
 
           case ManagerUIState.LEGACY_UI:
-            await useCommandStore().execute(
-              'Comfy.Manager.Menu.ToggleVisibility'
-            )
+            try {
+              await useCommandStore().execute(
+                'Comfy.Manager.Menu.ToggleVisibility'
+              )
+            } catch {
+              // If legacy command doesn't exist, fall back to extensions panel
+              dialogService.showSettingsDialog('extension')
+            }
             break
 
           case ManagerUIState.NEW_UI:
