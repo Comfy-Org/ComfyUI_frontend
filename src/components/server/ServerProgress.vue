@@ -150,7 +150,8 @@ const currentStatusLabel = computed(() => {
 
 const isError = computed(
   () =>
-    props.status === ProgressStatus.ERROR || installStage.value === InstallStage.ERROR
+    props.status === ProgressStatus.ERROR ||
+    installStage.value === InstallStage.ERROR
 )
 
 // Display properties for StartupDisplay component
