@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+
 import HardwareOption from './HardwareOption.vue'
 
 const meta: Meta<typeof HardwareOption> = {

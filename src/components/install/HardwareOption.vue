@@ -3,12 +3,15 @@
     class="hardware-option flex flex-col items-center rounded-3xl transition-all duration-200"
     :class="{
       'selected-border bg-neutral-900/70': selected,
-      'border-4 border-neutral-700 bg-neutral-900/70 hover:border-neutral-600': !selected
+      'border-4 border-neutral-700 bg-neutral-900/70 hover:border-neutral-600':
+        !selected
     }"
     @click="$emit('click')"
   >
     <!-- Icon/Logo Area - Rounded square container -->
-    <div class="icon-container rounded-2xl bg-neutral-800 flex items-center justify-center">
+    <div
+      class="icon-container rounded-2xl bg-neutral-800 flex items-center justify-center"
+    >
       <img
         v-if="imagePath"
         :src="imagePath"
@@ -16,7 +19,7 @@
         class="max-h-14 max-w-full object-contain p-2"
       />
     </div>
-    
+
     <!-- Text Content -->
     <div class="text-center mt-4">
       <div class="text-base font-normal text-neutral-100">{{ title }}</div>
