@@ -543,7 +543,9 @@ export class LGraphCanvas
   /** Shape of the markers shown at the midpoint of links.  Default: Circle */
   linkMarkerShape: LinkMarkerShape = LinkMarkerShape.Circle
   links_render_mode: number
-  /** Minimum font size in pixels before switching to low quality rendering. */
+  /** Minimum font size in pixels before switching to low quality rendering.
+   * This intializes first and if we cant get the value from the settings we default to 8px
+   */
   private _min_font_size_for_lod: number = 8
 
   get min_font_size_for_lod(): number {
