@@ -458,7 +458,7 @@ export class LGraphCanvas
     }
 
     const baseFontSize = LiteGraph.NODE_TEXT_SIZE // 14px
-    const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1)
+    const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1) //Using sqrt here because higher DPR monitors do not linearily scale the readability of the font, instead they increase the font by some heurisitc, and to approximate we use sqrt to say bascially a DPR of 2 increases the readibility by 40%, 3 by 70%
 
     // Calculate the zoom level where text becomes unreadable
     this._lowQualityZoomThreshold =

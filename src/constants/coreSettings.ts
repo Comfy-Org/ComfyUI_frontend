@@ -769,13 +769,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     versionAdded: '1.8.8'
   },
+
   {
     id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
-    name: 'Zoom threshold for low quality rendering (deprecated)',
     type: 'hidden',
-    defaultValue: 0.5,
     deprecated: true,
-    versionAdded: '1.0.0',
+    name: 'Low quality rendering zoom threshold (deprecated)',
+    tooltip:
+      'Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details.',
+    attrs: {
+      min: 0.1,
+      max: 1,
+      step: 0.01
+    },
+    defaultValue: 0.6,
+    versionAdded: '1.9.1',
     versionModified: '1.26.7'
   },
   {
