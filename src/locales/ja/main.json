@@ -27,6 +27,15 @@
       "title": "APIキー",
       "whitelistInfo": "ホワイトリストに登録されていないサイトについて"
     },
+    "deleteAccount": {
+      "cancel": "キャンセル",
+      "confirm": "アカウントを削除",
+      "confirmMessage": "本当にアカウントを削除しますか？この操作は元に戻せず、すべてのデータが完全に削除されます。",
+      "confirmTitle": "アカウントを削除",
+      "deleteAccount": "アカウントを削除",
+      "success": "アカウントが削除されました",
+      "successDetail": "アカウントは正常に削除されました。"
+    },
     "login": {
       "andText": "および",
       "confirmPasswordLabel": "パスワードの確認",
@@ -342,6 +351,7 @@
     "micPermissionDenied": "マイクの許可が拒否されました",
     "migrate": "移行する",
     "missing": "不足している",
+    "moreWorkflows": "さらに多くのワークフロー",
     "name": "名前",
     "newFolder": "新しいフォルダー",
     "next": "次へ",

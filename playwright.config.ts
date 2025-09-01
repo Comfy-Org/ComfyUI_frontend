@@ -1,39 +1,31 @@
 import { defineConfig, devices } from '@playwright/test'
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
   testDir: './browser_tests',
-  /* Run tests in files in parallel */
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only - increased for better flaky test handling */
-  retries: process.env.CI ? 3 : 0,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  // /* // Toggle for [LOCAL] testing.
+  retries: process.env.CI ? 3 : 0,
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    // baseURL: 'http://127.0.0.1:3000',
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry'
   },
-  /* Path to global setup file. Exported function runs once before all the tests */
+  /*/ // [LOCAL]
+  // VERY HELPFUL: Skip screenshot tests locally
+  // grep: process.env.CI ? undefined : /^(?!.*screenshot).*$/,
+  timeout: 30_000, // Longer timeout for breakpoints
+  retries: 0, // No retries while debugging. Increase if writing new tests. that may be flaky.
+  workers: 4, // Single worker for easier debugging. Increase to match CPU cores if you want to run a lot of tests in parallel.
+
+  use: {
+    trace: 'on', // Always capture traces (CI uses 'on-first-retry')
+    video: 'on' // Always record video (CI uses 'retain-on-failure')
+  },
+  //*/
+
   globalSetup: './browser_tests/globalSetup.ts',
-  /* Path to global teardown file. Exported function runs once after all the tests */
   globalTeardown: './browser_tests/globalTeardown.ts',
 
-  /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
