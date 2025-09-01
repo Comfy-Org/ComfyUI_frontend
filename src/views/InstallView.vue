@@ -25,10 +25,10 @@
       <StepPanels>
         <StepPanel v-slot="{ activateCallback }" value="0">
           <GpuPicker v-model:device="device" />
-          <div class="flex pt-6 justify-center">
+          <div class="flex pt-8 justify-center">
             <Button
               label="Next"
-              class="px-12 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+              class="w-96 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-lg"
               :disabled="typeof device !== 'string'"
               @click="activateCallback('1')"
             />
