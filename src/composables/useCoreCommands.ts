@@ -760,12 +760,8 @@ export function useCoreCommands(): ComfyCommand[] {
             useCommandStore()
               .execute('Comfy.Manager.Menu.ToggleVisibility')
               .catch(() => {
-                toastStore.add({
-                  severity: 'error',
-                  summary: t('g.error'),
-                  detail: t('manager.legacyMenuNotAvailable'),
-                  life: 3000
-                })
+                // If legacy command doesn't exist, fall back to extensions panel
+                dialogService.showSettingsDialog('extension')
               })
             break
 
@@ -780,10 +776,32 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-sync',
       label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
-      function: () => {
-        dialogService.showManagerDialog({
-          initialTab: ManagerTab.UpdateAvailable
-        })
+      function: async () => {
+        const managerStore = useManagerStateStore()
+        const state = managerStore.managerUIState
+
+        switch (state) {
+          case ManagerUIState.DISABLED:
+            dialogService.showSettingsDialog('extension')
+            break
+
+          case ManagerUIState.LEGACY_UI:
+            try {
+              await useCommandStore().execute(
+                'Comfy.Manager.Menu.ToggleVisibility'
+              )
+            } catch {
+              // If legacy command doesn't exist, fall back to extensions panel
+              dialogService.showSettingsDialog('extension')
+            }
+            break
+
+          case ManagerUIState.NEW_UI:
+            dialogService.showManagerDialog({
+              initialTab: ManagerTab.UpdateAvailable
+            })
+            break
+        }
       }
     },
     {
@@ -791,10 +809,33 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-exclamation-circle',
       label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
-      function: () => {
-        dialogService.showManagerDialog({
-          initialTab: ManagerTab.Missing
-        })
+      function: async () => {
+        const managerStore = useManagerStateStore()
+        const state = managerStore.managerUIState
+
+        switch (state) {
+          case ManagerUIState.DISABLED:
+            // When manager is disabled, open the extensions panel in settings
+            dialogService.showSettingsDialog('extension')
+            break
+
+          case ManagerUIState.LEGACY_UI:
+            try {
+              await useCommandStore().execute(
+                'Comfy.Manager.Menu.ToggleVisibility'
+              )
+            } catch {
+              // If legacy command doesn't exist, fall back to extensions panel
+              dialogService.showSettingsDialog('extension')
+            }
+            break
+
+          case ManagerUIState.NEW_UI:
+            dialogService.showManagerDialog({
+              initialTab: ManagerTab.Missing
+            })
+            break
+        }
       }
     },
     {

@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
+import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import {
   type InstallPackParams,
@@ -35,8 +36,12 @@ enum ManagerRoute {
   IS_LEGACY_MANAGER_UI = 'manager/is_legacy_manager_ui'
 }
 
+// Create axios client with conditional v2 prefix based on manager v4 support
+const supportsV4 = api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
+const baseURL = supportsV4 ? api.apiURL('/v2/') : api.apiURL('/')
+
 const managerApiClient = axios.create({
-  baseURL: api.apiURL('/v2/'),
+  baseURL,
   headers: {
     'Content-Type': 'application/json'
   }
