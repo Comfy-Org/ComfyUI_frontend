@@ -31,7 +31,7 @@
       </div>
     </template>
   </ListBox>
-  <div v-if="!isLegacyManager" class="flex justify-end py-3">
+  <div v-if="showManagerButtons" class="flex justify-end py-3">
     <PackInstallButton
       :disabled="
         isLoading || !!error || missingNodePacks.length === 0 || isInstalling
@@ -50,13 +50,12 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -79,7 +78,6 @@ const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
 const comfyManagerStore = useComfyManagerStore()
-const isLegacyManager = ref(false)
 
 // Check if any of the missing packs are currently being installed
 const isInstalling = computed(() => {
@@ -111,6 +109,11 @@ const uniqueNodes = computed(() => {
 })
 
 const managerStateStore = useManagerStateStore()
+
+// Show manager buttons unless manager is disabled
+const showManagerButtons = computed(() => {
+  return managerStateStore.managerUIState !== ManagerUIState.DISABLED
+})
 
 const openManager = async () => {
   const state = managerStateStore.managerUIState
@@ -144,10 +147,8 @@ const openManager = async () => {
 }
 
 onMounted(async () => {
-  const isLegacyResponse = await useComfyManagerService().isLegacyManagerUI()
-  if (isLegacyResponse?.is_legacy_manager_ui) {
-    isLegacyManager.value = true
-  }
+  // Initialize manager state to determine if manager is disabled
+  await managerStateStore.initializeManagerState()
 })
 </script>
 
