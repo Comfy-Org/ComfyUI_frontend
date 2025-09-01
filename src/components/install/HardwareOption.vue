@@ -51,4 +51,3 @@ defineEmits<{
   box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
 }
 </style>
-</template>
