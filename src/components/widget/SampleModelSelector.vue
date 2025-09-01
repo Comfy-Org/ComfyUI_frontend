@@ -12,7 +12,7 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" class="max-w-[384px]" />
+      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
     </template>
 
     <template #header-right-area>
@@ -56,7 +56,7 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative px-6 pt-2 pb-4 flex gap-2">
+      <div class="relative px-6 pb-4 flex gap-2">
         <MultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
