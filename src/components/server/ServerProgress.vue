@@ -95,6 +95,7 @@
 
 <script setup lang="ts">
 import {
+  InstallStage,
   type InstallStageInfo,
   type InstallStageType,
   ProgressStatus
@@ -148,7 +149,8 @@ const currentStatusLabel = computed(() => {
 })
 
 const isError = computed(
-  () => props.status === ProgressStatus.ERROR || installStage.value === 'error'
+  () =>
+    props.status === ProgressStatus.ERROR || installStage.value === InstallStage.ERROR
 )
 
 // Display properties for StartupDisplay component
@@ -159,13 +161,13 @@ const displayTitle = computed(() => {
   // Use the stage label as title if we're in an installation stage
   if (installStage.value && STAGE_METADATA[installStage.value]) {
     // For certain installation stages, use custom titles
-    const installationStages = [
-      'install_options_selection',
-      'creating_directories',
-      'initializing_config',
-      'python_environment_setup',
-      'installing_requirements',
-      'migrating_custom_nodes'
+    const installationStages: InstallStageType[] = [
+      InstallStage.INSTALL_OPTIONS_SELECTION,
+      InstallStage.CREATING_DIRECTORIES,
+      InstallStage.INITIALIZING_CONFIG,
+      InstallStage.PYTHON_ENVIRONMENT_SETUP,
+      InstallStage.INSTALLING_REQUIREMENTS,
+      InstallStage.MIGRATING_CUSTOM_NODES
     ]
     if (installationStages.includes(installStage.value)) {
       return t('serverStart.installation.title')
