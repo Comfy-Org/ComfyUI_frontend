@@ -770,6 +770,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.8'
   },
   {
+    id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
+    name: 'Zoom threshold for low quality rendering (deprecated)',
+    type: 'hidden',
+    defaultValue: 0.5,
+    deprecated: true,
+    versionAdded: '1.0.0',
+    versionModified: '1.26.7'
+  },
+  {
     id: 'LiteGraph.Canvas.MinFontSizeForLOD',
     name: 'Zoom Node Level of Detail - font size threshold',
     tooltip:

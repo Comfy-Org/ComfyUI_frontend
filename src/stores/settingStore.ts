@@ -195,7 +195,7 @@ export const useSettingStore = defineStore('setting', () => {
 
   /**
    * Migrate the old zoom threshold setting to the new font size setting.
-   * Maps zoom threshold (0.1-1.0) to font size (4-16px).
+   * Maps zoom threshold (0.1-1.0) to font size (1-24px).
    */
   async function migrateZoomThresholdToFontSize() {
     const oldKey = 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold'
@@ -206,7 +206,7 @@ export const useSettingStore = defineStore('setting', () => {
       settingValues.value[oldKey] !== undefined &&
       settingValues.value[newKey] === undefined
     ) {
-      const oldValue = settingValues.value[oldKey]
+      const oldValue = settingValues.value[oldKey] as number
 
       // Convert zoom threshold to approximate font size
       // Old: 0.1 = switch to LOD at 0.1 zoom (far out, keep detail longest)
@@ -226,8 +226,8 @@ export const useSettingStore = defineStore('setting', () => {
       delete settingValues.value[oldKey]
 
       // Store the migrated setting
-      await api.storeSetting(newKey as any, clampedFontSize)
-      await api.storeSetting(oldKey as any, undefined)
+      await api.storeSetting(newKey, clampedFontSize)
+      await api.storeSetting(oldKey, undefined)
     }
   }
 
