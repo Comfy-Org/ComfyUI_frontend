@@ -4,12 +4,14 @@ import { nextTick, ref } from 'vue'
 
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import {
-  InstalledPacksResponse,
-  ManagerChannel,
-  ManagerDatabaseSource,
-  ManagerPackInstalled
-} from '@/types/comfyManagerTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+
+type InstalledPacksResponse =
+  ManagerComponents['schemas']['InstalledPacksResponse']
+type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
+type ManagerDatabaseSource =
+  ManagerComponents['schemas']['ManagerDatabaseSource']
+type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 
 vi.mock('@/services/comfyManagerService', () => ({
   useComfyManagerService: vi.fn()
@@ -82,8 +84,8 @@ describe('useComfyManagerStore', () => {
       isLoading: ref(false),
       error: ref(null),
       startQueue: vi.fn().mockResolvedValue(null),
-      resetQueue: vi.fn().mockResolvedValue(null),
       getQueueStatus: vi.fn().mockResolvedValue(null),
+      getTaskHistory: vi.fn().mockResolvedValue(null),
       listInstalledPacks: vi.fn().mockResolvedValue({}),
       getImportFailInfo: vi.fn().mockResolvedValue(null),
       getImportFailInfoBulk: vi.fn().mockResolvedValue({}),
@@ -367,8 +369,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'test-pack',
         repository: 'https://github.com/test/test-pack',
-        channel: ManagerChannel.DEV,
-        mode: ManagerDatabaseSource.CACHE,
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
         selected_version: 'latest',
         version: 'latest'
       })
@@ -384,8 +386,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'test-pack',
         repository: 'https://github.com/test/test-pack',
-        channel: ManagerChannel.DEV,
-        mode: ManagerDatabaseSource.CACHE,
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
         selected_version: 'latest',
         version: 'latest'
       })
@@ -397,8 +399,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'another-pack',
         repository: 'https://github.com/test/another-pack',
-        channel: ManagerChannel.DEV,
-        mode: ManagerDatabaseSource.CACHE,
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
         selected_version: 'latest',
         version: 'latest'
       })
@@ -415,8 +417,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-1',
         repository: 'https://github.com/test/pack-1',
-        channel: ManagerChannel.DEV,
-        mode: ManagerDatabaseSource.CACHE,
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
         selected_version: 'latest',
         version: 'latest'
       })
@@ -425,8 +427,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-2',
         repository: 'https://github.com/test/pack-2',
-        channel: ManagerChannel.DEV,
-        mode: ManagerDatabaseSource.CACHE,
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
         selected_version: 'latest',
         version: 'latest'
       })

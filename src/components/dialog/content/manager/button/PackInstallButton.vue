@@ -33,11 +33,11 @@ import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import {
   type ConflictDetail,
   ConflictDetectionResult
 } from '@/types/conflictDetectionTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
@@ -123,7 +123,7 @@ const installAllPacks = async () => {
     })
     return
   }
-  
+
   // No conflicts or conflicts acknowledged - proceed with installation
   const uninstalledPacks = nodePacks.filter(
     (pack) => !managerStore.isPackInstalled(pack.id)

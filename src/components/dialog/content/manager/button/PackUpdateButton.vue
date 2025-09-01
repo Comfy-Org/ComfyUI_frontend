@@ -1,21 +1,26 @@
 <template>
-  <PackActionButton
+  <IconTextButton
     v-bind="$attrs"
-    variant="black"
+    type="transparent"
     :label="$t('manager.updateAll')"
-    :loading="isUpdating"
-    :loading-message="$t('g.updating')"
-    @action="updateAllPacks"
-  />
+    :border="true"
+    size="sm"
+    :disabled="isUpdating"
+    @click="updateAllPacks"
+  >
+    <template v-if="isUpdating" #icon>
+      <DotSpinner duration="1s" :size="12" />
+    </template>
+  </IconTextButton>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
+import IconTextButton from '@/components/button/IconTextButton.vue'
+import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
@@ -27,16 +32,10 @@ const isUpdating = ref<boolean>(false)
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (
-  updateItem: NodePack
-): ManagerComponents['schemas']['ManagerPackInfo'] => {
-  if (!updateItem.id) {
-    throw new Error('Node ID is required for update')
-  }
-
+const createPayload = (updateItem: NodePack) => {
   return {
-    id: updateItem.id,
-    version: updateItem.latest_version?.version || 'latest'
+    id: updateItem.id!,
+    version: updateItem.latest_version!.version!
   }
 }
 
@@ -53,21 +52,16 @@ const updateAllPacks = async () => {
     console.warn('No packs provided for update')
     return
   }
-
   isUpdating.value = true
-
   const updatablePacks = nodePacks.filter((pack) =>
     managerStore.isPackInstalled(pack.id)
   )
-
   if (!updatablePacks.length) {
     console.info('No installed packs available for update')
     isUpdating.value = false
     return
   }
-
   console.info(`Starting update of ${updatablePacks.length} packs`)
-
   try {
     await Promise.all(updatablePacks.map(updatePack))
     managerStore.updatePack.clear()

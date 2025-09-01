@@ -28,7 +28,8 @@
           size="md"
           :is-installing="isInstalling"
           :node-packs="nodePacks"
-          :has-conflict="hasConflict"
+          :has-conflict="hasConflict || computedHasConflict"
+          :conflict-info="conflictInfo"
         />
       </slot>
     </div>
@@ -48,8 +49,10 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackUninstallButton from '@/components/dialog/content/manager/button/PackUninstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
+import type { ConflictDetail } from '@/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePacks, hasConflict } = defineProps<{
@@ -79,4 +82,23 @@ const isInstalling = computed(() => {
   if (!nodePacks?.length) return false
   return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
 })
+
+// Add conflict detection for install button dialog
+const { checkNodeCompatibility } = useConflictDetection()
+
+// Compute conflict info for all node packs
+const conflictInfo = computed<ConflictDetail[]>(() => {
+  if (!nodePacks?.length) return []
+
+  const allConflicts: ConflictDetail[] = []
+  for (const nodePack of nodePacks) {
+    const compatibilityCheck = checkNodeCompatibility(nodePack)
+    if (compatibilityCheck.conflicts) {
+      allConflicts.push(...compatibilityCheck.conflicts)
+    }
+  }
+  return allConflicts
+})
+
+const computedHasConflict = computed(() => conflictInfo.value.length > 0)
 </script>

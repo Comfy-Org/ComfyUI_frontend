@@ -3,8 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useConflictDetection } from '@/composables/useConflictDetection'
-import type { InstalledPacksResponse } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
+
+type InstalledPacksResponse =
+  ManagerComponents['schemas']['InstalledPacksResponse']
 
 // Mock dependencies
 vi.mock('@/scripts/api', () => ({

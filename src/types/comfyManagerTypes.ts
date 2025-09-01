@@ -3,9 +3,6 @@ import type { InjectionKey, Ref } from 'vue'
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { components as managerComponents } from '@/types/generatedManagerTypes'
-import type { SearchMode } from '@/types/searchServiceTypes'
-
-type WorkflowNodeProperties = ComfyWorkflowJSON['nodes'][0]['properties']
 
 export type RegistryPack = components['schemas']['Node']
 export type MergedNodePack = RegistryPack & AlgoliaNodePack
@@ -79,7 +76,6 @@ export enum SortableAlgoliaField {
   Publisher = 'publisher_id',
   Name = 'name'
 }
-
 
 export interface ManagerState {
   selectedTabId: ManagerTab

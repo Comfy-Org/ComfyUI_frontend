@@ -712,16 +712,27 @@ export function useConflictDetection() {
     const conflicts: ConflictDetail[] = []
 
     // Check OS compatibility using centralized function
-    if (node.supported_os && node.supported_os.length > 0) {
+    // First try latest_version (most accurate), then fallback to top level
+    const supportedOS =
+      ('latest_version' in node ? node.latest_version?.supported_os : null) ||
+      node.supported_os
+
+    if (supportedOS && supportedOS.length > 0) {
       const currentOS = systemStats.system?.os || 'unknown'
-      const osConflict = checkOSConflict(node.supported_os, currentOS)
+      const osConflict = checkOSConflict(supportedOS, currentOS)
       if (osConflict) {
         conflicts.push(osConflict)
       }
     }
 
     // Check accelerator compatibility using centralized function
-    if (node.supported_accelerators && node.supported_accelerators.length > 0) {
+    // First try latest_version (most accurate), then fallback to top level
+    const supportedAccelerators =
+      ('latest_version' in node
+        ? node.latest_version?.supported_accelerators
+        : null) || node.supported_accelerators
+
+    if (supportedAccelerators && supportedAccelerators.length > 0) {
       // Extract available accelerators from system stats
       const acceleratorInfo = extractAcceleratorInfo(systemStats)
       const availableAccelerators: Node['supported_accelerators'] = []
@@ -733,7 +744,7 @@ export function useConflictDetection() {
       })
 
       const acceleratorConflict = checkAcceleratorConflict(
-        node.supported_accelerators,
+        supportedAccelerators,
         availableAccelerators
       )
       if (acceleratorConflict) {
@@ -742,13 +753,19 @@ export function useConflictDetection() {
     }
 
     // Check ComfyUI version compatibility
-    if (node.supported_comfyui_version) {
+    // First try latest_version (most accurate), then fallback to top level
+    const comfyuiVersionRequirement =
+      ('latest_version' in node
+        ? node.latest_version?.supported_comfyui_version
+        : null) || node.supported_comfyui_version
+
+    if (comfyuiVersionRequirement) {
       const currentComfyUIVersion = systemStats.system?.comfyui_version
       if (currentComfyUIVersion && currentComfyUIVersion !== 'unknown') {
         const versionConflict = utilCheckVersionCompatibility(
           'comfyui_version',
           currentComfyUIVersion,
-          node.supported_comfyui_version
+          comfyuiVersionRequirement
         )
         if (versionConflict) {
           conflicts.push(versionConflict)
@@ -757,13 +774,19 @@ export function useConflictDetection() {
     }
 
     // Check ComfyUI Frontend version compatibility
-    if (node.supported_comfyui_frontend_version) {
+    // First try latest_version (most accurate), then fallback to top level
+    const frontendVersionRequirement =
+      ('latest_version' in node
+        ? node.latest_version?.supported_comfyui_frontend_version
+        : null) || node.supported_comfyui_frontend_version
+
+    if (frontendVersionRequirement) {
       const currentFrontendVersion = config.app_version
       if (currentFrontendVersion && currentFrontendVersion !== 'unknown') {
         const versionConflict = utilCheckVersionCompatibility(
           'frontend_version',
           currentFrontendVersion,
-          node.supported_comfyui_frontend_version
+          frontendVersionRequirement
         )
         if (versionConflict) {
           conflicts.push(versionConflict)

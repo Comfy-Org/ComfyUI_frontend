@@ -38,8 +38,8 @@ import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgme
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 
@@ -108,8 +108,12 @@ const handleEnable = () => {
   }
   return enablePack.call({
     id: nodePack.id,
-    version: version.value ?? ('latest' as ManagerComponents['schemas']['SelectedVersion']),
-    selected_version: version.value ?? ('latest' as ManagerComponents['schemas']['SelectedVersion']),
+    version:
+      version.value ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
+    selected_version:
+      version.value ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion']),
     repository: nodePack.repository ?? '',
     channel: 'default' as ManagerComponents['schemas']['ManagerChannel'],
     mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
@@ -123,7 +127,9 @@ const handleDisable = () => {
   }
   return disablePack({
     id: nodePack.id,
-    version: version.value ?? ('latest' as ManagerComponents['schemas']['SelectedVersion'])
+    version:
+      version.value ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
   })
 }
 
