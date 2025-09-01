@@ -147,41 +147,8 @@ const displayStatusText = computed(() => {
   background-color: #f0ff41;
 }
 
-/* Remove all padding from terminal components */
-:deep(.p-terminal) {
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  background: transparent !important;
-}
-
-/* Style the terminal background for aesthetic effect */
-:deep(.xterm) {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-:deep(.xterm-viewport) {
+/* Hide the xterm scrollbar completely */
+:deep(.p-terminal) .xterm-viewport {
   overflow: hidden !important;
-  scrollbar-width: none !important; /* Firefox */
-}
-
-:deep(.xterm-viewport::-webkit-scrollbar) {
-  display: none !important; /* Chrome, Safari, Edge */
-}
-
-:deep(.xterm-screen) {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Hide all scrollbars in the terminal container */
-:deep(.terminal-container) {
-  overflow: hidden !important;
-  scrollbar-width: none !important;
-}
-
-:deep(.terminal-container::-webkit-scrollbar) {
-  display: none !important;
 }
 </style>
