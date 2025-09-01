@@ -49,7 +49,6 @@
           Configure ComfyUI manually for advanced setups or unsupported hardware
         </p>
       </div>
-
     </div>
 
     <!-- Progress dots -->
@@ -69,6 +68,7 @@ import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 
 import HardwareOption from '@/components/install/HardwareOption.vue'
 import { electronAPI } from '@/utils/envUtil'
+
 const selected = defineModel<TorchDeviceType | null>('device', {
   required: true
 })
