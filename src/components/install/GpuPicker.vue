@@ -55,16 +55,6 @@
         </p>
       </div>
     </div>
-
-    <!-- Progress dots -->
-    <div class="flex justify-center gap-2 mb-8">
-      <div
-        v-for="i in 4"
-        :key="i"
-        class="h-2 w-2 rounded-full transition-colors"
-        :class="i === 1 ? 'bg-yellow-500' : 'bg-neutral-700'"
-      />
-    </div>
   </div>
 </template>
 
