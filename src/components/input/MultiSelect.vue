@@ -19,7 +19,7 @@
       v-if="showSearchBox || showSelectedCount || showClearButton"
       #header
     >
-      <div class="pt-4 px-3 flex flex-col pb-0">
+      <div class="pt-2 pb-0 px-2 flex flex-col">
         <SearchBox
           v-if="showSearchBox"
           v-model="searchQuery"
@@ -51,7 +51,7 @@
             @click.stop="selectedItems = []"
           />
         </div>
-        <div class="mt-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+        <div class="my-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
       </div>
     </template>
 
@@ -171,14 +171,14 @@ const pt = computed(() => ({
   }),
   // Overlay & list visuals unchanged
   overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700',
+    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 py-2 px-2',
   list: {
-    class: 'flex flex-col gap-0 p-0 list-none border-none text-sm'
+    class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
   },
   // Option row hover and focus tone
   option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
     class: [
-      'flex gap-2 items-center h-10 px-2',
+      'flex gap-2 items-center h-10 px-2 rounded-lg',
       'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
       // Add focus/highlight state for keyboard navigation
       {

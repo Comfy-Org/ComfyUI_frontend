@@ -87,14 +87,8 @@
 
     <template #content>
       <!-- Card Examples -->
-      <div class="flex flex-wrap gap-2">
-        <CardContainer
-          v-for="i in 100"
-          :key="i"
-          ratio="square"
-          :max-width="480"
-          :min-width="230"
-        >
+      <CardGridList>
+        <CardContainer v-for="i in 100" :key="i" ratio="square">
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
@@ -123,8 +117,7 @@
             <CardBottom></CardBottom>
           </template>
         </CardContainer>
-      </div>
-      <!-- </div> -->
+      </CardGridList>
     </template>
 
     <template #rightPanel>
@@ -142,6 +135,7 @@ import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
+import CardGridList from '@/components/card/CardGridList.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'

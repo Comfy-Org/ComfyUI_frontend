@@ -18,8 +18,8 @@
   >
     <!-- Trigger value -->
     <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm">
-        <slot name="icon" />
+      <div class="flex items-center gap-2 text-sm text-neutral-500">
+        <slot name="icon" class=""></slot>
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
           class="text-zinc-700 dark-theme:text-gray-200"
@@ -34,9 +34,7 @@
 
     <!-- Trigger caret -->
     <template #dropdownicon>
-      <i-lucide:chevron-down
-        class="text-base text-neutral-400 dark-theme:text-gray-300"
-      />
+      <i-lucide:chevron-down class="text-base text-neutral-500" />
     </template>
 
     <!-- Option row -->
@@ -45,7 +43,7 @@
         <span class="truncate">{{ option.name }}</span>
         <i-lucide:check
           v-if="selected"
-          class="text-neutral-900 dark-theme:text-white"
+          class="text-neutral-600 dark-theme:text-white"
         />
       </div>
     </template>
