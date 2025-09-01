@@ -1,5 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { Folder, Puzzle, Settings } from 'lucide-vue-next'
+import {
+  Download,
+  Folder,
+  Grid3x3,
+  Image,
+  Layers,
+  Puzzle,
+  Settings,
+  Tag,
+  Wrench,
+  Zap
+} from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import LeftSidePanel from './LeftSidePanel.vue'
@@ -35,9 +46,9 @@ export const Default: Story = {
   args: {
     modelValue: 'installed',
     navItems: [
-      { id: 'installed', label: 'Installed', iconName: 'download' },
-      { id: 'models', label: 'Models', iconName: 'layers' },
-      { id: 'nodes', label: 'Nodes', iconName: 'grid-3-x-3' }
+      { id: 'installed', label: 'Installed', icon: Download as any },
+      { id: 'models', label: 'Models', icon: Layers as any },
+      { id: 'nodes', label: 'Nodes', icon: Grid3x3 as any }
     ]
   },
   render: (args) => ({
@@ -65,20 +76,20 @@ export const WithGroups: Story = {
   args: {
     modelValue: 'tag-sd15',
     navItems: [
-      { id: 'installed', label: 'Installed', iconName: 'download' },
+      { id: 'installed', label: 'Installed', icon: Download as any },
       {
         title: 'TAGS',
         items: [
-          { id: 'tag-sd15', label: 'SD 1.5', iconName: 'tag' },
-          { id: 'tag-sdxl', label: 'SDXL', iconName: 'tag' },
-          { id: 'tag-utility', label: 'Utility', iconName: 'tag' }
+          { id: 'tag-sd15', label: 'SD 1.5', icon: Tag as any },
+          { id: 'tag-sdxl', label: 'SDXL', icon: Tag as any },
+          { id: 'tag-utility', label: 'Utility', icon: Tag as any }
         ]
       },
       {
         title: 'CATEGORIES',
         items: [
-          { id: 'cat-models', label: 'Models', iconName: 'layers' },
-          { id: 'cat-nodes', label: 'Nodes', iconName: 'grid-3-x-3' }
+          { id: 'cat-models', label: 'Models', icon: Layers as any },
+          { id: 'cat-nodes', label: 'Nodes', icon: Grid3x3 as any }
         ]
       }
     ]
@@ -111,10 +122,10 @@ export const DefaultIcons: Story = {
   args: {
     modelValue: 'home',
     navItems: [
-      { id: 'home', label: 'Home' },
-      { id: 'documents', label: 'Documents' },
-      { id: 'downloads', label: 'Downloads' },
-      { id: 'desktop', label: 'Desktop' }
+      { id: 'home', label: 'Home', icon: Folder as any },
+      { id: 'documents', label: 'Documents', icon: Folder as any },
+      { id: 'downloads', label: 'Downloads', icon: Folder as any },
+      { id: 'desktop', label: 'Desktop', icon: Folder as any }
     ]
   },
   render: (args) => ({
@@ -142,11 +153,11 @@ export const LongLabels: Story = {
   args: {
     modelValue: 'general',
     navItems: [
-      { id: 'general', label: 'General Settings', iconName: 'wrench' },
+      { id: 'general', label: 'General Settings', icon: Wrench as any },
       {
         id: 'appearance',
         label: 'Appearance & Themes Configuration',
-        iconName: 'image'
+        icon: Image as any
       },
       {
         title: 'ADVANCED OPTIONS',
@@ -154,12 +165,12 @@ export const LongLabels: Story = {
           {
             id: 'performance',
             label: 'Performance & Optimization Settings',
-            iconName: 'zap'
+            icon: Zap as any
           },
           {
             id: 'experimental',
             label: 'Experimental Features (Beta)',
-            iconName: 'puzzle'
+            icon: Puzzle as any
           }
         ]
       }

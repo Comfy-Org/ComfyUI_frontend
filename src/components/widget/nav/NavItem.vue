@@ -9,7 +9,7 @@
     role="button"
     @click="onClick"
   >
-    <NavIcon v-if="iconName" :name="iconName" />
+    <NavIcon v-if="icon" :icon="icon" />
     <i-lucide:folder v-else class="text-xs text-neutral" />
     <span class="flex items-center">
       <slot></slot>
@@ -18,10 +18,12 @@
 </template>
 
 <script setup lang="ts">
+import { DefineComponent } from 'vue'
+
 import NavIcon from './NavIcon.vue'
 
-const { iconName, active, onClick } = defineProps<{
-  iconName?: string
+const { icon, active, onClick } = defineProps<{
+  icon: DefineComponent
   active?: boolean
   onClick: () => void
 }>()

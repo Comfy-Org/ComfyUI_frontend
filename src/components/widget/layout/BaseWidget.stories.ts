@@ -118,20 +118,20 @@ const createStoryTemplate = (args: StoryArgs) => ({
     provide(OnCloseKey, onClose)
 
     const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-      { id: 'installed', label: 'Installed' },
+      { id: 'installed', label: 'Installed', icon: Folder as any },
       {
         title: 'TAGS',
         items: [
-          { id: 'tag-sd15', label: 'SD 1.5' },
-          { id: 'tag-sdxl', label: 'SDXL' },
-          { id: 'tag-utility', label: 'Utility' }
+          { id: 'tag-sd15', label: 'SD 1.5', icon: Folder as any },
+          { id: 'tag-sdxl', label: 'SDXL', icon: Folder as any },
+          { id: 'tag-utility', label: 'Utility', icon: Folder as any }
         ]
       },
       {
         title: 'CATEGORIES',
         items: [
-          { id: 'cat-models', label: 'Models' },
-          { id: 'cat-nodes', label: 'Nodes' }
+          { id: 'cat-models', label: 'Models', icon: Folder as any },
+          { id: 'cat-nodes', label: 'Nodes', icon: Folder as any }
         ]
       }
     ])

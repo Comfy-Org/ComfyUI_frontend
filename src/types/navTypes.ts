@@ -1,7 +1,9 @@
+import { DefineComponent } from 'vue'
+
 export interface NavItemData {
   id: string
   label: string
-  iconName?: string
+  icon: DefineComponent
 }
 
 export interface NavGroupData {
