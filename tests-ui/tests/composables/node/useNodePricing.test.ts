@@ -8,7 +8,12 @@ import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 function createMockNode(
   nodeTypeName: string,
   widgets: Array<{ name: string; value: any }> = [],
-  isApiNode = true
+  isApiNode = true,
+  inputs: Array<{
+    name: string
+    connected?: boolean
+    useLinksArray?: boolean
+  }> = []
 ): LGraphNode {
   const mockWidgets = widgets.map(({ name, value }) => ({
     name,
@@ -16,7 +21,16 @@ function createMockNode(
     type: 'combo'
   })) as IComboWidget[]
 
-  return {
+  const mockInputs =
+    inputs.length > 0
+      ? inputs.map(({ name, connected, useLinksArray }) =>
+          useLinksArray
+            ? { name, links: connected ? [1] : [] }
+            : { name, link: connected ? 1 : null }
+        )
+      : undefined
+
+  const node: any = {
     id: Math.random().toString(),
     widgets: mockWidgets,
     constructor: {
@@ -25,7 +39,24 @@ function createMockNode(
         api_node: isApiNode
       }
     }
-  } as unknown as LGraphNode
+  }
+
+  if (mockInputs) {
+    node.inputs = mockInputs
+    // Provide the common helpers some frontend code may call
+    node.findInputSlot = function (portName: string) {
+      return this.inputs?.findIndex((i: any) => i.name === portName) ?? -1
+    }
+    node.isInputConnected = function (idx: number) {
+      const port = this.inputs?.[idx]
+      if (!port) return false
+      if (typeof port.link !== 'undefined') return port.link != null
+      if (Array.isArray(port.links)) return port.links.length > 0
+      return false
+    }
+  }
+
+  return node as LGraphNode
 }
 
 describe('useNodePricing', () => {
@@ -363,34 +394,51 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - IdeogramV3', () => {
-    it('should return $0.09 for Quality rendering speed', () => {
+    it('should return correct prices for IdeogramV3 node', () => {
       const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('IdeogramV3', [
-        { name: 'rendering_speed', value: 'Quality' }
-      ])
 
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.09/Run')
-    })
+      const testCases = [
+        {
+          rendering_speed: 'Quality',
+          character_image: false,
+          expected: '$0.09/Run'
+        },
+        {
+          rendering_speed: 'Quality',
+          character_image: true,
+          expected: '$0.20/Run'
+        },
+        {
+          rendering_speed: 'Default',
+          character_image: false,
+          expected: '$0.06/Run'
+        },
+        {
+          rendering_speed: 'Default',
+          character_image: true,
+          expected: '$0.15/Run'
+        },
+        {
+          rendering_speed: 'Turbo',
+          character_image: false,
+          expected: '$0.03/Run'
+        },
+        {
+          rendering_speed: 'Turbo',
+          character_image: true,
+          expected: '$0.10/Run'
+        }
+      ]
 
-    it('should return $0.06 for Balanced rendering speed', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('IdeogramV3', [
-        { name: 'rendering_speed', value: 'Balanced' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.06/Run')
-    })
-
-    it('should return $0.03 for Turbo rendering speed', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('IdeogramV3', [
-        { name: 'rendering_speed', value: 'Turbo' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.03/Run')
+      testCases.forEach(({ rendering_speed, character_image, expected }) => {
+        const node = createMockNode(
+          'IdeogramV3',
+          [{ name: 'rendering_speed', value: rendering_speed }],
+          true,
+          [{ name: 'character_image', connected: character_image }]
+        )
+        expect(getNodeDisplayPrice(node)).toBe(expected)
+      })
     })
 
     it('should return range when rendering_speed widget is missing', () => {
@@ -935,7 +983,11 @@ describe('useNodePricing', () => {
           const { getRelevantWidgetNames } = useNodePricing()
 
           const widgetNames = getRelevantWidgetNames('IdeogramV3')
-          expect(widgetNames).toEqual(['rendering_speed', 'num_images'])
+          expect(widgetNames).toEqual([
+            'rendering_speed',
+            'num_images',
+            'character_image'
+          ])
         })
       })
 
