@@ -141,14 +141,6 @@ export const useManagerQueue = (
     isLoading.value = false
   }
 
-  /**
-   * Force refresh of task state by requesting update from server
-   */
-  const refreshTaskState = () => {
-    // This would typically trigger a server request to get latest state
-    // Implementation depends on how the server exposes this functionality
-  }
-
   return {
     // State
     isLoading,
@@ -162,7 +154,6 @@ export const useManagerQueue = (
 
     // Actions
     updateTaskState,
-    refreshTaskState,
     cleanup
   }
 }
