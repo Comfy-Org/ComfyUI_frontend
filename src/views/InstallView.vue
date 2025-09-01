@@ -206,4 +206,57 @@ onMounted(async () => {
 :deep(.p-steppanel) {
   @apply bg-transparent;
 }
+
+/* Custom dot indicator styling */
+:deep(.p-steplist) {
+  @apply fixed bottom-20 left-1/2 transform -translate-x-1/2;
+  @apply flex items-center gap-3;
+  z-index: 10;
+  pointer-events: none;
+}
+
+:deep(.p-steplist .p-step-header) {
+  pointer-events: auto;
+}
+
+:deep(.p-step) {
+  @apply flex-none p-0 m-0;
+}
+
+:deep(.p-step-header) {
+  @apply p-0 border-0 bg-transparent;
+  width: auto !important;
+  min-width: unset !important;
+}
+
+:deep(.p-step-number) {
+  @apply hidden;
+}
+
+:deep(.p-step-title) {
+  @apply block w-2.5 h-2.5 rounded-full transition-all duration-300;
+  background-color: #4a4a4a;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  overflow: hidden !important;
+  text-indent: -9999px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+:deep(.p-step.p-step-active .p-step-title) {
+  background-color: #facc15;
+  @apply scale-110;
+}
+
+:deep(.p-step:not(.p-step-disabled) .p-step-header:hover .p-step-title) {
+  background-color: #6b6b6b;
+  @apply scale-105;
+}
+
+:deep(.p-step.p-step-disabled .p-step-title) {
+  background-color: #2a2a2a;
+  @apply opacity-60;
+  cursor: not-allowed !important;
+}
 </style>
