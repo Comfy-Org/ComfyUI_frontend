@@ -53,7 +53,6 @@ import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -251,13 +250,6 @@ void nextTick(() => {
   versionCompatibilityStore.initialize().catch((error) => {
     console.warn('Version compatibility check failed:', error)
   })
-
-  // Initialize manager state after system stats are loaded
-  useManagerStateStore()
-    .initializeManagerState()
-    .catch((error) => {
-      console.warn('Manager state initialization failed:', error)
-    })
 })
 
 const onGraphReady = () => {

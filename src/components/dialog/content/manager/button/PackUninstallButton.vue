@@ -18,8 +18,8 @@
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { ButtonSize } from '@/types/buttonTypes'
-import type { ManagerPackInfo } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
@@ -30,10 +30,16 @@ const { nodePacks, size } = defineProps<{
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (uninstallItem: NodePack): ManagerPackInfo => {
+const createPayload = (
+  uninstallItem: NodePack
+): ManagerComponents['schemas']['ManagerPackInfo'] => {
+  if (!uninstallItem.id) {
+    throw new Error('Node ID is required for uninstallation')
+  }
+
   return {
     id: uninstallItem.id,
-    version: uninstallItem.latest_version?.version
+    version: uninstallItem.latest_version?.version || 'unknown'
   }
 }
 

@@ -47,6 +47,9 @@
   "Comfy_Canvas_FitView": {
     "label": "Ajuster la vue aux nœuds sélectionnés"
   },
+  "Comfy_Canvas_Lock": {
+    "label": "Verrouiller la toile"
+  },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Déplacer les nœuds sélectionnés vers le bas"
   },
@@ -88,6 +91,9 @@
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Épingler/Désépingler les éléments sélectionnés"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Déverrouiller le Canvas"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom avant"
@@ -164,20 +170,8 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Charger le flux de travail par défaut"
   },
-  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "Nœuds personnalisés (Beta)"
-  },
-  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "Nœuds personnalisés (hérités)"
-  },
-  "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "Menu du gestionnaire (héritage)"
-  },
-  "Comfy_Manager_ShowMissingPacks": {
-    "label": "Installer manquants"
-  },
-  "Comfy_Manager_ShowUpdateAvailablePacks": {
-    "label": "Vérifier les mises à jour"
+  "Comfy_Manager_CustomNodesManager": {
+    "label": "Gestionnaire de Nœuds Personnalisés"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Basculer la boîte de dialogue de progression"
@@ -190,12 +184,6 @@
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
-  },
-  "Comfy_Memory_UnloadModels": {
-    "label": "Décharger les modèles"
-  },
-  "Comfy_Memory_UnloadModelsAndExecutionCache": {
-    "label": "Décharger les modèles et le cache d'exécution"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"

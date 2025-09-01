@@ -8,45 +8,41 @@
   >
     <div class="flex items-center text-base leading-none">
       <div class="flex items-center">
-        <!-- 1. Queue running (install/enable/disable etc.) -->
-        <template v-if="isQueueRunning">
+        <template v-if="isInProgress">
           <DotSpinner duration="1s" class="mr-2" />
           <span>{{ currentTaskName }}</span>
         </template>
-        <!-- 3. Restarting -->
-        <template v-else-if="isRestarting">
-          <DotSpinner duration="1s" class="mr-2" />
-          <span>{{ $t('manager.restartingBackend') }}</span>
-        </template>
-        <!-- 4. Restart completed -->
         <template v-else-if="isRestartCompleted">
           <span class="mr-2">🎉</span>
-          <span>{{ $t('manager.extensionsSuccessfullyInstalled') }}</span>
+          <span>{{ currentTaskName }}</span>
         </template>
-        <!-- 2. Tasks completed (waiting for restart) -->
         <template v-else>
           <span class="mr-2">✅</span>
-          <span>
-            {{ $t('manager.clickToFinishSetup') }}
-            '{{ $t('manager.applyChanges') }}'
-            {{ $t('manager.toFinishSetup') }}
-          </span>
+          <span>{{ $t('manager.restartToApplyChanges') }}</span>
         </template>
       </div>
     </div>
-
     <div class="flex items-center gap-4">
-      <!-- 1. Queue running -->
-      <template v-if="isQueueRunning">
-        <span class="text-sm text-neutral-700 dark-theme:text-neutral-400">
-          {{ completedTasksCount }} {{ $t('g.progressCountOf') }}
-          {{ taskLogs }}
-        </span>
+      <span v-if="isInProgress" class="text-sm text-neutral-700">
+        {{ completedTasksCount }} {{ $t('g.progressCountOf') }}
+        {{ totalTasksCount }}
+      </span>
+      <div class="flex items-center">
         <Button
+          v-if="!isInProgress && !isRestartCompleted"
+          rounded
+          outlined
+          class="mr-4 rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 !dark-theme:bg-transparent dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-800"
+          @click="handleRestart"
+        >
+          {{ $t('manager.applyChanges') }}
+        </Button>
+        <Button
+          v-else-if="!isRestartCompleted"
           :icon="
             progressDialogContent.isExpanded
               ? 'pi pi-chevron-up'
-              : 'pi pi-chevron-right'
+              : 'pi pi-chevron-down'
           "
           text
           rounded
@@ -56,41 +52,17 @@
           :aria-label="progressDialogContent.isExpanded ? 'Collapse' : 'Expand'"
           @click.stop="progressDialogContent.toggle"
         />
-      </template>
-
-      <!-- 2. Tasks completed (waiting for restart) -->
-      <template v-else-if="!isRestarting && !isRestartCompleted">
         <Button
+          icon="pi pi-times"
+          text
           rounded
-          outlined
-          class="rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 dark-theme:bg-none dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-700"
-          @click="handleRestart"
-        >
-          {{ $t('manager.applyChanges') }}
-        </Button>
-      </template>
-
-      <!-- 3. Restarting -->
-      <template v-else-if="isRestarting">
-        <!-- No buttons during restart -->
-      </template>
-
-      <!-- 4. Restart completed -->
-      <template v-else-if="isRestartCompleted">
-        <!-- No buttons after restart completed (auto-close after 3 seconds) -->
-      </template>
-
-      <!-- Common: Close button -->
-      <Button
-        icon="pi pi-times"
-        text
-        rounded
-        size="small"
-        class="font-bold"
-        severity="secondary"
-        aria-label="Close"
-        @click.stop="closeDialog"
-      />
+          size="small"
+          class="font-bold"
+          severity="secondary"
+          aria-label="Close"
+          @click.stop="closeDialog"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -123,15 +95,25 @@ const settingStore = useSettingStore()
 const isRestarting = ref<boolean>(false)
 const isRestartCompleted = ref<boolean>(false)
 
-// Computed states
-const isQueueRunning = computed(() => comfyManagerStore.uncompletedCount > 0)
-const taskLogs = computed(() => comfyManagerStore.taskLogs.length)
+const isInProgress = computed(
+  () => comfyManagerStore.isProcessingTasks || isRestarting.value
+)
 
 const completedTasksCount = computed(() => {
-  if (isQueueRunning.value && taskLogs.value > 0) {
-    return taskLogs.value - 1
-  }
-  return taskLogs.value
+  return (
+    comfyManagerStore.succeededTasksIds.length +
+    comfyManagerStore.failedTasksIds.length
+  )
+})
+
+const totalTasksCount = computed(() => {
+  const completedTasks = Object.keys(comfyManagerStore.taskHistory).length
+  const taskQueue = comfyManagerStore.taskQueue
+  const queuedTasks = taskQueue
+    ? (taskQueue.running_queue?.length || 0) +
+      (taskQueue.pending_queue?.length || 0)
+    : 0
+  return completedTasks + queuedTasks
 })
 
 const closeDialog = () => {
@@ -140,6 +122,12 @@ const closeDialog = () => {
 
 const fallbackTaskName = t('manager.installingDependencies')
 const currentTaskName = computed(() => {
+  if (isRestarting.value) {
+    return t('manager.restartingBackend')
+  }
+  if (isRestartCompleted.value) {
+    return t('manager.extensionsSuccessfullyInstalled')
+  }
   if (!comfyManagerStore.taskLogs.length) return fallbackTaskName
   const task = comfyManagerStore.taskLogs.at(-1)
   return task?.taskName ?? fallbackTaskName
@@ -174,7 +162,7 @@ const handleRestart = async () => {
 
         setTimeout(() => {
           closeDialog()
-          comfyManagerStore.clearLogs()
+          comfyManagerStore.resetTaskState()
         }, 3000)
       }
     }

@@ -1,0 +1,4 @@
+
+> @comfyorg/comfyui-frontend@1.26.7 typecheck /home/c_byrne/projects/comfyui-frontend-testing/ComfyUI_frontend-clone
+> vue-tsc --noEmit
+

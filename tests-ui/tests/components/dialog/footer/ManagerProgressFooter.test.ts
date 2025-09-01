@@ -183,9 +183,9 @@ describe('ManagerProgressFooter', () => {
       // Setup queue running state
       mockComfyManagerStore.uncompletedCount = 3
       mockTaskLogs.push(
-        { taskName: 'Installing pack1', logs: [] },
-        { taskName: 'Installing pack2', logs: [] },
-        { taskName: 'Installing pack3', logs: [] }
+        { taskName: 'Installing pack1', taskId: 'task-1', logs: [] },
+        { taskName: 'Installing pack2', taskId: 'task-2', logs: [] },
+        { taskName: 'Installing pack3', taskId: 'task-3', logs: [] }
       )
 
       const wrapper = mountComponent()
@@ -209,7 +209,11 @@ describe('ManagerProgressFooter', () => {
 
     it('should toggle expansion when expand button is clicked', async () => {
       mockComfyManagerStore.uncompletedCount = 1
-      mockTaskLogs.push({ taskName: 'Installing', logs: [] })
+      mockTaskLogs.push({
+        taskName: 'Installing',
+        taskId: 'task-install',
+        logs: []
+      })
 
       const wrapper = mountComponent()
 
@@ -225,8 +229,8 @@ describe('ManagerProgressFooter', () => {
       // Setup tasks completed state
       mockComfyManagerStore.uncompletedCount = 0
       mockTaskLogs.push(
-        { taskName: 'Installed pack1', logs: [] },
-        { taskName: 'Installed pack2', logs: [] }
+        { taskName: 'Installed pack1', taskId: 'task-done-1', logs: [] },
+        { taskName: 'Installed pack2', taskId: 'task-done-2', logs: [] }
       )
       mockComfyManagerStore.allTasksDone = true
 

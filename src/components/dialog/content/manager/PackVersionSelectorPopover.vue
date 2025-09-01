@@ -69,10 +69,6 @@ import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import {
-  ManagerChannel,
-  ManagerDatabaseSource
-} from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import { isSemVer } from '@/utils/formatUtil'
@@ -181,8 +177,8 @@ const handleSubmit = async () => {
     id: nodePack.id,
     version: selectedVersion.value,
     repository: nodePack.repository ?? '',
-    channel: ManagerChannel.DEFAULT,
-    mode: ManagerDatabaseSource.CACHE,
+    channel: 'default' as ManagerComponents['schemas']['ManagerChannel'],
+    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
     selected_version: selectedVersion.value
   })
 

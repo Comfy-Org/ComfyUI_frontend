@@ -27,6 +27,15 @@
       "title": "مفتاح API",
       "whitelistInfo": "حول المواقع غير المدرجة في القائمة البيضاء"
     },
+    "deleteAccount": {
+      "cancel": "إلغاء",
+      "confirm": "حذف الحساب",
+      "confirmMessage": "هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء وسيتم حذف جميع بياناتك نهائيًا.",
+      "confirmTitle": "حذف الحساب",
+      "deleteAccount": "حذف الحساب",
+      "success": "تم حذف الحساب",
+      "successDetail": "تم حذف حسابك بنجاح."
+    },
     "login": {
       "andText": "و",
       "confirmPasswordLabel": "تأكيد كلمة المرور",

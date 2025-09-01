@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
-import { useComfyManagerService } from '@/services/comfyManagerService'
+import { useExtensionStore } from '@/stores/extensionStore'
 import {
   ManagerUIState,
   useManagerStateStore
@@ -24,8 +24,8 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   }))
 }))
 
-vi.mock('@/services/comfyManagerService', () => ({
-  useComfyManagerService: vi.fn()
+vi.mock('@/stores/extensionStore', () => ({
+  useExtensionStore: vi.fn()
 }))
 
 vi.mock('@/stores/systemStatsStore', () => ({
@@ -38,36 +38,40 @@ describe('useManagerStateStore', () => {
     vi.clearAllMocks()
   })
 
-  describe('initializeManagerState', () => {
-    it('should set DISABLED state when --disable-manager is present', async () => {
+  describe('managerUIState computed', () => {
+    it('should return DISABLED state when --disable-manager is present', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
           system: { argv: ['python', 'main.py', '--disable-manager'] }
         }
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
 
       const store = useManagerStateStore()
-      await store.initializeManagerState()
 
       expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
     })
 
-    it('should set LEGACY_UI state when --enable-manager-legacy-ui is present', async () => {
+    it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
           system: { argv: ['python', 'main.py', '--enable-manager-legacy-ui'] }
         }
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
 
       const store = useManagerStateStore()
-      await store.initializeManagerState()
 
       expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
     })
 
-    it('should set NEW_UI state when client and server both support v4', async () => {
+    it('should return NEW_UI state when client and server both support v4', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
@@ -78,17 +82,16 @@ describe('useManagerStateStore', () => {
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
       } as any)
-      vi.mocked(useComfyManagerService).mockReturnValue({
-        isLegacyManagerUI: vi.fn().mockResolvedValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
       } as any)
 
       const store = useManagerStateStore()
-      await store.initializeManagerState()
 
       expect(store.managerUIState).toBe(ManagerUIState.NEW_UI)
     })
 
-    it('should set LEGACY_UI state when client does not support v4', async () => {
+    it('should return LEGACY_UI state when server supports v4 but client does not', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
@@ -99,38 +102,16 @@ describe('useManagerStateStore', () => {
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
       } as any)
-      vi.mocked(useComfyManagerService).mockReturnValue({
-        isLegacyManagerUI: vi.fn().mockResolvedValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
       } as any)
 
       const store = useManagerStateStore()
-      await store.initializeManagerState()
 
       expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
     })
 
-    it('should set LEGACY_UI state when server does not support v4', async () => {
-      vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
-      } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
-        supports_manager_v4_ui: true
-      })
-      vi.mocked(useFeatureFlags).mockReturnValue({
-        flags: { supportsManagerV4: false },
-        featureFlag: vi.fn()
-      } as any)
-      vi.mocked(useComfyManagerService).mockReturnValue({
-        isLegacyManagerUI: vi.fn().mockResolvedValue({})
-      } as any)
-
-      const store = useManagerStateStore()
-      await store.initializeManagerState()
-
-      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
-    })
-
-    it('should set LEGACY_UI state when isLegacyManagerUI route does not exist', async () => {
+    it('should return LEGACY_UI state when legacy manager extension exists', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
@@ -139,40 +120,52 @@ describe('useManagerStateStore', () => {
         flags: { supportsManagerV4: false },
         featureFlag: vi.fn()
       } as any)
-      vi.mocked(useComfyManagerService).mockReturnValue({
-        isLegacyManagerUI: vi.fn().mockRejectedValue(new Error('404'))
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: [{ name: 'Comfy.CustomNodesManager' }]
       } as any)
 
       const store = useManagerStateStore()
-      await store.initializeManagerState()
 
       expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
     })
 
-    it('should not re-initialize if already initialized', async () => {
-      vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: {
-          system: { argv: ['python', 'main.py', '--disable-manager'] }
-        }
-      } as any)
-
-      const store = useManagerStateStore()
-      await store.initializeManagerState()
-      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
-
-      // Change the mock to return different value
+    it('should return DISABLED state when feature flags are undefined', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: undefined },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
 
-      // Try to initialize again
-      await store.initializeManagerState()
+      const store = useManagerStateStore()
 
-      // Should still be DISABLED from first initialization
       expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
     })
 
-    it('should handle null systemStats gracefully', async () => {
+    it('should return DISABLED state when no manager is available', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: false },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+    })
+
+    it('should handle null systemStats gracefully', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: null
       } as any)
@@ -183,12 +176,11 @@ describe('useManagerStateStore', () => {
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
       } as any)
-      vi.mocked(useComfyManagerService).mockReturnValue({
-        isLegacyManagerUI: vi.fn().mockResolvedValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
       } as any)
 
       const store = useManagerStateStore()
-      await store.initializeManagerState()
 
       expect(store.managerUIState).toBe(ManagerUIState.NEW_UI)
     })

@@ -15,10 +15,6 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import {
-  ManagerChannel,
-  ManagerDatabaseSource
-} from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
@@ -47,8 +43,8 @@ const handleEnable = () => {
       nodePack.latest_version?.version ??
       ('latest' as ManagerComponents['schemas']['SelectedVersion']),
     repository: nodePack.repository ?? '',
-    channel: ManagerChannel.DEFAULT,
-    mode: ManagerDatabaseSource.CACHE,
+    channel: 'default' as ManagerComponents['schemas']['ManagerChannel'],
+    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
     skip_post_install: false
   })
 }

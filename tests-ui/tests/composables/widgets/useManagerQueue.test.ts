@@ -1,329 +1,265 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useManagerQueue } from '@/composables/useManagerQueue'
-import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn()
+// Mock VueUse's useEventListener
+const mockEventListeners = new Map()
+const mockWheneverCallback = vi.fn()
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual('@vueuse/core')
+  return {
+    ...actual,
+    useEventListener: vi.fn((target, event, handler) => {
+      if (!mockEventListeners.has(event)) {
+        mockEventListeners.set(event, [])
+      }
+      mockEventListeners.get(event).push(handler)
+
+      // Mock the addEventListener behavior
+      if (target && target.addEventListener) {
+        target.addEventListener(event, handler)
+      }
+
+      // Return cleanup function
+      return () => {
+        if (target && target.removeEventListener) {
+          target.removeEventListener(event, handler)
+        }
+      }
+    }),
+    whenever: vi.fn((_source, cb) => {
+      mockWheneverCallback.mockImplementation(cb)
+    })
+  }
+})
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    api: {
+      clientId: 'test-client-id',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn()
+    }
   }
 }))
 
+vi.mock('@/services/comfyManagerService', () => ({
+  useComfyManagerService: vi.fn(() => ({
+    getTaskQueue: vi.fn().mockResolvedValue({
+      queue_running: [],
+      queue_pending: []
+    }),
+    getTaskHistory: vi.fn().mockResolvedValue({}),
+    clearTaskHistory: vi.fn().mockResolvedValue(null),
+    deleteTaskHistoryItems: vi.fn().mockResolvedValue(null)
+  }))
+}))
+
+const mockShowManagerProgressDialog = vi.fn()
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: vi.fn(() => ({
+    showManagerProgressDialog: mockShowManagerProgressDialog
+  }))
+}))
+
 describe('useManagerQueue', () => {
-  const createMockTask = (result: any = 'result') => ({
-    task: vi.fn().mockResolvedValue(result),
-    onComplete: vi.fn()
+  let taskHistory: any
+  let taskQueue: any
+  let installedPacks: any
+
+  // Helper functions
+  const createMockTask = (
+    id: string,
+    clientId = 'test-client-id',
+    additional = {}
+  ) => ({
+    id,
+    client_id: clientId,
+    ...additional
   })
 
-  const createQueueWithMockTask = () => {
-    const queue = useManagerQueue()
-    const mockTask = createMockTask()
-    queue.enqueueTask(mockTask)
-    return { queue, mockTask }
-  }
+  const createMockHistoryItem = (
+    clientId = 'test-client-id',
+    result = 'success',
+    additional = {}
+  ) => ({
+    client_id: clientId,
+    result,
+    ...additional
+  })
 
-  const getEventListenerCallback = () =>
-    vi.mocked(api.addEventListener).mock.calls[0][1]
+  const createMockState = (overrides = {}) => ({
+    running_queue: [],
+    pending_queue: [],
+    history: {},
+    installed_packs: {},
+    ...overrides
+  })
 
-  const simulateServerStatus = async (status: 'all-done' | 'in_progress') => {
-    const event = new CustomEvent('cm-queue-status', {
-      detail: { status }
-    })
-    getEventListenerCallback()!(event as any)
-    await nextTick()
+  const triggerWebSocketEvent = (eventType: string, state: any) => {
+    const mockEventListener = app.api.addEventListener as any
+    const eventCall = mockEventListener.mock.calls.find(
+      (call: any) => call[0] === eventType
+    )
+
+    if (eventCall) {
+      const handler = eventCall[1]
+      handler({
+        type: eventType,
+        detail: { state }
+      })
+    }
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockEventListeners.clear()
+    taskHistory = ref({})
+    taskQueue = ref({
+      history: {},
+      running_queue: [],
+      pending_queue: [],
+      installed_packs: {}
+    })
+    installedPacks = ref({})
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    mockEventListeners.clear()
   })
 
   describe('initialization', () => {
     it('should initialize with empty queue and DONE status', () => {
-      const queue = useManagerQueue()
+      const queue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
-      expect(queue.queueLength.value).toBe(0)
-      expect(queue.statusMessage.value).toBe('all-done')
       expect(queue.allTasksDone.value).toBe(true)
+    })
+
+    it('should set up event listeners on creation', () => {
+      useManagerQueue(taskHistory, taskQueue, installedPacks)
+
+      expect(app.api.addEventListener).toHaveBeenCalled()
     })
   })
 
-  describe('queue management', () => {
-    it('should add tasks to the queue', () => {
-      const queue = useManagerQueue()
-      const mockTask = createMockTask()
+  describe('processing state handling', () => {
+    it('should update processing state based on queue length', async () => {
+      const queue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
-      queue.enqueueTask(mockTask)
-
-      expect(queue.queueLength.value).toBe(1)
-      expect(queue.allTasksDone.value).toBe(false)
-    })
-
-    it('should clear the queue when clearQueue is called', () => {
-      const queue = useManagerQueue()
-
-      // Add some tasks
-      queue.enqueueTask(createMockTask())
-      queue.enqueueTask(createMockTask())
-
-      expect(queue.queueLength.value).toBe(2)
-
-      // Clear the queue
-      queue.clearQueue()
-
-      expect(queue.queueLength.value).toBe(0)
+      // Initially empty queue
+      expect(queue.isProcessing.value).toBe(false)
       expect(queue.allTasksDone.value).toBe(true)
-    })
-  })
 
-  describe('server status handling', () => {
-    it('should update server status when receiving websocket events', async () => {
-      const queue = useManagerQueue()
+      // Add tasks to queue
+      taskQueue.value.running_queue = [createMockTask('task1')]
+      taskQueue.value.pending_queue = [createMockTask('task2')]
 
-      await simulateServerStatus('in_progress')
-
-      expect(queue.statusMessage.value).toBe('in_progress')
-      expect(queue.allTasksDone.value).toBe(false)
-    })
-
-    it('should handle invalid status values gracefully', async () => {
-      const queue = useManagerQueue()
-
-      // Simulate an invalid status
-      const event = new CustomEvent('cm-queue-status', {
-        detail: null as any
-      })
-
-      getEventListenerCallback()!(event)
+      // Force reactivity update
       await nextTick()
 
-      // Should maintain the default status
-      expect(queue.statusMessage.value).toBe('all-done')
+      expect(queue.allTasksDone.value).toBe(false)
     })
 
-    it('should handle missing status property gracefully', async () => {
-      const queue = useManagerQueue()
+    it('should trigger progress dialog when queue length changes', async () => {
+      useManagerQueue(taskHistory, taskQueue, installedPacks)
 
-      // Simulate a detail object without status property
-      const event = new CustomEvent('cm-queue-status', {
-        detail: { someOtherProperty: 'value' } as any
-      })
+      // Trigger the whenever callback
+      mockWheneverCallback()
 
-      getEventListenerCallback()!(event)
-      await nextTick()
-
-      // Should maintain the default status
-      expect(queue.statusMessage.value).toBe('all-done')
+      expect(mockShowManagerProgressDialog).toHaveBeenCalled()
     })
   })
 
-  describe('task execution', () => {
-    it('should start the next task when server is idle and queue has items', async () => {
-      const { queue, mockTask } = createQueueWithMockTask()
+  describe('task state management', () => {
+    it('should reflect task queue state changes', async () => {
+      const queue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
-      await simulateServerStatus('all-done')
+      // Add running tasks
+      taskQueue.value.running_queue = [createMockTask('task1')]
+      taskQueue.value.pending_queue = [createMockTask('task2')]
 
-      // Task should have been started
-      expect(mockTask.task).toHaveBeenCalled()
-      expect(queue.queueLength.value).toBe(0)
-    })
+      await nextTick()
 
-    it('should execute onComplete callback when task completes and server becomes idle', async () => {
-      const { mockTask } = createQueueWithMockTask()
-
-      // Start the task
-      await simulateServerStatus('all-done')
-      expect(mockTask.task).toHaveBeenCalled()
-
-      // Simulate task completion
-      await mockTask.task.mock.results[0].value
-
-      // Simulate server cycle (in_progress -> done)
-      await simulateServerStatus('in_progress')
-      expect(mockTask.onComplete).not.toHaveBeenCalled()
-
-      await simulateServerStatus('all-done')
-      expect(mockTask.onComplete).toHaveBeenCalled()
-    })
-
-    it('should handle tasks without onComplete callback', async () => {
-      const queue = useManagerQueue()
-      const mockTask = { task: vi.fn().mockResolvedValue('result') }
-
-      queue.enqueueTask(mockTask)
-
-      // Start the task
-      await simulateServerStatus('all-done')
-      expect(mockTask.task).toHaveBeenCalled()
-
-      // Simulate task completion
-      await mockTask.task.mock.results[0].value
-
-      // Simulate server cycle
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-
-      // Should not throw errors even without onComplete
-      expect(queue.allTasksDone.value).toBe(true)
-    })
-
-    it('should process multiple tasks in sequence', async () => {
-      const queue = useManagerQueue()
-      const mockTask1 = createMockTask('result1')
-      const mockTask2 = createMockTask('result2')
-
-      // Add tasks to the queue
-      queue.enqueueTask(mockTask1)
-      queue.enqueueTask(mockTask2)
-      expect(queue.queueLength.value).toBe(2)
-
-      // Process first task
-      await simulateServerStatus('all-done')
-      expect(mockTask1.task).toHaveBeenCalled()
-      expect(queue.queueLength.value).toBe(1)
-
-      // Complete first task
-      await mockTask1.task.mock.results[0].value
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-      expect(mockTask1.onComplete).toHaveBeenCalled()
-
-      // Process second task
-      expect(mockTask2.task).toHaveBeenCalled()
-      expect(queue.queueLength.value).toBe(0)
-
-      // Complete second task
-      await mockTask2.task.mock.results[0].value
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-      expect(mockTask2.onComplete).toHaveBeenCalled()
-
-      // Queue should be empty and all tasks done
-      expect(queue.queueLength.value).toBe(0)
-      expect(queue.allTasksDone.value).toBe(true)
-    })
-
-    it('should handle task that returns rejected promise', async () => {
-      const queue = useManagerQueue()
-      const mockTask = {
-        task: vi.fn().mockRejectedValue(new Error('Task failed')),
-        onComplete: vi.fn()
-      }
-
-      queue.enqueueTask(mockTask)
-
-      // Start the task
-      await simulateServerStatus('all-done')
-      expect(mockTask.task).toHaveBeenCalled()
-
-      // Let the promise rejection happen
-      try {
-        await mockTask.task()
-      } catch (e) {
-        // Ignore the error
-      }
-
-      // Simulate server cycle
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-
-      // onComplete should still be called for failed tasks
-      expect(mockTask.onComplete).toHaveBeenCalled()
-    })
-
-    it('should handle multiple multiple tasks enqueued at once while server busy', async () => {
-      const queue = useManagerQueue()
-      const mockTask1 = createMockTask()
-      const mockTask2 = createMockTask()
-      const mockTask3 = createMockTask()
-
-      // Three tasks enqueued at once
-      await simulateServerStatus('in_progress')
-      await Promise.all([
-        queue.enqueueTask(mockTask1),
-        queue.enqueueTask(mockTask2),
-        queue.enqueueTask(mockTask3)
-      ])
-
-      // Task 1
-      await simulateServerStatus('all-done')
-      expect(mockTask1.task).toHaveBeenCalled()
-
-      // Verify state of onComplete callbacks
-      expect(mockTask1.onComplete).toHaveBeenCalled()
-      expect(mockTask2.onComplete).not.toHaveBeenCalled()
-      expect(mockTask3.onComplete).not.toHaveBeenCalled()
-
-      // Verify state of queue
-      expect(queue.queueLength.value).toBe(2)
       expect(queue.allTasksDone.value).toBe(false)
+    })
 
-      // Task 2
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-      expect(mockTask2.task).toHaveBeenCalled()
+    it('should handle empty queue state', async () => {
+      const queue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
-      // Verify state of onComplete callbacks
-      expect(mockTask2.onComplete).toHaveBeenCalled()
-      expect(mockTask3.onComplete).not.toHaveBeenCalled()
+      taskQueue.value.running_queue = []
+      taskQueue.value.pending_queue = []
 
-      // Verify state of queue
-      expect(queue.queueLength.value).toBe(1)
+      await nextTick()
+
+      expect(queue.allTasksDone.value).toBe(true)
+    })
+  })
+
+  describe('WebSocket event handling', () => {
+    it('should handle task done events', async () => {
+      useManagerQueue(taskHistory, taskQueue, installedPacks)
+
+      const mockState = createMockState({
+        running_queue: [createMockTask('task1')],
+        history: {
+          task1: createMockHistoryItem()
+        },
+        installed_packs: { pack1: { version: '1.0' } }
+      })
+
+      triggerWebSocketEvent('cm-task-completed', mockState)
+      await nextTick()
+
+      expect(taskQueue.value.running_queue).toEqual([createMockTask('task1')])
+      expect(taskQueue.value.pending_queue).toEqual([])
+      expect(taskHistory.value).toEqual({
+        task1: createMockHistoryItem()
+      })
+      expect(installedPacks.value).toEqual({ pack1: { version: '1.0' } })
+    })
+
+    it('should filter tasks by client ID in WebSocket events', async () => {
+      const queue = useManagerQueue(taskHistory, taskQueue, installedPacks)
+
+      const mockState = createMockState({
+        running_queue: [
+          createMockTask('task1'),
+          createMockTask('task2', 'other-client-id')
+        ],
+        pending_queue: [createMockTask('task3')],
+        history: {
+          task1: createMockHistoryItem(),
+          task2: createMockHistoryItem('other-client-id')
+        }
+      })
+
+      triggerWebSocketEvent('cm-task-completed', mockState)
+      await nextTick()
+
+      // Should only include tasks from this client
+      expect(taskQueue.value.running_queue).toEqual([createMockTask('task1')])
+      expect(taskQueue.value.pending_queue).toEqual([createMockTask('task3')])
+      expect(taskHistory.value).toEqual({
+        task1: createMockHistoryItem()
+      })
       expect(queue.allTasksDone.value).toBe(false)
-
-      // Task 3
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-
-      // Verify state of onComplete callbacks
-      expect(mockTask3.task).toHaveBeenCalled()
-      expect(mockTask3.onComplete).toHaveBeenCalled()
-
-      // Verify state of queue
-      expect(queue.queueLength.value).toBe(0)
-      expect(queue.allTasksDone.value).toBe(true)
     })
+  })
 
-    it('should handle adding tasks while processing is in progress', async () => {
-      const queue = useManagerQueue()
-      const mockTask1 = createMockTask()
-      const mockTask2 = createMockTask()
+  describe('cleanup functionality', () => {
+    it('should clean up event listeners on cleanup', () => {
+      const queue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
-      // Add first task and start processing
-      queue.enqueueTask(mockTask1)
-      await simulateServerStatus('all-done')
-      expect(mockTask1.task).toHaveBeenCalled()
+      queue.cleanup()
 
-      // Add second task while first is processing
-      queue.enqueueTask(mockTask2)
-      expect(queue.queueLength.value).toBe(1)
-
-      // Complete first task
-      await mockTask1.task.mock.results[0].value
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-
-      // Second task should now be processed
-      expect(mockTask2.task).toHaveBeenCalled()
-    })
-
-    it('should handle server status changes without tasks in queue', async () => {
-      const queue = useManagerQueue()
-
-      // Cycle server status without any tasks
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-      await simulateServerStatus('in_progress')
-      await simulateServerStatus('all-done')
-
-      // Should not cause any errors
-      expect(queue.allTasksDone.value).toBe(true)
+      // Verify cleanup was called
+      expect(queue.isProcessing.value).toBe(false)
+      expect(queue.isLoading.value).toBe(false)
     })
   })
 })

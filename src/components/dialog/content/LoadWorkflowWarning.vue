@@ -51,7 +51,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -151,11 +151,6 @@ const openManager = async () => {
       break
   }
 }
-
-onMounted(async () => {
-  // Initialize manager state to determine if manager is disabled
-  await managerStateStore.initializeManagerState()
-})
 </script>
 
 <style scoped>

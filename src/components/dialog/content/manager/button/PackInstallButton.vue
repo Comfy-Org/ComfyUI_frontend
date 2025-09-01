@@ -22,12 +22,8 @@ import DotSpinner from '@/components/common/DotSpinner.vue'
 import { t } from '@/i18n'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { ButtonSize } from '@/types/buttonTypes'
-import {
-  ManagerChannel,
-  ManagerDatabaseSource,
-  SelectedVersion
-} from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
@@ -48,16 +44,21 @@ const {
 const managerStore = useComfyManagerStore()
 
 const createPayload = (installItem: NodePack) => {
+  if (!installItem.id) {
+    throw new Error('Node ID is required for installation')
+  }
+
   const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
   const versionToInstall = isUnclaimedPack
-    ? SelectedVersion.NIGHTLY
-    : installItem.latest_version?.version ?? SelectedVersion.LATEST
+    ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
+    : installItem.latest_version?.version ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
 
   return {
     id: installItem.id,
     repository: installItem.repository ?? '',
-    channel: ManagerChannel.DEV,
-    mode: ManagerDatabaseSource.CACHE,
+    channel: 'dev' as ManagerComponents['schemas']['ManagerChannel'],
+    mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
     selected_version: versionToInstall,
     version: versionToInstall
   }

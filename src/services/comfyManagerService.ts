@@ -1,17 +1,17 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
+import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
-import {
-  type InstallPackParams,
-  type InstalledPacksResponse,
-  type ManagerPackInfo,
-  type ManagerQueueStatus,
-  SelectedVersion,
-  type UpdateAllPacksParams
-} from '@/types/comfyManagerTypes'
+import { components } from '@/types/generatedManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
+
+type ManagerQueueStatus = components['schemas']['QueueStatus']
+type InstallPackParams = components['schemas']['InstallPackParams']
+type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
+type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
+type ManagerTaskHistory = components['schemas']['HistoryResponse']
+type QueueTaskItem = components['schemas']['QueueTaskItem']
 
 const GENERIC_SECURITY_ERR_MSG =
   'Forbidden: A security error has occurred. Please check the terminal logs'
@@ -20,28 +20,21 @@ const GENERIC_SECURITY_ERR_MSG =
  * API routes for ComfyUI Manager
  */
 enum ManagerRoute {
-  START_QUEUE = 'manager/queue/start',
-  RESET_QUEUE = 'manager/queue/reset',
-  QUEUE_STATUS = 'manager/queue/status',
-  INSTALL = 'manager/queue/install',
-  UPDATE = 'manager/queue/update',
-  UPDATE_ALL = 'manager/queue/update_all',
-  UNINSTALL = 'manager/queue/uninstall',
-  DISABLE = 'manager/queue/disable',
-  // FIX_NODE is currently unused but kept for potential future implementation
-  FIX_NODE = 'manager/queue/fix',
-  LIST_INSTALLED = 'customnode/installed',
-  IMPORT_FAIL_INFO = 'customnode/import_fail_info',
-  REBOOT = 'manager/reboot',
-  IS_LEGACY_MANAGER_UI = 'manager/is_legacy_manager_ui'
+  START_QUEUE = 'v2/manager/queue/start',
+  RESET_QUEUE = 'v2/manager/queue/reset',
+  QUEUE_STATUS = 'v2/manager/queue/status',
+  UPDATE_ALL = 'v2/manager/queue/update_all',
+  LIST_INSTALLED = 'v2/customnode/installed',
+  GET_NODES = 'v2/customnode/getmappings',
+  IMPORT_FAIL_INFO = 'v2/customnode/import_fail_info',
+  REBOOT = 'v2/manager/reboot',
+  IS_LEGACY_MANAGER_UI = 'v2/manager/is_legacy_manager_ui',
+  TASK_HISTORY = 'v2/manager/queue/history',
+  QUEUE_TASK = 'v2/manager/queue/task'
 }
 
-// Create axios client with conditional v2 prefix based on manager v4 support
-const supportsV4 = api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
-const baseURL = supportsV4 ? api.apiURL('/v2/') : api.apiURL('/')
-
 const managerApiClient = axios.create({
-  baseURL,
+  baseURL: api.apiURL(''),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -54,7 +47,6 @@ const managerApiClient = axios.create({
 export const useComfyManagerService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const didStartQueue = ref(false)
 
   const handleRequestError = (
     err: unknown,
@@ -115,28 +107,21 @@ export const useComfyManagerService = () => {
       201: 'Created: ComfyUI-Manager job queue is already running'
     }
 
-    didStartQueue.value = true
-
     return executeRequest<null>(
       () => managerApiClient.get(ManagerRoute.START_QUEUE, { signal }),
       { errorContext, routeSpecificErrors }
     )
   }
 
-  const getQueueStatus = async (signal?: AbortSignal) => {
+  const getQueueStatus = async (client_id?: string, signal?: AbortSignal) => {
     const errorContext = 'Getting ComfyUI-Manager queue status'
 
     return executeRequest<ManagerQueueStatus>(
-      () => managerApiClient.get(ManagerRoute.QUEUE_STATUS, { signal }),
-      { errorContext }
-    )
-  }
-
-  const resetQueue = async (signal?: AbortSignal) => {
-    const errorContext = 'Resetting ComfyUI-Manager queue'
-
-    return executeRequest<null>(
-      () => managerApiClient.get(ManagerRoute.RESET_QUEUE, { signal }),
+      () =>
+        managerApiClient.get(ManagerRoute.QUEUE_STATUS, {
+          params: client_id ? { client_id } : undefined,
+          signal
+        }),
       { errorContext }
     )
   }
@@ -159,73 +144,66 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const installPack = async (
-    params: InstallPackParams,
+  const queueTask = async (
+    kind: QueueTaskItem['kind'],
+    params: QueueTaskItem['params'],
+    ui_id?: string,
     signal?: AbortSignal
   ) => {
-    const errorContext = `Installing pack ${params.id}`
+    const task: QueueTaskItem = {
+      kind,
+      params,
+      ui_id: ui_id || uuidv4(),
+      client_id: api.clientId ?? api.initialClientId ?? 'unknown'
+    }
+
+    const errorContext = `Queueing ${task.kind} task`
     const routeSpecificErrors = {
       403: GENERIC_SECURITY_ERR_MSG,
-      404:
-        params.selected_version === SelectedVersion.NIGHTLY
-          ? `Not Found: Node pack ${params.id} does not provide nightly version`
-          : GENERIC_SECURITY_ERR_MSG
+      404: `Not Found: Task could not be queued`
     }
 
     return executeRequest<null>(
-      () => managerApiClient.post(ManagerRoute.INSTALL, params, { signal }),
+      () => managerApiClient.post(ManagerRoute.QUEUE_TASK, task, { signal }),
       { errorContext, routeSpecificErrors, isQueueOperation: true }
     )
+  }
+
+  const installPack = async (
+    params: InstallPackParams,
+    ui_id?: string,
+    signal?: AbortSignal
+  ) => {
+    return queueTask('install', params, ui_id, signal)
   }
 
   const uninstallPack = async (
-    params: ManagerPackInfo,
+    params: components['schemas']['UninstallPackParams'],
+    ui_id?: string,
     signal?: AbortSignal
   ) => {
-    const errorContext = `Uninstalling pack ${params.id}`
-    const routeSpecificErrors = {
-      403: GENERIC_SECURITY_ERR_MSG
-    }
-
-    return executeRequest<null>(
-      () => managerApiClient.post(ManagerRoute.UNINSTALL, params, { signal }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
-    )
+    return queueTask('uninstall', params, ui_id, signal)
   }
 
   const disablePack = async (
-    params: ManagerPackInfo,
+    params: components['schemas']['DisablePackParams'],
+    ui_id?: string,
     signal?: AbortSignal
   ): Promise<null> => {
-    const errorContext = `Disabling pack ${params.id}`
-    const routeSpecificErrors = {
-      404: `Pack ${params.id} not found or not installed`,
-      409: `Pack ${params.id} is already disabled`
-    }
-
-    return executeRequest<null>(
-      () => managerApiClient.post(ManagerRoute.DISABLE, params, { signal }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
-    )
+    return queueTask('disable', params, ui_id, signal)
   }
 
   const updatePack = async (
-    params: ManagerPackInfo,
+    params: components['schemas']['UpdatePackParams'],
+    ui_id?: string,
     signal?: AbortSignal
   ): Promise<null> => {
-    const errorContext = `Updating pack ${params.id}`
-    const routeSpecificErrors = {
-      403: GENERIC_SECURITY_ERR_MSG
-    }
-
-    return executeRequest<null>(
-      () => managerApiClient.post(ManagerRoute.UPDATE, params, { signal }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
-    )
+    return queueTask('update', params, ui_id, signal)
   }
 
   const updateAllPacks = async (
-    params?: UpdateAllPacksParams,
+    params: UpdateAllPacksParams = {},
+    ui_id?: string,
     signal?: AbortSignal
   ) => {
     const errorContext = 'Updating all packs'
@@ -234,8 +212,18 @@ export const useComfyManagerService = () => {
       401: 'Unauthorized: ComfyUI-Manager job queue is busy'
     }
 
+    const queryParams = {
+      mode: params.mode,
+      client_id: api.clientId ?? api.initialClientId ?? 'unknown',
+      ui_id: ui_id || uuidv4()
+    }
+
     return executeRequest<null>(
-      () => managerApiClient.get(ManagerRoute.UPDATE_ALL, { params, signal }),
+      () =>
+        managerApiClient.get(ManagerRoute.UPDATE_ALL, {
+          params: queryParams,
+          signal
+        }),
       { errorContext, routeSpecificErrors, isQueueOperation: true }
     )
   }
@@ -261,6 +249,27 @@ export const useComfyManagerService = () => {
     )
   }
 
+  const getTaskHistory = async (
+    options: {
+      ui_id?: string
+      max_items?: number
+      client_id?: string
+      offset?: number
+    } = {},
+    signal?: AbortSignal
+  ) => {
+    const errorContext = 'Getting ComfyUI-Manager task history'
+
+    return executeRequest<ManagerTaskHistory>(
+      () =>
+        managerApiClient.get(ManagerRoute.TASK_HISTORY, {
+          params: options,
+          signal
+        }),
+      { errorContext }
+    )
+  }
+
   return {
     // State
     isLoading,
@@ -268,8 +277,8 @@ export const useComfyManagerService = () => {
 
     // Queue operations
     startQueue,
-    resetQueue,
     getQueueStatus,
+    getTaskHistory,
 
     // Pack management
     listInstalledPacks,
