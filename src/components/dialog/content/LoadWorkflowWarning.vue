@@ -33,6 +33,7 @@
   </ListBox>
   <div v-if="showManagerButtons" class="flex justify-end py-3">
     <PackInstallButton
+      v-if="showInstallAllButton"
       :disabled="
         isLoading || !!error || missingNodePacks.length === 0 || isInstalling
       "
@@ -113,6 +114,11 @@ const managerStateStore = useManagerStateStore()
 // Show manager buttons unless manager is disabled
 const showManagerButtons = computed(() => {
   return managerStateStore.managerUIState !== ManagerUIState.DISABLED
+})
+
+// Only show Install All button for NEW_UI (new manager with v4 support)
+const showInstallAllButton = computed(() => {
+  return managerStateStore.managerUIState === ManagerUIState.NEW_UI
 })
 
 const openManager = async () => {
