@@ -207,62 +207,64 @@ onMounted(async () => {
   @apply bg-transparent;
 }
 
-/* Ensure stepper container is positioned */
-:deep(.p-stepper) {
-  @apply relative;
-}
-
-/* Custom dot indicator styling */
-:deep(.p-steplist) {
-  @apply absolute left-1/2 transform -translate-x-1/2;
-  @apply flex items-center justify-center gap-3;
-  bottom: 5rem;
+/* Custom dot indicator styling - position dots above Next button */
+:deep(.p-stepper .p-steplist) {
+  position: fixed;
+  bottom: 160px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   z-index: 10;
   pointer-events: none;
 }
 
-:deep(.p-steplist .p-step-header) {
+:deep(.p-stepper .p-steplist .p-step-header) {
   pointer-events: auto;
 }
 
-:deep(.p-step) {
+:deep(.p-stepper .p-step) {
   @apply flex-none p-0 m-0;
 }
 
-:deep(.p-step-header) {
+:deep(.p-stepper .p-step-header) {
   @apply p-0 border-0 bg-transparent;
-  width: auto !important;
-  min-width: unset !important;
+  width: auto;
+  min-width: unset;
 }
 
-:deep(.p-step-number) {
+:deep(.p-stepper .p-step-number) {
   @apply hidden;
 }
 
-:deep(.p-step-title) {
+:deep(.p-stepper .p-step-title) {
   @apply block w-2.5 h-2.5 rounded-full transition-all duration-300;
   background-color: #4a4a4a;
-  font-size: 0 !important;
-  line-height: 0 !important;
-  overflow: hidden !important;
-  text-indent: -9999px !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+  text-indent: -9999px;
+  padding: 0;
+  margin: 0;
 }
 
-:deep(.p-step.p-step-active .p-step-title) {
+:deep(.p-stepper .p-step.p-step-active .p-step-title) {
   background-color: #facc15;
   @apply scale-110;
 }
 
-:deep(.p-step:not(.p-step-disabled) .p-step-header:hover .p-step-title) {
+:deep(
+    .p-stepper .p-step:not(.p-step-disabled) .p-step-header:hover .p-step-title
+  ) {
   background-color: #6b6b6b;
   @apply scale-105;
 }
 
-:deep(.p-step.p-step-disabled .p-step-title) {
+:deep(.p-stepper .p-step.p-step-disabled .p-step-title) {
   background-color: #2a2a2a;
   @apply opacity-60;
-  cursor: not-allowed !important;
+  cursor: not-allowed;
 }
 </style>
