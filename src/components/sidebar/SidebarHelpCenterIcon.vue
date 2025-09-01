@@ -42,7 +42,6 @@
           'sidebar-right': sidebarLocation === 'right',
           'small-sidebar': sidebarSize === 'small'
         }"
-        @whats-new-dismissed="handleWhatsNewDismissed"
       />
     </Teleport>
 
@@ -64,9 +63,6 @@ import { computed, onMounted } from 'vue'
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
 import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
-import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useConflictDetection } from '@/composables/useConflictDetection'
-import { useDialogService } from '@/services/dialogService'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
@@ -76,22 +72,8 @@ import SidebarIcon from './SidebarIcon.vue'
 const settingStore = useSettingStore()
 const releaseStore = useReleaseStore()
 const helpCenterStore = useHelpCenterStore()
+const { shouldShowRedDot } = storeToRefs(releaseStore)
 const { isVisible: isHelpCenterVisible } = storeToRefs(helpCenterStore)
-const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
-
-const conflictDetection = useConflictDetection()
-
-const { showNodeConflictDialog } = useDialogService()
-
-// Use conflict acknowledgment state from composable - call only once
-const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
-  useConflictAcknowledgment()
-
-// Use either release red dot or conflict red dot
-const shouldShowRedDot = computed(() => {
-  const releaseRedDot = showReleaseRedDot
-  return releaseRedDot || shouldShowConflictRedDot.value
-})
 
 const sidebarLocation = computed(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -105,36 +87,6 @@ const toggleHelpCenter = () => {
 
 const closeHelpCenter = () => {
   helpCenterStore.hide()
-}
-
-/**
- * Handle What's New popup dismissal
- * Check if conflict modal should be shown after ComfyUI update
- */
-const handleWhatsNewDismissed = async () => {
-  try {
-    // Check if conflict modal should be shown after update
-    const shouldShow =
-      await conflictDetection.shouldShowConflictModalAfterUpdate()
-    if (shouldShow) {
-      showConflictModal()
-    }
-  } catch (error) {
-    console.error('[HelpCenter] Error checking conflict modal:', error)
-  }
-}
-/**
- * Show the node conflict dialog with current conflict data
- */
-const showConflictModal = () => {
-  showNodeConflictDialog({
-    showAfterWhatsNew: true,
-    dialogComponentProps: {
-      onClose: () => {
-        markConflictsAsSeen()
-      }
-    }
-  })
 }
 
 // Initialize release store on mount

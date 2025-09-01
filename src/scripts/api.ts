@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { get } from 'es-toolkit/compat'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
 import type {
@@ -36,7 +35,6 @@ import type {
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useToastStore } from '@/stores/toastStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
@@ -1022,56 +1020,6 @@ export class ComfyApi extends EventTarget {
     return (await axios.get(this.internalURL('/folder_paths'))).data
   }
 
-  /* Frees memory by unloading models and optionally freeing execution cache
-   * @param {Object} options - The options object
-   * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
-   */
-  async freeMemory(options: { freeExecutionCache: boolean }) {
-    try {
-      let mode = ''
-      if (options.freeExecutionCache) {
-        mode = '{"unload_models": true, "free_memory": true}'
-      } else {
-        mode = '{"unload_models": true}'
-      }
-
-      const res = await this.fetchApi(`/free`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: mode
-      })
-
-      if (res.status === 200) {
-        if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
-          })
-        } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
-        }
-      } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.',
-          life: 5000
-        })
-      }
-    } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.',
-        life: 5000
-      })
-    }
-  }
-
   /**
    * Gets the custom nodes i18n data from the server.
    *
@@ -1083,21 +1031,21 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Checks if the server supports a specific feature.
-   * @param featureName The name of the feature to check (supports dot notation for nested values)
+   * @param featureName The name of the feature to check
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
-    return get(this.serverFeatureFlags, featureName) === true
+    return this.serverFeatureFlags[featureName] === true
   }
 
   /**
    * Gets a server feature flag value.
-   * @param featureName The name of the feature to get (supports dot notation for nested values)
+   * @param featureName The name of the feature to get
    * @param defaultValue The default value if the feature is not found
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    return get(this.serverFeatureFlags, featureName, defaultValue) as T
+    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
   }
 
   /**

@@ -1,45 +1,35 @@
 <template>
-  <IconTextButton
+  <PackActionButton
     v-bind="$attrs"
-    type="transparent"
     :label="
       nodePacks.length > 1
         ? $t('manager.uninstallSelected')
         : $t('manager.uninstall')
     "
-    :border="true"
-    :size="size"
-    class="border-red-500"
-    @click="uninstallItems"
+    severity="danger"
+    :loading-message="$t('manager.uninstalling')"
+    @action="uninstallItems"
   />
 </template>
 
 <script setup lang="ts">
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import PackActionButton from '@/components/dialog/content/manager/button/PackActionButton.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { ButtonSize } from '@/types/buttonTypes'
+import type { ManagerPackInfo } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks, size } = defineProps<{
+const { nodePacks } = defineProps<{
   nodePacks: NodePack[]
-  size?: ButtonSize
 }>()
 
 const managerStore = useComfyManagerStore()
 
-const createPayload = (
-  uninstallItem: NodePack
-): ManagerComponents['schemas']['ManagerPackInfo'] => {
-  if (!uninstallItem.id) {
-    throw new Error('Node ID is required for uninstallation')
-  }
-
+const createPayload = (uninstallItem: NodePack): ManagerPackInfo => {
   return {
     id: uninstallItem.id,
-    version: uninstallItem.latest_version?.version || 'unknown'
+    version: uninstallItem.latest_version?.version
   }
 }
 

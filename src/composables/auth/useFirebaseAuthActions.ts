@@ -135,6 +135,16 @@ export const useFirebaseAuthActions = () => {
     reportError
   )
 
+  const deleteAccount = wrapWithErrorHandlingAsync(async () => {
+    await authStore.deleteAccount()
+    toastStore.add({
+      severity: 'success',
+      summary: t('auth.deleteAccount.success'),
+      detail: t('auth.deleteAccount.successDetail'),
+      life: 5000
+    })
+  }, reportError)
+
   return {
     logout,
     sendPasswordReset,
@@ -146,6 +156,7 @@ export const useFirebaseAuthActions = () => {
     signInWithEmail,
     signUpWithEmail,
     updatePassword,
+    deleteAccount,
     accessError
   }
 }

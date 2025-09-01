@@ -16,14 +16,6 @@ const meta: Meta<typeof IconButton> = {
       control: { type: 'select' },
       options: ['primary', 'secondary', 'transparent']
     },
-    border: {
-      control: 'boolean',
-      description: 'Toggle border attribute'
-    },
-    disabled: {
-      control: 'boolean',
-      description: 'Toggle disable status'
-    },
     onClick: { action: 'clicked' }
   }
 }

@@ -29,7 +29,7 @@
     />
 
     <template v-if="item.footerComponent" #footer>
-      <component :is="item.footerComponent" v-bind="item.footerProps" />
+      <component :is="item.footerComponent" />
     </template>
   </Dialog>
 </template>

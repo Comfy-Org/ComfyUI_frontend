@@ -1,53 +1,49 @@
 <template>
   <div
-    class="w-full px-6 py-2 shadow-lg flex items-center justify-between"
+    class="w-full px-6 py-4 shadow-lg flex items-center justify-between"
     :class="{
       'rounded-t-none': progressDialogContent.isExpanded,
       'rounded-lg': !progressDialogContent.isExpanded
     }"
   >
-    <div class="flex items-center text-base leading-none">
+    <div class="justify-center text-sm font-bold leading-none">
       <div class="flex items-center">
         <template v-if="isInProgress">
-          <DotSpinner duration="1s" class="mr-2" />
-          <span>{{ currentTaskName }}</span>
-        </template>
-        <template v-else-if="isRestartCompleted">
-          <span class="mr-2">🎉</span>
+          <i class="pi pi-spin pi-spinner mr-2 text-3xl" />
           <span>{{ currentTaskName }}</span>
         </template>
         <template v-else>
-          <span class="mr-2">✅</span>
-          <span>{{ $t('manager.restartToApplyChanges') }}</span>
+          <i class="pi pi-check-circle mr-2 text-green-500" />
+          <span class="leading-none">{{
+            $t('manager.restartToApplyChanges')
+          }}</span>
         </template>
       </div>
     </div>
     <div class="flex items-center gap-4">
-      <span v-if="isInProgress" class="text-sm text-neutral-700">
-        {{ completedTasksCount }} {{ $t('g.progressCountOf') }}
-        {{ totalTasksCount }}
+      <span v-if="isInProgress" class="text-xs font-bold text-neutral-600">
+        {{ comfyManagerStore.uncompletedCount }} {{ $t('g.progressCountOf') }}
+        {{ comfyManagerStore.taskLogs.length }}
       </span>
       <div class="flex items-center">
         <Button
-          v-if="!isInProgress && !isRestartCompleted"
+          v-if="!isInProgress"
           rounded
           outlined
-          class="mr-4 rounded-md border-2 px-3 text-neutral-600 border-neutral-900 hover:bg-neutral-100 !dark-theme:bg-transparent dark-theme:text-white dark-theme:border-white dark-theme:hover:bg-neutral-800"
+          class="px-4 py-2 rounded-md mr-4"
           @click="handleRestart"
         >
-          {{ $t('manager.applyChanges') }}
+          {{ $t('g.restart') }}
         </Button>
         <Button
-          v-else-if="!isRestartCompleted"
           :icon="
             progressDialogContent.isExpanded
               ? 'pi pi-chevron-up'
-              : 'pi pi-chevron-down'
+              : 'pi pi-chevron-right'
           "
           text
           rounded
           size="small"
-          class="font-bold"
           severity="secondary"
           :aria-label="progressDialogContent.isExpanded ? 'Collapse' : 'Expand'"
           @click.stop="progressDialogContent.toggle"
@@ -57,7 +53,6 @@
           text
           rounded
           size="small"
-          class="font-bold"
           severity="secondary"
           aria-label="Close"
           @click.stop="closeDialog"
@@ -70,11 +65,9 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import Button from 'primevue/button'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DotSpinner from '@/components/common/DotSpinner.vue'
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useWorkflowService } from '@/services/workflowService'
@@ -84,107 +77,41 @@ import {
 } from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
 const progressDialogContent = useManagerProgressDialogStore()
 const comfyManagerStore = useComfyManagerStore()
-const settingStore = useSettingStore()
-const { performConflictDetection } = useConflictDetection()
 
-// State management for restart process
-const isRestarting = ref<boolean>(false)
-const isRestartCompleted = ref<boolean>(false)
-
-const isInProgress = computed(
-  () => comfyManagerStore.isProcessingTasks || isRestarting.value
-)
-
-const completedTasksCount = computed(() => {
-  return (
-    comfyManagerStore.succeededTasksIds.length +
-    comfyManagerStore.failedTasksIds.length
-  )
-})
-
-const totalTasksCount = computed(() => {
-  const completedTasks = Object.keys(comfyManagerStore.taskHistory).length
-  const taskQueue = comfyManagerStore.taskQueue
-  const queuedTasks = taskQueue
-    ? (taskQueue.running_queue?.length || 0) +
-      (taskQueue.pending_queue?.length || 0)
-    : 0
-  return completedTasks + queuedTasks
-})
+const isInProgress = computed(() => comfyManagerStore.uncompletedCount > 0)
 
 const closeDialog = () => {
   dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })
 }
 
-const fallbackTaskName = t('manager.installingDependencies')
+const fallbackTaskName = t('g.installing')
 const currentTaskName = computed(() => {
-  if (isRestarting.value) {
-    return t('manager.restartingBackend')
-  }
-  if (isRestartCompleted.value) {
-    return t('manager.extensionsSuccessfullyInstalled')
-  }
   if (!comfyManagerStore.taskLogs.length) return fallbackTaskName
   const task = comfyManagerStore.taskLogs.at(-1)
   return task?.taskName ?? fallbackTaskName
 })
 
 const handleRestart = async () => {
-  // Store original toast setting value
-  const originalToastSetting = settingStore.get(
-    'Comfy.Toast.DisableReconnectingToast'
-  )
+  const onReconnect = async () => {
+    // Refresh manager state
 
-  try {
-    await settingStore.set('Comfy.Toast.DisableReconnectingToast', true)
+    comfyManagerStore.clearLogs()
+    comfyManagerStore.setStale()
 
-    isRestarting.value = true
+    // Refresh node definitions
+    await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
 
-    const onReconnect = async () => {
-      try {
-        comfyManagerStore.setStale()
-
-        await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-
-        await useWorkflowService().reloadCurrentWorkflow()
-
-        // Run conflict detection after restart completion
-        await performConflictDetection()
-      } finally {
-        await settingStore.set(
-          'Comfy.Toast.DisableReconnectingToast',
-          originalToastSetting
-        )
-
-        isRestarting.value = false
-        isRestartCompleted.value = true
-
-        setTimeout(() => {
-          closeDialog()
-          comfyManagerStore.resetTaskState()
-        }, 3000)
-      }
-    }
-
-    useEventListener(api, 'reconnected', onReconnect, { once: true })
-
-    await useComfyManagerService().rebootComfyUI()
-  } catch (error) {
-    // If restart fails, restore settings and reset state
-    await settingStore.set(
-      'Comfy.Toast.DisableReconnectingToast',
-      originalToastSetting
-    )
-    isRestarting.value = false
-    isRestartCompleted.value = false
-    closeDialog() // Close dialog on error
-    throw error
+    // Reload workflow
+    await useWorkflowService().reloadCurrentWorkflow()
   }
+  useEventListener(api, 'reconnected', onReconnect, { once: true })
+
+  await useComfyManagerService().rebootComfyUI()
+  closeDialog()
 }
 </script>

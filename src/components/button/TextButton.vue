@@ -1,5 +1,5 @@
 <template>
-  <Button unstyled :class="buttonStyle" :disabled="disabled" @click="onClick">
+  <Button unstyled :class="buttonStyle" role="button" @click="onClick">
     <span>{{ label }}</span>
   </Button>
 </template>
@@ -11,7 +11,6 @@ import { computed } from 'vue'
 import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
   getBaseButtonClasses,
-  getBorderButtonTypeClasses,
   getButtonSizeClasses,
   getButtonTypeClasses
 } from '@/types/buttonTypes'
@@ -24,8 +23,6 @@ interface TextButtonProps extends BaseButtonProps {
 const {
   size = 'md',
   type = 'primary',
-  border = false,
-  disabled = false,
   class: className,
   label,
   onClick
@@ -34,9 +31,7 @@ const {
 const buttonStyle = computed(() => {
   const baseClasses = getBaseButtonClasses()
   const sizeClasses = getButtonSizeClasses(size)
-  const typeClasses = border
-    ? getBorderButtonTypeClasses(type)
-    : getButtonTypeClasses(type)
+  const typeClasses = getButtonTypeClasses(type)
 
   return [baseClasses, sizeClasses, typeClasses, className]
     .filter(Boolean)

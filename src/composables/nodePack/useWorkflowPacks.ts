@@ -7,7 +7,7 @@ import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { UseNodePacksOptions } from '@/types/comfyManagerTypes'
+import { SelectedVersion, UseNodePacksOptions } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -66,7 +66,8 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
       return {
         id: CORE_NODES_PACK_NAME,
         version:
-          systemStatsStore.systemStats?.system?.comfyui_version ?? 'nightly'
+          systemStatsStore.systemStats?.system?.comfyui_version ??
+          SelectedVersion.NIGHTLY
       }
     }
 
@@ -76,7 +77,7 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
     if (pack) {
       return {
         id: pack.id,
-        version: pack.latest_version?.version ?? 'nightly'
+        version: pack.latest_version?.version ?? SelectedVersion.NIGHTLY
       }
     }
 

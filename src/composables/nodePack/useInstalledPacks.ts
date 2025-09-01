@@ -1,5 +1,5 @@
 import { whenever } from '@vueuse/core'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted } from 'vue'
 
 import { useNodePacks } from '@/composables/nodePack/useNodePacks'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
@@ -8,10 +8,6 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
   const comfyManagerStore = useComfyManagerStore()
-
-  // Flag to prevent duplicate fetches during initialization
-  const isInitializing = ref(false)
-  const lastFetchedIds = ref<string>('')
 
   const installedPackIds = computed(() =>
     Array.from(comfyManagerStore.installedPacksIds)
@@ -24,51 +20,17 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
     packs.filter((pack) => comfyManagerStore.isPackInstalled(pack.id))
 
   const startFetchInstalled = async () => {
-    // Prevent duplicate calls during initialization
-    if (isInitializing.value) {
-      return
-    }
-
-    isInitializing.value = true
-    try {
-      if (comfyManagerStore.installedPacksIds.size === 0) {
-        await comfyManagerStore.refreshInstalledList()
-      }
-      await startFetch()
-    } finally {
-      isInitializing.value = false
-    }
+    await comfyManagerStore.refreshInstalledList()
+    await startFetch()
   }
 
   // When installedPackIds changes, we need to update the nodePacks
-  // But only if the IDs actually changed (not just array reference)
-  whenever(installedPackIds, async (newIds) => {
-    const newIdsStr = newIds.sort().join(',')
-    if (newIdsStr !== lastFetchedIds.value && !isInitializing.value) {
-      lastFetchedIds.value = newIdsStr
-      await startFetch()
-    }
+  whenever(installedPackIds, async () => {
+    await startFetch()
   })
 
   onUnmounted(() => {
     cleanup()
-  })
-
-  // Create a computed property that provides installed pack info with versions
-  const installedPacksWithVersions = computed(() => {
-    const result: Array<{ id: string; version: string }> = []
-
-    for (const pack of Object.values(comfyManagerStore.installedPacks)) {
-      const id = pack.cnr_id || pack.aux_id
-      if (id) {
-        result.push({
-          id,
-          version: pack.ver ?? ''
-        })
-      }
-    }
-
-    return result
   })
 
   return {
@@ -76,7 +38,6 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
     isLoading,
     isReady,
     installedPacks: nodePacks,
-    installedPacksWithVersions,
     startFetchInstalled,
     filterInstalledPack
   }

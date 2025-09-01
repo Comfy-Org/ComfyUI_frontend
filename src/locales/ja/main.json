@@ -27,6 +27,15 @@
       "title": "APIキー",
       "whitelistInfo": "ホワイトリストに登録されていないサイトについて"
     },
+    "deleteAccount": {
+      "cancel": "キャンセル",
+      "confirm": "アカウントを削除",
+      "confirmMessage": "本当にアカウントを削除しますか？この操作は元に戻せず、すべてのデータが完全に削除されます。",
+      "confirmTitle": "アカウントを削除",
+      "deleteAccount": "アカウントを削除",
+      "success": "アカウントが削除されました",
+      "successDetail": "アカウントは正常に削除されました。"
+    },
     "login": {
       "andText": "および",
       "confirmPasswordLabel": "パスワードの確認",
@@ -278,7 +287,6 @@
     "color": "色",
     "comingSoon": "近日公開",
     "command": "コマンド",
-    "commandProhibited": "コマンド {command} は禁止されています。詳細は管理者にお問い合わせください。",
     "community": "コミュニティ",
     "completed": "完了",
     "confirm": "確認",
@@ -301,6 +309,7 @@
     "disabling": "無効化",
     "dismiss": "閉じる",
     "download": "ダウンロード",
+    "duplicate": "複製",
     "edit": "編集",
     "empty": "空",
     "enableAll": "すべて有効にする",
@@ -313,7 +322,6 @@
     "feedback": "フィードバック",
     "filter": "フィルタ",
     "findIssues": "問題を見つける",
-    "firstTimeUIMessage": "新しいUIを初めて使用しています。「メニュー > 新しいメニューを使用 > 無効」を選択することで古いUIに戻すことが可能です。",
     "frontendNewer": "フロントエンドのバージョン {frontendVersion} はバックエンドのバージョン {backendVersion} と互換性がない可能性があります。",
     "frontendOutdated": "フロントエンドのバージョン {frontendVersion} は古くなっています。バックエンドは {requiredVersion} 以上が必要です。",
     "goToNode": "ノードに移動",
@@ -342,6 +350,7 @@
     "micPermissionDenied": "マイクの許可が拒否されました",
     "migrate": "移行する",
     "missing": "不足している",
+    "moreWorkflows": "さらに多くのワークフロー",
     "name": "名前",
     "newFolder": "新しいフォルダー",
     "next": "次へ",
@@ -410,12 +419,17 @@
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
+    "focusMode": "フォーカスモード",
+    "hand": "手のひら",
+    "hideLinks": "リンクを非表示",
     "panMode": "パンモード",
     "resetView": "ビューをリセット",
+    "select": "選択",
     "selectMode": "選択モード",
-    "toggleLinkVisibility": "リンクの表示切り替え",
+    "showLinks": "リンクを表示",
     "toggleMinimap": "ミニマップの切り替え",
     "zoomIn": "拡大",
+    "zoomOptions": "ズームオプション",
     "zoomOut": "縮小"
   },
   "groupNode": {
@@ -573,6 +587,10 @@
     "applyingTexture": "テクスチャを適用中...",
     "backgroundColor": "背景色",
     "camera": "カメラ",
+    "cameraType": {
+      "orthographic": "オルソグラフィック",
+      "perspective": "パースペクティブ"
+    },
     "clearRecording": "録画をクリア",
     "edgeThreshold": "エッジ閾値",
     "export": "エクスポート",
@@ -593,6 +611,7 @@
       "wireframe": "ワイヤーフレーム"
     },
     "model": "モデル",
+    "openIn3DViewer": "3Dビューアで開く",
     "previewOutput": "出力のプレビュー",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
@@ -603,8 +622,22 @@
     "switchCamera": "カメラを切り替える",
     "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "upDirection": "上方向",
+    "upDirections": {
+      "original": "オリジナル"
+    },
     "uploadBackgroundImage": "背景画像をアップロード",
-    "uploadTexture": "テクスチャをアップロード"
+    "uploadTexture": "テクスチャをアップロード",
+    "viewer": {
+      "apply": "適用",
+      "cameraSettings": "カメラ設定",
+      "cameraType": "カメラタイプ",
+      "cancel": "キャンセル",
+      "exportSettings": "エクスポート設定",
+      "lightSettings": "ライト設定",
+      "modelSettings": "モデル設定",
+      "sceneSettings": "シーン設定",
+      "title": "3Dビューア（ベータ）"
+    }
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} が必要です：",
@@ -651,9 +684,6 @@
     "installationQueue": "インストールキュー",
     "lastUpdated": "最終更新日",
     "latestVersion": "最新",
-    "legacyManagerUI": "レガシーUIを使用する",
-    "legacyManagerUIDescription": "レガシーManager UIを使用するには、--enable-manager-legacy-uiを付けてComfyUIを起動してください",
-    "legacyMenuNotAvailable": "このバージョンのComfyUIでは、レガシーマネージャーメニューは利用できません。新しいマネージャーメニューを使用してください。",
     "license": "ライセンス",
     "loadingVersions": "バージョンを読み込んでいます...",
     "nightlyVersion": "ナイトリー",
@@ -736,6 +766,7 @@
     "manageExtensions": "拡張機能の管理",
     "onChange": "変更時",
     "onChangeTooltip": "変更が行われるとワークフローがキューに追加されます",
+    "queue": "キューパネル",
     "refresh": "ノードを更新",
     "resetView": "ビューをリセット",
     "run": "実行する",
@@ -751,10 +782,8 @@
     "Bottom Panel": "下部パネル",
     "Browse Templates": "テンプレートを参照",
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
-    "Canvas Toggle Link Visibility": "キャンバスのリンク表示を切り替え",
+    "Canvas Performance": "キャンバスパフォーマンス",
     "Canvas Toggle Lock": "キャンバスのロックを切り替え",
-    "Canvas Toggle Minimap": "キャンバス ミニマップの切り替え",
-    "Check for Custom Node Updates": "カスタムノードのアップデートを確認",
     "Check for Updates": "更新を確認する",
     "Clear Pending Tasks": "保留中のタスクをクリア",
     "Clear Workflow": "ワークフローをクリア",
@@ -768,27 +797,29 @@
     "Contact Support": "サポートに連絡",
     "Convert Selection to Subgraph": "選択範囲をサブグラフに変換",
     "Convert selected nodes to group node": "選択したノードをグループノードに変換",
-    "Custom Nodes (Legacy)": "カスタムノード（レガシー）",
-    "Custom Nodes Manager": "カスタムノードマネージャ",
     "Decrease Brush Size in MaskEditor": "マスクエディタでブラシサイズを小さくする",
     "Delete Selected Items": "選択したアイテムを削除",
     "Desktop User Guide": "デスクトップユーザーガイド",
     "Duplicate Current Workflow": "現在のワークフローを複製",
     "Edit": "編集",
+    "Exit Subgraph": "サブグラフを終了",
     "Export": "エクスポート",
     "Export (API)": "エクスポート (API)",
+    "File": "ファイル",
     "Fit Group To Contents": "グループを内容に合わせる",
-    "Fit view to selected nodes": "選択したノードにビューを合わせる",
+    "Focus Mode": "フォーカスモード",
     "Give Feedback": "フィードバックを送る",
     "Group Selected Nodes": "選択したノードをグループ化",
     "Help": "ヘルプ",
+    "Help Center": "ヘルプセンター",
     "Increase Brush Size in MaskEditor": "マスクエディタでブラシサイズを大きくする",
-    "Install Missing Custom Nodes": "不足しているカスタムノードをインストール",
     "Interrupt": "中断",
     "Load Default Workflow": "デフォルトワークフローを読み込む",
+    "Lock Canvas": "キャンバスをロック",
     "Manage group nodes": "グループノードを管理",
     "Manager": "マネージャー",
-    "Manager Menu (Legacy)": "マネージャーメニュー（レガシー）",
+    "Minimap": "ミニマップ",
+    "Model Library": "モデルライブラリ",
     "Move Selected Nodes Down": "選択したノードを下へ移動",
     "Move Selected Nodes Left": "選択したノードを左へ移動",
     "Move Selected Nodes Right": "選択したノードを右へ移動",
@@ -796,7 +827,10 @@
     "Mute/Unmute Selected Nodes": "選択したノードのミュート/ミュート解除",
     "New": "新規",
     "Next Opened Workflow": "次に開いたワークフロー",
+    "Node Library": "ノードライブラリ",
+    "Node Links": "ノードリンク",
     "Open": "開く",
+    "Open 3D Viewer (Beta) for Selected Node": "選択したノードの3Dビューアー（ベータ）を開く",
     "Open Custom Nodes Folder": "カスタムノードフォルダを開く",
     "Open DevTools": "DevToolsを開く",
     "Open Inputs Folder": "入力フォルダを開く",
@@ -809,6 +843,7 @@
     "Pin/Unpin Selected Items": "選択したアイテムのピン留め/ピン留め解除",
     "Pin/Unpin Selected Nodes": "選択したノードのピン留め/ピン留め解除",
     "Previous Opened Workflow": "前に開いたワークフロー",
+    "Queue Panel": "キューパネル",
     "Queue Prompt": "キューのプロンプト",
     "Queue Prompt (Front)": "キューのプロンプト (前面)",
     "Queue Selected Output Nodes": "選択した出力ノードをキューに追加",
@@ -830,15 +865,24 @@
     "Toggle Search Box": "検索ボックスの切り替え",
     "Toggle Terminal Bottom Panel": "ターミナル下部パネルの切り替え",
     "Toggle Theme (Dark/Light)": "テーマを切り替え（ダーク/ライト）",
-    "Toggle Workflows Sidebar": "ワークフローサイドバーを切り替え",
+    "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
+    "Toggle the Custom Nodes Manager": "カスタムノードマネージャーを切り替え",
     "Toggle the Custom Nodes Manager Progress Bar": "カスタムノードマネージャーの進行状況バーを切り替え",
     "Undo": "元に戻す",
     "Ungroup selected group nodes": "選択したグループノードのグループ解除",
-    "Unload Models": "モデルのアンロード",
-    "Unload Models and Execution Cache": "モデルと実行キャッシュのアンロード",
-    "Workflow": "ワークフロー",
+    "Unlock Canvas": "キャンバスのロックを解除",
+    "Unpack the selected Subgraph": "選択したサブグラフを展開",
+    "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
-    "Zoom Out": "ズームアウト"
+    "Zoom Out": "ズームアウト",
+    "Zoom to fit": "全体表示にズーム"
+  },
+  "minimap": {
+    "nodeColors": "ノードの色",
+    "renderBypassState": "バイパス状態を表示",
+    "renderErrorState": "エラー状態を表示",
+    "showGroups": "フレーム／グループを表示",
+    "showLinks": "リンクを表示"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "再度表示しない",
@@ -1106,6 +1150,7 @@
   },
   "settingsCategories": {
     "3D": "3D",
+    "3DViewer": "3Dビューア",
     "API Nodes": "APIノード",
     "About": "情報",
     "Appearance": "外観",
@@ -1157,10 +1202,31 @@
     "Window": "ウィンドウ",
     "Workflow": "ワークフロー"
   },
+  "shortcuts": {
+    "essentials": "基本",
+    "keyboardShortcuts": "キーボードショートカット",
+    "manageShortcuts": "ショートカットの管理",
+    "noKeybinding": "キー割り当てなし",
+    "subcategories": {
+      "node": "ノード",
+      "panelControls": "パネルコントロール",
+      "queue": "キュー",
+      "view": "ビュー",
+      "workflow": "ワークフロー"
+    },
+    "viewControls": "表示コントロール"
+  },
   "sideToolbar": {
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
     "helpCenter": "ヘルプセンター",
+    "labels": {
+      "models": "モデル",
+      "nodes": "ノード",
+      "queue": "キュー",
+      "templates": "テンプレート",
+      "workflows": "ワークフロー"
+    },
     "logout": "ログアウト",
     "modelLibrary": "モデルライブラリ",
     "newBlankWorkflow": "新しい空のワークフローを作成",
@@ -1198,6 +1264,7 @@
       },
       "showFlatList": "フラットリストを表示"
     },
+    "templates": "テンプレート",
     "workflowTab": {
       "confirmDelete": "このワークフローを削除してもよろしいですか？",
       "confirmDeleteTitle": "ワークフローを削除しますか？",
@@ -1244,6 +1311,8 @@
       "Video": "ビデオ",
       "Video API": "動画API"
     },
+    "loadingMore": "さらにテンプレートを読み込み中...",
+    "searchPlaceholder": "テンプレートを検索...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",
@@ -1566,6 +1635,7 @@
     "failedToExportModel": "{format}としてモデルのエクスポートに失敗しました",
     "failedToFetchBalance": "残高の取得に失敗しました: {error}",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
+    "failedToInitializeLoad3dViewer": "3Dビューアの初期化に失敗しました",
     "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
     "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "fileLoadError": "{fileName}でワークフローが見つかりません",
@@ -1640,5 +1710,11 @@
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
+  },
+  "zoomControls": {
+    "hideMinimap": "ミニマップを非表示",
+    "label": "ズームコントロール",
+    "showMinimap": "ミニマップを表示",
+    "zoomToFit": "全体表示にズーム"
   }
 }

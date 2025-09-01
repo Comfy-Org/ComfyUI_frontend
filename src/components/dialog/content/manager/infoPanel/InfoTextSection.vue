@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4 text-sm">
     <div v-for="(section, index) in sections" :key="index" class="mb-4">
-      <div class="mb-3">
+      <div class="mb-1">
         {{ section.title }}
       </div>
       <div class="text-muted break-words">

@@ -12,7 +12,7 @@
     </template>
 
     <template #header>
-      <SearchBox v-model:="searchQuery" class="max-w-[384px]" />
+      <SearchBox v-model="searchQuery" class="max-w-[384px]" />
     </template>
 
     <template #header-right-area>
@@ -59,12 +59,13 @@
       <div class="relative px-6 pt-2 pb-4 flex gap-2">
         <MultiSelect
           v-model="selectedFrameworks"
+          v-model:search-query="searchText"
           class="w-[250px]"
-          :has-search-box="true"
-          :show-selected-count="true"
-          :has-clear-button="true"
           label="Select Frameworks"
           :options="frameworkOptions"
+          :show-search-box="true"
+          :show-selected-count="true"
+          :show-clear-button="true"
         />
         <MultiSelect
           v-model="selectedProjects"
@@ -135,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { provide, ref } from 'vue'
+import { provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -201,9 +202,18 @@ const { onClose } = defineProps<{
 provide(OnCloseKey, onClose)
 
 const searchQuery = ref<string>('')
+const searchText = ref<string>('')
 const selectedFrameworks = ref([])
 const selectedProjects = ref([])
 const selectedSort = ref<string>('popular')
 
 const selectedNavItem = ref<string | null>('installed')
+
+watch(searchText, (newQuery) => {
+  console.log('searchText:', searchText.value, newQuery)
+})
+
+watch(searchQuery, (newQuery) => {
+  console.log('searchQuery:', searchQuery.value, newQuery)
+})
 </script>

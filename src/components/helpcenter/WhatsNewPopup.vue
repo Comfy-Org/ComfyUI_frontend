@@ -75,11 +75,6 @@ import { formatVersionAnchor } from '@/utils/formatUtil'
 const { locale, t } = useI18n()
 const releaseStore = useReleaseStore()
 
-// Emit event for parent component
-const emit = defineEmits<{
-  'whats-new-dismissed': []
-}>()
-
 // Local state for dismissed status
 const isDismissed = ref(false)
 
@@ -139,10 +134,6 @@ const closePopup = async () => {
     await releaseStore.handleWhatsNewSeen(latestRelease.value.version)
   }
   hide()
-
-  // Emit event to notify parent that What's New was dismissed
-  // Parent can then check if conflict modal should be shown
-  emit('whats-new-dismissed')
 }
 
 // const handleCTA = async () => {
