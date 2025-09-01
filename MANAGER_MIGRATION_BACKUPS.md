@@ -43,6 +43,32 @@ This document tracks backup branches created during the manager migration recove
   - Verified working state in dev server
   - Ready for integration of PR #4654 and PR #5063
 
+### `manager-migration-pr4654-integrated`
+- **Created**: 2025-08-30
+- **Source Branch**: `manager-migration-clean`
+- **Source Commit**: `b5bf6fd6e` - "fix: Restore correct interfaces from PR #3367"
+- **Purpose**: Backup after successfully integrating PR #4654 (conflict detection system)
+- **Contains**:
+  - All manager migration functionality from PR #3367
+  - Complete conflict detection system from PR #4654
+  - Node conflict detection and acknowledgment features
+  - Warning tab and conflict message utilities
+  - Import failed detection system
+  - Package selection and status management
+
+### `manager-migration-pr5063-integrated`
+- **Created**: 2025-08-30
+- **Source Branch**: `manager-migration-clean`  
+- **Source Commit**: `8a26b7ef6` - "[fix] Fix API URL prefix slash and add error handling"
+- **Purpose**: Backup after successfully integrating PR #5063 (manager capability feature flags)
+- **Contains**:
+  - All previous functionality from manager migration and PR #4654
+  - Manager capability feature flags system (`MANAGER_SUPPORTS_V4`)
+  - Three-state manager UI logic (DISABLED, LEGACY_UI, NEW_UI)
+  - Dynamic API client creation with conditional v2 prefix
+  - Manager state detection with command line arg support
+  - Enhanced error handling and state management
+
 ### `manager-migration-upstream-backup` 
 - **Created**: Earlier in recovery process
 - **Purpose**: Backup of upstream state before major changes
@@ -69,6 +95,7 @@ This document tracks backup branches created during the manager migration recove
 
 ## Recovery Verification Status ✅
 
+### Core Manager Migration (PR #3367)
 - ✅ All work from PR #3367 maintained
 - ✅ Task queue changes preserved  
 - ✅ No conflicts with main branch
@@ -76,11 +103,21 @@ This document tracks backup branches created during the manager migration recove
 - ✅ Manager service functionality complete
 - ✅ TypeScript compatibility restored
 
+### Additional PR Integrations  
+- ✅ PR #4654 (conflict detection system) successfully integrated
+- ✅ PR #5063 (manager capability feature flags) successfully integrated
+- ✅ Dynamic API client creation based on backend v4 support
+- ✅ Three-state manager UI logic (DISABLED, LEGACY_UI, NEW_UI)
+- ✅ Command line argument detection for manager state
+- ✅ Enhanced error handling and state management
+
 ## Next Steps
 
-1. Interactive squash of 80 commits into single meaningful commit
-2. Create clean PR for manager migration
-3. Address remaining test compatibility issues (non-blocking)
+1. ✅ ~~Interactive squash of 80 commits into single meaningful commit~~
+2. ✅ ~~Successfully integrate PR #4654 (conflict detection system)~~
+3. ✅ ~~Successfully integrate PR #5063 (manager capability feature flags)~~
+4. **Current**: Create clean PR for comprehensive manager migration
+5. Address remaining test compatibility issues (non-blocking)
 
 ## Notes
 
