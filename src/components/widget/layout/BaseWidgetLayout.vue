@@ -36,7 +36,7 @@
         <div class="w-full h-full flex flex-col">
           <header
             v-if="$slots.header"
-            class="w-full h-18 px-6 py-4 flex items-center justify-between gap-2"
+            class="w-full h-18 px-6 flex items-center justify-between gap-2"
           >
             <div class="flex-1 flex gap-2 shrink-0">
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">

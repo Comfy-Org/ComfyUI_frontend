@@ -39,7 +39,14 @@
 
     <!-- Option row -->
     <template #option="{ option, selected }">
-      <div class="flex items-center justify-between gap-3 w-full">
+      <div
+        class="flex items-center justify-between gap-3 w-full"
+        :style="
+          popoverMinWidth || popoverMaxWidth
+            ? `${popoverMinWidth ? `min-width: ${popoverMinWidth} !important;` : ''} ${popoverMaxWidth ? `max-width: ${popoverMaxWidth} !important;` : ''}`
+            : undefined
+        "
+      >
         <span class="truncate">{{ option.name }}</span>
         <i-lucide:check
           v-if="selected"
@@ -58,7 +65,13 @@ defineOptions({
   inheritAttrs: false
 })
 
-const { label, options } = defineProps<{
+const {
+  label,
+  options,
+  listMaxHeight = '28rem',
+  popoverMinWidth,
+  popoverMaxWidth
+} = defineProps<{
   label?: string
   /**
    * Required for displaying the selected item's label.
@@ -69,6 +82,12 @@ const { label, options } = defineProps<{
     name: string
     value: string
   }[]
+  /** Maximum height of the dropdown panel (default: 28rem) */
+  listMaxHeight?: string
+  /** Minimum width of the popover (default: auto) */
+  popoverMinWidth?: string
+  /** Maximum width of the popover (default: auto) */
+  popoverMaxWidth?: string
 }>()
 
 const selectedItem = defineModel<string | null>({ required: true })
@@ -118,9 +137,13 @@ const pt = computed(() => ({
   overlay: {
     class: [
       // dropdown panel
-      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 py-2 px-2'
+      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-neutral-200 dark-theme:border-zinc-700 py-2 px-2'
     ]
   },
+  listContainer: () => ({
+    style: `max-height: ${listMaxHeight} !important;`,
+    class: 'overflow-y-auto scrollbar-hide'
+  }),
   list: {
     class:
       // Same list tone/size as MultiSelect

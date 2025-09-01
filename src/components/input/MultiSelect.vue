@@ -75,7 +75,14 @@
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
     <template #option="slotProps">
-      <div class="flex items-center gap-2">
+      <div
+        class="flex items-center gap-2"
+        :style="
+          popoverMinWidth || popoverMaxWidth
+            ? `${popoverMinWidth ? `min-width: ${popoverMinWidth} !important;` : ''} ${popoverMaxWidth ? `max-width: ${popoverMaxWidth} !important;` : ''}`
+            : undefined
+        "
+      >
         <div
           class="flex h-4 w-4 p-0.5 shrink-0 items-center justify-center rounded transition-all duration-200"
           :class="
@@ -89,9 +96,11 @@
             class="text-xs text-bold text-white"
           />
         </div>
-        <Button class="border-none outline-none bg-transparent" unstyled>{{
-          slotProps.option.name
-        }}</Button>
+        <Button
+          class="border-none outline-none bg-transparent text-left"
+          unstyled
+          >{{ slotProps.option.name }}</Button
+        >
       </div>
     </template>
   </MultiSelect>
@@ -125,6 +134,12 @@ interface Props {
   showClearButton?: boolean
   /** Placeholder for the search input */
   searchPlaceholder?: string
+  /** Maximum height of the dropdown panel (default: 28rem) */
+  listMaxHeight?: string
+  /** Minimum width of the popover (default: auto) */
+  popoverMinWidth?: string
+  /** Maximum width of the popover (default: auto) */
+  popoverMaxWidth?: string
   // Note: options prop is intentionally omitted.
   // It's passed via $attrs to maximize PrimeVue API compatibility
 }
@@ -133,7 +148,10 @@ const {
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,
-  searchPlaceholder = 'Search...'
+  searchPlaceholder = 'Search...',
+  listMaxHeight = '28rem',
+  popoverMinWidth,
+  popoverMaxWidth
 } = defineProps<Props>()
 
 const selectedItems = defineModel<Option[]>({
@@ -170,8 +188,14 @@ const pt = computed(() => ({
       showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
   }),
   // Overlay & list visuals unchanged
-  overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 py-2 px-2',
+  overlay: {
+    class:
+      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-neutral-200 dark-theme:border-zinc-700 py-2 px-2'
+  },
+  listContainer: () => ({
+    style: `max-height: ${listMaxHeight} !important;`,
+    class: 'overflow-y-auto scrollbar-hide'
+  }),
   list: {
     class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
   },
