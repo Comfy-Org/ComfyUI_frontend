@@ -1,26 +1,26 @@
 <template>
   <button
-    class="hardware-option flex flex-col items-center rounded-2xl border-2 transition-all duration-200"
+    class="hardware-option flex flex-col items-center rounded-3xl border-3 transition-all duration-200"
     :class="{
-      'border-yellow-400 bg-neutral-800/50': selected,
-      'border-neutral-700 bg-neutral-900/50 hover:border-neutral-600': !selected
+      'border-yellow-500 bg-neutral-900/70': selected,
+      'border-neutral-700 bg-neutral-900/70 hover:border-neutral-600': !selected
     }"
     @click="$emit('click')"
   >
     <!-- Icon/Logo Area - Rounded square container -->
-    <div class="icon-container rounded-xl bg-neutral-800 flex items-center justify-center">
+    <div class="icon-container rounded-2xl bg-neutral-800 flex items-center justify-center">
       <img
         v-if="imagePath"
         :src="imagePath"
         :alt="title"
-        class="max-h-16 max-w-full object-contain"
+        class="max-h-14 max-w-full object-contain p-2"
       />
     </div>
     
     <!-- Text Content -->
-    <div class="text-center mt-3">
-      <div class="text-sm font-normal text-neutral-100">{{ title }}</div>
-      <div v-if="subtitle" class="text-xs text-neutral-500 mt-1">
+    <div class="text-center mt-4">
+      <div class="text-base font-normal text-neutral-100">{{ title }}</div>
+      <div v-if="subtitle" class="text-sm text-neutral-500 mt-1">
         {{ subtitle }}
       </div>
     </div>
@@ -45,14 +45,15 @@ defineEmits<{
 
 <style scoped>
 .hardware-option {
-  width: 160px;
-  height: 180px;
+  width: 170px;
+  height: 190px;
   padding: 1.25rem;
+  border-width: 3px;
 }
 
 .icon-container {
-  width: 120px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
 }
 
 .hardware-option:focus {
