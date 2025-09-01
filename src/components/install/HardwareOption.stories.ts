@@ -15,8 +15,7 @@ const meta: Meta<typeof HardwareOption> = {
   argTypes: {
     selected: { control: 'boolean' },
     imagePath: { control: 'text' },
-    title: { control: 'text' },
-    subtitle: { control: 'text' }
+    placeholderText: { control: 'text' }
   }
 }
 
@@ -26,8 +25,7 @@ type Story = StoryObj<typeof meta>
 export const AppleMetalSelected: Story = {
   args: {
     imagePath: '/assets/images/apple-mps-logo.png',
-    title: 'Apple Metal',
-    subtitle: '',
+    placeholderText: 'Apple Metal',
     value: 'mps',
     selected: true
   }
@@ -36,8 +34,7 @@ export const AppleMetalSelected: Story = {
 export const AppleMetalUnselected: Story = {
   args: {
     imagePath: '/assets/images/apple-mps-logo.png',
-    title: 'Apple Metal',
-    subtitle: '',
+    placeholderText: 'Apple Metal',
     value: 'mps',
     selected: false
   }
@@ -45,8 +42,7 @@ export const AppleMetalUnselected: Story = {
 
 export const CPUOption: Story = {
   args: {
-    title: 'CPU',
-    subtitle: 'Subtitle',
+    placeholderText: 'CPU',
     value: 'cpu',
     selected: false
   }
@@ -54,8 +50,7 @@ export const CPUOption: Story = {
 
 export const ManualInstall: Story = {
   args: {
-    title: 'Manual Install',
-    subtitle: 'Subtitle',
+    placeholderText: 'Manual Install',
     value: 'unsupported',
     selected: false
   }
