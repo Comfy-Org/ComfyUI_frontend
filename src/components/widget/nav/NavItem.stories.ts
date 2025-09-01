@@ -22,6 +22,7 @@ import {
   Wrench,
   Zap
 } from 'lucide-vue-next'
+import { h } from 'vue'
 
 import NavItem from './NavItem.vue'
 
@@ -93,10 +94,16 @@ export const Interactive: Story = {
   render: (args) => ({
     components: { NavItem },
     setup() {
-      return { args }
+      const IconComponent = args.icon
+      const WrappedIcon = {
+        render() {
+          return h(IconComponent, { size: 14 })
+        }
+      }
+      return { args, WrappedIcon }
     },
     template: `
-      <NavItem :icon="args.icon" :active="args.active" :on-click="() => {}">
+      <NavItem :icon="WrappedIcon" :active="args.active" :on-click="() => {}">
         {{ args.default }}
       </NavItem>
     `
@@ -105,13 +112,13 @@ export const Interactive: Story = {
 
 export const InteractiveList: Story = {
   render: () => ({
-    components: { NavItem, Download, Layers, Grid3x3, Tag, Wrench, Folder },
+    components: { NavItem },
     template: `
       <div class="space-y-1">
         <NavItem
           v-for="item in items"
           :key="item.id"
-          :icon="item.icon"
+          :icon="item.wrappedIcon"
           :active="selectedId === item.id"
           :on-click="() => selectedId = item.id"
         >
@@ -121,19 +128,50 @@ export const InteractiveList: Story = {
     `,
     data() {
       return {
-        selectedId: 'downloads',
-        items: [
-          { id: 'downloads', label: 'Downloads', icon: Download as any },
-          { id: 'models', label: 'Models', icon: Layers as any },
-          { id: 'nodes', label: 'Nodes', icon: Grid3x3 as any },
-          { id: 'tags', label: 'Tags', icon: Tag as any },
-          { id: 'settings', label: 'Settings', icon: Wrench as any },
-          { id: 'default', label: 'Default Icon', icon: Folder as any }
-        ]
+        selectedId: 'downloads'
       }
     },
     setup() {
-      return { Download, Layers, Grid3x3, Tag, Wrench, Folder }
+      const createIconWrapper = (IconComponent: any) => ({
+        render() {
+          return h(IconComponent, { size: 14 })
+        }
+      })
+
+      const items = [
+        {
+          id: 'downloads',
+          label: 'Downloads',
+          wrappedIcon: createIconWrapper(Download)
+        },
+        {
+          id: 'models',
+          label: 'Models',
+          wrappedIcon: createIconWrapper(Layers)
+        },
+        {
+          id: 'nodes',
+          label: 'Nodes',
+          wrappedIcon: createIconWrapper(Grid3x3)
+        },
+        {
+          id: 'tags',
+          label: 'Tags',
+          wrappedIcon: createIconWrapper(Tag)
+        },
+        {
+          id: 'settings',
+          label: 'Settings',
+          wrappedIcon: createIconWrapper(Wrench)
+        },
+        {
+          id: 'default',
+          label: 'Default Icon',
+          wrappedIcon: createIconWrapper(Folder)
+        }
+      ]
+
+      return { items }
     }
   }),
   parameters: {

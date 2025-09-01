@@ -11,7 +11,7 @@ import {
   Wrench,
   Zap
 } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { h, ref } from 'vue'
 
 import LeftSidePanel from './LeftSidePanel.vue'
 
@@ -46,9 +46,21 @@ export const Default: Story = {
   args: {
     modelValue: 'installed',
     navItems: [
-      { id: 'installed', label: 'Installed', icon: Download as any },
-      { id: 'models', label: 'Models', icon: Layers as any },
-      { id: 'nodes', label: 'Nodes', icon: Grid3x3 as any }
+      {
+        id: 'installed',
+        label: 'Installed',
+        icon: { render: () => h(Download, { size: 14 }) } as any
+      },
+      {
+        id: 'models',
+        label: 'Models',
+        icon: { render: () => h(Layers, { size: 14 }) } as any
+      },
+      {
+        id: 'nodes',
+        label: 'Nodes',
+        icon: { render: () => h(Grid3x3, { size: 14 }) } as any
+      }
     ]
   },
   render: (args) => ({
@@ -76,20 +88,44 @@ export const WithGroups: Story = {
   args: {
     modelValue: 'tag-sd15',
     navItems: [
-      { id: 'installed', label: 'Installed', icon: Download as any },
+      {
+        id: 'installed',
+        label: 'Installed',
+        icon: { render: () => h(Download, { size: 14 }) } as any
+      },
       {
         title: 'TAGS',
         items: [
-          { id: 'tag-sd15', label: 'SD 1.5', icon: Tag as any },
-          { id: 'tag-sdxl', label: 'SDXL', icon: Tag as any },
-          { id: 'tag-utility', label: 'Utility', icon: Tag as any }
+          {
+            id: 'tag-sd15',
+            label: 'SD 1.5',
+            icon: { render: () => h(Tag, { size: 14 }) } as any
+          },
+          {
+            id: 'tag-sdxl',
+            label: 'SDXL',
+            icon: { render: () => h(Tag, { size: 14 }) } as any
+          },
+          {
+            id: 'tag-utility',
+            label: 'Utility',
+            icon: { render: () => h(Tag, { size: 14 }) } as any
+          }
         ]
       },
       {
         title: 'CATEGORIES',
         items: [
-          { id: 'cat-models', label: 'Models', icon: Layers as any },
-          { id: 'cat-nodes', label: 'Nodes', icon: Grid3x3 as any }
+          {
+            id: 'cat-models',
+            label: 'Models',
+            icon: { render: () => h(Layers, { size: 14 }) } as any
+          },
+          {
+            id: 'cat-nodes',
+            label: 'Nodes',
+            icon: { render: () => h(Grid3x3, { size: 14 }) } as any
+          }
         ]
       }
     ]
@@ -122,10 +158,26 @@ export const DefaultIcons: Story = {
   args: {
     modelValue: 'home',
     navItems: [
-      { id: 'home', label: 'Home', icon: Folder as any },
-      { id: 'documents', label: 'Documents', icon: Folder as any },
-      { id: 'downloads', label: 'Downloads', icon: Folder as any },
-      { id: 'desktop', label: 'Desktop', icon: Folder as any }
+      {
+        id: 'home',
+        label: 'Home',
+        icon: { render: () => h(Folder, { size: 14 }) } as any
+      },
+      {
+        id: 'documents',
+        label: 'Documents',
+        icon: { render: () => h(Folder, { size: 14 }) } as any
+      },
+      {
+        id: 'downloads',
+        label: 'Downloads',
+        icon: { render: () => h(Folder, { size: 14 }) } as any
+      },
+      {
+        id: 'desktop',
+        label: 'Desktop',
+        icon: { render: () => h(Folder, { size: 14 }) } as any
+      }
     ]
   },
   render: (args) => ({
@@ -153,11 +205,15 @@ export const LongLabels: Story = {
   args: {
     modelValue: 'general',
     navItems: [
-      { id: 'general', label: 'General Settings', icon: Wrench as any },
+      {
+        id: 'general',
+        label: 'General Settings',
+        icon: { render: () => h(Wrench, { size: 14 }) } as any
+      },
       {
         id: 'appearance',
         label: 'Appearance & Themes Configuration',
-        icon: Image as any
+        icon: { render: () => h(Image, { size: 14 }) } as any
       },
       {
         title: 'ADVANCED OPTIONS',
@@ -165,12 +221,12 @@ export const LongLabels: Story = {
           {
             id: 'performance',
             label: 'Performance & Optimization Settings',
-            icon: Zap as any
+            icon: { render: () => h(Zap, { size: 14 }) } as any
           },
           {
             id: 'experimental',
             label: 'Experimental Features (Beta)',
-            icon: Puzzle as any
+            icon: { render: () => h(Puzzle, { size: 14 }) } as any
           }
         ]
       }

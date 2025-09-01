@@ -14,7 +14,7 @@ import {
   Upload,
   X
 } from 'lucide-vue-next'
-import { provide, ref } from 'vue'
+import { h, provide, ref } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -118,20 +118,44 @@ const createStoryTemplate = (args: StoryArgs) => ({
     provide(OnCloseKey, onClose)
 
     const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-      { id: 'installed', label: 'Installed', icon: Folder as any },
+      {
+        id: 'installed',
+        label: 'Installed',
+        icon: { render: () => h(Folder, { size: 14 }) } as any
+      },
       {
         title: 'TAGS',
         items: [
-          { id: 'tag-sd15', label: 'SD 1.5', icon: Folder as any },
-          { id: 'tag-sdxl', label: 'SDXL', icon: Folder as any },
-          { id: 'tag-utility', label: 'Utility', icon: Folder as any }
+          {
+            id: 'tag-sd15',
+            label: 'SD 1.5',
+            icon: { render: () => h(Folder, { size: 14 }) } as any
+          },
+          {
+            id: 'tag-sdxl',
+            label: 'SDXL',
+            icon: { render: () => h(Folder, { size: 14 }) } as any
+          },
+          {
+            id: 'tag-utility',
+            label: 'Utility',
+            icon: { render: () => h(Folder, { size: 14 }) } as any
+          }
         ]
       },
       {
         title: 'CATEGORIES',
         items: [
-          { id: 'cat-models', label: 'Models', icon: Folder as any },
-          { id: 'cat-nodes', label: 'Nodes', icon: Folder as any }
+          {
+            id: 'cat-models',
+            label: 'Models',
+            icon: { render: () => h(Folder, { size: 14 }) } as any
+          },
+          {
+            id: 'cat-nodes',
+            label: 'Nodes',
+            icon: { render: () => h(Folder, { size: 14 }) } as any
+          }
         ]
       }
     ])
