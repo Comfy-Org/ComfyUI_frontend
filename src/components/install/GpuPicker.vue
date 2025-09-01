@@ -3,149 +3,72 @@
     <!-- Installation Path Section -->
     <div class="grow flex flex-col gap-4 text-neutral-300">
       <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.gpuSelection.selectGpu') }}
+        Choose your hardware setup
       </h2>
 
-      <p class="m-1 text-neutral-400">
-        {{ $t('install.gpuSelection.selectGpuDescription') }}:
-      </p>
-
       <!-- GPU Selection buttons -->
-      <div
-        class="flex gap-2 text-center transition-opacity"
-        :class="{ selected: selected }"
-      >
-        <!-- NVIDIA -->
-        <div
-          v-if="platform !== 'darwin'"
-          class="gpu-button"
-          :class="{ selected: selected === 'nvidia' }"
-          role="button"
-          @click="pickGpu('nvidia')"
-        >
-          <img
-            class="m-12"
-            alt="NVIDIA logo"
-            width="196"
-            height="32"
-            src="/assets/images/nvidia-logo.svg"
-          />
-        </div>
-        <!-- MPS -->
-        <div
+      <div class="flex gap-4 justify-center">
+        <!-- Apple Metal -->
+        <HardwareOption
           v-if="platform === 'darwin'"
-          class="gpu-button"
-          :class="{ selected: selected === 'mps' }"
-          role="button"
+          :image-path="'/assets/images/apple-mps-logo.png'"
+          :title="'Apple Metal'"
+          :subtitle="''"
+          value="mps"
+          :selected="selected === 'mps'"
           @click="pickGpu('mps')"
-        >
-          <img
-            class="rounded-lg hover-brighten"
-            alt="Apple Metal Performance Shaders Logo"
-            width="292"
-            ratio
-            src="/assets/images/apple-mps-logo.png"
-          />
-        </div>
-        <!-- Manual configuration -->
-        <div
-          class="gpu-button"
-          :class="{ selected: selected === 'unsupported' }"
-          role="button"
+        />
+        <!-- CPU -->
+        <HardwareOption
+          :title="'CPU'"
+          :subtitle="'Subtitle'"
+          value="cpu"
+          :selected="selected === 'cpu'"
+          @click="pickGpu('cpu')"
+        />
+        <!-- Manual Install -->
+        <HardwareOption
+          :title="'Manual Install'"
+          :subtitle="'Subtitle'"
+          value="unsupported"
+          :selected="selected === 'unsupported'"
           @click="pickGpu('unsupported')"
-        >
-          <img
-            class="m-12"
-            alt="Manual configuration"
-            width="196"
-            src="/assets/images/manual-configuration.svg"
-          />
-        </div>
+        />
       </div>
 
-      <!-- Details on selected GPU -->
-      <p v-if="selected === 'nvidia'" class="m-1">
-        <Tag icon="pi pi-check" severity="success" :value="'CUDA'" />
-        {{ $t('install.gpuSelection.nvidiaDescription') }}
-      </p>
-
-      <p v-if="selected === 'mps'" class="m-1">
-        <Tag icon="pi pi-check" severity="success" :value="'MPS'" />
-        {{ $t('install.gpuSelection.mpsDescription') }}
-      </p>
-
-      <div v-if="selected === 'unsupported'" class="text-neutral-300">
-        <p class="m-1">
-          <Tag
-            icon="pi pi-exclamation-triangle"
-            severity="warn"
-            :value="t('icon.exclamation-triangle')"
-          />
-          {{ $t('install.gpuSelection.customSkipsPython') }}
+      <!-- Description text -->
+      <div class="mt-6 text-center text-sm text-neutral-400">
+        <p v-if="selected === 'mps'">
+          Leverages your Mac's GPU for faster speed and a better overall
+          experience
         </p>
-
-        <ul>
-          <li>
-            <strong>
-              {{ $t('install.gpuSelection.customComfyNeedsPython') }}
-            </strong>
-          </li>
-          <li>{{ $t('install.gpuSelection.customManualVenv') }}</li>
-          <li>{{ $t('install.gpuSelection.customInstallRequirements') }}</li>
-          <li>{{ $t('install.gpuSelection.customMayNotWork') }}</li>
-        </ul>
-      </div>
-
-      <div v-if="selected === 'cpu'">
-        <p class="m-1">
-          <Tag
-            icon="pi pi-exclamation-triangle"
-            severity="warn"
-            :value="t('icon.exclamation-triangle')"
-          />
-          {{ $t('install.gpuSelection.cpuModeDescription') }}
+        <p v-if="selected === 'cpu'">
+          Use CPU mode for compatibility when GPU acceleration is not available
         </p>
-        <p class="m-1">
-          {{ $t('install.gpuSelection.cpuModeDescription2') }}
+        <p v-if="selected === 'unsupported'">
+          Configure ComfyUI manually for advanced setups or unsupported hardware
         </p>
       </div>
+
     </div>
 
-    <div
-      class="transition-opacity flex gap-3 h-0"
-      :class="{
-        'opacity-40': selected && selected !== 'cpu'
-      }"
-    >
-      <ToggleSwitch
-        v-model="cpuMode"
-        input-id="cpu-mode"
-        class="-translate-y-40"
+    <!-- Progress dots -->
+    <div class="flex justify-center gap-2">
+      <div
+        v-for="i in 4"
+        :key="i"
+        class="h-2 w-2 rounded-full transition-colors"
+        :class="i === 1 ? 'bg-yellow-500' : 'bg-neutral-700'"
       />
-      <label for="cpu-mode" class="select-none">
-        {{ $t('install.gpuSelection.enableCpuMode') }}
-      </label>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
-import Tag from 'primevue/tag'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import HardwareOption from '@/components/install/HardwareOption.vue'
 import { electronAPI } from '@/utils/envUtil'
-
-const { t } = useI18n()
-
-const cpuMode = computed({
-  get: () => selected.value === 'cpu',
-  set: (value) => {
-    selected.value = value ? 'cpu' : null
-  }
-})
 const selected = defineModel<TorchDeviceType | null>('device', {
   required: true
 })
