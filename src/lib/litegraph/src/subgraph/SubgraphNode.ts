@@ -576,7 +576,26 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Call parent serialize method
     return super.serialize()
   }
-  addProxyWidget(nodeId, widgetName) {
+  onPropertyChanged(k, property) {
+    if (k !== "proxyWidgets") return
+    this.widgets = this.widgets.filter((w) => !w.isProxyWidget)
+    setTimeout(() => {
+      for (const [nodeId, widgetName] of property)
+	this.addProxyFromOverlay({
+	  __proto__:{nodeId, widgetName}})
+    }, 0)
+
+  }
+  addProxyWidget(nodeId: string, widgetName: string) {
+    const overlay = {nodeId, widgetName}
+    this.properties.proxyWidgets ??= []
+    //NOTE: This doesn't trigger onPropertyChanged
+    this.properties.proxyWidgets.push([overlay.nodeId, overlay.widgetName])
+    this.addProxyFromOverlay({__proto__:overlay})
+  }
+  addProxyFromOverlay(overlay: Object) {
+    overlay.graph = this.subgraph
+    overlay.isProxyWidget = true
     //TODO: Add minimal caching for linkedWidget?
     //use a weakref and only trigger recalc on calls when undefined?
     //TODO: call toConcrete when resolved and hold reference?
@@ -591,37 +610,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!n) return
       return n.widgets.find((w) => w.name === widgetName)
     }
-    const overlay: object = {nodeId, widgetName, graph: subgraphNode.subgraph}
     const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function(t,p,...rest) {
 	if (s == 'get' && p == '_overlay')
 	  return overlay
 	const lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
 	if (s == 'get' && p == 'node') {
-	  //This is more dangerous than I would like for custom nodes. It probably breaks something
 	  return subgraphNode
-	  return {pos: subgraphNode.pos, __proto__:lw.node}
 	}
 	//NOTE: p may be undefined
 	let r = rest.at(-1)
-	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled', 'afterQueued', 'beforeQueued', 'onRemove'].includes(p))
+	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled', 'afterQueued', 'beforeQueued', 'onRemove', 'isProxyWidget'].includes(p))
 	  t = overlay
-	else if (p == "value") {
-	  t = lw
-	  r = lw
-	} else {
+	else {
 	  t = lw
 	  if (!t)
-	    return//TODO: pass to overlay subitem to display a disconnected state
+	   t = {__proto__: overlay, draw: drawDisconnected}
+	  if (p == "value")
+	    r = t
 	}
 	return Reflect[s](t,p,...rest.slice(0,-1),r)
       }
       return [s, func]
     }))
     const w = new Proxy(overlay, handler)
-    //add widget to domwidgetstore
-    if (linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName))
-      "..."
     this.widgets.push(w)
   }
 }
