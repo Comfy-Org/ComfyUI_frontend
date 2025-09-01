@@ -27,7 +27,7 @@ export const AppleMetalSelected: Story = {
   args: {
     imagePath: '/assets/images/apple-mps-logo.png',
     placeholderText: 'Apple Metal',
-    subtitle: '',
+    subtitle: 'Apple Silicon',
     value: 'mps',
     selected: true
   }
@@ -37,7 +37,7 @@ export const AppleMetalUnselected: Story = {
   args: {
     imagePath: '/assets/images/apple-mps-logo.png',
     placeholderText: 'Apple Metal',
-    subtitle: '',
+    subtitle: 'Apple Silicon',
     value: 'mps',
     selected: false
   }
