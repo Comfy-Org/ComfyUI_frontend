@@ -27,6 +27,15 @@
       "title": "مفتاح API",
       "whitelistInfo": "حول المواقع غير المدرجة في القائمة البيضاء"
     },
+    "deleteAccount": {
+      "cancel": "إلغاء",
+      "confirm": "حذف الحساب",
+      "confirmMessage": "هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء وسيتم حذف جميع بياناتك نهائيًا.",
+      "confirmTitle": "حذف الحساب",
+      "deleteAccount": "حذف الحساب",
+      "success": "تم حذف الحساب",
+      "successDetail": "تم حذف حسابك بنجاح."
+    },
     "login": {
       "andText": "و",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
@@ -313,7 +322,6 @@
     "feedback": "ملاحظات",
     "filter": "تصفية",
     "findIssues": "العثور على مشاكل",
-    "firstTimeUIMessage": "هذه هي المرة الأولى التي تستخدم فيها واجهة المستخدم الجديدة. اختر \"القائمة > استخدام القائمة الجديدة > تعطيل\" لاستعادة الواجهة القديمة.",
     "frontendNewer": "إصدار الواجهة الأمامية {frontendVersion} قد لا يكون متوافقاً مع الإصدار الخلفي {backendVersion}.",
     "frontendOutdated": "إصدار الواجهة الأمامية {frontendVersion} قديم. يتطلب الإصدار الخلفي {requiredVersion} أو أحدث.",
     "goToNode": "الانتقال إلى العقدة",
@@ -342,6 +350,7 @@
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
     "missing": "مفقود",
+    "moreWorkflows": "المزيد من سير العمل",
     "name": "الاسم",
     "newFolder": "مجلد جديد",
     "next": "التالي",

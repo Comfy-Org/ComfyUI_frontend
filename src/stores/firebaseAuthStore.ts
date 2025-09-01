@@ -1,11 +1,14 @@
+import { FirebaseError } from 'firebase/app'
 import {
   type Auth,
+  AuthErrorCodes,
   GithubAuthProvider,
   GoogleAuthProvider,
   type User,
   type UserCredential,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   sendPasswordResetEmail,
   setPersistence,
@@ -20,6 +23,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { type AuthHeader } from '@/types/authTypes'
 import { operations } from '@/types/comfyRegistryTypes'
@@ -88,11 +92,27 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     lastBalanceUpdateTime.value = null
   })
 
-  const getIdToken = async (): Promise<string | null> => {
-    if (currentUser.value) {
-      return currentUser.value.getIdToken()
+  const getIdToken = async (): Promise<string | undefined> => {
+    if (!currentUser.value) return
+    try {
+      return await currentUser.value.getIdToken()
+    } catch (error: unknown) {
+      if (
+        error instanceof FirebaseError &&
+        error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
+      ) {
+        console.warn(
+          'Could not authenticate with Firebase. Features requiring authentication might not work.'
+        )
+        return
+      }
+
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.defaultTitle'),
+        reportType: 'authenticationError'
+      })
+      console.error(error)
     }
-    return null
   }
 
   /**
@@ -268,6 +288,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     await updatePassword(currentUser.value, newPassword)
   }
 
+  /** Delete the current user account */
+  const _deleteAccount = async (): Promise<void> => {
+    if (!currentUser.value) {
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    await deleteUser(currentUser.value)
+  }
+
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
@@ -366,6 +394,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     accessBillingPortal,
     sendPasswordReset,
     updatePassword: _updatePassword,
+    deleteAccount: _deleteAccount,
     getAuthHeader
   }
 })

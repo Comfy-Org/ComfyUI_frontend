@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
   type MenuOption,
@@ -58,8 +58,8 @@ import {
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useSubmenuPositioning } from '@/composables/graph/useSubmenuPositioning'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCanvasStore } from '@/stores/graphStore'
-import { SelectionOverlayInjectionKey } from '@/types/selectionOverlayTypes'
+
+// import { useCanvasStore } from '@/stores/graphStore'
 
 import MenuOptionItem from './MenuOptionItem.vue'
 import SubmenuPopover from './SubmenuPopover.vue'
@@ -80,7 +80,7 @@ const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 
 const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
-const canvasStore = useCanvasStore()
+// const canvasStore = useCanvasStore()
 
 const toggle = (event: Event) => {
   if (isOpen.value) {
@@ -163,34 +163,34 @@ const pt = computed(() => ({
 
 // When selection is dragged the overlay (and toolbox) hide; ensure the popover
 // hides too so it doesn't float detached, and restore it after movement.
-const selectionOverlayState = inject(SelectionOverlayInjectionKey)
-watch(
-  () => selectionOverlayState?.updateCount.value,
-  () => {
-    if (!selectionOverlayState) return
-    const visible = selectionOverlayState.visible.value
-    if (!visible) {
-      if (isOpen.value) {
-        const dragging = canvasStore.canvas?.state?.draggingItems === true
-        if (dragging) {
-          wasOpenBeforeHide.value = true
-          hide('drag')
-        } else {
-          // Any other reason (e.g., submenu overlay hide / selection cleared): close & do not restore.
-          wasOpenBeforeHide.value = false
-          hide('manual')
-        }
-      }
-    } else if (wasOpenBeforeHide.value) {
-      wasOpenBeforeHide.value = false
-      const targetEl = (buttonRef.value as any)?.$el || buttonRef.value
-      if (targetEl instanceof HTMLElement) {
-        popover.value?.show(new Event('reopen'), targetEl)
-        isOpen.value = true
-      }
-    }
-  }
-)
+// const selectionOverlayState = inject(SelectionOverlayInjectionKey)
+// watch(
+//   () => selectionOverlayState?.updateCount.value,
+//   () => {
+//     if (!selectionOverlayState) return
+//     const visible = selectionOverlayState.visible.value
+//     if (!visible) {
+//       if (isOpen.value) {
+//         const dragging = canvasStore.canvas?.state?.draggingItems === true
+//         if (dragging) {
+//           wasOpenBeforeHide.value = true
+//           hide('drag')
+//         } else {
+//           // Any other reason (e.g., submenu overlay hide / selection cleared): close & do not restore.
+//           wasOpenBeforeHide.value = false
+//           hide('manual')
+//         }
+//       }
+//     } else if (wasOpenBeforeHide.value) {
+//       wasOpenBeforeHide.value = false
+//       const targetEl = (buttonRef.value as any)?.$el || buttonRef.value
+//       if (targetEl instanceof HTMLElement) {
+//         popover.value?.show(new Event('reopen'), targetEl)
+//         isOpen.value = true
+//       }
+//     }
+//   }
+// )
 
 // Distinguish outside click (PrimeVue dismiss) from programmatic hides.
 const onPopoverHide = () => {

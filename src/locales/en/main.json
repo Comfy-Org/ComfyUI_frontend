@@ -5,7 +5,6 @@
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
-    "firstTimeUIMessage": "This is the first time you use the new UI. Choose \"Menu > Use New Menu > Disabled\" to restore the old UI.",
     "download": "Download",
     "import": "Import",
     "loadAllFolders": "Load All Folders",
@@ -155,7 +154,8 @@
     "duplicate": "Duplicate",
     "subgraphCreated": "Subgraph created successfully",
     "pleaseSelectNodesToSave": "Please select nodes to save to library",
-    "frameNodes": "Frame Nodes"
+    "frameNodes": "Frame Nodes",
+    "moreWorkflows": "More workflows"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -1644,6 +1644,15 @@
     "passwordUpdate": {
       "success": "Password Updated",
       "successDetail": "Your password has been updated successfully"
+    },
+    "deleteAccount": {
+      "deleteAccount": "Delete Account",
+      "confirmTitle": "Delete Account",
+      "confirmMessage": "Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.",
+      "confirm": "Delete Account",
+      "cancel": "Cancel",
+      "success": "Account Deleted",
+      "successDetail": "Your account has been successfully deleted."
     }
   },
   "validation": {
