@@ -10,13 +10,14 @@
   >
     <!-- Icon/Logo Area - Rounded square container -->
     <div
-      class="icon-container rounded-2xl bg-neutral-800 flex items-center justify-center"
+      class="icon-container rounded-2xl bg-neutral-800 flex items-center justify-center overflow-hidden"
     >
       <img
         v-if="imagePath"
         :src="imagePath"
         :alt="title"
-        class="max-h-14 max-w-full object-contain p-2"
+        class="scale-150 object-contain"
+        style="width: 140%; height: 140%"
       />
     </div>
 
