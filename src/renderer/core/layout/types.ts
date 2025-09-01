@@ -92,68 +92,6 @@ export interface ConnectionLayout {
   controlPoints?: Point[]
 }
 
-// Mutation types (legacy - for compatibility)
-export type LayoutMutationType =
-  | 'moveNode'
-  | 'resizeNode'
-  | 'setNodeZIndex'
-  | 'createNode'
-  | 'deleteNode'
-  | 'batch'
-
-export interface LayoutMutation {
-  type: LayoutMutationType
-  timestamp: number
-  source: LayoutSource
-}
-
-export interface MoveNodeMutation extends LayoutMutation {
-  type: 'moveNode'
-  nodeId: NodeId
-  position: Point
-  previousPosition?: Point
-}
-
-export interface ResizeNodeMutation extends LayoutMutation {
-  type: 'resizeNode'
-  nodeId: NodeId
-  size: Size
-  previousSize?: Size
-}
-
-export interface SetNodeZIndexMutation extends LayoutMutation {
-  type: 'setNodeZIndex'
-  nodeId: NodeId
-  zIndex: number
-  previousZIndex?: number
-}
-
-export interface CreateNodeMutation extends LayoutMutation {
-  type: 'createNode'
-  nodeId: NodeId
-  layout: NodeLayout
-}
-
-export interface DeleteNodeMutation extends LayoutMutation {
-  type: 'deleteNode'
-  nodeId: NodeId
-  previousLayout?: NodeLayout
-}
-
-export interface BatchMutation extends LayoutMutation {
-  type: 'batch'
-  mutations: AnyLayoutMutation[]
-}
-
-// Union type for all mutations
-export type AnyLayoutMutation =
-  | MoveNodeMutation
-  | ResizeNodeMutation
-  | SetNodeZIndexMutation
-  | CreateNodeMutation
-  | DeleteNodeMutation
-  | BatchMutation
-
 // CRDT Operation Types
 
 /**
