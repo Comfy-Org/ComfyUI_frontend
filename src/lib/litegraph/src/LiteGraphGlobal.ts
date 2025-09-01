@@ -106,6 +106,7 @@ export class LiteGraphGlobal {
    * These values ensure both systems can independently calculate node, slot, and widget positions
    * to place them in identical locations.
    */
+  // WARNING THIS WILL BE REMOVED IN FAVOR OF THE SLOTS LAYOUT TREE useDomSlotRegistration
   COMFY_VUE_NODE_DIMENSIONS = COMFY_VUE_NODE_DIMENSIONS
 
   LINK_COLOR = '#9A9'
