@@ -64,6 +64,25 @@
             </template>
           </TreeExplorer>
         </div>
+
+        <RecentItemsSection
+          :recently-added-items="recentItemsStore.recentlyAddedWorkflows"
+          :recently-used-items="recentItemsStore.recentlyUsedWorkflows"
+          :show-recently-added="showRecentlyAddedWorkflows"
+          :show-recently-used="showRecentlyUsedWorkflows"
+          :recently-added-title="
+            $t(
+              'sideToolbar.workflowTab.workflowTreeType.recentlyAddedWorkflows'
+            )
+          "
+          :recently-used-title="
+            $t('sideToolbar.workflowTab.workflowTreeType.recentlyUsedWorkflows')
+          "
+          :get-item-icon="getWorkflowIcon"
+          :get-item-label="getWorkflowLabel"
+          :on-item-click="handleWorkflowClick"
+        />
+
         <div
           v-show="workflowStore.bookmarkedWorkflows.length > 0"
           class="comfyui-workflows-bookmarks"
@@ -138,12 +157,15 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import RecentItemsSection from '@/components/sidebar/tabs/RecentItemsSection.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useWorkflowService } from '@/services/workflowService'
+import { useRecentItemsStore } from '@/stores/recentItemsStore'
 import { useSettingStore } from '@/stores/settingStore'
 import {
+  WorkflowTreeType,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
@@ -155,8 +177,17 @@ import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 const settingStore = useSettingStore()
+const recentItemsStore = useRecentItemsStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
+)
+
+const showRecentlyAddedWorkflows = computed(() =>
+  settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyAdded')
+)
+
+const showRecentlyUsedWorkflows = computed(() =>
+  settingStore.get('Comfy.Sidebar.RecentItems.ShowRecentlyUsed')
 )
 
 const searchQuery = ref('')
@@ -172,9 +203,11 @@ const handleSearch = async (query: string) => {
     return
   }
   const lowerQuery = query.toLocaleLowerCase()
-  filteredWorkflows.value = workflowStore.workflows.filter((workflow) => {
-    return workflow.path.toLocaleLowerCase().includes(lowerQuery)
-  })
+  filteredWorkflows.value = workflowStore.workflows.filter(
+    (workflow: ComfyWorkflow) => {
+      return workflow.path.toLocaleLowerCase().includes(lowerQuery)
+    }
+  )
   await nextTick()
   expandNode(filteredRoot.value)
 }
@@ -195,12 +228,6 @@ const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   }
 }
 
-enum WorkflowTreeType {
-  Open = 'Open',
-  Bookmarks = 'Bookmarks',
-  Browse = 'Browse'
-}
-
 const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
   return buildTree(workflows, (workflow: ComfyWorkflow) =>
     workflow.key.split('/')
@@ -214,12 +241,28 @@ const workflowsTree = computed(() =>
 )
 // Bookmarked workflows tree is flat.
 const bookmarkedWorkflowsTree = computed(() =>
-  buildTree(workflowStore.bookmarkedWorkflows, (workflow) => [workflow.key])
+  buildTree(workflowStore.bookmarkedWorkflows, (workflow: ComfyWorkflow) => [
+    workflow.key
+  ])
 )
 // Open workflows tree is flat.
 const openWorkflowsTree = computed(() =>
-  buildTree(workflowStore.openWorkflows, (workflow) => [workflow.key])
+  buildTree(workflowStore.openWorkflows, (workflow: ComfyWorkflow) => [
+    workflow.key
+  ])
 )
+
+const getWorkflowIcon = (_: ComfyWorkflow): string => {
+  return 'pi pi-file'
+}
+
+const getWorkflowLabel = (workflow: ComfyWorkflow): string => {
+  return workflow.key
+}
+
+const handleWorkflowClick = async (workflow: ComfyWorkflow): Promise<void> => {
+  await workflowService.openWorkflow(workflow)
+}
 
 const renderTreeNode = (
   node: TreeNode,
