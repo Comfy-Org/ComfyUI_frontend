@@ -17,6 +17,7 @@
         :src="imagePath"
         :alt="title"
         class="w-full h-full object-cover"
+        style="object-position: 57% center"
       />
     </div>
 
