@@ -98,7 +98,7 @@ const pt = computed(() => ({
   }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
     class: [
       // container
-      'relative inline-flex cursor-pointer select-none items-center',
+      'h-10 relative inline-flex cursor-pointer select-none items-center',
       // trigger surface
       'rounded-md',
       'bg-transparent text-neutral dark-theme:text-white',
@@ -120,21 +120,21 @@ const pt = computed(() => ({
   overlay: {
     class: [
       // dropdown panel
-      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700'
+      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 py-2 px-2'
     ]
   },
   list: {
     class:
       // Same list tone/size as MultiSelect
-      'flex flex-col gap-1 p-0 list-none border-none text-xs'
+      'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
   },
   option: ({
     context
   }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
     class: [
       // Row layout
-      'flex items-center justify-between gap-3 px-3 py-2',
-      'hover:bg-neutral-100/50 hover:dark-theme:bg-zinc-700/50',
+      'flex items-center justify-between gap-3 px-2 py-3 rounded',
+      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
       // Selected state + check icon
       { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected },
       // Add focus state for keyboard navigation

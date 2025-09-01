@@ -4,7 +4,7 @@
   >
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
-      class="absolute top-4 right-16 z-10 transition-opacity duration-200"
+      class="absolute top-4 right-18 z-10 transition-opacity duration-200"
       :class="{
         'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
       }"
@@ -36,7 +36,7 @@
         <div class="w-full h-full flex flex-col">
           <header
             v-if="$slots.header"
-            class="w-full h-16 px-6 py-4 flex justify-between gap-2"
+            class="w-full h-18 px-6 py-4 flex items-center justify-between gap-2"
           >
             <div class="flex-1 flex gap-2 shrink-0">
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">
@@ -49,7 +49,7 @@
             <div
               class="flex justify-end gap-2 w-0"
               :class="
-                hasRightPanel && !isRightPanelOpen ? 'min-w-18' : 'min-w-8'
+                hasRightPanel && !isRightPanelOpen ? 'min-w-22' : 'min-w-10'
               "
             >
               <IconButton

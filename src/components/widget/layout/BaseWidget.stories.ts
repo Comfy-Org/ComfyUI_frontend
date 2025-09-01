@@ -231,7 +231,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+          <div class="relative px-6 pb-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
@@ -355,7 +355,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+          <div class="relative px-6 pb-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
