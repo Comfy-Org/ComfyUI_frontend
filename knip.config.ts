@@ -3,23 +3,16 @@ import type { KnipConfig } from 'knip'
 const config: KnipConfig = {
   entry: [
     'src/main.ts',
-    'vite.config.mts',
     'vite.electron.config.mts',
     'vite.types.config.mts',
-    'eslint.config.js',
-    'tailwind.config.ts',
-    'postcss.config.js',
-    'playwright.config.ts',
-    'playwright.i18n.config.ts',
-    'vitest.config.ts',
-    'vitest.litegraph.config.ts',
     'scripts/**/*.{js,ts}'
   ],
   project: [
     'src/**/*.{js,ts,vue}',
     'tests-ui/**/*.{js,ts,vue}',
     'browser_tests/**/*.{js,ts}',
-    'scripts/**/*.{js,ts}'
+    'scripts/**/*.{js,ts}',
+    'vitest.litegraph.config.ts',
   ],
   ignore: [
     // Generated files
@@ -73,13 +66,8 @@ const config: KnipConfig = {
     unlisted: 'off'
   },
   // Include dependencies analysis
-  includeEntryExports: true,
-  // Workspace configuration for monorepo-like structure
-  workspaces: {
-    '.': {
-      entry: ['src/main.ts', 'playwright.i18n.config.ts']
-    }
-  }
+  includeEntryExports: true
+  // }
 }
 
 export default config
