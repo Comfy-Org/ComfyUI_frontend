@@ -369,10 +369,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       widget: promotedWidget,
       subgraphNode: this
     })
-
-    const backingInput =
-      (widget as { node?: LGraphNode }).node?.findInputSlot(widget.name, true)
-        ?.widget ?? {}
+    const hasNode = (w: any): w is { node: LGraphNode } =>
+      w && typeof w.node === 'object' && w.node.findInputSlot
+    const backingInput = hasNode(widget)
+      ? widget.node.findInputSlot(widget.name, true)?.widget ?? {}
+      : {}
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
     Object.setPrototypeOf(input.widget, backingInput)
