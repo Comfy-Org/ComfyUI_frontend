@@ -3,131 +3,107 @@
     <!-- Fixed height container with flexbox layout for proper content management -->
     <div class="w-full h-full max-w-5xl mx-auto flex flex-col">
       <Stepper
+        v-model:value="currentStep"
         class="flex flex-col h-full p-8"
-        value="0"
         @update:value="handleStepChange"
       >
         <!-- Main content area that grows to fill available space -->
         <StepPanels class="flex-1 overflow-auto">
-          <StepPanel v-slot="{ activateCallback }" value="0">
-            <div class="flex flex-col h-full">
-              <div class="flex-1 flex items-center justify-center">
-                <GpuPicker v-model:device="device" />
-              </div>
-              <div class="flex justify-center mt-8">
-                <Button
-                  label="Next"
-                  class="w-96 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-lg"
-                  :disabled="typeof device !== 'string'"
-                  @click="activateCallback('1')"
-                />
-              </div>
+          <StepPanel value="0">
+            <div class="flex items-center justify-center h-full">
+              <GpuPicker v-model:device="device" />
             </div>
           </StepPanel>
-          <StepPanel v-slot="{ activateCallback }" value="1">
-            <div class="flex flex-col h-full">
-              <div class="flex-1 flex items-center justify-center">
-                <InstallLocationPicker
-                  v-model:install-path="installPath"
-                  v-model:path-error="pathError"
-                />
-              </div>
-              <div class="flex justify-between mt-8">
-                <Button
-                  :label="$t('g.back')"
-                  severity="secondary"
-                  icon="pi pi-arrow-left"
-                  @click="activateCallback('0')"
-                />
-                <Button
-                  :label="$t('g.next')"
-                  icon="pi pi-arrow-right"
-                  icon-pos="right"
-                  :disabled="pathError !== ''"
-                  @click="activateCallback('2')"
-                />
-              </div>
+          <StepPanel value="1">
+            <div class="flex items-center justify-center h-full">
+              <InstallLocationPicker
+                v-model:install-path="installPath"
+                v-model:path-error="pathError"
+              />
             </div>
           </StepPanel>
-          <StepPanel v-slot="{ activateCallback }" value="2">
-            <div class="flex flex-col h-full">
-              <div class="flex-1 flex items-center justify-center">
-                <MigrationPicker
-                  v-model:source-path="migrationSourcePath"
-                  v-model:migration-item-ids="migrationItemIds"
-                />
-              </div>
-              <div class="flex justify-between mt-8">
-                <Button
-                  :label="$t('g.back')"
-                  severity="secondary"
-                  icon="pi pi-arrow-left"
-                  @click="activateCallback('1')"
-                />
-                <Button
-                  :label="$t('g.next')"
-                  icon="pi pi-arrow-right"
-                  icon-pos="right"
-                  @click="activateCallback('3')"
-                />
-              </div>
+          <StepPanel value="2">
+            <div class="flex items-center justify-center h-full">
+              <MigrationPicker
+                v-model:source-path="migrationSourcePath"
+                v-model:migration-item-ids="migrationItemIds"
+              />
             </div>
           </StepPanel>
-          <StepPanel v-slot="{ activateCallback }" value="3">
-            <div class="flex flex-col h-full">
-              <div
-                class="flex-1 overflow-auto flex items-center justify-center"
-              >
-                <div>
-                  <DesktopSettingsConfiguration
-                    v-model:auto-update="autoUpdate"
-                    v-model:allow-metrics="allowMetrics"
-                  />
-                  <MirrorsConfiguration
-                    v-model:python-mirror="pythonMirror"
-                    v-model:pypi-mirror="pypiMirror"
-                    v-model:torch-mirror="torchMirror"
-                    :device="device"
-                    class="mt-6"
-                  />
-                </div>
-              </div>
-              <div class="flex justify-between mt-8">
-                <Button
-                  :label="$t('g.back')"
-                  severity="secondary"
-                  icon="pi pi-arrow-left"
-                  @click="activateCallback('2')"
+          <StepPanel value="3">
+            <div class="flex items-center justify-center h-full">
+              <div class="overflow-auto">
+                <DesktopSettingsConfiguration
+                  v-model:auto-update="autoUpdate"
+                  v-model:allow-metrics="allowMetrics"
                 />
-                <Button
-                  :label="$t('g.install')"
-                  icon="pi pi-check"
-                  icon-pos="right"
-                  :disabled="hasError"
-                  @click="install()"
+                <MirrorsConfiguration
+                  v-model:python-mirror="pythonMirror"
+                  v-model:pypi-mirror="pypiMirror"
+                  v-model:torch-mirror="torchMirror"
+                  :device="device"
+                  class="mt-6"
                 />
               </div>
             </div>
           </StepPanel>
         </StepPanels>
 
-        <!-- Step indicators at the bottom -->
-        <StepList
-          class="flex justify-center items-center gap-3 py-8 select-none"
-        >
-          <Step value="0">
-            {{ $t('install.gpu') }}
-          </Step>
-          <Step value="1" :disabled="noGpu">
-            {{ $t('install.installLocation') }}
-          </Step>
-          <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
-            {{ $t('install.migration') }}
-          </Step>
-          <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
-            {{ $t('install.desktopSettings') }}
-          </Step>
-        </StepList>
+        <!-- Bottom navigation section with buttons and step indicators -->
+        <div class="flex flex-col gap-6 pt-6">
+          <!-- Navigation buttons -->
+          <div class="flex justify-between items-center">
+            <Button
+              v-if="currentStep !== '0'"
+              :label="$t('g.back')"
+              severity="secondary"
+              icon="pi pi-arrow-left"
+              class="px-6 py-2"
+              @click="goToPreviousStep"
+            />
+            <div v-else class="w-24"></div>
+
+            <!-- Center space for potential future content -->
+            <div class="flex-1"></div>
+
+            <Button
+              v-if="currentStep !== '3'"
+              :label="$t('g.next')"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
+              class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+              :disabled="!canProceed"
+              @click="goToNextStep"
+            />
+            <Button
+              v-else
+              :label="$t('g.install')"
+              icon="pi pi-check"
+              icon-pos="right"
+              class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white"
+              :disabled="!canProceed"
+              @click="install()"
+            />
+          </div>
+
+          <!-- Step indicators -->
+          <StepList
+            class="flex justify-center items-center gap-3 pb-4 select-none"
+          >
+            <Step value="0">
+              {{ $t('install.gpu') }}
+            </Step>
+            <Step value="1" :disabled="noGpu">
+              {{ $t('install.installLocation') }}
+            </Step>
+            <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
+              {{ $t('install.migration') }}
+            </Step>
+            <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
+              {{ $t('install.desktopSettings') }}
+            </Step>
+          </StepList>
+        </div>
       </Stepper>
     </div>
   </BaseViewTemplate>
@@ -169,6 +145,9 @@ const pythonMirror = ref('')
 const pypiMirror = ref('')
 const torchMirror = ref('')
 
+/** Current step in the stepper */
+const currentStep = ref('0')
+
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
 
@@ -187,6 +166,40 @@ const setHighestStep = (value: string | number) => {
 
 const hasError = computed(() => pathError.value !== '')
 const noGpu = computed(() => typeof device.value !== 'string')
+
+// Computed property to determine if user can proceed to next step
+const canProceed = computed(() => {
+  switch (currentStep.value) {
+    case '0':
+      return typeof device.value === 'string'
+    case '1':
+      return pathError.value === ''
+    case '2':
+      return true // Migration is optional
+    case '3':
+      return !hasError.value
+    default:
+      return false
+  }
+})
+
+// Navigation methods
+const goToNextStep = () => {
+  const nextStep = (parseInt(currentStep.value) + 1).toString()
+  currentStep.value = nextStep
+  setHighestStep(nextStep)
+  electronAPI().Events.trackEvent('install_stepper_change', {
+    step: nextStep
+  })
+}
+
+const goToPreviousStep = () => {
+  const prevStep = (parseInt(currentStep.value) - 1).toString()
+  currentStep.value = prevStep
+  electronAPI().Events.trackEvent('install_stepper_change', {
+    step: prevStep
+  })
+}
 
 const electron = electronAPI()
 const router = useRouter()
@@ -219,7 +232,7 @@ onMounted(async () => {
   }
 
   electronAPI().Events.trackEvent('install_stepper_change', {
-    step: '0',
+    step: currentStep.value,
     gpu: detectedGpu
   })
 })
