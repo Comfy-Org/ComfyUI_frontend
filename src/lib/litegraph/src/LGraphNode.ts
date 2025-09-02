@@ -390,8 +390,8 @@ export class LGraphNode
   selected?: boolean
   showAdvanced?: boolean
 
-  declare comfyClass?: string
-  declare isVirtualNode?: boolean
+  comfyClass?: string
+  isVirtualNode?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
 
   isSubgraphNode(): this is SubgraphNode {

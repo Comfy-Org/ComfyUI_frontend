@@ -156,12 +156,6 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0(zod@3.24.1)
     devDependencies:
-      '@babel/core':
-        specifier: ^7.28.3
-        version: 7.28.3
-      '@babel/preset-typescript':
-        specifier: ^7.27.1
-        version: 7.27.1(@babel/core@7.28.3)
       '@eslint/js':
         specifier: ^9.8.0
         version: 9.12.0

@@ -30,7 +30,9 @@ import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
  * Functionally, however, when editing a subgraph, that "subgraph input" is the "origin" or "output side" of a link.
  */
 export class SubgraphInput extends SubgraphSlot {
-  declare parent: SubgraphInputNode
+  get parent(): SubgraphInputNode {
+    return super.parent as SubgraphInputNode
+  }
 
   events = new CustomEventTarget<SubgraphInputEventMap>()
 

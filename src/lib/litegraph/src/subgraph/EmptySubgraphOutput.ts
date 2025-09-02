@@ -12,8 +12,6 @@ import type { SubgraphOutputNode } from './SubgraphOutputNode'
  * A virtual slot that simply creates a new output slot when connected to.
  */
 export class EmptySubgraphOutput extends SubgraphOutput {
-  declare parent: SubgraphOutputNode
-
   constructor(parent: SubgraphOutputNode) {
     super(
       {

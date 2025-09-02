@@ -8,7 +8,7 @@ export default defineConfig({
   // Run tests sequentially to avoid conflicts
   workers: 1,
   fullyParallel: false,
-  // Use combined setup that includes litegraph preprocessing
-  globalSetup: './browser_tests/globalSetupWithI18n.ts',
-  globalTeardown: './browser_tests/globalTeardownWithI18n.ts'
+  // Use regular setup without babel preprocessing
+  globalSetup: './browser_tests/globalSetup.ts',
+  globalTeardown: './browser_tests/globalTeardown.ts'
 })
