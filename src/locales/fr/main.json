@@ -949,7 +949,6 @@
     "sampling": "échantillonnage",
     "schedulers": "planificateurs",
     "scheduling": "planification",
-    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
@@ -959,9 +958,6 @@
     "upscale_diffusion": "diffusion_de_mise_à_l'échelle",
     "upscaling": "mise_à_l'échelle",
     "utils": "utilitaires",
-    "v1": "v1",
-    "v2": "v2",
-    "v3": "v3",
     "video": "vidéo",
     "video_models": "modèles_vidéo"
   },

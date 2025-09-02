@@ -949,7 +949,6 @@
     "sampling": "muestreo",
     "schedulers": "programadores",
     "scheduling": "programación",
-    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
@@ -959,9 +958,6 @@
     "upscale_diffusion": "difusión_de_escalado",
     "upscaling": "escalado",
     "utils": "utilidades",
-    "v1": "v1",
-    "v2": "v2",
-    "v3": "v3",
     "video": "video",
     "video_models": "modelos_de_video"
   },

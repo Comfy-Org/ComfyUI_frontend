@@ -949,7 +949,6 @@
     "sampling": "サンプリング",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
-    "sd": "sd",
     "sd3": "SD3",
     "sigmas": "シグマ",
     "stable_cascade": "安定したカスケード",
@@ -959,9 +958,6 @@
     "upscale_diffusion": "アップスケール拡散",
     "upscaling": "アップスケーリング",
     "utils": "ユーティリティ",
-    "v1": "v1",
-    "v2": "v2",
-    "v3": "v3",
     "video": "ビデオ",
     "video_models": "ビデオモデル"
   },

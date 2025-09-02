@@ -949,7 +949,6 @@
     "sampling": "采样",
     "schedulers": "调度器",
     "scheduling": "调度",
-    "sd": "sd",
     "sd3": "SD3",
     "sigmas": "Sigmas",
     "stable_cascade": "StableCascade",
@@ -959,9 +958,6 @@
     "upscale_diffusion": "放大扩散",
     "upscaling": "放大",
     "utils": "工具",
-    "v1": "v1",
-    "v2": "v2",
-    "v3": "v3",
     "video": "视频",
     "video_models": "视频模型"
   },

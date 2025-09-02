@@ -949,7 +949,6 @@
     "sampling": "выборка",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
-    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
@@ -959,9 +958,6 @@
     "upscale_diffusion": "диффузии_апскейла",
     "upscaling": "апскейл",
     "utils": "утилиты",
-    "v1": "v1",
-    "v2": "v2",
-    "v3": "v3",
     "video": "видео",
     "video_models": "видеомодели"
   },

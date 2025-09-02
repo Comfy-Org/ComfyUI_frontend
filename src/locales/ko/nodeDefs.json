@@ -2418,9 +2418,6 @@
         "name": "cfg",
         "tooltip": "Classifier-Free Guidance 스케일은 창의성과 프롬프트 준수를 균형 있게 조절합니다. 값이 높을수록 프롬프트와 더 밀접하게 일치하는 이미지가 생성되지만, 너무 높은 값은 품질에 부정적인 영향을 미칠 수 있습니다."
       },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
       "denoise": {
         "name": "노이즈 제거양",
         "tooltip": "적용되는 노이즈 제거의 양으로, 낮은 값은 초기 이미지의 구조를 유지하여 이미지 간 샘플링을 가능하게 합니다."
@@ -2472,9 +2469,6 @@
       },
       "cfg": {
         "name": "cfg"
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
       },
       "end_at_step": {
         "name": "종료 스텝"
@@ -3495,9 +3489,6 @@
     "inputs": {
       "image": {
         "name": "이미지"
-      },
-      "upload": {
-        "name": "업로드할 파일 선택"
       }
     }
   },
@@ -3509,9 +3500,6 @@
       },
       "image": {
         "name": "이미지"
-      },
-      "upload": {
-        "name": "업로드할 파일 선택"
       }
     }
   },
@@ -3521,11 +3509,6 @@
     "inputs": {
       "image": {
         "name": "이미지"
-      },
-      "refresh": {
-      },
-      "upload": {
-        "name": "업로드할 파일 선택"
       }
     }
   },
@@ -7363,19 +7346,6 @@
       },
       "samples": {
         "name": "잠재 데이터"
-      }
-    }
-  },
-  "SaveSVG": {
-    "description": "SVG 파일을 디스크에 저장합니다.",
-    "display_name": "SVG 저장",
-    "inputs": {
-      "filename_prefix": {
-        "name": "파일명 접두사",
-        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같이 노드의 값을 포함하는 형식 정보를 사용할 수 있습니다."
-      },
-      "svg": {
-        "name": "svg"
       }
     }
   },

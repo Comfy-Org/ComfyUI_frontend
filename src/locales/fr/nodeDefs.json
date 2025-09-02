@@ -2418,9 +2418,6 @@
         "name": "cfg",
         "tooltip": "L'échelle de guidage sans classificateur équilibre la créativité et l'adhérence à l'invite. Des valeurs plus élevées donnent des images correspondant plus étroitement à l'invite, cependant des valeurs trop élevées auront un impact négatif sur la qualité."
       },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
       "denoise": {
         "name": "denoise",
         "tooltip": "La quantité de débruitage appliquée, des valeurs plus faibles maintiendront la structure de l'image initiale permettant un échantillonnage d'image à image."
@@ -2472,9 +2469,6 @@
       },
       "cfg": {
         "name": "cfg"
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
       },
       "end_at_step": {
         "name": "end_at_step"
@@ -3495,9 +3489,6 @@
     "inputs": {
       "image": {
         "name": "image"
-      },
-      "upload": {
-        "name": "choisissez le fichier à télécharger"
       }
     }
   },
@@ -3509,9 +3500,6 @@
       },
       "image": {
         "name": "image"
-      },
-      "upload": {
-        "name": "choisissez le fichier à télécharger"
       }
     }
   },
@@ -3521,11 +3509,6 @@
     "inputs": {
       "image": {
         "name": "image"
-      },
-      "refresh": {
-      },
-      "upload": {
-        "name": "choisissez le fichier à télécharger"
       }
     }
   },
@@ -7363,19 +7346,6 @@
       },
       "samples": {
         "name": "échantillons"
-      }
-    }
-  },
-  "SaveSVG": {
-    "description": "Enregistrer les fichiers SVG sur le disque.",
-    "display_name": "Enregistrer SVG",
-    "inputs": {
-      "filename_prefix": {
-        "name": "préfixe_nom_fichier",
-        "tooltip": "Le préfixe pour le fichier à enregistrer. Cela peut inclure des informations de formatage telles que %date:yyyy-MM-dd% ou %Empty Latent Image.width% pour inclure des valeurs provenant des nœuds."
-      },
-      "svg": {
-        "name": "svg"
       }
     }
   },
