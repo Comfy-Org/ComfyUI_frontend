@@ -83,8 +83,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
-        shard: [1, 2, 3, 4, 5]
+        include:
+          # Chromium tests with 5 shards (optimized distribution)
+          - browser: chromium
+            shard: 1
+            shard-total: 5
+          - browser: chromium
+            shard: 2
+            shard-total: 5
+          - browser: chromium
+            shard: 3
+            shard-total: 5
+          - browser: chromium
+            shard: 4
+            shard-total: 5
+          - browser: chromium
+            shard: 5
+            shard-total: 5
+          # Other browser variants without sharding (faster tests)
+          - browser: chromium-2x
+            shard: 1
+            shard-total: 1
+          - browser: chromium-0.5x
+            shard: 1
+            shard-total: 1
+          - browser: mobile-chrome
+            shard: 1
+            shard-total: 1
     steps:
       - name: Wait for cache propagation
         run: sleep 10
@@ -136,9 +161,14 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
 
-      - name: Run Playwright tests (${{ matrix.browser }}, shard ${{ matrix.shard }}/5)
+      - name: Run Playwright tests (${{ matrix.browser }}${{ matrix.shard-total > 1 && format(', shard {0}/{1}', matrix.shard, matrix.shard-total) || '' }})
         id: playwright
-        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/5
+        run: |
+          if [ "${{ matrix.shard-total }}" -gt 1 ]; then
+            npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/${{ matrix.shard-total }}
+          else
+            npx playwright test --project=${{ matrix.browser }}
+          fi
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4

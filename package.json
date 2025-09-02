@@ -19,6 +19,8 @@
     "format:no-cache": "prettier --write './**/*.{js,ts,tsx,vue,mts}'",
     "format:check:no-cache": "prettier --check './**/*.{js,ts,tsx,vue,mts}'",
     "test:browser": "npx nx e2e",
+    "test:browser:sharded": "playwright test --config=playwright-sharded.config.ts",
+    "test:browser:optimize-shards": "node browser_tests/scripts/optimizeSharding.js",
     "test:unit": "nx run test tests-ui/tests",
     "test:component": "nx run test src/components/",
     "preinstall": "npx only-allow pnpm",
