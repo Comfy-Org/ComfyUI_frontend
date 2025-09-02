@@ -4,7 +4,7 @@
       v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
-      class="w-full text-xs"
+      class="w-full text-xs py-2 px-4 bg-zinc-500/10 border-none outline outline-1 outline-offset-[-1px] outline-zinc-300/10 !rounded-lg hover:outline-blue-500/80"
       size="small"
       @update:model-value="onChange"
     />
