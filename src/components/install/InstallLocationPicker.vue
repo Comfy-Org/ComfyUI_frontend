@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex flex-col gap-8 w-full max-w-3xl mx-auto h-[30rem] select-none"
-  >
+  <div class="flex flex-col gap-8 w-full max-w-3xl mx-auto select-none">
     <!-- Installation Path Section -->
     <div class="grow flex flex-col gap-6 text-neutral-300">
       <h2
