@@ -1,17 +1,15 @@
 <template>
-  <div
-    class="flex justify-between items-center pt-6 pb-4 max-w-3xl mx-auto w-full"
-  >
+  <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
     <!-- Back button -->
     <Button
       v-if="currentStep !== '0'"
       :label="$t('g.back')"
       severity="secondary"
       icon="pi pi-arrow-left"
-      class="px-6 py-2"
+      class="px-6 py-2 justify-self-start"
       @click="$emit('previous')"
     />
-    <div v-else class="w-24"></div>
+    <div v-else></div>
 
     <!-- Step indicators in center -->
     <StepList class="flex justify-center items-center gap-3 select-none">
@@ -32,8 +30,7 @@
     <!-- Next/Install button -->
     <Button
       :label="currentStep !== '3' ? $t('g.next') : $t('g.install')"
-      class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold transition-colors italic"
-      style="font-family: 'ABC ROM Black Italic', sans-serif"
+      class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold transition-colors italic justify-self-end"
       :disabled="!canProceed"
       @click="currentStep !== '3' ? $emit('next') : $emit('install')"
     />
@@ -69,6 +66,7 @@ defineEmits<{
 /* Apply rounded corners to all buttons in the footer */
 :deep(.p-button) {
   @apply rounded-lg border-0;
+  font-family: 'ABC ROM Black Italic', sans-serif;
 }
 
 /* Style step indicators as dots */
