@@ -69,7 +69,7 @@
             <Button
               v-if="currentStep !== '3'"
               :label="$t('g.next')"
-              class="px-8 py-3 bg-[#d4ff00] hover:bg-[#c4ef00] text-neutral-900 font-bold rounded-lg transition-colors italic"
+              class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-lg transition-colors italic"
               style="font-family: 'ABC ROM Black Italic', sans-serif"
               :disabled="!canProceed"
               @click="goToNextStep"
@@ -77,7 +77,7 @@
             <Button
               v-else
               :label="$t('g.install')"
-              class="px-8 py-3 bg-[#d4ff00] hover:bg-[#c4ef00] text-neutral-900 font-bold rounded-lg transition-colors italic"
+              class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-lg transition-colors italic"
               style="font-family: 'ABC ROM Black Italic', sans-serif"
               :disabled="!canProceed"
               @click="install()"
@@ -270,8 +270,7 @@ onMounted(async () => {
 }
 
 :deep(.p-stepper .p-step.p-step-active .p-step-title) {
-  background-color: #facc15;
-  @apply scale-110;
+  @apply bg-comfy-yellow scale-110;
 }
 
 :deep(
