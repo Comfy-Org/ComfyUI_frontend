@@ -58,8 +58,6 @@ export function useCanvasInteractions() {
       forwardEventToCanvas(event)
       return
     }
-
-    // Otherwise, let the media element handle normally (preserves drag behavior)
   }
 
   /**
