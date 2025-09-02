@@ -56,17 +56,24 @@
       <!-- Collapsible Sections using PrimeVue Accordion -->
       <div class="px-12">
         <Accordion
-          :value="activeAccordionIndex"
-          @update:value="activeAccordionIndex = $event"
+          v-model:value="activeAccordionIndex"
           :multiple="true"
           class="location-picker-accordion"
-          pt:root="bg-transparent border-0"
-          pt:accordionPanel="border-0"
-          pt:accordionHeader="bg-transparent border-0 text-neutral-400 hover:text-neutral-300 px-0 py-3"
-          pt:accordionHeaderAction="flex items-center gap-3 w-full"
-          pt:accordionToggleIcon="text-xs"
-          pt:accordionContent="bg-transparent border-0"
-          pt:accordionContentContainer="text-neutral-500 text-sm pl-8 pb-3 pt-0"
+          :pt="{
+            root: 'bg-transparent border-0',
+            panel: {
+              root: 'border-0'
+            },
+            header: {
+              root: 'bg-transparent border-0',
+              content: 'text-neutral-400 hover:text-neutral-300 px-0 py-3',
+              toggleicon: 'text-xs'
+            },
+            content: {
+              root: 'bg-transparent border-0',
+              content: 'text-neutral-500 text-sm pl-8 pb-3 pt-0'
+            }
+          }"
         >
           <AccordionPanel value="0">
             <AccordionHeader>
@@ -113,8 +120,8 @@ const pathExists = ref(false)
 const nonDefaultDrive = ref(false)
 const inputTouched = ref(false)
 
-// Accordion state - null means all collapsed
-const activeAccordionIndex = ref<string[]>([])
+// Accordion state - array of active panel values
+const activeAccordionIndex = ref<string[] | undefined>(undefined)
 
 const electron = electronAPI()
 
