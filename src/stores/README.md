@@ -386,4 +386,209 @@ describe('useExampleStore', () => {
 })
 ```
 
+## ComfyUI-Specific Patterns
+
+ComfyUI stores follow additional patterns specific to the application's architecture:
+
+### WebSocket Message Handling
+
+Many stores handle real-time updates via WebSocket messages. The execution store is a prime example:
+
+```typescript
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type { ExecutionStartWsMessage, ProgressWsMessage } from '@/schemas/apiSchema'
+import { api } from '@/scripts/api'
+
+export const useExecutionStore = defineStore('execution', () => {
+  const activePromptId = ref<string | null>(null)
+  const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
+
+  // Register WebSocket event listeners
+  function registerEvents() {
+    api.addEventListener('execution_start', handleExecutionStart)
+    api.addEventListener('progress', handleProgress)
+    api.addEventListener('execution_error', handleExecutionError)
+  }
+
+  function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
+    activePromptId.value = e.detail.prompt_id
+    // Handle execution start
+  }
+
+  function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    // Update node progress states
+    const { value, max } = e.detail
+    // ... progress handling logic
+  }
+
+  // Clean up listeners when store is no longer needed
+  function unregisterEvents() {
+    api.removeEventListener('execution_start', handleExecutionStart)
+    api.removeEventListener('progress', handleProgress)
+    api.removeEventListener('execution_error', handleExecutionError)
+  }
+
+  return {
+    activePromptId,
+    nodeProgressStates,
+    registerEvents,
+    unregisterEvents
+  }
+})
+```
+
+### Store Communication Patterns
+
+ComfyUI stores frequently reference each other to maintain consistency across the application:
+
+```typescript
+import { defineStore } from 'pinia'
+import { computed } from 'vue'
+import { useCanvasStore } from './graphStore'
+import { useWorkflowStore } from './workflowStore'
+
+export const useExecutionStore = defineStore('execution', () => {
+  // Reference related stores
+  const workflowStore = useWorkflowStore()
+  const canvasStore = useCanvasStore()
+
+  // Computed values that depend on other stores
+  const activeWorkflow = computed(() => workflowStore.activeWorkflow)
+  
+  // Actions that coordinate between stores
+  async function executeWorkflow() {
+    const workflow = workflowStore.serialize()
+    const canvas = canvasStore.canvas
+    // Execute with coordination between stores
+  }
+
+  return {
+    activeWorkflow,
+    executeWorkflow
+  }
+})
+```
+
+### Extension Integration
+
+Extensions can register with stores to extend functionality:
+
+```typescript
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type { ComfyExtension } from '@/types/comfy'
+
+export const useExtensionStore = defineStore('extension', () => {
+  const extensionByName = ref<Record<string, ComfyExtension>>({})
+
+  function registerExtension(extension: ComfyExtension) {
+    if (!extension.name) {
+      throw new Error("Extensions must have a 'name' property.")
+    }
+
+    if (extensionByName.value[extension.name]) {
+      console.warn(`Extension ${extension.name} already registered. Overwriting.`)
+    }
+
+    extensionByName.value[extension.name] = extension
+
+    // Call extension setup if provided
+    if (extension.setup) {
+      extension.setup()
+    }
+  }
+
+  function isExtensionEnabled(extensionName: string): boolean {
+    const extension = extensionByName.value[extensionName]
+    return extension && !extension.disabled
+  }
+
+  return {
+    extensionByName: readonly(extensionByName),
+    registerExtension,
+    isExtensionEnabled
+  }
+})
+```
+
+### Workspace Store Organization
+
+ComfyUI uses a two-tier store organization:
+
+1. **Main stores** (`src/stores/*.ts`) - Core application logic
+2. **Workspace stores** (`src/stores/workspace/*.ts`) - UI layout and workspace-specific state
+
+The `useWorkspaceStore` acts as a coordinator, providing computed access to other stores:
+
+```typescript
+import { defineStore } from 'pinia'
+import { computed } from 'vue'
+import { useWorkflowStore } from './workflowStore'
+import { useBottomPanelStore } from './workspace/bottomPanelStore'
+import { useSidebarTabStore } from './workspace/sidebarTabStore'
+
+export const useWorkspaceStore = defineStore('workspace', () => {
+  const focusMode = ref(false)
+
+  // Provide unified access to related stores
+  const workflow = computed(() => useWorkflowStore())
+  const sidebarTab = computed(() => useSidebarTabStore())
+  const bottomPanel = computed(() => useBottomPanelStore())
+
+  // Workspace-level actions that coordinate multiple stores
+  function toggleFocusMode() {
+    focusMode.value = !focusMode.value
+    // Hide/show panels based on focus mode
+    if (focusMode.value) {
+      bottomPanel.value.hide()
+      sidebarTab.value.closeTabs()
+    }
+  }
+
+  return {
+    focusMode,
+    workflow,
+    sidebarTab,
+    bottomPanel,
+    toggleFocusMode
+  }
+})
+```
+
+### Node and Workflow State Management
+
+ComfyUI stores often work with node and workflow concepts:
+
+```typescript
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import type { ComfyWorkflow, NodeId } from '@/schemas/comfyWorkflowSchema'
+
+export const useWorkflowStore = defineStore('workflow', () => {
+  const activeWorkflow = ref<ComfyWorkflow | null>(null)
+
+  // Convert node ID to a locator for cross-store communication
+  function nodeIdToNodeLocatorId(nodeId: NodeId): NodeLocatorId {
+    return createNodeLocatorId(activeWorkflow.value?.path, nodeId)
+  }
+
+  // Serialize current workflow for execution
+  function serialize(): ComfyApiWorkflow {
+    if (!activeWorkflow.value) {
+      throw new Error('No active workflow to serialize')
+    }
+    return convertToApiFormat(activeWorkflow.value)
+  }
+
+  return {
+    activeWorkflow,
+    nodeIdToNodeLocatorId,
+    serialize
+  }
+})
+```
+
+These patterns ensure that ComfyUI stores work together effectively to manage the complex state of a node-based workflow editor.
+
 For more information on Pinia, refer to the [Pinia documentation](https://pinia.vuejs.org/introduction.html).
