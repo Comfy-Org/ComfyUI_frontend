@@ -48,17 +48,11 @@ export function useCanvasInteractions() {
     const canvas = getCanvas()
     if (!canvas) return
 
-    // Forward space+drag (panning) events to canvas
-    // The canvas already handles space key state via read_only property
-    if (canvas.read_only && event.buttons === 1) {
-      event.preventDefault()
-      event.stopPropagation()
-      forwardEventToCanvas(event)
-      return
-    }
+    // Check conditions for forwarding events to canvas
+    const isSpacePanningDrag = canvas.read_only && event.buttons === 1 // Space key pressed + left mouse drag
+    const isMiddleMousePanning = event.buttons === 4 // Middle mouse button for panning
 
-    // Forward middle mouse button events for panning
-    if (event.buttons === 4) {
+    if (isSpacePanningDrag || isMiddleMousePanning) {
       event.preventDefault()
       event.stopPropagation()
       forwardEventToCanvas(event)
