@@ -16,8 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Install pnpm
@@ -71,7 +70,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add .
           git commit -m "[auto-fix] Apply ESLint and Prettier fixes"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push
 
       - name: Final validation
         run: |
