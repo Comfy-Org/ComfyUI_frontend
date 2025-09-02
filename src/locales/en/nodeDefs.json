@@ -2196,9 +2196,6 @@
       }
     }
   },
-  "HotReload_Terminal": {
-    "display_name": "Terminal"
-  },
   "Hunyuan3Dv2Conditioning": {
     "display_name": "Hunyuan3Dv2Conditioning",
     "inputs": {
@@ -10804,46 +10801,6 @@
     "outputs": {
       "0": {
         "tooltip": null
-      }
-    }
-  },
-  "VideoCropNode": {
-    "display_name": "Video Crop (FFmpeg)",
-    "inputs": {
-      "video": {
-        "name": "video"
-      },
-      "x": {
-        "name": "x"
-      },
-      "y": {
-        "name": "y"
-      },
-      "width": {
-        "name": "width"
-      },
-      "height": {
-        "name": "height"
-      },
-      "output_format": {
-        "name": "output_format"
-      },
-      "codec": {
-        "name": "codec"
-      },
-      "quality": {
-        "name": "quality"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "extra_ffmpeg_args": {
-        "name": "extra_ffmpeg_args"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "cropped_video"
       }
     }
   },
