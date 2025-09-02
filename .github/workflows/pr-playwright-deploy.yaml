@@ -37,6 +37,7 @@ jobs:
             }
             
             const pr = pullRequests[0];
+            console.log(`✅ Found PR #${pr.number} for branch: ${context.payload.workflow_run.head_branch}`);
             const branchName = context.payload.workflow_run.head_branch;
             const sanitizedBranch = branchName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '');
             
@@ -127,7 +128,9 @@ jobs:
               return null;
             }
 
-            return pullRequests[0].number;
+            const prNumber = pullRequests[0].number;
+            console.log(`✅ Found PR #${prNumber} for branch: ${context.payload.workflow_run.head_branch}`);
+            return prNumber;
 
       - name: Get completion time
         id: completion-time
@@ -188,7 +191,9 @@ jobs:
               return null;
             }
 
-            return pullRequests[0].number;
+            const prNumber = pullRequests[0].number;
+            console.log(`✅ Found PR #${prNumber} for branch: ${context.payload.workflow_run.head_branch}`);
+            return prNumber;
 
       - name: Download all deployment info
         if: steps.pr.outputs.result != 'null'
