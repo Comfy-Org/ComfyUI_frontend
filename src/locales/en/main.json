@@ -930,7 +930,8 @@
     "blueprintName": "Subgraph name",
     "publish": "Publish Subgraph",
     "publishSuccess": "Saved to Nodes Library",
-    "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\""
+    "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
+    "loadFailure": "Failed to load subgraph blueprints"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",

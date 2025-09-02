@@ -156,11 +156,16 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
     ).filter((f) => f.path.endsWith('.json'))
     const settled = await Promise.allSettled(res.map(loadBlueprint))
-    settled
-      .filter((i) => 'reason' in i)
-      .forEach(({ reason }) =>
-        console.error('Failed to load subgraph blueprint', reason)
-      )
+    const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
+    errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
+    if (errors.length > 0) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subgraphStore.loadFailure'),
+        detail: errors.length > 3 ? `x${errors.length}` : `${errors}`,
+        life: 6000
+      })
+    }
   }
   function convertToNodeDef(workflow: LoadedComfyWorkflow): ComfyNodeDefImpl {
     const name = workflow.filename
@@ -232,6 +237,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const path = SubgraphBlueprint.basePath + name + '.json'
     const workflow = new SubgraphBlueprint({
       path,
+      //NOTE: Placeholder to allow overwrites. Updated on save()
       size: 1,
       modified: Date.now()
     })
@@ -252,19 +258,16 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   function updateDef(blueprint: LoadedComfyWorkflow) {
     subgraphDefCache.value.set(blueprint.filename, convertToNodeDef(blueprint))
   }
-  function editBlueprint(nodeType: string) {
+  async function editBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
     useWorkflowStore().attachWorkflow(subgraphCache[name])
-    void useWorkflowService()
-      .openWorkflow(subgraphCache[name])
-      .then(() => {
-        const canvas = useCanvasStore().getCanvas()
-        if (canvas.graph && 'subgraph' in canvas.graph.nodes[0])
-          canvas.setGraph(canvas.graph.nodes[0].subgraph)
-      })
+    await useWorkflowService().openWorkflow(subgraphCache[name])
+    const canvas = useCanvasStore().getCanvas()
+    if (canvas.graph && 'subgraph' in canvas.graph.nodes[0])
+      canvas.setGraph(canvas.graph.nodes[0].subgraph)
   }
   function getBlueprint(nodeType: string): ComfyWorkflowJSON {
     const name = nodeType.slice(typePrefix.length)

@@ -115,7 +115,7 @@ const editBlueprint = async () => {
     throw new Error(
       'Failed to edit subgraph blueprint lacking backing node data'
     )
-  useSubgraphStore().editBlueprint(props.node.data.name)
+  await useSubgraphStore().editBlueprint(props.node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuItems = computed<MenuItem[]>(() => {
