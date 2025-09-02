@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import { test } from '../browser_tests/fixtures/ComfyPageNoUser'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'

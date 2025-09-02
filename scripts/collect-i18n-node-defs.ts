@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import { test } from '../browser_tests/fixtures/ComfyPageNoUser'
 import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
 import type { ComfyApi } from '../src/scripts/api'
 import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'

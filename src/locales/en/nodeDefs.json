@@ -2196,6 +2196,9 @@
       }
     }
   },
+  "HotReload_Terminal": {
+    "display_name": "Terminal"
+  },
   "Hunyuan3Dv2Conditioning": {
     "display_name": "Hunyuan3Dv2Conditioning",
     "inputs": {
@@ -3360,6 +3363,9 @@
       "denoise": {
         "name": "denoise",
         "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -3409,6 +3415,9 @@
       },
       "return_with_leftover_noise": {
         "name": "return_with_leftover_noise"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     }
   },
@@ -3864,6 +3873,9 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "upload": {
+        "name": "choose file to upload"
       }
     }
   },
@@ -3875,6 +3887,9 @@
       },
       "channel": {
         "name": "channel"
+      },
+      "upload": {
+        "name": "choose file to upload"
       }
     }
   },
@@ -3884,6 +3899,11 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "Auto-refresh after generation": {},
+      "refresh": {},
+      "upload": {
+        "name": "choose file to upload"
       }
     }
   },
@@ -10784,6 +10804,46 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "VideoCropNode": {
+    "display_name": "Video Crop (FFmpeg)",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "output_format": {
+        "name": "output_format"
+      },
+      "codec": {
+        "name": "codec"
+      },
+      "quality": {
+        "name": "quality"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "extra_ffmpeg_args": {
+        "name": "extra_ffmpeg_args"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "cropped_video"
       }
     }
   },
