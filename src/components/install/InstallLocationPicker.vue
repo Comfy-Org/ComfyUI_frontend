@@ -62,16 +62,17 @@
           :pt="{
             root: 'bg-transparent border-0',
             panel: {
-              root: 'border-0'
+              root: 'border-0 mb-0'
             },
             header: {
               root: 'bg-transparent border-0',
-              content: 'text-neutral-400 hover:text-neutral-300 px-0 py-3',
-              toggleicon: 'text-xs'
+              content:
+                'text-neutral-400 hover:text-neutral-300 px-0 py-3 flex items-center gap-3',
+              toggleicon: 'text-xs order-first mr-0'
             },
             content: {
               root: 'bg-transparent border-0',
-              content: 'text-neutral-500 text-sm pl-8 pb-3 pt-0'
+              content: 'text-neutral-500 text-sm pl-7 pb-3 pt-0'
             }
           }"
         >
@@ -195,15 +196,26 @@ const onFocus = async () => {
   .p-accordionheader {
     background: transparent;
     border: none;
-
-    .p-accordionheader-toggle-icon {
-      order: -1; /* Move icon to the left */
-    }
   }
 
   .p-accordioncontent {
     background: transparent;
     border: none;
+  }
+
+  /* Override default chevron icons to use right/down */
+  .p-accordionheader-toggle-icon {
+    &::before {
+      content: '\e933' !important; /* pi-chevron-right */
+    }
+  }
+
+  .p-accordionpanel-active {
+    .p-accordionheader-toggle-icon {
+      &::before {
+        content: '\e902' !important; /* pi-chevron-down */
+      }
+    }
   }
 }
 </style>
