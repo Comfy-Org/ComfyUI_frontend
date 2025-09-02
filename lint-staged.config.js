@@ -7,7 +7,7 @@ export default {
   ],
 
   // Run knip on any staged files to check for unused dependencies and exports
-  '*': () => 'npm run knip'
+  '*': () => 'pnpm run knip'
 }
 
 function formatAndEslint(fileNames) {
