@@ -98,15 +98,15 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
 
-    it('should handle missing canvas gracefully', () => {
+    it('should return early when canvas is null', () => {
       // Setup
       mockGetCanvas.mockReturnValue(null)
 
       const { handlePointer } = useCanvasInteractions()
 
-      // Create mock pointer event
+      // Create mock pointer event that would normally trigger forwarding
       const mockEvent = {
-        buttons: 1,
+        buttons: 1, // Left mouse button - would trigger space+drag if canvas had read_only=true
         preventDefault: vi.fn(),
         stopPropagation: vi.fn()
       } satisfies Partial<PointerEvent>
@@ -114,8 +114,10 @@ describe('useCanvasInteractions', () => {
       // Test
       handlePointer(mockEvent as unknown as PointerEvent)
 
-      // Verify - should not prevent default when no canvas
+      // Verify early return - no event methods should be called at all
+      expect(mockGetCanvas).toHaveBeenCalled()
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
   })
 
