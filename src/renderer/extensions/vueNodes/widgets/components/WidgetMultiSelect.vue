@@ -4,6 +4,7 @@
       v-model="localValue"
       v-bind="combinedProps"
       :disabled="readonly"
+      append-to="self"
       class="w-full text-xs"
       size="small"
       display="chip"
