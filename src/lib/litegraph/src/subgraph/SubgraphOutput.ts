@@ -29,10 +29,6 @@ import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
  * Functionally, however, when editing a subgraph, that "subgraph output" is the "target" or "input side" of a link.
  */
 export class SubgraphOutput extends SubgraphSlot {
-  get parent(): SubgraphOutputNode {
-    return super.parent as SubgraphOutputNode
-  }
-
   override connect(
     slot: INodeOutputSlot,
     node: LGraphNode,
@@ -70,8 +66,8 @@ export class SubgraphOutput extends SubgraphSlot {
       slot.type,
       node.id,
       outputIndex,
-      this.parent.id,
-      this.parent.slots.indexOf(this),
+      (this.parent as SubgraphOutputNode).id,
+      (this.parent as SubgraphOutputNode).slots.indexOf(this),
       afterRerouteId
     )
 

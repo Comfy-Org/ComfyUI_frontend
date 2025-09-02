@@ -30,10 +30,6 @@ import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
  * Functionally, however, when editing a subgraph, that "subgraph input" is the "origin" or "output side" of a link.
  */
 export class SubgraphInput extends SubgraphSlot {
-  get parent(): SubgraphInputNode {
-    return super.parent as SubgraphInputNode
-  }
-
   events = new CustomEventTarget<SubgraphInputEventMap>()
 
   /** The linked widget that this slot is connected to. */
@@ -79,7 +75,7 @@ export class SubgraphInput extends SubgraphSlot {
     if (slot.link != null) {
       subgraph.beforeChange()
       const link = subgraph.getLink(slot.link)
-      this.parent._disconnectNodeInput(node, slot, link)
+      ;(this.parent as SubgraphInputNode)._disconnectNodeInput(node, slot, link)
     }
 
     const inputWidget = node.getWidgetFromSlot(slot)
@@ -99,8 +95,8 @@ export class SubgraphInput extends SubgraphSlot {
     const link = new LLink(
       ++subgraph.state.lastLinkId,
       slot.type,
-      this.parent.id,
-      this.parent.slots.indexOf(this),
+      (this.parent as SubgraphInputNode).id,
+      (this.parent as SubgraphInputNode).slots.indexOf(this),
       node.id,
       inputIndex,
       afterRerouteId

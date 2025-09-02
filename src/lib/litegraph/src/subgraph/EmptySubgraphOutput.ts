@@ -28,7 +28,7 @@ export class EmptySubgraphOutput extends SubgraphOutput {
     node: LGraphNode,
     afterRerouteId?: RerouteId
   ): LLink | undefined {
-    const { subgraph } = this.parent
+    const { subgraph } = this.parent as SubgraphOutputNode
     const existingNames = subgraph.outputs.map((x) => x.name)
 
     const name = nextUniqueName(slot.name, existingNames)

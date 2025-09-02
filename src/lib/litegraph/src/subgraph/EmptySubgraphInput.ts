@@ -28,7 +28,7 @@ export class EmptySubgraphInput extends SubgraphInput {
     node: LGraphNode,
     afterRerouteId?: RerouteId
   ): LLink | undefined {
-    const { subgraph } = this.parent
+    const { subgraph } = this.parent as SubgraphInputNode
     const existingNames = subgraph.inputs.map((x) => x.name)
 
     const name = nextUniqueName(slot.name, existingNames)
