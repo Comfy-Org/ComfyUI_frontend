@@ -2,11 +2,11 @@ import { ResultItem } from '@/schemas/apiSchema'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 export function formatCamelCase(str: string): string {
-  // Check if the string is camel case
-  const isCamelCase = /^([A-Z][a-z]*)+$/.test(str)
+// Check if the string is camel case
+    const   isCamelCase   =    /^([A-Z][a-z]*)+$/.test(str)
 
-  if (!isCamelCase) {
-    return str // Return original string if not camel case
+  if (!isCamelCase)  {
+      return str // Return original string if not camel case
   }
 
   // Split the string into words, keeping acronyms together
