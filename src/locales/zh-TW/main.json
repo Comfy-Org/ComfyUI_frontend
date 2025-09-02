@@ -551,37 +551,7 @@
     "updateConsent": "您先前已選擇回報當機。現在我們會追蹤事件型統計資料，以協助找出錯誤並改進應用程式。不會收集任何可識別個人身分的資訊。"
   },
   "issueReport": {
-    "contactFollowUp": "需要聯絡我以便後續追蹤",
-    "contactSupportDescription": "請填寫下列表單並提交您的報告",
-    "contactSupportTitle": "聯絡客服支援",
-    "describeTheProblem": "請描述問題",
-    "email": "電子郵件",
-    "feedbackTitle": "協助我們改進 ComfyUI，請提供您的回饋",
-    "helpFix": "協助修復此問題",
-    "helpTypes": {
-      "billingPayments": "帳單／付款問題",
-      "bugReport": "錯誤回報",
-      "giveFeedback": "提供回饋",
-      "loginAccessIssues": "登入／存取問題",
-      "somethingElse": "其他"
-    },
-    "notifyResolve": "問題解決時通知我",
-    "provideAdditionalDetails": "提供更多細節",
-    "provideEmail": "請提供您的電子郵件（選填）",
-    "rating": "評分",
-    "selectIssue": "請選擇問題",
-    "stackTrace": "堆疊追蹤",
-    "submitErrorReport": "提交錯誤報告（選填）",
-    "systemStats": "系統狀態",
-    "validation": {
-      "descriptionRequired": "請填寫問題描述",
-      "helpTypeRequired": "請選擇協助類型",
-      "invalidEmail": "請輸入有效的電子郵件地址",
-      "maxLength": "訊息過長",
-      "selectIssueType": "請選擇問題類型"
-    },
-    "whatCanWeInclude": "請說明報告中要包含哪些內容",
-    "whatDoYouNeedHelpWith": "您需要什麼協助？"
+    "helpFix": "協助修復此問題"
   },
   "load3d": {
     "applyingTexture": "正在套用材質貼圖...",
