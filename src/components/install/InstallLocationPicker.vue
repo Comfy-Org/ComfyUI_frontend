@@ -55,7 +55,7 @@
 
       <!-- Collapsible Sections using PrimeVue Accordion -->
       <div class="px-12">
-        <Accordion 
+        <Accordion
           :value="activeAccordionIndex"
           @update:value="activeAccordionIndex = $event"
           :multiple="true"
@@ -76,7 +76,7 @@
               {{ $t('install.locationPicker.migrateDescription') }}
             </AccordionContent>
           </AccordionPanel>
-          
+
           <AccordionPanel value="1">
             <AccordionHeader>
               {{ $t('install.locationPicker.chooseDownloadServers') }}
@@ -188,7 +188,7 @@ const onFocus = async () => {
   .p-accordionheader {
     background: transparent;
     border: none;
-    
+
     .p-accordionheader-toggle-icon {
       order: -1; /* Move icon to the left */
     }
