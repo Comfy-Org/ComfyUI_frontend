@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import { test } from '../browser_tests/fixtures/ComfyPageNoUser'
+import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
 import type { ComfyApi } from '../src/scripts/api'
 import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
@@ -11,7 +11,7 @@ const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
   // Mock view route
-  comfyPage.page.route('**/view**', async (route) => {
+  await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
