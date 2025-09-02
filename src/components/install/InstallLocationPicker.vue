@@ -53,52 +53,49 @@
       <!-- Divider -->
       <Divider class="mx-12 border-neutral-700" />
 
-      <!-- Collapsible Sections -->
-      <div class="flex flex-col gap-0 px-12">
-        <!-- Migration Section -->
-        <button
-          type="button"
-          class="flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full bg-transparent border-0 outline-none cursor-pointer"
-          @click="showMigration = !showMigration"
+      <!-- Collapsible Sections using PrimeVue Accordion -->
+      <div class="px-12">
+        <Accordion 
+          :value="activeAccordionIndex"
+          @update:value="activeAccordionIndex = $event"
+          :multiple="true"
+          class="location-picker-accordion"
+          pt:root="bg-transparent border-0"
+          pt:accordionPanel="border-0"
+          pt:accordionHeader="bg-transparent border-0 text-neutral-400 hover:text-neutral-300 px-0 py-3"
+          pt:accordionHeaderAction="flex items-center gap-3 w-full"
+          pt:accordionToggleIcon="text-xs"
+          pt:accordionContent="bg-transparent border-0"
+          pt:accordionContentContainer="text-neutral-500 text-sm pl-8 pb-3 pt-0"
         >
-          <i
-            class="text-xs transition-transform duration-200"
-            :class="
-              showMigration ? 'pi pi-chevron-down' : 'pi pi-chevron-right'
-            "
-          />
-          <span>{{ $t('install.locationPicker.migrateFromExisting') }}</span>
-        </button>
-        <div v-if="showMigration" class="text-neutral-500 text-sm pb-3 pl-8">
-          {{ $t('install.locationPicker.migrateDescription') }}
-        </div>
-
-        <!-- Download Servers Section -->
-        <button
-          type="button"
-          class="flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full bg-transparent border-0 outline-none cursor-pointer"
-          @click="showDownloadServers = !showDownloadServers"
-        >
-          <i
-            class="text-xs transition-transform duration-200"
-            :class="
-              showDownloadServers ? 'pi pi-chevron-down' : 'pi pi-chevron-right'
-            "
-          />
-          <span>{{ $t('install.locationPicker.chooseDownloadServers') }}</span>
-        </button>
-        <div
-          v-if="showDownloadServers"
-          class="text-neutral-500 text-sm pb-3 pl-8"
-        >
-          {{ $t('install.locationPicker.downloadServersDescription') }}
-        </div>
+          <AccordionPanel value="0">
+            <AccordionHeader>
+              {{ $t('install.locationPicker.migrateFromExisting') }}
+            </AccordionHeader>
+            <AccordionContent>
+              {{ $t('install.locationPicker.migrateDescription') }}
+            </AccordionContent>
+          </AccordionPanel>
+          
+          <AccordionPanel value="1">
+            <AccordionHeader>
+              {{ $t('install.locationPicker.chooseDownloadServers') }}
+            </AccordionHeader>
+            <AccordionContent>
+              {{ $t('install.locationPicker.downloadServersDescription') }}
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Accordion from 'primevue/accordion'
+import AccordionContent from 'primevue/accordioncontent'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionPanel from 'primevue/accordionpanel'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
@@ -116,9 +113,8 @@ const pathExists = ref(false)
 const nonDefaultDrive = ref(false)
 const inputTouched = ref(false)
 
-// Collapsible section states
-const showMigration = ref(false)
-const showDownloadServers = ref(false)
+// Accordion state - null means all collapsed
+const activeAccordionIndex = ref<string[]>([])
 
 const electron = electronAPI()
 
@@ -182,19 +178,25 @@ const onFocus = async () => {
 </script>
 
 <style scoped>
-/* Ensure button expanders have no default styling */
-button[type='button'] {
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  padding: 0.75rem 0;
-}
+/* Style the accordion to match the mockup */
+:deep(.location-picker-accordion) {
+  .p-accordionpanel {
+    border: none;
+    background: transparent;
+  }
 
-button[type='button']:focus {
-  outline: none;
-}
+  .p-accordionheader {
+    background: transparent;
+    border: none;
+    
+    .p-accordionheader-toggle-icon {
+      order: -1; /* Move icon to the left */
+    }
+  }
 
-button[type='button']:hover {
-  background: transparent;
+  .p-accordioncontent {
+    background: transparent;
+    border: none;
+  }
 }
 </style>
