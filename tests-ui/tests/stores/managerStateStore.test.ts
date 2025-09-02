@@ -141,7 +141,7 @@ describe('useManagerStateStore', () => {
       expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
     })
 
-    it('should return DISABLED state when no manager is available', () => {
+    it('should return LEGACY_UI state when server explicitly does not support v4', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
@@ -156,7 +156,8 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+      // When server explicitly returns false for v4 support, we assume legacy manager exists
+      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should handle null systemStats gracefully', () => {

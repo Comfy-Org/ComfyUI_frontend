@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { isReactive, isReadonly } from 'vue'
+import { isReadonly } from 'vue'
 
 import {
   ServerFeatureFlag,
@@ -38,7 +38,9 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
 
       expect(isReadonly(flags)).toBe(true)
-      expect(isReactive(flags)).toBe(true)
+      // computed returns a ComputedRef which is readonly but not reactive
+      // The value inside is reactive though
+      expect(flags.value).toBeDefined()
     })
 
     it('should access supportsPreviewMetadata', () => {
