@@ -2,7 +2,7 @@
   <button
     class="hardware-option flex flex-col items-center rounded-3xl transition-all duration-200"
     :class="{
-      'selected-border bg-neutral-900/70': selected,
+      'border-4 border-comfy-yellow bg-neutral-900/70': selected,
       'border-4 border-transparent bg-neutral-900/70': !selected
     }"
     @click="$emit('click')"
@@ -51,10 +51,6 @@ defineEmits<{
   width: 170px;
   height: 190px;
   padding: 1.25rem;
-}
-
-.selected-border {
-  border: 4px solid rgb(255, 235, 59);
 }
 
 .icon-container {
