@@ -54,8 +54,7 @@ export class SubgraphInput extends SubgraphSlot {
     // Allow nodes to block connection
     const inputIndex = node.inputs.indexOf(slot)
     if (
-      node.onConnectInput?.(inputIndex, this.type, this, parent, -1) ===
-      false
+      node.onConnectInput?.(inputIndex, this.type, this, parent, -1) === false
     )
       return
 

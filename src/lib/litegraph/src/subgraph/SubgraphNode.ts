@@ -37,7 +37,7 @@ import type { SubgraphInput } from './SubgraphInput'
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   // Override inputs with proper typing for subgraph inputs
   override inputs: (INodeInputSlot & Partial<ISubgraphInput>)[] = []
-  
+
   override readonly type: UUID
   override readonly isVirtualNode = true as const
 

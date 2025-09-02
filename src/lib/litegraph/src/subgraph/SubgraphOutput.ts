@@ -46,8 +46,7 @@ export class SubgraphOutput extends SubgraphSlot {
       throw new Error('Slot is not an output of the given node')
 
     if (
-      node.onConnectOutput?.(outputIndex, this.type, this, parent, -1) ===
-      false
+      node.onConnectOutput?.(outputIndex, this.type, this, parent, -1) === false
     )
       return
 

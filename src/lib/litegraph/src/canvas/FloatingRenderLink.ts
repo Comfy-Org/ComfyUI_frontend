@@ -177,7 +177,9 @@ export class FloatingRenderLink implements RenderLink {
   ): void {
     const floatingLink = this.link
     floatingLink.origin_id = SUBGRAPH_INPUT_ID
-    floatingLink.origin_slot = (input.parent as SubgraphInputNode).slots.indexOf(input)
+    floatingLink.origin_slot = (
+      input.parent as SubgraphInputNode
+    ).slots.indexOf(input)
 
     this.fromSlot._floatingLinks?.delete(floatingLink)
     input._floatingLinks ??= new Set()
@@ -190,7 +192,9 @@ export class FloatingRenderLink implements RenderLink {
   ): void {
     const floatingLink = this.link
     floatingLink.origin_id = SUBGRAPH_OUTPUT_ID
-    floatingLink.origin_slot = (output.parent as SubgraphOutputNode).slots.indexOf(output)
+    floatingLink.origin_slot = (
+      output.parent as SubgraphOutputNode
+    ).slots.indexOf(output)
 
     this.fromSlot._floatingLinks?.delete(floatingLink)
     output._floatingLinks ??= new Set()
