@@ -4,7 +4,6 @@ import { Component } from 'vue'
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
@@ -120,16 +119,6 @@ export const useDialogService = () => {
           content: { class: '!px-0 overflow-y-hidden' }
         }
       },
-      props
-    })
-  }
-
-  function showIssueReportDialog(
-    props: InstanceType<typeof IssueReportDialogContent>['$props']
-  ) {
-    dialogStore.showDialog({
-      key: 'global-issue-report',
-      component: IssueReportDialogContent,
       props
     })
   }
@@ -470,7 +459,6 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
-    showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,
     showErrorDialog,
