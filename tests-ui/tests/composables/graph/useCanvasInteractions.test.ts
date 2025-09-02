@@ -23,12 +23,12 @@ describe('useCanvasInteractions', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useCanvasStore).mockReturnValue({
+    vi.mocked(useCanvasStore, { partial: true }).mockReturnValue({
       getCanvas: mockGetCanvas
-    } as any)
-    vi.mocked(useSettingStore).mockReturnValue({
+    })
+    vi.mocked(useSettingStore, { partial: true }).mockReturnValue({
       get: mockGet
-    } as any)
+    })
   })
 
   describe('handlePointer', () => {
@@ -44,10 +44,10 @@ describe('useCanvasInteractions', () => {
         buttons: 1, // Left mouse button
         preventDefault: vi.fn(),
         stopPropagation: vi.fn()
-      } as unknown as PointerEvent
+      } satisfies Partial<PointerEvent>
 
       // Test
-      handlePointer(mockEvent)
+      handlePointer(mockEvent as unknown as PointerEvent)
 
       // Verify
       expect(mockEvent.preventDefault).toHaveBeenCalled()
@@ -66,10 +66,10 @@ describe('useCanvasInteractions', () => {
         buttons: 4, // Middle mouse button
         preventDefault: vi.fn(),
         stopPropagation: vi.fn()
-      } as unknown as PointerEvent
+      } satisfies Partial<PointerEvent>
 
       // Test
-      handlePointer(mockEvent)
+      handlePointer(mockEvent as unknown as PointerEvent)
 
       // Verify
       expect(mockEvent.preventDefault).toHaveBeenCalled()
@@ -88,10 +88,10 @@ describe('useCanvasInteractions', () => {
         buttons: 1, // Left mouse button
         preventDefault: vi.fn(),
         stopPropagation: vi.fn()
-      } as unknown as PointerEvent
+      } satisfies Partial<PointerEvent>
 
       // Test
-      handlePointer(mockEvent)
+      handlePointer(mockEvent as unknown as PointerEvent)
 
       // Verify - should not prevent default (let media handle normally)
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
@@ -109,12 +109,12 @@ describe('useCanvasInteractions', () => {
         buttons: 1,
         preventDefault: vi.fn(),
         stopPropagation: vi.fn()
-      } as unknown as PointerEvent
+      } satisfies Partial<PointerEvent>
 
-      // Test - should not throw
-      expect(() => handlePointer(mockEvent)).not.toThrow()
+      // Test
+      handlePointer(mockEvent as unknown as PointerEvent)
 
-      // Verify
+      // Verify - should not prevent default when no canvas
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
     })
   })
@@ -131,10 +131,10 @@ describe('useCanvasInteractions', () => {
         ctrlKey: true,
         metaKey: false,
         preventDefault: vi.fn()
-      } as unknown as WheelEvent
+      } satisfies Partial<WheelEvent>
 
       // Test
-      handleWheel(mockEvent)
+      handleWheel(mockEvent as unknown as WheelEvent)
 
       // Verify
       expect(mockEvent.preventDefault).toHaveBeenCalled()
@@ -151,10 +151,10 @@ describe('useCanvasInteractions', () => {
         ctrlKey: false,
         metaKey: false,
         preventDefault: vi.fn()
-      } as unknown as WheelEvent
+      } satisfies Partial<WheelEvent>
 
       // Test
-      handleWheel(mockEvent)
+      handleWheel(mockEvent as unknown as WheelEvent)
 
       // Verify
       expect(mockEvent.preventDefault).toHaveBeenCalled()
@@ -171,10 +171,10 @@ describe('useCanvasInteractions', () => {
         ctrlKey: false,
         metaKey: false,
         preventDefault: vi.fn()
-      } as unknown as WheelEvent
+      } satisfies Partial<WheelEvent>
 
       // Test
-      handleWheel(mockEvent)
+      handleWheel(mockEvent as unknown as WheelEvent)
 
       // Verify - should not prevent default (let component handle normally)
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
