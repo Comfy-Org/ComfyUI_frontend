@@ -8,10 +8,11 @@
       }"
       data-testid="more-options-button"
       text
+      class="h-8 w-8 px-0"
       severity="secondary"
       @click="toggle"
     >
-      <i-lucide:more-vertical :size="16" />
+      <i-lucide:more-vertical class="w-4 h-4" />
     </Button>
 
     <Popover
@@ -85,7 +86,6 @@ const { toggleSubmenu, hideAllSubmenus } = useSubmenuPositioning()
 
 const minimap = useMinimap()
 const containerStyles = minimap.containerStyles
-// const canvasStore = useCanvasStore()
 
 function getButtonEl(): HTMLElement | null {
   const el = (buttonRef.value as any)?.$el || buttonRef.value
@@ -111,6 +111,8 @@ function closePopover(reason: HideReason = 'manual') {
   hideAll()
   if (reason !== 'drag') {
     wasOpenBeforeHide.value = false
+    // Natural hide: cancel any pending restore
+    moreOptionsRestorePending.value = false
   } else {
     if (!moreOptionsRestorePending.value) {
       wasOpenBeforeHide.value = true
@@ -207,6 +209,8 @@ const onPopoverHide = () => {
     hideAll()
     wasOpenBeforeHide.value = false
     moreOptionsOpen.value = false
+    // Outside (natural) hide: ensure restore is cancelled
+    moreOptionsRestorePending.value = false
   }
   lastProgrammaticHideReason.value = null
 }

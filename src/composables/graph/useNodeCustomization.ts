@@ -71,11 +71,6 @@ export function useNodeCustomization() {
     {
       name: 'default',
       localizedName: t('shape.default'),
-      value: RenderShape.ROUND
-    },
-    {
-      name: 'box',
-      localizedName: t('shape.box'),
       value: RenderShape.BOX
     },
     {

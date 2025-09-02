@@ -11,7 +11,7 @@
         :style="`backgroundColor: ${containerStyles.backgroundColor};`"
         :pt="{
           header: 'hidden',
-          content: 'p-[4px] flex flex-row gap-[4px]'
+          content: 'px-1 py-1 h-10 px-1 flex flex-row gap-[4px]'
         }"
         @wheel="canvasInteractions.handleWheel"
       >
@@ -20,35 +20,24 @@
         <InfoButton v-if="showInfoButton" />
 
         <ColorPickerButton v-if="showColorPicker" />
-        <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
         <FrameNodes v-if="showFrameNodes" />
-        <BookmarkButton v-if="showBookmark" />
+        <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
+        <PublishButton v-if="showBookmark" />
+        <MaskEditorButton v-if="showMaskEditor" />
         <VerticalDivider
           v-if="showAnyPrimaryActions && showAnyControlActions"
         />
 
         <BypassButton v-if="showBypass" />
-        <VerticalDivider
-          v-if="showAnyControlActions && showAnySpecializedActions"
-        />
-
-        <Load3DViewerButton v-if="showLoad3DViewer" />
-        <MaskEditorButton v-if="showMaskEditor" />
-        <VerticalDivider v-if="showLoad3DViewer && showMaskEditor" />
-
         <RefreshSelectionButton v-if="showRefresh" />
-        <ExecuteButton v-if="showExecute" />
-        <VerticalDivider
-          v-if="showAnyExecutionActions && hasExtensionButtons"
-        />
+        <Load3DViewerButton v-if="showLoad3DViewer" />
 
         <ExtensionCommandButton
           v-for="command in extensionToolboxCommands"
           :key="command.id"
           :command="command"
         />
-        <VerticalDivider v-if="hasExtensionButtons" />
-
+        <ExecuteButton v-if="showExecute" />
         <MoreOptions />
       </Panel>
     </Transition>
@@ -57,7 +46,7 @@
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -69,7 +58,10 @@ import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
-import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
+import {
+  resetMoreOptionsState,
+  useSelectionToolboxPosition
+} from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -77,9 +69,9 @@ import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
-import BookmarkButton from './selectionToolbox/BookmarkButton.vue'
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import MoreOptions from './selectionToolbox/MoreOptions.vue'
+import PublishButton from './selectionToolbox/PublishButton.vue'
 import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 
 const commandStore = useCommandStore()
@@ -147,17 +139,9 @@ const showAnyPrimaryActions = computed(
 
 const showAnyControlActions = computed(() => showBypass.value)
 
-const showAnySpecializedActions = computed(
-  () => showLoad3DViewer.value || showMaskEditor.value
-)
-
-const showAnyExecutionActions = computed(
-  () => showDelete.value || showRefresh.value || showExecute.value
-)
-
-const hasExtensionButtons = computed(
-  () => extensionToolboxCommands.value.length > 0
-)
+onUnmounted(() => {
+  resetMoreOptionsState()
+})
 </script>
 
 <style scoped>
