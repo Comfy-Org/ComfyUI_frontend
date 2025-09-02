@@ -54,58 +54,46 @@
       <Divider class="mx-12 border-neutral-700" />
 
       <!-- Collapsible Sections -->
-      <div class="flex flex-col gap-3 px-12">
+      <div class="flex flex-col gap-0 px-12">
         <!-- Migration Section -->
-        <Panel
-          :header="$t('install.locationPicker.migrateFromExisting')"
-          toggleable
-          :collapsed="!showMigration"
-          class="border-0 bg-transparent"
-          pt:header="bg-transparent text-neutral-400 hover:text-neutral-300 py-2 px-0"
-          pt:toggleableContent="bg-transparent pt-2"
-          pt:toggleIcon="text-neutral-500"
-          @update:collapsed="showMigration = !$event"
+        <button
+          class="flex items-center justify-between py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full"
+          @click="showMigration = !showMigration"
         >
-          <template #icons>
-            <span class="flex items-center gap-2">
-              <i
-                :class="
-                  showMigration ? 'pi pi-chevron-up' : 'pi pi-chevron-down'
-                "
-              />
-            </span>
-          </template>
-          <div class="text-neutral-400 text-sm">
-            {{ $t('install.locationPicker.migrateDescription') }}
-          </div>
-        </Panel>
+          <span>{{ $t('install.locationPicker.migrateFromExisting') }}</span>
+          <i
+            :class="
+              showMigration ? 'pi pi-chevron-up' : 'pi pi-chevron-down'
+            "
+          />
+        </button>
+        <div
+          v-if="showMigration"
+          class="text-neutral-400 text-sm pb-3 pl-2"
+        >
+          {{ $t('install.locationPicker.migrateDescription') }}
+        </div>
 
         <!-- Download Servers Section -->
-        <Panel
-          :header="$t('install.locationPicker.chooseDownloadServers')"
-          toggleable
-          :collapsed="!showDownloadServers"
-          class="border-0 bg-transparent"
-          pt:header="bg-transparent text-neutral-400 hover:text-neutral-300 py-2 px-0"
-          pt:toggleableContent="bg-transparent pt-2"
-          pt:toggleIcon="text-neutral-500"
-          @update:collapsed="showDownloadServers = !$event"
+        <button
+          class="flex items-center justify-between py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full border-t border-neutral-700"
+          @click="showDownloadServers = !showDownloadServers"
         >
-          <template #icons>
-            <span class="flex items-center gap-2">
-              <i
-                :class="
-                  showDownloadServers
-                    ? 'pi pi-chevron-up'
-                    : 'pi pi-chevron-down'
-                "
-              />
-            </span>
-          </template>
-          <div class="text-neutral-400 text-sm">
-            {{ $t('install.locationPicker.downloadServersDescription') }}
-          </div>
-        </Panel>
+          <span>{{ $t('install.locationPicker.chooseDownloadServers') }}</span>
+          <i
+            :class="
+              showDownloadServers
+                ? 'pi pi-chevron-up'
+                : 'pi pi-chevron-down'
+            "
+          />
+        </button>
+        <div
+          v-if="showDownloadServers"
+          class="text-neutral-400 text-sm pb-3 pl-2"
+        >
+          {{ $t('install.locationPicker.downloadServersDescription') }}
+        </div>
       </div>
     </div>
   </div>
@@ -116,7 +104,6 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import Panel from 'primevue/panel'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
