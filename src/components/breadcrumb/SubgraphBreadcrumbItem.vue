@@ -107,6 +107,7 @@ const rename = async (
   }
 }
 
+const isRoot = props.item.key === 'root'
 const menuItems = computed<MenuItem[]>(() => {
   return [
     {
@@ -120,7 +121,27 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       },
-      visible: props.item.key === 'root'
+      visible: isRoot
+    },
+    {
+      separator: true,
+      visible: isRoot
+    },
+    {
+      label: t('menuLabels.Save'),
+      icon: 'pi pi-save',
+      command: async () => {
+        await useCommandStore().execute('Comfy.SaveWorkflow')
+      },
+      visible: isRoot
+    },
+    {
+      label: t('menuLabels.Save As'),
+      icon: 'pi pi-save',
+      command: async () => {
+        await useCommandStore().execute('Comfy.SaveWorkflowAs')
+      },
+      visible: isRoot
     },
     {
       separator: true
@@ -134,7 +155,7 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       separator: true,
-      visible: props.item.key === 'root'
+      visible: isRoot
     },
     {
       label: t('breadcrumbsMenu.deleteWorkflow'),
@@ -142,7 +163,7 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await workflowService.deleteWorkflow(workflowStore.activeWorkflow!)
       },
-      visible: props.item.key === 'root'
+      visible: isRoot
     }
   ]
 })
