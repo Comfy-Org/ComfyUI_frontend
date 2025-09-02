@@ -57,40 +57,42 @@
       <div class="flex flex-col gap-0 px-12">
         <!-- Migration Section -->
         <button
-          class="flex items-center justify-between py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full"
+          class="group flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full"
           @click="showMigration = !showMigration"
         >
-          <span>{{ $t('install.locationPicker.migrateFromExisting') }}</span>
           <i
+            class="text-xs transition-transform duration-200"
             :class="
-              showMigration ? 'pi pi-chevron-up' : 'pi pi-chevron-down'
+              showMigration ? 'pi pi-chevron-down' : 'pi pi-chevron-right'
             "
           />
+          <span>{{ $t('install.locationPicker.migrateFromExisting') }}</span>
         </button>
         <div
           v-if="showMigration"
-          class="text-neutral-400 text-sm pb-3 pl-2"
+          class="text-neutral-500 text-sm pb-3 pl-8"
         >
           {{ $t('install.locationPicker.migrateDescription') }}
         </div>
 
         <!-- Download Servers Section -->
         <button
-          class="flex items-center justify-between py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full border-t border-neutral-700"
+          class="group flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full"
           @click="showDownloadServers = !showDownloadServers"
         >
-          <span>{{ $t('install.locationPicker.chooseDownloadServers') }}</span>
           <i
+            class="text-xs transition-transform duration-200"
             :class="
               showDownloadServers
-                ? 'pi pi-chevron-up'
-                : 'pi pi-chevron-down'
+                ? 'pi pi-chevron-down'
+                : 'pi pi-chevron-right'
             "
           />
+          <span>{{ $t('install.locationPicker.chooseDownloadServers') }}</span>
         </button>
         <div
           v-if="showDownloadServers"
-          class="text-neutral-400 text-sm pb-3 pl-2"
+          class="text-neutral-500 text-sm pb-3 pl-8"
         >
           {{ $t('install.locationPicker.downloadServersDescription') }}
         </div>
