@@ -4,6 +4,7 @@
       v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
+      append-to="self"
       class="w-full text-xs"
       size="small"
       @update:model-value="onChange"

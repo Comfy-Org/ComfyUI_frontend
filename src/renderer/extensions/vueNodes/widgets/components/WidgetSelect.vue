@@ -5,6 +5,7 @@
       :options="selectOptions"
       v-bind="filteredProps"
       :disabled="readonly"
+      append-to="self"
       class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
       size="small"
       :pt="{
