@@ -25,6 +25,10 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   COMBO: WidgetType.COMBO,
   selectbutton: WidgetType.SELECTBUTTON,
   SELECTBUTTON: WidgetType.SELECTBUTTON,
+  multiselect: WidgetType.MULTISELECT,
+  MULTISELECT: WidgetType.MULTISELECT,
+  treeselect: WidgetType.TREESELECT,
+  TREESELECT: WidgetType.TREESELECT,
 
   // Boolean
   toggle: WidgetType.TOGGLESWITCH,
@@ -34,6 +38,7 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   // Multiline text
   multiline: WidgetType.TEXTAREA,
   textarea: WidgetType.TEXTAREA,
+  TEXTAREA: WidgetType.TEXTAREA,
   customtext: WidgetType.TEXTAREA,
   MARKDOWN: WidgetType.MARKDOWN,
 

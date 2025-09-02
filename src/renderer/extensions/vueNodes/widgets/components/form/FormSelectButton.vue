@@ -1,6 +1,11 @@
 <template>
   <div
-    class="p-1 bg-zinc-500/10 rounded-lg outline outline-1 outline-offset-[-1px] outline-zinc-300/10 inline-flex justify-center items-center gap-1 hover:outline-blue-500/80"
+    :class="
+      cn(
+        WidgetInputBaseClass,
+        'p-1 inline-flex justify-center items-center gap-1'
+      )
+    "
   >
     <button
       v-for="(option, index) in options"
@@ -32,6 +37,8 @@
 
 <script setup lang="ts">
 import { cn } from '@/utils/tailwindUtil'
+
+import { WidgetInputBaseClass } from '../layout'
 
 interface Props {
   modelValue: string | null | undefined
