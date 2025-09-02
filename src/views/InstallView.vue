@@ -49,53 +49,17 @@
           </StepPanel>
         </StepPanels>
 
-        <!-- Bottom navigation section with buttons and step indicators aligned horizontally -->
-        <div class="flex justify-between items-center pt-6 pb-4">
-          <!-- Back button -->
-          <Button
-            v-if="currentStep !== '0'"
-            :label="$t('g.back')"
-            severity="secondary"
-            icon="pi pi-arrow-left"
-            class="px-6 py-2"
-            @click="goToPreviousStep"
-          />
-          <div v-else class="w-24"></div>
-
-          <!-- Step indicators in center -->
-          <StepList class="flex justify-center items-center gap-3 select-none">
-            <Step value="0">
-              {{ $t('install.gpu') }}
-            </Step>
-            <Step value="1" :disabled="noGpu">
-              {{ $t('install.installLocation') }}
-            </Step>
-            <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
-              {{ $t('install.migration') }}
-            </Step>
-            <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
-              {{ $t('install.desktopSettings') }}
-            </Step>
-          </StepList>
-
-          <!-- Next/Install button -->
-          <Button
-            v-if="currentStep !== '3'"
-            :label="$t('g.next')"
-            class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold transition-colors italic"
-            style="font-family: 'ABC ROM Black Italic', sans-serif"
-            :disabled="!canProceed"
-            @click="goToNextStep"
-          />
-          <Button
-            v-else
-            :label="$t('g.install')"
-            class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold transition-colors italic"
-            style="font-family: 'ABC ROM Black Italic', sans-serif"
-            :disabled="!canProceed"
-            @click="install()"
-          />
-        </div>
+        <!-- Install footer with navigation -->
+        <InstallFooter
+          :current-step
+          :can-proceed
+          :disable-location-step="noGpu"
+          :disable-migration-step="noGpu || hasError || highestStep < 1"
+          :disable-settings-step="noGpu || hasError || highestStep < 2"
+          @previous="goToPreviousStep"
+          @next="goToNextStep"
+          @install="install"
+        />
       </Stepper>
     </div>
   </BaseViewTemplate>
@@ -106,9 +70,6 @@ import type {
   InstallOptions,
   TorchDeviceType
 } from '@comfyorg/comfyui-electron-types'
-import Button from 'primevue/button'
-import Step from 'primevue/step'
-import StepList from 'primevue/steplist'
 import StepPanel from 'primevue/steppanel'
 import StepPanels from 'primevue/steppanels'
 import Stepper from 'primevue/stepper'
@@ -117,6 +78,7 @@ import { useRouter } from 'vue-router'
 
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 import GpuPicker from '@/components/install/GpuPicker.vue'
+import InstallFooter from '@/components/install/InstallFooter.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
