@@ -214,10 +214,10 @@ test.describe('Remote COMBO Widget', () => {
       // Wait for the refresh (TTL) to expire with extra buffer for processing
       // TTL is 300ms, wait 600ms to ensure it has expired
       await comfyPage.page.waitForTimeout(600)
-      
+
       // Click on the canvas to trigger widget refresh
       await comfyPage.page.mouse.click(400, 300)
-      
+
       // Wait a bit for the refresh to complete
       await comfyPage.page.waitForTimeout(100)
 
