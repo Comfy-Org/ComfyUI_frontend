@@ -21,8 +21,10 @@ const config: KnipConfig = {
     '@primeuix/styled',
     '@primeuix/utils',
     '@primevue/icons',
+    '@iconify/json',
     // Dev
-    '@executeautomation/playwright-mcp-server'
+    '@executeautomation/playwright-mcp-server',
+    '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
     // Generated files
