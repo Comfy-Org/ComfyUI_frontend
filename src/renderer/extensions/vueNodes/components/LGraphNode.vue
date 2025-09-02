@@ -11,6 +11,7 @@
         'bg-white dark-theme:bg-[#15161A]',
         'min-w-[445px]',
         'lg-node absolute border border-solid rounded-2xl',
+        'outline outline-transparent outline-2 hover:outline-black dark-theme:hover:outline-white',
         {
           'border-blue-500 ring-2 ring-blue-300': selected,
           'border-[#e1ded5] dark-theme:border-[#292A30]': !selected,
@@ -19,8 +20,7 @@
           'border-red-500 bg-red-50': error,
           'will-change-transform': isDragging
         },
-        lodCssClass,
-        'hover:border-green-500'
+        lodCssClass
       )
     "
     :style="[
