@@ -3,10 +3,9 @@
  * Script to analyze test distribution and create optimized shard configurations
  * Run with: node browser_tests/scripts/optimizeSharding.js
  */
-
+import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
-import { execSync } from 'child_process'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -60,7 +59,7 @@ const TEST_WEIGHTS = {
   'userSelectView.spec.ts': 10,
   'versionMismatchWarnings.spec.ts': 10,
   'workflowTabThumbnail.spec.ts': 10,
-  'actionbar.spec.ts': 10,
+  'actionbar.spec.ts': 10
 }
 
 /**
@@ -69,13 +68,13 @@ const TEST_WEIGHTS = {
 function getTestFiles() {
   const testsDir = path.join(__dirname, '..', 'tests')
   const files = []
-  
+
   function scanDir(dir, prefix = '') {
     const items = fs.readdirSync(dir)
     for (const item of items) {
       const fullPath = path.join(dir, item)
       const relativePath = prefix ? `${prefix}/${item}` : item
-      
+
       if (fs.statSync(fullPath).isDirectory()) {
         scanDir(fullPath, relativePath)
       } else if (item.endsWith('.spec.ts')) {
@@ -83,7 +82,7 @@ function getTestFiles() {
       }
     }
   }
-  
+
   scanDir(testsDir)
   return files
 }
@@ -93,20 +92,20 @@ function getTestFiles() {
  */
 function createBalancedShards(testFiles, numShards) {
   // Create test entries with weights
-  const tests = testFiles.map(file => ({
+  const tests = testFiles.map((file) => ({
     file,
     weight: TEST_WEIGHTS[file] || 15 // Default weight for unknown tests
   }))
-  
+
   // Sort tests by weight (heaviest first)
   tests.sort((a, b) => b.weight - a.weight)
-  
+
   // Initialize shards
   const shards = Array.from({ length: numShards }, () => ({
     tests: [],
     totalWeight: 0
   }))
-  
+
   // Distribute tests using a greedy algorithm (assign to shard with least weight)
   for (const test of tests) {
     // Find shard with minimum weight
@@ -116,12 +115,12 @@ function createBalancedShards(testFiles, numShards) {
         minShard = shard
       }
     }
-    
+
     // Add test to the lightest shard
     minShard.tests.push(test.file)
     minShard.totalWeight += test.weight
   }
-  
+
   return shards
 }
 
@@ -130,28 +129,30 @@ function createBalancedShards(testFiles, numShards) {
  */
 function printShardConfig(shards) {
   console.log('\n=== Optimized Shard Configuration ===\n')
-  
+
   shards.forEach((shard, index) => {
     console.log(`Shard ${index + 1} (weight: ${shard.totalWeight})`)
     console.log('  Tests:')
-    shard.tests.forEach(test => {
+    shard.tests.forEach((test) => {
       const weight = TEST_WEIGHTS[test] || 15
       console.log(`    - ${test} (weight: ${weight})`)
     })
     console.log()
   })
-  
+
   // Print weight balance analysis
-  const weights = shards.map(s => s.totalWeight)
+  const weights = shards.map((s) => s.totalWeight)
   const maxWeight = Math.max(...weights)
   const minWeight = Math.min(...weights)
   const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length
-  
+
   console.log('=== Balance Analysis ===')
   console.log(`Max weight: ${maxWeight}`)
   console.log(`Min weight: ${minWeight}`)
   console.log(`Avg weight: ${avgWeight.toFixed(1)}`)
-  console.log(`Imbalance: ${((maxWeight - minWeight) / avgWeight * 100).toFixed(1)}%`)
+  console.log(
+    `Imbalance: ${(((maxWeight - minWeight) / avgWeight) * 100).toFixed(1)}%`
+  )
 }
 
 /**
@@ -163,7 +164,11 @@ function generateConfigFile(shards) {
  * Generated on: ${new Date().toISOString()}
  */
 
-export const OPTIMIZED_SHARDS = ${JSON.stringify(shards.map(s => s.tests), null, 2)}
+export const OPTIMIZED_SHARDS = ${JSON.stringify(
+    shards.map((s) => s.tests),
+    null,
+    2
+  )}
 
 export function getShardTests(shardIndex: number): string[] {
   return OPTIMIZED_SHARDS[shardIndex - 1] || []
@@ -173,7 +178,7 @@ export function getShardPattern(shardIndex: number): string[] {
   return getShardTests(shardIndex).map(test => \`**/\${test}\`)
 }
 `
-  
+
   const configPath = path.join(__dirname, '..', 'shardConfig.generated.ts')
   fs.writeFileSync(configPath, config)
   console.log(`\n✅ Generated configuration file: ${configPath}`)
@@ -182,12 +187,12 @@ export function getShardPattern(shardIndex: number): string[] {
 // Main execution
 function main() {
   const numShards = parseInt(process.argv[2]) || 5
-  
+
   console.log(`Analyzing test distribution for ${numShards} shards...`)
-  
+
   const testFiles = getTestFiles()
   console.log(`Found ${testFiles.length} test files`)
-  
+
   const shards = createBalancedShards(testFiles, numShards)
   printShardConfig(shards)
   generateConfigFile(shards)

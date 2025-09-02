@@ -10,14 +10,14 @@ export interface ShardConfig {
 
 // Group tests by execution characteristics
 export const HEAVY_SCREENSHOT_TESTS = [
-  'interaction.spec.ts', // 61 tests, 81 screenshots - heaviest test file
+  'interaction.spec.ts' // 61 tests, 81 screenshots - heaviest test file
 ]
 
 export const MEDIUM_SCREENSHOT_TESTS = [
   'widget.spec.ts', // 17 tests with screenshots
   'rightClickMenu.spec.ts', // 11 tests with screenshots
   'nodeSearchBox.spec.ts', // 23 tests with screenshots
-  'groupNode.spec.ts', // 17 tests with screenshots
+  'groupNode.spec.ts' // 17 tests with screenshots
 ]
 
 export const LIGHT_SCREENSHOT_TESTS = [
@@ -33,14 +33,14 @@ export const LIGHT_SCREENSHOT_TESTS = [
   'execution.spec.ts',
   'rerouteNode.spec.ts',
   'copyPaste.spec.ts',
-  'loadWorkflowInMedia.spec.ts',
+  'loadWorkflowInMedia.spec.ts'
 ]
 
 export const HEAVY_LOGIC_TESTS = [
   'subgraph.spec.ts', // 23 tests, complex logic
   'dialog.spec.ts', // 21 tests
   'sidebar/workflows.spec.ts', // 18 tests
-  'sidebar/nodeLibrary.spec.ts', // 18 tests
+  'sidebar/nodeLibrary.spec.ts' // 18 tests
 ]
 
 export const MEDIUM_LOGIC_TESTS = [
@@ -51,7 +51,7 @@ export const MEDIUM_LOGIC_TESTS = [
   'extensionAPI.spec.ts', // 11 tests
   'bottomPanelShortcuts.spec.ts', // 11 tests
   'featureFlags.spec.ts', // 9 tests
-  'menu.spec.ts', // 9 tests
+  'menu.spec.ts' // 9 tests
 ]
 
 export const LIGHT_LOGIC_TESTS = [
@@ -70,7 +70,7 @@ export const LIGHT_LOGIC_TESTS = [
   'userSelectView.spec.ts',
   'versionMismatchWarnings.spec.ts',
   'workflowTabThumbnail.spec.ts',
-  'actionbar.spec.ts',
+  'actionbar.spec.ts'
 ]
 
 // Optimized shard distribution for chromium tests
@@ -115,7 +115,11 @@ export const NO_SHARD_PROJECTS = [
  * @param totalShards Total number of shards
  * @param projectName Name of the Playwright project
  */
-export function getShardTests(shardIndex: number, totalShards: number, projectName: string): string[] | null {
+export function getShardTests(
+  shardIndex: number,
+  totalShards: number,
+  projectName: string
+): string[] | null {
   // For projects that don't need sharding, return null to run all tests
   if (NO_SHARD_PROJECTS.includes(projectName)) {
     return null
@@ -137,14 +141,18 @@ export function getShardTests(shardIndex: number, totalShards: number, projectNa
  * @param totalShards Total number of shards
  * @param projectName Name of the Playwright project
  */
-export function getShardGrep(shardIndex: number, totalShards: number, projectName: string): RegExp | null {
+export function getShardGrep(
+  shardIndex: number,
+  totalShards: number,
+  projectName: string
+): RegExp | null {
   const tests = getShardTests(shardIndex, totalShards, projectName)
-  
+
   if (!tests || tests.length === 0) {
     return null
   }
 
   // Create a regex pattern that matches any of the test files
-  const pattern = tests.map(file => file.replace(/\./g, '\\.')).join('|')
+  const pattern = tests.map((file) => file.replace(/\./g, '\\.')).join('|')
   return new RegExp(pattern)
 }

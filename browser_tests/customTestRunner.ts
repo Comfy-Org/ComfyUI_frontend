@@ -3,9 +3,9 @@
  * Custom test runner for optimized sharding
  * This script determines which tests to run based on shard configuration
  */
-
 import { spawn } from 'child_process'
-import { getShardTests, NO_SHARD_PROJECTS } from './shardConfig'
+
+import { NO_SHARD_PROJECTS, getShardTests } from './shardConfig'
 
 const projectName = process.env.PLAYWRIGHT_PROJECT || 'chromium'
 const shardInfo = process.env.PLAYWRIGHT_SHARD
@@ -24,12 +24,16 @@ if (shardInfo) {
 if (NO_SHARD_PROJECTS.includes(projectName)) {
   // For projects that don't need sharding, only run on shard 1
   if (shardIndex > 1) {
-    console.log(`Skipping shard ${shardIndex}/${totalShards} for project ${projectName} (no sharding needed)`)
+    console.log(
+      `Skipping shard ${shardIndex}/${totalShards} for project ${projectName} (no sharding needed)`
+    )
     process.exit(0)
   }
   console.log(`Running all tests for project ${projectName} (no sharding)`)
 } else {
-  console.log(`Running shard ${shardIndex}/${totalShards} for project ${projectName}`)
+  console.log(
+    `Running shard ${shardIndex}/${totalShards} for project ${projectName}`
+  )
 }
 
 // Get the test files for this shard
@@ -40,7 +44,7 @@ const args = ['playwright', 'test', `--project=${projectName}`]
 
 if (shardTests && shardTests.length > 0) {
   // Add specific test files for this shard
-  shardTests.forEach(testFile => {
+  shardTests.forEach((testFile) => {
     args.push(`browser_tests/tests/${testFile}`)
   })
 } else if (shardTests === null) {

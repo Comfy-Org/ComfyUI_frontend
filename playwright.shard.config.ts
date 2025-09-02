@@ -1,4 +1,5 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig } from '@playwright/test'
+
 import baseConfig from './playwright.config'
 
 /**
@@ -7,7 +8,9 @@ import baseConfig from './playwright.config'
  */
 
 // Helper to determine if we should apply custom test filtering
-const shardInfo = process.env.SHARD ? process.env.SHARD.split('/').map(Number) : null
+const shardInfo = process.env.SHARD
+  ? process.env.SHARD.split('/').map(Number)
+  : null
 const currentShard = shardInfo?.[0] || 1
 const totalShards = shardInfo?.[1] || 1
 const projectName = process.env.TEST_PROJECT || 'chromium'
@@ -16,13 +19,13 @@ const projectName = process.env.TEST_PROJECT || 'chromium'
 const testGroups = {
   // Heavy tests (run in separate shards)
   heavy: [
-    '**/interaction.spec.ts', // 61 tests with 81 screenshots
+    '**/interaction.spec.ts' // 61 tests with 81 screenshots
   ],
   // Medium-heavy tests
   mediumHeavy: [
     '**/subgraph.spec.ts', // 23 complex tests
     '**/widget.spec.ts', // 17 tests with screenshots
-    '**/nodeSearchBox.spec.ts', // 23 tests with screenshots
+    '**/nodeSearchBox.spec.ts' // 23 tests with screenshots
   ],
   // Medium tests
   medium: [
@@ -30,7 +33,7 @@ const testGroups = {
     '**/groupNode.spec.ts',
     '**/rightClickMenu.spec.ts',
     '**/sidebar/workflows.spec.ts',
-    '**/sidebar/nodeLibrary.spec.ts',
+    '**/sidebar/nodeLibrary.spec.ts'
   ],
   // Light tests
   light: [
@@ -46,7 +49,7 @@ const testGroups = {
     '**/execution.spec.ts',
     '**/rerouteNode.spec.ts',
     '**/copyPaste.spec.ts',
-    '**/loadWorkflowInMedia.spec.ts',
+    '**/loadWorkflowInMedia.spec.ts'
   ],
   // Very light tests
   veryLight: [
@@ -73,7 +76,7 @@ const testGroups = {
     '**/userSelectView.spec.ts',
     '**/versionMismatchWarnings.spec.ts',
     '**/workflowTabThumbnail.spec.ts',
-    '**/actionbar.spec.ts',
+    '**/actionbar.spec.ts'
   ]
 }
 
@@ -83,12 +86,16 @@ const shardPatterns: Record<number, string[]> = {
   2: testGroups.mediumHeavy, // Shard 2: Medium-heavy tests
   3: testGroups.medium, // Shard 3: Medium tests
   4: testGroups.light, // Shard 4: Light tests
-  5: testGroups.veryLight, // Shard 5: Very light tests
+  5: testGroups.veryLight // Shard 5: Very light tests
 }
 
 // Determine which tests to run based on shard
 let testMatch: string[] | undefined
-if (projectName === 'chromium' && totalShards === 5 && shardPatterns[currentShard]) {
+if (
+  projectName === 'chromium' &&
+  totalShards === 5 &&
+  shardPatterns[currentShard]
+) {
   testMatch = shardPatterns[currentShard]
 }
 
@@ -96,30 +103,36 @@ export default defineConfig({
   ...baseConfig,
   // Override testMatch if we have custom shard patterns
   ...(testMatch && { testMatch }),
-  
+
   // Increase workers for lighter test shards
   use: {
     ...baseConfig.use,
     // More parallel workers for shards with lighter tests
-    ...(currentShard >= 4 && projectName === 'chromium' && {
-      workers: process.env.CI ? 4 : 2
-    })
+    ...(currentShard >= 4 &&
+      projectName === 'chromium' && {
+        workers: process.env.CI ? 4 : 2
+      })
   },
 
   // Optimize retries based on shard content
   retries: process.env.CI ? (currentShard === 1 ? 2 : 3) : 0,
 
   // Project-specific optimizations
-  projects: baseConfig.projects?.map(project => {
-    // For non-chromium projects that don't need sharding
-    if (['mobile-chrome', 'chromium-0.5x', 'chromium-2x'].includes(project.name || '')) {
-      return {
-        ...project,
-        // These projects should only run when not sharding or on first shard
-        ...(totalShards > 1 && currentShard > 1 && { testMatch: [] })
+  projects:
+    baseConfig.projects?.map((project) => {
+      // For non-chromium projects that don't need sharding
+      if (
+        ['mobile-chrome', 'chromium-0.5x', 'chromium-2x'].includes(
+          project.name || ''
+        )
+      ) {
+        return {
+          ...project,
+          // These projects should only run when not sharding or on first shard
+          ...(totalShards > 1 && currentShard > 1 && { testMatch: [] })
+        }
       }
-    }
-    
-    return project
-  }) || []
+
+      return project
+    }) || []
 })
