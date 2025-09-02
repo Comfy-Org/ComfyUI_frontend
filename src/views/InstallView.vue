@@ -235,7 +235,7 @@ onMounted(async () => {
 
 /* Apply rounded corners to all buttons in the installer */
 :deep(.p-button) {
-  @apply rounded-xl;
+  @apply rounded-lg border-0;
 }
 
 :deep(.p-steppanel) {
