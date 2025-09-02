@@ -8,7 +8,7 @@ import { restoreLitegraph } from './i18nSetup'
 export default async function globalTeardownWithI18n() {
   // First run regular teardown
   await globalTeardown()
-  
+
   // Then restore litegraph files
   await restoreLitegraph()
 }
