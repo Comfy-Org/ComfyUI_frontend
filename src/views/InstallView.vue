@@ -1,110 +1,135 @@
 <template>
   <BaseViewTemplate dark>
-    <!-- h-full to make sure the stepper does not layout shift between steps
-    as for each step the stepper height is different. Inherit the center element
-    placement from BaseViewTemplate would cause layout shift. -->
-    <Stepper
-      class="h-full p-8 2xl:p-16"
-      value="0"
-      @update:value="handleStepChange"
-    >
-      <StepList class="select-none">
-        <Step value="0">
-          {{ $t('install.gpu') }}
-        </Step>
-        <Step value="1" :disabled="noGpu">
-          {{ $t('install.installLocation') }}
-        </Step>
-        <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
-          {{ $t('install.migration') }}
-        </Step>
-        <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
-          {{ $t('install.desktopSettings') }}
-        </Step>
-      </StepList>
-      <StepPanels>
-        <StepPanel v-slot="{ activateCallback }" value="0">
-          <GpuPicker v-model:device="device" />
-          <div class="flex pt-8 justify-center">
-            <Button
-              label="Next"
-              class="w-96 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-lg"
-              :disabled="typeof device !== 'string'"
-              @click="activateCallback('1')"
-            />
-          </div>
-        </StepPanel>
-        <StepPanel v-slot="{ activateCallback }" value="1">
-          <InstallLocationPicker
-            v-model:install-path="installPath"
-            v-model:path-error="pathError"
-          />
-          <div class="flex pt-6 justify-between">
-            <Button
-              :label="$t('g.back')"
-              severity="secondary"
-              icon="pi pi-arrow-left"
-              @click="activateCallback('0')"
-            />
-            <Button
-              :label="$t('g.next')"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
-              :disabled="pathError !== ''"
-              @click="activateCallback('2')"
-            />
-          </div>
-        </StepPanel>
-        <StepPanel v-slot="{ activateCallback }" value="2">
-          <MigrationPicker
-            v-model:source-path="migrationSourcePath"
-            v-model:migration-item-ids="migrationItemIds"
-          />
-          <div class="flex pt-6 justify-between">
-            <Button
-              :label="$t('g.back')"
-              severity="secondary"
-              icon="pi pi-arrow-left"
-              @click="activateCallback('1')"
-            />
-            <Button
-              :label="$t('g.next')"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
-              @click="activateCallback('3')"
-            />
-          </div>
-        </StepPanel>
-        <StepPanel v-slot="{ activateCallback }" value="3">
-          <DesktopSettingsConfiguration
-            v-model:auto-update="autoUpdate"
-            v-model:allow-metrics="allowMetrics"
-          />
-          <MirrorsConfiguration
-            v-model:python-mirror="pythonMirror"
-            v-model:pypi-mirror="pypiMirror"
-            v-model:torch-mirror="torchMirror"
-            :device="device"
-            class="mt-6"
-          />
-          <div class="flex mt-6 justify-between">
-            <Button
-              :label="$t('g.back')"
-              severity="secondary"
-              icon="pi pi-arrow-left"
-              @click="activateCallback('2')"
-            />
-            <Button
-              :label="$t('g.install')"
-              icon="pi pi-check"
-              icon-pos="right"
-              :disabled="hasError"
-              @click="install()"
-            />
-          </div>
-        </StepPanel>
-      </StepPanels>
-    </Stepper>
+    <!-- Fixed height container with flexbox layout for proper content management -->
+    <div class="w-full h-full max-w-5xl mx-auto flex flex-col">
+      <Stepper
+        class="flex flex-col h-full p-8"
+        value="0"
+        @update:value="handleStepChange"
+      >
+        <!-- Main content area that grows to fill available space -->
+        <StepPanels class="flex-1 overflow-auto">
+          <StepPanel v-slot="{ activateCallback }" value="0">
+            <div class="flex flex-col h-full">
+              <div class="flex-1 flex items-center justify-center">
+                <GpuPicker v-model:device="device" />
+              </div>
+              <div class="flex justify-center mt-8">
+                <Button
+                  label="Next"
+                  class="w-96 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-lg"
+                  :disabled="typeof device !== 'string'"
+                  @click="activateCallback('1')"
+                />
+              </div>
+            </div>
+          </StepPanel>
+          <StepPanel v-slot="{ activateCallback }" value="1">
+            <div class="flex flex-col h-full">
+              <div class="flex-1 flex items-center justify-center">
+                <InstallLocationPicker
+                  v-model:install-path="installPath"
+                  v-model:path-error="pathError"
+                />
+              </div>
+              <div class="flex justify-between mt-8">
+                <Button
+                  :label="$t('g.back')"
+                  severity="secondary"
+                  icon="pi pi-arrow-left"
+                  @click="activateCallback('0')"
+                />
+                <Button
+                  :label="$t('g.next')"
+                  icon="pi pi-arrow-right"
+                  icon-pos="right"
+                  :disabled="pathError !== ''"
+                  @click="activateCallback('2')"
+                />
+              </div>
+            </div>
+          </StepPanel>
+          <StepPanel v-slot="{ activateCallback }" value="2">
+            <div class="flex flex-col h-full">
+              <div class="flex-1 flex items-center justify-center">
+                <MigrationPicker
+                  v-model:source-path="migrationSourcePath"
+                  v-model:migration-item-ids="migrationItemIds"
+                />
+              </div>
+              <div class="flex justify-between mt-8">
+                <Button
+                  :label="$t('g.back')"
+                  severity="secondary"
+                  icon="pi pi-arrow-left"
+                  @click="activateCallback('1')"
+                />
+                <Button
+                  :label="$t('g.next')"
+                  icon="pi pi-arrow-right"
+                  icon-pos="right"
+                  @click="activateCallback('3')"
+                />
+              </div>
+            </div>
+          </StepPanel>
+          <StepPanel v-slot="{ activateCallback }" value="3">
+            <div class="flex flex-col h-full">
+              <div
+                class="flex-1 overflow-auto flex items-center justify-center"
+              >
+                <div>
+                  <DesktopSettingsConfiguration
+                    v-model:auto-update="autoUpdate"
+                    v-model:allow-metrics="allowMetrics"
+                  />
+                  <MirrorsConfiguration
+                    v-model:python-mirror="pythonMirror"
+                    v-model:pypi-mirror="pypiMirror"
+                    v-model:torch-mirror="torchMirror"
+                    :device="device"
+                    class="mt-6"
+                  />
+                </div>
+              </div>
+              <div class="flex justify-between mt-8">
+                <Button
+                  :label="$t('g.back')"
+                  severity="secondary"
+                  icon="pi pi-arrow-left"
+                  @click="activateCallback('2')"
+                />
+                <Button
+                  :label="$t('g.install')"
+                  icon="pi pi-check"
+                  icon-pos="right"
+                  :disabled="hasError"
+                  @click="install()"
+                />
+              </div>
+            </div>
+          </StepPanel>
+        </StepPanels>
+
+        <!-- Step indicators at the bottom -->
+        <StepList
+          class="flex justify-center items-center gap-3 py-8 select-none"
+        >
+          <Step value="0">
+            {{ $t('install.gpu') }}
+          </Step>
+          <Step value="1" :disabled="noGpu">
+            {{ $t('install.installLocation') }}
+          </Step>
+          <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
+            {{ $t('install.migration') }}
+          </Step>
+          <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
+            {{ $t('install.desktopSettings') }}
+          </Step>
+        </StepList>
+      </Stepper>
+    </div>
   </BaseViewTemplate>
 </template>
 
@@ -207,24 +232,7 @@ onMounted(async () => {
   @apply bg-transparent;
 }
 
-/* Custom dot indicator styling - position dots above Next button */
-:deep(.p-stepper .p-steplist) {
-  position: fixed;
-  bottom: 160px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 10;
-  pointer-events: none;
-}
-
-:deep(.p-stepper .p-steplist .p-step-header) {
-  pointer-events: auto;
-}
-
+/* Style step indicators as dots */
 :deep(.p-stepper .p-step) {
   @apply flex-none p-0 m-0;
 }
