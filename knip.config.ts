@@ -2,17 +2,27 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   entry: [
+    'build/**/*.ts',
+    'scripts/**/*.{js,ts}',
     'src/main.ts',
     'vite.electron.config.mts',
-    'vite.types.config.mts',
-    'scripts/**/*.{js,ts}'
+    'vite.types.config.mts'
   ],
   project: [
+    'browser_tests/**/*.{js,ts}',
+    'build/**/*.{js,ts,vue}',
+    'scripts/**/*.{js,ts}',
     'src/**/*.{js,ts,vue}',
     'tests-ui/**/*.{js,ts,vue}',
-    'browser_tests/**/*.{js,ts}',
-    'scripts/**/*.{js,ts}',
     'vitest.litegraph.config.ts',
+  ],
+  ignoreDependencies: [
+    '@primeuix/forms',
+    '@primeuix/styled',
+    '@primeuix/utils',
+    '@primevue/icons',
+    // Dev
+    '@executeautomation/playwright-mcp-server'
   ],
   ignore: [
     // Generated files
@@ -55,8 +65,6 @@ const config: KnipConfig = {
   rules: {
     binaries: 'off',
     classMembers: 'off',
-    dependencies: 'off',
-    devDependencies: 'off',
     duplicates: 'off',
     enumMembers: 'off',
     exports: 'off',
@@ -66,7 +74,6 @@ const config: KnipConfig = {
   },
   // Include dependencies analysis
   includeEntryExports: true
-  // }
 }
 
 export default config
