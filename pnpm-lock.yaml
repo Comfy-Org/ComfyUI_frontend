@@ -41,9 +41,6 @@ importers:
       '@primevue/themes':
         specifier: ^4.2.5
         version: 4.2.5
-      '@sentry/core':
-        specifier: ^10.5.0
-        version: 10.5.0
       '@sentry/vue':
         specifier: ^8.48.0
         version: 8.48.0(pinia@2.2.2(typescript@5.9.2)(vue@3.5.13(typescript@5.9.2)))(vue@3.5.13(typescript@5.9.2))
@@ -2227,10 +2224,6 @@ packages:
   '@sentry/browser@8.48.0':
     resolution: {integrity: sha512-fuuVULB5/1vI8NoIwXwR3xwhJJqk+y4RdSdajExGF7nnUDBpwUJyXsmYJnOkBO+oLeEs58xaCpotCKiPUNnE3g==}
     engines: {node: '>=14.18'}
-
-  '@sentry/core@10.5.0':
-    resolution: {integrity: sha512-jTJ8NhZSKB2yj3QTVRXfCCngQzAOLThQUxCl9A7Mv+XF10tP7xbH/88MVQ5WiOr2IzcmrB9r2nmUe36BnMlLjA==}
-    engines: {node: '>=18'}
 
   '@sentry/core@8.48.0':
     resolution: {integrity: sha512-VGwYgTfLpvJ5LRO5A+qWo1gpo6SfqaGXL9TOzVgBucAdpzbrYHpZ87sEarDVq/4275uk1b0S293/mfsskFczyw==}
@@ -9183,8 +9176,6 @@ snapshots:
       '@sentry-internal/replay': 8.48.0
       '@sentry-internal/replay-canvas': 8.48.0
       '@sentry/core': 8.48.0
-
-  '@sentry/core@10.5.0': {}
 
   '@sentry/core@8.48.0': {}
 

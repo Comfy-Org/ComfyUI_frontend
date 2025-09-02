@@ -111,7 +111,6 @@
     "@primevue/forms": "^4.2.5",
     "@primevue/icons": "4.2.5",
     "@primevue/themes": "^4.2.5",
-    "@sentry/core": "^10.5.0",
     "@sentry/vue": "^8.48.0",
     "@tiptap/core": "^2.10.4",
     "@tiptap/extension-link": "^2.10.4",
