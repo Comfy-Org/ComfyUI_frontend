@@ -6,7 +6,7 @@
     text
     @click="refreshSelected"
   >
-    <i-lucide:refresh-cw :size="16" />
+    <i-lucide:refresh-cw class="w-4 h-4" />
   </Button>
 </template>
 

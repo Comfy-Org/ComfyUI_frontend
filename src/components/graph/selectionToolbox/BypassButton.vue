@@ -16,7 +16,7 @@
     @click="byPass"
   >
     <template #icon>
-      <i-lucide:ban />
+      <i-lucide:ban class="w-4 h-4" />
     </template>
   </Button>
 </template>

@@ -10,7 +10,7 @@
     severity="secondary"
     @click="frameNodes"
   >
-    <i-lucide:frame :size="16" />
+    <i-lucide:frame class="w-4 h-4" />
   </Button>
 </template>
 

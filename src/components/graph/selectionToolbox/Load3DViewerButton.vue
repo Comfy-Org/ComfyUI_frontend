@@ -8,6 +8,7 @@
     severity="secondary"
     text
     icon="pi pi-pencil"
+    icon-class="w-4 h-4"
     @click="open3DViewer"
   />
 </template>

@@ -5,9 +5,9 @@ import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import BookmarkButton from '@/components/graph/selectionToolbox/BookmarkButton.vue'
+import PublishButton from '@/components/graph/selectionToolbox/PublishButton.vue'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { useNodeBookmarkStore as useNodePublishStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const mockLGraphNode = {
@@ -19,10 +19,10 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => true)
 }))
 
-describe('BookmarkButton', () => {
+describe('PublishButton', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
   let nodeDefStore: ReturnType<typeof useNodeDefStore>
-  let nodeBookmarkStore: ReturnType<typeof useNodeBookmarkStore>
+  let nodePublishStore: ReturnType<typeof useNodePublishStore>
 
   const i18n = createI18n({
     legacy: false,
@@ -40,13 +40,13 @@ describe('BookmarkButton', () => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     nodeDefStore = useNodeDefStore()
-    nodeBookmarkStore = useNodeBookmarkStore()
+    nodePublishStore = useNodePublishStore()
 
     vi.clearAllMocks()
   })
 
   const mountComponent = () => {
-    return mount(BookmarkButton, {
+    return mount(PublishButton, {
       global: {
         plugins: [i18n, PrimeVue],
         directives: { tooltip: Tooltip },
@@ -99,14 +99,14 @@ describe('BookmarkButton', () => {
     }
     canvasStore.selectedItems = [mockLGraphNode] as any
     vi.spyOn(nodeDefStore, 'fromLGraphNode').mockReturnValue(mockNodeDef as any)
-    const addBookmarkSpy = vi
-      .spyOn(nodeBookmarkStore, 'addBookmark')
+    const addPublishSpy = vi
+      .spyOn(nodePublishStore, 'addBookmark')
       .mockResolvedValue()
 
     const wrapper = mountComponent()
     await wrapper.find('button').trigger('click')
 
-    expect(addBookmarkSpy).toHaveBeenCalledWith('test/node')
+    expect(addPublishSpy).toHaveBeenCalledWith('test/node')
   })
 
   it('should have correct tooltip', () => {

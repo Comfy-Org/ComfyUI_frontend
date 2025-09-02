@@ -10,12 +10,16 @@
       text
       @click="() => (showColorPicker = !showColorPicker)"
     >
-      <template #icon>
-        <div class="flex items-center gap-1">
-          <i class="pi pi-circle-fill" :style="{ color: currentColor ?? '' }" />
-          <i class="pi pi-chevron-down" :style="{ fontSize: '0.5rem' }" />
-        </div>
-      </template>
+      <div class="flex items-center gap-1 px-0">
+        <i
+          class="w-4 h-4 pi pi-circle-fill"
+          :style="{ color: currentColor ?? '' }"
+        />
+        <i
+          class="w-4 h-4 pi pi-chevron-down py-1"
+          :style="{ fontSize: '0.5rem' }"
+        />
+      </div>
     </Button>
     <div
       v-if="showColorPicker"

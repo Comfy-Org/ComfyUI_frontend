@@ -10,7 +10,7 @@
     severity="secondary"
     @click="bookmarkNode"
   >
-    <i-lucide:book-open :size="16" />
+    <i-lucide:book-open class="w-4 h-4" />
   </Button>
 </template>
 

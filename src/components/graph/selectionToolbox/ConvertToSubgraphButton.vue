@@ -10,7 +10,7 @@
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
     <template #icon>
-      <i-lucide:expand />
+      <i-lucide:expand class="w-4 h-4" />
     </template>
   </Button>
   <Button
