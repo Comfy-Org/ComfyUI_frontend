@@ -10545,6 +10545,20 @@
       }
     }
   },
+  "USOStyleReference": {
+    "display_name": "USOStyleReference",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      }
+    }
+  },
   "VAEDecode": {
     "display_name": "VAE Decode",
     "description": "Decodes latent images back into pixel space images.",
