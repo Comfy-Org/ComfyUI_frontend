@@ -262,6 +262,24 @@ export class ComfyApi extends EventTarget {
   reportedUnknownMessageTypes = new Set<string>()
 
   /**
+   * Cached feature flags store module to avoid repeated imports
+   */
+  #featureFlagsStorePromise?: Promise<
+    typeof import('@/stores/featureFlagsStore')
+  >
+
+  /**
+   * Get cached feature flags store module (lazy loading)
+   */
+  async #getFeatureFlagsStore() {
+    if (!this.#featureFlagsStorePromise) {
+      this.#featureFlagsStorePromise = import('@/stores/featureFlagsStore')
+    }
+    const module = await this.#featureFlagsStorePromise
+    return module.useFeatureFlagsStore()
+  }
+
+  /**
    * Get feature flags supported by this frontend client.
    * Returns a copy to prevent external modification.
    */
@@ -417,12 +435,22 @@ export class ComfyApi extends EventTarget {
       opened = true
 
       // Send feature flags as the first message
+      const clientFlags = this.getClientFeatureFlags()
       this.socket!.send(
         JSON.stringify({
           type: 'feature_flags',
-          data: this.getClientFeatureFlags()
+          data: clientFlags
         })
       )
+
+      // Update client flags in the store
+      this.#getFeatureFlagsStore()
+        .then((store) => {
+          store.updateClientFlags(clientFlags)
+        })
+        .catch((error) => {
+          console.error('[API] Failed to update client flags:', error)
+        })
 
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
@@ -444,10 +472,18 @@ export class ComfyApi extends EventTarget {
       if (opened) {
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
+        // Reset feature flags store when connection is lost
+        this.#getFeatureFlagsStore()
+          .then((store) => {
+            store.resetStore()
+          })
+          .catch((error) => {
+            console.error('[API] Failed to reset feature flags store:', error)
+          })
       }
     })
 
-    this.socket.addEventListener('message', (event) => {
+    this.socket.addEventListener('message', async (event) => {
       try {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
@@ -552,6 +588,18 @@ export class ComfyApi extends EventTarget {
                 'Server feature flags received:',
                 this.serverFeatureFlags
               )
+              // Update the reactive store asynchronously without blocking
+              this.#getFeatureFlagsStore()
+                .then((store) => {
+                  store.updateServerFlags(msg.data)
+                })
+                .catch((error) => {
+                  console.error(
+                    '[API] Failed to update feature flags store:',
+                    error
+                  )
+                  // Store update failed but api.serverFeatureFlags is still updated
+                })
               break
             default:
               if (this.#registered.has(msg.type)) {

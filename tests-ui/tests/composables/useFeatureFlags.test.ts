@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isReactive, isReadonly } from 'vue'
 
@@ -5,18 +6,31 @@ import {
   ServerFeatureFlag,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
-import { api } from '@/scripts/api'
+import { useFeatureFlagsStore } from '@/stores/featureFlagsStore'
 
-// Mock the API module
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
+// Mock the store module
+vi.mock('@/stores/featureFlagsStore', () => ({
+  useFeatureFlagsStore: vi.fn()
 }))
 
 describe('useFeatureFlags', () => {
+  let mockStore: any
+
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
+
+    // Create mock store
+    mockStore = {
+      getServerFeature: vi.fn(),
+      getClientFeature: vi.fn(),
+      serverSupportsFeature: vi.fn(),
+      supportsManagerV4: false,
+      clientSupportsManagerV4UI: false,
+      isReady: false
+    }
+
+    vi.mocked(useFeatureFlagsStore).mockReturnValue(mockStore)
   })
 
   describe('flags object', () => {
@@ -28,69 +42,74 @@ describe('useFeatureFlags', () => {
     })
 
     it('should access supportsPreviewMetadata', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
-            return true as any
+      mockStore.getServerFeature.mockImplementation(
+        (path: string, defaultValue?: any) => {
+          if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA) return true
           return defaultValue
         }
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.supportsPreviewMetadata).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA
+      expect(flags.value.supportsPreviewMetadata).toBe(true)
+      expect(mockStore.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA,
+        false
       )
     })
 
     it('should access maxUploadSize', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE)
-            return 209715200 as any // 200MB
+      mockStore.getServerFeature.mockImplementation(
+        (path: string, defaultValue?: any) => {
+          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 209715200 // 200MB
           return defaultValue
         }
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.maxUploadSize).toBe(209715200)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
+      expect(flags.value.maxUploadSize).toBe(209715200)
+      expect(mockStore.getServerFeature).toHaveBeenCalledWith(
         ServerFeatureFlag.MAX_UPLOAD_SIZE
       )
     })
 
     it('should access supportsManagerV4', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MANAGER_SUPPORTS_V4) return true as any
-          return defaultValue
-        }
-      )
+      mockStore.supportsManagerV4 = true
 
       const { flags } = useFeatureFlags()
-      expect(flags.supportsManagerV4).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.MANAGER_SUPPORTS_V4
-      )
+      expect(flags.value.supportsManagerV4).toBe(true)
     })
 
-    it('should return undefined when features are not available and no default provided', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (_path, defaultValue) => defaultValue as any
+    it('should access clientSupportsManagerV4UI', () => {
+      mockStore.clientSupportsManagerV4UI = true
+
+      const { flags } = useFeatureFlags()
+      expect(flags.value.clientSupportsManagerV4UI).toBe(true)
+    })
+
+    it('should access isReady state', () => {
+      mockStore.isReady = true
+
+      const { flags } = useFeatureFlags()
+      expect(flags.value.isReady).toBe(true)
+    })
+
+    it('should return default values when features are not available', () => {
+      mockStore.getServerFeature.mockImplementation(
+        (_path: string, defaultValue?: any) => defaultValue
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.supportsPreviewMetadata).toBeUndefined()
-      expect(flags.maxUploadSize).toBeUndefined()
-      expect(flags.supportsManagerV4).toBeUndefined()
+      expect(flags.value.supportsPreviewMetadata).toBe(false) // default value is false
+      expect(flags.value.maxUploadSize).toBeUndefined()
+      expect(flags.value.supportsManagerV4).toBe(false) // store mock returns false
     })
   })
 
   describe('featureFlag', () => {
     it('should create reactive computed for custom feature flags', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === 'custom.feature') return 'custom-value' as any
+      mockStore.getServerFeature.mockImplementation(
+        (path: string, defaultValue?: any) => {
+          if (path === 'custom.feature') return 'custom-value'
           return defaultValue
         }
       )
@@ -99,16 +118,16 @@ describe('useFeatureFlags', () => {
       const customFlag = featureFlag('custom.feature', 'default')
 
       expect(customFlag.value).toBe('custom-value')
-      expect(api.getServerFeature).toHaveBeenCalledWith(
+      expect(mockStore.getServerFeature).toHaveBeenCalledWith(
         'custom.feature',
         'default'
       )
     })
 
     it('should handle nested paths', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === 'extension.custom.nested.feature') return true as any
+      mockStore.getServerFeature.mockImplementation(
+        (path: string, defaultValue?: any) => {
+          if (path === 'extension.custom.nested.feature') return true
           return defaultValue
         }
       )
@@ -120,10 +139,9 @@ describe('useFeatureFlags', () => {
     })
 
     it('should work with ServerFeatureFlag enum', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE)
-            return 104857600 as any
+      mockStore.getServerFeature.mockImplementation(
+        (path: string, defaultValue?: any) => {
+          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 104857600
           return defaultValue
         }
       )
@@ -132,6 +150,34 @@ describe('useFeatureFlags', () => {
       const maxUploadSize = featureFlag(ServerFeatureFlag.MAX_UPLOAD_SIZE)
 
       expect(maxUploadSize.value).toBe(104857600)
+    })
+  })
+
+  describe('serverSupportsFeature', () => {
+    it('should create reactive computed for feature support check', () => {
+      mockStore.serverSupportsFeature.mockImplementation(
+        (path: string) => path === 'supported.feature'
+      )
+
+      const { serverSupportsFeature } = useFeatureFlags()
+      const isSupported = serverSupportsFeature('supported.feature')
+
+      expect(isSupported.value).toBe(true)
+      expect(mockStore.serverSupportsFeature).toHaveBeenCalledWith(
+        'supported.feature'
+      )
+    })
+  })
+
+  describe('direct store methods', () => {
+    it('should expose getServerFeature method', () => {
+      const { getServerFeature } = useFeatureFlags()
+      expect(getServerFeature).toBe(mockStore.getServerFeature)
+    })
+
+    it('should expose getClientFeature method', () => {
+      const { getClientFeature } = useFeatureFlags()
+      expect(getClientFeature).toBe(mockStore.getClientFeature)
     })
   })
 })

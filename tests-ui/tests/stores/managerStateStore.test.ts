@@ -1,9 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useFeatureFlagsStore } from '@/stores/featureFlagsStore'
 import {
   ManagerUIState,
   useManagerStateStore
@@ -11,18 +10,8 @@ import {
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock dependencies
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getClientFeatureFlags: vi.fn(),
-    getServerFeature: vi.fn()
-  }
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: vi.fn(() => ({
-    flags: { supportsManagerV4: false },
-    featureFlag: vi.fn()
-  }))
+vi.mock('@/stores/featureFlagsStore', () => ({
+  useFeatureFlagsStore: vi.fn()
 }))
 
 vi.mock('@/stores/extensionStore', () => ({
@@ -46,7 +35,11 @@ describe('useManagerStateStore', () => {
           system: { argv: ['python', 'main.py', '--disable-manager'] }
         }
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: false,
+        supportsManagerV4: false,
+        isReady: false
+      } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
       } as any)
@@ -62,7 +55,11 @@ describe('useManagerStateStore', () => {
           system: { argv: ['python', 'main.py', '--enable-manager-legacy-ui'] }
         }
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: false,
+        supportsManagerV4: false,
+        isReady: false
+      } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
       } as any)
@@ -76,13 +73,10 @@ describe('useManagerStateStore', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
-        supports_manager_v4_ui: true
-      })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-      vi.mocked(useFeatureFlags).mockReturnValue({
-        flags: { supportsManagerV4: true },
-        featureFlag: vi.fn()
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: true,
+        supportsManagerV4: true,
+        isReady: true
       } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
@@ -97,13 +91,10 @@ describe('useManagerStateStore', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
-        supports_manager_v4_ui: false
-      })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-      vi.mocked(useFeatureFlags).mockReturnValue({
-        flags: { supportsManagerV4: true },
-        featureFlag: vi.fn()
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: false,
+        supportsManagerV4: true,
+        isReady: true
       } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
@@ -118,10 +109,10 @@ describe('useManagerStateStore', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-      vi.mocked(useFeatureFlags).mockReturnValue({
-        flags: { supportsManagerV4: false },
-        featureFlag: vi.fn()
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: false,
+        supportsManagerV4: false,
+        isReady: true
       } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: [{ name: 'Comfy.CustomNodesManager' }]
@@ -136,11 +127,10 @@ describe('useManagerStateStore', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
-      vi.mocked(useFeatureFlags).mockReturnValue({
-        flags: { supportsManagerV4: undefined },
-        featureFlag: vi.fn()
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: false,
+        supportsManagerV4: undefined,
+        isReady: true
       } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
@@ -155,11 +145,10 @@ describe('useManagerStateStore', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
-      vi.mocked(api.getServerFeature).mockReturnValue(false)
-      vi.mocked(useFeatureFlags).mockReturnValue({
-        flags: { supportsManagerV4: false },
-        featureFlag: vi.fn()
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: false,
+        supportsManagerV4: false,
+        isReady: true
       } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
@@ -174,13 +163,10 @@ describe('useManagerStateStore', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: null
       } as any)
-      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
-        supports_manager_v4_ui: true
-      })
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-      vi.mocked(useFeatureFlags).mockReturnValue({
-        flags: { supportsManagerV4: true },
-        featureFlag: vi.fn()
+      vi.mocked(useFeatureFlagsStore).mockReturnValue({
+        clientSupportsManagerV4UI: true,
+        supportsManagerV4: true,
+        isReady: true
       } as any)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []

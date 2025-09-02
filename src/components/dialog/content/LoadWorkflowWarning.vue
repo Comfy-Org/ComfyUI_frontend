@@ -54,19 +54,16 @@
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useDialogService } from '@/services/dialogService'
+import { useManagerHelper } from '@/composables/useManagerHelper'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useCommandStore } from '@/stores/commandStore'
 import {
   ManagerUIState,
   useManagerStateStore
 } from '@/stores/managerStateStore'
-import { useToastStore } from '@/stores/toastStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
@@ -112,6 +109,7 @@ const uniqueNodes = computed(() => {
 })
 
 const managerStateStore = useManagerStateStore()
+const { openManager: openManagerHelper } = useManagerHelper()
 
 // Show manager buttons unless manager is disabled
 const showManagerButtons = computed(() => {
@@ -123,35 +121,12 @@ const showInstallAllButton = computed(() => {
   return managerStateStore.managerUIState === ManagerUIState.NEW_UI
 })
 
+// Open manager with Missing tab for NEW_UI
 const openManager = async () => {
-  const state = managerStateStore.managerUIState
-
-  switch (state) {
-    case ManagerUIState.DISABLED:
-      useDialogService().showSettingsDialog('extension')
-      break
-
-    case ManagerUIState.LEGACY_UI:
-      try {
-        await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
-      } catch {
-        // If legacy command doesn't exist, show toast
-        const { t } = useI18n()
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('manager.legacyMenuNotAvailable'),
-          life: 3000
-        })
-      }
-      break
-
-    case ManagerUIState.NEW_UI:
-      useDialogService().showManagerDialog({
-        initialTab: ManagerTab.Missing
-      })
-      break
-  }
+  // Use the helper with Missing tab option
+  await openManagerHelper({
+    initialTab: ManagerTab.Missing
+  })
 }
 </script>
 

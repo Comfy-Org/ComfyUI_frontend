@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, readonly } from 'vue'
+import { computed, readonly, watchEffect } from 'vue'
 
-import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useFeatureFlagsStore } from '@/stores/featureFlagsStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 export enum ManagerUIState {
@@ -14,27 +14,17 @@ export enum ManagerUIState {
 export const useManagerStateStore = defineStore('managerState', () => {
   const systemStatsStore = useSystemStatsStore()
   const extensionStore = useExtensionStore()
+  const featureFlagsStore = useFeatureFlagsStore()
 
   // Reactive computed manager state that updates when dependencies change
   const managerUIState = computed(() => {
     const systemStats = systemStatsStore.systemStats
-    const clientSupportsV4 =
-      api.getClientFeatureFlags().supports_manager_v4_ui ?? false
+    const clientSupportsV4 = featureFlagsStore.clientSupportsManagerV4UI
     const hasLegacyManager = extensionStore.extensions.some(
       (ext) => ext.name === 'Comfy.CustomNodesManager'
     )
 
-    const serverSupportsV4 = api.getServerFeature(
-      'extension.manager.supports_v4'
-    )
-
-    console.log('[Manager State Debug]', {
-      systemStats: systemStats?.system?.argv,
-      clientSupportsV4,
-      serverSupportsV4,
-      hasLegacyManager,
-      extensions: extensionStore.extensions.map((e) => e.name)
-    })
+    const serverSupportsV4 = featureFlagsStore.supportsManagerV4
 
     // Check command line args first
     if (systemStats?.system?.argv?.includes('--disable-manager')) {
@@ -55,20 +45,43 @@ export const useManagerStateStore = defineStore('managerState', () => {
       return ManagerUIState.LEGACY_UI
     }
 
-    // No server v4 support but legacy manager extension exists = LEGACY_UI
-    if (hasLegacyManager) {
-      return ManagerUIState.LEGACY_UI
-    }
-
     // If server feature flags haven't loaded yet, return DISABLED for now
     // This will update reactively once feature flags load
-    if (serverSupportsV4 === undefined) {
+    if (!featureFlagsStore.isReady || serverSupportsV4 === undefined) {
       return ManagerUIState.DISABLED
+    }
+
+    // Server explicitly doesn't support v4 (false) = assume legacy manager exists
+    // OR legacy manager extension is detected
+    if (serverSupportsV4 === false || hasLegacyManager) {
+      return ManagerUIState.LEGACY_UI
     }
 
     // No manager at all = DISABLED
     return ManagerUIState.DISABLED
   })
+
+  // Debug logging in development mode only
+  if (import.meta.env.DEV) {
+    watchEffect(() => {
+      const systemStats = systemStatsStore.systemStats
+      const clientSupportsV4 = featureFlagsStore.clientSupportsManagerV4UI
+      const serverSupportsV4 = featureFlagsStore.supportsManagerV4
+      const hasLegacyManager = extensionStore.extensions.some(
+        (ext) => ext.name === 'Comfy.CustomNodesManager'
+      )
+
+      console.log('[Manager State Debug]', {
+        currentState: managerUIState.value,
+        systemStats: systemStats?.system?.argv,
+        clientSupportsV4,
+        serverSupportsV4,
+        hasLegacyManager,
+        isReady: featureFlagsStore.isReady,
+        extensions: extensionStore.extensions.map((e) => e.name)
+      })
+    })
+  }
 
   return {
     managerUIState: readonly(managerUIState)

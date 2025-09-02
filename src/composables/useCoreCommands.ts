@@ -763,7 +763,8 @@ export function useCoreCommands(): ComfyCommand[] {
                 detail: t('manager.legacyMenuNotAvailable'),
                 life: 3000
               })
-              dialogService.showManagerDialog()
+              // Show settings dialog instead of new manager for legacy UI state
+              dialogService.showSettingsDialog('extension')
             }
             break
 
@@ -1015,12 +1016,31 @@ export function useCoreCommands(): ComfyCommand[] {
             'Comfy.Manager.CustomNodesManager.ToggleVisibility'
           )
         } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
+          // Check manager state to avoid infinite loop
+          const { ManagerUIState, useManagerStateStore } = await import(
+            '@/stores/managerStateStore'
+          )
+          const managerState = useManagerStateStore().managerUIState
+
+          if (managerState === ManagerUIState.NEW_UI) {
+            // Only fallback to new manager if we're in NEW_UI state
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+            const managerHelper = await import('@/composables/useManagerHelper')
+            await managerHelper.openManager()
+          } else {
+            // In LEGACY_UI state, just show error without fallback
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+          }
         }
       }
     },
@@ -1033,12 +1053,31 @@ export function useCoreCommands(): ComfyCommand[] {
         try {
           await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
         } catch (error) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable'),
-            life: 3000
-          })
+          // Check manager state to avoid infinite loop
+          const { ManagerUIState, useManagerStateStore } = await import(
+            '@/stores/managerStateStore'
+          )
+          const managerState = useManagerStateStore().managerUIState
+
+          if (managerState === ManagerUIState.NEW_UI) {
+            // Only fallback to new manager if we're in NEW_UI state
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+            const managerHelper = await import('@/composables/useManagerHelper')
+            await managerHelper.openManager()
+          } else {
+            // In LEGACY_UI state, just show error without fallback
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+          }
         }
       }
     },

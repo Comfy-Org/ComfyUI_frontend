@@ -142,7 +142,7 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useDialogService } from '@/services/dialogService'
+import { useManagerHelper } from '@/composables/useManagerHelper'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
@@ -191,7 +191,7 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
+const { openManager } = useManagerHelper()
 
 // Emits
 const emit = defineEmits<{
@@ -313,8 +313,8 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: PuzzleIcon,
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
-      action: () => {
-        dialogService.showManagerDialog()
+      action: async () => {
+        await openManager()
         emit('close')
       }
     },
