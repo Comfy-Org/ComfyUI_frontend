@@ -82,7 +82,7 @@
           <Button
             v-if="currentStep !== '3'"
             :label="$t('g.next')"
-            class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
+            class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
             style="font-family: 'ABC ROM Black Italic', sans-serif"
             :disabled="!canProceed"
             @click="goToNextStep"
@@ -90,7 +90,7 @@
           <Button
             v-else
             :label="$t('g.install')"
-            class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
+            class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
             style="font-family: 'ABC ROM Black Italic', sans-serif"
             :disabled="!canProceed"
             @click="install()"
