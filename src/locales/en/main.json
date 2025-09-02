@@ -210,37 +210,7 @@
     }
   },
   "issueReport": {
-    "submitErrorReport": "Submit Error Report (Optional)",
-    "provideEmail": "Give us your email (optional)",
-    "provideAdditionalDetails": "Provide additional details",
-    "stackTrace": "Stack Trace",
-    "systemStats": "System Stats",
-    "contactFollowUp": "Contact me for follow up",
-    "notifyResolve": "Notify me when resolved",
-    "helpFix": "Help Fix This",
-    "rating": "Rating",
-    "feedbackTitle": "Help us improve ComfyUI by providing feedback",
-    "contactSupportTitle": "Contact Support",
-    "contactSupportDescription": "Please fill in the form below with your report",
-    "selectIssue": "Select the issue",
-    "whatDoYouNeedHelpWith": "What do you need help with?",
-    "whatCanWeInclude": "Specify what to include in the report",
-    "describeTheProblem": "Describe the problem",
-    "email": "Email",
-    "helpTypes": {
-      "billingPayments": "Billing / Payments",
-      "loginAccessIssues": "Login / Access Issues",
-      "giveFeedback": "Give Feedback",
-      "bugReport": "Bug Report",
-      "somethingElse": "Something Else"
-    },
-    "validation": {
-      "maxLength": "Message too long",
-      "invalidEmail": "Please enter a valid email address",
-      "selectIssueType": "Please select an issue type",
-      "descriptionRequired": "Description is required",
-      "helpTypeRequired": "Help type is required"
-    }
+    "helpFix": "Help Fix This"
   },
   "color": {
     "noColor": "No Color",

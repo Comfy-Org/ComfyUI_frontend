@@ -277,7 +277,7 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-question-circle',
       label: t('helpCenter.helpFeedback'),
       action: () => {
-        void commandStore.execute('Comfy.Feedback')
+        void commandStore.execute('Comfy.ContactSupport')
         emit('close')
       }
     },

@@ -551,37 +551,7 @@
     "updateConsent": "이전에 충돌 보고에 동의하셨습니다. 이제 버그를 식별하고 앱을 개선하기 위해 이벤트 기반 통계 정보의 추적을 시작합니다. 개인을 식별할 수 있는 정보는 수집되지 않습니다."
   },
   "issueReport": {
-    "contactFollowUp": "추적 조사를 위해 연락해 주세요",
-    "contactSupportDescription": "아래 양식에 보고 내용을 작성해 주세요",
-    "contactSupportTitle": "지원팀에 문의하기",
-    "describeTheProblem": "문제를 설명해 주세요",
-    "email": "이메일",
-    "feedbackTitle": "피드백을 제공함으로써 ComfyUI를 개선하는 데 도움을 주십시오",
-    "helpFix": "이 문제 해결에 도움을 주세요",
-    "helpTypes": {
-      "billingPayments": "결제 / 지불",
-      "bugReport": "버그 신고",
-      "giveFeedback": "피드백 제공",
-      "loginAccessIssues": "로그인 / 접근 문제",
-      "somethingElse": "기타"
-    },
-    "notifyResolve": "해결되었을 때 알려주세요",
-    "provideAdditionalDetails": "추가 세부 사항 제공 (선택 사항)",
-    "provideEmail": "이메일을 알려주세요 (선택 사항)",
-    "rating": "평가",
-    "selectIssue": "문제를 선택하세요",
-    "stackTrace": "스택 추적",
-    "submitErrorReport": "오류 보고서 제출 (선택 사항)",
-    "systemStats": "시스템 통계",
-    "validation": {
-      "descriptionRequired": "설명은 필수입니다",
-      "helpTypeRequired": "도움 유형은 필수입니다",
-      "invalidEmail": "유효한 이메일 주소를 입력해 주세요",
-      "maxLength": "메시지가 너무 깁니다",
-      "selectIssueType": "문제 유형을 선택해 주세요"
-    },
-    "whatCanWeInclude": "보고서에 포함할 내용을 지정하세요",
-    "whatDoYouNeedHelpWith": "어떤 도움이 필요하신가요?"
+    "helpFix": "이 문제 해결에 도움을 주세요"
   },
   "load3d": {
     "applyingTexture": "텍스처 적용 중...",
