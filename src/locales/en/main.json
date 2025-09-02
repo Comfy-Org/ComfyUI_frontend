@@ -407,6 +407,15 @@
     "migration": "Migration",
     "desktopSettings": "Desktop Settings",
     "chooseInstallationLocation": "Choose Installation Location",
+    "locationPicker": {
+      "title": "Choose where to install ComfyUI",
+      "subtitle": "Pick a folder for ComfyUI's files. We'll also set up Python there automatically.",
+      "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrateFromExisting": "Migrate from existing installation",
+      "migrateDescription": "Copy or link your existing models, custom nodes, and configurations from a previous ComfyUI installation.",
+      "chooseDownloadServers": "Choose download servers manually",
+      "downloadServersDescription": "Select specific mirror servers for downloading Python, PyPI packages, and PyTorch based on your location."
+    },
     "systemLocations": "System Locations",
     "failedToSelectDirectory": "Failed to select directory",
     "pathValidationFailed": "Failed to validate path",
