@@ -62,3 +62,53 @@ defineEmits<{
   install: []
 }>()
 </script>
+
+<style scoped>
+/* Apply rounded corners to all buttons in the footer */
+:deep(.p-button) {
+  @apply rounded-lg border-0;
+}
+
+/* Style step indicators as dots */
+:deep(.p-step) {
+  @apply flex-none p-0 m-0;
+}
+
+:deep(.p-step-header) {
+  @apply p-0 border-0 bg-transparent;
+  width: auto;
+  min-width: unset;
+}
+
+:deep(.p-step-number) {
+  @apply hidden;
+}
+
+:deep(.p-step-title) {
+  @apply block w-2.5 h-2.5 rounded-full transition-all duration-300;
+  background-color: #4a4a4a;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+  text-indent: -9999px;
+  padding: 0;
+  margin: 0;
+}
+
+:deep(.p-step.p-step-active .p-step-title) {
+  @apply bg-comfy-yellow;
+  width: 2rem;
+  border-radius: 0.625rem;
+}
+
+:deep(.p-step:not(.p-step-disabled) .p-step-header:hover .p-step-title) {
+  background-color: #6b6b6b;
+  @apply scale-105;
+}
+
+:deep(.p-step.p-step-disabled .p-step-title) {
+  background-color: #2a2a2a;
+  @apply opacity-60;
+  cursor: not-allowed;
+}
+</style>
