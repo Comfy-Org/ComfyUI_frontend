@@ -57,7 +57,8 @@
       <div class="flex flex-col gap-0 px-12">
         <!-- Migration Section -->
         <button
-          class="group flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full"
+          type="button"
+          class="flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full bg-transparent border-0 outline-none cursor-pointer"
           @click="showMigration = !showMigration"
         >
           <i
@@ -68,24 +69,20 @@
           />
           <span>{{ $t('install.locationPicker.migrateFromExisting') }}</span>
         </button>
-        <div
-          v-if="showMigration"
-          class="text-neutral-500 text-sm pb-3 pl-8"
-        >
+        <div v-if="showMigration" class="text-neutral-500 text-sm pb-3 pl-8">
           {{ $t('install.locationPicker.migrateDescription') }}
         </div>
 
         <!-- Download Servers Section -->
         <button
-          class="group flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full"
+          type="button"
+          class="flex items-center gap-3 py-3 text-neutral-400 hover:text-neutral-300 transition-colors text-left w-full bg-transparent border-0 outline-none cursor-pointer"
           @click="showDownloadServers = !showDownloadServers"
         >
           <i
             class="text-xs transition-transform duration-200"
             :class="
-              showDownloadServers
-                ? 'pi pi-chevron-down'
-                : 'pi pi-chevron-right'
+              showDownloadServers ? 'pi pi-chevron-down' : 'pi pi-chevron-right'
             "
           />
           <span>{{ $t('install.locationPicker.chooseDownloadServers') }}</span>
@@ -183,3 +180,21 @@ const onFocus = async () => {
   await validatePath(installPath.value)
 }
 </script>
+
+<style scoped>
+/* Ensure button expanders have no default styling */
+button[type='button'] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  padding: 0.75rem 0;
+}
+
+button[type='button']:focus {
+  outline: none;
+}
+
+button[type='button']:hover {
+  background: transparent;
+}
+</style>
