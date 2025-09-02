@@ -49,45 +49,21 @@
           </StepPanel>
         </StepPanels>
 
-        <!-- Bottom navigation section with buttons and step indicators -->
-        <div class="flex flex-col gap-6 pt-6">
-          <!-- Navigation buttons -->
-          <div class="flex justify-between items-center">
-            <Button
-              v-if="currentStep !== '0'"
-              :label="$t('g.back')"
-              severity="secondary"
-              icon="pi pi-arrow-left"
-              class="px-6 py-2"
-              @click="goToPreviousStep"
-            />
-            <div v-else class="w-24"></div>
+        <!-- Bottom navigation section with buttons and step indicators aligned horizontally -->
+        <div class="flex justify-between items-center pt-6 pb-4">
+          <!-- Back button -->
+          <Button
+            v-if="currentStep !== '0'"
+            :label="$t('g.back')"
+            severity="secondary"
+            icon="pi pi-arrow-left"
+            class="px-6 py-2"
+            @click="goToPreviousStep"
+          />
+          <div v-else class="w-24"></div>
 
-            <!-- Center space for potential future content -->
-            <div class="flex-1"></div>
-
-            <Button
-              v-if="currentStep !== '3'"
-              :label="$t('g.next')"
-              class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-lg transition-colors italic"
-              style="font-family: 'ABC ROM Black Italic', sans-serif"
-              :disabled="!canProceed"
-              @click="goToNextStep"
-            />
-            <Button
-              v-else
-              :label="$t('g.install')"
-              class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-lg transition-colors italic"
-              style="font-family: 'ABC ROM Black Italic', sans-serif"
-              :disabled="!canProceed"
-              @click="install()"
-            />
-          </div>
-
-          <!-- Step indicators -->
-          <StepList
-            class="flex justify-center items-center gap-3 pb-4 select-none"
-          >
+          <!-- Step indicators in center -->
+          <StepList class="flex justify-center items-center gap-3 select-none">
             <Step value="0">
               {{ $t('install.gpu') }}
             </Step>
@@ -101,6 +77,24 @@
               {{ $t('install.desktopSettings') }}
             </Step>
           </StepList>
+
+          <!-- Next/Install button -->
+          <Button
+            v-if="currentStep !== '3'"
+            :label="$t('g.next')"
+            class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
+            style="font-family: 'ABC ROM Black Italic', sans-serif"
+            :disabled="!canProceed"
+            @click="goToNextStep"
+          />
+          <Button
+            v-else
+            :label="$t('g.install')"
+            class="px-8 py-3 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
+            style="font-family: 'ABC ROM Black Italic', sans-serif"
+            :disabled="!canProceed"
+            @click="install()"
+          />
         </div>
       </Stepper>
     </div>
