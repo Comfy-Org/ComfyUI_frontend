@@ -17,12 +17,10 @@ app.registerExtension({
       constructor(title: string) {
         super(title)
         this.title = 'Test Widgets'
-        this.size = [450, 800]
+        this.size = [500, 1200]
 
-        // 添加输出端口
         this.addOutput('output', 'STRING')
 
-        // 添加基础 widgets
         this.addTestWidgets()
 
         this.serialize_widgets = true
@@ -30,7 +28,47 @@ app.registerExtension({
 
       addTestWidgets() {
         try {
-          // 主题选择器
+          ComfyWidgets.STRING(
+            this,
+            'string_input',
+            ['STRING', { default: 'Hello World', placeholder: '输入文本' }],
+            app
+          )
+
+          ComfyWidgets.INT(
+            this,
+            'int_input',
+            ['INT', { default: 42, min: 0, max: 100, step: 1 }],
+            app
+          )
+
+          ComfyWidgets.FLOAT(
+            this,
+            'float_input',
+            ['FLOAT', { default: 3.14, min: 0.0, max: 10.0, step: 0.1 }],
+            app
+          )
+
+          ComfyWidgets.BOOLEAN(
+            this,
+            'boolean_toggle',
+            ['BOOLEAN', { default: true }],
+            app
+          )
+
+          ComfyWidgets.COMBO(
+            this,
+            'combo_select',
+            [
+              'COMBO',
+              {
+                values: ['Option A', 'Option B', 'Option C'],
+                default: 'Option A'
+              }
+            ],
+            app
+          )
+
           ComfyWidgets.SELECTBUTTON(
             this,
             'theme_selector',
@@ -44,52 +82,153 @@ app.registerExtension({
             app
           )
 
-          // 质量设置
-          ComfyWidgets.SELECTBUTTON(
+          ComfyWidgets.MULTISELECT(
             this,
-            'quality_setting',
+            'multi_select',
             [
-              'SELECTBUTTON',
+              'MULTISELECT',
               {
-                values: ['Low', 'Medium', 'High', 'Ultra'],
-                default: 'High'
+                values: ['Red', 'Green', 'Blue', 'Yellow', 'Purple'],
+                default: ['Red', 'Blue']
               }
             ],
             app
           )
 
-          // 方向选择
-          ComfyWidgets.SELECTBUTTON(
+          ComfyWidgets.TREESELECT(
             this,
-            'orientation',
+            'tree_select',
             [
-              'SELECTBUTTON',
+              'TREESELECT',
               {
-                values: ['Portrait', 'Landscape', 'Square'],
-                default: 'Portrait'
+                values: [
+                  {
+                    key: '0',
+                    label: 'Root',
+                    children: [
+                      { key: '0-0', label: 'Child 1' },
+                      { key: '0-1', label: 'Child 2' }
+                    ]
+                  }
+                ],
+                default: '0-0'
               }
             ],
             app
           )
 
-          // 6. 可选的高级 widgets
-          if (ComfyWidgets.COLOR) {
-            ComfyWidgets.COLOR(
-              this,
-              'color_test',
-              ['COLOR', { default: '#ff0000' }],
-              app
-            )
-          }
+          ComfyWidgets.TEXTAREA(
+            this,
+            'textarea_input',
+            [
+              'TEXTAREA',
+              {
+                default: 'This is a multiline\ntext area for longer content.',
+                rows: 4
+              }
+            ],
+            app
+          )
 
-          if (ComfyWidgets.MARKDOWN) {
-            ComfyWidgets.MARKDOWN(
-              this,
-              'markdown_test',
-              ['MARKDOWN', { default: '# Test Markdown' }],
-              app
-            )
-          }
+          ComfyWidgets.COLOR(
+            this,
+            'color_picker',
+            ['COLOR', { default: 'ff6b6b' }],
+            app
+          )
+
+          ComfyWidgets.FILEUPLOAD(
+            this,
+            'file_upload',
+            [
+              'FILEUPLOAD',
+              {
+                accept: '.jpg,.png,.gif,.webp',
+                multiple: false
+              }
+            ],
+            app
+          )
+
+          // ComfyWidgets.MARKDOWN(
+          //   this,
+          //   'markdown_display',
+          //   ['MARKDOWN', {
+          //     default: `# Test Markdown Widget
+
+          //     This is a **Markdown** rendering component test.
+
+          //     - Supports lists
+          //     - Supports *italic* and **bold** text
+          //     - Supports \`code\`
+
+          //     > This is quoted text
+
+          //     \`\`\`javascript
+          //     console.log('Hello World!');
+          //     \`\`\``
+          //   }],
+          //   app
+          // )
+
+          // ComfyWidgets.IMAGE(
+          //   this,
+          //   'image_display',
+          //   ['IMAGE', {
+          //     default: null,
+          //     width: 200,
+          //     height: 200
+          //   }],
+          //   app
+          // )
+
+          // ComfyWidgets.IMAGECOMPARE(
+          //   this,
+          //   'image_compare',
+          //   ['IMAGECOMPARE', {
+          //     default: { before: null, after: null }
+          //   }],
+          //   app
+          // )
+
+          // ComfyWidgets.GALLERIA(
+          //   this,
+          //   'image_gallery',
+          //   ['GALLERIA', {
+          //     default: [],
+          //     thumbnailSize: 100
+          //   }],
+          //   app
+          // )
+
+          // ComfyWidgets.CHART(
+          //   this,
+          //   'chart_display',
+          //   ['CHART', {
+          //     default: {
+          //       type: 'line',
+          //       data: {
+          //         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+          //         datasets: [{
+          //           label: 'Test Data',
+          //           data: [10, 20, 15, 25, 30],
+          //           borderColor: '#42A5F5',
+          //           backgroundColor: '#42A5F5'
+          //         }]
+          //       },
+          //       options: {
+          //         responsive: true,
+          //         plugins: {
+          //           title: {
+          //             display: true,
+          //             text: 'Test Chart Widget'
+          //           }
+          //         }
+          //       }
+          //     }
+          //   }],
+          //   app
+          // )
         } catch (error) {
           console.error('Error adding widgets:', error)
         }
