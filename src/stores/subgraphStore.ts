@@ -37,8 +37,6 @@ async function confirmOverwrite(name: string): Promise<boolean | null> {
   })
 }
 
-const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
-
 export const useSubgraphStore = defineStore('subgraph', () => {
   class SubgraphBlueprint extends ComfyWorkflow {
     static override readonly basePath = 'subgraphs/'
@@ -60,9 +58,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         )
       const { subgraphs } = this.activeState.definitions
       const { nodes } = this.activeState
-      //Instanceof doesn't funciton as nodes are serialized
+      //Instanceof doesn't function as nodes are serialized
       function isSubgraphNode(node: ComfyNode) {
-        return node && subgraphs.some((s) => s.id == node.type)
+        return node && subgraphs.some((s) => s.id === node.type)
       }
       if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
       const errors: Record<NodeId, NodeError> = {}
@@ -131,6 +129,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       })
     }
   }
+  const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
   const typePrefix = 'SubgraphBlueprint.'
   const subgraphDefCache = ref<Map<string, ComfyNodeDefImpl>>(new Map())
   const canvasStore = useCanvasStore()
@@ -197,7 +196,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const canvas = canvasStore.getCanvas()
     const subgraphNode = [...canvas.selectedItems][0]
     if (
-      canvas.selectedItems.size != 1 ||
+      canvas.selectedItems.size !== 1 ||
       !(subgraphNode instanceof SubgraphNode)
     )
       throw new TypeError('Must have single SubgraphNode selected to publish')
