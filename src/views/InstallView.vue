@@ -69,18 +69,16 @@
             <Button
               v-if="currentStep !== '3'"
               :label="$t('g.next')"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
-              class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+              class="px-8 py-3 bg-[#d4ff00] hover:bg-[#c4ef00] text-neutral-900 font-bold rounded-lg transition-colors italic"
+              style="font-family: 'ABC ROM Black Italic', sans-serif"
               :disabled="!canProceed"
               @click="goToNextStep"
             />
             <Button
               v-else
               :label="$t('g.install')"
-              icon="pi pi-check"
-              icon-pos="right"
-              class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white"
+              class="px-8 py-3 bg-[#d4ff00] hover:bg-[#c4ef00] text-neutral-900 font-bold rounded-lg transition-colors italic"
+              style="font-family: 'ABC ROM Black Italic', sans-serif"
               :disabled="!canProceed"
               @click="install()"
             />
