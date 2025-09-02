@@ -35,6 +35,9 @@ import type { SubgraphInput } from './SubgraphInput'
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
  */
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
+  // Override inputs with proper typing for subgraph inputs
+  override inputs: (INodeInputSlot & Partial<ISubgraphInput>)[] = []
+  
   override readonly type: UUID
   override readonly isVirtualNode = true as const
 
