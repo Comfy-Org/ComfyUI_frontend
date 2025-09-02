@@ -2,10 +2,11 @@
   <WidgetLayoutField :widget="widget">
     <MultiSelect
       v-model="localValue"
-      v-bind="filteredProps"
+      :options="widget.options?.values || []"
       :disabled="readonly"
-      class="w-full text-xs"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       size="small"
+      display="chip"
       :pt="{
         option: 'text-xs'
       }"
@@ -16,15 +17,12 @@
 
 <script setup lang="ts">
 import MultiSelect from 'primevue/multiselect'
-import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import { cn } from '@/utils/tailwindUtil'
 
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
@@ -44,14 +42,4 @@ const { localValue, onChange } = useWidgetValue({
   defaultValue: [],
   emit
 })
-
-// MultiSelect specific excluded props include overlay styles
-const MULTISELECT_EXCLUDED_PROPS = [
-  ...PANEL_EXCLUDED_PROPS,
-  'overlayStyle'
-] as const
-
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, MULTISELECT_EXCLUDED_PROPS)
-)
 </script>

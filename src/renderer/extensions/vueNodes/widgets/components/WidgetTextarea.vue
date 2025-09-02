@@ -3,7 +3,8 @@
     v-model="localValue"
     v-bind="filteredProps"
     :disabled="readonly"
-    class="w-full text-xs"
+    :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+    :placeholder="widget.name || ''"
     size="small"
     rows="3"
     @update:model-value="onChange"
@@ -16,10 +17,13 @@ import { computed } from 'vue'
 
 import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+
+import { WidgetInputBaseClass } from './layout'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string>
