@@ -1,5 +1,7 @@
 <template>
-  <div class="flex justify-between items-center pt-6 pb-4">
+  <div
+    class="flex justify-between items-center pt-6 pb-4 max-w-3xl mx-auto w-full"
+  >
     <!-- Back button -->
     <Button
       v-if="currentStep !== '0'"
