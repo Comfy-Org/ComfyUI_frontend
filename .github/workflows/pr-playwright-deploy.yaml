@@ -56,14 +56,39 @@ jobs:
           fi
           echo "branch=${{ fromJSON(steps.pr-info.outputs.result).sanitized_branch }}" >> $GITHUB_OUTPUT
 
-      - name: Download playwright report
+      - name: Install pnpm
+        if: fromJSON(steps.pr-info.outputs.result).number != null
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        if: fromJSON(steps.pr-info.outputs.result).number != null
+        with:
+          node-version: lts/*
+
+      - name: Download playwright report shards
         if: fromJSON(steps.pr-info.outputs.result).number != null
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
-          name: playwright-report-${{ matrix.browser }}
-          path: playwright-report
+          pattern: playwright-report-${{ matrix.browser }}-shard-*
+          path: playwright-shards
+
+      - name: Install Playwright
+        if: fromJSON(steps.pr-info.outputs.result).number != null
+        run: npm install @playwright/test
+
+      - name: Merge reports
+        if: fromJSON(steps.pr-info.outputs.result).number != null
+        run: |
+          npx playwright merge-reports --reporter html ./playwright-shards
+          mv playwright-report merged-report
+
+      - name: Rename merged report
+        if: fromJSON(steps.pr-info.outputs.result).number != null
+        run: mv merged-report playwright-report
 
       - name: Install Wrangler
         if: fromJSON(steps.pr-info.outputs.result).number != null
@@ -78,14 +103,20 @@ jobs:
           RETRY_COUNT=0
           MAX_RETRIES=3
           SUCCESS=false
+          DEPLOYMENT_URL=""
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
             
-            if npx wrangler pages deploy playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
+            OUTPUT=$(npx wrangler pages deploy playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }} 2>&1)
+            EXIT_CODE=$?
+            
+            if [ $EXIT_CODE -eq 0 ]; then
               SUCCESS=true
+              DEPLOYMENT_URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+\.pages\.dev' | head -1)
               echo "Deployment successful on attempt $RETRY_COUNT"
+              echo "URL: $DEPLOYMENT_URL"
             else
               echo "Deployment failed on attempt $RETRY_COUNT"
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
@@ -99,9 +130,24 @@ jobs:
             echo "All deployment attempts failed"
             exit 1
           fi
+          
+          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Save deployment info
+        if: fromJSON(steps.pr-info.outputs.result).number != null
+        run: |
+          echo "${{ matrix.browser }}|${{ steps.cloudflare-deploy.outcome == 'success' && '0' || '1' }}|${{ steps.cloudflare-deploy.outputs.deployment_url || '#' }}" > deployment-info-${{ matrix.browser }}.txt
+
+      - name: Upload deployment info
+        if: fromJSON(steps.pr-info.outputs.result).number != null
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-info-${{ matrix.browser }}
+          path: deployment-info-${{ matrix.browser }}.txt
+          retention-days: 1
 
   comment-tests-starting:
     runs-on: ubuntu-latest
@@ -144,14 +190,14 @@ jobs:
           echo "" >> comment.md
           echo "⏰ Started at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
           echo "" >> comment.md
-          echo "### 🚀 Running Tests" >> comment.md
-          echo "- 🧪 **chromium**: Running tests..." >> comment.md
-          echo "- 🧪 **chromium-0.5x**: Running tests..." >> comment.md
-          echo "- 🧪 **chromium-2x**: Running tests..." >> comment.md
-          echo "- 🧪 **mobile-chrome**: Running tests..." >> comment.md
+          echo "### 🚀 Running Tests (5 parallel shards per browser)" >> comment.md
+          echo "- 🧪 **chromium**: Running tests in 5 shards..." >> comment.md
+          echo "- 🧪 **chromium-0.5x**: Running tests in 5 shards..." >> comment.md
+          echo "- 🧪 **chromium-2x**: Running tests in 5 shards..." >> comment.md
+          echo "- 🧪 **mobile-chrome**: Running tests in 5 shards..." >> comment.md
           echo "" >> comment.md
           echo "---" >> comment.md
-          echo "⏱️ Please wait while tests are running across all browsers..." >> comment.md
+          echo "⏱️ Tests are running in parallel across 20 jobs (4 browsers × 5 shards)..." >> comment.md
 
       - name: Comment PR - Tests Started
         if: steps.pr.outputs.result != 'null'

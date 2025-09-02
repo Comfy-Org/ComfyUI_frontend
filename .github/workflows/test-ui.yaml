@@ -84,6 +84,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - name: Wait for cache propagation
         run: sleep 10
@@ -135,15 +136,33 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
 
-      - name: Run Playwright tests (${{ matrix.browser }})
+      - name: Run Playwright tests (${{ matrix.browser }}, shard ${{ matrix.shard }}/5)
         id: playwright
-        run: npx playwright test --project=${{ matrix.browser }} --reporter=html
+        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/5
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
         if: always() # note: use always() to allow results to be upload/report even tests failed.
         with:
-          name: playwright-report-${{ matrix.browser }}
+          name: playwright-report-${{ matrix.browser }}-shard-${{ matrix.shard }}
           path: ComfyUI_frontend/playwright-report/
+          retention-days: 30
+
+  merge-reports:
+    needs: playwright-tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          path: all-reports/
+
+      - name: Upload merged report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-merged
+          path: all-reports/
           retention-days: 30
 
