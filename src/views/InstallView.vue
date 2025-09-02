@@ -269,7 +269,9 @@ onMounted(async () => {
 }
 
 :deep(.p-stepper .p-step.p-step-active .p-step-title) {
-  @apply bg-comfy-yellow scale-110;
+  @apply bg-comfy-yellow;
+  width: 2rem;
+  border-radius: 0.625rem;
 }
 
 :deep(
