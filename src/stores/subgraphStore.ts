@@ -40,6 +40,7 @@ async function confirmOverwrite(name: string): Promise<boolean | null> {
 export const useSubgraphStore = defineStore('subgraph', () => {
   class SubgraphBlueprint extends ComfyWorkflow {
     static override readonly basePath = 'subgraphs/'
+    override readonly tintCanvasBg = '#22227740'
 
     hasPromptedSave: boolean = false
 
