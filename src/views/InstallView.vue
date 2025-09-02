@@ -51,6 +51,7 @@
 
         <!-- Install footer with navigation -->
         <InstallFooter
+          class="pt-6 pb-4 max-w-2xl mx-auto w-full"
           :current-step
           :can-proceed
           :disable-location-step="noGpu"
