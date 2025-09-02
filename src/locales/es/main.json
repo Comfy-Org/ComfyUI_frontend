@@ -551,37 +551,7 @@
     "updateConsent": "Anteriormente optaste por reportar fallos. Ahora estamos rastreando métricas basadas en eventos para ayudar a identificar errores y mejorar la aplicación. No se recoge ninguna información personal identificable."
   },
   "issueReport": {
-    "contactFollowUp": "Contáctame para seguimiento",
-    "contactSupportDescription": "Por favor, complete el siguiente formulario con su reporte",
-    "contactSupportTitle": "Contactar Soporte",
-    "describeTheProblem": "Describa el problema",
-    "email": "Correo electrónico",
-    "feedbackTitle": "Ayúdanos a mejorar ComfyUI proporcionando comentarios",
-    "helpFix": "Ayuda a Solucionar Esto",
-    "helpTypes": {
-      "billingPayments": "Facturación / Pagos",
-      "bugReport": "Reporte de error",
-      "giveFeedback": "Enviar comentarios",
-      "loginAccessIssues": "Problemas de inicio de sesión / acceso",
-      "somethingElse": "Otro"
-    },
-    "notifyResolve": "Notifícame cuando se resuelva",
-    "provideAdditionalDetails": "Proporciona detalles adicionales (opcional)",
-    "provideEmail": "Danos tu correo electrónico (opcional)",
-    "rating": "Calificación",
-    "selectIssue": "Seleccione el problema",
-    "stackTrace": "Rastreo de Pila",
-    "submitErrorReport": "Enviar Reporte de Error (Opcional)",
-    "systemStats": "Estadísticas del Sistema",
-    "validation": {
-      "descriptionRequired": "Se requiere una descripción",
-      "helpTypeRequired": "Se requiere el tipo de ayuda",
-      "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida",
-      "maxLength": "Mensaje demasiado largo",
-      "selectIssueType": "Por favor, seleccione un tipo de problema"
-    },
-    "whatCanWeInclude": "Especifique qué incluir en el reporte",
-    "whatDoYouNeedHelpWith": "¿Con qué necesita ayuda?"
+    "helpFix": "Ayuda a Solucionar Esto"
   },
   "load3d": {
     "applyingTexture": "Aplicando textura...",

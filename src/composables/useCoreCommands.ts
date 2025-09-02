@@ -680,35 +680,12 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Feedback',
-      icon: 'pi pi-megaphone',
-      label: 'Give Feedback',
-      versionAdded: '1.8.2',
-      function: () => {
-        dialogService.showIssueReportDialog({
-          title: t('g.feedback'),
-          subtitle: t('issueReport.feedbackTitle'),
-          panelProps: {
-            errorType: 'Feedback',
-            defaultFields: ['SystemStats', 'Settings']
-          }
-        })
-      }
-    },
-    {
       id: 'Comfy.ContactSupport',
       icon: 'pi pi-question',
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        dialogService.showIssueReportDialog({
-          title: t('issueReport.contactSupportTitle'),
-          subtitle: t('issueReport.contactSupportDescription'),
-          panelProps: {
-            errorType: 'ContactSupport',
-            defaultFields: ['Workflow', 'Logs', 'SystemStats', 'Settings']
-          }
-        })
+        window.open('https://support.comfy.org/', '_blank')
       }
     },
     {
