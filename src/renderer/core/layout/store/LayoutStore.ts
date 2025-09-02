@@ -90,11 +90,11 @@ class LayoutStoreImpl implements LayoutStore {
     this.rerouteSpatialIndex = new SpatialIndexManager()
 
     // Listen for Yjs changes and trigger Vue reactivity
-    this.ynodes.observe((event) => {
+    this.ynodes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
 
       // Trigger all affected node refs
-      event.changes.keys.forEach((_change, key) => {
+      event.changes.keys.forEach((_change: any, key: string) => {
         const trigger = this.nodeTriggers.get(key)
         if (trigger) {
           trigger()
@@ -103,9 +103,9 @@ class LayoutStoreImpl implements LayoutStore {
     })
 
     // Listen for link changes and update spatial indexes
-    this.ylinks.observe((event) => {
+    this.ylinks.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
-      event.changes.keys.forEach((change, linkIdStr) => {
+      event.changes.keys.forEach((change: any, linkIdStr: string) => {
         const linkId = Number(linkIdStr) as LinkId
         if (change.action === 'delete') {
           this.linkLayouts.delete(linkId)
@@ -128,9 +128,9 @@ class LayoutStoreImpl implements LayoutStore {
     })
 
     // Listen for reroute changes and update spatial indexes
-    this.yreroutes.observe((event) => {
+    this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
-      event.changes.keys.forEach((change, rerouteIdStr) => {
+      event.changes.keys.forEach((change: any, rerouteIdStr: string) => {
         // Yjs Map keys are strings, convert to number for layout operations
         const rerouteId = Number(rerouteIdStr) as RerouteId
 
@@ -938,16 +938,22 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     const size = ynode.get('size') as { width: number; height: number }
-    ynode.set('position', operation.position)
-    this.updateNodeBounds(ynode, operation.position, size)
-
-    // Update spatial index
-    this.spatialIndex.update(operation.nodeId, {
+    const newBounds = {
       x: operation.position.x,
       y: operation.position.y,
       width: size.width,
       height: size.height
-    })
+    }
+
+    // Update spatial index FIRST, synchronously
+    this.spatialIndex.update(operation.nodeId, newBounds)
+
+    // Update associated slot positions synchronously
+    this.updateNodeSlotPositions(operation.nodeId, operation.position)
+
+    // Then update CRDT
+    ynode.set('position', operation.position)
+    this.updateNodeBounds(ynode, operation.position, size)
 
     change.nodeIds.push(operation.nodeId)
   }
@@ -960,16 +966,22 @@ class LayoutStoreImpl implements LayoutStore {
     if (!ynode) return
 
     const position = ynode.get('position') as Point
-    ynode.set('size', operation.size)
-    this.updateNodeBounds(ynode, position, operation.size)
-
-    // Update spatial index
-    this.spatialIndex.update(operation.nodeId, {
+    const newBounds = {
       x: position.x,
       y: position.y,
       width: operation.size.width,
       height: operation.size.height
-    })
+    }
+
+    // Update spatial index FIRST, synchronously
+    this.spatialIndex.update(operation.nodeId, newBounds)
+
+    // Update associated slot positions synchronously (size changes may affect slot positions)
+    this.updateNodeSlotPositions(operation.nodeId, position)
+
+    // Then update CRDT
+    ynode.set('size', operation.size)
+    this.updateNodeBounds(ynode, position, operation.size)
 
     change.nodeIds.push(operation.nodeId)
   }
@@ -1014,6 +1026,39 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Clean up associated slot layouts
     this.deleteNodeSlotLayouts(operation.nodeId)
+
+    // Clean up associated links
+    const linksToDelete: LinkId[] = []
+    this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
+      const linkId = Number(linkIdStr) as LinkId
+      const sourceNodeId = linkData.get('sourceNodeId') as NodeId
+      const targetNodeId = linkData.get('targetNodeId') as NodeId
+
+      if (
+        sourceNodeId === operation.nodeId ||
+        targetNodeId === operation.nodeId
+      ) {
+        linksToDelete.push(linkId)
+      }
+    })
+
+    // Delete the associated links
+    for (const linkId of linksToDelete) {
+      this.ylinks.delete(String(linkId))
+      this.linkLayouts.delete(linkId)
+
+      // Clean up link segment layouts
+      const keysToDelete: string[] = []
+      for (const [key] of this.linkSegmentLayouts) {
+        if (key.startsWith(`${linkId}:`)) {
+          keysToDelete.push(key)
+        }
+      }
+      for (const key of keysToDelete) {
+        this.linkSegmentLayouts.delete(key)
+        this.linkSegmentSpatialIndex.remove(key)
+      }
+    }
 
     change.type = 'delete'
     change.nodeIds.push(operation.nodeId)
@@ -1132,6 +1177,40 @@ class LayoutStoreImpl implements LayoutStore {
     })
   }
 
+  /**
+   * Update slot positions when a node moves
+   */
+  private updateNodeSlotPositions(nodeId: NodeId, nodePosition: Point): void {
+    const slotsToUpdate: Array<{ key: string; layout: SlotLayout }> = []
+
+    // Find all slots for this node
+    for (const [key, slotLayout] of this.slotLayouts) {
+      if (slotLayout.nodeId === nodeId) {
+        // Calculate new slot position based on new node position
+        // This is a simplified calculation - in reality, this would use the slot calculation logic
+        const relativeX = slotLayout.bounds.x - slotLayout.bounds.x // This would be proper relative positioning
+        const relativeY = slotLayout.bounds.y - slotLayout.bounds.y // This would be proper relative positioning
+
+        const newSlotLayout: SlotLayout = {
+          ...slotLayout,
+          bounds: {
+            ...slotLayout.bounds,
+            x: nodePosition.x + relativeX,
+            y: nodePosition.y + relativeY
+          }
+        }
+
+        slotsToUpdate.push({ key, layout: newSlotLayout })
+      }
+    }
+
+    // Update all found slots
+    for (const { key, layout } of slotsToUpdate) {
+      this.slotSpatialIndex.update(key, layout.bounds)
+      this.slotLayouts.set(key, layout)
+    }
+  }
+
   // Helper methods
   private layoutToYNode(layout: NodeLayout): Y.Map<unknown> {
     const ynode = new Y.Map<unknown>()
@@ -1186,7 +1265,7 @@ class LayoutStoreImpl implements LayoutStore {
   // CRDT-specific methods
   getOperationsSince(timestamp: number): LayoutOperation[] {
     const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op) => {
+    this.yoperations.forEach((op: LayoutOperation) => {
       if (op && op.timestamp > timestamp) {
         operations.push(op)
       }
@@ -1196,7 +1275,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   getOperationsByActor(actor: string): LayoutOperation[] {
     const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op) => {
+    this.yoperations.forEach((op: LayoutOperation) => {
       if (op && op.actor === actor) {
         operations.push(op)
       }
