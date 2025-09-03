@@ -240,9 +240,6 @@ const createStoryTemplate = (args: StoryArgs) => ({
               v-model="selectedFrameworks"
               label="Select Frameworks"
               :options="frameworkOptions"
-              :has-search-box="true"
-              :show-selected-count="true"
-              :has-clear-button="true"
             />
             <MultiSelect
               v-model="selectedProjects"

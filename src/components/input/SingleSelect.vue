@@ -1,73 +1,58 @@
 <template>
-  <!-- 
-    Note: We explicitly pass options here (not just via $attrs) because:
-    1. Our custom value template needs options to look up labels from values
-    2. PrimeVue's value slot only provides 'value' and 'placeholder', not the selected item's label
-    3. We need to maintain the icon slot functionality in the value template
-    
-    option-label="name" is required because our option template directly accesses option.name
-  -->
-  <Select
-    v-model="selectedItem"
-    v-bind="$attrs"
-    :options="options"
-    option-label="name"
-    option-value="value"
-    unstyled
-    :pt="pt"
-  >
-    <!-- Trigger value -->
-    <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm">
-        <slot name="icon" />
-        <span
-          v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-zinc-700 dark-theme:text-gray-200"
-        >
-          {{ getLabel(slotProps.value) }}
-        </span>
-        <span v-else class="text-zinc-700 dark-theme:text-gray-200">
-          {{ label }}
-        </span>
-      </div>
-    </template>
+  <div class="relative inline-flex items-center">
+    <Select
+      v-model="selectedItem"
+      :options="options"
+      option-label="name"
+      option-value="value"
+      unstyled
+      :placeholder="label"
+      :pt="pt"
+    >
+      <!-- Trigger value -->
+      <template #value="slotProps">
+        <div class="flex items-center gap-2 text-sm">
+          <slot name="icon" />
+          <span
+            v-if="slotProps.value !== null && slotProps.value !== undefined"
+            class="text-zinc-700 dark-theme:text-gray-200"
+          >
+            {{ getLabel(slotProps.value) }}
+          </span>
+          <span v-else class="text-zinc-700 dark-theme:text-gray-200">
+            {{ label }}
+          </span>
+        </div>
+      </template>
 
-    <!-- Trigger caret -->
-    <template #dropdownicon>
-      <i-lucide:chevron-down
-        class="text-base text-neutral-400 dark-theme:text-gray-300"
-      />
-    </template>
-
-    <!-- Option row -->
-    <template #option="{ option, selected }">
-      <div class="flex items-center justify-between gap-3 w-full">
-        <span class="truncate">{{ option.name }}</span>
-        <i-lucide:check
-          v-if="selected"
-          class="text-neutral-900 dark-theme:text-white"
+      <!-- Trigger caret -->
+      <template #dropdownicon>
+        <i-lucide:chevron-down
+          class="text-base text-neutral-400 dark-theme:text-gray-300"
         />
-      </div>
-    </template>
-  </Select>
+      </template>
+
+      <!-- Option row -->
+      <template #option="{ option, selected }">
+        <div class="flex items-center justify-between gap-3 w-full">
+          <span class="truncate">{{ option.name }}</span>
+          <i-lucide:check
+            v-if="selected"
+            class="text-neutral-900 dark-theme:text-white"
+          />
+        </div>
+      </template>
+    </Select>
+  </div>
 </template>
 
 <script setup lang="ts">
 import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
 import { computed } from 'vue'
 
-defineOptions({
-  inheritAttrs: false
-})
-
 const { label, options } = defineProps<{
   label?: string
-  /**
-   * Required for displaying the selected item's label.
-   * Cannot rely on $attrs alone because we need to access options
-   * in getLabel() to map values to their display names.
-   */
-  options?: {
+  options: {
     name: string
     value: string
   }[]
@@ -75,14 +60,8 @@ const { label, options } = defineProps<{
 
 const selectedItem = defineModel<string | null>({ required: true })
 
-/**
- * Maps a value to its display label.
- * Necessary because PrimeVue's value slot doesn't provide the selected item's label,
- * only the raw value. We need this to show the correct text when an item is selected.
- */
 const getLabel = (val: string | null | undefined) => {
   if (val == null) return label ?? ''
-  if (!options) return label ?? ''
   const found = options.find((o) => o.value === val)
   return found ? found.name : label ?? ''
 }
@@ -98,7 +77,7 @@ const pt = computed(() => ({
   }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
     class: [
       // container
-      'relative inline-flex cursor-pointer select-none items-center',
+      'relative inline-flex w-full cursor-pointer select-none items-center',
       // trigger surface
       'rounded-md',
       'bg-transparent text-neutral dark-theme:text-white',
@@ -136,9 +115,7 @@ const pt = computed(() => ({
       'flex items-center justify-between gap-3 px-3 py-2',
       'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
       // Selected state + check icon
-      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected },
-      // Add focus state for keyboard navigation
-      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.focused }
+      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected }
     ]
   }),
   optionLabel: {

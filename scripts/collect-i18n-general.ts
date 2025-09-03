@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import { test } from '@playwright/test'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
@@ -19,9 +19,26 @@ const extractMenuCommandLocaleStrings = (): Set<string> => {
   return labels
 }
 
-test('collect-i18n-general', async ({ comfyPage }) => {
+test('collect-i18n-general', async ({ page }) => {
+  // Navigate to the page and wait for app to be available
+  console.log('Navigating to page...')
+  await page.goto('/')
+  console.log('Waiting for app to be available...')
+  
+  // Check if we're on electron page
+  const title = await page.title()
+  console.log('Page title:', title)
+  
+  // Debug: Check what's available on window
+  const windowKeys = await page.evaluate(() => {
+    return Object.keys(window).filter(key => !key.startsWith('__')).slice(0, 20)
+  })
+  console.log('Window keys:', windowKeys)
+  
+  await page.waitForFunction(() => window['app'] != null, { timeout: 30000 })
+  
   const commands = (
-    await comfyPage.page.evaluate(() => {
+    await page.evaluate(() => {
       const workspace = window['app'].extensionManager
       const commands = workspace.command.commands as ComfyCommandImpl[]
       return commands.map((command) => ({
@@ -58,7 +75,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
   )
 
   // Settings
-  const settings = await comfyPage.page.evaluate(() => {
+  const settings = await page.evaluate(() => {
     const workspace = window['app'].extensionManager
     const settings = workspace.setting.settings as Record<string, SettingParams>
     return Object.values(settings)

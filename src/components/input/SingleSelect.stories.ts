@@ -4,24 +4,12 @@ import { ref } from 'vue'
 
 import SingleSelect from './SingleSelect.vue'
 
-// SingleSelect already includes options prop, so no need to extend
 const meta: Meta<typeof SingleSelect> = {
   title: 'Components/Input/SingleSelect',
   component: SingleSelect,
   tags: ['autodocs'],
   argTypes: {
-    label: { control: 'text' },
-    options: { control: 'object' }
-  },
-  args: {
-    label: 'Sorting Type',
-    options: [
-      { name: 'Popular', value: 'popular' },
-      { name: 'Newest', value: 'newest' },
-      { name: 'Oldest', value: 'oldest' },
-      { name: 'A → Z', value: 'az' },
-      { name: 'Z → A', value: 'za' }
-    ]
+    label: { control: 'text' }
   }
 }
 
@@ -41,18 +29,19 @@ export const Default: Story = {
     components: { SingleSelect },
     setup() {
       const selected = ref<string | null>(null)
-      const options = args.options || sampleOptions
+      const options = sampleOptions
       return { selected, options, args }
     },
     template: `
       <div>
-        <SingleSelect v-model="selected" :options="options" :label="args.label" />
+        <SingleSelect v-model="selected" :options="options" :label="args.label || 'Sorting Type'" />
         <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
           <p class="text-sm">Selected: {{ selected ?? 'None' }}</p>
         </div>
       </div>
     `
-  })
+  }),
+  args: { label: 'Sorting Type' }
 }
 
 export const WithIcon: Story = {

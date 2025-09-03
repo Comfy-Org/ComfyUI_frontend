@@ -28,14 +28,6 @@ const meta: Meta<typeof IconTextButton> = {
       control: { type: 'select' },
       options: ['primary', 'secondary', 'transparent']
     },
-    border: {
-      control: 'boolean',
-      description: 'Toggle border attribute'
-    },
-    disabled: {
-      control: 'boolean',
-      description: 'Toggle disable status'
-    },
     iconPosition: {
       control: { type: 'select' },
       options: ['left', 'right']

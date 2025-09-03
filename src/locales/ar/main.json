@@ -551,7 +551,37 @@
     "updateConsent": "لقد وافقت سابقًا على الإبلاغ عن الأعطال. نحن الآن نتتبع إحصائيات مبنية على الأحداث للمساعدة في تحديد الأخطاء وتحسين التطبيق. لا يتم جمع معلومات شخصية قابلة للتعريف."
   },
   "issueReport": {
-    "helpFix": "المساعدة في الإصلاح"
+    "contactFollowUp": "اتصل بي للمتابعة",
+    "contactSupportDescription": "يرجى ملء النموذج أدناه مع تقريرك",
+    "contactSupportTitle": "الاتصال بالدعم",
+    "describeTheProblem": "صف المشكلة",
+    "email": "البريد الإلكتروني",
+    "feedbackTitle": "ساعدنا في تحسين ComfyUI من خلال تقديم الملاحظات",
+    "helpFix": "المساعدة في الإصلاح",
+    "helpTypes": {
+      "billingPayments": "الفوترة / المدفوعات",
+      "bugReport": "تقرير خطأ",
+      "giveFeedback": "إرسال ملاحظات",
+      "loginAccessIssues": "مشكلة في تسجيل الدخول / الوصول",
+      "somethingElse": "أمر آخر"
+    },
+    "notifyResolve": "أعلمني عند الحل",
+    "provideAdditionalDetails": "أضف تفاصيل إضافية",
+    "provideEmail": "زودنا ببريدك الإلكتروني (اختياري)",
+    "rating": "التقييم",
+    "selectIssue": "اختر المشكلة",
+    "stackTrace": "أثر التكديس",
+    "submitErrorReport": "إرسال تقرير الخطأ (اختياري)",
+    "systemStats": "إحصائيات النظام",
+    "validation": {
+      "descriptionRequired": "الوصف مطلوب",
+      "helpTypeRequired": "نوع المساعدة مطلوب",
+      "invalidEmail": "يرجى إدخال بريد إلكتروني صالح",
+      "maxLength": "الرسالة طويلة جداً",
+      "selectIssueType": "يرجى اختيار نوع المشكلة"
+    },
+    "whatCanWeInclude": "حدد ما يجب تضمينه في التقرير",
+    "whatDoYouNeedHelpWith": "بماذا تحتاج المساعدة؟"
   },
   "load3d": {
     "applyingTexture": "جارٍ تطبيق الخامة...",

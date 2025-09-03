@@ -12,7 +12,6 @@ const config: KnipConfig = {
     'playwright.config.ts',
     'playwright.i18n.config.ts',
     'vitest.config.ts',
-    'vitest.litegraph.config.ts',
     'scripts/**/*.{js,ts}'
   ],
   project: [
@@ -33,8 +32,6 @@ const config: KnipConfig = {
     'coverage/**',
     // i18n config
     '.i18nrc.cjs',
-    // Vitest litegraph config
-    'vitest.litegraph.config.ts',
     // Test setup files
     'browser_tests/globalSetup.ts',
     'browser_tests/globalTeardown.ts',

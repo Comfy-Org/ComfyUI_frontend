@@ -12,8 +12,8 @@ import type { SubgraphInputNode } from './SubgraphInputNode'
  * A virtual slot that simply creates a new input slot when connected to.
  */
 export class EmptySubgraphInput extends SubgraphInput {
-  declare parent: SubgraphInputNode
-
+  // Parent type is narrowed to SubgraphInputNode
+  
   constructor(parent: SubgraphInputNode) {
     super(
       {

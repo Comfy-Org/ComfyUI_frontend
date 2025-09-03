@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-4 text-sm">
+  <div class="flex flex-col gap-4 mt-4 text-sm">
     <template v-if="mappedNodeDefs?.length">
       <div
         v-for="nodeDef in mappedNodeDefs"

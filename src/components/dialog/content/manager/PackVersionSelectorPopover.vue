@@ -1,10 +1,8 @@
 <template>
-  <div class="w-64 pt-1">
-    <div class="py-2">
-      <span class="pl-3 text-md font-semibold text-neutral-500">
-        {{ $t('manager.selectVersion') }}
-      </span>
-    </div>
+  <div class="w-64 mt-2">
+    <span class="pl-3 text-muted text-md font-semibold opacity-70">
+      {{ $t('manager.selectVersion') }}
+    </span>
     <div
       v-if="isLoadingVersions || isQueueing"
       class="text-center text-muted py-4 flex flex-col items-center"
@@ -25,44 +23,24 @@
       v-model="selectedVersion"
       option-label="label"
       option-value="value"
-      :options="processedVersionOptions"
+      :options="versionOptions"
       :highlight-on-select="false"
-      class="w-full max-h-[50vh] border-none shadow-none rounded-md"
-      :pt="{
-        listContainer: { class: 'scrollbar-hide' }
-      }"
+      class="my-3 w-full max-h-[50vh] border-none shadow-none"
     >
       <template #option="slotProps">
         <div class="flex justify-between items-center w-full p-1">
-          <div class="flex items-center gap-2">
-            <template v-if="slotProps.option.value === 'nightly'">
-              <div class="w-4"></div>
-            </template>
-            <template v-else>
-              <i
-                v-if="slotProps.option.hasConflict"
-                v-tooltip="{
-                  value: slotProps.option.conflictMessage,
-                  showDelay: 300
-                }"
-                class="pi pi-exclamation-triangle text-yellow-500"
-              />
-              <VerifiedIcon v-else :size="20" class="relative right-0.5" />
-            </template>
-            <span>{{ slotProps.option.label }}</span>
-          </div>
+          <span>{{ slotProps.option.label }}</span>
           <i
-            v-if="slotProps.option.isSelected"
+            v-if="selectedVersion === slotProps.option.value"
             class="pi pi-check text-highlight"
           />
         </div>
       </template>
     </Listbox>
     <ContentDivider class="my-2" />
-    <div class="flex justify-end gap-2 py-1 px-3">
+    <div class="flex justify-end gap-2 p-1 px-3">
       <Button
         text
-        class="text-sm"
         severity="secondary"
         :label="$t('g.cancel')"
         :disabled="isQueueing"
@@ -71,7 +49,7 @@
       <Button
         severity="secondary"
         :label="$t('g.install')"
-        class="py-2.5 px-4 text-sm dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
+        class="py-3 px-4 dark-theme:bg-unset bg-black/80 dark-theme:text-unset text-neutral-100 rounded-lg"
         :disabled="isQueueing"
         @click="handleSubmit"
       />
@@ -84,41 +62,20 @@ import { whenever } from '@vueuse/core'
 import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
-import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import {
+  ManagerChannel,
+  ManagerDatabaseSource,
+  SelectedVersion
+} from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
-import { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
 import { isSemVer } from '@/utils/formatUtil'
-
-type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
-type ManagerDatabaseSource =
-  ManagerComponents['schemas']['ManagerDatabaseSource']
-type SelectedVersion = ManagerComponents['schemas']['SelectedVersion']
-
-// Enum values for runtime use
-const SelectedVersionValues = {
-  LATEST: 'latest' as SelectedVersion,
-  NIGHTLY: 'nightly' as SelectedVersion
-}
-
-const ManagerChannelValues: Record<string, ManagerChannel> = {
-  DEFAULT: 'default',
-  DEV: 'dev'
-}
-
-const ManagerDatabaseSourceValues: Record<string, ManagerDatabaseSource> = {
-  CACHE: 'cache',
-  REMOTE: 'remote',
-  LOCAL: 'local'
-}
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
@@ -132,25 +89,22 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const registryService = useComfyRegistryService()
 const managerStore = useComfyManagerStore()
-const { checkNodeCompatibility } = useConflictDetection()
 
 const isQueueing = ref(false)
 
-const selectedVersion = ref<string>(SelectedVersionValues.LATEST)
+const selectedVersion = ref<string>(SelectedVersion.LATEST)
 onMounted(() => {
-  const initialVersion =
-    getInitialSelectedVersion() ?? SelectedVersionValues.LATEST
+  const initialVersion = getInitialSelectedVersion() ?? SelectedVersion.LATEST
   selectedVersion.value =
     // Use NIGHTLY when version is a Git hash
-    isSemVer(initialVersion) ? initialVersion : SelectedVersionValues.NIGHTLY
+    isSemVer(initialVersion) ? initialVersion : SelectedVersion.NIGHTLY
 })
 
 const getInitialSelectedVersion = () => {
   if (!nodePack.id) return
 
   // If unclaimed, set selected version to nightly
-  if (nodePack.publisher?.name === 'Unclaimed')
-    return SelectedVersionValues.NIGHTLY
+  if (nodePack.publisher?.name === 'Unclaimed') return SelectedVersion.NIGHTLY
 
   // If node pack is installed, set selected version to the installed version
   if (managerStore.isPackInstalled(nodePack.id))
@@ -172,8 +126,6 @@ const versionOptions = ref<
   }[]
 >([])
 
-const fetchedVersions = ref<components['schemas']['NodeVersion'][]>([])
-
 const isLoadingVersions = ref(false)
 
 const onNodePackChange = async () => {
@@ -181,34 +133,25 @@ const onNodePackChange = async () => {
 
   // Fetch versions from the registry
   const versions = await fetchVersions()
-  fetchedVersions.value = versions
-
-  const latestVersionNumber = nodePack.latest_version?.version
-
   const availableVersionOptions = versions
     .map((version) => ({
       value: version.version ?? '',
       label: version.version ?? ''
     }))
-    .filter((option) => option.value && option.value !== latestVersionNumber) // Exclude latest version from the list
-
-  // Add Latest option with actual version number
-  const latestLabel = latestVersionNumber
-    ? `${t('manager.latestVersion')} (${latestVersionNumber})`
-    : t('manager.latestVersion')
+    .filter((option) => option.value)
 
   // Add Latest option
   const defaultVersions = [
     {
-      value: SelectedVersionValues.LATEST,
-      label: latestLabel
+      value: SelectedVersion.LATEST,
+      label: t('manager.latestVersion')
     }
   ]
 
   // Add Nightly option if there is a non-empty `repository` field
   if (nodePack.repository?.length) {
     defaultVersions.push({
-      value: SelectedVersionValues.NIGHTLY,
+      value: SelectedVersion.NIGHTLY,
       label: t('manager.nightlyVersion')
     })
   }
@@ -229,86 +172,16 @@ whenever(
 
 const handleSubmit = async () => {
   isQueueing.value = true
-
-  if (!nodePack.id) {
-    throw new Error('Node ID is required for installation')
-  }
-  // Convert 'latest' to actual version number for installation
-  const actualVersion =
-    selectedVersion.value === 'latest'
-      ? nodePack.latest_version?.version ?? 'latest'
-      : selectedVersion.value
-
   await managerStore.installPack.call({
     id: nodePack.id,
     repository: nodePack.repository ?? '',
-    channel: ManagerChannelValues.DEFAULT,
-    mode: ManagerDatabaseSourceValues.CACHE,
-    version: actualVersion,
+    channel: ManagerChannel.DEFAULT,
+    mode: ManagerDatabaseSource.CACHE,
+    version: selectedVersion.value,
     selected_version: selectedVersion.value
   })
 
   isQueueing.value = false
   emit('submit')
 }
-
-const getVersionData = (version: string) => {
-  const latestVersionNumber = nodePack.latest_version?.version
-  const useLatestVersionData =
-    version === 'latest' || version === latestVersionNumber
-  if (useLatestVersionData) {
-    const latestVersionData = nodePack.latest_version
-    return {
-      ...latestVersionData
-    }
-  }
-  const versionData = fetchedVersions.value.find((v) => v.version === version)
-  if (versionData) {
-    return {
-      ...versionData
-    }
-  }
-  // Fallback to nodePack data
-  return {
-    ...nodePack
-  }
-}
-// Main function to get version compatibility info
-const getVersionCompatibility = (version: string) => {
-  const versionData = getVersionData(version)
-  const compatibility = checkNodeCompatibility(versionData)
-  const conflictMessage = compatibility.hasConflict
-    ? getJoinedConflictMessages(compatibility.conflicts, t)
-    : ''
-  return {
-    hasConflict: compatibility.hasConflict,
-    conflictMessage
-  }
-}
-// Helper to determine if an option is selected.
-const isOptionSelected = (optionValue: string) => {
-  if (selectedVersion.value === optionValue) {
-    return true
-  }
-  if (
-    optionValue === 'latest' &&
-    selectedVersion.value === nodePack.latest_version?.version
-  ) {
-    return true
-  }
-  return false
-}
-// Checks if an option is selected, treating 'latest' as an alias for the actual latest version number.
-const processedVersionOptions = computed(() => {
-  return versionOptions.value.map((option) => {
-    const compatibility = getVersionCompatibility(option.value)
-    const isSelected = isOptionSelected(option.value)
-    return {
-      ...option,
-      hasConflict: compatibility.hasConflict,
-      conflictMessage: compatibility.conflictMessage,
-      isSelected: isSelected
-    }
-  })
-})
 </script>

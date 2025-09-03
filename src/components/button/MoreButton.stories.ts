@@ -24,22 +24,22 @@ export const Basic: Story = {
         <MoreButton>
           <template #default="{ close }">
             <IconTextButton
-              type="transparent"
+              type="secondary"
               label="Settings"
               @click="() => { close() }"
             >
               <template #icon>
-                <Download :size="16" />
+                <Download />
               </template>
             </IconTextButton>
 
             <IconTextButton
-              type="transparent"
+              type="primary"
               label="Profile"
               @click="() => { close() }"
             >
               <template #icon>
-                <ScrollText :size="16" />
+                <ScrollText />
               </template>
             </IconTextButton>
           </template>

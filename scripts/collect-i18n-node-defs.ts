@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import { test } from '@playwright/test'
 import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
 import type { ComfyApi } from '../src/scripts/api'
 import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
@@ -9,17 +9,23 @@ import { normalizeI18nKey } from '../src/utils/formatUtil'
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
-test('collect-i18n-node-defs', async ({ comfyPage }) => {
+test('collect-i18n-node-defs', async ({ page }) => {
+  // Navigate to the page
+  await page.goto('/')
+  
   // Mock view route
-  comfyPage.page.route('**/view**', async (route) => {
+  await page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
   })
 
+  // Wait for app to be available
+  await page.waitForFunction(() => window['app'] != null, { timeout: 30000 })
+
   const nodeDefs: ComfyNodeDefImpl[] = (
     Object.values(
-      await comfyPage.page.evaluate(async () => {
+      await page.evaluate(async () => {
         const api = window['app'].api as ComfyApi
         return await api.getNodeDefs()
       })
@@ -62,7 +68,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
       if (!inputNames.length) continue
 
       try {
-        const widgetsMappings = await comfyPage.page.evaluate(
+        const widgetsMappings = await page.evaluate(
           (args) => {
             const [nodeName, displayName, inputNames] = args
             const node = window['LiteGraph'].createNode(nodeName, displayName)
@@ -91,7 +97,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
           `Failed to extract widgets from ${nodeDef.name}: ${error}`
         )
       } finally {
-        await comfyPage.nextFrame()
+        await page.waitForTimeout(10)
       }
     }
 

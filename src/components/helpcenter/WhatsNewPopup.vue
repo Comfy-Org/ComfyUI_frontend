@@ -75,11 +75,6 @@ import { formatVersionAnchor } from '@/utils/formatUtil'
 const { locale, t } = useI18n()
 const releaseStore = useReleaseStore()
 
-// Define emits
-const emit = defineEmits<{
-  'whats-new-dismissed': []
-}>()
-
 // Local state for dismissed status
 const isDismissed = ref(false)
 
@@ -131,7 +126,6 @@ const show = () => {
 
 const hide = () => {
   isDismissed.value = true
-  emit('whats-new-dismissed')
 }
 
 const closePopup = async () => {

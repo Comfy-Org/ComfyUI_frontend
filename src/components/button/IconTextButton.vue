@@ -1,5 +1,5 @@
 <template>
-  <Button unstyled :class="buttonStyle" :disabled="disabled" @click="onClick">
+  <Button unstyled :class="buttonStyle" @click="onClick">
     <slot v-if="iconPosition !== 'right'" name="icon"></slot>
     <span>{{ label }}</span>
     <slot v-if="iconPosition === 'right'" name="icon"></slot>
@@ -13,7 +13,6 @@ import { computed } from 'vue'
 import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
   getBaseButtonClasses,
-  getBorderButtonTypeClasses,
   getButtonSizeClasses,
   getButtonTypeClasses
 } from '@/types/buttonTypes'
@@ -27,8 +26,6 @@ interface IconTextButtonProps extends BaseButtonProps {
 const {
   size = 'md',
   type = 'primary',
-  border = false,
-  disabled = false,
   class: className,
   iconPosition = 'left',
   label,
@@ -38,9 +35,7 @@ const {
 const buttonStyle = computed(() => {
   const baseClasses = `${getBaseButtonClasses()} !justify-start gap-2`
   const sizeClasses = getButtonSizeClasses(size)
-  const typeClasses = border
-    ? getBorderButtonTypeClasses(type)
-    : getButtonTypeClasses(type)
+  const typeClasses = getButtonTypeClasses(type)
 
   return [baseClasses, sizeClasses, typeClasses, className]
     .filter(Boolean)

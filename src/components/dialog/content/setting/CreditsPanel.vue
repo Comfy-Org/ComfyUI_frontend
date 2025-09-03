@@ -112,12 +112,12 @@ import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import TabPanel from 'primevue/tabpanel'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
@@ -128,10 +128,10 @@ interface CreditHistoryItemData {
   isPositive: boolean
 }
 
+const { t } = useI18n()
 const dialogService = useDialogService()
 const authStore = useFirebaseAuthStore()
 const authActions = useFirebaseAuthActions()
-const commandStore = useCommandStore()
 const loading = computed(() => authStore.loading)
 const balanceLoading = computed(() => authStore.isFetchingBalance)
 
@@ -160,8 +160,15 @@ const handleCreditsHistoryClick = async () => {
   await authActions.accessBillingPortal()
 }
 
-const handleMessageSupport = async () => {
-  await commandStore.execute('Comfy.ContactSupport')
+const handleMessageSupport = () => {
+  dialogService.showIssueReportDialog({
+    title: t('issueReport.contactSupportTitle'),
+    subtitle: t('issueReport.contactSupportDescription'),
+    panelProps: {
+      errorType: 'BillingSupport',
+      defaultFields: ['Workflow', 'Logs', 'SystemStats', 'Settings']
+    }
+  })
 }
 
 const handleFaqClick = () => {

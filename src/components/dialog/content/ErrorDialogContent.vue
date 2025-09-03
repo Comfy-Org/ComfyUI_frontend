@@ -21,9 +21,16 @@
         @click="showReport"
       />
       <Button
-        v-show="!reportOpen"
+        v-show="!sendReportOpen"
         text
         :label="$t('issueReport.helpFix')"
+        @click="showSendReport"
+      />
+      <Button
+        v-if="authStore.currentUser"
+        v-show="!reportOpen"
+        text
+        :label="$t('issueReport.contactSupportTitle')"
         @click="showContactSupport"
       />
     </div>
@@ -34,6 +41,16 @@
       </ScrollPanel>
       <Divider />
     </template>
+    <ReportIssuePanel
+      v-if="sendReportOpen"
+      :title="$t('issueReport.submitErrorReport')"
+      :error-type="error.reportType ?? 'unknownError'"
+      :extra-fields="[stackTraceField]"
+      :tags="{
+        exceptionMessage: error.exceptionMessage,
+        nodeType: error.nodeType ?? 'UNKNOWN'
+      }"
+    />
     <div class="flex gap-4 justify-end">
       <FindIssueButton
         :error-message="error.exceptionMessage"
@@ -64,11 +81,17 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { ReportField } from '@/types/issueReportTypes'
 import {
   type ErrorReportData,
   generateErrorReport
 } from '@/utils/errorReportUtil'
+
+import ReportIssuePanel from './error/ReportIssuePanel.vue'
+
+const authStore = useFirebaseAuthStore()
 
 const { error } = defineProps<{
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
@@ -91,6 +114,10 @@ const reportOpen = ref(false)
 const showReport = () => {
   reportOpen.value = true
 }
+const sendReportOpen = ref(false)
+const showSendReport = () => {
+  sendReportOpen.value = true
+}
 const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
@@ -98,6 +125,15 @@ const systemStatsStore = useSystemStatsStore()
 const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
 )
+
+const stackTraceField = computed<ReportField>(() => {
+  return {
+    label: t('issueReport.stackTrace'),
+    value: 'StackTrace',
+    optIn: true,
+    getData: () => error.traceback
+  }
+})
 
 const showContactSupport = async () => {
   await useCommandStore().execute('Comfy.ContactSupport')

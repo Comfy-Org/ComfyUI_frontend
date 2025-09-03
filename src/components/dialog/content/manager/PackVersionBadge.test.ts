@@ -6,17 +6,10 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import { SelectedVersion } from '@/types/comfyManagerTypes'
 
 import PackVersionBadge from './PackVersionBadge.vue'
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
-
-// Mock config to prevent __COMFYUI_FRONTEND_VERSION__ error
-vi.mock('@/config', () => ({
-  default: {
-    app_title: 'ComfyUI',
-    app_version: '1.0.0'
-  }
-}))
 
 const mockNodePack = {
   id: 'test-pack',
@@ -127,7 +120,7 @@ describe('PackVersionBadge', () => {
 
     const badge = wrapper.find('[role="button"]')
     expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe('nightly')
+    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
   })
 
   it('falls back to NIGHTLY when nodePack.id is missing', () => {
@@ -141,7 +134,7 @@ describe('PackVersionBadge', () => {
 
     const badge = wrapper.find('[role="button"]')
     expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe('nightly')
+    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
   })
 
   it('toggles the popover when button is clicked', async () => {
