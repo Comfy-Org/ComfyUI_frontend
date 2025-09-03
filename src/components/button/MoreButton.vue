@@ -14,7 +14,7 @@
       unstyled
       :pt="pt"
     >
-      <div class="flex flex-col gap-1 p-2 min-w-40">
+      <div class="flex flex-col gap-2 p-2 min-w-40">
         <slot :close="hide" />
       </div>
     </Popover>

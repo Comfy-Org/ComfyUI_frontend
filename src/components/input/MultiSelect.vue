@@ -1,10 +1,9 @@
 <template>
-  <!-- 
+  <!--
     Note: Unlike SingleSelect, we don't need an explicit options prop because:
     1. Our value template only shows a static label (not dynamic based on selection)
     2. We display a count badge instead of actual selected labels
     3. All PrimeVue props (including options) are passed via v-bind="$attrs"
-    
     option-label="name" is required because our option template directly accesses option.name
     max-selected-labels="0" is required to show count badge instead of selected item labels
   -->
@@ -20,12 +19,13 @@
       v-if="showSearchBox || showSelectedCount || showClearButton"
       #header
     >
-      <div class="p-2 flex flex-col pb-0">
+      <div class="pt-2 pb-0 px-2 flex flex-col">
         <SearchBox
           v-if="showSearchBox"
           v-model="searchQuery"
           :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
           :show-order="true"
+          :show-border="true"
           :place-holder="searchPlaceholder"
         />
         <div
@@ -51,7 +51,7 @@
             @click.stop="selectedItems = []"
           />
         </div>
-        <div class="mt-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+        <div class="my-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
       </div>
     </template>
 
@@ -75,7 +75,14 @@
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
     <template #option="slotProps">
-      <div class="flex items-center gap-2">
+      <div
+        class="flex items-center gap-2"
+        :style="
+          popoverMinWidth || popoverMaxWidth
+            ? `${popoverMinWidth ? `min-width: ${popoverMinWidth} !important;` : ''} ${popoverMaxWidth ? `max-width: ${popoverMaxWidth} !important;` : ''}`
+            : undefined
+        "
+      >
         <div
           class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded transition-all duration-200"
           :class="
@@ -89,9 +96,11 @@
             class="text-xs text-bold text-white"
           />
         </div>
-        <Button class="border-none outline-none bg-transparent" unstyled>{{
-          slotProps.option.name
-        }}</Button>
+        <Button
+          class="border-none outline-none bg-transparent text-left"
+          unstyled
+          >{{ slotProps.option.name }}</Button
+        >
       </div>
     </template>
   </MultiSelect>
@@ -125,6 +134,12 @@ interface Props {
   showClearButton?: boolean
   /** Placeholder for the search input */
   searchPlaceholder?: string
+  /** Maximum height of the dropdown panel (default: 28rem) */
+  listMaxHeight?: string
+  /** Minimum width of the popover (default: auto) */
+  popoverMinWidth?: string
+  /** Maximum width of the popover (default: auto) */
+  popoverMaxWidth?: string
   // Note: options prop is intentionally omitted.
   // It's passed via $attrs to maximize PrimeVue API compatibility
 }
@@ -133,7 +148,10 @@ const {
   showSearchBox = false,
   showSelectedCount = false,
   showClearButton = false,
-  searchPlaceholder = 'Search...'
+  searchPlaceholder = 'Search...',
+  listMaxHeight = '28rem',
+  popoverMinWidth,
+  popoverMaxWidth
 } = defineProps<Props>()
 
 const selectedItems = defineModel<Option[]>({
@@ -145,7 +163,7 @@ const selectedCount = computed(() => selectedItems.value.length)
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: [
-      'relative inline-flex cursor-pointer select-none',
+      'h-10 relative inline-flex cursor-pointer select-none',
       'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
       'transition-all duration-200 ease-in-out',
       'border-[2.5px] border-solid',
@@ -170,15 +188,21 @@ const pt = computed(() => ({
       showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
   }),
   // Overlay & list visuals unchanged
-  overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700',
+  overlay: {
+    class:
+      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-neutral-200 dark-theme:border-zinc-700 py-2 px-2'
+  },
+  listContainer: () => ({
+    style: `max-height: ${listMaxHeight} !important;`,
+    class: 'overflow-y-auto scrollbar-hide'
+  }),
   list: {
-    class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
+    class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
   },
   // Option row hover and focus tone
   option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
     class: [
-      'flex gap-1 items-center p-2',
+      'flex gap-2 items-center h-10 px-2 rounded-lg',
       'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
       // Add focus/highlight state for keyboard navigation
       {

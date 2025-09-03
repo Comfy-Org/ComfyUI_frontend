@@ -14,11 +14,17 @@ const meta: Meta<typeof SearchBox> = {
     showBorder: {
       control: 'boolean',
       description: 'Toggle border prop'
+    },
+    size: {
+      control: 'select',
+      options: ['md', 'lg'],
+      description: 'Size variant of the search box'
     }
   },
   args: {
     placeHolder: 'Search...',
-    showBorder: false
+    showBorder: false,
+    size: 'md'
   }
 }
 
@@ -51,5 +57,29 @@ export const NoBorder: Story = {
   ...Default,
   args: {
     showBorder: false
+  }
+}
+
+export const MediumSize: Story = {
+  ...Default,
+  args: {
+    size: 'md',
+    showBorder: false
+  }
+}
+
+export const LargeSize: Story = {
+  ...Default,
+  args: {
+    size: 'lg',
+    showBorder: false
+  }
+}
+
+export const LargeSizeWithBorder: Story = {
+  ...Default,
+  args: {
+    size: 'lg',
+    showBorder: true
   }
 }

@@ -18,8 +18,8 @@
   >
     <!-- Trigger value -->
     <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm">
-        <slot name="icon" />
+      <div class="flex items-center gap-2 text-sm text-neutral-500">
+        <slot name="icon" class=""></slot>
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
           class="text-zinc-700 dark-theme:text-gray-200"
@@ -34,18 +34,23 @@
 
     <!-- Trigger caret -->
     <template #dropdownicon>
-      <i-lucide:chevron-down
-        class="text-base text-neutral-400 dark-theme:text-gray-300"
-      />
+      <i-lucide:chevron-down class="text-base text-neutral-500" />
     </template>
 
     <!-- Option row -->
     <template #option="{ option, selected }">
-      <div class="flex items-center justify-between gap-3 w-full">
+      <div
+        class="flex items-center justify-between gap-3 w-full"
+        :style="
+          popoverMinWidth || popoverMaxWidth
+            ? `${popoverMinWidth ? `min-width: ${popoverMinWidth} !important;` : ''} ${popoverMaxWidth ? `max-width: ${popoverMaxWidth} !important;` : ''}`
+            : undefined
+        "
+      >
         <span class="truncate">{{ option.name }}</span>
         <i-lucide:check
           v-if="selected"
-          class="text-neutral-900 dark-theme:text-white"
+          class="text-neutral-600 dark-theme:text-white"
         />
       </div>
     </template>
@@ -60,7 +65,13 @@ defineOptions({
   inheritAttrs: false
 })
 
-const { label, options } = defineProps<{
+const {
+  label,
+  options,
+  listMaxHeight = '28rem',
+  popoverMinWidth,
+  popoverMaxWidth
+} = defineProps<{
   label?: string
   /**
    * Required for displaying the selected item's label.
@@ -71,6 +82,12 @@ const { label, options } = defineProps<{
     name: string
     value: string
   }[]
+  /** Maximum height of the dropdown panel (default: 28rem) */
+  listMaxHeight?: string
+  /** Minimum width of the popover (default: auto) */
+  popoverMinWidth?: string
+  /** Maximum width of the popover (default: auto) */
+  popoverMaxWidth?: string
 }>()
 
 const selectedItem = defineModel<string | null>({ required: true })
@@ -98,7 +115,7 @@ const pt = computed(() => ({
   }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
     class: [
       // container
-      'relative inline-flex cursor-pointer select-none items-center',
+      'h-10 relative inline-flex cursor-pointer select-none items-center',
       // trigger surface
       'rounded-md',
       'bg-transparent text-neutral dark-theme:text-white',
@@ -120,20 +137,24 @@ const pt = computed(() => ({
   overlay: {
     class: [
       // dropdown panel
-      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700'
+      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-neutral-200 dark-theme:border-zinc-700 py-2 px-2'
     ]
   },
+  listContainer: () => ({
+    style: `max-height: ${listMaxHeight} !important;`,
+    class: 'overflow-y-auto scrollbar-hide'
+  }),
   list: {
     class:
       // Same list tone/size as MultiSelect
-      'flex flex-col gap-1 p-0 list-none border-none text-xs'
+      'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
   },
   option: ({
     context
   }: SelectPassThroughMethodOptions<{ name: string; value: string }>) => ({
     class: [
       // Row layout
-      'flex items-center justify-between gap-3 px-3 py-2',
+      'flex items-center justify-between gap-3 px-2 py-3 rounded',
       'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
       // Selected state + check icon
       { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected },

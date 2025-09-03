@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-center gap-2 px-4 py-2 text-xs rounded-md transition-colors cursor-pointer"
+    class="flex items-center gap-2 px-4 py-3 text-sm rounded-md transition-colors cursor-pointer"
     :class="
       active
         ? 'bg-neutral-100 dark-theme:bg-zinc-700 text-neutral'
@@ -9,7 +9,7 @@
     role="button"
     @click="onClick"
   >
-    <i-lucide:folder v-if="hasFolderIcon" class="text-xs text-neutral" />
+    <i-lucide:folder v-if="hasFolderIcon" class="text-sm text-neutral" />
     <span class="flex items-center">
       <slot></slot>
     </span>
