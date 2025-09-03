@@ -34,8 +34,9 @@ interface IFilenameMappingWidget extends IComboWidget {
   computedDisabled?: boolean
 }
 
-// Common file extensions that indicate file inputs
+// Common media file extensions (images, videos, audio)
 const FILE_EXTENSIONS = [
+  // Image formats
   '.jpg',
   '.jpeg',
   '.png',
@@ -44,11 +45,22 @@ const FILE_EXTENSIONS = [
   '.bmp',
   '.tiff',
   '.svg',
-  '.safetensors',
-  '.ckpt',
-  '.pt',
-  '.pth',
-  '.bin'
+  // Video formats
+  '.mp4',
+  '.avi',
+  '.mov',
+  '.webm',
+  '.mkv',
+  '.flv',
+  '.wmv',
+  // Audio formats
+  '.mp3',
+  '.wav',
+  '.flac',
+  '.aac',
+  '.ogg',
+  '.m4a',
+  '.wma'
 ]
 
 /**
