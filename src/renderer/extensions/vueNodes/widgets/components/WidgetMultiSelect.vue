@@ -2,9 +2,9 @@
   <WidgetLayoutField :widget="widget">
     <MultiSelect
       v-model="localValue"
-      v-bind="filteredProps"
+      v-bind="combinedProps"
       :disabled="readonly"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
+      class="w-full text-xs"
       size="small"
       display="chip"
       :pt="{
@@ -20,14 +20,13 @@ import MultiSelect from 'primevue/multiselect'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
@@ -48,24 +47,17 @@ const { localValue, onChange } = useWidgetValue({
   emit
 })
 
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
+
 // MultiSelect specific excluded props include overlay styles
 const MULTISELECT_EXCLUDED_PROPS = [
   ...PANEL_EXCLUDED_PROPS,
   'overlayStyle'
 ] as const
 
-const filteredProps = computed(() => {
-  const filtered = filterWidgetProps(
-    props.widget.options,
-    MULTISELECT_EXCLUDED_PROPS
-  )
-
-  // Ensure options array is available for MultiSelect
-  const values = props.widget.options?.values
-  if (values && Array.isArray(values)) {
-    filtered.options = values
-  }
-
-  return filtered
-})
+const combinedProps = computed(() => ({
+  ...filterWidgetProps(props.widget.options, MULTISELECT_EXCLUDED_PROPS),
+  ...transformCompatProps.value
+}))
 </script>
