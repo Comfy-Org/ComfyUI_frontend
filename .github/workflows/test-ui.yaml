@@ -141,6 +141,8 @@ jobs:
           retention-days: 1
 
   playwright-tests:
+  # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
+    timeout-minutes: 15
     needs: setup
     runs-on: ubuntu-latest
     permissions:
