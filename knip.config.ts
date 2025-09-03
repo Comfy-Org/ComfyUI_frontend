@@ -7,7 +7,7 @@ const config: KnipConfig = {
     'vite.electron.config.mts',
     'vite.types.config.mts',
     'eslint.config.js',
-    'tailwind.config.js',
+    'tailwind.config.ts',
     'postcss.config.js',
     'playwright.config.ts',
     'playwright.i18n.config.ts',
