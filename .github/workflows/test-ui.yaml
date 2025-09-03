@@ -139,11 +139,20 @@ jobs:
         id: playwright
         run: npx playwright test --project=${{ matrix.browser }} --reporter=html
         working-directory: ComfyUI_frontend
+        continue-on-error: true
+
+      - name: Save test exit code
+        if: always()
+        run: |
+          echo "${{ steps.playwright.outcome == 'success' && '0' || '1' }}" > test-exit-code.txt
+          echo "Test outcome: ${{ steps.playwright.outcome }}"
 
       - uses: actions/upload-artifact@v4
         if: always() # note: use always() to allow results to be upload/report even tests failed.
         with:
           name: playwright-report-${{ matrix.browser }}
-          path: ComfyUI_frontend/playwright-report/
+          path: |
+            ComfyUI_frontend/playwright-report/
+            test-exit-code.txt
           retention-days: 30
 

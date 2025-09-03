@@ -38,6 +38,7 @@ jobs:
             
             const pr = pullRequests[0];
             console.log(`✅ Found PR #${pr.number} for branch: ${context.payload.workflow_run.head_branch}`);
+            console.log(`PR number is: ${pr.number}`);
             const branchName = context.payload.workflow_run.head_branch;
             const sanitizedBranch = branchName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '');
             
@@ -79,14 +80,38 @@ jobs:
           RETRY_COUNT=0
           MAX_RETRIES=3
           SUCCESS=false
+          DEPLOYMENT_URL=""
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
             
-            if npx wrangler pages deploy playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
+            # Capture wrangler output to extract deployment URL
+            OUTPUT=$(npx wrangler pages deploy playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }} 2>&1)
+            EXIT_CODE=$?
+            
+            echo "$OUTPUT"
+            
+            if [ $EXIT_CODE -eq 0 ]; then
               SUCCESS=true
               echo "Deployment successful on attempt $RETRY_COUNT"
+              # Extract the deployment URL from wrangler output
+              # Look for the URL in various formats that wrangler might output
+              DEPLOYMENT_URL=$(echo "$OUTPUT" | grep -oE 'https://[a-z0-9.-]+\.pages\.dev(/[^[:space:]]*)?$' | head -1)
+              if [ -z "$DEPLOYMENT_URL" ]; then
+                # Try another pattern if the first one fails
+                DEPLOYMENT_URL=$(echo "$OUTPUT" | grep -oE 'https://[^[:space:]]+\.pages\.dev' | head -1)
+              fi
+              if [ -n "$DEPLOYMENT_URL" ]; then
+                echo "Deployment URL: $DEPLOYMENT_URL"
+                echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+              else
+                echo "Warning: Could not extract deployment URL from wrangler output"
+                # Construct expected URL as fallback
+                FALLBACK_URL="https://${{ steps.project-name.outputs.name }}-${{ steps.project-name.outputs.branch }}.pages.dev"
+                echo "Using fallback URL: $FALLBACK_URL"
+                echo "url=$FALLBACK_URL" >> $GITHUB_OUTPUT
+              fi
             else
               echo "Deployment failed on attempt $RETRY_COUNT"
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
@@ -103,6 +128,32 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Save deployment info
+        if: fromJSON(steps.pr-info.outputs.result).number != null && always()
+        run: |
+          # Read test exit code from the artifact
+          TEST_EXIT_CODE="1"
+          if [ -f "playwright-report/test-exit-code.txt" ]; then
+            TEST_EXIT_CODE=$(cat playwright-report/test-exit-code.txt)
+          fi
+          
+          # Use deployment URL if available, otherwise use a fallback
+          URL="${{ steps.cloudflare-deploy.outputs.url }}"
+          if [ -z "$URL" ] || [ "${{ steps.cloudflare-deploy.outcome }}" != "success" ]; then
+            URL="https://${{ steps.project-name.outputs.name }}-${{ steps.project-name.outputs.branch }}.pages.dev"
+          fi
+          
+          echo "${{ matrix.browser }}|$TEST_EXIT_CODE|$URL" > deployment-info.txt
+          echo "Saved deployment info: ${{ matrix.browser }}|$TEST_EXIT_CODE|$URL"
+
+      - name: Upload deployment info
+        if: fromJSON(steps.pr-info.outputs.result).number != null && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-info-${{ matrix.browser }}
+          path: deployment-info.txt
+          retention-days: 1
 
   comment-tests-starting:
     runs-on: ubuntu-latest
