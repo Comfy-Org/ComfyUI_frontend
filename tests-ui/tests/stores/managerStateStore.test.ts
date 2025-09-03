@@ -1,0 +1,194 @@
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { api } from '@/scripts/api'
+import { useExtensionStore } from '@/stores/extensionStore'
+import {
+  ManagerUIState,
+  useManagerStateStore
+} from '@/stores/managerStateStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+
+// Mock dependencies
+vi.mock('@/scripts/api', () => ({
+  api: {
+    getClientFeatureFlags: vi.fn(),
+    getServerFeature: vi.fn()
+  }
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: vi.fn(() => ({
+    flags: { supportsManagerV4: false },
+    featureFlag: vi.fn()
+  }))
+}))
+
+vi.mock('@/stores/extensionStore', () => ({
+  useExtensionStore: vi.fn()
+}))
+
+vi.mock('@/stores/systemStatsStore', () => ({
+  useSystemStatsStore: vi.fn()
+}))
+
+describe('useManagerStateStore', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  describe('managerUIState computed', () => {
+    it('should return DISABLED state when --disable-manager is present', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: {
+          system: { argv: ['python', 'main.py', '--disable-manager'] }
+        }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+    })
+
+    it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: {
+          system: { argv: ['python', 'main.py', '--enable-manager-legacy-ui'] }
+        }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
+    })
+
+    it('should return NEW_UI state when client and server both support v4', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: true },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.NEW_UI)
+    })
+
+    it('should return LEGACY_UI state when server supports v4 but client does not', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: false
+      })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: true },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
+    })
+
+    it('should return LEGACY_UI state when legacy manager extension exists', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: false },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: [{ name: 'Comfy.CustomNodesManager' }]
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
+    })
+
+    it('should return DISABLED state when feature flags are undefined', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: undefined },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+    })
+
+    it('should return DISABLED state when no manager is available', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: false },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+    })
+
+    it('should handle null systemStats gracefully', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: null
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(useFeatureFlags).mockReturnValue({
+        flags: { supportsManagerV4: true },
+        featureFlag: vi.fn()
+      } as any)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+
+      expect(store.managerUIState).toBe(ManagerUIState.NEW_UI)
+    })
+  })
+})

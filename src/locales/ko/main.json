@@ -287,6 +287,7 @@
     "color": "색상",
     "comingSoon": "곧 출시 예정",
     "command": "명령",
+    "commandProhibited": "명령 {command}은 금지되었습니다. 자세한 정보는 관리자에게 문의하십시오.",
     "community": "커뮤니티",
     "completed": "완료됨",
     "confirm": "확인",
@@ -309,7 +310,6 @@
     "disabling": "비활성화 중",
     "dismiss": "닫기",
     "download": "다운로드",
-    "duplicate": "복제",
     "edit": "편집",
     "empty": "비어 있음",
     "enableAll": "모두 활성화",
@@ -322,6 +322,7 @@
     "feedback": "피드백",
     "filter": "필터",
     "findIssues": "문제 찾기",
+    "firstTimeUIMessage": "새 UI를 처음 사용합니다. \"메뉴 > 새 메뉴 사용 > 비활성화\"를 선택하여 이전 UI로 복원하세요.",
     "frontendNewer": "프론트엔드 버전 {frontendVersion}이(가) 백엔드 버전 {backendVersion}과(와) 호환되지 않을 수 있습니다.",
     "frontendOutdated": "프론트엔드 버전 {frontendVersion}이(가) 오래되었습니다. 백엔드는 {requiredVersion} 이상이 필요합니다.",
     "goToNode": "노드로 이동",
@@ -419,17 +420,12 @@
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",
-    "focusMode": "포커스 모드",
-    "hand": "손 도구",
-    "hideLinks": "링크 숨기기",
     "panMode": "팬 모드",
     "resetView": "보기 재설정",
-    "select": "선택",
     "selectMode": "선택 모드",
-    "showLinks": "링크 표시",
+    "toggleLinkVisibility": "링크 가시성 전환",
     "toggleMinimap": "미니맵 전환",
     "zoomIn": "확대",
-    "zoomOptions": "확대/축소 옵션",
     "zoomOut": "축소"
   },
   "groupNode": {
@@ -551,46 +547,12 @@
     "updateConsent": "이전에 충돌 보고에 동의하셨습니다. 이제 버그를 식별하고 앱을 개선하기 위해 이벤트 기반 통계 정보의 추적을 시작합니다. 개인을 식별할 수 있는 정보는 수집되지 않습니다."
   },
   "issueReport": {
-    "contactFollowUp": "추적 조사를 위해 연락해 주세요",
-    "contactSupportDescription": "아래 양식에 보고 내용을 작성해 주세요",
-    "contactSupportTitle": "지원팀에 문의하기",
-    "describeTheProblem": "문제를 설명해 주세요",
-    "email": "이메일",
-    "feedbackTitle": "피드백을 제공함으로써 ComfyUI를 개선하는 데 도움을 주십시오",
-    "helpFix": "이 문제 해결에 도움을 주세요",
-    "helpTypes": {
-      "billingPayments": "결제 / 지불",
-      "bugReport": "버그 신고",
-      "giveFeedback": "피드백 제공",
-      "loginAccessIssues": "로그인 / 접근 문제",
-      "somethingElse": "기타"
-    },
-    "notifyResolve": "해결되었을 때 알려주세요",
-    "provideAdditionalDetails": "추가 세부 사항 제공 (선택 사항)",
-    "provideEmail": "이메일을 알려주세요 (선택 사항)",
-    "rating": "평가",
-    "selectIssue": "문제를 선택하세요",
-    "stackTrace": "스택 추적",
-    "submitErrorReport": "오류 보고서 제출 (선택 사항)",
-    "systemStats": "시스템 통계",
-    "validation": {
-      "descriptionRequired": "설명은 필수입니다",
-      "helpTypeRequired": "도움 유형은 필수입니다",
-      "invalidEmail": "유효한 이메일 주소를 입력해 주세요",
-      "maxLength": "메시지가 너무 깁니다",
-      "selectIssueType": "문제 유형을 선택해 주세요"
-    },
-    "whatCanWeInclude": "보고서에 포함할 내용을 지정하세요",
-    "whatDoYouNeedHelpWith": "어떤 도움이 필요하신가요?"
+    "helpFix": "이 문제 해결에 도움을 주세요"
   },
   "load3d": {
     "applyingTexture": "텍스처 적용 중...",
     "backgroundColor": "배경색",
     "camera": "카메라",
-    "cameraType": {
-      "orthographic": "직교",
-      "perspective": "원근"
-    },
     "clearRecording": "녹화 지우기",
     "edgeThreshold": "엣지 임계값",
     "export": "내보내기",
@@ -611,7 +573,6 @@
       "wireframe": "와이어프레임"
     },
     "model": "모델",
-    "openIn3DViewer": "3D 뷰어에서 열기",
     "previewOutput": "출력 미리보기",
     "removeBackgroundImage": "배경 이미지 제거",
     "resizeNodeMatchOutput": "노드 크기를 출력에 맞추기",
@@ -622,22 +583,8 @@
     "switchCamera": "카메라 전환",
     "switchingMaterialMode": "재질 모드 전환 중...",
     "upDirection": "위 방향",
-    "upDirections": {
-      "original": "원본"
-    },
     "uploadBackgroundImage": "배경 이미지 업로드",
-    "uploadTexture": "텍스처 업로드",
-    "viewer": {
-      "apply": "적용",
-      "cameraSettings": "카메라 설정",
-      "cameraType": "카메라 유형",
-      "cancel": "취소",
-      "exportSettings": "내보내기 설정",
-      "lightSettings": "조명 설정",
-      "modelSettings": "모델 설정",
-      "sceneSettings": "씬 설정",
-      "title": "3D 뷰어 (베타)"
-    }
+    "uploadTexture": "텍스처 업로드"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "ComfyUI {version} 이상 필요:",
@@ -684,6 +631,9 @@
     "installationQueue": "설치 대기열",
     "lastUpdated": "마지막 업데이트",
     "latestVersion": "최신",
+    "legacyManagerUI": "레거시 UI 사용",
+    "legacyManagerUIDescription": "레거시 매니저 UI를 사용하려면, ComfyUI를 --enable-manager-legacy-ui로 시작하세요",
+    "legacyMenuNotAvailable": "이 버전의 ComfyUI에서는 레거시 매니저 메뉴를 사용할 수 없습니다. 대신 새로운 매니저 메뉴를 사용하십시오.",
     "license": "라이선스",
     "loadingVersions": "버전 로딩 중...",
     "nightlyVersion": "최신 테스트 버전(nightly)",
@@ -766,7 +716,6 @@
     "manageExtensions": "확장 프로그램 관리",
     "onChange": "변경 시",
     "onChangeTooltip": "변경이 있는 경우에만 워크플로를 실행 대기열에 추가합니다.",
-    "queue": "대기열 패널",
     "refresh": "노드 정의 새로 고침",
     "resetView": "캔버스 보기 재설정",
     "run": "실행",
@@ -782,8 +731,10 @@
     "Bottom Panel": "하단 패널",
     "Browse Templates": "템플릿 탐색",
     "Bypass/Unbypass Selected Nodes": "선택한 노드 우회/우회 해제",
-    "Canvas Performance": "캔버스 성능",
+    "Canvas Toggle Link Visibility": "캔버스 토글 링크 가시성",
     "Canvas Toggle Lock": "캔버스 토글 잠금",
+    "Canvas Toggle Minimap": "캔버스 미니맵 전환",
+    "Check for Custom Node Updates": "커스텀 노드 업데이트 확인",
     "Check for Updates": "업데이트 확인",
     "Clear Pending Tasks": "보류 중인 작업 제거하기",
     "Clear Workflow": "워크플로 지우기",
@@ -797,28 +748,27 @@
     "Contact Support": "고객 지원 문의",
     "Convert Selection to Subgraph": "선택 영역을 서브그래프로 변환",
     "Convert selected nodes to group node": "선택한 노드를 그룹 노드로 변환",
+    "Custom Nodes (Legacy)": "커스텀 노드(레거시)",
+    "Custom Nodes Manager": "사용자 정의 노드 관리자",
     "Decrease Brush Size in MaskEditor": "마스크 편집기에서 브러시 크기 줄이기",
     "Delete Selected Items": "선택한 항목 삭제",
     "Desktop User Guide": "데스크톱 사용자 가이드",
     "Duplicate Current Workflow": "현재 워크플로 복제",
     "Edit": "편집",
-    "Exit Subgraph": "서브그래프 종료",
     "Export": "내보내기",
     "Export (API)": "내보내기 (API)",
-    "File": "파일",
     "Fit Group To Contents": "그룹을 내용에 맞게 조정",
-    "Focus Mode": "포커스 모드",
+    "Fit view to selected nodes": "선택한 노드에 맞게 보기 조정",
+    "Give Feedback": "피드백 제공",
     "Group Selected Nodes": "선택한 노드 그룹화",
     "Help": "도움말",
-    "Help Center": "도움말 센터",
     "Increase Brush Size in MaskEditor": "마스크 편집기에서 브러시 크기 늘리기",
+    "Install Missing Custom Nodes": "누락된 커스텀 노드 설치",
     "Interrupt": "중단",
     "Load Default Workflow": "기본 워크플로 불러오기",
-    "Lock Canvas": "캔버스 잠금",
     "Manage group nodes": "그룹 노드 관리",
     "Manager": "매니저",
-    "Minimap": "미니맵",
-    "Model Library": "모델 라이브러리",
+    "Manager Menu (Legacy)": "매니저 메뉴(레거시)",
     "Move Selected Nodes Down": "선택한 노드 아래로 이동",
     "Move Selected Nodes Left": "선택한 노드 왼쪽으로 이동",
     "Move Selected Nodes Right": "선택한 노드 오른쪽으로 이동",
@@ -826,10 +776,7 @@
     "Mute/Unmute Selected Nodes": "선택한 노드 활성화/비활성화",
     "New": "새로 만들기",
     "Next Opened Workflow": "다음 열린 워크플로",
-    "Node Library": "노드 라이브러리",
-    "Node Links": "노드 링크",
     "Open": "열기",
-    "Open 3D Viewer (Beta) for Selected Node": "선택한 노드에 대해 3D 뷰어(베타) 열기",
     "Open Custom Nodes Folder": "사용자 정의 노드 폴더 열기",
     "Open DevTools": "개발자 도구 열기",
     "Open Inputs Folder": "입력 폴더 열기",
@@ -842,7 +789,6 @@
     "Pin/Unpin Selected Items": "선택한 항목 고정/고정 해제",
     "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",
     "Previous Opened Workflow": "이전 열린 워크플로",
-    "Queue Panel": "대기열 패널",
     "Queue Prompt": "실행 대기열에 프롬프트 추가",
     "Queue Prompt (Front)": "실행 대기열 맨 앞에 프롬프트 추가",
     "Queue Selected Output Nodes": "선택한 출력 노드 대기열에 추가",
@@ -859,29 +805,24 @@
     "Show Model Selector (Dev)": "모델 선택기 표시 (개발자용)",
     "Show Settings Dialog": "설정 대화상자 표시",
     "Sign Out": "로그아웃",
-    "Toggle Essential Bottom Panel": "필수 하단 패널 전환",
+    "Toggle Bottom Panel": "하단 패널 전환",
+    "Toggle Focus Mode": "포커스 모드 전환",
     "Toggle Logs Bottom Panel": "로그 하단 패널 전환",
+    "Toggle Model Library Sidebar": "모델 라이브러리 사이드바 전환",
+    "Toggle Node Library Sidebar": "노드 라이브러리 사이드바 전환",
+    "Toggle Queue Sidebar": "실행 대기열 사이드바 전환",
     "Toggle Search Box": "검색 상자 전환",
     "Toggle Terminal Bottom Panel": "터미널 하단 패널 전환",
     "Toggle Theme (Dark/Light)": "테마 전환 (어두운/밝은)",
-    "Toggle View Controls Bottom Panel": "뷰 컨트롤 하단 패널 전환",
-    "Toggle the Custom Nodes Manager": "커스텀 노드 매니저 전환",
+    "Toggle Workflows Sidebar": "워크플로우 사이드바 전환",
     "Toggle the Custom Nodes Manager Progress Bar": "커스텀 노드 매니저 진행률 표시줄 전환",
     "Undo": "실행 취소",
     "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
-    "Unlock Canvas": "캔버스 잠금 해제",
-    "Unpack the selected Subgraph": "선택한 서브그래프 풀기",
-    "Workflows": "워크플로우",
+    "Unload Models": "모델 언로드",
+    "Unload Models and Execution Cache": "모델 및 실행 캐시 언로드",
+    "Workflow": "워크플로",
     "Zoom In": "확대",
-    "Zoom Out": "축소",
-    "Zoom to fit": "화면에 맞추기"
-  },
-  "minimap": {
-    "nodeColors": "노드 색상",
-    "renderBypassState": "바이패스 상태 렌더링",
-    "renderErrorState": "에러 상태 렌더링",
-    "showGroups": "프레임/그룹 표시",
-    "showLinks": "링크 표시"
+    "Zoom Out": "축소"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "다시 보지 않기",
@@ -948,6 +889,7 @@
     "sampling": "샘플링",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
+    "sd": "sd",
     "sd3": "sd3",
     "sigmas": "시그마",
     "stable_cascade": "Stable Cascade",
@@ -957,6 +899,9 @@
     "upscale_diffusion": "업스케일 확산",
     "upscaling": "업스케일링",
     "utils": "유틸리티",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "비디오",
     "video_models": "비디오 모델"
   },
@@ -1145,7 +1090,6 @@
   },
   "settingsCategories": {
     "3D": "3D",
-    "3DViewer": "3D뷰어",
     "API Nodes": "API 노드",
     "About": "정보",
     "Appearance": "모양",
@@ -1197,31 +1141,10 @@
     "Window": "창",
     "Workflow": "워크플로"
   },
-  "shortcuts": {
-    "essentials": "필수",
-    "keyboardShortcuts": "키보드 단축키",
-    "manageShortcuts": "단축키 관리",
-    "noKeybinding": "단축키 없음",
-    "subcategories": {
-      "node": "노드",
-      "panelControls": "패널 컨트롤",
-      "queue": "대기열",
-      "view": "보기",
-      "workflow": "워크플로우"
-    },
-    "viewControls": "보기 컨트롤"
-  },
   "sideToolbar": {
     "browseTemplates": "예제 템플릿 탐색",
     "downloads": "다운로드",
     "helpCenter": "도움말 센터",
-    "labels": {
-      "models": "모델",
-      "nodes": "노드",
-      "queue": "대기열",
-      "templates": "템플릿",
-      "workflows": "워크플로우"
-    },
     "logout": "로그아웃",
     "modelLibrary": "모델 라이브러리",
     "newBlankWorkflow": "새 빈 워크플로 만들기",
@@ -1259,7 +1182,6 @@
       },
       "showFlatList": "평면 목록 표시"
     },
-    "templates": "템플릿",
     "workflowTab": {
       "confirmDelete": "정말로 이 워크플로를 삭제하시겠습니까?",
       "confirmDeleteTitle": "워크플로 삭제",
@@ -1306,8 +1228,6 @@
       "Video": "비디오",
       "Video API": "비디오 API"
     },
-    "loadingMore": "템플릿을 더 불러오는 중...",
-    "searchPlaceholder": "템플릿 검색...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",
@@ -1630,7 +1550,6 @@
     "failedToExportModel": "{format} 형식으로 모델 내보내기에 실패했습니다",
     "failedToFetchBalance": "잔액을 가져오지 못했습니다: {error}",
     "failedToFetchLogs": "서버 로그를 가져오는 데 실패했습니다",
-    "failedToInitializeLoad3dViewer": "3D 뷰어 초기화에 실패했습니다",
     "failedToInitiateCreditPurchase": "크레딧 구매를 시작하지 못했습니다: {error}",
     "failedToPurchaseCredits": "크레딧 구매에 실패했습니다: {error}",
     "fileLoadError": "{fileName}에서 워크플로를 찾을 수 없습니다",
@@ -1705,11 +1624,5 @@
     "enterFilename": "파일 이름 입력",
     "exportWorkflow": "워크플로 내보내기",
     "saveWorkflow": "워크플로 저장"
-  },
-  "zoomControls": {
-    "hideMinimap": "미니맵 숨기기",
-    "label": "확대/축소 컨트롤",
-    "showMinimap": "미니맵 표시",
-    "zoomToFit": "화면에 맞게 확대"
   }
 }
