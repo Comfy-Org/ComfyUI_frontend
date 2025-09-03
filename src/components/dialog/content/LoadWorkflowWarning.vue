@@ -53,7 +53,8 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
@@ -64,6 +65,8 @@ import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
 import PackInstallButton from './manager/button/PackInstallButton.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useToastStore } from '@/stores/toastStore'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
@@ -121,6 +124,36 @@ const openManager = async () => {
     showToastOnLegacyError: true
   })
 }
+
+const { t } = useI18n()
+const dialogStore = useDialogStore()
+
+// Computed to check if all missing nodes have been installed
+const allMissingNodesInstalled = computed(() => {
+  return (
+    !isLoading.value &&
+    missingNodePacks.value?.length === 0 &&
+    !isInstalling.value
+  )
+})
+
+// Watch for completion and close dialog
+watch(allMissingNodesInstalled, (allInstalled) => {
+  if (allInstalled && missingNodePacks.value !== null) {
+    // Small delay to let the user see the completion
+    setTimeout(() => {
+      dialogStore.closeDialog({ key: 'global-load-workflow-warning' })
+
+      // Show success toast
+      useToastStore().add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('manager.allMissingNodesInstalled'),
+        life: 3000
+      })
+    }, 500)
+  }
+})
 </script>
 
 <style scoped>
