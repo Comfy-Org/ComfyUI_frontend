@@ -32,7 +32,6 @@
       "
     ></div>
 
-    <!-- Main Content Layer -->
     <div class="relative z-10">
       <!-- Main startup display using StartupDisplay component -->
       <StartupDisplay
@@ -47,7 +46,6 @@
         v-if="isError"
         class="absolute bottom-20 left-0 right-0 flex flex-col items-center gap-4"
       >
-        <!-- Action Buttons (for error states) -->
         <div class="flex gap-4 justify-center">
           <Button
             icon="pi pi-flag"
@@ -68,7 +66,6 @@
           />
         </div>
 
-        <!-- Terminal Toggle -->
         <div class="text-center">
           <button
             v-if="!terminalVisible"
@@ -112,19 +109,16 @@ import { electronAPI } from '@/utils/envUtil'
 const { t } = useI18n()
 const electron = electronAPI()
 
-// Props
 const props = defineProps<{
   status: ProgressStatus
   electronVersion?: string
   terminalVisible?: boolean
 }>()
 
-// Local state for installation stages
 const installStage = ref<InstallStageType | null>(null)
 const installStageMessage = ref<string>('')
 const installStageProgress = ref<number | undefined>(undefined)
 
-// Emits
 defineEmits<{
   'report-issue': []
   'open-logs': []
@@ -132,22 +126,20 @@ defineEmits<{
   'toggle-terminal': [visible: boolean]
 }>()
 
-// Handle installation stage updates
+/**
+ * Handles installation stage updates from the desktop
+ */
 const updateInstallStage = (stageInfo: InstallStageInfo) => {
   installStage.value = stageInfo.stage
   installStageMessage.value = stageInfo.message || ''
   installStageProgress.value = stageInfo.progress
 }
 
-// Computed properties
 const currentStatusLabel = computed(() => {
-  // If we have an installation stage, use its metadata
   if (installStage.value && STAGE_METADATA[installStage.value]) {
     const metadata = STAGE_METADATA[installStage.value]
-    // Use custom message if provided, otherwise use the stage description
     return installStageMessage.value || metadata.description || metadata.label
   }
-  // Fallback to the old progress status message
   return t(`serverStart.process.${props.status}`)
 })
 
@@ -173,7 +165,6 @@ const isInstallationStage = computed(() => {
   )
 })
 
-// Display properties for StartupDisplay component
 const displayTitle = computed(() => {
   if (isError.value) {
     return t('serverStart.errorMessage')
@@ -191,30 +182,22 @@ const displayStatusText = computed(() => {
   return currentStatusLabel.value
 })
 
-// Progress for the progress bar - only show determinate during installation
 const installProgress = computed(() => {
-  // Check if we're in an installation stage
   if (installStage.value && STAGE_METADATA[installStage.value]) {
     const metadata = STAGE_METADATA[installStage.value]
 
     // Only show determinate progress for installation-related stages
     const installationCategories = ['installation', 'validation']
     if (installationCategories.includes(metadata.category)) {
-      // Use the progress from desktop if available, otherwise use stage metadata
       return installStageProgress.value ?? metadata.progress
     }
   }
-
-  // Return undefined for indeterminate progress (during startup)
   return undefined
 })
 
-// Store cleanup function for InstallStage listener
 let cleanupInstallStageListener: (() => void) | undefined
 
-// Lifecycle hooks
 onMounted(() => {
-  // Listen for installation stage updates
   if (electron.InstallStage?.onUpdate) {
     cleanupInstallStageListener =
       electron.InstallStage.onUpdate(updateInstallStage)
@@ -222,7 +205,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  // Clean up InstallStage listener using the returned cleanup function
   if (cleanupInstallStageListener) {
     cleanupInstallStageListener()
   }
@@ -230,7 +212,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Override PrimeVue ProgressBar color to brand yellow */
 :deep(.p-progressbar-indeterminate .p-progressbar-value),
 :deep(.p-progressbar-determinate .p-progressbar-value) {
   background-color: #f0ff41;
