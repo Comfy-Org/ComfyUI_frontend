@@ -157,26 +157,34 @@ const isError = computed(
     installStage.value === InstallStage.ERROR
 )
 
+// Helper to check if we're in an installation stage
+const isInstallationStage = computed(() => {
+  const installationStages: InstallStageType[] = [
+    InstallStage.WELCOME_SCREEN,
+    InstallStage.INSTALL_OPTIONS_SELECTION,
+    InstallStage.CREATING_DIRECTORIES,
+    InstallStage.INITIALIZING_CONFIG,
+    InstallStage.PYTHON_ENVIRONMENT_SETUP,
+    InstallStage.INSTALLING_REQUIREMENTS,
+    InstallStage.MIGRATING_CUSTOM_NODES
+  ]
+  return (
+    installStage.value !== null &&
+    installationStages.includes(installStage.value)
+  )
+})
+
 // Display properties for StartupDisplay component
 const displayTitle = computed(() => {
   if (isError.value) {
     return t('serverStart.errorMessage')
   }
-  // Use the stage label as title if we're in an installation stage
-  if (installStage.value && STAGE_METADATA[installStage.value]) {
-    // For certain installation stages, use custom titles
-    const installationStages: InstallStageType[] = [
-      InstallStage.INSTALL_OPTIONS_SELECTION,
-      InstallStage.CREATING_DIRECTORIES,
-      InstallStage.INITIALIZING_CONFIG,
-      InstallStage.PYTHON_ENVIRONMENT_SETUP,
-      InstallStage.INSTALLING_REQUIREMENTS,
-      InstallStage.MIGRATING_CUSTOM_NODES
-    ]
-    if (installationStages.includes(installStage.value)) {
-      return t('serverStart.installation.title')
-    }
+  // Check if we're in an installation stage
+  // This includes the initial state when coming from the install flow
+  if (isInstallationStage.value) {
+    return t('serverStart.installation.title')
   }
+  // Default to starting message for regular startup
   return t('serverStart.title')
 })
 
