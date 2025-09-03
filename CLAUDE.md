@@ -82,39 +82,9 @@ When referencing Comfy-Org repos:
 2. Use GitHub API for branches/PRs/metadata
 3. Curl GitHub website if needed
 
-## Settings and Feature Flags Quick Reference
+## Settings and Feature Flags
 
-### Settings Usage
-```typescript
-const settingStore = useSettingStore()
-const value = settingStore.get('Comfy.SomeSetting')     // Get setting
-await settingStore.set('Comfy.SomeSetting', newValue)   // Update setting
-```
-
-### Dynamic Defaults
-```typescript
-{
-  id: 'Comfy.Example.Setting',
-  defaultValue: () => window.innerWidth < 1024 ? 'small' : 'large'  // Runtime context
-}
-```
-
-### Version-Based Defaults
-```typescript
-{
-  id: 'Comfy.Example.Feature',
-  defaultValue: 'legacy',
-  defaultsByInstallVersion: { '1.25.0': 'enhanced' }  // Gradual rollout
-}
-```
-
-### Feature Flags
-```typescript
-if (api.serverSupportsFeature('feature_name')) {  // Check capability
-  // Use enhanced feature
-}
-const value = api.getServerFeature('config_name', defaultValue)  // Get config
-```
+Extensive capabilities to adding settings and feature flags. Read documentation.
 
 **Documentation:**
 - Settings system: `docs/SETTINGS.md`
