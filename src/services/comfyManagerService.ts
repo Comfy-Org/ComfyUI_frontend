@@ -3,6 +3,10 @@ import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
 import { api } from '@/scripts/api'
+import {
+  ManagerUIState,
+  useManagerStateStore
+} from '@/stores/managerStateStore'
 import { components } from '@/types/generatedManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -34,11 +38,27 @@ enum ManagerRoute {
   QUEUE_TASK = 'manager/queue/task'
 }
 
+// Dynamically determine API version based on manager state
+const getApiBaseURL = () => {
+  const managerStore = useManagerStateStore()
+  const state = managerStore.getManagerUIState()
+
+  // Use v2 API only for NEW_UI state
+  const apiPrefix = state === ManagerUIState.NEW_UI ? '/v2/' : '/'
+  console.log('[Manager API] State:', state, 'Using prefix:', apiPrefix)
+  return api.apiURL(apiPrefix)
+}
+
 const managerApiClient = axios.create({
-  baseURL: api.apiURL('/v2/'),
   headers: {
     'Content-Type': 'application/json'
   }
+})
+
+// Add request interceptor to dynamically set baseURL
+managerApiClient.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseURL()
+  return config
 })
 
 /**

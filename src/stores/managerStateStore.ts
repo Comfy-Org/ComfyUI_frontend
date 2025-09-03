@@ -32,44 +32,62 @@ export const useManagerStateStore = defineStore('managerState', () => {
       'extension.manager.supports_v4'
     )
 
-    console.log('[Manager State Debug]', {
+    const result = {
       systemStats: systemStats?.system?.argv,
       clientSupportsV4,
       serverSupportsV4,
       hasLegacyManager,
       extensions: extensionStore.extensions.map((e) => e.name)
-    })
+    }
+    console.log('[Manager State Debug]', result)
 
     // Check command line args first (highest priority)
     if (systemStats?.system?.argv?.includes('--disable-manager')) {
+      console.log(
+        '[Manager State] Returning DISABLED due to --disable-manager flag'
+      )
       return ManagerUIState.DISABLED
     }
 
     if (systemStats?.system?.argv?.includes('--enable-manager-legacy-ui')) {
+      console.log(
+        '[Manager State] Returning LEGACY_UI due to --enable-manager-legacy-ui flag'
+      )
       return ManagerUIState.LEGACY_UI
     }
 
     // Both client and server support v4 = NEW_UI
     if (clientSupportsV4 && serverSupportsV4 === true) {
+      console.log('[Manager State] Returning NEW_UI (both support v4)')
       return ManagerUIState.NEW_UI
     }
 
     // Server supports v4 but client doesn't = LEGACY_UI
     if (serverSupportsV4 === true) {
+      console.log(
+        '[Manager State] Returning LEGACY_UI (server supports v4, client does not)'
+      )
       return ManagerUIState.LEGACY_UI
     }
 
     // No server v4 support but legacy manager extension exists = LEGACY_UI
     if (hasLegacyManager) {
+      console.log(
+        '[Manager State] Returning LEGACY_UI (has legacy manager extension)'
+      )
       return ManagerUIState.LEGACY_UI
     }
 
     // If server feature flags haven't loaded yet, return DISABLED for now
     if (serverSupportsV4 === undefined) {
+      console.log(
+        '[Manager State] Returning DISABLED (server feature flags not loaded)'
+      )
       return ManagerUIState.DISABLED
     }
 
     // No manager at all = DISABLED
+    console.log('[Manager State] Returning DISABLED (no manager support)')
     return ManagerUIState.DISABLED
   }
 

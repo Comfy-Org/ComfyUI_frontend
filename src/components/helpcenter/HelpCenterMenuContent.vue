@@ -145,6 +145,10 @@ import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgme
 import { useDialogService } from '@/services/dialogService'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
+import {
+  ManagerUIState,
+  useManagerStateStore
+} from '@/stores/managerStateStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -313,8 +317,29 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: PuzzleIcon,
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
-      action: () => {
-        dialogService.showManagerDialog()
+      action: async () => {
+        const managerState = useManagerStateStore().getManagerUIState()
+
+        switch (managerState) {
+          case ManagerUIState.DISABLED:
+            dialogService.showSettingsDialog('extension')
+            break
+
+          case ManagerUIState.LEGACY_UI:
+            try {
+              await useCommandStore().execute(
+                'Comfy.Manager.Menu.ToggleVisibility'
+              )
+            } catch {
+              // If legacy command doesn't exist, fall back to extensions panel
+              dialogService.showSettingsDialog('extension')
+            }
+            break
+
+          case ManagerUIState.NEW_UI:
+            dialogService.showManagerDialog()
+            break
+        }
         emit('close')
       }
     },

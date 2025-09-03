@@ -933,8 +933,29 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.OpenManagerDialog',
       icon: 'mdi mdi-puzzle-outline',
       label: 'Manager',
-      function: () => {
-        dialogService.showManagerDialog()
+      function: async () => {
+        const managerState = useManagerStateStore().getManagerUIState()
+
+        switch (managerState) {
+          case ManagerUIState.DISABLED:
+            dialogService.showSettingsDialog('extension')
+            break
+
+          case ManagerUIState.LEGACY_UI:
+            try {
+              await useCommandStore().execute(
+                'Comfy.Manager.Menu.ToggleVisibility'
+              )
+            } catch {
+              // If legacy command doesn't exist, fall back to extensions panel
+              dialogService.showSettingsDialog('extension')
+            }
+            break
+
+          case ManagerUIState.NEW_UI:
+            dialogService.showManagerDialog()
+            break
+        }
       }
     },
     {
