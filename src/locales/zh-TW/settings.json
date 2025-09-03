@@ -388,10 +388,6 @@
       "Topbar (2nd-row)": "頂部欄（第二列）"
     }
   },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "低品質渲染縮放臨界值",
-    "tooltip": "當縮小檢視時以低品質渲染圖形"
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "畫布允許渲染的最大每秒幀數。限制GPU使用率，但可能影響流暢度。若設為0，則使用螢幕的更新率。預設值：0"
