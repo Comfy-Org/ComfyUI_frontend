@@ -14,7 +14,7 @@ const config: KnipConfig = {
     'scripts/**/*.{js,ts}',
     'src/**/*.{js,ts,vue}',
     'tests-ui/**/*.{js,ts,vue}',
-    'vitest.litegraph.config.ts',
+    'vitest.litegraph.config.ts'
   ],
   ignoreDependencies: [
     '@primeuix/forms',
