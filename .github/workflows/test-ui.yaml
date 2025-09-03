@@ -152,6 +152,7 @@ jobs:
     steps:
       - name: Wait for cache propagation
         run: sleep 10
+
       - name: Restore cached setup
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
@@ -198,6 +199,7 @@ jobs:
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
+          path: ComfyUI_frontend/playwright-report/
           retention-days: 30
 
   # Merge sharded test reports
@@ -243,4 +245,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-chromium-merged
+          path: ComfyUI_frontend/playwright-report/
           retention-days: 30
