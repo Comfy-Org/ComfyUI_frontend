@@ -1,9 +1,9 @@
 <template>
   <button
-    class="hardware-option flex flex-col items-center rounded-3xl transition-all duration-200"
+    class="hardware-option flex flex-col items-center rounded-3xl transition-all duration-200 bg-neutral-900/70"
     :class="{
-      'border-4 border-comfy-yellow bg-neutral-900/70': selected,
-      'border-4 border-transparent bg-neutral-900/70': !selected
+      'selected-border': selected,
+      'border-4 border-transparent': !selected
     }"
     @click="$emit('click')"
   >
@@ -61,5 +61,14 @@ defineEmits<{
 
 .hardware-option:focus {
   outline: none;
+}
+
+.hardware-option:focus-visible {
+  outline: none;
+}
+
+/* Custom border for selected state to ensure uniform color */
+.hardware-option.selected-border {
+  @apply border-solid border-4 border-comfy-yellow;
 }
 </style>
