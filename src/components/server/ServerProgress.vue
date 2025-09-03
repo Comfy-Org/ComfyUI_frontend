@@ -38,6 +38,7 @@
       <StartupDisplay
         :title="displayTitle"
         :status-text="displayStatusText"
+        :progress-percentage="installProgress"
         :hide-progress="isError"
       />
 
@@ -121,6 +122,7 @@ const props = defineProps<{
 // Local state for installation stages
 const installStage = ref<InstallStageType | null>(null)
 const installStageMessage = ref<string>('')
+const installStageProgress = ref<number | undefined>(undefined)
 
 // Emits
 defineEmits<{
@@ -134,6 +136,7 @@ defineEmits<{
 const updateInstallStage = (stageInfo: InstallStageInfo) => {
   installStage.value = stageInfo.stage
   installStageMessage.value = stageInfo.message || ''
+  installStageProgress.value = stageInfo.progress
 }
 
 // Computed properties
@@ -184,6 +187,24 @@ const displayStatusText = computed(() => {
   return currentStatusLabel.value
 })
 
+// Progress for the progress bar - only show determinate during installation
+const installProgress = computed(() => {
+  // Check if we're in an installation stage
+  if (installStage.value && STAGE_METADATA[installStage.value]) {
+    const metadata = STAGE_METADATA[installStage.value]
+
+    // Only show determinate progress for installation-related stages
+    const installationCategories = ['installation', 'validation']
+    if (installationCategories.includes(metadata.category)) {
+      // Use the progress from desktop if available, otherwise use stage metadata
+      return installStageProgress.value ?? metadata.progress
+    }
+  }
+
+  // Return undefined for indeterminate progress (during startup)
+  return undefined
+})
+
 // Store cleanup function for InstallStage listener
 let cleanupInstallStageListener: (() => void) | undefined
 
@@ -206,7 +227,8 @@ onUnmounted(() => {
 
 <style scoped>
 /* Override PrimeVue ProgressBar color to brand yellow */
-:deep(.p-progressbar-indeterminate .p-progressbar-value) {
+:deep(.p-progressbar-indeterminate .p-progressbar-value),
+:deep(.p-progressbar-determinate .p-progressbar-value) {
   background-color: #f0ff41;
 }
 
