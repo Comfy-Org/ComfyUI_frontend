@@ -110,8 +110,8 @@ const SelectedVersionValues = {
 }
 
 const ManagerChannelValues: Record<string, ManagerChannel> = {
-  DEFAULT: 'default', // ✅ Valid - will compile
-  DEV: 'dev' // ✅ Valid - will compile
+  DEFAULT: 'default',
+  DEV: 'dev'
 }
 
 const ManagerDatabaseSourceValues: Record<string, ManagerDatabaseSource> = {
