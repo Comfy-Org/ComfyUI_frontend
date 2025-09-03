@@ -122,15 +122,6 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-chromium
-          restore-keys: |
-            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
-            playwright-browsers-${{ runner.os }}-
-
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
@@ -161,7 +152,6 @@ jobs:
     steps:
       - name: Wait for cache propagation
         run: sleep 10
-
       - name: Restore cached setup
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
@@ -195,15 +185,6 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ matrix.browser }}
-          restore-keys: |
-            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
-            playwright-browsers-${{ runner.os }}-
-
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
@@ -217,7 +198,6 @@ jobs:
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
-          path: ComfyUI_frontend/playwright-report/
           retention-days: 30
 
   # Merge sharded test reports
@@ -263,5 +243,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-chromium-merged
-          path: ComfyUI_frontend/playwright-report/
           retention-days: 30
