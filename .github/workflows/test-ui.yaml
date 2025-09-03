@@ -67,7 +67,7 @@ jobs:
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Save cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           path: |
             ComfyUI
@@ -90,7 +90,7 @@ jobs:
         run: sleep 10
 
       - name: Restore cached setup
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           fail-on-cache-miss: true
           path: |
@@ -149,8 +149,7 @@ jobs:
           path: blob-report/
           retention-days: 1
 
-  # Non-sharded tests for other browsers
-  playwright-tests-other-browsers:
+  playwright-tests:
     needs: setup
     runs-on: ubuntu-latest
     permissions:
@@ -164,7 +163,7 @@ jobs:
         run: sleep 10
 
       - name: Restore cached setup
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           fail-on-cache-miss: true
           path: |
