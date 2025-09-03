@@ -8,7 +8,7 @@
         class="text-3xl text-neutral-100 text-center italic"
         style="font-family: 'ABC ROM Black Italic', sans-serif"
       >
-        Choose your hardware setup
+        {{ $t('install.gpuPicker.title') }}
       </h2>
 
       <!-- GPU Selection buttons -->
@@ -21,6 +21,7 @@
           subtitle="Apple Metal"
           value="mps"
           :selected="selected === 'mps'"
+          :recommended="true"
           @click="pickGpu('mps')"
         />
         <!-- CPU -->
@@ -44,14 +45,13 @@
       <!-- Description text -->
       <div class="mt-8 text-center text-base text-neutral-300 px-12">
         <p v-if="selected === 'mps'" class="leading-relaxed">
-          Leverages your Mac's GPU for faster speed and a better overall
-          experience
+          {{ $t('install.gpuPicker.appleMetalDescription') }}
         </p>
         <p v-if="selected === 'cpu'" class="leading-relaxed">
-          Use CPU mode for compatibility when GPU acceleration is not available
+          {{ $t('install.gpuPicker.cpuDescription') }}
         </p>
         <p v-if="selected === 'unsupported'" class="leading-relaxed">
-          Configure ComfyUI manually for advanced setups or unsupported hardware
+          {{ $t('install.gpuPicker.manualDescription') }}
         </p>
       </div>
     </div>

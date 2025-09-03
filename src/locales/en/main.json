@@ -407,6 +407,12 @@
     "migration": "Migration",
     "desktopSettings": "Desktop Settings",
     "chooseInstallationLocation": "Choose Installation Location",
+    "gpuPicker": {
+      "title": "Choose your hardware setup",
+      "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",
+      "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
+      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
+    },
     "locationPicker": {
       "title": "Choose where to install ComfyUI",
       "subtitle": "Pick a folder for ComfyUI's files. We'll also set up Python there automatically.",
