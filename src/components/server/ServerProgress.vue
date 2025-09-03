@@ -157,7 +157,6 @@ const isError = computed(
     installStage.value === InstallStage.ERROR
 )
 
-// Helper to check if we're in an installation stage
 const isInstallationStage = computed(() => {
   const installationStages: InstallStageType[] = [
     InstallStage.WELCOME_SCREEN,
@@ -179,12 +178,9 @@ const displayTitle = computed(() => {
   if (isError.value) {
     return t('serverStart.errorMessage')
   }
-  // Check if we're in an installation stage
-  // This includes the initial state when coming from the install flow
   if (isInstallationStage.value) {
     return t('serverStart.installation.title')
   }
-  // Default to starting message for regular startup
   return t('serverStart.title')
 })
 
