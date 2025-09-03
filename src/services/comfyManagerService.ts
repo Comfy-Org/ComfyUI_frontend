@@ -45,7 +45,6 @@ const getApiBaseURL = () => {
 
   // Use v2 API only for NEW_UI state
   const apiPrefix = state === ManagerUIState.NEW_UI ? '/v2/' : '/'
-  console.log('[Manager API] State:', state, 'Using prefix:', apiPrefix)
   return api.apiURL(apiPrefix)
 }
 
