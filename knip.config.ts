@@ -38,6 +38,9 @@ const config: KnipConfig = {
     // Test setup files
     'browser_tests/globalSetup.ts',
     'browser_tests/globalTeardown.ts',
+    'browser_tests/globalSetupWithI18n.ts',
+    'browser_tests/globalTeardownWithI18n.ts',
+    'browser_tests/i18nSetup.ts',
     'browser_tests/utils/**',
     // Scripts
     'scripts/**',
