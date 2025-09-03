@@ -122,15 +122,6 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-chromium
-          restore-keys: |
-            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
-            playwright-browsers-${{ runner.os }}-
-
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
         working-directory: ComfyUI_frontend
@@ -150,6 +141,8 @@ jobs:
           retention-days: 1
 
   playwright-tests:
+  # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
+    timeout-minutes: 15
     needs: setup
     runs-on: ubuntu-latest
     permissions:
@@ -194,15 +187,6 @@ jobs:
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ matrix.browser }}
-          restore-keys: |
-            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
-            playwright-browsers-${{ runner.os }}-
 
       - name: Install Playwright Browsers
         run: npx playwright install chromium --with-deps
@@ -262,6 +246,6 @@ jobs:
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-chromium-merged
+          name: playwright-report-chromium
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
