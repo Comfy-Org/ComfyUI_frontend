@@ -43,10 +43,34 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
 export function addToComboValues(widget: IComboWidget, value: string) {
   if (!widget.options) widget.options = { values: [] }
   if (!widget.options.values) widget.options.values = []
-  // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-  if (!widget.options.values.includes(value)) {
+
+  // Check if this widget has our filename mapping (has getRawValues method)
+  interface MappingWidget extends IComboWidget {
+    getRawValues?: () => string[]
+    refreshMappings?: () => void
+  }
+  const mappingWidget = widget as MappingWidget
+  if (
+    mappingWidget.getRawValues &&
+    typeof mappingWidget.getRawValues === 'function'
+  ) {
+    // This is a filename mapping widget - work with raw values directly
+    const rawValues = mappingWidget.getRawValues()
+    if (!rawValues.includes(value)) {
+      rawValues.push(value)
+
+      // Trigger refresh
+      if (mappingWidget.refreshMappings) {
+        mappingWidget.refreshMappings()
+      }
+    }
+  } else {
+    // Regular widget without mapping
     // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    widget.options.values.push(value)
+    if (!widget.options.values.includes(value)) {
+      // @ts-expect-error Combo widget values may be a dictionary or legacy function type
+      widget.options.values.push(value)
+    }
   }
 }
 

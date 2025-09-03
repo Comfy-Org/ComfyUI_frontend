@@ -7,6 +7,7 @@ import { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import { fileNameMappingService } from '@/services/fileNameMappingService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/formatUtil'
@@ -76,11 +77,36 @@ export const useImageUploadWidget = () => {
       fileFilter,
       accept,
       folder,
-      onUploadComplete: (output) => {
-        output.forEach((path) => addToComboValues(fileComboWidget, path))
+      onUploadComplete: async (output) => {
+        // CRITICAL: Refresh mappings FIRST before updating dropdown
+        // This ensures new hash→human mappings are available when dropdown renders
+        try {
+          await fileNameMappingService.refreshMapping('input')
+        } catch (error) {
+          // Continue anyway - will show hash values as fallback
+        }
+
+        // Now add the files to dropdown - addToComboValues will trigger refreshMappings
+        output.forEach((path) => {
+          addToComboValues(fileComboWidget, path)
+        })
+
+        // Set the widget value to the newly uploaded files
+        // Use the last uploaded file for single selection widgets
+        const selectedValue = allow_batch ? output : output[output.length - 1]
+
         // @ts-expect-error litegraph combo value type does not support arrays yet
-        fileComboWidget.value = output
-        fileComboWidget.callback?.(output)
+        fileComboWidget.value = selectedValue
+        fileComboWidget.callback?.(selectedValue)
+
+        // Force one more refresh to ensure UI is in sync
+        if (typeof (fileComboWidget as any).refreshMappings === 'function') {
+          ;(fileComboWidget as any).refreshMappings()
+        }
+
+        // Trigger UI update to show human-readable names
+        node.setDirtyCanvas?.(true, true)
+        node.graph?.setDirtyCanvas?.(true, true)
       }
     })
 
