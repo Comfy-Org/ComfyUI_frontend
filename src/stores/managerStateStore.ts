@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 export enum ManagerUIState {
@@ -12,7 +11,6 @@ export enum ManagerUIState {
 
 export const useManagerStateStore = defineStore('managerState', () => {
   const systemStatsStore = useSystemStatsStore()
-  const extensionStore = useExtensionStore()
 
   /**
    * Get the current manager UI state.
@@ -24,9 +22,6 @@ export const useManagerStateStore = defineStore('managerState', () => {
     const systemStats = systemStatsStore.systemStats
     const clientSupportsV4 =
       api.getClientFeatureFlags().supports_manager_v4_ui ?? false
-    const hasLegacyManager = extensionStore.extensions.some(
-      (ext) => ext.name === 'Comfy.CustomNodesManager'
-    )
 
     const serverSupportsV4 = api.getServerFeature(
       'extension.manager.supports_v4'
@@ -35,9 +30,7 @@ export const useManagerStateStore = defineStore('managerState', () => {
     const result = {
       systemStats: systemStats?.system?.argv,
       clientSupportsV4,
-      serverSupportsV4,
-      hasLegacyManager,
-      extensions: extensionStore.extensions.map((e) => e.name)
+      serverSupportsV4
     }
     console.log('[Manager State Debug]', result)
 
@@ -70,20 +63,13 @@ export const useManagerStateStore = defineStore('managerState', () => {
       return ManagerUIState.LEGACY_UI
     }
 
-    // No server v4 support but legacy manager extension exists = LEGACY_UI
-    if (hasLegacyManager) {
-      console.log(
-        '[Manager State] Returning LEGACY_UI (has legacy manager extension)'
-      )
-      return ManagerUIState.LEGACY_UI
-    }
-
-    // If server feature flags haven't loaded yet, return DISABLED for now
+    // If server feature flags haven't loaded yet, default to NEW_UI
+    // This is the safest default since v2 API is the current standard
     if (serverSupportsV4 === undefined) {
       console.log(
-        '[Manager State] Returning DISABLED (server feature flags not loaded)'
+        '[Manager State] Returning NEW_UI (server feature flags not loaded, using default)'
       )
-      return ManagerUIState.DISABLED
+      return ManagerUIState.NEW_UI
     }
 
     // No manager at all = DISABLED
