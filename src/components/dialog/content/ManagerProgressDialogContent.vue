@@ -59,7 +59,7 @@
             class="overflow-y-auto h-64 rounded-lg bg-black"
             :class="{
               'h-64': index !== focusedLogs.length - 1,
-              'grow': index === focusedLogs.length - 1
+              grow: index === focusedLogs.length - 1
             }"
             @scroll="handleScroll"
           >
