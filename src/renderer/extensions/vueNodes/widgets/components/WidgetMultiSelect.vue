@@ -2,9 +2,8 @@
   <WidgetLayoutField :widget="widget">
     <MultiSelect
       v-model="localValue"
-      v-bind="filteredProps"
+      v-bind="combinedProps"
       :disabled="readonly"
-      append-to="self"
       class="w-full text-xs"
       size="small"
       :pt="{
@@ -20,6 +19,7 @@ import MultiSelect from 'primevue/multiselect'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -46,13 +46,17 @@ const { localValue, onChange } = useWidgetValue({
   emit
 })
 
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
+
 // MultiSelect specific excluded props include overlay styles
 const MULTISELECT_EXCLUDED_PROPS = [
   ...PANEL_EXCLUDED_PROPS,
   'overlayStyle'
 ] as const
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, MULTISELECT_EXCLUDED_PROPS)
-)
+const combinedProps = computed(() => ({
+  ...filterWidgetProps(props.widget.options, MULTISELECT_EXCLUDED_PROPS),
+  ...transformCompatProps.value
+}))
 </script>

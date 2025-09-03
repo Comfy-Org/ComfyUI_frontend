@@ -3,9 +3,8 @@
     <Select
       v-model="localValue"
       :options="selectOptions"
-      v-bind="filteredProps"
+      v-bind="combinedProps"
       :disabled="readonly"
-      append-to="self"
       class="w-full text-xs bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] !rounded-lg"
       size="small"
       :pt="{
@@ -21,6 +20,7 @@ import Select from 'primevue/select'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -47,9 +47,13 @@ const { localValue, onChange } = useWidgetValue({
   emit
 })
 
-const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
-)
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
+
+const combinedProps = computed(() => ({
+  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
+  ...transformCompatProps.value
+}))
 
 // Extract select options from widget options
 const selectOptions = computed(() => {
