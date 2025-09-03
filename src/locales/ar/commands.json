@@ -122,9 +122,6 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "تصدير سير العمل (تنسيق API)"
   },
-  "Comfy_Feedback": {
-    "label": "إرسال ملاحظات"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "تحويل التحديد إلى رسم فرعي"
   },
@@ -169,9 +166,6 @@
   },
   "Comfy_LoadDefaultWorkflow": {
     "label": "تحميل سير العمل الافتراضي"
-  },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "تبديل مدير العقد المخصصة"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "تبديل شريط تقدم مدير العقد المخصصة"

@@ -2717,6 +2717,20 @@
       }
     }
   },
+  "ImageScaleToMaxDimension": {
+    "display_name": "ImageScaleToMaxDimension",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      },
+      "largest_size": {
+        "name": "largest_size"
+      }
+    }
+  },
   "ImageScaleToTotalPixels": {
     "display_name": "Scale Image to Total Pixels",
     "inputs": {
