@@ -14,6 +14,9 @@ import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsD
 import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
 import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
+import NodeConflictDialogContent from '@/components/dialog/content/manager/NodeConflictDialogContent.vue'
+import NodeConflictFooter from '@/components/dialog/content/manager/NodeConflictFooter.vue'
+import NodeConflictHeader from '@/components/dialog/content/manager/NodeConflictHeader.vue'
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
@@ -27,6 +30,7 @@ import {
   type ShowDialogOptions,
   useDialogStore
 } from '@/stores/dialogStore'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -452,6 +456,54 @@ export const useDialogService = () => {
     })
   }
 
+  function showNodeConflictDialog(
+    options: {
+      showAfterWhatsNew?: boolean
+      conflictedPackages?: ConflictDetectionResult[]
+      dialogComponentProps?: DialogComponentProps
+      buttonText?: string
+      onButtonClick?: () => void
+    } = {}
+  ) {
+    const {
+      dialogComponentProps,
+      buttonText,
+      onButtonClick,
+      showAfterWhatsNew,
+      conflictedPackages
+    } = options
+
+    return dialogStore.showDialog({
+      key: 'global-node-conflict',
+      headerComponent: NodeConflictHeader,
+      footerComponent: NodeConflictFooter,
+      component: NodeConflictDialogContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class:
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-gray-500 dark-theme:bg-neutral-700 text-white'
+            }
+          }
+        },
+        ...dialogComponentProps
+      },
+      props: {
+        showAfterWhatsNew,
+        conflictedPackages
+      },
+      footerProps: {
+        buttonText,
+        onButtonClick
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -471,6 +523,7 @@ export const useDialogService = () => {
     confirm,
     toggleManagerDialog,
     toggleManagerProgressDialog,
-    showLayoutDialog
+    showLayoutDialog,
+    showNodeConflictDialog
   }
 }
