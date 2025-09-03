@@ -18,16 +18,13 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 describe('useCanvasInteractions', () => {
-  const mockGetCanvas = vi.fn()
-  const mockGet = vi.fn()
-
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useCanvasStore, { partial: true }).mockReturnValue({
-      getCanvas: mockGetCanvas
+      getCanvas: vi.fn()
     })
     vi.mocked(useSettingStore, { partial: true }).mockReturnValue({
-      get: mockGet
+      get: vi.fn()
     })
   })
 
@@ -35,7 +32,8 @@ describe('useCanvasInteractions', () => {
     it('should forward space+drag events to canvas when read_only is true', () => {
       // Setup
       const mockCanvas = { read_only: true }
-      mockGetCanvas.mockReturnValue(mockCanvas)
+      const { getCanvas } = useCanvasStore()
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas as any)
 
       const { handlePointer } = useCanvasInteractions()
 
@@ -57,7 +55,8 @@ describe('useCanvasInteractions', () => {
     it('should forward middle mouse button events to canvas', () => {
       // Setup
       const mockCanvas = { read_only: false }
-      mockGetCanvas.mockReturnValue(mockCanvas)
+      const { getCanvas } = useCanvasStore()
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas as any)
 
       const { handlePointer } = useCanvasInteractions()
 
@@ -79,7 +78,8 @@ describe('useCanvasInteractions', () => {
     it('should not prevent default when canvas is not in read_only mode and not middle button', () => {
       // Setup
       const mockCanvas = { read_only: false }
-      mockGetCanvas.mockReturnValue(mockCanvas)
+      const { getCanvas } = useCanvasStore()
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas as any)
 
       const { handlePointer } = useCanvasInteractions()
 
@@ -100,7 +100,8 @@ describe('useCanvasInteractions', () => {
 
     it('should return early when canvas is null', () => {
       // Setup
-      mockGetCanvas.mockReturnValue(null)
+      const { getCanvas } = useCanvasStore()
+      vi.mocked(getCanvas).mockReturnValue(null as any)
 
       const { handlePointer } = useCanvasInteractions()
 
@@ -115,7 +116,7 @@ describe('useCanvasInteractions', () => {
       handlePointer(mockEvent as unknown as PointerEvent)
 
       // Verify early return - no event methods should be called at all
-      expect(mockGetCanvas).toHaveBeenCalled()
+      expect(getCanvas).toHaveBeenCalled()
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
@@ -124,7 +125,8 @@ describe('useCanvasInteractions', () => {
   describe('handleWheel', () => {
     it('should forward ctrl+wheel events to canvas in standard nav mode', () => {
       // Setup
-      mockGet.mockReturnValue('standard')
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
 
       const { handleWheel } = useCanvasInteractions()
 
@@ -144,7 +146,8 @@ describe('useCanvasInteractions', () => {
 
     it('should forward all wheel events to canvas in legacy nav mode', () => {
       // Setup
-      mockGet.mockReturnValue('legacy')
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('legacy')
 
       const { handleWheel } = useCanvasInteractions()
 
@@ -164,7 +167,8 @@ describe('useCanvasInteractions', () => {
 
     it('should not prevent default for regular wheel events in standard nav mode', () => {
       // Setup
-      mockGet.mockReturnValue('standard')
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
 
       const { handleWheel } = useCanvasInteractions()
 
