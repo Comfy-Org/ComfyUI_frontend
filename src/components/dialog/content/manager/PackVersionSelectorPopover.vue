@@ -110,7 +110,7 @@ const SelectedVersionValues = {
 }
 
 const ManagerChannelValues = {
-  STABLE: 'stable' as ManagerChannel,
+  DEFAULT: 'default' as ManagerChannel,
   DEV: 'dev' as ManagerChannel
 }
 
@@ -242,7 +242,7 @@ const handleSubmit = async () => {
   await managerStore.installPack.call({
     id: nodePack.id,
     repository: nodePack.repository ?? '',
-    channel: ManagerChannelValues.STABLE,
+    channel: ManagerChannelValues.DEFAULT,
     mode: ManagerDatabaseSourceValues.CACHE,
     version: actualVersion,
     selected_version: selectedVersion.value
