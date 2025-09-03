@@ -56,9 +56,17 @@ export const useManagerStateStore = defineStore('managerState', () => {
     }
 
     // Server supports v4 but client doesn't = LEGACY_UI
-    if (serverSupportsV4 === true) {
+    if (serverSupportsV4 === true && !clientSupportsV4) {
       console.log(
         '[Manager State] Returning LEGACY_UI (server supports v4, client does not)'
+      )
+      return ManagerUIState.LEGACY_UI
+    }
+
+    // Server explicitly doesn't support v4 = LEGACY_UI
+    if (serverSupportsV4 === false) {
+      console.log(
+        '[Manager State] Returning LEGACY_UI (server does not support v4)'
       )
       return ManagerUIState.LEGACY_UI
     }
@@ -72,8 +80,8 @@ export const useManagerStateStore = defineStore('managerState', () => {
       return ManagerUIState.NEW_UI
     }
 
-    // No manager at all = DISABLED
-    console.log('[Manager State] Returning DISABLED (no manager support)')
+    // Should never reach here, but if we do, disable manager
+    console.log('[Manager State] Returning DISABLED (unexpected state)')
     return ManagerUIState.DISABLED
   }
 
