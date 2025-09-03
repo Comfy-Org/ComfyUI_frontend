@@ -132,7 +132,7 @@ describe('useManagerStateStore', () => {
       expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
-    it('should return DISABLED state when feature flags are undefined', () => {
+    it('should return NEW_UI state when server feature flags are undefined', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
@@ -148,10 +148,10 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.DISABLED)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
     })
 
-    it('should return DISABLED state when no manager is available', () => {
+    it('should return LEGACY_UI state when server does not support v4', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
       } as any)
@@ -167,7 +167,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.DISABLED)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should handle null systemStats gracefully', () => {
