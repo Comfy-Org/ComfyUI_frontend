@@ -495,6 +495,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
+  'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
   'VHS.AdvancedPreviews': z.string(),

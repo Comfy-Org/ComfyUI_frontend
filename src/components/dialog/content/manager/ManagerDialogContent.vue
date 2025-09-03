@@ -26,6 +26,35 @@
         }"
       >
         <div class="px-6 flex flex-col h-full">
+          <!-- Conflict Warning Banner -->
+          <div
+            v-if="shouldShowManagerBanner"
+            class="bg-yellow-600 bg-opacity-20 border border-yellow-400 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6 relative"
+          >
+            <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
+            <div class="flex flex-col gap-2 flex-1">
+              <p class="text-sm font-bold m-0">
+                {{ $t('manager.conflicts.warningBanner.title') }}
+              </p>
+              <p class="text-xs m-0">
+                {{ $t('manager.conflicts.warningBanner.message') }}
+              </p>
+              <p
+                class="text-sm font-bold m-0 cursor-pointer"
+                @click="onClickWarningLink"
+              >
+                {{ $t('manager.conflicts.warningBanner.button') }}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="absolute top-2 right-2 w-6 h-6 border-none outline-none bg-transparent flex items-center justify-center text-yellow-600 rounded transition-colors"
+              :aria-label="$t('g.close')"
+              @click="dismissWarningBanner"
+            >
+              <i class="pi pi-times text-sm"></i>
+            </button>
+          </div>
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
             v-model:searchMode="searchMode"
@@ -34,6 +63,7 @@
             :suggestions="suggestions"
             :is-missing-tab="isMissingTab"
             :sort-options="sortOptions"
+            :is-update-available-tab="isUpdateAvailableTab"
           />
           <div class="flex-1 overflow-auto">
             <div
@@ -69,7 +99,9 @@
                     :is-selected="
                       selectedNodePacks.some((pack) => pack.id === item.id)
                     "
-                    @click.stop="(event) => selectNodePack(item, event)"
+                    @click.stop="
+                      (event: MouseEvent) => selectNodePack(item, event)
+                    "
                   />
                 </template>
               </VirtualGrid>
@@ -101,7 +133,8 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -119,6 +152,7 @@ import { useManagerStatePersistence } from '@/composables/manager/useManagerStat
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
+import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
@@ -133,12 +167,13 @@ const { initialTab } = defineProps<{
 const { t } = useI18n()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
+const conflictAcknowledgment = useConflictAcknowledgment()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
 
 const GRID_STYLE = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(19rem, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(17rem, 1fr))',
   padding: '0.5rem',
   gap: '1.5rem'
 } as const
@@ -148,6 +183,13 @@ const {
   isOpen: isSideNavOpen,
   toggle: toggleSideNav
 } = useResponsiveCollapse()
+
+// Use conflict acknowledgment state from composable
+const {
+  shouldShowManagerBanner,
+  dismissWarningBanner,
+  dismissRedDotNotification
+} = conflictAcknowledgment
 
 const tabs = ref<TabItem[]>([
   { id: ManagerTab.All, label: t('g.all'), icon: 'pi-list' },
@@ -312,6 +354,13 @@ watch([isAllTab, searchResults], () => {
   displayPacks.value = searchResults.value
 })
 
+const onClickWarningLink = () => {
+  window.open(
+    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    '_blank'
+  )
+}
+
 const onResultsChange = () => {
   switch (selectedTab.value?.id) {
     case ManagerTab.Installed:
@@ -470,6 +519,10 @@ watch([searchQuery, selectedTab], () => {
     pageNumber.value = 0
     gridContainer.scrollTop = 0
   }
+})
+
+watchEffect(() => {
+  dismissRedDotNotification()
 })
 
 onBeforeUnmount(() => {
