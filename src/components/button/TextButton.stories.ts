@@ -16,6 +16,14 @@ const meta: Meta<typeof TextButton> = {
       options: ['sm', 'md'],
       defaultValue: 'md'
     },
+    border: {
+      control: 'boolean',
+      description: 'Toggle border attribute'
+    },
+    disabled: {
+      control: 'boolean',
+      description: 'Toggle disable status'
+    },
     type: {
       control: { type: 'select' },
       options: ['primary', 'secondary', 'transparent'],
