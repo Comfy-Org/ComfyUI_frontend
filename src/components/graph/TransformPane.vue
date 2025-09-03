@@ -117,7 +117,6 @@ useCanvasTransformSync(props.canvas, syncWithCanvas, {
 .transform-pane {
   position: absolute;
   inset: 0;
-  contain: layout style paint;
   transform-origin: 0 0;
   pointer-events: none;
   top: 0;
