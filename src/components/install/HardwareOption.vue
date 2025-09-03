@@ -59,14 +59,6 @@ defineEmits<{
   flex-shrink: 0;
 }
 
-.hardware-option:focus {
-  outline: none;
-}
-
-.hardware-option:focus-visible {
-  outline: none;
-}
-
 /* Custom border for selected state to ensure uniform color */
 .hardware-option.selected-border {
   @apply border-solid border-4 border-comfy-yellow;
