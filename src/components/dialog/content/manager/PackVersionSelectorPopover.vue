@@ -109,15 +109,15 @@ const SelectedVersionValues = {
   NIGHTLY: 'nightly' as SelectedVersion
 }
 
-const ManagerChannelValues = {
-  DEFAULT: 'default' as ManagerChannel,
-  DEV: 'dev' as ManagerChannel
+const ManagerChannelValues: Record<string, ManagerChannel> = {
+  DEFAULT: 'default', // ✅ Valid - will compile
+  DEV: 'dev' // ✅ Valid - will compile
 }
 
-const ManagerDatabaseSourceValues = {
-  CACHE: 'cache' as ManagerDatabaseSource,
-  REMOTE: 'remote' as ManagerDatabaseSource,
-  LOCAL: 'local' as ManagerDatabaseSource
+const ManagerDatabaseSourceValues: Record<string, ManagerDatabaseSource> = {
+  CACHE: 'cache',
+  REMOTE: 'remote',
+  LOCAL: 'local'
 }
 
 const { nodePack } = defineProps<{
