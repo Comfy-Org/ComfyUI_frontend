@@ -20,6 +20,7 @@
           :model-value="selectedFile?.name"
           :options="[selectedFile?.name || '']"
           :disabled="true"
+          v-bind="transformCompatProps"
           class="min-w-[8em] max-w-[20em] text-xs"
           size="small"
           :pt="{
@@ -88,6 +89,7 @@
           :model-value="selectedFile?.name"
           :options="[selectedFile?.name || '']"
           :disabled="true"
+          v-bind="transformCompatProps"
           class="min-w-[8em] max-w-[20em] text-xs"
           size="small"
           :pt="{
@@ -185,6 +187,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 // import { useI18n } from 'vue-i18n' // Commented out for testing
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 // const { t } = useI18n() // Commented out for testing
@@ -206,6 +209,9 @@ const { localValue, onChange } = useWidgetValue({
   defaultValue: null,
   emit
 })
+
+// Transform compatibility props for overlay positioning
+const transformCompatProps = useTransformCompatOverlayProps()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
