@@ -1,6 +1,6 @@
 <template>
   <div class="settings-container">
-    <ScrollPanel class="settings-sidebar flex-shrink-0 p-2 w-48 2xl:w-64">
+    <ScrollPanel class="settings-sidebar shrink-0 p-2 w-48 2xl:w-64">
       <SearchBox
         v-model:modelValue="searchQuery"
         class="settings-search-box w-full mb-2"

@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="visible"
-    class="w-[250px] absolute flex justify-center right-2 md:right-11 z-[1300] bottom-[66px] !bg-inherit !border-0"
+    class="w-[250px] absolute flex justify-center right-2 md:right-11 z-1300 bottom-[66px] bg-inherit! border-0!"
   >
     <div
       class="bg-white dark-theme:bg-[#2b2b2b] border border-gray-200 dark-theme:border-gray-700 rounded-lg shadow-lg p-4 w-4/5"
@@ -15,7 +15,7 @@
           :pt="{
             root: {
               class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:!bg-transparent focus:!bg-transparent active:!bg-transparent'
+                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
             },
             label: {
               class: 'flex flex-col items-start w-full'
@@ -41,7 +41,7 @@
           :pt="{
             root: {
               class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:!bg-transparent focus:!bg-transparent active:!bg-transparent'
+                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
             },
             label: {
               class: 'flex flex-col items-start w-full'
@@ -67,7 +67,7 @@
           :pt="{
             root: {
               class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:!bg-transparent focus:!bg-transparent active:!bg-transparent'
+                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
             },
             label: {
               class: 'flex flex-col items-start w-full'
@@ -92,7 +92,7 @@
           :pt="{
             root: {
               class:
-                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:!bg-transparent focus:!bg-transparent active:!bg-transparent'
+                'flex items-center justify-between cursor-pointer p-2 rounded w-full text-left hover:bg-transparent! focus:bg-transparent! active:bg-transparent!'
             },
             label: {
               class: 'flex flex-col items-start w-full'
@@ -122,7 +122,7 @@
             :show-buttons="false"
             :use-grouping="false"
             :unstyled="true"
-            input-class="flex-1 bg-transparent border-none outline-none text-sm shadow-none my-0 "
+            input-class="flex-1 bg-transparent border-none outline-hidden text-sm shadow-none my-0 "
             fluid
             @input="applyZoom"
             @keyup.enter="applyZoom"

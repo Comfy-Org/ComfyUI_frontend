@@ -52,7 +52,7 @@ app
         prefix: 'p',
         cssLayer: {
           name: 'primevue',
-          order: 'primevue, tailwind-utilities'
+          order: 'theme, base, primevue'
         },
         // This is a workaround for the issue with the dark mode selector
         // https://github.com/primefaces/primevue/issues/5515

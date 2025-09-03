@@ -5,7 +5,7 @@
     <!-- Backdrop -->
     <div
       v-if="hasActivePopup"
-      class="fixed inset-0 z-[1200]"
+      class="fixed inset-0 z-1200"
       @click="hideModal"
     ></div>
 
@@ -52,7 +52,7 @@
         icon="pi pi-expand"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="hover:dark-theme:!bg-[#444444] hover:!bg-[#E7E6E6]"
+        class="dark-theme:hover:bg-[#444444]! hover:bg-[#E7E6E6]!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <template #icon>
@@ -205,27 +205,27 @@ const focusCommandText = computed(() =>
 // Computed properties for button classes and states
 const selectButtonClass = computed(() =>
   isCanvasUnlocked.value
-    ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
+    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
     : ''
 )
 
 const handButtonClass = computed(() =>
   isCanvasReadOnly.value
-    ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
+    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
     : ''
 )
 
 const zoomButtonClass = computed(() => [
-  '!w-16',
+  'w-16!',
   isModalVisible.value
-    ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
+    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
     : '',
-  'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]'
+  'dark-theme:hover:bg-[#262729]! hover:bg-[#E7E6E6]!'
 ])
 
 const focusButtonClass = computed(() => ({
-  'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]': true,
-  'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]':
+  'dark-theme:hover:bg-[#262729]! hover:bg-[#E7E6E6]!': true,
+  'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!':
     workspaceStore.focusMode
 }))
 
@@ -254,9 +254,9 @@ const linkVisibilityAriaLabel = computed(() =>
 )
 const linkVisibleClass = computed(() => [
   linkHidden.value
-    ? 'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]'
+    ? 'not-active:dark-theme:bg-[#262729]! not-active:bg-[#E7E6E6]!'
     : '',
-  'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]'
+  'dark-theme:hover:bg-[#262729]! hover:bg-[#E7E6E6]!'
 ])
 
 onMounted(() => {
