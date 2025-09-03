@@ -198,10 +198,8 @@ const installProgress = computed(() => {
 let cleanupInstallStageListener: (() => void) | undefined
 
 onMounted(() => {
-  if (electron.InstallStage?.onUpdate) {
-    cleanupInstallStageListener =
-      electron.InstallStage.onUpdate(updateInstallStage)
-  }
+  cleanupInstallStageListener =
+    electron.InstallStage.onUpdate(updateInstallStage)
 })
 
 onUnmounted(() => {
