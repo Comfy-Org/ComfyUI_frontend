@@ -22,6 +22,181 @@ describe('FileNameMappingService', () => {
     service = new FileNameMappingService()
   })
 
+  describe('deduplication', () => {
+    it('should not modify unique names', async () => {
+      const mockData: FileNameMapping = {
+        'abc123.png': 'vacation.png',
+        'def456.jpg': 'profile.jpg',
+        'ghi789.gif': 'animation.gif'
+      }
+
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockData
+      } as any)
+
+      await service.getMapping('input')
+      const dedupMapping = service.getCachedMapping('input', true)
+
+      // All unique names should remain unchanged
+      expect(dedupMapping['abc123.png']).toBe('vacation.png')
+      expect(dedupMapping['def456.jpg']).toBe('profile.jpg')
+      expect(dedupMapping['ghi789.gif']).toBe('animation.gif')
+    })
+
+    it('should add hash suffix to duplicate names', async () => {
+      const mockData: FileNameMapping = {
+        'abc123def456.png': 'vacation.png',
+        'xyz789uvw012.png': 'vacation.png',
+        'mno345pqr678.png': 'vacation.png'
+      }
+
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockData
+      } as any)
+
+      await service.getMapping('input')
+      const dedupMapping = service.getCachedMapping('input', true)
+
+      // Check that all values are unique
+      const values = Object.values(dedupMapping)
+      const uniqueValues = new Set(values)
+      expect(uniqueValues.size).toBe(values.length)
+
+      // Check that suffixes are added correctly
+      expect(dedupMapping['abc123def456.png']).toBe('vacation_abc123de.png')
+      expect(dedupMapping['xyz789uvw012.png']).toBe('vacation_xyz789uv.png')
+      expect(dedupMapping['mno345pqr678.png']).toBe('vacation_mno345pq.png')
+    })
+
+    it('should preserve file extensions when deduplicating', async () => {
+      const mockData: FileNameMapping = {
+        'hash1234.safetensors': 'model.safetensors',
+        'hash5678.safetensors': 'model.safetensors'
+      }
+
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockData
+      } as any)
+
+      await service.getMapping('input')
+      const dedupMapping = service.getCachedMapping('input', true)
+
+      // Extensions should be preserved
+      expect(dedupMapping['hash1234.safetensors']).toBe(
+        'model_hash1234.safetensors'
+      )
+      expect(dedupMapping['hash5678.safetensors']).toBe(
+        'model_hash5678.safetensors'
+      )
+    })
+
+    it('should handle files without extensions', async () => {
+      const mockData: FileNameMapping = {
+        abc123: 'README',
+        def456: 'README',
+        ghi789: 'LICENSE'
+      }
+
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockData
+      } as any)
+
+      await service.getMapping('input')
+      const dedupMapping = service.getCachedMapping('input', true)
+
+      // Files without extensions should still get deduplicated
+      expect(dedupMapping['abc123']).toBe('README_abc123')
+      expect(dedupMapping['def456']).toBe('README_def456')
+      expect(dedupMapping['ghi789']).toBe('LICENSE') // Unique, no suffix
+    })
+
+    it('should build correct reverse mapping for deduplicated names', async () => {
+      const mockData: FileNameMapping = {
+        'hash1.png': 'image.png',
+        'hash2.png': 'image.png',
+        'hash3.jpg': 'photo.jpg'
+      }
+
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockData
+      } as any)
+
+      await service.getMapping('input')
+      const reverseMapping = service.getCachedReverseMapping('input', true)
+
+      // Reverse mapping should map deduplicated names back to hashes
+      expect(reverseMapping['image_hash1.png']).toBe('hash1.png')
+      expect(reverseMapping['image_hash2.png']).toBe('hash2.png')
+      expect(reverseMapping['photo.jpg']).toBe('hash3.jpg')
+
+      // Should not have original duplicate names in reverse mapping
+      expect(reverseMapping['image.png']).toBeUndefined()
+    })
+
+    it('should handle mixed duplicate and unique names', async () => {
+      const mockData: FileNameMapping = {
+        'a1.png': 'sunset.png',
+        'b2.png': 'sunset.png',
+        'c3.jpg': 'portrait.jpg',
+        'd4.gif': 'animation.gif',
+        'e5.png': 'sunset.png'
+      }
+
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockData
+      } as any)
+
+      await service.getMapping('input')
+      const dedupMapping = service.getCachedMapping('input', true)
+
+      // Duplicates get suffixes
+      expect(dedupMapping['a1.png']).toBe('sunset_a1.png')
+      expect(dedupMapping['b2.png']).toBe('sunset_b2.png')
+      expect(dedupMapping['e5.png']).toBe('sunset_e5.png')
+
+      // Unique names remain unchanged
+      expect(dedupMapping['c3.jpg']).toBe('portrait.jpg')
+      expect(dedupMapping['d4.gif']).toBe('animation.gif')
+    })
+
+    it('should return non-deduplicated mapping when deduplicated=false', async () => {
+      const mockData: FileNameMapping = {
+        'hash1.png': 'image.png',
+        'hash2.png': 'image.png'
+      }
+
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockData
+      } as any)
+
+      await service.getMapping('input')
+
+      // Without deduplication flag
+      const normalMapping = service.getCachedMapping('input', false)
+      expect(normalMapping['hash1.png']).toBe('image.png')
+      expect(normalMapping['hash2.png']).toBe('image.png')
+
+      // With deduplication flag
+      const dedupMapping = service.getCachedMapping('input', true)
+      expect(dedupMapping['hash1.png']).toBe('image_hash1.png')
+      expect(dedupMapping['hash2.png']).toBe('image_hash2.png')
+    })
+  })
+
   describe('getMapping', () => {
     it('should fetch mappings from API', async () => {
       const mockData: FileNameMapping = {

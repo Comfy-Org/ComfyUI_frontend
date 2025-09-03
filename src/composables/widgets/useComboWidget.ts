@@ -92,8 +92,8 @@ function applyFilenameMappingToWidget(
       const hashValue = widget.value
       if (typeof hashValue !== 'string') return String(hashValue)
 
-      // Try to get human-readable name from cache
-      const mapping = fileNameMappingService.getCachedMapping('input')
+      // Try to get human-readable name from cache (deduplicated for display)
+      const mapping = fileNameMappingService.getCachedMapping('input', true)
       const humanName = mapping[hashValue]
 
       // Return human name for display, fallback to hash
@@ -117,8 +117,8 @@ function applyFilenameMappingToWidget(
     get() {
       if (!Array.isArray(rawValues)) return rawValues
 
-      // Map values to human-readable names
-      const mapping = fileNameMappingService.getCachedMapping('input')
+      // Map values to human-readable names (deduplicated for dropdown display)
+      const mapping = fileNameMappingService.getCachedMapping('input', true)
       const mapped = rawValues.map((value: any) => {
         if (typeof value === 'string') {
           const humanName = mapping[value]
@@ -165,8 +165,8 @@ function applyFilenameMappingToWidget(
 
   // Override incrementValue and decrementValue for arrow key navigation
   ;(widget as any).incrementValue = function (options: any) {
-    // Get the current human-readable value
-    const mapping = fileNameMappingService.getCachedMapping('input')
+    // Get the current human-readable value (deduplicated)
+    const mapping = fileNameMappingService.getCachedMapping('input', true)
     const currentHumanName = mapping[widget.value] || widget.value
 
     // Get the values array (which contains human names through our proxy)
@@ -185,8 +185,8 @@ function applyFilenameMappingToWidget(
     }
   }
   ;(widget as any).decrementValue = function (options: any) {
-    // Get the current human-readable value
-    const mapping = fileNameMappingService.getCachedMapping('input')
+    // Get the current human-readable value (deduplicated)
+    const mapping = fileNameMappingService.getCachedMapping('input', true)
     const currentHumanName = mapping[widget.value] || widget.value
 
     // Get the values array (which contains human names through our proxy)
@@ -210,8 +210,11 @@ function applyFilenameMappingToWidget(
   ;(widget as any).setValue = function (selectedValue: any, options?: any) {
     if (typeof selectedValue === 'string') {
       // Check if this is a human-readable name that needs reverse mapping
-      const reverseMapping =
-        fileNameMappingService.getCachedReverseMapping('input')
+      // Use deduplicated reverse mapping to handle suffixed names
+      const reverseMapping = fileNameMappingService.getCachedReverseMapping(
+        'input',
+        true
+      )
       const hashValue = reverseMapping[selectedValue] || selectedValue
 
       // Set the hash value
@@ -242,8 +245,11 @@ function applyFilenameMappingToWidget(
   widget.callback = function (selectedValue: any) {
     if (typeof selectedValue === 'string') {
       // Check if this is a human-readable name that needs reverse mapping
-      const reverseMapping =
-        fileNameMappingService.getCachedReverseMapping('input')
+      // Use deduplicated reverse mapping to handle suffixed names
+      const reverseMapping = fileNameMappingService.getCachedReverseMapping(
+        'input',
+        true
+      )
       const hashValue = reverseMapping[selectedValue] || selectedValue
 
       // Set the hash value

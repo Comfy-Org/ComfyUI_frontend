@@ -8,6 +8,7 @@ export interface FileNameMapping {
 
 export interface CacheEntry {
   data: FileNameMapping
+  dedupData?: FileNameMapping // Deduplicated mapping with unique display names
   timestamp: number
   error?: Error | null
   fetchPromise?: Promise<FileNameMapping>
@@ -88,16 +89,25 @@ export class FileNameMappingService {
   /**
    * Get cached mapping synchronously (returns empty object if not cached).
    * @param fileType - The file type to get cached mapping for
+   * @param deduplicated - Whether to return deduplicated names for display
    * @returns The cached mapping or empty object
    */
-  getCachedMapping(fileType: FileType = 'input'): FileNameMapping {
+  getCachedMapping(
+    fileType: FileType = 'input',
+    deduplicated: boolean = false
+  ): FileNameMapping {
     const cached = this.cache.get(fileType)
     if (cached && !this.isExpired(cached) && !cached.failed) {
+      // Return deduplicated mapping if requested and available
+      if (deduplicated && cached.dedupData) {
+        return cached.dedupData
+      }
       const result = cached.data
       console.debug(
         `[FileNameMapping] getCachedMapping returning cached data:`,
         {
           fileType,
+          deduplicated,
           mappingCount: Object.keys(result).length,
           sampleMappings: Object.entries(result).slice(0, 3)
         }
@@ -113,12 +123,14 @@ export class FileNameMappingService {
   /**
    * Get reverse mapping (human-readable name to hash) synchronously.
    * @param fileType - The file type to get reverse mapping for
+   * @param deduplicated - Whether to use deduplicated names
    * @returns The reverse mapping object
    */
   getCachedReverseMapping(
-    fileType: FileType = 'input'
+    fileType: FileType = 'input',
+    deduplicated: boolean = false
   ): Record<string, string> {
-    const mapping = this.getCachedMapping(fileType)
+    const mapping = this.getCachedMapping(fileType, deduplicated)
     const reverseMapping: Record<string, string> = {}
 
     // Build reverse mapping: humanName -> hashName
@@ -212,6 +224,7 @@ export class FileNameMappingService {
 
       // Update cache with successful result
       entry.data = data
+      entry.dedupData = this.deduplicateMapping(data)
       entry.timestamp = Date.now()
       entry.error = null
       entry.failed = false
@@ -314,6 +327,73 @@ export class FileNameMappingService {
   private shouldRetry(entry: CacheEntry): boolean {
     // Allow retry after 30 seconds for failed requests
     return entry.timestamp > 0 && Date.now() - entry.timestamp > 30000
+  }
+
+  /**
+   * Deduplicate human-readable names when multiple hashes map to the same name.
+   * Adds a suffix to duplicate names to make them unique.
+   * @param mapping - The original hash -> human name mapping
+   * @returns A new mapping with deduplicated human names
+   */
+  private deduplicateMapping(mapping: FileNameMapping): FileNameMapping {
+    const dedupMapping: FileNameMapping = {}
+    const nameCount = new Map<string, number>()
+    const nameToHashes = new Map<string, string[]>()
+
+    // First pass: count occurrences of each human name
+    for (const [hash, humanName] of Object.entries(mapping)) {
+      const count = nameCount.get(humanName) || 0
+      nameCount.set(humanName, count + 1)
+
+      // Track which hashes map to this human name
+      const hashes = nameToHashes.get(humanName) || []
+      hashes.push(hash)
+      nameToHashes.set(humanName, hashes)
+    }
+
+    // Second pass: create deduplicated names
+    const nameIndex = new Map<string, number>()
+
+    for (const [hash, humanName] of Object.entries(mapping)) {
+      const count = nameCount.get(humanName) || 1
+
+      if (count === 1) {
+        // No duplicates, use original name
+        dedupMapping[hash] = humanName
+      } else {
+        // Has duplicates, add suffix
+        const currentIndex = (nameIndex.get(humanName) || 0) + 1
+        nameIndex.set(humanName, currentIndex)
+
+        // Extract file extension if present
+        const lastDotIndex = humanName.lastIndexOf('.')
+        let baseName = humanName
+        let extension = ''
+
+        if (lastDotIndex > 0 && lastDotIndex < humanName.length - 1) {
+          baseName = humanName.substring(0, lastDotIndex)
+          extension = humanName.substring(lastDotIndex)
+        }
+
+        // Add suffix: use first 8 chars of hash (without extension)
+        // Remove extension from hash if present
+        const hashWithoutExt = hash.includes('.')
+          ? hash.substring(0, hash.lastIndexOf('.'))
+          : hash
+        const hashSuffix = hashWithoutExt.substring(0, 8)
+        dedupMapping[hash] = `${baseName}_${hashSuffix}${extension}`
+      }
+    }
+
+    console.debug('[FileNameMappingService] Deduplicated mapping:', {
+      original: Object.keys(mapping).length,
+      duplicates: Array.from(nameCount.entries()).filter(
+        ([_, count]) => count > 1
+      ),
+      sample: Object.entries(dedupMapping).slice(0, 5)
+    })
+
+    return dedupMapping
   }
 }
 

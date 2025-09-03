@@ -33,6 +33,158 @@ describe('useComboWidget', () => {
     vi.clearAllMocks()
   })
 
+  describe('deduplication', () => {
+    it('should display deduplicated names in dropdown', () => {
+      const constructor = useComboWidget()
+      const mockWidget = {
+        name: 'image',
+        value: 'hash1.png',
+        options: {
+          values: ['hash1.png', 'hash2.png', 'hash3.png']
+        },
+        callback: vi.fn()
+      }
+      const mockNode = {
+        addWidget: vi.fn().mockReturnValue(mockWidget)
+      }
+
+      // Mock deduplicated mapping
+      vi.mocked(fileNameMappingService.getCachedMapping).mockImplementation(
+        (_fileType, deduplicated) => {
+          if (deduplicated) {
+            return {
+              'hash1.png': 'vacation_hash1.png',
+              'hash2.png': 'vacation_hash2.png',
+              'hash3.png': 'landscape.png'
+            }
+          }
+          return {
+            'hash1.png': 'vacation.png',
+            'hash2.png': 'vacation.png',
+            'hash3.png': 'landscape.png'
+          }
+        }
+      )
+
+      const inputSpec: InputSpec = {
+        type: 'COMBO',
+        name: 'image',
+        options: ['hash1.png', 'hash2.png', 'hash3.png']
+      }
+
+      const widget = constructor(mockNode as any, inputSpec)
+
+      // Check that dropdown values are deduplicated
+      const dropdownValues = widget.options.values
+      expect(dropdownValues).toEqual([
+        'vacation_hash1.png',
+        'vacation_hash2.png',
+        'landscape.png'
+      ])
+    })
+
+    it('should correctly handle selection of deduplicated names', () => {
+      const constructor = useComboWidget()
+      const mockWidget = {
+        name: 'image',
+        value: 'hash1.png',
+        options: {
+          values: ['hash1.png', 'hash2.png']
+        },
+        callback: vi.fn()
+      }
+      const mockNode = {
+        addWidget: vi.fn().mockReturnValue(mockWidget)
+      }
+
+      // Mock deduplicated mappings
+      vi.mocked(fileNameMappingService.getCachedMapping).mockImplementation(
+        (_fileType, deduplicated) => {
+          if (deduplicated) {
+            return {
+              'hash1.png': 'image_hash1.png',
+              'hash2.png': 'image_hash2.png'
+            }
+          }
+          return {
+            'hash1.png': 'image.png',
+            'hash2.png': 'image.png'
+          }
+        }
+      )
+
+      vi.mocked(
+        fileNameMappingService.getCachedReverseMapping
+      ).mockImplementation((_fileType, deduplicated) => {
+        if (deduplicated) {
+          return {
+            'image_hash1.png': 'hash1.png',
+            'image_hash2.png': 'hash2.png'
+          } as Record<string, string>
+        }
+        return {
+          'image.png': 'hash2.png' // Last one wins in non-dedup
+        } as Record<string, string>
+      })
+
+      const inputSpec: InputSpec = {
+        type: 'COMBO',
+        name: 'image',
+        options: ['hash1.png', 'hash2.png']
+      }
+
+      const widget = constructor(mockNode as any, inputSpec)
+
+      // Select deduplicated name
+      ;(widget as any).setValue('image_hash1.png')
+
+      // Should set the correct hash value
+      expect(widget.value).toBe('hash1.png')
+    })
+
+    it('should display correct deduplicated name in _displayValue', () => {
+      const constructor = useComboWidget()
+      const mockWidget = {
+        name: 'image',
+        value: 'abc123.png',
+        options: {
+          values: ['abc123.png', 'def456.png']
+        },
+        callback: vi.fn()
+      }
+      const mockNode = {
+        addWidget: vi.fn().mockReturnValue(mockWidget)
+      }
+
+      // Mock deduplicated mapping
+      vi.mocked(fileNameMappingService.getCachedMapping).mockImplementation(
+        (_fileType, deduplicated) => {
+          if (deduplicated) {
+            return {
+              'abc123.png': 'photo_abc123.png',
+              'def456.png': 'photo_def456.png'
+            }
+          }
+          return {
+            'abc123.png': 'photo.png',
+            'def456.png': 'photo.png'
+          }
+        }
+      )
+
+      const inputSpec: InputSpec = {
+        type: 'COMBO',
+        name: 'image',
+        options: ['abc123.png', 'def456.png']
+      }
+
+      const widget = constructor(mockNode as any, inputSpec)
+
+      // Check display value shows deduplicated name
+      expect((widget as any)._displayValue).toBe('photo_abc123.png')
+    })
+  })
+
   it('should handle undefined spec', () => {
     const constructor = useComboWidget()
     const mockNode = {
