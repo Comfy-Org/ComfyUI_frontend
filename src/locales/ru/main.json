@@ -287,6 +287,7 @@
     "color": "Цвет",
     "comingSoon": "Скоро будет",
     "command": "Команда",
+    "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
     "community": "Сообщество",
     "completed": "Завершено",
     "confirm": "Подтвердить",
@@ -309,7 +310,6 @@
     "disabling": "Отключение",
     "dismiss": "Закрыть",
     "download": "Скачать",
-    "duplicate": "Дублировать",
     "edit": "Редактировать",
     "empty": "Пусто",
     "enableAll": "Включить все",
@@ -322,6 +322,7 @@
     "feedback": "Обратная связь",
     "filter": "Фильтр",
     "findIssues": "Найти проблемы",
+    "firstTimeUIMessage": "Вы впервые используете новый интерфейс. Выберите \"Меню > Использовать новое меню > Отключено\", чтобы восстановить старый интерфейс.",
     "frontendNewer": "Версия интерфейса {frontendVersion} может быть несовместима с версией сервера {backendVersion}.",
     "frontendOutdated": "Версия интерфейса {frontendVersion} устарела. Требуется версия не ниже {requiredVersion} для работы с сервером.",
     "goToNode": "Перейти к ноде",
@@ -419,17 +420,12 @@
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",
-    "focusMode": "Режим фокуса",
-    "hand": "Рука",
-    "hideLinks": "Скрыть связи",
     "panMode": "Режим панорамирования",
     "resetView": "Сбросить вид",
-    "select": "Выбрать",
     "selectMode": "Выбрать режим",
-    "showLinks": "Показать связи",
+    "toggleLinkVisibility": "Переключить видимость ссылок",
     "toggleMinimap": "Показать/скрыть миникарту",
     "zoomIn": "Увеличить",
-    "zoomOptions": "Параметры масштабирования",
     "zoomOut": "Уменьшить"
   },
   "groupNode": {
@@ -551,46 +547,12 @@
     "updateConsent": "Вы ранее согласились на отчётность об ошибках. Теперь мы отслеживаем метрики событий, чтобы помочь выявить ошибки и улучшить приложение. Личная идентифицируемая информация не собирается."
   },
   "issueReport": {
-    "contactFollowUp": "Свяжитесь со мной для уточнения",
-    "contactSupportDescription": "Пожалуйста, заполните форму ниже для отправки вашего отчёта",
-    "contactSupportTitle": "Связаться с поддержкой",
-    "describeTheProblem": "Опишите проблему",
-    "email": "Электронная почта",
-    "feedbackTitle": "Помогите нам улучшить ComfyUI, оставив отзыв",
-    "helpFix": "Помочь исправить это",
-    "helpTypes": {
-      "billingPayments": "Оплата / Платежи",
-      "bugReport": "Сообщить об ошибке",
-      "giveFeedback": "Оставить отзыв",
-      "loginAccessIssues": "Проблемы со входом / доступом",
-      "somethingElse": "Другое"
-    },
-    "notifyResolve": "Уведомить меня, когда проблема будет решена",
-    "provideAdditionalDetails": "Предоставьте дополнительные сведения (необязательно)",
-    "provideEmail": "Укажите вашу электронную почту (необязательно)",
-    "rating": "Рейтинг",
-    "selectIssue": "Выберите проблему",
-    "stackTrace": "Трассировка стека",
-    "submitErrorReport": "Отправить отчёт об ошибке (необязательно)",
-    "systemStats": "Статистика системы",
-    "validation": {
-      "descriptionRequired": "Описание обязательно",
-      "helpTypeRequired": "Тип помощи обязателен",
-      "invalidEmail": "Пожалуйста, введите действительный адрес электронной почты",
-      "maxLength": "Сообщение слишком длинное",
-      "selectIssueType": "Пожалуйста, выберите тип проблемы"
-    },
-    "whatCanWeInclude": "Уточните, что включить в отчёт",
-    "whatDoYouNeedHelpWith": "С чем вам нужна помощь?"
+    "helpFix": "Помочь исправить это"
   },
   "load3d": {
     "applyingTexture": "Применение текстуры...",
     "backgroundColor": "Цвет фона",
     "camera": "Камера",
-    "cameraType": {
-      "orthographic": "Ортографическая",
-      "perspective": "Перспективная"
-    },
     "clearRecording": "Очистить запись",
     "edgeThreshold": "Пороговое значение края",
     "export": "Экспорт",
@@ -611,7 +573,6 @@
       "wireframe": "Каркас"
     },
     "model": "Модель",
-    "openIn3DViewer": "Открыть в 3D просмотрщике",
     "previewOutput": "Предварительный просмотр",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
@@ -622,22 +583,8 @@
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
     "upDirection": "Направление Вверх",
-    "upDirections": {
-      "original": "Оригинал"
-    },
     "uploadBackgroundImage": "Загрузить фоновое изображение",
-    "uploadTexture": "Загрузить текстуру",
-    "viewer": {
-      "apply": "Применить",
-      "cameraSettings": "Настройки камеры",
-      "cameraType": "Тип камеры",
-      "cancel": "Отмена",
-      "exportSettings": "Настройки экспорта",
-      "lightSettings": "Настройки освещения",
-      "modelSettings": "Настройки модели",
-      "sceneSettings": "Настройки сцены",
-      "title": "3D Просмотрщик (Бета)"
-    }
+    "uploadTexture": "Загрузить текстуру"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Требуется ComfyUI {version}:",
@@ -684,6 +631,9 @@
     "installationQueue": "Очередь установки",
     "lastUpdated": "Последнее обновление",
     "latestVersion": "Последняя",
+    "legacyManagerUI": "Использовать устаревший UI",
+    "legacyManagerUIDescription": "Чтобы использовать устаревший UI менеджера, запустите ComfyUI с --enable-manager-legacy-ui",
+    "legacyMenuNotAvailable": "Устаревшее меню менеджера недоступно в этой версии ComfyUI. Пожалуйста, используйте новое меню менеджера.",
     "license": "Лицензия",
     "loadingVersions": "Загрузка версий...",
     "nightlyVersion": "Ночная",
@@ -766,7 +716,6 @@
     "manageExtensions": "Управление расширениями",
     "onChange": "При изменении",
     "onChangeTooltip": "Рабочий процесс будет поставлен в очередь после внесения изменений",
-    "queue": "Панель очереди",
     "refresh": "Обновить определения нод",
     "resetView": "Сбросить вид холста",
     "run": "Запустить",
@@ -782,8 +731,10 @@
     "Bottom Panel": "Нижняя панель",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
-    "Canvas Performance": "Производительность холста",
+    "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
     "Canvas Toggle Lock": "Переключение блокировки холста",
+    "Canvas Toggle Minimap": "Показать/скрыть миникарту на холсте",
+    "Check for Custom Node Updates": "Проверить обновления пользовательских узлов",
     "Check for Updates": "Проверить наличие обновлений",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
     "Clear Workflow": "Очистить рабочий процесс",
@@ -797,29 +748,27 @@
     "Contact Support": "Связаться с поддержкой",
     "Convert Selection to Subgraph": "Преобразовать выделенное в подграф",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
+    "Custom Nodes (Legacy)": "Пользовательские узлы (устаревшие)",
+    "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
     "Decrease Brush Size in MaskEditor": "Уменьшить размер кисти в MaskEditor",
     "Delete Selected Items": "Удалить выбранные элементы",
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
-    "Exit Subgraph": "Выйти из подграфа",
     "Export": "Экспортировать",
     "Export (API)": "Экспорт (API)",
-    "File": "Файл",
     "Fit Group To Contents": "Подогнать группу под содержимое",
-    "Focus Mode": "Режим фокуса",
+    "Fit view to selected nodes": "Подогнать вид под выбранные ноды",
     "Give Feedback": "Оставить отзыв",
     "Group Selected Nodes": "Сгруппировать выбранные ноды",
     "Help": "Помощь",
-    "Help Center": "Центр поддержки",
     "Increase Brush Size in MaskEditor": "Увеличить размер кисти в MaskEditor",
+    "Install Missing Custom Nodes": "Установить отсутствующие пользовательские узлы",
     "Interrupt": "Прервать",
     "Load Default Workflow": "Загрузить стандартный рабочий процесс",
-    "Lock Canvas": "Заблокировать холст",
     "Manage group nodes": "Управление групповыми нодами",
     "Manager": "Менеджер",
-    "Minimap": "Мини-карта",
-    "Model Library": "Библиотека моделей",
+    "Manager Menu (Legacy)": "Меню управления (устаревшее)",
     "Move Selected Nodes Down": "Переместить выбранные узлы вниз",
     "Move Selected Nodes Left": "Переместить выбранные узлы влево",
     "Move Selected Nodes Right": "Переместить выбранные узлы вправо",
@@ -827,10 +776,7 @@
     "Mute/Unmute Selected Nodes": "Отключить/включить звук для выбранных нод",
     "New": "Новый",
     "Next Opened Workflow": "Следующий открытый рабочий процесс",
-    "Node Library": "Библиотека узлов",
-    "Node Links": "Связи узлов",
     "Open": "Открыть",
-    "Open 3D Viewer (Beta) for Selected Node": "Открыть 3D-просмотрщик (бета) для выбранного узла",
     "Open Custom Nodes Folder": "Открыть папку пользовательских нод",
     "Open DevTools": "Открыть инструменты разработчика",
     "Open Inputs Folder": "Открыть папку входных данных",
@@ -843,7 +789,6 @@
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
-    "Queue Panel": "Панель очереди",
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
     "Queue Selected Output Nodes": "Добавить выбранные выходные узлы в очередь",
@@ -870,19 +815,11 @@
     "Toggle the Custom Nodes Manager Progress Bar": "Переключить индикатор выполнения менеджера пользовательских узлов",
     "Undo": "Отменить",
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
-    "Unlock Canvas": "Разблокировать холст",
-    "Unpack the selected Subgraph": "Распаковать выбранный подграф",
-    "Workflows": "Рабочие процессы",
+    "Unload Models": "Выгрузить модели",
+    "Unload Models and Execution Cache": "Выгрузить модели и кэш выполнения",
+    "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
-    "Zoom Out": "Уменьшить",
-    "Zoom to fit": "Масштабировать по размеру"
-  },
-  "minimap": {
-    "nodeColors": "Цвета узлов",
-    "renderBypassState": "Отображать состояние обхода",
-    "renderErrorState": "Отображать состояние ошибки",
-    "showGroups": "Показать фреймы/группы",
-    "showLinks": "Показать связи"
+    "Zoom Out": "Уменьшить"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "Больше не показывать это",
@@ -1150,7 +1087,6 @@
   },
   "settingsCategories": {
     "3D": "3D",
-    "3DViewer": "3D-просмотрщик",
     "API Nodes": "API-узлы",
     "About": "О программе",
     "Appearance": "Внешний вид",
@@ -1202,31 +1138,10 @@
     "Window": "Окно",
     "Workflow": "Рабочий процесс"
   },
-  "shortcuts": {
-    "essentials": "Основные",
-    "keyboardShortcuts": "Горячие клавиши",
-    "manageShortcuts": "Управление горячими клавишами",
-    "noKeybinding": "Нет сочетания клавиш",
-    "subcategories": {
-      "node": "Узел",
-      "panelControls": "Управление панелью",
-      "queue": "Очередь",
-      "view": "Просмотр",
-      "workflow": "Рабочий процесс"
-    },
-    "viewControls": "Управление просмотром"
-  },
   "sideToolbar": {
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
     "helpCenter": "Центр поддержки",
-    "labels": {
-      "models": "Модели",
-      "nodes": "Узлы",
-      "queue": "Очередь",
-      "templates": "Шаблоны",
-      "workflows": "Воркфлоу"
-    },
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
@@ -1264,7 +1179,6 @@
       },
       "showFlatList": "Показать плоский список"
     },
-    "templates": "Шаблоны",
     "workflowTab": {
       "confirmDelete": "Вы уверены, что хотите удалить этот рабочий процесс?",
       "confirmDeleteTitle": "Удалить рабочий процесс?",
@@ -1311,8 +1225,6 @@
       "Video": "Видео",
       "Video API": "Video API"
     },
-    "loadingMore": "Загрузка дополнительных шаблонов...",
-    "searchPlaceholder": "Поиск шаблонов...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D",
@@ -1635,7 +1547,6 @@
     "failedToExportModel": "Не удалось экспортировать модель как {format}",
     "failedToFetchBalance": "Не удалось получить баланс: {error}",
     "failedToFetchLogs": "Не удалось получить серверные логи",
-    "failedToInitializeLoad3dViewer": "Не удалось инициализировать 3D просмотрщик",
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "fileLoadError": "Не удалось найти рабочий процесс в {fileName}",
@@ -1710,11 +1621,5 @@
     "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
-  },
-  "zoomControls": {
-    "hideMinimap": "Скрыть миникарту",
-    "label": "Элементы управления масштабом",
-    "showMinimap": "Показать миникарту",
-    "zoomToFit": "Масштабировать по размеру"
   }
 }
