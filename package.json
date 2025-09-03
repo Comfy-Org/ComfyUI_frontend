@@ -38,8 +38,6 @@
     "build-storybook": "storybook build"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.3",
-    "@babel/preset-typescript": "^7.27.1",
     "@eslint/js": "^9.8.0",
     "@executeautomation/playwright-mcp-server": "^1.0.6",
     "@iconify/json": "^2.2.245",
