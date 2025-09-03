@@ -141,7 +141,7 @@ const showSettings = (defaultPanel?: string) => {
 const managerStateStore = useManagerStateStore()
 
 const showManageExtensions = async () => {
-  const state = managerStateStore.managerUIState
+  const state = managerStateStore.getManagerUIState()
 
   switch (state) {
     case ManagerUIState.DISABLED:

@@ -732,7 +732,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
-        const managerState = useManagerStateStore().managerUIState
+        const managerState = useManagerStateStore().getManagerUIState()
 
         switch (managerState) {
           case ManagerUIState.DISABLED:
@@ -769,7 +769,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.17.0',
       function: () => {
         const managerStore = useManagerStateStore()
-        const state = managerStore.managerUIState
+        const state = managerStore.getManagerUIState()
 
         switch (state) {
           case ManagerUIState.DISABLED:
@@ -803,7 +803,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.17.0',
       function: async () => {
         const managerStore = useManagerStateStore()
-        const state = managerStore.managerUIState
+        const state = managerStore.getManagerUIState()
 
         switch (state) {
           case ManagerUIState.DISABLED:

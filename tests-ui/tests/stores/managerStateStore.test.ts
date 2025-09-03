@@ -39,7 +39,7 @@ describe('useManagerStateStore', () => {
     vi.clearAllMocks()
   })
 
-  describe('managerUIState computed', () => {
+  describe('getManagerUIState function', () => {
     it('should return DISABLED state when --disable-manager is present', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
@@ -53,7 +53,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.DISABLED)
     })
 
     it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
@@ -69,7 +69,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return NEW_UI state when client and server both support v4', () => {
@@ -90,7 +90,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.NEW_UI)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
     })
 
     it('should return LEGACY_UI state when server supports v4 but client does not', () => {
@@ -111,7 +111,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return LEGACY_UI state when legacy manager extension exists', () => {
@@ -129,7 +129,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.LEGACY_UI)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return DISABLED state when feature flags are undefined', () => {
@@ -148,7 +148,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.DISABLED)
     })
 
     it('should return DISABLED state when no manager is available', () => {
@@ -167,7 +167,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.DISABLED)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.DISABLED)
     })
 
     it('should handle null systemStats gracefully', () => {
@@ -188,7 +188,7 @@ describe('useManagerStateStore', () => {
 
       const store = useManagerStateStore()
 
-      expect(store.managerUIState).toBe(ManagerUIState.NEW_UI)
+      expect(store.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
     })
   })
 })
