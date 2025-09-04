@@ -147,6 +147,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
@@ -314,6 +315,7 @@ const menuItems = computed<MenuItem[]>(() => {
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
         await useManagerStateStore().openManager({
+          initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
         emit('close')

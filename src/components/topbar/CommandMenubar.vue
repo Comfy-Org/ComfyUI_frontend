@@ -90,6 +90,7 @@ import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -137,7 +138,10 @@ const showSettings = (defaultPanel?: string) => {
 const managerStateStore = useManagerStateStore()
 
 const showManageExtensions = async () => {
-  await managerStateStore.openManager({ showToastOnLegacyError: false })
+  await managerStateStore.openManager({
+    initialTab: ManagerTab.All,
+    showToastOnLegacyError: false
+  })
 }
 
 const themeMenuItems = computed(() => {

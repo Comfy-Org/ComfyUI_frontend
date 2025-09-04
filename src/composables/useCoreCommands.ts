@@ -756,7 +756,10 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
 
-        await managerStore.openManager({ showToastOnLegacyError: false })
+        await managerStore.openManager({
+          initialTab: ManagerTab.UpdateAvailable,
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -876,6 +879,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Manager',
       function: async () => {
         await useManagerStateStore().openManager({
+          initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
       }
