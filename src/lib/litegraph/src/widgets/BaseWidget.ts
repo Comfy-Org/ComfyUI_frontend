@@ -63,10 +63,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   linkedWidgets?: IBaseWidget[]
-  name: string
-  options: TWidget['options']
+  name!: string
+  options!: TWidget['options']
   label?: string
-  type: TWidget['type']
+  type!: TWidget['type']
   y: number = 0
   last_y?: number
   width?: number
