@@ -38,35 +38,28 @@ enum ManagerRoute {
   QUEUE_TASK = 'manager/queue/task'
 }
 
-// Dynamically determine API version based on manager state
-const getApiBaseURL = () => {
-  const managerStore = useManagerStateStore()
-  const state = managerStore.getManagerUIState()
-
-  // Use v2 API only for NEW_UI state
-  const apiPrefix = state === ManagerUIState.NEW_UI ? '/v2/' : '/'
-  return api.apiURL(apiPrefix)
-}
-
+// Always use v2 API for New Manager (no dynamic switching needed)
 const managerApiClient = axios.create({
+  baseURL: api.apiURL('/v2/'),
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// Add request interceptor to dynamically set baseURL
-managerApiClient.interceptors.request.use((config) => {
-  config.baseURL = getApiBaseURL()
-  return config
-})
-
 /**
  * Service for interacting with the ComfyUI Manager API
  * Provides methods for managing packs, ComfyUI-Manager queue operations, and system functions
+ * Note: This service should only be used when Manager state is NEW_UI
  */
 export const useComfyManagerService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Check if manager service should be available
+  const isManagerServiceAvailable = () => {
+    const managerStore = useManagerStateStore()
+    return managerStore.getManagerUIState() === ManagerUIState.NEW_UI
+  }
 
   const handleRequestError = (
     err: unknown,
@@ -105,6 +98,12 @@ export const useComfyManagerService = () => {
     }
   ): Promise<T | null> => {
     const { errorContext, routeSpecificErrors, isQueueOperation } = options
+
+    // Block service calls if not in NEW_UI state
+    if (!isManagerServiceAvailable()) {
+      error.value = 'Manager service is not available in current mode'
+      return null
+    }
 
     isLoading.value = true
     error.value = null
