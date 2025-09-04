@@ -14,7 +14,6 @@ import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composabl
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
-import { useImageWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageWidget'
 import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { useMultiSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMultiSelectWidget'
@@ -301,7 +300,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   IMAGEUPLOAD: useImageUploadWidget(),
   FILEUPLOAD: transformWidgetConstructorV2ToV1(useFileUploadWidget()),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
-  IMAGE: transformWidgetConstructorV2ToV1(useImageWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
   TREESELECT: transformWidgetConstructorV2ToV1(useTreeSelectWidget()),
   MULTISELECT: transformWidgetConstructorV2ToV1(useMultiSelectWidget()),

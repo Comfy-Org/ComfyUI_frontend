@@ -9,7 +9,6 @@ import WidgetChart from '../components/WidgetChart.vue'
 import WidgetColorPicker from '../components/WidgetColorPicker.vue'
 import WidgetFileUpload from '../components/WidgetFileUpload.vue'
 import WidgetGalleria from '../components/WidgetGalleria.vue'
-import WidgetImage from '../components/WidgetImage.vue'
 import WidgetImageCompare from '../components/WidgetImageCompare.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
@@ -67,7 +66,6 @@ export const widgetTypeToComponent: Record<string, Component> = {
   [WidgetType.TEXTAREA]: WidgetTextarea,
   [WidgetType.TOGGLESWITCH]: WidgetToggleSwitch,
   [WidgetType.CHART]: WidgetChart,
-  [WidgetType.IMAGE]: WidgetImage,
   [WidgetType.IMAGECOMPARE]: WidgetImageCompare,
   [WidgetType.GALLERIA]: WidgetGalleria,
   [WidgetType.FILEUPLOAD]: WidgetFileUpload,

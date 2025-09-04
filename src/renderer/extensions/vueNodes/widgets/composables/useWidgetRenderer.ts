@@ -38,8 +38,6 @@ const TYPE_TO_ENUM_MAP: Record<string, string> = {
   // Advanced widgets
   color: WidgetType.COLOR,
   COLOR: WidgetType.COLOR,
-  image: WidgetType.IMAGE,
-  IMAGE: WidgetType.IMAGE,
   imagecompare: WidgetType.IMAGECOMPARE,
   IMAGECOMPARE: WidgetType.IMAGECOMPARE,
   galleria: WidgetType.GALLERIA,
