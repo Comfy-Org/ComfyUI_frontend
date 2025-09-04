@@ -9,6 +9,7 @@ test.describe('NodeHeader', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Enabled')
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', false)
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
+    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
     // Load single SaveImage node workflow (positioned below menu bar)
     await comfyPage.loadWorkflow('nodes/single_save_image_node')
