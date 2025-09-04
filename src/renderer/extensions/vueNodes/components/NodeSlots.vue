@@ -4,7 +4,7 @@
     ⚠️ Node Slots Error
   </div>
   <div v-else class="lg-node-slots flex justify-between">
-    <div v-if="filteredInputs.length" class="flex flex-col">
+    <div v-if="filteredInputs.length" class="flex flex-col gap-1">
       <InputSlot
         v-for="(input, index) in filteredInputs"
         :key="`input-${index}`"
@@ -18,7 +18,7 @@
       />
     </div>
 
-    <div v-if="filteredOutputs.length" class="flex flex-col ml-auto">
+    <div v-if="filteredOutputs.length" class="flex flex-col gap-1 ml-auto">
       <OutputSlot
         v-for="(output, index) in filteredOutputs"
         :key="`output-${index}`"
