@@ -56,21 +56,23 @@ const cleanupFunctions = new WeakMap<
   }
 >()
 
-export function useDomSlotRegistration(
-  nodeId: string,
-  slotIndex: number,
-  isInput: boolean,
+interface SlotRegistrationOptions {
+  nodeId: string
+  slotIndex: number
+  isInput: boolean
+  element: Ref<HTMLElement | null>
   transform?: TransformState
-) {
+}
+
+export function useDomSlotRegistration(options: SlotRegistrationOptions) {
+  const { nodeId, slotIndex, isInput, element: elRef, transform } = options
+
   // Early return if no nodeId
   if (!nodeId || nodeId === '') {
     return {
-      slotElRef: ref<HTMLElement | null>(null),
       remeasure: () => {}
     }
   }
-
-  const elRef = ref<HTMLElement | null>(null)
   const slotKey = getSlotKey(nodeId, slotIndex, isInput)
   // Track if this component is mounted
   const componentToken = {}
@@ -221,7 +223,6 @@ export function useDomSlotRegistration(
   })
 
   return {
-    slotElRef: elRef,
     // Expose for forced remeasure on structural changes
     remeasure: () => scheduleMeasurement(measureAndCacheOffset)
   }
