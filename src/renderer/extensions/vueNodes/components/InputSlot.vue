@@ -27,7 +27,7 @@
       v-if="!dotOnly"
       class="whitespace-nowrap text-sm font-normal dark-theme:text-[#9FA2BD] text-[#888682]"
     >
-      {{ slotData.name || `Input ${index}` }}
+      {{ slotData.localized_name || slotData.name || `Input ${index}` }}
     </span>
   </div>
 </template>
