@@ -63,7 +63,7 @@ defineEmits<{
 </script>
 
 <style scoped>
-@reference '../../../assets/css/style.css';
+@reference '../../assets/css/style.css';
 
 /* Apply rounded corners to all buttons in the footer */
 :deep(.p-button) {
