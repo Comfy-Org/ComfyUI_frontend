@@ -47,6 +47,8 @@ defineEmits<{
 </script>
 
 <style scoped>
+@reference '../../../assets/css/style.css';
+
 .hardware-option {
   width: 170px;
   height: 190px;
