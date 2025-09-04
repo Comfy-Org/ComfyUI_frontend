@@ -61,7 +61,49 @@ export const useManagerStateStore = defineStore('managerState', () => {
     return ManagerUIState.DISABLED
   }
 
+  /**
+   * Helper function to check if manager is enabled (not DISABLED)
+   */
+  const isManagerEnabled = (): boolean => {
+    return getManagerUIState() !== ManagerUIState.DISABLED
+  }
+
+  /**
+   * Helper function to check if manager UI is in NEW_UI mode
+   */
+  const isNewManagerUI = (): boolean => {
+    return getManagerUIState() === ManagerUIState.NEW_UI
+  }
+
+  /**
+   * Helper function to check if manager UI is in LEGACY_UI mode
+   */
+  const isLegacyManagerUI = (): boolean => {
+    return getManagerUIState() === ManagerUIState.LEGACY_UI
+  }
+
+  /**
+   * Helper function to check if install button should be shown
+   * (only in NEW_UI mode)
+   */
+  const shouldShowInstallButton = (): boolean => {
+    return isNewManagerUI()
+  }
+
+  /**
+   * Helper function to check if manager buttons should be shown
+   * (when manager is not disabled)
+   */
+  const shouldShowManagerButtons = (): boolean => {
+    return isManagerEnabled()
+  }
+
   return {
-    getManagerUIState
+    getManagerUIState,
+    isManagerEnabled,
+    isNewManagerUI,
+    isLegacyManagerUI,
+    shouldShowInstallButton,
+    shouldShowManagerButtons
   }
 })

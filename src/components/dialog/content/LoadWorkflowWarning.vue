@@ -115,12 +115,12 @@ const managerStateStore = useManagerStateStore()
 
 // Show manager buttons unless manager is disabled
 const showManagerButtons = computed(() => {
-  return managerStateStore.getManagerUIState() !== ManagerUIState.DISABLED
+  return managerStateStore.shouldShowManagerButtons()
 })
 
 // Only show Install All button for NEW_UI (new manager with v4 support)
 const showInstallAllButton = computed(() => {
-  return managerStateStore.getManagerUIState() === ManagerUIState.NEW_UI
+  return managerStateStore.shouldShowInstallButton()
 })
 
 const openManager = async () => {

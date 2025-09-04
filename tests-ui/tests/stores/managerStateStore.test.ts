@@ -191,4 +191,100 @@ describe('useManagerStateStore', () => {
       expect(store.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
     })
   })
+
+  describe('helper functions', () => {
+    it('isManagerEnabled should return true when state is not DISABLED', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+      expect(store.isManagerEnabled()).toBe(true)
+    })
+
+    it('isManagerEnabled should return false when state is DISABLED', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: {
+          system: { argv: ['python', 'main.py', '--disable-manager'] }
+        }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+      expect(store.isManagerEnabled()).toBe(false)
+    })
+
+    it('isNewManagerUI should return true when state is NEW_UI', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+      expect(store.isNewManagerUI()).toBe(true)
+    })
+
+    it('isLegacyManagerUI should return true when state is LEGACY_UI', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: {
+          system: { argv: ['python', 'main.py', '--enable-manager-legacy-ui'] }
+        }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+      expect(store.isLegacyManagerUI()).toBe(true)
+    })
+
+    it('shouldShowInstallButton should return true only for NEW_UI', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+      expect(store.shouldShowInstallButton()).toBe(true)
+    })
+
+    it('shouldShowManagerButtons should return true when not DISABLED', () => {
+      vi.mocked(useSystemStatsStore).mockReturnValue({
+        systemStats: { system: { argv: ['python', 'main.py'] } }
+      } as any)
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      vi.mocked(useExtensionStore).mockReturnValue({
+        extensions: []
+      } as any)
+
+      const store = useManagerStateStore()
+      expect(store.shouldShowManagerButtons()).toBe(true)
+    })
+  })
 })

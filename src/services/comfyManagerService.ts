@@ -3,10 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
 import { api } from '@/scripts/api'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
+import { useManagerStateStore } from '@/stores/managerStateStore'
 import { components } from '@/types/generatedManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -58,7 +55,7 @@ export const useComfyManagerService = () => {
   // Check if manager service should be available
   const isManagerServiceAvailable = () => {
     const managerStore = useManagerStateStore()
-    return managerStore.getManagerUIState() === ManagerUIState.NEW_UI
+    return managerStore.isNewManagerUI()
   }
 
   const handleRequestError = (
