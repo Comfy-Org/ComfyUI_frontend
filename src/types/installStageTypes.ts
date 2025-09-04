@@ -14,7 +14,6 @@ export type {
 export interface StageMetadata {
   label: string
   description?: string
-  progress: number // Progress percentage for this stage (0-100)
   category:
     | 'initialization'
     | 'validation'
