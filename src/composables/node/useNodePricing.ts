@@ -109,6 +109,66 @@ const pixversePricingCalculator = (node: LGraphNode): string => {
   return '$0.9/Run'
 }
 
+const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
+  const modelWidget = node.widgets?.find(
+    (w) => w.name === 'model'
+  ) as IComboWidget
+  const durationWidget = node.widgets?.find(
+    (w) => w.name === 'duration'
+  ) as IComboWidget
+  const resolutionWidget = node.widgets?.find(
+    (w) => w.name === 'resolution'
+  ) as IComboWidget
+
+  if (!modelWidget || !durationWidget || !resolutionWidget) return 'Token-based'
+
+  const model = String(modelWidget.value).toLowerCase()
+  const resolution = String(resolutionWidget.value).toLowerCase()
+  const seconds = parseFloat(String(durationWidget.value))
+  const priceByModel: Record<string, Record<string, [number, number]>> = {
+    'seedance-1-0-pro': {
+      '480p': [0.23, 0.24],
+      '720p': [0.51, 0.56],
+      '1080p': [1.18, 1.22]
+    },
+    'seedance-1-0-lite': {
+      '480p': [0.17, 0.18],
+      '720p': [0.37, 0.41],
+      '1080p': [0.85, 0.88]
+    }
+  }
+
+  const modelKey = model.includes('seedance-1-0-pro')
+    ? 'seedance-1-0-pro'
+    : model.includes('seedance-1-0-lite')
+      ? 'seedance-1-0-lite'
+      : ''
+
+  const resKey = resolution.includes('1080')
+    ? '1080p'
+    : resolution.includes('720')
+      ? '720p'
+      : resolution.includes('480')
+        ? '480p'
+        : ''
+
+  const baseRange =
+    modelKey && resKey ? priceByModel[modelKey]?.[resKey] : undefined
+  if (!baseRange) return 'Token-based'
+
+  const [min10s, max10s] = baseRange
+  const scale = seconds / 10
+  const minCost = min10s * scale
+  const maxCost = max10s * scale
+
+  const minStr = `$${minCost.toFixed(2)}/Run`
+  const maxStr = `$${maxCost.toFixed(2)}/Run`
+
+  return minStr === maxStr
+    ? minStr
+    : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
+}
+
 /**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
@@ -1441,6 +1501,18 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         }
         return 'Token-based'
       }
+    },
+    ByteDanceTextToVideoNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceImageToVideoNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceFirstLastFrameNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceImageReferenceNode: {
+      displayPrice: byteDanceVideoPricingCalculator
     }
   }
 
@@ -1531,7 +1603,11 @@ export const useNodePricing = () => {
       OpenAIChatNode: ['model'],
       // ByteDance
       ByteDanceImageNode: ['model'],
-      ByteDanceImageEditNode: ['model']
+      ByteDanceImageEditNode: ['model'],
+      ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
+      ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
+      ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
+      ByteDanceImageReferenceNode: ['model', 'duration', 'resolution']
     }
     return widgetMap[nodeType] || []
   }
