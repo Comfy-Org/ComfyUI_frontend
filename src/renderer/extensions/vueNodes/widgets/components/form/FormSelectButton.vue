@@ -35,14 +35,20 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script
+  setup
+  lang="ts"
+  generic="T extends string | number | { label: string; value: any }"
+>
 import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../layout'
 
 interface Props {
   modelValue: string | null | undefined
-  options: any[]
+  options: T[] // Now using generic type instead of any[]
+  optionLabel?: string // PrimeVue compatible prop
+  optionValue?: string // PrimeVue compatible prop
   disabled?: boolean
 }
 
@@ -56,29 +62,44 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-// handle both string/number arrays and object arrays
-const getOptionValue = (option: any, index: number): string => {
+// handle both string/number arrays and object arrays with PrimeVue compatibility
+const getOptionValue = (option: T, index: number): string => {
   if (typeof option === 'object' && option !== null) {
-    const value = option.value ?? option.name ?? option.label ?? index
+    // Use PrimeVue optionValue prop if provided, otherwise fallback to common fields
+    const valueField = props.optionValue ?? 'value'
+    const value =
+      (option as any)[valueField] ??
+      (option as any).value ??
+      (option as any).name ??
+      (option as any).label ??
+      index
     return String(value)
   }
   return String(option)
 }
 
-// for display
-const getOptionLabel = (option: any): string => {
+// for display with PrimeVue compatibility
+const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
-    return option.label ?? option.name ?? option.value ?? String(option)
+    // Use PrimeVue optionLabel prop if provided, otherwise fallback to common fields
+    const labelField = props.optionLabel ?? 'label'
+    return (
+      (option as any)[labelField] ??
+      (option as any).label ??
+      (option as any).name ??
+      (option as any).value ??
+      String(option)
+    )
   }
   return String(option)
 }
 
-const isSelected = (option: any): boolean => {
+const isSelected = (option: T): boolean => {
   const optionValue = getOptionValue(option, props.options.indexOf(option))
   return optionValue === String(props.modelValue ?? '')
 }
 
-const handleSelect = (option: any) => {
+const handleSelect = (option: T) => {
   if (props.disabled) return
 
   const optionValue = getOptionValue(option, props.options.indexOf(option))

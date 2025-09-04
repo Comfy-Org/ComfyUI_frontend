@@ -2,7 +2,7 @@
   <WidgetLayoutField :widget="widget">
     <FormSelectButton
       v-model="localValue"
-      v-bind="filteredProps"
+      :options="widget.options?.values || []"
       :disabled="readonly"
       class="w-full"
       @update:model-value="onChange"
@@ -11,14 +11,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  STANDARD_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
 
 import FormSelectButton from './form/FormSelectButton.vue'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
@@ -39,21 +33,4 @@ const { localValue, onChange } = useStringWidgetValue(
   props.modelValue,
   emit
 )
-
-const filteredProps = computed(() => {
-  const filtered = filterWidgetProps(
-    props.widget.options,
-    STANDARD_EXCLUDED_PROPS
-  )
-
-  // Ensure options array is available for SelectButton
-  if (filtered.values && Array.isArray(filtered.values)) {
-    filtered.options = filtered.values
-  }
-
-  return filtered as {
-    options: any[]
-    [key: string]: any
-  }
-})
 </script>
