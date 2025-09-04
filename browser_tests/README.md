@@ -24,7 +24,7 @@ _ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser
 Ensure you have Node.js v20 or v22 installed. Then, set up the Chromium test driver:
 
 ```bash
-pnpx playwright install chromium --with-deps
+pnpm exec playwright install chromium --with-deps
 ```
 
 ### Environment Configuration
@@ -76,7 +76,7 @@ For tests that specifically need to test release functionality, see the example 
 **Always use UI mode for development:**
 
 ```bash
-pnpx playwright test --ui
+pnpm exec playwright test --ui
 ```
 
 UI mode features:
@@ -92,8 +92,8 @@ UI mode features:
 For CI or headless testing:
 
 ```bash
-pnpx playwright test                    # Run all tests
-pnpx playwright test widget.spec.ts     # Run specific test file
+pnpm exec playwright test                    # Run all tests
+pnpm exec playwright test widget.spec.ts     # Run specific test file
 ```
 
 ### Local Development Config
@@ -389,7 +389,7 @@ export default defineConfig({
 Option 2 - Generate local baselines for comparison:
 
 ```bash
-pnpx playwright test --update-snapshots
+pnpm exec playwright test --update-snapshots
 ```
 
 ### Creating New Screenshot Baselines
