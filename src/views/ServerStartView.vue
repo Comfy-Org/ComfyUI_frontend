@@ -236,9 +236,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   xterm?.dispose()
-  if (cleanupInstallStageListener) {
-    cleanupInstallStageListener()
-  }
+  cleanupInstallStageListener?.()
 })
 </script>
 
