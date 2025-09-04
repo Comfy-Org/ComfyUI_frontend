@@ -2418,6 +2418,9 @@
         "name": "cfg",
         "tooltip": "用于平衡随机性和提示词服从性。提高该值会使结果更加符合提示词，但过高会导致图像质量下降。"
       },
+      "control_after_generate": {
+        "name": "生成后的控制"
+      },
       "denoise": {
         "name": "降噪",
         "tooltip": "降噪的强度，降低该值会保留原图的大部分内容从而实现图生图。"
@@ -2469,6 +2472,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "生成后的控制"
       },
       "end_at_step": {
         "name": "结束步数"
@@ -3489,6 +3495,9 @@
     "inputs": {
       "image": {
         "name": "图像"
+      },
+      "upload": {
+        "name": "选择文件上传"
       }
     }
   },
@@ -3500,6 +3509,9 @@
       },
       "image": {
         "name": "图像"
+      },
+      "upload": {
+        "name": "选择文件上传"
       }
     }
   },
@@ -3509,6 +3521,11 @@
     "inputs": {
       "image": {
         "name": "图像"
+      },
+      "refresh": {
+      },
+      "upload": {
+        "name": "选择文件上传"
       }
     }
   },
@@ -7346,6 +7363,19 @@
       },
       "samples": {
         "name": "Latent"
+      }
+    }
+  },
+  "SaveSVG": {
+    "description": "将 SVG 文件保存到磁盘。",
+    "display_name": "保存 SVG",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "要保存文件的前缀。可以包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以包含来自节点的数值。"
+      },
+      "svg": {
+        "name": "svg"
       }
     }
   },

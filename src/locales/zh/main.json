@@ -551,7 +551,37 @@
     "updateConsent": "您之前选择了报告崩溃。我们现在正在跟踪基于事件的度量，以帮助识别错误并改进应用程序。我们不收集任何个人可识别信息。"
   },
   "issueReport": {
-    "helpFix": "帮助修复这个"
+    "contactFollowUp": "跟进联系我",
+    "contactSupportDescription": "请填写下方表格提交您的报告",
+    "contactSupportTitle": "联系支持",
+    "describeTheProblem": "描述问题",
+    "email": "电子邮箱",
+    "feedbackTitle": "通过提供反馈帮助我们改进ComfyUI",
+    "helpFix": "帮助修复这个",
+    "helpTypes": {
+      "billingPayments": "账单 / 支付",
+      "bugReport": "错误报告",
+      "giveFeedback": "提交反馈",
+      "loginAccessIssues": "登录 / 访问问题",
+      "somethingElse": "其他"
+    },
+    "notifyResolve": "解决时通知我",
+    "provideAdditionalDetails": "提供额外的详细信息（可选）",
+    "provideEmail": "提供您的电子邮件（可选）",
+    "rating": "评分",
+    "selectIssue": "选择问题",
+    "stackTrace": "堆栈跟踪",
+    "submitErrorReport": "提交错误报告（可选）",
+    "systemStats": "系统状态",
+    "validation": {
+      "descriptionRequired": "描述为必填项",
+      "helpTypeRequired": "帮助类型为必选项",
+      "invalidEmail": "请输入有效的电子邮件地址",
+      "maxLength": "消息过长",
+      "selectIssueType": "请选择一个问题类型"
+    },
+    "whatCanWeInclude": "请说明报告中需要包含的内容",
+    "whatDoYouNeedHelpWith": "您需要什么帮助？"
   },
   "load3d": {
     "applyingTexture": "应用纹理中...",
@@ -778,6 +808,7 @@
     "File": "文件",
     "Fit Group To Contents": "适应组内容",
     "Focus Mode": "专注模式",
+    "Give Feedback": "提供反馈",
     "Group Selected Nodes": "将选中节点转换为组节点",
     "Help": "帮助",
     "Help Center": "帮助中心",
@@ -835,6 +866,7 @@
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
+    "Toggle the Custom Nodes Manager": "切换自定义节点管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
     "Ungroup selected group nodes": "解散选中组节点",
@@ -917,6 +949,7 @@
     "sampling": "采样",
     "schedulers": "调度器",
     "scheduling": "调度",
+    "sd": "sd",
     "sd3": "SD3",
     "sigmas": "Sigmas",
     "stable_cascade": "StableCascade",
@@ -926,6 +959,9 @@
     "upscale_diffusion": "放大扩散",
     "upscaling": "放大",
     "utils": "工具",
+    "v1": "v1",
+    "v2": "v2",
+    "v3": "v3",
     "video": "视频",
     "video_models": "视频模型"
   },
