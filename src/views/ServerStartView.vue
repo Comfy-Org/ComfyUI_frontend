@@ -167,6 +167,7 @@ const isInstallationStage = computed(() => {
     InstallStage.CREATING_DIRECTORIES,
     InstallStage.INITIALIZING_CONFIG,
     InstallStage.PYTHON_ENVIRONMENT_SETUP,
+    InstallStage.INSTALLING_REQUIREMENTS,
     InstallStage.INSTALLING_PYTORCH,
     InstallStage.INSTALLING_COMFYUI_REQUIREMENTS,
     InstallStage.INSTALLING_MANAGER_REQUIREMENTS,
