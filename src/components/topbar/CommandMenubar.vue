@@ -23,14 +23,7 @@
     :popup="true"
     class="comfy-command-menu"
     :class="{
-      'comfy-command-menu-top': isTopMenu,
-      'comfy-command-menu-compact': isCompactHeight
-    }"
-    :pt="{
-      submenu: () =>
-        isCompactHeight
-          ? { class: 'absolute max-h-[90vh] overflow-y-auto' }
-          : undefined
+      'comfy-command-menu-top': isTopMenu
     }"
     @show="onMenuShow"
   >
@@ -101,7 +94,6 @@
 </template>
 
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
 import SelectButton from 'primevue/selectbutton'
 import TieredMenu, {
@@ -318,9 +310,6 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
   return menuItemsStore.menuItemHasActiveStateChildren[item.parentPath]
 }
-
-const { height: windowHeight } = useWindowSize()
-const isCompactHeight = computed(() => windowHeight.value < 700)
 </script>
 
 <style scoped>
@@ -346,16 +335,19 @@ const isCompactHeight = computed(() => windowHeight.value < 700)
 .comfy-command-menu ul {
   background-color: var(--comfy-menu-secondary-bg) !important;
 }
-
 .comfy-command-menu-top .p-tieredmenu-submenu {
   left: calc(100% + 15px) !important;
   top: -4px !important;
 }
-/* Help (last) submenu upward offset in compact mode */
-.comfy-command-menu-compact
+@media (max-height: 700px) {
+  .comfy-command-menu .p-tieredmenu-submenu {
+    @apply absolute max-h-[90vh] overflow-y-auto;
+  }
+  /* Help (last) submenu upward offset in compact mode */
   .p-tieredmenu-root-list
-  > .p-tieredmenu-item:last-of-type
-  .p-tieredmenu-submenu {
-  top: -188px !important;
+    > .p-tieredmenu-item:last-of-type
+    .p-tieredmenu-submenu {
+    top: -188px !important;
+  }
 }
 </style>
