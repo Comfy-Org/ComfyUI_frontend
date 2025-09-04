@@ -33,6 +33,26 @@ vi.mock('@/stores/systemStatsStore', () => ({
   useSystemStatsStore: vi.fn()
 }))
 
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: vi.fn(() => ({
+    showManagerPopup: vi.fn(),
+    showLegacyManagerPopup: vi.fn(),
+    showSettingsDialog: vi.fn()
+  }))
+}))
+
+vi.mock('@/stores/commandStore', () => ({
+  useCommandStore: vi.fn(() => ({
+    execute: vi.fn()
+  }))
+}))
+
+vi.mock('@/stores/toastStore', () => ({
+  useToastStore: vi.fn(() => ({
+    add: vi.fn()
+  }))
+}))
+
 describe('useManagerStateStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
