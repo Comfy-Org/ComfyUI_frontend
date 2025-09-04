@@ -278,9 +278,6 @@ export type KeysOfType<T, Match> = Exclude<
   undefined
 >
 
-/** A new type that contains only the properties of T that are of type Match */
-export type PickByType<T, Match> = { [P in keyof T]: Extract<T[P], Match> }
-
 /** The names of all (optional) methods and functions in T */
 export type MethodNames<T> = KeysOfType<T, ((...args: any) => any) | undefined>
 

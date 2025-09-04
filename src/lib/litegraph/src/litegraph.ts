@@ -2,7 +2,7 @@ import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
 import { LiteGraphGlobal } from './LiteGraphGlobal'
 import type { ConnectingLink, Point } from './interfaces'
-import type { IContextMenuOptions, INodeSlot, Size } from './interfaces'
+import type { IContextMenuOptions, Size } from './interfaces'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
 import type { RenderShape, TitleMode } from './types/globalEnums'
@@ -22,8 +22,6 @@ loadPolyfills()
 // Definitions by: NateScarlet <https://github.com/NateScarlet>
 /** @deprecated Use {@link Point} instead. */
 export type Vector2 = Point
-/** @deprecated Use {@link Rect} instead. */
-export type Vector4 = [number, number, number, number]
 
 export interface IContextMenuItem {
   content: string
@@ -45,14 +43,6 @@ export type ContextMenuEventListener = (
   parentMenu: ContextMenu<unknown> | undefined,
   node: LGraphNode
 ) => boolean | void
-
-export interface LinkReleaseContext {
-  node_to?: LGraphNode
-  node_from?: LGraphNode
-  slot_from: INodeSlot
-  type_filter_in?: string
-  type_filter_out?: string
-}
 
 export interface LinkReleaseContextExtended {
   links: ConnectingLink[]
@@ -117,7 +107,6 @@ export type {
   LinkNetwork,
   LinkSegment,
   MethodNames,
-  PickByType,
   Point,
   Positionable,
   ReadonlyLinkNetwork,
