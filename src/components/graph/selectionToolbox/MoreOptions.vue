@@ -52,7 +52,6 @@ import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, onMounted, ref, watch } from 'vue'
 
-// import { useCanvasStore } from '@/stores/graphStore'
 import {
   forceCloseMoreOptionsSignal,
   moreOptionsOpen,

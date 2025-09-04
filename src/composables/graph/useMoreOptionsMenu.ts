@@ -347,16 +347,17 @@ export function useMoreOptionsMenu() {
       },
       {
         type: 'divider'
-      },
-      {
-        label: t('contextMenu.Add Subgraph to Library'),
-        icon: markRaw(ILucideFolderPlus),
-        action: addSubgraphToLibrary
       }
+      // only show when subgraph is selected
     )
 
     // Add appropriate subgraph option based on selection
     if (hasSubgraphsSelected) {
+      options.push({
+        label: t('contextMenu.Add Subgraph to Library'),
+        icon: markRaw(ILucideFolderPlus),
+        action: addSubgraphToLibrary
+      })
       options.push({
         label: t('contextMenu.Unpack Subgraph'),
         icon: markRaw(ILucideExpand),
