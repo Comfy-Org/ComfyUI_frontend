@@ -4,7 +4,7 @@
     v-bind="filteredProps"
     :disabled="readonly"
     :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-    :placeholder="widget.name || ''"
+    :placeholder="placeholder || widget.name || ''"
     size="small"
     rows="3"
     @update:model-value="onChange"
@@ -29,6 +29,7 @@ const props = defineProps<{
   widget: SimplifiedWidget<string>
   modelValue: string
   readonly?: boolean
+  placeholder?: string
 }>()
 
 const emit = defineEmits<{
