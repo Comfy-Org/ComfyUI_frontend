@@ -52,7 +52,9 @@ export const useManagerStateStore = defineStore('managerState', () => {
     }
 
     // If server feature flags haven't loaded yet, default to NEW_UI
-    // This is the safest default since v2 API is the current standard
+    // This is a temporary state - feature flags are exchanged immediately on WebSocket connection
+    // NEW_UI is the safest default since v2 API is the current standard
+    // If the server doesn't support v2, API calls will fail with 404 and be handled gracefully
     if (serverSupportsV4 === undefined) {
       return ManagerUIState.NEW_UI
     }
