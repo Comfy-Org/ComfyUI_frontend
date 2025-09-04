@@ -186,16 +186,9 @@ const displayStatusText = computed(() => {
 })
 
 const installProgress = computed(() => {
-  if (installStage.value && STAGE_METADATA[installStage.value]) {
-    const metadata = STAGE_METADATA[installStage.value]
-
-    // Only show determinate progress for installation-related stages
-    const installationCategories = ['installation', 'validation']
-    if (installationCategories.includes(metadata.category)) {
-      return installStageProgress.value ?? metadata.progress
-    }
-  }
-  return undefined
+  // Only use progress value from Electron API
+  // Will be undefined if not provided, causing indeterminate progress bar
+  return installStageProgress.value
 })
 
 const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
