@@ -132,27 +132,33 @@ export const useAssetComboWidget = (): ComfyWidgetConstructorV2 => {
 // Widget creation using ComponentWidgetImpl
 function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
   const widgetValue = ref<string>(inputSpec.default || '')
-  const widget = new ComponentWidgetImpl({
+  const widget = new ComponentWidgetImpl<string | object>({
     node,
     name: inputSpec.name,
     component: AssetPickerWidget,
     inputSpec,
     options: {
       getValue: () => widgetValue.value,
-      setValue: (value: string) => {
-        widgetValue.value = value
-      },
+      setValue: (value: string | object) => {
+        const stringValue = typeof value === 'string' ? value : String(value)
+        widgetValue.value = stringValue
+      }
+    },
+    props: {
       widget: {
-        value: widgetValue.value,
+        get value() { return widgetValue.value },
         name: inputSpec.name,
-        setValue: (value: string) => {
-          widgetValue.value = value
+        setValue: (newValue: string) => {
+          // Proper setValue with canvas context (see Canvas Access Patterns)
+          const canvas = getCanvasFromApp()
+          const canvasEvent = createSyntheticPointerEvent()
+          widget.setValue(newValue, { e: canvasEvent, node, canvas })
         }
       }
     }
   })
   
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget)
   return widget
 }
 ```
@@ -300,7 +306,7 @@ If you put Vue component props in the `options` object, the DOM widget system tr
 function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
   const widgetValue = ref<string>(inputSpec.default || '')
   
-  const widget = new ComponentWidgetImpl({
+  const widget = new ComponentWidgetImpl<string | object>({
     node,
     name: inputSpec.name,
     component: AssetPickerWidget,
@@ -308,9 +314,10 @@ function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
     // OPTIONS: Internal widget behavior (for DOM widget system)
     options: {
       getValue: () => widgetValue.value,
-      setValue: (value: string) => {
-        widgetValue.value = value
-        console.log('🔧 Widget value updated to:', value)
+      setValue: (value: string | object) => {
+        const stringValue = typeof value === 'string' ? value : String(value)
+        widgetValue.value = stringValue
+        console.log('🔧 Widget value updated to:', stringValue)
       }
     },
     // PROPS: Passed to Vue component (this is what your Vue component receives)
@@ -320,11 +327,12 @@ function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
         get value() { return widgetValue.value },
         name: inputSpec.name,
         setValue: (newValue: string) => {
-          // Proper setValue implementation with canvas context
-          const globalApp = globalThis as { app?: { canvas?: LGraphCanvas } }
-          const canvas = globalApp.app?.canvas
+          // Get canvas from the ComfyUI app instance - this is the proper way
+          // to access the canvas for widget setValue operations
+          const canvas = app.canvas
           
           if (!canvas) {
+            console.error('Canvas not found on app instance')
             throw new Error('Canvas is required for setValue operation')
           }
 
@@ -358,7 +366,7 @@ function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
     }
   })
   
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget)
   return widget
 }
 ```
@@ -754,11 +762,14 @@ console.log('✅ Modal should be closed now, showModal.value =', showModal.value
 
 **Widget Creation (ComponentWidgetImpl Structure):**
 ```typescript
-const widget = new ComponentWidgetImpl({
+const widget = new ComponentWidgetImpl<string | object>({
   node, name: inputSpec.name, component: YourComponent, inputSpec,
   options: {                    // Internal widget behavior
     getValue: () => widgetValue.value,
-    setValue: (v) => widgetValue.value = v
+    setValue: (value: string | object) => {
+      const stringValue = typeof value === 'string' ? value : String(value)
+      widgetValue.value = stringValue
+    }
   },
   props: {                      // Vue component props
     widget: {
@@ -766,7 +777,7 @@ const widget = new ComponentWidgetImpl({
       name: inputSpec.name,
       setValue: (newValue: string) => {
         // Proper setValue with canvas context (see Canvas Access Patterns)
-        const canvas = getCanvasFromGlobalApp()
+        const canvas = getCanvasFromApp()
         const canvasEvent = createSyntheticPointerEvent()
         widget.setValue(newValue, { e: canvasEvent, node, canvas })
       }
@@ -794,11 +805,12 @@ props.widget.setValue(newValue)  // ✅ Has proper canvas context
 
 The most common failure point in widget integration is accessing canvas context. The setValue method requires proper canvas context through WidgetEventOptions.
 
-**✅ WORKING: Global App Canvas Access**
+**✅ WORKING: ComfyUI App Canvas Access**
 ```typescript
-function getCanvasFromGlobalApp(): LGraphCanvas {
-  const globalApp = globalThis as { app?: { canvas?: LGraphCanvas } }
-  const canvas = globalApp.app?.canvas
+import { app } from '@/scripts/app'
+
+function getCanvasFromApp(): LGraphCanvas {
+  const canvas = app.canvas
   
   if (!canvas) {
     throw new Error('Canvas is required for setValue operation')
@@ -856,7 +868,7 @@ Object.assign creates a proper CanvasPointerEvent by extending the base PointerE
 ```typescript
 // In ComponentWidgetImpl props
 setValue: (newValue: string) => {
-  const canvas = getCanvasFromGlobalApp()
+  const canvas = getCanvasFromApp()
   const canvasEvent = createSyntheticPointerEvent()
   
   // Call BaseWidget.setValue with proper WidgetEventOptions
@@ -874,17 +886,19 @@ setValue: (newValue: string) => {
 const canvas = node.graph?.canvas           // ❌ Property doesn't exist on LGraph
 const canvas = node.graph.list_of_graphcanvas?.[0]  // ❌ Unreliable
 const canvas = someStore.getCanvas()        // ❌ Store dependency issues
+const globalApp = globalThis as { app?: { canvas?: LGraphCanvas } }  // ❌ Unnecessarily complex global access
+const canvas = globalApp.app?.canvas        // ❌ When proper import is available
 ```
 
-### **Why Global App Access Works:**
+### **Why Direct App Import Access Works:**
 
 **ComfyUI Architecture Context:**
-ComfyUI follows a centralized application pattern where the global `app` object serves as the main application controller. This architecture choice exists because:
+ComfyUI follows a centralized application pattern where the `app` object serves as the main application controller. Direct import access is preferred because:
 
 1. **Single Canvas Pattern**: ComfyUI typically runs with one primary graph canvas that handles all node interactions
-2. **Global State Management**: The app object centralizes access to core services like the canvas, API client, and UI state  
-3. **Extension Compatibility**: Many ComfyUI extensions and custom nodes rely on `globalThis.app` access patterns
-4. **Lifecycle Reliability**: The global app instance is initialized early and persists throughout the application lifecycle
+2. **Module-Based Architecture**: The app object is properly exported from `@/scripts/app` for clean module dependencies
+3. **Type Safety**: Direct imports provide full TypeScript typing without complex type assertions
+4. **Lifecycle Reliability**: The app instance is initialized early and persists throughout the application lifecycle
 
 **Why Alternative Approaches Fail:**
 
@@ -892,8 +906,8 @@ ComfyUI follows a centralized application pattern where the global `app` object 
 - `node.graph.list_of_graphcanvas?.[0]`: **Unreliable because this is an internal LiteGraph array** that may be empty, have multiple canvases, or change unexpectedly during graph operations
 - `someStore.getCanvas()`: **Creates circular dependencies and initialization order issues** - stores may not be initialized when widgets are created, and store-based canvas access can fail during early widget creation phases
 
-**Why globalThis.app?.canvas Works:**
-This approach succeeds because it directly accesses ComfyUI's established architecture pattern that's guaranteed to be available when widget setValue operations occur.
+**Why Direct Import Access Works:**
+This approach succeeds because it directly accesses ComfyUI's exported app instance with full type safety and module dependencies, guaranteed to be available when widget setValue operations occur.
 
 ## TypeScript Compliance Patterns
 
@@ -901,28 +915,44 @@ This approach succeeds because it directly accesses ComfyUI's established archit
 
 Following CLAUDE.md guidelines, we must avoid `as any` type assertions while maintaining proper typing.
 
-**✅ WORKING: Proper Global Typing**
+**✅ WORKING: Proper Import Typing**
 ```typescript
-// Define the shape we expect from globalThis
-const globalApp = globalThis as { app?: { canvas?: LGraphCanvas } }
-const canvas = globalApp.app?.canvas
+// Import the app instance directly with full typing
+import { app } from '@/scripts/app'
+const canvas = app.canvas
 ```
 
-**✅ WORKING: Structured Type Assertion**
+**✅ WORKING: Safe Type Assertion (Object Extension)**
 ```typescript
-// For PointerEvent extension
+// For PointerEvent extension - this is safe because we're adding the properties
 const syntheticEvent = new PointerEvent('pointerdown', { /* ... */ })
 const canvasEvent = Object.assign(syntheticEvent, {
   canvasX: 0, canvasY: 0, deltaX: 0, deltaY: 0,
   safeOffsetX: 0, safeOffsetY: 0
 }) as CanvasPointerEvent  // Safe - we're adding the required properties
+
+// Acceptable type assertion pattern: Object.assign + type assertion
+// This works because we control what properties we're adding
 ```
+
+**When Type Assertions Are Acceptable:**
+- **Object Extension**: When using `Object.assign` to add known properties to an object
+- **Library Interface Compliance**: When you need to match an exact interface requirement
+- **Property Addition**: When you're adding properties that TypeScript can't infer automatically
+
+**When Type Assertions Violate CLAUDE.md Rules:**
+- **`as any`**: Always forbidden - bypasses all type checking
+- **Assumption-based**: `err as Error` assumes `err` is an Error without verification
+- **Shortcut casting**: `{} as SomeType` creates objects with missing properties
+- **Unknown objects**: Casting objects you didn't create or control
 
 **❌ BROKEN: Type Assertion Violations**
 ```typescript
 const app = (globalThis as any).app        // ❌ Violates CLAUDE.md rules
 const canvas = app.canvas                  // ❌ No type safety
 const event = {} as CanvasPointerEvent     // ❌ Empty object cast
+// Even this complex global access is unnecessary when proper imports exist:
+const globalApp = globalThis as { app?: { canvas?: LGraphCanvas } }  // ❌ Overly complex
 ```
 
 **Why `as any` Assertions Fail in This Codebase:**
@@ -936,17 +966,134 @@ The CLAUDE.md guidelines prohibit `as any` assertions because they:
 
 **Why Structured Type Assertions Work:**
 
-Our structured approach (`globalThis as { app?: { canvas?: LGraphCanvas } }`) succeeds because:
+Our structured approach succeeds because:
 
 - **Preserves Type Information**: TypeScript can still validate the expected structure
 - **Enables Safe Access**: Optional chaining (`app?.canvas`) handles cases where properties don't exist  
 - **Maintains IDE Support**: Full autocomplete and type checking for accessed properties
-- **Self-Documenting**: The type assertion clearly shows what structure we expect from globalThis
+- **Self-Documenting**: The type assertion clearly shows what structure we expect
 
-### **Type Import Requirements**
+### **Proper Error Handling Patterns**
+
+**✅ WORKING: Type-Safe Error Handling**
 ```typescript
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'  // If using the type
+try {
+  // Some operation that might fail
+  await someAsyncOperation()
+} catch (err) {
+  // Proper type guard instead of 'as Error'
+  const error = err instanceof Error ? err : new Error(String(err))
+  console.error('Operation failed:', error.message)
+  throw error
+}
+```
+
+**❌ BROKEN: Type Assertion Error Handling**
+```typescript
+try {
+  await someAsyncOperation()
+} catch (err) {
+  const error = err as Error  // ❌ Violates CLAUDE.md rules
+  console.error('Operation failed:', error.message)
+}
+```
+
+**Why Type Guards Work Better:**
+- `instanceof Error` provides runtime type checking that actually validates the object
+- `String(err)` safely converts any value to a string without assuming type structure
+- Maintains type safety while handling edge cases where thrown values aren't Error instances
+
+### **Union Type Handling Patterns**
+
+Widget systems often need to handle multiple value types. Here are proper patterns for union type handling:
+
+**✅ WORKING: Type Narrowing with typeof**
+```typescript
+// ComponentWidgetImpl options setValue with union types
+setValue: (value: string | object) => {
+  const stringValue = typeof value === 'string' ? value : String(value)
+  widgetValue.value = stringValue
+}
+
+// More complex union type handling
+function processWidgetValue(value: string | number | boolean): string {
+  if (typeof value === 'string') {
+    return value.trim()
+  } else if (typeof value === 'number') {
+    return value.toString()
+  } else if (typeof value === 'boolean') {
+    return value ? 'true' : 'false'
+  }
+  
+  // Exhaustive check - TypeScript will error if we miss a case
+  const _exhaustive: never = value
+  return String(value)
+}
+```
+
+**✅ WORKING: Type Guards for Complex Objects**
+```typescript
+// Type guard functions for widget value validation
+function isAssetObject(value: unknown): value is { filename: string; name: string } {
+  return typeof value === 'object' && 
+         value !== null && 
+         'filename' in value && 
+         'name' in value &&
+         typeof (value as { filename: unknown }).filename === 'string'
+}
+
+// Usage in widget setValue
+setValue: (value: string | object) => {
+  let finalValue: string
+  
+  if (typeof value === 'string') {
+    finalValue = value
+  } else if (isAssetObject(value)) {
+    finalValue = value.filename
+  } else {
+    finalValue = String(value)
+  }
+  
+  widgetValue.value = finalValue
+}
+```
+
+**❌ BROKEN: Unsafe Union Handling**
+```typescript
+// Don't assume types without checking
+setValue: (value: string | object) => {
+  const stringValue = (value as any).filename || value  // ❌ Unsafe assumption
+  widgetValue.value = stringValue
+}
+
+// Don't cast to bypass union types  
+setValue: (value: string | object) => {
+  widgetValue.value = value as string  // ❌ May fail if value is object
+}
+```
+
+### **Essential Type Imports for Widget Development**
+```typescript
+// Core app instance for canvas access
+import { app } from '@/scripts/app'
+
+// LiteGraph types
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+
+// Widget system components  
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+
+// Input specification types
+import { 
+  ComboInputSpec, 
+  type InputSpec, 
+  isComboInputSpec 
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+
+// Vue composition
+import { ref, computed } from 'vue'
 ```
 
 ## Best Practices
@@ -1069,7 +1216,7 @@ function createYourCustomWidget(node: LGraphNode, inputSpec: InputSpec) {
     }
   })
   
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget)
   return widget
 }
 ```
