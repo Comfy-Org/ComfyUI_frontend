@@ -5,6 +5,7 @@ import {
   calculateInputSlotPosFromSlot,
   calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/SlotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScale } from './DragAndScale'
@@ -2785,6 +2786,8 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
+    const layoutMutations = useLayoutMutations()
+
     const outputIndex = this.outputs.indexOf(output)
     if (outputIndex === -1) {
       console.warn('connectSlots: output not found')
@@ -2844,8 +2847,8 @@ export class LGraphNode
     graph._links.set(link.id, link)
 
     // Register link in Layout Store for spatial tracking
-    graph.layoutMutations.setSource(LayoutSource.Canvas)
-    graph.layoutMutations.createLink(
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createLink(
       link.id,
       this.id,
       outputIndex,
