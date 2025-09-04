@@ -2,24 +2,31 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   entry: [
+    'build/**/*.ts',
+    'scripts/**/*.{js,ts}',
     'src/main.ts',
-    'vite.config.mts',
     'vite.electron.config.mts',
-    'vite.types.config.mts',
-    'eslint.config.js',
-    'tailwind.config.ts',
-    'postcss.config.js',
-    'playwright.config.ts',
-    'playwright.i18n.config.ts',
-    'vitest.config.ts',
-    'vitest.litegraph.config.ts',
-    'scripts/**/*.{js,ts}'
+    'vite.types.config.mts'
   ],
   project: [
+    'browser_tests/**/*.{js,ts}',
+    'build/**/*.{js,ts,vue}',
+    'scripts/**/*.{js,ts}',
     'src/**/*.{js,ts,vue}',
     'tests-ui/**/*.{js,ts,vue}',
-    'browser_tests/**/*.{js,ts}',
-    'scripts/**/*.{js,ts}'
+    '*.{js,ts,mts}'
+  ],
+  ignoreDependencies: [
+    '@primeuix/forms',
+    '@primeuix/styled',
+    '@primeuix/utils',
+    '@primevue/icons',
+    '@iconify/json',
+    'tailwindcss',
+    'tailwindcss-primeui', // Need to figure out why tailwind plugin isn't applying
+    // Dev
+    '@executeautomation/playwright-mcp-server',
+    '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
     // Generated files
@@ -60,29 +67,21 @@ const config: KnipConfig = {
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration
   vue: true,
+  tailwind: true,
   // Only check for unused files, disable all other rules
   // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
   rules: {
     binaries: 'off',
     classMembers: 'off',
-    dependencies: 'off',
-    devDependencies: 'off',
     duplicates: 'off',
     enumMembers: 'off',
     exports: 'off',
     nsExports: 'off',
     nsTypes: 'off',
-    types: 'off',
-    unlisted: 'off'
+    types: 'off'
   },
   // Include dependencies analysis
-  includeEntryExports: true,
-  // Workspace configuration for monorepo-like structure
-  workspaces: {
-    '.': {
-      entry: ['src/main.ts', 'playwright.i18n.config.ts']
-    }
-  }
+  includeEntryExports: true
 }
 
 export default config
