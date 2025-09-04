@@ -230,9 +230,12 @@ let cleanupInstallStageListener: (() => void) | undefined
 onMounted(async () => {
   electron.sendReady()
   electron.onProgressUpdate(updateProgress)
-  electronVersion.value = await electron.getElectronVersion()
   cleanupInstallStageListener =
     electron.InstallStage.onUpdate(updateInstallStage)
+
+  const stageInfo = await electron.InstallStage.getCurrent()
+  updateInstallStage(stageInfo)
+  electronVersion.value = await electron.getElectronVersion()
 })
 
 onUnmounted(() => {
