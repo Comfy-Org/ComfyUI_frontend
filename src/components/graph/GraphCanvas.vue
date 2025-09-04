@@ -101,6 +101,7 @@ import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
+import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
@@ -415,6 +416,11 @@ onMounted(async () => {
   const { useReleaseStore } = await import('@/stores/releaseStore')
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
+
+  // Initialize conflict detection after GraphCanvas is ready
+  // This ensures SystemStats and Manager state are properly loaded
+  const conflictDetection = useConflictDetection()
+  void conflictDetection.initializeConflictDetection()
 
   // Start watching for locale change after the initial value is loaded.
   watch(

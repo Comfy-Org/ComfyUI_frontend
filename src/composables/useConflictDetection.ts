@@ -8,6 +8,7 @@ import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -636,6 +637,15 @@ export function useConflictDetection() {
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
+      // Check if manager is disabled before running conflict detection
+      const managerStore = useManagerStateStore()
+      if (!managerStore.isManagerEnabled()) {
+        console.log(
+          '[ConflictDetection] Manager is disabled, skipping conflict detection'
+        )
+        return
+      }
+
       // Simply perform conflict detection
       // The useInstalledPacks will handle fetching installed list if needed
       await performConflictDetection()
