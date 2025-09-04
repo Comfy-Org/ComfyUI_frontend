@@ -28,6 +28,11 @@
       "denoise": {
         "name": "denoise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "APG": {
@@ -116,6 +121,90 @@
       },
       "beta": {
         "name": "beta"
+      }
+    }
+  },
+  "ByteDanceImageEditNode": {
+    "display_name": "ByteDance Image Edit",
+    "description": "Edit images using ByteDance models via api based on prompt",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "The base image to edit"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instruction to edit image"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Higher value makes the image follow the prompt more closely"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageNode": {
+    "display_name": "ByteDance Image",
+    "description": "Generate images using ByteDance models via api based on prompt",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the image"
+      },
+      "size_preset": {
+        "name": "size_preset",
+        "tooltip": "Pick a recommended size. Select Custom to use the width and height below"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Custom width for image. Value is working only if `size_preset` is set to `Custom`"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Custom height for image. Value is working only if `size_preset` is set to `Custom`"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Higher value makes the image follow the prompt more closely"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2434,6 +2523,14 @@
         "name": "rendering_speed",
         "tooltip": "Controls the trade-off between generation speed and quality"
       },
+      "character_image": {
+        "name": "character_image",
+        "tooltip": "Image to use as character reference."
+      },
+      "character_mask": {
+        "name": "character_mask",
+        "tooltip": "Optional mask for character reference image."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -3374,9 +3471,6 @@
       "denoise": {
         "name": "denoise",
         "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
       }
     },
     "outputs": {
@@ -3426,9 +3520,6 @@
       },
       "return_with_leftover_noise": {
         "name": "return_with_leftover_noise"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
       }
     }
   },
@@ -3884,9 +3975,6 @@
     "inputs": {
       "image": {
         "name": "image"
-      },
-      "upload": {
-        "name": "choose file to upload"
       }
     }
   },
@@ -3898,9 +3986,6 @@
       },
       "channel": {
         "name": "channel"
-      },
-      "upload": {
-        "name": "choose file to upload"
       }
     }
   },
@@ -3910,11 +3995,6 @@
     "inputs": {
       "image": {
         "name": "image"
-      },
-      "Auto-refresh after generation": {},
-      "refresh": {},
-      "upload": {
-        "name": "choose file to upload"
       }
     }
   },
@@ -8528,6 +8608,11 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RunwayImageToVideoNodeGen3a": {
@@ -8554,6 +8639,11 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8582,15 +8672,20 @@
       "control_after_generate": {
         "name": "control after generate"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RunwayTextToImageNode": {
     "display_name": "Runway Text to Image",
-    "description": "Generate an image from a text prompt using Runway's Gen 4 model. You can also include reference images to guide the generation.",
+    "description": "Generate an image from a text prompt using Runway's Gen 4 model. You can also include reference image to guide the generation.",
     "inputs": {
       "prompt": {
         "name": "prompt",
-        "tooltip": "Text prompt for the image generation"
+        "tooltip": "Text prompt for the generation"
       },
       "ratio": {
         "name": "ratio"
@@ -8598,6 +8693,11 @@
       "reference_image": {
         "name": "reference_image",
         "tooltip": "Optional reference image to guide the generation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

@@ -388,10 +388,6 @@
       "Topbar (2nd-row)": "Barra superior (2ª fila)"
     }
   },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "Umbral de renderizado de baja calidad al hacer zoom",
-    "tooltip": "Renderiza formas de baja calidad cuando se aleja"
-  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "FPS máximo",
     "tooltip": "La cantidad máxima de cuadros por segundo que se permite renderizar en el lienzo. Limita el uso de la GPU a costa de la suavidad. Si es 0, se utiliza la tasa de refresco de la pantalla. Predeterminado: 0"
