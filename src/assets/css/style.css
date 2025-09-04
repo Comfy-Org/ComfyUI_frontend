@@ -1,4 +1,11 @@
-@layer primevue, tailwind-utilities;
+@layer theme, base, primevue, components, utilities;
+
+@import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/utilities' layer(utilities);
+
+@plugin "tailwindcss-primeui";
+
+@config '../../../tailwind.config.ts';
 
 @layer tailwind-utilities {
   /* Set default values to prevent some styles from not working properly. */
@@ -59,7 +66,6 @@
   @tailwind components;
   @tailwind utilities;
 }
-
 
 :root {
   --fg-color: #000;
@@ -493,6 +499,7 @@ button.comfy-close-menu-btn {
 .comfy-modal button {
   color: var(--input-text);
   background-color: var(--comfy-input-bg);
+  border-width: initial;
   border-radius: 8px;
   border-color: var(--border-color);
   border-style: solid;

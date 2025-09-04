@@ -86,6 +86,8 @@ const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .task-card-ok {
   @apply text-green-500 absolute -right-4 -bottom-4 opacity-100 row-span-full col-span-full transition-opacity;
 

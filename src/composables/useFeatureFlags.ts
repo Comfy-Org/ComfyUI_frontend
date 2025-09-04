@@ -1,70 +1,37 @@
+import { computed, reactive, readonly } from 'vue'
+
+import { api } from '@/scripts/api'
+
 /**
- * Feature flags composable for Vue node system
- * Provides safe toggles for experimental features
+ * Known server feature flags (top-level, not extensions)
  */
-import { computed, watch } from 'vue'
+export enum ServerFeatureFlag {
+  SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
+  MAX_UPLOAD_SIZE = 'max_upload_size',
+  MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4'
+}
 
-import { useSettingStore } from '@/stores/settingStore'
-
-import { LiteGraph } from '../lib/litegraph/src/litegraph'
-
-export const useFeatureFlags = () => {
-  const settingStore = useSettingStore()
-
-  /**
-   * Enable Vue-based node rendering
-   * When disabled, falls back to standard LiteGraph canvas rendering
-   */
-  const isVueNodesEnabled = computed(() => {
-    try {
-      // Off by default: ensure Vue nodes are disabled unless explicitly enabled
-      return settingStore.get('Comfy.VueNodes.Enabled') ?? false
-    } catch {
-      return false
+/**
+ * Composable for reactive access to server-side feature flags
+ */
+export function useFeatureFlags() {
+  const flags = reactive({
+    get supportsPreviewMetadata() {
+      return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
+    },
+    get maxUploadSize() {
+      return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)
+    },
+    get supportsManagerV4() {
+      return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     }
   })
 
-  /**
-   * Development mode features (debug panel, etc.)
-   * Automatically enabled in development builds
-   */
-  const isDevModeEnabled = computed(() => {
-    try {
-      return (
-        settingStore.get('Comfy.DevMode' as any) ??
-        process.env.NODE_ENV === 'development'
-      )
-    } catch {
-      return process.env.NODE_ENV === 'development'
-    }
-  })
-
-  /**
-   * Check if Vue nodes should be rendered at all
-   * Combines multiple conditions for safety
-   */
-  const shouldRenderVueNodes = computed(
-    () =>
-      isVueNodesEnabled.value &&
-      // Add any other safety conditions here
-      true
-  )
-
-  /**
-   * Sync the Vue nodes feature flag with LiteGraph global settings
-   */
-  const syncVueNodesFlag = () => {
-    LiteGraph.vueNodesMode = isVueNodesEnabled.value
-    console.log('Vue nodes mode:', LiteGraph.vueNodesMode)
-  }
-
-  // Watch for changes and update LiteGraph
-  watch(isVueNodesEnabled, syncVueNodesFlag, { immediate: true })
+  const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) =>
+    computed(() => api.getServerFeature(featurePath, defaultValue))
 
   return {
-    isVueNodesEnabled,
-    isDevModeEnabled,
-    shouldRenderVueNodes,
-    syncVueNodesFlag
+    flags: readonly(flags),
+    featureFlag
   }
 }

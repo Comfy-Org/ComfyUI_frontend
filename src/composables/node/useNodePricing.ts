@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
 /**
@@ -109,6 +109,66 @@ const pixversePricingCalculator = (node: LGraphNode): string => {
   return '$0.9/Run'
 }
 
+const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
+  const modelWidget = node.widgets?.find(
+    (w) => w.name === 'model'
+  ) as IComboWidget
+  const durationWidget = node.widgets?.find(
+    (w) => w.name === 'duration'
+  ) as IComboWidget
+  const resolutionWidget = node.widgets?.find(
+    (w) => w.name === 'resolution'
+  ) as IComboWidget
+
+  if (!modelWidget || !durationWidget || !resolutionWidget) return 'Token-based'
+
+  const model = String(modelWidget.value).toLowerCase()
+  const resolution = String(resolutionWidget.value).toLowerCase()
+  const seconds = parseFloat(String(durationWidget.value))
+  const priceByModel: Record<string, Record<string, [number, number]>> = {
+    'seedance-1-0-pro': {
+      '480p': [0.23, 0.24],
+      '720p': [0.51, 0.56],
+      '1080p': [1.18, 1.22]
+    },
+    'seedance-1-0-lite': {
+      '480p': [0.17, 0.18],
+      '720p': [0.37, 0.41],
+      '1080p': [0.85, 0.88]
+    }
+  }
+
+  const modelKey = model.includes('seedance-1-0-pro')
+    ? 'seedance-1-0-pro'
+    : model.includes('seedance-1-0-lite')
+      ? 'seedance-1-0-lite'
+      : ''
+
+  const resKey = resolution.includes('1080')
+    ? '1080p'
+    : resolution.includes('720')
+      ? '720p'
+      : resolution.includes('480')
+        ? '480p'
+        : ''
+
+  const baseRange =
+    modelKey && resKey ? priceByModel[modelKey]?.[resKey] : undefined
+  if (!baseRange) return 'Token-based'
+
+  const [min10s, max10s] = baseRange
+  const scale = seconds / 10
+  const minCost = min10s * scale
+  const maxCost = max10s * scale
+
+  const minStr = `$${minCost.toFixed(2)}/Run`
+  const maxStr = `$${maxCost.toFixed(2)}/Run`
+
+  return minStr === maxStr
+    ? minStr
+    : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
+}
+
 /**
  * Static pricing data for API nodes, now supporting both strings and functions
  */
@@ -179,6 +239,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const numImagesWidget = node.widgets?.find(
           (w) => w.name === 'num_images'
         ) as IComboWidget
+        const characterInput = node.inputs?.find(
+          (i) => i.name === 'character_image'
+        ) as INodeInputSlot
+        const hasCharacter =
+          typeof characterInput?.link !== 'undefined' &&
+          characterInput.link != null
 
         if (!renderingSpeedWidget)
           return '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
@@ -188,11 +254,23 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         const renderingSpeed = String(renderingSpeedWidget.value)
         if (renderingSpeed.toLowerCase().includes('quality')) {
-          basePrice = 0.09
-        } else if (renderingSpeed.toLowerCase().includes('balanced')) {
-          basePrice = 0.06
+          if (hasCharacter) {
+            basePrice = 0.2
+          } else {
+            basePrice = 0.09
+          }
+        } else if (renderingSpeed.toLowerCase().includes('default')) {
+          if (hasCharacter) {
+            basePrice = 0.15
+          } else {
+            basePrice = 0.06
+          }
         } else if (renderingSpeed.toLowerCase().includes('turbo')) {
-          basePrice = 0.03
+          if (hasCharacter) {
+            basePrice = 0.1
+          } else {
+            basePrice = 0.03
+          }
         }
 
         const totalCost = (basePrice * numImages).toFixed(2)
@@ -395,7 +473,12 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         const modeValue = String(modeWidget.value)
 
         // Same pricing matrix as KlingTextToVideoNode
-        if (modeValue.includes('v2-master')) {
+        if (modeValue.includes('v2-1')) {
+          if (modeValue.includes('10s')) {
+            return '$0.98/Run' // pro, 10s
+          }
+          return '$0.49/Run' // pro, 5s default
+        } else if (modeValue.includes('v2-master')) {
           if (modeValue.includes('10s')) {
             return '$2.80/Run'
           }
@@ -1418,6 +1501,18 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         }
         return 'Token-based'
       }
+    },
+    ByteDanceTextToVideoNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceImageToVideoNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceFirstLastFrameNode: {
+      displayPrice: byteDanceVideoPricingCalculator
+    },
+    ByteDanceImageReferenceNode: {
+      displayPrice: byteDanceVideoPricingCalculator
     }
   }
 
@@ -1462,7 +1557,7 @@ export const useNodePricing = () => {
       OpenAIGPTImage1: ['quality', 'n'],
       IdeogramV1: ['num_images', 'turbo'],
       IdeogramV2: ['num_images', 'turbo'],
-      IdeogramV3: ['rendering_speed', 'num_images'],
+      IdeogramV3: ['rendering_speed', 'num_images', 'character_image'],
       FluxProKontextProNode: [],
       FluxProKontextMaxNode: [],
       VeoVideoGenerationNode: ['duration_seconds'],
@@ -1508,7 +1603,11 @@ export const useNodePricing = () => {
       OpenAIChatNode: ['model'],
       // ByteDance
       ByteDanceImageNode: ['model'],
-      ByteDanceImageEditNode: ['model']
+      ByteDanceImageEditNode: ['model'],
+      ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
+      ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
+      ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
+      ByteDanceImageReferenceNode: ['model', 'duration', 'resolution']
     }
     return widgetMap[nodeType] || []
   }

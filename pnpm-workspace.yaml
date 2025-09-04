@@ -11,6 +11,7 @@ onlyBuiltDependencies:
   - '@playwright/browser-chromium'
   - '@playwright/browser-firefox'
   - '@playwright/browser-webkit'
+  - '@tailwindcss/oxide'
   - esbuild
   - nx
   - oxc-resolver

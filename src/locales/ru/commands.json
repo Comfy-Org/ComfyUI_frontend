@@ -170,8 +170,20 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Загрузить стандартный рабочий процесс"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "Менеджер Пользовательских Узлов"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Пользовательские узлы (Бета)"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Пользовательские узлы (устаревшие)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Меню менеджера (устаревшее)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Установить отсутствующие"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Проверить наличие обновлений"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Переключить диалоговое окно прогресса"
@@ -184,6 +196,12 @@
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Открыть редактор масок для выбранной ноды"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Выгрузить модели"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Выгрузить модели и кэш выполнения"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "Новый пустой рабочий процесс"

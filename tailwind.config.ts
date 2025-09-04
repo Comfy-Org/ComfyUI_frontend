@@ -1,14 +1,9 @@
-/** @type {import('tailwindcss').Config} */
 import { addDynamicIconSelectors } from '@iconify/tailwind'
 
-import { iconCollection } from './build/customIconCollection.ts'
+import { iconCollection } from './build/customIconCollection'
 
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
-
-  corePlugins: {
-    preflight: false // This disables Tailwind's base styles
-  },
 
   theme: {
     fontSize: {
@@ -179,6 +174,20 @@ export default {
           800: '#9c4221',
           900: '#7b341e',
           950: '#431407'
+        },
+
+        yellow: {
+          50: '#fffef5',
+          100: '#fffce8',
+          200: '#fff8c5',
+          300: '#fff197',
+          400: '#ffcc00',
+          500: '#ffc000',
+          600: '#e6a800',
+          700: '#cc9600',
+          800: '#b38400',
+          900: '#997200',
+          950: '#664d00'
         }
       },
 

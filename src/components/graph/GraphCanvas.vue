@@ -130,10 +130,10 @@ import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
 import { usePaste } from '@/composables/usePaste'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
@@ -194,8 +194,8 @@ const selectionToolboxEnabled = computed(() =>
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
-// Feature flags
-const { shouldRenderVueNodes, isDevModeEnabled } = useFeatureFlags()
+// Feature flags (Vue-related)
+const { shouldRenderVueNodes, isDevModeEnabled } = useVueFeatureFlags()
 
 // TransformPane enabled when Vue nodes are enabled OR debug override
 const debugOverrideVueNodes = ref(false)
@@ -761,7 +761,7 @@ onMounted(async () => {
   useCopy()
   usePaste()
   useWorkflowAutoSave()
-  useFeatureFlags() // This will automatically sync Vue nodes flag with LiteGraph
+  useVueFeatureFlags() // Automatically syncs Vue nodes flag with LiteGraph
 
   comfyApp.vueAppReady = true
 
