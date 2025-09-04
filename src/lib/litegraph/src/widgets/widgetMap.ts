@@ -34,7 +34,6 @@ import { ComboWidget } from './ComboWidget'
 import { FileUploadWidget } from './FileUploadWidget'
 import { GalleriaWidget } from './GalleriaWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
-import { ImageWidget } from './ImageWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
 import { MarkdownWidget } from './MarkdownWidget'
@@ -59,7 +58,6 @@ export type WidgetTypeMap = {
   fileupload: FileUploadWidget
   color: ColorWidget
   markdown: MarkdownWidget
-  image: ImageWidget
   treeselect: TreeSelectWidget
   multiselect: MultiSelectWidget
   chart: ChartWidget
@@ -121,8 +119,6 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(ColorWidget, narrowedWidget, node)
     case 'markdown':
       return toClass(MarkdownWidget, narrowedWidget, node)
-    case 'image':
-      return toClass(ImageWidget, narrowedWidget, node)
     case 'treeselect':
       return toClass(TreeSelectWidget, narrowedWidget, node)
     case 'multiselect':
