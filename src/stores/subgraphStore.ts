@@ -238,12 +238,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const path = SubgraphBlueprint.basePath + name + '.json'
     const workflow = new SubgraphBlueprint({
       path,
-      //NOTE: Placeholder to allow overwrites. Updated on save()
-      size: 1,
+      size: -1,
       modified: Date.now()
     })
     workflow.originalContent = JSON.stringify(workflowData)
     const loadedWorkflow = await workflow.load()
+    //Mark non-temporary
+    workflow.size = 1
     await workflow.save()
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
