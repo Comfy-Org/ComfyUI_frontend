@@ -279,9 +279,6 @@ importers:
       nx:
         specifier: 21.4.1
         version: 21.4.1
-      postcss:
-        specifier: ^8.4.39
-        version: 8.5.1
       prettier:
         specifier: ^3.3.2
         version: 3.3.2

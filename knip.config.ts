@@ -14,7 +14,7 @@ const config: KnipConfig = {
     'scripts/**/*.{js,ts}',
     'src/**/*.{js,ts,vue}',
     'tests-ui/**/*.{js,ts,vue}',
-    'vitest.litegraph.config.ts'
+    '*.{js,ts,mts}'
   ],
   ignoreDependencies: [
     '@primeuix/forms',
@@ -22,6 +22,8 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     '@iconify/json',
+    'tailwindcss',
+    'tailwindcss-primeui', // Need to figure out why tailwind plugin isn't applying
     // Dev
     '@executeautomation/playwright-mcp-server',
     '@trivago/prettier-plugin-sort-imports'
@@ -62,6 +64,7 @@ const config: KnipConfig = {
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration
   vue: true,
+  tailwind: true,
   // Only check for unused files, disable all other rules
   // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
   rules: {
