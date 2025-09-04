@@ -150,3 +150,4 @@ IMPORTANT: Ultra think about this list before every change and follow every guid
 1. NEVER delete or disable tests to make them pass
 1. NEVER circumvent quality checks
 1. NEVER lint the entire source directory, only lint files you are modifying.
+1. NEVER do `as` casting for types. ultrathink through how to properly type instead.
