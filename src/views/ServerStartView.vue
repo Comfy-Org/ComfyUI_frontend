@@ -100,7 +100,7 @@
 import {
   InstallStage,
   type InstallStageInfo,
-  type InstallStageType,
+  type InstallStageName,
   ProgressStatus
 } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
@@ -123,7 +123,7 @@ const status = ref<ProgressStatus>(ProgressStatus.INITIAL_STATE)
 const electronVersion = ref<string>('')
 const terminalVisible = ref(false)
 
-const installStage = ref<InstallStageType | null>(null)
+const installStage = ref<InstallStageName | null>(null)
 const installStageMessage = ref<string>('')
 const installStageProgress = ref<number | undefined>(undefined)
 
@@ -153,13 +153,15 @@ const isError = computed(
 )
 
 const isInstallationStage = computed(() => {
-  const installationStages: InstallStageType[] = [
+  const installationStages: InstallStageName[] = [
     InstallStage.WELCOME_SCREEN,
     InstallStage.INSTALL_OPTIONS_SELECTION,
     InstallStage.CREATING_DIRECTORIES,
     InstallStage.INITIALIZING_CONFIG,
     InstallStage.PYTHON_ENVIRONMENT_SETUP,
-    InstallStage.INSTALLING_REQUIREMENTS,
+    InstallStage.INSTALLING_PYTORCH,
+    InstallStage.INSTALLING_COMFYUI_REQUIREMENTS,
+    InstallStage.INSTALLING_MANAGER_REQUIREMENTS,
     InstallStage.MIGRATING_CUSTOM_NODES
   ]
   return (
