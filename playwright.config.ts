@@ -31,21 +31,23 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile/ // Run all tests except those tagged with @mobile
+      grepInvert: /@mobile|collect-i18n/ // Run all tests except mobile and i18n collection tests
     },
 
     {
       name: 'chromium-2x',
       use: { ...devices['Desktop Chrome'], deviceScaleFactor: 2 },
       timeout: 15000,
-      grep: /@2x/ // Run all tests tagged with @2x
+      grep: /@2x/, // Run all tests tagged with @2x
+      grepInvert: /collect-i18n/ // Exclude i18n collection tests
     },
 
     {
       name: 'chromium-0.5x',
       use: { ...devices['Desktop Chrome'], deviceScaleFactor: 0.5 },
       timeout: 15000,
-      grep: /@0.5x/ // Run all tests tagged with @0.5x
+      grep: /@0.5x/, // Run all tests tagged with @0.5x
+      grepInvert: /collect-i18n/ // Exclude i18n collection tests
     },
 
     // {
@@ -62,7 +64,8 @@ export default defineConfig({
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'], hasTouch: true },
-      grep: /@mobile/ // Run only tests tagged with @mobile
+      grep: /@mobile/, // Run only tests tagged with @mobile
+      grepInvert: /collect-i18n/ // Exclude i18n collection tests
     }
     // {
     //   name: 'Mobile Safari',
