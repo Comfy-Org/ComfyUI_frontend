@@ -6,12 +6,14 @@
  */
 import log from 'loglevel'
 
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import {
   LayoutSource,
-  type NodeId,
+  type LinkId,
   type NodeLayout,
   type Point,
+  type RerouteId,
   type Size
 } from '@/renderer/core/layout/types'
 
@@ -29,24 +31,24 @@ export interface LayoutMutations {
 
   // Link operations
   createLink(
-    linkId: string | number,
-    sourceNodeId: string | number,
+    linkId: LinkId,
+    sourceNodeId: NodeId,
     sourceSlot: number,
-    targetNodeId: string | number,
+    targetNodeId: NodeId,
     targetSlot: number
   ): void
-  deleteLink(linkId: string | number): void
+  deleteLink(linkId: LinkId): void
 
   // Reroute operations
   createReroute(
-    rerouteId: string | number,
+    rerouteId: RerouteId,
     position: Point,
-    parentId?: string | number,
-    linkIds?: (string | number)[]
+    parentId?: LinkId,
+    linkIds?: LinkId[]
   ): void
-  deleteReroute(rerouteId: string | number): void
+  deleteReroute(rerouteId: RerouteId): void
   moveReroute(
-    rerouteId: string | number,
+    rerouteId: RerouteId,
     position: Point,
     previousPosition: Point
   ): void
@@ -81,13 +83,14 @@ export function useLayoutMutations(): LayoutMutations {
    * Move a node to a new position
    */
   const moveNode = (nodeId: NodeId, position: Point): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+    const normalizedNodeId = String(nodeId)
+    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'moveNode',
       entity: 'node',
-      nodeId,
+      nodeId: normalizedNodeId,
       position,
       previousPosition: existing.position,
       timestamp: Date.now(),
@@ -100,13 +103,14 @@ export function useLayoutMutations(): LayoutMutations {
    * Resize a node
    */
   const resizeNode = (nodeId: NodeId, size: Size): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+    const normalizedNodeId = String(nodeId)
+    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'resizeNode',
       entity: 'node',
-      nodeId,
+      nodeId: normalizedNodeId,
       size,
       previousSize: existing.size,
       timestamp: Date.now(),
@@ -119,13 +123,14 @@ export function useLayoutMutations(): LayoutMutations {
    * Set node z-index
    */
   const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+    const normalizedNodeId = String(nodeId)
+    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'setNodeZIndex',
       entity: 'node',
-      nodeId,
+      nodeId: normalizedNodeId,
       zIndex,
       previousZIndex: existing.zIndex,
       timestamp: Date.now(),
@@ -138,8 +143,9 @@ export function useLayoutMutations(): LayoutMutations {
    * Create a new node
    */
   const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
+    const normalizedNodeId = String(nodeId)
     const fullLayout: NodeLayout = {
-      id: nodeId,
+      id: normalizedNodeId,
       position: layout.position ?? { x: 0, y: 0 },
       size: layout.size ?? { width: 200, height: 100 },
       zIndex: layout.zIndex ?? 0,
@@ -155,7 +161,7 @@ export function useLayoutMutations(): LayoutMutations {
     layoutStore.applyOperation({
       type: 'createNode',
       entity: 'node',
-      nodeId,
+      nodeId: normalizedNodeId,
       layout: fullLayout,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -167,13 +173,14 @@ export function useLayoutMutations(): LayoutMutations {
    * Delete a node
    */
   const deleteNode = (nodeId: NodeId): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+    const normalizedNodeId = String(nodeId)
+    const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'deleteNode',
       entity: 'node',
-      nodeId,
+      nodeId: normalizedNodeId,
       previousLayout: existing,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
@@ -203,25 +210,25 @@ export function useLayoutMutations(): LayoutMutations {
    * Create a new link
    */
   const createLink = (
-    linkId: string | number,
-    sourceNodeId: string | number,
+    linkId: LinkId,
+    sourceNodeId: NodeId,
     sourceSlot: number,
-    targetNodeId: string | number,
+    targetNodeId: NodeId,
     targetSlot: number
   ): void => {
-    // Normalize node IDs to strings
+    // Normalize node IDs to strings for layout store consistency
     const normalizedSourceNodeId = String(sourceNodeId)
     const normalizedTargetNodeId = String(targetNodeId)
 
     logger.debug('Creating link:', {
-      linkId: Number(linkId),
+      linkId,
       from: `${normalizedSourceNodeId}[${sourceSlot}]`,
       to: `${normalizedTargetNodeId}[${targetSlot}]`
     })
     layoutStore.applyOperation({
       type: 'createLink',
       entity: 'link',
-      linkId: Number(linkId),
+      linkId,
       sourceNodeId: normalizedSourceNodeId,
       sourceSlot,
       targetNodeId: normalizedTargetNodeId,
@@ -235,12 +242,12 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a link
    */
-  const deleteLink = (linkId: string | number): void => {
-    logger.debug('Deleting link:', Number(linkId))
+  const deleteLink = (linkId: LinkId): void => {
+    logger.debug('Deleting link:', linkId)
     layoutStore.applyOperation({
       type: 'deleteLink',
       entity: 'link',
-      linkId: Number(linkId),
+      linkId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -251,24 +258,24 @@ export function useLayoutMutations(): LayoutMutations {
    * Create a new reroute
    */
   const createReroute = (
-    rerouteId: string | number,
+    rerouteId: RerouteId,
     position: Point,
-    parentId?: string | number,
-    linkIds: (string | number)[] = []
+    parentId?: LinkId,
+    linkIds: LinkId[] = []
   ): void => {
     logger.debug('Creating reroute:', {
-      rerouteId: Number(rerouteId),
+      rerouteId,
       position,
-      parentId: parentId != null ? Number(parentId) : undefined,
+      parentId,
       linkCount: linkIds.length
     })
     layoutStore.applyOperation({
       type: 'createReroute',
       entity: 'reroute',
-      rerouteId: Number(rerouteId),
+      rerouteId,
       position,
-      parentId: parentId != null ? Number(parentId) : undefined,
-      linkIds: linkIds.map((id) => Number(id)),
+      parentId,
+      linkIds,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -278,12 +285,12 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a reroute
    */
-  const deleteReroute = (rerouteId: string | number): void => {
-    logger.debug('Deleting reroute:', Number(rerouteId))
+  const deleteReroute = (rerouteId: RerouteId): void => {
+    logger.debug('Deleting reroute:', rerouteId)
     layoutStore.applyOperation({
       type: 'deleteReroute',
       entity: 'reroute',
-      rerouteId: Number(rerouteId),
+      rerouteId,
       timestamp: Date.now(),
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
@@ -294,19 +301,19 @@ export function useLayoutMutations(): LayoutMutations {
    * Move a reroute
    */
   const moveReroute = (
-    rerouteId: string | number,
+    rerouteId: RerouteId,
     position: Point,
     previousPosition: Point
   ): void => {
     logger.debug('Moving reroute:', {
-      rerouteId: Number(rerouteId),
+      rerouteId,
       from: previousPosition,
       to: position
     })
     layoutStore.applyOperation({
       type: 'moveReroute',
       entity: 'reroute',
-      rerouteId: Number(rerouteId),
+      rerouteId,
       position,
       previousPosition,
       timestamp: Date.now(),

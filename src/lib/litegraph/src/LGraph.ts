@@ -1362,9 +1362,9 @@ export class LGraph
     // Register reroute in Layout Store for spatial tracking
     this.layoutMutations.setSource(LayoutSource.Canvas)
     this.layoutMutations.createReroute(
-      String(rerouteId),
+      rerouteId,
       { x: pos[0], y: pos[1] },
-      before.parentId ? String(before.parentId) : undefined,
+      before.parentId,
       Array.from(linkIds)
     )
 
