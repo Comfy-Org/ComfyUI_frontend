@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useTemplateRef } from 'vue'
 
 import { type ClassValue, cn } from '@/utils/tailwindUtil'
 
@@ -9,7 +9,7 @@ const props = defineProps<{
   class?: ClassValue
 }>()
 
-const slotElRef = ref<HTMLElement>()
+const slotElRef = useTemplateRef('slot-el')
 
 defineExpose({
   slotElRef
@@ -23,7 +23,7 @@ defineExpose({
     "
   >
     <div
-      ref="slotElRef"
+      ref="slot-el"
       :style="{ backgroundColor: color }"
       :class="
         cn(
