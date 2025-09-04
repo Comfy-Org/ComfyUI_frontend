@@ -1,7 +1,9 @@
 <template>
   <WidgetLayoutField :widget="widget">
     <div
-      class="flex items-center gap-2 w-full rounded-lg pl-4 pr-2 bg-[#F9F8F4] dark-theme:bg-[#0E0E12] border-[#E1DED5] dark-theme:border-[#15161C] border-solid border"
+      :class="
+        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full pl-4 pr-2')
+      "
     >
       <Slider
         v-model="localValue"
@@ -33,11 +35,13 @@ import { computed, ref, watch } from 'vue'
 
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   STANDARD_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
