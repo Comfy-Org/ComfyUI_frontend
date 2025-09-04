@@ -848,16 +848,15 @@ export class ComfyApp {
         
         // Assertions: UnwrapRef
         for (const widgetId of widgetStore.widgetStates.keys()) {
-	  const widgetState = widgetStore
-	    .widgetStates.get(widgetId)
-	  if (widgetId in widgetIds) {
-	    widgetState.active = true
-	    widgetState.widget = widgetIds[widgetId]
-	  } else {
-	    widgetState.active = false
-	  }
-	}
-	console.log(widgetStore.widgetStates)
+          const widgetState = widgetStore
+          .widgetStates.get(widgetId)
+          if (widgetId in widgetIds) {
+            widgetState.active = true
+            widgetState.widget = widgetIds[widgetId]
+          } else {
+            widgetState.active = false
+          }
+        }
       }
     )
 
