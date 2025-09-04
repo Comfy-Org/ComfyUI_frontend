@@ -153,7 +153,6 @@ const repositionPopover = () => {
   const now = performance.now()
   if (now - lastLogTs > LOG_INTERVAL) {
     lastLogTs = now
-    // (debug removed)
   }
 }
 
@@ -166,7 +165,6 @@ function openPopover(triggerEvent?: Event): boolean {
   if (!el || !el.isConnected) return false
   bump()
   popover.value?.show(triggerEvent ?? new Event('reopen'), el)
-  // (debug removed)
   isOpen.value = true
   moreOptionsOpen.value = true
   moreOptionsRestorePending.value = false
@@ -176,7 +174,6 @@ function openPopover(triggerEvent?: Event): boolean {
 function closePopover(reason: HideReason = 'manual') {
   lastProgrammaticHideReason.value = reason
   popover.value?.hide()
-  // (debug removed)
   isOpen.value = false
   moreOptionsOpen.value = false
   stopSync()
@@ -280,7 +277,6 @@ const onPopoverShow = () => {
   // Delay first reposition slightly to ensure DOM fully painted
   requestAnimationFrame(() => repositionPopover())
   startSync()
-  // (debug removed)
 }
 
 const onPopoverHide = () => {
@@ -290,7 +286,6 @@ const onPopoverHide = () => {
     wasOpenBeforeHide.value = false
     moreOptionsOpen.value = false
     moreOptionsRestorePending.value = false
-    // (debug removed)
   }
   overlayElCache = null
   stopSync()
@@ -305,7 +300,6 @@ watch(
     else
       wasOpenBeforeHide.value =
         wasOpenBeforeHide.value || moreOptionsRestorePending.value
-    // (debug removed)
   }
 )
 
@@ -318,7 +312,6 @@ onMounted(() => {
   if (moreOptionsRestorePending.value && !isOpen.value) {
     requestAnimationFrame(() => attemptRestore())
   }
-  // (debug removed)
 })
 
 onUnmounted(() => {
