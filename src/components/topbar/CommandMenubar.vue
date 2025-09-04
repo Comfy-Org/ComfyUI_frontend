@@ -346,31 +346,18 @@ const isCompactHeight = computed(() => windowHeight.value < 700)
   top: -4px !important;
 }
 
-/* Force submenus to open to the right and start from top on compact heights */
+/* Force submenus to open to the right on compact heights */
 .comfy-command-menu-compact .p-tieredmenu-submenu {
-  /* Position submenu to the right of parent menu */
   position: absolute;
-  left: 100%;
-  margin-left: 4px;
-  margin-top: 0;
-
-  /* Align with top of the root menu container */
-  top: 0;
-  bottom: auto;
-
-  /* Allow it to grow downward from the top */
   max-height: 90vh;
   overflow-y: auto;
 }
 
-/* For deeper nested menus, maintain the same top alignment */
-.comfy-command-menu-compact .p-tieredmenu-submenu .p-tieredmenu-submenu {
-  top: 0;
-  left: calc(100% + 4px);
-}
-
-/* Ensure the submenu container uses the full available height from top */
-.comfy-command-menu-compact .p-tieredmenu-root-list > .p-tieredmenu-item {
-  position: static;
+/* Ensure the help menu container tethers from bottom to top */
+.comfy-command-menu-compact
+  .p-tieredmenu-root-list
+  > .p-tieredmenu-item:last-of-type
+  .p-tieredmenu-submenu {
+  top: -188px !important;
 }
 </style>
