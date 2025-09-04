@@ -11,7 +11,7 @@ test.describe('NodeHeader', () => {
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.setup()
     // Load single SaveImage node workflow (positioned below menu bar)
-    await comfyPage.loadWorkflow('single_save_image_node')
+    await comfyPage.loadWorkflow('nodes/single_save_image_node')
   })
 
   test('displays node title', async ({ comfyPage }) => {
