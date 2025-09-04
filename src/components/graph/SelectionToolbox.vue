@@ -83,7 +83,6 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 <style scoped>
 .selection-toolbox {
   transform: translateX(-50%) translateY(-120%);
-  will-change: transform, opacity;
 }
 
 @keyframes slideUp {
