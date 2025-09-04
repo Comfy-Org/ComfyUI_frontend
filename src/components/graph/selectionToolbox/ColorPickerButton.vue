@@ -158,6 +158,8 @@ watch(
 </script>
 
 <style scoped>
+@reference '../../../assets/css/style.css';
+
 .color-picker-container {
   transform: translateX(-50%);
 }

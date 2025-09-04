@@ -8,7 +8,7 @@
           class="mb-3"
           :photo-url="userPhotoUrl"
           :pt:icon:class="{
-            '!text-2xl': !userPhotoUrl
+            'text-2xl!': !userPhotoUrl
           }"
           size="large"
         />

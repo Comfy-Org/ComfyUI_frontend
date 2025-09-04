@@ -54,7 +54,7 @@
       </div>
 
       <template v-if="creditHistory.length > 0">
-        <div class="flex-grow">
+        <div class="grow">
           <DataTable :value="creditHistory" :show-headers="false">
             <Column field="title" :header="$t('g.name')">
               <template #body="{ data }">

@@ -313,6 +313,8 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 :deep(.p-menubar-submenu.dropdown-direction-up) {
   @apply top-auto bottom-full flex-col-reverse;
 }

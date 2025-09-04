@@ -175,6 +175,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .status-indicator {
   @apply absolute font-bold;
   font-size: 1.5rem;

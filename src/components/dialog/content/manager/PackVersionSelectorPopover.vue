@@ -109,15 +109,15 @@ const SelectedVersionValues = {
   NIGHTLY: 'nightly' as SelectedVersion
 }
 
-const ManagerChannelValues = {
-  STABLE: 'stable' as ManagerChannel,
-  DEV: 'dev' as ManagerChannel
+const ManagerChannelValues: Record<string, ManagerChannel> = {
+  DEFAULT: 'default',
+  DEV: 'dev'
 }
 
-const ManagerDatabaseSourceValues = {
-  CACHE: 'cache' as ManagerDatabaseSource,
-  REMOTE: 'remote' as ManagerDatabaseSource,
-  LOCAL: 'local' as ManagerDatabaseSource
+const ManagerDatabaseSourceValues: Record<string, ManagerDatabaseSource> = {
+  CACHE: 'cache',
+  REMOTE: 'remote',
+  LOCAL: 'local'
 }
 
 const { nodePack } = defineProps<{
@@ -242,7 +242,7 @@ const handleSubmit = async () => {
   await managerStore.installPack.call({
     id: nodePack.id,
     repository: nodePack.repository ?? '',
-    channel: ManagerChannelValues.STABLE,
+    channel: ManagerChannelValues.DEFAULT,
     mode: ManagerDatabaseSourceValues.CACHE,
     version: actualVersion,
     selected_version: selectedVersion.value

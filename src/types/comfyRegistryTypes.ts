@@ -5142,7 +5142,7 @@ export interface components {
       | 'doodle_fill'
       | 'doodle_offset_fill'
       | 'offset_fill'
-      | 'outline'
+      | 'outline-solid'
       | 'outline_gradient'
       | 'uneven_fill'
       | '70s'
