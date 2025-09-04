@@ -388,17 +388,13 @@
       "Topbar (2nd-row)": "Topbar (2nd-row)"
     }
   },
-  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
-    "name": "Low quality rendering zoom threshold",
-    "tooltip": "Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details."
+  "LiteGraph_Canvas_MinFontSizeForLOD": {
+    "name": "Zoom Node Level of Detail - font size threshold",
+    "tooltip": "Controls when the nodes switch to low quality LOD rendering. Uses font size in pixels to determine when to switch. Set to 0 to disable. Values 1-24 set the minimum font size threshold for LOD - higher values (24px) = switch nodes to simplified rendering sooner when zooming out, lower values (1px) = maintain full node quality longer."
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Maximum FPS",
     "tooltip": "The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0"
-  },
-  "LiteGraph_Canvas_MinFontSizeForLOD": {
-    "name": "Zoom Node Level of Detail - font size threshold",
-    "tooltip": "Controls when the nodes switch to low quality LOD rendering. Uses font size in pixels to determine when to switch. Set to 0 to disable. Values 1-24 set the minimum font size threshold for LOD - higher values (24px) = switch nodes to simplified rendering sooner when zooming out, lower values (1px) = maintain full node quality longer."
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Scale node combo widget menus (lists) when zoomed in"

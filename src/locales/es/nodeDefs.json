@@ -2418,6 +2418,9 @@
         "name": "cfg",
         "tooltip": "La escala de Orientación Libre de Clasificador equilibra la creatividad y la adherencia al indicador. Los valores más altos resultan en imágenes que se asemejan más al indicador, sin embargo, valores demasiado altos afectarán negativamente la calidad."
       },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
       "denoise": {
         "name": "deshacer_ruido",
         "tooltip": "La cantidad de eliminación de ruido aplicada, los valores más bajos mantendrán la estructura de la imagen inicial permitiendo el muestreo de imagen a imagen."
@@ -2469,6 +2472,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "control_después_de_generar"
       },
       "end_at_step": {
         "name": "terminar_en_paso"
@@ -3489,6 +3495,9 @@
     "inputs": {
       "image": {
         "name": "imagen"
+      },
+      "upload": {
+        "name": "elige archivo para subir"
       }
     }
   },
@@ -3500,6 +3509,9 @@
       },
       "image": {
         "name": "imagen"
+      },
+      "upload": {
+        "name": "elige archivo para subir"
       }
     }
   },
@@ -3509,6 +3521,11 @@
     "inputs": {
       "image": {
         "name": "imagen"
+      },
+      "refresh": {
+      },
+      "upload": {
+        "name": "elige archivo para subir"
       }
     }
   },
@@ -7346,6 +7363,19 @@
       },
       "samples": {
         "name": "muestras"
+      }
+    }
+  },
+  "SaveSVG": {
+    "description": "Guardar archivos SVG en el disco.",
+    "display_name": "Guardar SVG",
+    "inputs": {
+      "filename_prefix": {
+        "name": "prefijo_de_archivo",
+        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como %date:yyyy-MM-dd% o %Empty Latent Image.width% para incluir valores de los nodos."
+      },
+      "svg": {
+        "name": "svg"
       }
     }
   },

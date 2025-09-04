@@ -2418,6 +2418,9 @@
         "name": "cfg",
         "tooltip": "Classifier-Free Guidance（CFG）比例可平衡創意與提示的貼合度。數值越高，生成的圖片越貼近提示，但過高可能會影響品質。"
       },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
       "denoise": {
         "name": "去雜訊強度",
         "tooltip": "應用的去噪程度，數值較低時會保留初始影像的結構，適合影像轉影像取樣。"
@@ -2469,6 +2472,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
       },
       "end_at_step": {
         "name": "結束步數"
@@ -3489,6 +3495,9 @@
     "inputs": {
       "image": {
         "name": "影像"
+      },
+      "upload": {
+        "name": "選擇要上傳的檔案"
       }
     }
   },
@@ -3500,6 +3509,9 @@
       },
       "image": {
         "name": "影像"
+      },
+      "upload": {
+        "name": "選擇要上傳的檔案"
       }
     }
   },
@@ -3509,6 +3521,11 @@
     "inputs": {
       "image": {
         "name": "影像"
+      },
+      "refresh": {
+      },
+      "upload": {
+        "name": "選擇要上傳的檔案"
       }
     }
   },
@@ -7346,6 +7363,19 @@
       },
       "samples": {
         "name": "samples"
+      }
+    }
+  },
+  "SaveSVG": {
+    "description": "將 SVG 檔案儲存到磁碟。",
+    "display_name": "儲存 SVG",
+    "inputs": {
+      "filename_prefix": {
+        "name": "檔名前綴",
+        "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
+      },
+      "svg": {
+        "name": "svg"
       }
     }
   },

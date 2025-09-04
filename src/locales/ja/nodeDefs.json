@@ -2418,6 +2418,9 @@
         "name": "cfg",
         "tooltip": "Classifier-Free Guidanceスケールは、創造性とプロンプトへの遵守のバランスを取ります。値が高いほど、生成される画像はプロンプトにより近くなりますが、値が高すぎると品質に悪影響を及ぼす可能性があります。"
       },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
       "denoise": {
         "name": "ノイズ除去",
         "tooltip": "適用されるデノイズの量。値が低いほど、初期画像の構造を維持し、画像から画像へのサンプリングが可能になります。"
@@ -2469,6 +2472,9 @@
       },
       "cfg": {
         "name": "cfg"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
       },
       "end_at_step": {
         "name": "ステップ終了"
@@ -3489,6 +3495,9 @@
     "inputs": {
       "image": {
         "name": "画像"
+      },
+      "upload": {
+        "name": "アップロードするファイルを選択"
       }
     }
   },
@@ -3500,6 +3509,9 @@
       },
       "image": {
         "name": "画像"
+      },
+      "upload": {
+        "name": "アップロードするファイルを選択"
       }
     }
   },
@@ -3509,6 +3521,11 @@
     "inputs": {
       "image": {
         "name": "画像"
+      },
+      "refresh": {
+      },
+      "upload": {
+        "name": "アップロードするファイルを選択"
       }
     }
   },
@@ -7346,6 +7363,19 @@
       },
       "samples": {
         "name": "サンプル"
+      }
+    }
+  },
+  "SaveSVG": {
+    "description": "SVGファイルをディスクに保存します。",
+    "display_name": "SVGを保存",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス",
+        "tooltip": "保存するファイルのプレフィックスです。%date:yyyy-MM-dd% や %Empty Latent Image.width% など、ノードからの値を含めるフォーマット情報を指定できます。"
+      },
+      "svg": {
+        "name": "svg"
       }
     }
   },
