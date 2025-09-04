@@ -441,11 +441,38 @@ export class LGraphCanvas
     LiteGraph.ROUND_RADIUS = value
   }
 
+  // Cached LOD threshold values for performance
+  private _lowQualityZoomThreshold: number = 0
+  private _isLowQuality: boolean = false
+
   /**
-   * Render low quality when zoomed out.
+   * Updates the low quality zoom threshold based on current settings.
+   * Called when min_font_size_for_lod or DPR changes.
+   */
+  private updateLowQualityThreshold(): void {
+    if (this._min_font_size_for_lod === 0) {
+      // LOD disabled
+      this._lowQualityZoomThreshold = 0
+      this._isLowQuality = false
+      return
+    }
+
+    const baseFontSize = LiteGraph.NODE_TEXT_SIZE // 14px
+    const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1) //Using sqrt here because higher DPR monitors do not linearily scale the readability of the font, instead they increase the font by some heurisitc, and to approximate we use sqrt to say bascially a DPR of 2 increases the readibility by 40%, 3 by 70%
+
+    // Calculate the zoom level where text becomes unreadable
+    this._lowQualityZoomThreshold =
+      this._min_font_size_for_lod / (baseFontSize * dprAdjustment)
+
+    // Update current state based on current zoom
+    this._isLowQuality = this.ds.scale < this._lowQualityZoomThreshold
+  }
+
+  /**
+   * Render low quality when zoomed out based on minimum readable font size.
    */
   get low_quality(): boolean {
-    return this.ds.scale < this.low_quality_zoom_threshold
+    return this._isLowQuality
   }
 
   options: {
@@ -516,8 +543,21 @@ export class LGraphCanvas
   /** Shape of the markers shown at the midpoint of links.  Default: Circle */
   linkMarkerShape: LinkMarkerShape = LinkMarkerShape.Circle
   links_render_mode: number
-  /** Zoom threshold for low quality rendering. Zoom below this threshold will render low quality. */
-  low_quality_zoom_threshold: number = 0.6
+  /** Minimum font size in pixels before switching to low quality rendering.
+   * This intializes first and if we cant get the value from the settings we default to 8px
+   */
+  private _min_font_size_for_lod: number = 8
+
+  get min_font_size_for_lod(): number {
+    return this._min_font_size_for_lod
+  }
+
+  set min_font_size_for_lod(value: number) {
+    if (this._min_font_size_for_lod !== value) {
+      this._min_font_size_for_lod = value
+      this.updateLowQualityThreshold()
+    }
+  }
   /** mouse in canvas coordinates, where 0,0 is the top-left corner of the blue rectangle */
   readonly mouse: Point
   /** mouse in graph coordinates, where 0,0 is the top-left corner of the blue rectangle */
@@ -699,6 +739,14 @@ export class LGraphCanvas
 
     this.ds = new DragAndScale(canvas)
     this.pointer = new CanvasPointer(canvas)
+
+    // Set up zoom change handler for efficient LOD updates
+    this.ds.onChanged = (scale: number, _offset: Point) => {
+      // Only check LOD threshold if it's enabled
+      if (this._lowQualityZoomThreshold > 0) {
+        this._isLowQuality = scale < this._lowQualityZoomThreshold
+      }
+    }
 
     this.linkConnector.events.addEventListener('link-created', () =>
       this.#dirty()
@@ -885,6 +933,8 @@ export class LGraphCanvas
     }
 
     this.autoresize = options.autoresize
+
+    this.updateLowQualityThreshold()
   }
 
   static onGroupAdd(

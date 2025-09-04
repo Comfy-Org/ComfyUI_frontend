@@ -23,6 +23,8 @@ defineEmits(['remove'])
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 :deep(.i-badge) {
   @apply bg-green-500 text-white;
 }

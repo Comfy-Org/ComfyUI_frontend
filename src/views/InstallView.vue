@@ -202,6 +202,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 :deep(.p-steppanel) {
   @apply bg-transparent;
 }

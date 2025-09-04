@@ -63,12 +63,11 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
-    const lowQualityRenderingZoomThreshold = settingStore.get(
-      'LiteGraph.Canvas.LowQualityRenderingZoomThreshold'
+    const minFontSizeForLOD = settingStore.get(
+      'LiteGraph.Canvas.MinFontSizeForLOD'
     )
     if (canvasStore.canvas) {
-      canvasStore.canvas.low_quality_zoom_threshold =
-        lowQualityRenderingZoomThreshold
+      canvasStore.canvas.min_font_size_for_lod = minFontSizeForLOD
       canvasStore.canvas.setDirty(/* fg */ true, /* bg */ true)
     }
   })

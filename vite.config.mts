@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
@@ -86,6 +87,7 @@ export default defineConfig({
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
+    tailwindcss(),
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
       {

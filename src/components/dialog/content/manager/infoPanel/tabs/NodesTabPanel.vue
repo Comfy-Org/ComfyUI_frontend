@@ -6,7 +6,7 @@
         :key="createNodeDefKey(nodeDef)"
         class="border rounded-lg p-4"
       >
-        <NodePreview :node-def="nodeDef" class="!text-[.625rem] !min-w-full" />
+        <NodePreview :node-def="nodeDef" class="text-[.625rem]! min-w-full!" />
       </div>
     </template>
     <template v-else-if="isLoading">

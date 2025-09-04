@@ -2136,10 +2136,22 @@ export class LGraphNode
         widget.computeSize?.(nodeWidth)[1] ??
         LiteGraph.NODE_WIDGET_HEIGHT
 
+      const maybeDOMWidget = widget as { margin?: number }
+      const mtop = maybeDOMWidget.margin ?? -2
+      const mbot = maybeDOMWidget.margin ?? 2
+      const mx = maybeDOMWidget.margin ?? 6
+
       const w = widget.width || nodeWidth
       if (
         widget.last_y !== undefined &&
-        isInRectangle(x, y, 6, widget.last_y, w - 12, h)
+        isInRectangle(
+          x,
+          y,
+          mx,
+          widget.last_y + mtop,
+          w - 2 * mx,
+          h - mtop - mbot
+        )
       ) {
         return widget
       }

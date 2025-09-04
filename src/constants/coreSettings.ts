@@ -776,19 +776,36 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     versionAdded: '1.8.8'
   },
+
   {
     id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
-    name: 'Low quality rendering zoom threshold',
+    type: 'hidden',
+    deprecated: true,
+    name: 'Low quality rendering zoom threshold (deprecated)',
     tooltip:
       'Zoom level threshold for performance mode. Lower values (0.1) = quality at all zoom levels. Higher values (1.0) = performance mode even when zoomed in. Performance mode simplifies rendering by hiding text labels, shadows, and details.',
-    type: 'slider',
     attrs: {
       min: 0.1,
       max: 1,
       step: 0.01
     },
     defaultValue: 0.6,
-    versionAdded: '1.9.1'
+    versionAdded: '1.9.1',
+    versionModified: '1.26.7'
+  },
+  {
+    id: 'LiteGraph.Canvas.MinFontSizeForLOD',
+    name: 'Zoom Node Level of Detail - font size threshold',
+    tooltip:
+      'Controls when the nodes switch to low quality LOD rendering. Uses font size in pixels to determine when to switch. Set to 0 to disable. Values 1-24 set the minimum font size threshold for LOD - higher values (24px) = switch nodes to simplified rendering sooner when zooming out, lower values (1px) = maintain full node quality longer.',
+    type: 'slider',
+    attrs: {
+      min: 0,
+      max: 24,
+      step: 1
+    },
+    defaultValue: 8,
+    versionAdded: '1.26.7'
   },
   {
     id: 'Comfy.Canvas.NavigationMode',

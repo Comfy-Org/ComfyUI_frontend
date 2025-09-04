@@ -189,6 +189,8 @@ watch(
 </script>
 
 <style scoped>
+@reference '../../../assets/css/style.css';
+
 .dom-widget > * {
   @apply h-full w-full;
 }

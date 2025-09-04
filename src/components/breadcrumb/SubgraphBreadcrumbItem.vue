@@ -36,7 +36,7 @@
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
-    class="fixed z-[10000] text-[.8rem] px-2 py-2"
+    class="fixed z-10000 text-[.8rem] px-2 py-2"
     @blur="inputBlur(true)"
     @click.stop
     @keydown.enter="inputBlur(true)"
@@ -211,6 +211,8 @@ const inputBlur = async (doRename: boolean) => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .p-breadcrumb-item-link,
 .p-breadcrumb-item-icon {
   @apply select-none;

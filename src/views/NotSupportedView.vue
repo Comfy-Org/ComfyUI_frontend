@@ -79,6 +79,8 @@ const continueToInstall = async () => {
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 .sad-container {
   @apply grid items-center justify-evenly;
   grid-template-columns: 25rem 1fr;

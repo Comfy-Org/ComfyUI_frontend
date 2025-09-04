@@ -55,7 +55,7 @@
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button flex-shrink-0 no-drag rounded-none"
+      class="new-blank-workflow-button shrink-0 no-drag rounded-none"
       icon="pi pi-plus"
       text
       severity="secondary"
@@ -65,7 +65,7 @@
     <ContextMenu ref="menu" :model="contextMenuItems" />
     <div
       v-if="menuSetting !== 'Bottom' && isDesktop"
-      class="window-actions-spacer flex-shrink-0 app-drag"
+      class="window-actions-spacer shrink-0 app-drag"
     />
   </div>
 </template>
@@ -302,12 +302,14 @@ onUpdated(() => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .workflow-tabs-container {
   background-color: var(--comfy-menu-secondary-bg);
 }
 
 :deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none flex-shrink relative border-0 border-r border-solid;
+  @apply p-0 bg-transparent rounded-none shrink relative border-0 border-r border-solid;
   border-right-color: var(--border-color);
   min-width: 90px;
 }
