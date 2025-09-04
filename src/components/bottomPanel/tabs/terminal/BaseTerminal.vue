@@ -101,6 +101,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference '../../../../assets/css/style.css';
+
 :deep(.p-terminal) .xterm {
   overflow: hidden;
 }
