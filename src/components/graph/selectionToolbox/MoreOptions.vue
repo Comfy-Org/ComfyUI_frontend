@@ -24,6 +24,7 @@
       :close-on-escape="true"
       unstyled
       :pt="pt"
+      @show="onPopoverShow"
       @hide="onPopoverHide"
     >
       <div class="flex flex-col p-2 min-w-48">
@@ -50,8 +51,9 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import {
   forceCloseMoreOptionsSignal,
   moreOptionsOpen,
@@ -91,11 +93,80 @@ function getButtonEl(): HTMLElement | null {
   return el instanceof HTMLElement ? el : null
 }
 
+// -- Position / transform sync -------------------------------------------------
+// New approach: directly set overlay style (no hide/show churn) so we can smoothly track canvas.
+// We assume PrimeVue Popover root element structure: container with style.left/top when positioned.
+// We'll derive center-top alignment similar to initial placement (button center, below button + margin).
+let lastLogTs = 0
+const LOG_INTERVAL = 120 // ms
+let overlayElCache: HTMLElement | null = null
+
+function resolveOverlayEl(): HTMLElement | null {
+  // Prefer cached element (cleared on hide)
+  if (overlayElCache && overlayElCache.isConnected) return overlayElCache
+  // PrimeVue Popover root element (component instance $el)
+  const direct = (popover.value as any)?.$el
+  if (direct instanceof HTMLElement) {
+    overlayElCache = direct
+    return direct
+  }
+  // Fallback: try to locate a recent popover root near the button (same z-index class + absolute)
+  const btn = getButtonEl()
+  if (btn) {
+    const candidates = Array.from(
+      document.querySelectorAll('div.absolute.z-50')
+    ) as HTMLElement[]
+    // Heuristic: pick the one closest (vertically) below the button
+    const rect = btn.getBoundingClientRect()
+    let best: { el: HTMLElement; dist: number } | null = null
+    for (const el of candidates) {
+      const r = el.getBoundingClientRect()
+      const dist = Math.abs(r.top - rect.bottom)
+      if (!best || dist < best.dist) best = { el, dist }
+    }
+    if (best && best.el) {
+      overlayElCache = best.el
+      return best.el
+    }
+  }
+  return null
+}
+
+const repositionPopover = () => {
+  if (!isOpen.value) return
+  const btn = getButtonEl()
+  const overlayEl = resolveOverlayEl()
+  if (!btn || !overlayEl) return
+  const rect = btn.getBoundingClientRect()
+  const marginY = 8 // tailwind mt-2 ~ 0.5rem = 8px
+  const left = rect.left + rect.width / 2
+  const top = rect.bottom + marginY
+  try {
+    overlayEl.style.position = 'fixed'
+    overlayEl.style.left = `${left}px`
+    overlayEl.style.top = `${top}px`
+    overlayEl.style.transform = 'translate(-50%, 0)'
+  } catch (e) {
+    console.warn('[MoreOptions] Failed to set overlay style', e)
+    return
+  }
+  const now = performance.now()
+  if (now - lastLogTs > LOG_INTERVAL) {
+    lastLogTs = now
+    // (debug removed)
+  }
+}
+
+const { startSync, stopSync } = useCanvasTransformSync(repositionPopover, {
+  autoStart: false
+})
+
 function openPopover(triggerEvent?: Event): boolean {
   const el = getButtonEl()
   if (!el || !el.isConnected) return false
   bump()
   popover.value?.show(triggerEvent ?? new Event('reopen'), el)
+  // (debug removed)
   isOpen.value = true
   moreOptionsOpen.value = true
   moreOptionsRestorePending.value = false
@@ -105,8 +176,10 @@ function openPopover(triggerEvent?: Event): boolean {
 function closePopover(reason: HideReason = 'manual') {
   lastProgrammaticHideReason.value = reason
   popover.value?.hide()
+  // (debug removed)
   isOpen.value = false
   moreOptionsOpen.value = false
+  stopSync()
   hideAll()
   if (reason !== 'drag') {
     wasOpenBeforeHide.value = false
@@ -202,15 +275,25 @@ const pt = computed(() => ({
 }))
 
 // Distinguish outside click (PrimeVue dismiss) from programmatic hides.
+const onPopoverShow = () => {
+  overlayElCache = resolveOverlayEl()
+  // Delay first reposition slightly to ensure DOM fully painted
+  requestAnimationFrame(() => repositionPopover())
+  startSync()
+  // (debug removed)
+}
+
 const onPopoverHide = () => {
   if (lastProgrammaticHideReason.value == null) {
     isOpen.value = false
     hideAll()
     wasOpenBeforeHide.value = false
     moreOptionsOpen.value = false
-    // Outside (natural) hide: ensure restore is cancelled
     moreOptionsRestorePending.value = false
+    // (debug removed)
   }
+  overlayElCache = null
+  stopSync()
   lastProgrammaticHideReason.value = null
 }
 
@@ -222,6 +305,7 @@ watch(
     else
       wasOpenBeforeHide.value =
         wasOpenBeforeHide.value || moreOptionsRestorePending.value
+    // (debug removed)
   }
 )
 
@@ -234,5 +318,10 @@ onMounted(() => {
   if (moreOptionsRestorePending.value && !isOpen.value) {
     requestAnimationFrame(() => attemptRestore())
   }
+  // (debug removed)
+})
+
+onUnmounted(() => {
+  stopSync()
 })
 </script>

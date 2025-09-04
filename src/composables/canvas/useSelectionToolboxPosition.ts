@@ -60,6 +60,7 @@ export function useSelectionToolboxPosition(
 
     if (!selectableItems.size) {
       visible.value = false
+      // debug removed
       return
     }
 
@@ -67,6 +68,7 @@ export function useSelectionToolboxPosition(
     const bounds = createBounds(selectableItems)
 
     if (!bounds) {
+      // debug removed
       return
     }
 
@@ -76,6 +78,8 @@ export function useSelectionToolboxPosition(
       x: xBase + width / 2,
       y: y
     }
+
+    // debug removed
 
     updateTransform()
   }
@@ -94,6 +98,7 @@ export function useSelectionToolboxPosition(
     if (toolboxRef.value) {
       toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
       toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
+      // debug removed
     }
   }
 
@@ -107,6 +112,7 @@ export function useSelectionToolboxPosition(
     () => canvasStore.getCanvas().state.selectionChanged,
     (changed) => {
       if (changed) {
+        // debug removed
         if (moreOptionsRestorePending.value || moreOptionsSelectionSignature) {
           moreOptionsRestorePending.value = false
           moreOptionsWasOpenBeforeDrag = false
@@ -115,12 +121,15 @@ export function useSelectionToolboxPosition(
           } else {
             moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
           }
+          // debug removed
         }
         updateSelectionBounds()
         canvasStore.getCanvas().state.selectionChanged = false
         if (visible.value) {
+          // debug removed
           startSync()
         } else {
+          // debug removed
           stopSync()
         }
       }
@@ -132,10 +141,12 @@ export function useSelectionToolboxPosition(
     (v) => {
       if (v) {
         moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
+        // debug removed
       } else if (!canvasStore.canvas?.state?.draggingItems) {
         moreOptionsSelectionSignature = null
         if (moreOptionsRestorePending.value)
           moreOptionsRestorePending.value = false
+        // debug removed
       }
     }
   )
@@ -146,6 +157,7 @@ export function useSelectionToolboxPosition(
     (dragging) => {
       if (dragging) {
         visible.value = false
+        // debug removed
         if (moreOptionsOpen.value) {
           const currentSig = buildSelectionSignature(canvasStore)
           if (currentSig !== moreOptionsSelectionSignature) {
@@ -156,8 +168,10 @@ export function useSelectionToolboxPosition(
           moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
           if (moreOptionsRestorePending.value) {
             forceCloseMoreOptionsSignal.value++
+            // debug removed
           } else {
             moreOptionsWasOpenBeforeDrag = false
+            // debug removed
           }
         } else {
           moreOptionsRestorePending.value = false
@@ -172,6 +186,7 @@ export function useSelectionToolboxPosition(
             visible.value &&
             moreOptionsRestorePending.value &&
             selectionMatches
+          // debug removed
           if (shouldRestore) {
             restoreMoreOptionsSignal.value++
           } else {
