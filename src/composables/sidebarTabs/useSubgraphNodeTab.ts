@@ -7,13 +7,13 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 export const useSubgraphNodeTab = (): SidebarTabExtension => {
   return {
     id: 'sgn',
-    icon: 'pi pi-history',
+    icon: 'pi pi-chart-bar',
     iconBadge: () => {
       return null
     },
-    title: 'sideToolbar.queue',
-    tooltip: 'sideToolbar.queue',
-    label: 'sideToolbar.labels.queue',
+    title: 'subgraph widgets',
+    tooltip: 'Change displayed subgraph widgets',
+    label: 'subgraph widgets',
     component: markRaw(SubgraphNode),
     type: 'vue'
   }

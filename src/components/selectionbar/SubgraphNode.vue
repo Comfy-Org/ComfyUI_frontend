@@ -47,13 +47,14 @@ const widgetTree = computed(() => {
     items.value = null
     return
   }
+  node.widgets ??= []
   const intn = interiorNodes.map((n) =>
-    n.widgets?.map((w) => [n.id, n.title, w.name]) ?? []).flat(1)
+    n.widgets?.map((w) => [n, w, node]) ?? []).flat(1)
   //items.value = intn
   //TODO: filter enabled/disabled items while keeping order
   console.log(intn)
   return buildTree(intn, (item: [unknown, unknown]) =>
-    [`${item[1]}: ${item[2]}`]
+    [`${item[0].title}: ${item[1].name}`]
   )
 })
 
@@ -70,19 +71,10 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       data: node.data,
       label: node.label,
       getIcon() {
-        if (this.leaf) {
-          return 'pi pi-circle-fill'
-        }
+          return 'pi pi-minus'
       },
       children,
-      draggable: node.leaf,
-      handleClick(e: MouseEvent) {
-        if (this.leaf) {
-          //FIXME Implement
-        } else {
-          toggleNodeOnEvent(e, this)
-        }
-      }
+      draggable: true,
     }
   }
   console.log(widgetTree.value)
