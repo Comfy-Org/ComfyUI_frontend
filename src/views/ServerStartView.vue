@@ -112,7 +112,6 @@ import { useI18n } from 'vue-i18n'
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import StartupDisplay from '@/components/common/StartupDisplay.vue'
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { STAGE_METADATA } from '@/types/installStageTypes'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
@@ -139,9 +138,9 @@ const updateInstallStage = (stageInfo: InstallStageInfo) => {
 }
 
 const currentStatusLabel = computed(() => {
-  if (installStage.value && STAGE_METADATA[installStage.value]) {
-    const metadata = STAGE_METADATA[installStage.value]
-    return installStageMessage.value || metadata.description || metadata.label
+  // Use the message from the Electron API if available
+  if (installStageMessage.value) {
+    return installStageMessage.value
   }
   return t(`serverStart.process.${status.value}`)
 })
