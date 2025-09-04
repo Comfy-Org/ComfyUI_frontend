@@ -212,61 +212,82 @@ jobs:
           echo "## 🎭 Playwright Test Results" >> comment.md
           echo "" >> comment.md
 
-          # Check if all tests passed
-          ALL_PASSED=true
+          # Check if we have any test results
+          FILES_FOUND=false
           for file in deployment-info/*.txt; do
             if [ -f "$file" ]; then
-              browser=$(basename "$file" .txt)
-              info=$(cat "$file")
-              exit_code=$(echo "$info" | cut -d'|' -f2)
-              if [ "$exit_code" != "0" ]; then
-                ALL_PASSED=false
-                break
-              fi
+              FILES_FOUND=true
+              break
             fi
           done
 
-          if [ "$ALL_PASSED" = "true" ]; then
-            echo "✅ **All tests passed across all browsers!**" >> comment.md
+          if [ "$FILES_FOUND" = "false" ]; then
+            # No test results found - tests were skipped or not run
+            echo "⏭️ **Tests were skipped or not run**" >> comment.md
+            echo "" >> comment.md
+            echo "⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
+            echo "" >> comment.md
+            echo "No test results available for this PR. This can happen when:" >> comment.md
+            echo "- Tests were skipped due to branch filters" >> comment.md
+            echo "- The test workflow didn't complete successfully" >> comment.md
+            echo "- Tests are still running" >> comment.md
           else
-            echo "❌ **Some tests failed!**" >> comment.md
-          fi
-
-          echo "" >> comment.md
-          echo "⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
-          echo "" >> comment.md
-          echo "### 📊 Test Reports by Browser" >> comment.md
-
-          for file in deployment-info/*.txt; do
-            if [ -f "$file" ]; then
-              browser=$(basename "$file" .txt)
-              info=$(cat "$file")
-              exit_code=$(echo "$info" | cut -d'|' -f2)
-              url=$(echo "$info" | cut -d'|' -f3)
-              
-              # Validate URLs before using them in comments
-              sanitized_url=$(echo "$url" | grep -E '^https://[a-z0-9.-]+\.pages\.dev(/.*)?$' || echo "INVALID_URL")
-              if [ "$sanitized_url" = "INVALID_URL" ]; then
-                echo "Invalid deployment URL detected: $url"
-                url="#" # Use safe fallback
+            # Check if all tests passed
+            ALL_PASSED=true
+            for file in deployment-info/*.txt; do
+              if [ -f "$file" ]; then
+                browser=$(basename "$file" .txt)
+                info=$(cat "$file")
+                exit_code=$(echo "$info" | cut -d'|' -f2)
+                if [ "$exit_code" != "0" ]; then
+                  ALL_PASSED=false
+                  break
+                fi
               fi
-              
-              if [ "$exit_code" = "0" ]; then
-                status="✅"
-              else
-                status="❌"
-              fi
-              
-              echo "- $status **$browser**: [View Report]($url)" >> comment.md
+            done
+
+            if [ "$ALL_PASSED" = "true" ]; then
+              echo "✅ **All tests passed across all browsers!**" >> comment.md
+            else
+              echo "❌ **Some tests failed!**" >> comment.md
             fi
-          done
 
-          echo "" >> comment.md
-          echo "---" >> comment.md
-          if [ "$ALL_PASSED" = "true" ]; then
-            echo "🎉 Your tests are passing across all browsers!" >> comment.md
-          else
-            echo "⚠️ Please check the test reports for details on failures." >> comment.md
+            echo "" >> comment.md
+            echo "⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
+            echo "" >> comment.md
+            echo "### 📊 Test Reports by Browser" >> comment.md
+
+            for file in deployment-info/*.txt; do
+              if [ -f "$file" ]; then
+                browser=$(basename "$file" .txt)
+                info=$(cat "$file")
+                exit_code=$(echo "$info" | cut -d'|' -f2)
+                url=$(echo "$info" | cut -d'|' -f3)
+                
+                # Validate URLs before using them in comments
+                sanitized_url=$(echo "$url" | grep -E '^https://[a-z0-9.-]+\.pages\.dev(/.*)?$' || echo "INVALID_URL")
+                if [ "$sanitized_url" = "INVALID_URL" ]; then
+                  echo "Invalid deployment URL detected: $url"
+                  url="#" # Use safe fallback
+                fi
+                
+                if [ "$exit_code" = "0" ]; then
+                  status="✅"
+                else
+                  status="❌"
+                fi
+                
+                echo "- $status **$browser**: [View Report]($url)" >> comment.md
+              fi
+            done
+
+            echo "" >> comment.md
+            echo "---" >> comment.md
+            if [ "$ALL_PASSED" = "true" ]; then
+              echo "🎉 Your tests are passing across all browsers!" >> comment.md
+            else
+              echo "⚠️ Please check the test reports for details on failures." >> comment.md
+            fi
           fi
 
       - name: Comment PR - Tests Complete

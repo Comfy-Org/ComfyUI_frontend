@@ -140,6 +140,27 @@ jobs:
           path: blob-report/
           retention-days: 1
 
+      # Save test result for deployment info (only on shard 1 to avoid duplicates)
+      - name: Save test result for chromium
+        if: always() && matrix.shardIndex == 1
+        run: |
+          # Use outcome to determine exit code (0 for success, 1 for failure/skipped)
+          if [ "${{ steps.playwright.outcome }}" = "success" ]; then
+            EXIT_CODE=0
+          else
+            EXIT_CODE=1
+          fi
+          # For sharded tests, we use the main chromium project name
+          echo "chromium|${EXIT_CODE}|https://comfyui-playwright-chromium.pages.dev" > deployment-info-chromium.txt
+        working-directory: ComfyUI_frontend
+
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.shardIndex == 1
+        with:
+          name: deployment-info-chromium
+          path: ComfyUI_frontend/deployment-info-chromium.txt
+          retention-days: 1
+
   playwright-tests:
   # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
     timeout-minutes: 15
@@ -203,6 +224,32 @@ jobs:
           name: playwright-report-${{ matrix.browser }}
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
+
+      # Save test result for deployment info
+      - name: Save test result for ${{ matrix.browser }}
+        if: always()
+        run: |
+          # Use outcome to determine exit code (0 for success, 1 for failure/skipped)
+          if [ "${{ steps.playwright.outcome }}" = "success" ]; then
+            EXIT_CODE=0
+          else
+            EXIT_CODE=1
+          fi
+          # Generate project name based on browser
+          if [ "${{ matrix.browser }}" = "chromium-0.5x" ]; then
+            PROJECT_NAME="comfyui-playwright-chromium-0-5x"
+          else
+            PROJECT_NAME="comfyui-playwright-${{ matrix.browser }}"
+          fi
+          echo "${{ matrix.browser }}|${EXIT_CODE}|https://${PROJECT_NAME}.pages.dev" > deployment-info-${{ matrix.browser }}.txt
+        working-directory: ComfyUI_frontend
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-info-${{ matrix.browser }}
+          path: ComfyUI_frontend/deployment-info-${{ matrix.browser }}.txt
+          retention-days: 1
 
   # Merge sharded test reports
   merge-reports:
