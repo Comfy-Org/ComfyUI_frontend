@@ -324,8 +324,11 @@ describe('FileNameMappingService', () => {
 
       await service.getMapping('input')
 
-      const hash = service.getHashFromHumanName('vacation_photo.png', 'input')
-      expect(hash).toBe('abc123.png')
+      const assetId = service.getAssetIdFromHumanName(
+        'vacation_photo.png',
+        'input'
+      )
+      expect(assetId).toBe('abc123.png')
     })
 
     it('should return original name if no mapping exists', async () => {
@@ -337,7 +340,7 @@ describe('FileNameMappingService', () => {
 
       await service.getMapping('input')
 
-      const result = service.getHashFromHumanName('unknown.png', 'input')
+      const result = service.getAssetIdFromHumanName('unknown.png', 'input')
       expect(result).toBe('unknown.png')
     })
   })

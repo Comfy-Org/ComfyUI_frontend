@@ -3,7 +3,7 @@ import { api } from '@/scripts/api'
 export type FileType = 'input' | 'output' | 'temp'
 
 export interface FileNameMapping {
-  [hashFilename: string]: string // hash -> human readable name
+  [assetId: string]: string // asset-id -> asset name
 }
 
 export interface CacheEntry {
@@ -16,8 +16,8 @@ export interface CacheEntry {
 }
 
 /**
- * Service for fetching and caching filename mappings from the backend.
- * Maps SHA256 hash filenames to their original human-readable names.
+ * Service for fetching and caching asset mappings from the backend.
+ * Maps asset IDs (UUIDs) to their human-readable asset names.
  */
 export class FileNameMappingService {
   private cache = new Map<FileType, CacheEntry>()
@@ -49,46 +49,46 @@ export class FileNameMappingService {
   }
 
   /**
-   * Get human-readable filename from hash filename.
-   * @param hashFilename - The SHA256 hash filename
+   * Get human-readable asset name from asset ID.
+   * @param assetId - The asset ID (UUID)
    * @param fileType - The type of file
    * @returns Promise resolving to human-readable name or original if not found
    */
   async getHumanReadableName(
-    hashFilename: string,
+    assetId: string,
     fileType: FileType = 'input'
   ): Promise<string> {
     try {
       const mapping = await this.getMapping(fileType)
-      return mapping[hashFilename] ?? hashFilename
+      return mapping[assetId] ?? assetId
     } catch (error) {
       // Log error without exposing file paths
       if (process.env.NODE_ENV === 'development') {
         console.warn('Failed to get human readable name:', error)
       }
-      return hashFilename
+      return assetId
     }
   }
 
   /**
-   * Apply filename mapping to an array of hash filenames.
-   * @param hashFilenames - Array of SHA256 hash filenames
+   * Apply asset mapping to an array of asset IDs.
+   * @param assetIds - Array of asset IDs (UUIDs)
    * @param fileType - The type of files
    * @returns Promise resolving to array of human-readable names
    */
   async applyMappingToArray(
-    hashFilenames: string[],
+    assetIds: string[],
     fileType: FileType = 'input'
   ): Promise<string[]> {
     try {
       const mapping = await this.getMapping(fileType)
-      return hashFilenames.map((filename) => mapping[filename] ?? filename)
+      return assetIds.map((assetId) => mapping[assetId] ?? assetId)
     } catch (error) {
       // Log error without exposing sensitive data
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Failed to apply filename mapping')
+        console.warn('Failed to apply asset mapping')
       }
-      return hashFilenames
+      return assetIds
     }
   }
 
@@ -137,12 +137,12 @@ export class FileNameMappingService {
   }
 
   /**
-   * Convert a human-readable name back to its hash filename.
-   * @param humanName - The human-readable filename
+   * Convert a human-readable name back to its asset ID.
+   * @param humanName - The human-readable asset name
    * @param fileType - The file type
-   * @returns The hash filename or the original if no mapping exists
+   * @returns The asset ID or the original if no mapping exists
    */
-  getHashFromHumanName(
+  getAssetIdFromHumanName(
     humanName: string,
     fileType: FileType = 'input'
   ): string {
@@ -351,7 +351,7 @@ export class FileNameMappingService {
         const currentIndex = (nameIndex.get(humanName) || 0) + 1
         nameIndex.set(humanName, currentIndex)
 
-        // Extract file extension if present
+        // Extract file extension from human name if present
         const lastDotIndex = humanName.lastIndexOf('.')
         let baseName = humanName
         let extension = ''
@@ -361,13 +361,25 @@ export class FileNameMappingService {
           extension = humanName.substring(lastDotIndex)
         }
 
-        // Add suffix: use first 8 chars of hash (without extension)
-        // Remove extension from hash if present
-        const hashWithoutExt = hash.includes('.')
-          ? hash.substring(0, hash.lastIndexOf('.'))
-          : hash
-        const hashSuffix = hashWithoutExt.substring(0, 8)
-        dedupMapping[hash] = `${baseName}_${hashSuffix}${extension}`
+        // Create suffix from hash/UUID
+        let hashSuffix: string
+        if (
+          /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+            hash
+          )
+        ) {
+          // UUID format - use first 8 characters
+          hashSuffix = hash.substring(0, 8)
+        } else {
+          // Legacy hash format - remove extension if present and take first 8 chars
+          const hashWithoutExt = hash.includes('.')
+            ? hash.substring(0, hash.lastIndexOf('.'))
+            : hash
+          hashSuffix = hashWithoutExt.substring(0, 8)
+        }
+
+        const dedupName = `${baseName}_${hashSuffix}${extension}`
+        dedupMapping[hash] = dedupName
       }
     }
 
