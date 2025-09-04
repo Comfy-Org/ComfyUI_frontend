@@ -64,24 +64,7 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
   return {
     ...original,
     useNodeDefStore: vi.fn(() => ({
-      nodeDefsByName: mockNodeDefsByName,
-      nodeDefsByDisplayName: {},
-      showDeprecated: vi.fn().mockReturnValue(false),
-      showExperimental: vi.fn().mockReturnValue(false),
-      nodeDefFilters: [],
-      nodeDefs: Object.values(mockNodeDefsByName),
-      nodeDataTypes: new Set(),
-      visibleNodeDefs: Object.values(mockNodeDefsByName),
-      nodeSearchService: {
-        searchNodeDefs: vi.fn(),
-        setSearchTerm: vi.fn()
-      },
-      nodeTree: [],
-      updateNodeDefs: vi.fn(),
-      addNodeDef: vi.fn(),
-      fromLGraphNode: vi.fn(),
-      registerNodeDefFilter: vi.fn(),
-      unregisterNodeDefFilter: vi.fn()
+      nodeDefsByName: mockNodeDefsByName
     }))
   }
 })
