@@ -38,7 +38,7 @@
         <StartupDisplay
           :title="displayTitle"
           :status-text="displayStatusText"
-          :progress-percentage="installProgress"
+          :progress-percentage="installStageProgress"
           :hide-progress="isError"
         />
 
@@ -193,12 +193,6 @@ const displayStatusText = computed(() => {
     return `v${electronVersion.value}`
   }
   return currentStatusLabel.value
-})
-
-const installProgress = computed(() => {
-  // Only use progress value from Electron API
-  // Will be undefined if not provided, causing indeterminate progress bar
-  return installStageProgress.value
 })
 
 const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
