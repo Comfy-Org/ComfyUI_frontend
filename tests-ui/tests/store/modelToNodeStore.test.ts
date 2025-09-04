@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import {
@@ -7,19 +7,6 @@ import {
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-
-const MOCK_NODE_NAMES = [
-  'CheckpointLoaderSimple',
-  'ImageOnlyCheckpointLoader',
-  'LoraLoader',
-  'LoraLoaderModelOnly',
-  'VAELoader',
-  'ControlNetLoader',
-  'UNETLoader',
-  'UpscaleModelLoader',
-  'StyleModelLoader',
-  'GLIGENLoader'
-] as const
 
 const EXPECTED_DEFAULT_TYPES = [
   'checkpoints',
@@ -32,33 +19,76 @@ const EXPECTED_DEFAULT_TYPES = [
   'gligen'
 ] as const
 
+type NodeDefStoreType = typeof import('@/stores/nodeDefStore')
+
+// Mock nodeDefStore dependency - modelToNodeStore relies on this for registration
+// Most tests expect this to be populated; tests that need empty state can override
+vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
+  const original = await importOriginal<NodeDefStoreType>()
+  const { ComfyNodeDefImpl } = original
+
+  // Create minimal but valid ComfyNodeDefImpl for testing
+  function createMockNodeDef(name: string): ComfyNodeDefImpl {
+    const def: ComfyNodeDefV1 = {
+      name,
+      display_name: name,
+      category: 'test',
+      python_module: 'nodes',
+      description: '',
+      input: { required: {}, optional: {} },
+      output: [],
+      output_name: [],
+      output_is_list: [],
+      output_node: false
+    }
+    return new ComfyNodeDefImpl(def)
+  }
+
+  const MOCK_NODE_NAMES = [
+    'CheckpointLoaderSimple',
+    'ImageOnlyCheckpointLoader',
+    'LoraLoader',
+    'LoraLoaderModelOnly',
+    'VAELoader',
+    'ControlNetLoader',
+    'UNETLoader',
+    'UpscaleModelLoader',
+    'StyleModelLoader',
+    'GLIGENLoader'
+  ] as const
+
+  const mockNodeDefsByName = Object.fromEntries(
+    MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
+  )
+
+  return {
+    ...original,
+    useNodeDefStore: vi.fn(() => ({
+      nodeDefsByName: mockNodeDefsByName,
+      nodeDefsByDisplayName: {},
+      showDeprecated: vi.fn().mockReturnValue(false),
+      showExperimental: vi.fn().mockReturnValue(false),
+      nodeDefFilters: [],
+      nodeDefs: Object.values(mockNodeDefsByName),
+      nodeDataTypes: new Set(),
+      visibleNodeDefs: Object.values(mockNodeDefsByName),
+      nodeSearchService: {
+        searchNodeDefs: vi.fn(),
+        setSearchTerm: vi.fn()
+      },
+      nodeTree: [],
+      updateNodeDefs: vi.fn(),
+      addNodeDef: vi.fn(),
+      fromLGraphNode: vi.fn(),
+      registerNodeDefFilter: vi.fn(),
+      unregisterNodeDefFilter: vi.fn()
+    }))
+  }
+})
+
 describe('useModelToNodeStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-
-    // Create minimal but valid ComfyNodeDefImpl for testing
-    const createMockNodeDef = (name: string): ComfyNodeDefImpl => {
-      const def: ComfyNodeDefV1 = {
-        name,
-        display_name: name,
-        category: 'test',
-        python_module: 'nodes',
-        description: '',
-        input: { required: {}, optional: {} },
-        output: [],
-        output_name: [],
-        output_is_list: [],
-        output_node: false
-      }
-      return new ComfyNodeDefImpl(def)
-    }
-
-    // Mock nodeDefStore dependency - modelToNodeStore relies on this for registration
-    // Most tests expect this to be populated; tests that need empty state can override
-    const nodeDefStore = useNodeDefStore()
-    nodeDefStore.nodeDefsByName = Object.fromEntries(
-      MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
-    )
   })
 
   describe('modelToNodeMap', () => {
@@ -256,9 +286,9 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      EXPECTED_DEFAULT_TYPES.forEach((modelType) => {
+      for (const modelType of EXPECTED_DEFAULT_TYPES) {
         expect.soft(modelToNodeStore.getNodeProvider(modelType)).toBeDefined()
-      })
+      }
     })
 
     it('should be idempotent', () => {
@@ -275,9 +305,10 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should not register when nodeDefStore is empty', () => {
+      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
+        nodeDefsByName: {}
+      })
       const modelToNodeStore = useModelToNodeStore()
-      const nodeDefStore = useNodeDefStore()
-      nodeDefStore.nodeDefsByName = {}
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('checkpoints')).toBeUndefined()
     })
