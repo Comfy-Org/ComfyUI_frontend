@@ -105,7 +105,7 @@ export const useAssetStore = defineStore('asset', () => {
 
       return assets.value
     } catch (err) {
-      error.value = err as Error
+      error.value = err instanceof Error ? err : new Error(String(err))
       console.error('❌ Error loading checkpoint assets:', err)
       return []
     } finally {

@@ -34,7 +34,7 @@ import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useToastStore } from '@/stores/toastStore'
-import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -110,7 +110,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Save',
       category: 'essentials' as const,
       function: async () => {
-        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
+        const workflow = useWorkflowStore().activeWorkflow
         if (!workflow) return
 
         await workflowService.saveWorkflow(workflow)
@@ -123,7 +123,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Save As',
       category: 'essentials' as const,
       function: async () => {
-        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
+        const workflow = useWorkflowStore().activeWorkflow
         if (!workflow) return
 
         await workflowService.saveWorkflowAs(workflow)

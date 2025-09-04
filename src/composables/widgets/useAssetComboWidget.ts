@@ -1,17 +1,14 @@
 import { ref } from 'vue'
 
 import AssetPickerWidget from '@/components/graph/widgets/AssetPickerWidget.vue'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   ComboInputSpec,
   type InputSpec,
   isComboInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  type BaseDOMWidget,
-  ComponentWidgetImpl,
-  addWidget
-} from '@/scripts/domWidget'
+import { app } from '@/scripts/app'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 import { useComboWidget } from './useComboWidget'
@@ -57,16 +54,17 @@ function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
 
   const widgetValue = ref<string>(inputSpec.default || '')
 
-  const widget = new ComponentWidgetImpl({
+  const widget = new ComponentWidgetImpl<string | object>({
     node,
     name: inputSpec.name,
     component: AssetPickerWidget,
     inputSpec,
     options: {
       getValue: () => widgetValue.value,
-      setValue: (value: string) => {
-        widgetValue.value = value
-        console.log('🔧 Widget value updated to:', value)
+      setValue: (value: string | object) => {
+        const stringValue = typeof value === 'string' ? value : String(value)
+        widgetValue.value = stringValue
+        console.log('🔧 Widget value updated to:', stringValue)
       }
     },
     props: {
@@ -78,13 +76,12 @@ function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
         setValue: (newValue: string) => {
           console.log('🔧 AssetPickerWidget setValue called with:', newValue)
 
-          // Get canvas from the global ComfyUI app instance - this is the primary way
-          // LiteGraph nodes access the canvas in ComfyUI
-          const globalApp = globalThis as { app?: { canvas?: LGraphCanvas } }
-          const canvas = globalApp.app?.canvas
+          // Get canvas from the ComfyUI app instance - this is the proper way
+          // to access the canvas for widget setValue operations
+          const canvas = app.canvas
 
           if (!canvas) {
-            console.error('Canvas not found, app available:', !!globalApp.app)
+            console.error('Canvas not found on app instance')
             throw new Error('Canvas is required for setValue operation')
           }
 
@@ -120,7 +117,7 @@ function createAssetPickerWidget(node: LGraphNode, inputSpec: ComboInputSpec) {
     }
   })
 
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget)
   return widget
 }
 
