@@ -95,13 +95,14 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
 import SelectButton from 'primevue/selectbutton'
 import TieredMenu, {
   type TieredMenuMethods,
   type TieredMenuState
 } from 'primevue/tieredmenu'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
@@ -311,19 +312,9 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
   return menuItemsStore.menuItemHasActiveStateChildren[item.parentPath]
 }
-const windowHeight = ref(window.innerHeight)
+
+const { height: windowHeight } = useWindowSize()
 const isCompactHeight = computed(() => windowHeight.value < 700)
-
-onMounted(() => {
-  const handleResize = () => {
-    windowHeight.value = window.innerHeight
-  }
-  window.addEventListener('resize', handleResize)
-
-  onUnmounted(() => {
-    window.removeEventListener('resize', handleResize)
-  })
-})
 </script>
 
 <style scoped>
@@ -356,14 +347,14 @@ onMounted(() => {
 /* Force submenus to open to the right and start from top on compact heights */
 .comfy-command-menu-compact .p-tieredmenu-submenu {
   /* Position submenu to the right of parent menu */
-  position: absolute !important;
-  left: 100% !important;
-  margin-left: 4px !important;
-  margin-top: 0 !important;
+  position: absolute;
+  left: 100%;
+  margin-left: 4px;
+  margin-top: 0;
 
   /* Align with top of the root menu container */
-  top: 0 !important;
-  bottom: auto !important;
+  top: 0;
+  bottom: auto;
 
   /* Allow it to grow downward from the top */
   max-height: 90vh;
@@ -372,12 +363,12 @@ onMounted(() => {
 
 /* For deeper nested menus, maintain the same top alignment */
 .comfy-command-menu-compact .p-tieredmenu-submenu .p-tieredmenu-submenu {
-  top: 0 !important;
-  left: calc(100% + 4px) !important;
+  top: 0;
+  left: calc(100% + 4px);
 }
 
 /* Ensure the submenu container uses the full available height from top */
 .comfy-command-menu-compact .p-tieredmenu-root-list > .p-tieredmenu-item {
-  position: static !important;
+  position: static;
 }
 </style>
