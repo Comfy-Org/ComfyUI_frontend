@@ -15,8 +15,8 @@ importers:
         specifier: ^1.3.1
         version: 1.3.1
       '@comfyorg/comfyui-electron-types':
-        specifier: ^0.4.43
-        version: 0.4.43
+        specifier: ^0.4.69
+        version: 0.4.69
       '@primeuix/forms':
         specifier: 0.0.2
         version: 0.0.2
@@ -1058,8 +1058,8 @@ packages:
     resolution: {integrity: sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ==}
     engines: {node: '>=6.9.0'}
 
-  '@comfyorg/comfyui-electron-types@0.4.43':
-    resolution: {integrity: sha512-o6WFbYn9yAkGbkOwvhPF7pbKDvN0occZ21Tfyhya8CIsIqKpTHLft0aOqo4yhSh+kTxN16FYjsfrTH5Olk4WuA==}
+  '@comfyorg/comfyui-electron-types@0.4.69':
+    resolution: {integrity: sha512-emEapJvbbx8lXiJ/84gmk+fYU73MmqkQKgBDQkyDwctcOb+eNe347PaH/+0AIjX8A/DtFHfnwgh9J8k3RVdqZA==}
 
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
@@ -7945,7 +7945,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  '@comfyorg/comfyui-electron-types@0.4.43': {}
+  '@comfyorg/comfyui-electron-types@0.4.69': {}
 
   '@csstools/color-helpers@5.1.0': {}
 
