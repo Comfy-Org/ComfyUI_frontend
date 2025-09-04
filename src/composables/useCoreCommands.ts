@@ -1,5 +1,6 @@
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useAssetBrowserDialog } from '@/composables/useAssetBrowserDialog'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
@@ -979,6 +980,21 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const modelSelectorDialog = useModelSelectorDialog()
         modelSelectorDialog.show()
+      }
+    },
+    {
+      id: 'Comfy.Dev.ShowAssetBrowser',
+      icon: 'pi pi-folder-open',
+      label: 'Show Asset Browser (Dev)',
+      versionAdded: '1.26.9',
+      category: 'view-controls' as const,
+      function: () => {
+        const assetBrowserDialog = useAssetBrowserDialog()
+        assetBrowserDialog.show({
+          onSelect: (asset) => {
+            console.log('Selected asset:', asset)
+          }
+        })
       }
     },
     {

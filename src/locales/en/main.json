@@ -1761,5 +1761,9 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "assetBrowser": {
+    "noCheckpointsFound": "No checkpoints found",
+    "loadingCheckpoints": "Loading checkpoints..."
   }
 }

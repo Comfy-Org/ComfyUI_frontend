@@ -53,6 +53,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import { useAssetBrowserDialog } from '@/composables/useAssetBrowserDialog'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
@@ -71,6 +72,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const assetBrowserDialog = useAssetBrowserDialog()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
@@ -148,14 +150,38 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
           // @ts-expect-error fixme ts strict error
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
+            // Check if this is a checkpoint model - if so, open asset browser
             // @ts-expect-error fixme ts strict error
-            const widget = node.widgets.find(
-              (widget) => widget.name === provider.key
-            )
-            if (widget) {
+            if (model.directory === 'checkpoints') {
+              assetBrowserDialog.show({
+                onSelect: (asset) => {
+                  console.log('🎯 Asset selected from model directory:', asset)
+                  // Create the node and set the selected asset filename
+                  const node = useLitegraphService().addNodeOnGraph(
+                    provider.nodeDef
+                  )
+                  // @ts-expect-error fixme ts strict error
+                  const widget = node.widgets.find(
+                    (widget) => widget.name === provider.key
+                  )
+                  if (widget) {
+                    widget.value = asset.filename
+                  }
+                }
+              })
+            } else {
+              // Original behavior for non-checkpoint models
+              const node = useLitegraphService().addNodeOnGraph(
+                provider.nodeDef
+              )
               // @ts-expect-error fixme ts strict error
-              widget.value = model.file_name
+              const widget = node.widgets.find(
+                (widget) => widget.name === provider.key
+              )
+              if (widget) {
+                // @ts-expect-error fixme ts strict error
+                widget.value = model.file_name
+              }
             }
           }
         } else {
@@ -185,6 +211,9 @@ watch(
 )
 
 onMounted(async () => {
+  // Always load model folders (this will fallback to mock data if backend fails)
+  await modelStore.loadModelFolders()
+
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
     await modelStore.loadModels()
   }
