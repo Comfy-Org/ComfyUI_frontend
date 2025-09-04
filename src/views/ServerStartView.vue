@@ -84,7 +84,10 @@
           v-if="terminalVisible && isError"
           class="absolute bottom-4 left-4 right-4 max-w-4xl mx-auto z-10"
         >
-          <div class="bg-neutral-900/95 rounded-lg p-4 border border-neutral-700" style="height: 300px">
+          <div
+            class="bg-neutral-900/95 rounded-lg p-4 border border-neutral-700"
+            style="height: 300px"
+          >
             <BaseTerminal @created="terminalCreated" />
           </div>
         </div>
