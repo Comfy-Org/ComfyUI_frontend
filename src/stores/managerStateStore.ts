@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { useI18n } from 'vue-i18n'
 
+import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -137,7 +137,6 @@ export const useManagerStateStore = defineStore('managerState', () => {
         } catch {
           // If legacy command doesn't exist
           if (options?.showToastOnLegacyError !== false) {
-            const { t } = useI18n()
             useToastStore().add({
               severity: 'error',
               summary: t('g.error'),
@@ -156,7 +155,6 @@ export const useManagerStateStore = defineStore('managerState', () => {
       case ManagerUIState.NEW_UI:
         if (options?.isLegacyOnly) {
           // Legacy command is not available in NEW_UI mode
-          const { t } = useI18n()
           useToastStore().add({
             severity: 'error',
             summary: t('g.error'),
