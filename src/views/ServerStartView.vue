@@ -132,6 +132,15 @@ let xterm: Terminal | undefined
  * Handles installation stage updates from the desktop
  */
 const updateInstallStage = (stageInfo: InstallStageInfo) => {
+  console.warn('[InstallStage.onUpdate] Received:', {
+    stage: stageInfo.stage,
+    progress: stageInfo.progress,
+    message: stageInfo.message,
+    error: stageInfo.error,
+    timestamp: stageInfo.timestamp,
+    fullInfo: stageInfo
+  })
+
   installStage.value = stageInfo.stage
   installStageMessage.value = stageInfo.message || ''
   installStageProgress.value = stageInfo.progress
