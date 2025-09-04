@@ -468,49 +468,6 @@ export interface LayoutStore {
   getCurrentActor(): string
 }
 
-// Simplified mutation API
-export interface LayoutMutations {
-  // Single node operations (synchronous, CRDT-ready)
-  moveNode(nodeId: NodeId, position: Point): void
-  resizeNode(nodeId: NodeId, size: Size): void
-  setNodeZIndex(nodeId: NodeId, zIndex: number): void
-
-  // Node lifecycle operations
-  createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
-  deleteNode(nodeId: NodeId): void
-
-  // Link operations
-  createLink(
-    linkId: string | number,
-    sourceNodeId: string | number,
-    sourceSlot: number,
-    targetNodeId: string | number,
-    targetSlot: number
-  ): void
-  deleteLink(linkId: string | number): void
-
-  // Reroute operations
-  createReroute(
-    rerouteId: string | number,
-    position: Point,
-    parentId?: string | number,
-    linkIds?: (string | number)[]
-  ): void
-  deleteReroute(rerouteId: string | number): void
-  moveReroute(
-    rerouteId: string | number,
-    position: Point,
-    previousPosition: Point
-  ): void
-
-  // Stacking operations
-  bringNodeToFront(nodeId: NodeId): void
-
-  // Source tracking
-  setSource(source: LayoutSource): void
-  setActor(actor: string): void // For CRDT
-}
-
 // CRDT-ready operation log (for future CRDT integration)
 export interface OperationLog {
   operations: LayoutOperation[]

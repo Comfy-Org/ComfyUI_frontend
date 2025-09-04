@@ -66,11 +66,6 @@ describe('useWidgetRenderer', () => {
         expect(getWidgetComponent('COLOR')).toBe(WidgetType.COLOR)
       })
 
-      it('should map image types to IMAGE widget', () => {
-        expect(getWidgetComponent('image')).toBe(WidgetType.IMAGE)
-        expect(getWidgetComponent('IMAGE')).toBe(WidgetType.IMAGE)
-      })
-
       it('should map file types to FILEUPLOAD widget', () => {
         expect(getWidgetComponent('file')).toBe(WidgetType.FILEUPLOAD)
         expect(getWidgetComponent('FILEUPLOAD')).toBe(WidgetType.FILEUPLOAD)

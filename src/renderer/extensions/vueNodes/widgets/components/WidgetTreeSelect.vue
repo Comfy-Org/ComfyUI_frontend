@@ -4,7 +4,7 @@
       v-model="localValue"
       v-bind="filteredProps"
       :disabled="readonly"
-      class="w-full text-xs"
+      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       size="small"
       @update:model-value="onChange"
     />
@@ -17,11 +17,13 @@ import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{

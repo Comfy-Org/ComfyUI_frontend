@@ -1,4 +1,4 @@
-import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -17,6 +17,8 @@ import type {
 } from './interfaces'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
+
+const layoutMutations = useLayoutMutations()
 
 export type RerouteId = number
 

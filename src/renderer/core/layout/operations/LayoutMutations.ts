@@ -8,7 +8,6 @@ import log from 'loglevel'
 
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import {
-  type LayoutMutations,
   LayoutSource,
   type NodeId,
   type NodeLayout,
@@ -18,25 +17,70 @@ import {
 
 const logger = log.getLogger('LayoutMutations')
 
-class LayoutMutationsImpl implements LayoutMutations {
+export interface LayoutMutations {
+  // Single node operations (synchronous, CRDT-ready)
+  moveNode(nodeId: NodeId, position: Point): void
+  resizeNode(nodeId: NodeId, size: Size): void
+  setNodeZIndex(nodeId: NodeId, zIndex: number): void
+
+  // Node lifecycle operations
+  createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
+  deleteNode(nodeId: NodeId): void
+
+  // Link operations
+  createLink(
+    linkId: string | number,
+    sourceNodeId: string | number,
+    sourceSlot: number,
+    targetNodeId: string | number,
+    targetSlot: number
+  ): void
+  deleteLink(linkId: string | number): void
+
+  // Reroute operations
+  createReroute(
+    rerouteId: string | number,
+    position: Point,
+    parentId?: string | number,
+    linkIds?: (string | number)[]
+  ): void
+  deleteReroute(rerouteId: string | number): void
+  moveReroute(
+    rerouteId: string | number,
+    position: Point,
+    previousPosition: Point
+  ): void
+
+  // Stacking operations
+  bringNodeToFront(nodeId: NodeId): void
+
+  // Source tracking
+  setSource(source: LayoutSource): void
+  setActor(actor: string): void
+}
+
+/**
+ * Composable for accessing layout mutations with clean destructuring API
+ */
+export function useLayoutMutations(): LayoutMutations {
   /**
    * Set the current mutation source
    */
-  setSource(source: LayoutSource): void {
+  const setSource = (source: LayoutSource): void => {
     layoutStore.setSource(source)
   }
 
   /**
    * Set the current actor (for CRDT)
    */
-  setActor(actor: string): void {
+  const setActor = (actor: string): void => {
     layoutStore.setActor(actor)
   }
 
   /**
    * Move a node to a new position
    */
-  moveNode(nodeId: NodeId, position: Point): void {
+  const moveNode = (nodeId: NodeId, position: Point): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -55,7 +99,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Resize a node
    */
-  resizeNode(nodeId: NodeId, size: Size): void {
+  const resizeNode = (nodeId: NodeId, size: Size): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -74,7 +118,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Set node z-index
    */
-  setNodeZIndex(nodeId: NodeId, zIndex: number): void {
+  const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -93,7 +137,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Create a new node
    */
-  createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void {
+  const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
     const fullLayout: NodeLayout = {
       id: nodeId,
       position: layout.position ?? { x: 0, y: 0 },
@@ -122,7 +166,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Delete a node
    */
-  deleteNode(nodeId: NodeId): void {
+  const deleteNode = (nodeId: NodeId): void => {
     const existing = layoutStore.getNodeLayoutRef(nodeId).value
     if (!existing) return
 
@@ -140,7 +184,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Bring a node to the front (highest z-index)
    */
-  bringNodeToFront(nodeId: NodeId): void {
+  const bringNodeToFront = (nodeId: NodeId): void => {
     // Get all nodes to find the highest z-index
     const allNodes = layoutStore.getAllNodes().value
     let maxZIndex = 0
@@ -152,19 +196,19 @@ class LayoutMutationsImpl implements LayoutMutations {
     }
 
     // Set this node's z-index to be one higher than the current max
-    this.setNodeZIndex(nodeId, maxZIndex + 1)
+    setNodeZIndex(nodeId, maxZIndex + 1)
   }
 
   /**
    * Create a new link
    */
-  createLink(
+  const createLink = (
     linkId: string | number,
     sourceNodeId: string | number,
     sourceSlot: number,
     targetNodeId: string | number,
     targetSlot: number
-  ): void {
+  ): void => {
     // Normalize node IDs to strings
     const normalizedSourceNodeId = String(sourceNodeId)
     const normalizedTargetNodeId = String(targetNodeId)
@@ -191,7 +235,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Delete a link
    */
-  deleteLink(linkId: string | number): void {
+  const deleteLink = (linkId: string | number): void => {
     logger.debug('Deleting link:', Number(linkId))
     layoutStore.applyOperation({
       type: 'deleteLink',
@@ -206,12 +250,12 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Create a new reroute
    */
-  createReroute(
+  const createReroute = (
     rerouteId: string | number,
     position: Point,
     parentId?: string | number,
     linkIds: (string | number)[] = []
-  ): void {
+  ): void => {
     logger.debug('Creating reroute:', {
       rerouteId: Number(rerouteId),
       position,
@@ -234,7 +278,7 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Delete a reroute
    */
-  deleteReroute(rerouteId: string | number): void {
+  const deleteReroute = (rerouteId: string | number): void => {
     logger.debug('Deleting reroute:', Number(rerouteId))
     layoutStore.applyOperation({
       type: 'deleteReroute',
@@ -249,11 +293,11 @@ class LayoutMutationsImpl implements LayoutMutations {
   /**
    * Move a reroute
    */
-  moveReroute(
+  const moveReroute = (
     rerouteId: string | number,
     position: Point,
     previousPosition: Point
-  ): void {
+  ): void => {
     logger.debug('Moving reroute:', {
       rerouteId: Number(rerouteId),
       from: previousPosition,
@@ -270,7 +314,20 @@ class LayoutMutationsImpl implements LayoutMutations {
       actor: layoutStore.getCurrentActor()
     })
   }
-}
 
-// Create singleton instance
-export const layoutMutations = new LayoutMutationsImpl()
+  return {
+    setSource,
+    setActor,
+    moveNode,
+    resizeNode,
+    setNodeZIndex,
+    createNode,
+    deleteNode,
+    bringNodeToFront,
+    createLink,
+    deleteLink,
+    createReroute,
+    deleteReroute,
+    moveReroute
+  }
+}

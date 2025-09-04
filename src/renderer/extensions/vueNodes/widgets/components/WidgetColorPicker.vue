@@ -1,17 +1,24 @@
 <!-- Needs custom color picker for alpha support -->
 <template>
-  <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-sm opacity-80">{{
-      widget.name
-    }}</label>
-    <ColorPicker
-      v-model="localValue"
-      v-bind="filteredProps"
-      :disabled="readonly"
-      inline
-      @update:model-value="onChange"
-    />
-  </div>
+  <WidgetLayoutField :widget="widget">
+    <label
+      :class="
+        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full px-4 py-2')
+      "
+    >
+      <ColorPicker
+        v-model="localValue"
+        v-bind="filteredProps"
+        :disabled="readonly"
+        class="w-8 h-4 !rounded-full overflow-hidden border-none"
+        :pt="{
+          preview: '!w-full !h-full !border-none'
+        }"
+        @update:model-value="onChange"
+      />
+      <span class="text-xs">#{{ localValue }}</span>
+    </label>
+  </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
@@ -20,10 +27,14 @@ import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+
+import { WidgetInputBaseClass } from './layout'
+import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{
   widget: SimplifiedWidget<string>

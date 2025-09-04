@@ -6,7 +6,7 @@
  */
 import { computed, inject } from 'vue'
 
-import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import { LayoutSource, type Point } from '@/renderer/core/layout/types'
 
@@ -16,7 +16,7 @@ import { LayoutSource, type Point } from '@/renderer/core/layout/types'
  */
 export function useNodeLayout(nodeId: string) {
   const store = layoutStore
-  const mutations = layoutMutations
+  const mutations = useLayoutMutations()
 
   // Get transform utilities from TransformPane if available
   const transformState = inject('transformState') as

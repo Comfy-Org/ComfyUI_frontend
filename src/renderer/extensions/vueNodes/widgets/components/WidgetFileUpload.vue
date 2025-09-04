@@ -157,6 +157,7 @@
           <Button
             label="Browse Files"
             size="small"
+            severity="secondary"
             class="text-xs"
             :disabled="readonly"
             @click="triggerFileInput"
