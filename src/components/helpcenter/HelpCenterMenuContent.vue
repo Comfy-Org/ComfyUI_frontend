@@ -142,13 +142,9 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useDialogService } from '@/services/dialogService'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
+import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
@@ -195,7 +191,6 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
 
 // Emits
 const emit = defineEmits<{
@@ -318,28 +313,9 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
-        const managerState = useManagerStateStore().getManagerUIState()
-
-        switch (managerState) {
-          case ManagerUIState.DISABLED:
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility'
-              )
-            } catch {
-              // If legacy command doesn't exist, fall back to extensions panel
-              dialogService.showSettingsDialog('extension')
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog()
-            break
-        }
+        await useManagerStateStore().openManager({
+          showToastOnLegacyError: false
+        })
         emit('close')
       }
     },

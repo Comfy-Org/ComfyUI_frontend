@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
+import { useI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
+import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useToastStore } from '@/stores/toastStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 
 export enum ManagerUIState {
   DISABLED = 'disabled',
@@ -100,12 +105,80 @@ export const useManagerStateStore = defineStore('managerState', () => {
     return isManagerEnabled()
   }
 
+  /**
+   * Opens the manager UI based on current state
+   * Centralizes the logic for opening manager across the app
+   * @param options - Optional configuration for opening the manager
+   * @param options.initialTab - Initial tab to show (for NEW_UI mode)
+   * @param options.legacyCommand - Legacy command to execute (for LEGACY_UI mode)
+   * @param options.showToastOnLegacyError - Whether to show toast on legacy command failure
+   * @param options.isLegacyOnly - If true, shows error in NEW_UI mode instead of opening manager
+   */
+  const openManager = async (options?: {
+    initialTab?: ManagerTab
+    legacyCommand?: string
+    showToastOnLegacyError?: boolean
+    isLegacyOnly?: boolean
+  }): Promise<void> => {
+    const state = getManagerUIState()
+    const dialogService = useDialogService()
+    const commandStore = useCommandStore()
+
+    switch (state) {
+      case ManagerUIState.DISABLED:
+        dialogService.showSettingsDialog('extension')
+        break
+
+      case ManagerUIState.LEGACY_UI: {
+        const command =
+          options?.legacyCommand || 'Comfy.Manager.Menu.ToggleVisibility'
+        try {
+          await commandStore.execute(command)
+        } catch {
+          // If legacy command doesn't exist
+          if (options?.showToastOnLegacyError !== false) {
+            const { t } = useI18n()
+            useToastStore().add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('manager.legacyMenuNotAvailable'),
+              life: 3000
+            })
+          }
+          // Fallback to extensions panel if not showing toast
+          if (options?.showToastOnLegacyError === false) {
+            dialogService.showSettingsDialog('extension')
+          }
+        }
+        break
+      }
+
+      case ManagerUIState.NEW_UI:
+        if (options?.isLegacyOnly) {
+          // Legacy command is not available in NEW_UI mode
+          const { t } = useI18n()
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.legacyMenuNotAvailable'),
+            life: 3000
+          })
+        } else {
+          dialogService.showManagerDialog(
+            options?.initialTab ? { initialTab: options.initialTab } : undefined
+          )
+        }
+        break
+    }
+  }
+
   return {
     getManagerUIState,
     isManagerEnabled,
     isNewManagerUI,
     isLegacyManagerUI,
     shouldShowInstallButton,
-    shouldShowManagerButtons
+    shouldShowManagerButtons,
+    openManager
   }
 })

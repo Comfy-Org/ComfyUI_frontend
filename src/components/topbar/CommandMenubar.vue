@@ -84,13 +84,9 @@ import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
+import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -141,26 +137,7 @@ const showSettings = (defaultPanel?: string) => {
 const managerStateStore = useManagerStateStore()
 
 const showManageExtensions = async () => {
-  const state = managerStateStore.getManagerUIState()
-
-  switch (state) {
-    case ManagerUIState.DISABLED:
-      showSettings('extension')
-      break
-
-    case ManagerUIState.LEGACY_UI:
-      try {
-        await commandStore.execute('Comfy.Manager.Menu.ToggleVisibility')
-      } catch {
-        // If legacy command doesn't exist, fall back to extensions panel
-        showSettings('extension')
-      }
-      break
-
-    case ManagerUIState.NEW_UI:
-      useDialogService().showManagerDialog()
-      break
-  }
+  await managerStateStore.openManager({ showToastOnLegacyError: false })
 }
 
 const themeMenuItems = computed(() => {

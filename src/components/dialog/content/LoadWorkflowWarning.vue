@@ -54,19 +54,12 @@
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useCommandStore } from '@/stores/commandStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useManagerStateStore } from '@/stores/managerStateStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
@@ -124,34 +117,10 @@ const showInstallAllButton = computed(() => {
 })
 
 const openManager = async () => {
-  const state = managerStateStore.getManagerUIState()
-
-  switch (state) {
-    case ManagerUIState.DISABLED:
-      useDialogService().showSettingsDialog('extension')
-      break
-
-    case ManagerUIState.LEGACY_UI:
-      try {
-        await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
-      } catch {
-        // If legacy command doesn't exist, show toast
-        const { t } = useI18n()
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('manager.legacyMenuNotAvailable'),
-          life: 3000
-        })
-      }
-      break
-
-    case ManagerUIState.NEW_UI:
-      useDialogService().showManagerDialog({
-        initialTab: ManagerTab.Missing
-      })
-      break
-  }
+  await managerStateStore.openManager({
+    initialTab: ManagerTab.Missing,
+    showToastOnLegacyError: true
+  })
 }
 </script>
 

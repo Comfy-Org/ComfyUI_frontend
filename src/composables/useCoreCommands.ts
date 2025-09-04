@@ -20,7 +20,6 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
@@ -732,34 +731,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
-        const managerState = useManagerStateStore().getManagerUIState()
-
-        switch (managerState) {
-          case ManagerUIState.DISABLED:
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility' // This command is registered by legacy manager FE extension
-              )
-            } catch (error) {
-              console.error('error', error)
-              useToastStore().add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: t('manager.legacyMenuNotAvailable'),
-                life: 3000
-              })
-              dialogService.showManagerDialog()
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog()
-            break
-        }
+        await useManagerStateStore().openManager({
+          showToastOnLegacyError: true
+        })
       }
     },
     {
@@ -767,33 +741,22 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-sync',
       label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
-      function: () => {
+      function: async () => {
         const managerStore = useManagerStateStore()
         const state = managerStore.getManagerUIState()
 
-        switch (state) {
-          case ManagerUIState.DISABLED:
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('manager.notAvailable'),
-              life: 3000
-            })
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            useCommandStore()
-              .execute('Comfy.Manager.Menu.ToggleVisibility')
-              .catch(() => {
-                // If legacy command doesn't exist, fall back to extensions panel
-                dialogService.showSettingsDialog('extension')
-              })
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog()
-            break
+        // For DISABLED state, show error toast instead of opening settings
+        if (state === ManagerUIState.DISABLED) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.notAvailable'),
+            life: 3000
+          })
+          return
         }
+
+        await managerStore.openManager({ showToastOnLegacyError: false })
       }
     },
     {
@@ -802,32 +765,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
       function: async () => {
-        const managerStore = useManagerStateStore()
-        const state = managerStore.getManagerUIState()
-
-        switch (state) {
-          case ManagerUIState.DISABLED:
-            // When manager is disabled, open the extensions panel in settings
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility'
-              )
-            } catch {
-              // If legacy command doesn't exist, fall back to extensions panel
-              dialogService.showSettingsDialog('extension')
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog({
-              initialTab: ManagerTab.Missing
-            })
-            break
-        }
+        await useManagerStateStore().openManager({
+          initialTab: ManagerTab.Missing,
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -934,28 +875,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'mdi mdi-puzzle-outline',
       label: 'Manager',
       function: async () => {
-        const managerState = useManagerStateStore().getManagerUIState()
-
-        switch (managerState) {
-          case ManagerUIState.DISABLED:
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility'
-              )
-            } catch {
-              // If legacy command doesn't exist, fall back to extensions panel
-              dialogService.showSettingsDialog('extension')
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            dialogService.showManagerDialog()
-            break
-        }
+        await useManagerStateStore().openManager({
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -1020,38 +942,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        const managerState = useManagerStateStore().getManagerUIState()
-
-        switch (managerState) {
-          case ManagerUIState.DISABLED:
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.CustomNodesManager.ToggleVisibility'
-              )
-            } catch (error) {
-              useToastStore().add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: t('manager.legacyMenuNotAvailable'),
-                life: 3000
-              })
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            // Legacy command is not available in NEW_UI mode
-            useToastStore().add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('manager.legacyMenuNotAvailable'),
-              life: 3000
-            })
-            break
-        }
+        await useManagerStateStore().openManager({
+          legacyCommand: 'Comfy.Manager.CustomNodesManager.ToggleVisibility',
+          showToastOnLegacyError: true,
+          isLegacyOnly: true
+        })
       }
     },
     {
@@ -1060,38 +955,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        const managerState = useManagerStateStore().getManagerUIState()
-
-        switch (managerState) {
-          case ManagerUIState.DISABLED:
-            dialogService.showSettingsDialog('extension')
-            break
-
-          case ManagerUIState.LEGACY_UI:
-            try {
-              await useCommandStore().execute(
-                'Comfy.Manager.Menu.ToggleVisibility'
-              )
-            } catch (error) {
-              useToastStore().add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: t('manager.legacyMenuNotAvailable'),
-                life: 3000
-              })
-            }
-            break
-
-          case ManagerUIState.NEW_UI:
-            // Legacy command is not available in NEW_UI mode
-            useToastStore().add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('manager.legacyMenuNotAvailable'),
-              life: 3000
-            })
-            break
-        }
+        await useManagerStateStore().openManager({
+          showToastOnLegacyError: true,
+          isLegacyOnly: true
+        })
       }
     },
     {
