@@ -591,7 +591,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.properties.proxyWidgets ??= []
     //NOTE: This doesn't trigger onPropertyChanged
     this.properties.proxyWidgets.push([overlay.nodeId, overlay.widgetName])
-    this.addProxyFromOverlay({__proto__:overlay})
+    return this.addProxyFromOverlay({__proto__:overlay})
   }
   addProxyFromOverlay(overlay: Object) {
     overlay.graph = this.subgraph
@@ -635,5 +635,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }))
     const w = new Proxy(overlay, handler)
     this.widgets.push(w)
+    return w
   }
 }

@@ -19,6 +19,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import Button from 'primevue/button'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 function hasWidget() {
   const node = props.node.data[2]
@@ -45,14 +46,23 @@ function onClick(e) {
   const node = props.node.data[2]
 
   console.log(isShown.value)
+  const { widgetStates } = useDomWidgetStore()
   if (!isShown.value) {
-    node.addProxyWidget(`${nodeId}`, widgetName)
+    const w = node.addProxyWidget(`${nodeId}`, widgetName)
+    if (widgetStates.has(w.id)) {
+      const widgetState = widgetStates.get(w.id)
+      widgetState.active = true
+      widgetState.widget = w
+    }
     isShown.value = true
   } else {
     //FIXME: widget name collisions
     const index = node.widgets.findIndex((w) => w.name === widgetName)
     if (index < 0) throw new Error("Can't disable missing widget")
-    node.widgets.splice(index, 1)
+    const w = node.widgets.splice(index, 1)
+    if (widgetStates.has(w.id)) {
+      widgetStates.get(w.id).active = false
+    }
     isShown.value = false
   }
 }
