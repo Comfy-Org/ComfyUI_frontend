@@ -13,9 +13,12 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
 import { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
+import {
+  isNodeSlot,
+  isSubgraphInput,
+  isSubgraphOutputNode
+} from './subgraphUtils'
 
 /**
  * An output "slot" from a subgraph to a parent graph.
@@ -34,7 +37,11 @@ export class SubgraphOutput extends SubgraphSlot {
     node: LGraphNode,
     afterRerouteId?: RerouteId
   ): LLink | undefined {
-    const parent = this.parent as SubgraphOutputNode
+    if (!isSubgraphOutputNode(this.parent)) {
+      console.error('Invalid parent type for SubgraphOutput')
+      return
+    }
+    const parent = this.parent
     const { subgraph } = parent
 
     // Validate type compatibility

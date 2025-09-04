@@ -455,6 +455,26 @@ export function findUsedSubgraphIds(
 }
 
 /**
+ * Type guard to check if a node is a SubgraphInputNode.
+ * @param node The node to check
+ * @returns true if the node is a SubgraphInputNode
+ */
+export function isSubgraphInputNode(node: unknown): node is SubgraphInputNode {
+  return node instanceof SubgraphInputNode
+}
+
+/**
+ * Type guard to check if a node is a SubgraphOutputNode.
+ * @param node The node to check
+ * @returns true if the node is a SubgraphOutputNode
+ */
+export function isSubgraphOutputNode(
+  node: unknown
+): node is SubgraphOutputNode {
+  return node instanceof SubgraphOutputNode
+}
+
+/**
  * Type guard to check if a slot is a SubgraphInput.
  * @param slot The slot to check
  * @returns true if the slot is a SubgraphInput

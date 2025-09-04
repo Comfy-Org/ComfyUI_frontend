@@ -14,9 +14,11 @@ import type {
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import {
+  isSubgraphInputNode,
+  isSubgraphOutputNode
+} from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { RenderLink } from './RenderLink'
@@ -177,9 +179,11 @@ export class FloatingRenderLink implements RenderLink {
   ): void {
     const floatingLink = this.link
     floatingLink.origin_id = SUBGRAPH_INPUT_ID
-    floatingLink.origin_slot = (
-      input.parent as SubgraphInputNode
-    ).slots.indexOf(input)
+    if (!isSubgraphInputNode(input.parent)) {
+      console.error('Invalid parent type for SubgraphInput')
+      return
+    }
+    floatingLink.origin_slot = input.parent.slots.indexOf(input)
 
     this.fromSlot._floatingLinks?.delete(floatingLink)
     input._floatingLinks ??= new Set()
@@ -192,9 +196,11 @@ export class FloatingRenderLink implements RenderLink {
   ): void {
     const floatingLink = this.link
     floatingLink.origin_id = SUBGRAPH_OUTPUT_ID
-    floatingLink.origin_slot = (
-      output.parent as SubgraphOutputNode
-    ).slots.indexOf(output)
+    if (!isSubgraphOutputNode(output.parent)) {
+      console.error('Invalid parent type for SubgraphOutput')
+      return
+    }
+    floatingLink.origin_slot = output.parent.slots.indexOf(output)
 
     this.fromSlot._floatingLinks?.delete(floatingLink)
     output._floatingLinks ??= new Set()
