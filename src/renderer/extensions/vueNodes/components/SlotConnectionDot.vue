@@ -29,7 +29,9 @@ defineExpose({
         cn(
           'bg-[#5B5E7D] rounded-full',
           'transition-all duration-150',
-          'cursor-crosshair group-hover/slot:border-2 group-hover/slot:border-white group-hover/slot:scale-125',
+          'cursor-crosshair',
+          'border border-solid border-black/5 dark-theme:border-white/10',
+          'group-hover/slot:border-black/20 dark-theme:group-hover/slot:border-white/50 group-hover/slot:scale-125',
           multi ? 'w-3 h-6' : 'size-3'
         )
       "
