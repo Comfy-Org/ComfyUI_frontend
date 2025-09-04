@@ -7,7 +7,6 @@ import {
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
-import type { LayoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScaleState } from './DragAndScale'
@@ -191,9 +190,6 @@ export class LGraph
   nodes_executedAction: string[] = []
   extra: LGraphExtra = {}
 
-  /** Layout mutations instance for this graph */
-  layoutMutations!: LayoutMutations
-
   /** @deprecated Deserialising a workflow sets this unused property. */
   version?: number
 
@@ -279,9 +275,6 @@ export class LGraph
    */
   constructor(o?: ISerialisedGraph | SerialisableGraph) {
     if (LiteGraph.debug) console.log('Graph created')
-
-    // Get layout mutations composable
-    this.layoutMutations = useLayoutMutations()
 
     /** @see MapProxyHandler */
     const links = this._links
@@ -1345,6 +1338,7 @@ export class LGraph
    * @returns The newly created reroute - typically ignored.
    */
   createReroute(pos: Point, before: LinkSegment): Reroute {
+    const layoutMutations = useLayoutMutations()
     const rerouteId = ++this.state.lastRerouteId
     const linkIds = before instanceof Reroute ? before.linkIds : [before.id]
     const floatingLinkIds =
@@ -1360,8 +1354,8 @@ export class LGraph
     this.reroutes.set(rerouteId, reroute)
 
     // Register reroute in Layout Store for spatial tracking
-    this.layoutMutations.setSource(LayoutSource.Canvas)
-    this.layoutMutations.createReroute(
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.createReroute(
       rerouteId,
       { x: pos[0], y: pos[1] },
       before.parentId,
@@ -1398,6 +1392,7 @@ export class LGraph
    * @param id ID of reroute to remove
    */
   removeReroute(id: RerouteId): void {
+    const layoutMutations = useLayoutMutations()
     const { reroutes } = this
     const reroute = reroutes.get(id)
     if (!reroute) return
@@ -1443,8 +1438,8 @@ export class LGraph
     reroutes.delete(id)
 
     // Delete reroute from Layout Store
-    this.layoutMutations.setSource(LayoutSource.Canvas)
-    this.layoutMutations.deleteReroute(id)
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.deleteReroute(id)
 
     // This does not belong here; it should be handled by the caller, or run by a remove-many API.
     // https://github.com/Comfy-Org/litegraph.js/issues/898
@@ -2129,6 +2124,7 @@ export class LGraph
     data: ISerialisedGraph | SerialisableGraph,
     keep_old?: boolean
   ): boolean | undefined {
+    const layoutMutations = useLayoutMutations()
     const options: LGraphEventMap['configuring'] = {
       data,
       clearGraph: !keep_old
@@ -2270,8 +2266,8 @@ export class LGraph
         if (!reroute.validateLinks(this._links, this.floatingLinks)) {
           this.reroutes.delete(reroute.id)
           // Clean up layout store
-          this.layoutMutations.setSource(LayoutSource.Canvas)
-          this.layoutMutations.deleteReroute(reroute.id)
+          layoutMutations.setSource(LayoutSource.Canvas)
+          layoutMutations.deleteReroute(reroute.id)
         }
       }
 
