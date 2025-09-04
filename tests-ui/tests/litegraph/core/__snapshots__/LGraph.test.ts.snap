@@ -65,6 +65,7 @@ LGraph {
       "clip_area": undefined,
       "clonable": undefined,
       "color": undefined,
+      "comfyClass": undefined,
       "console": undefined,
       "exec_version": undefined,
       "execute_triggered": undefined,
@@ -76,6 +77,7 @@ LGraph {
       "id": 1,
       "ignore_remove": undefined,
       "inputs": [],
+      "isVirtualNode": undefined,
       "last_serialization": {
         "id": 1,
       },
@@ -136,6 +138,7 @@ LGraph {
       "clip_area": undefined,
       "clonable": undefined,
       "color": undefined,
+      "comfyClass": undefined,
       "console": undefined,
       "exec_version": undefined,
       "execute_triggered": undefined,
@@ -147,6 +150,7 @@ LGraph {
       "id": 1,
       "ignore_remove": undefined,
       "inputs": [],
+      "isVirtualNode": undefined,
       "last_serialization": {
         "id": 1,
       },
@@ -208,6 +212,7 @@ LGraph {
       "clip_area": undefined,
       "clonable": undefined,
       "color": undefined,
+      "comfyClass": undefined,
       "console": undefined,
       "exec_version": undefined,
       "execute_triggered": undefined,
@@ -219,6 +224,7 @@ LGraph {
       "id": 1,
       "ignore_remove": undefined,
       "inputs": [],
+      "isVirtualNode": undefined,
       "last_serialization": {
         "id": 1,
       },
