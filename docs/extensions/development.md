@@ -110,7 +110,7 @@ pnpm build
 
 For faster iteration during development, use watch mode:
 ```bash
-npx vite build --watch
+pnpx vite build --watch
 ```
 
 Note: Watch mode provides faster rebuilds than full builds, but still no hot reload

@@ -83,7 +83,7 @@ jobs:
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
             
-            if npx wrangler pages deploy playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
+            if pnpx wrangler pages deploy playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
               SUCCESS=true
               echo "Deployment successful on attempt $RETRY_COUNT"
             else
