@@ -972,6 +972,16 @@ export class ComfyApp {
   async registerNodes() {
     // Load node definitions from the backend
     const defs = await this.#getNodeDefs()
+
+    // Load filename mappings alongside node definitions for better UX
+    import('@/services/fileNameMappingService').then(
+      ({ fileNameMappingService }) => {
+        fileNameMappingService.ensureMappingsLoaded('input').catch(() => {
+          // Silently fail - lazy loading will still work
+        })
+      }
+    )
+
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {

@@ -64,18 +64,27 @@ const FILE_EXTENSIONS = [
 ]
 
 /**
- * Check if options contain filename-like values
+ * Check if options contain filename-like values (UUIDs or legacy hashes)
  */
 function hasFilenameOptions(options: any[]): boolean {
   return options.some((opt: any) => {
     if (typeof opt !== 'string') return false
-    // Check for common file extensions
+
+    // Check for UUID format (new system)
+    const isUUID =
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(
+        opt
+      )
+
+    // Check for common file extensions (legacy)
     const hasExtension = FILE_EXTENSIONS.some((ext) =>
       opt.toLowerCase().endsWith(ext)
     )
-    // Check for hash-like filenames (ComfyUI hashed files)
+
+    // Check for hash-like filenames (legacy ComfyUI hashed files)
     const isHashLike = /^[a-f0-9]{8,}\./i.test(opt)
-    return hasExtension || isHashLike
+
+    return isUUID || hasExtension || isHashLike
   })
 }
 
@@ -98,9 +107,9 @@ function applyFilenameMappingToWidget(
   // Cast to extended interface for type safety
   const mappingWidget = widget as IFilenameMappingWidget
 
-  // Override serializeValue to ensure hash is used for API
+  // Override serializeValue to ensure asset ID is used for API
   mappingWidget.serializeValue = function () {
-    // Always return the actual widget value (hash) for serialization
+    // Always return the actual widget value (asset ID) for serialization
     return mappingWidget.value
   }
 
@@ -110,16 +119,16 @@ function applyFilenameMappingToWidget(
       get() {
         if (mappingWidget.computedDisabled) return ''
 
-        // Get current hash value
-        const hashValue = mappingWidget.value
-        if (typeof hashValue !== 'string') return String(hashValue)
+        // Get current asset ID value
+        const assetId = mappingWidget.value
+        if (typeof assetId !== 'string') return String(assetId)
 
         // Try to get human-readable name from cache (deduplicated for display)
         const mapping = fileNameMappingService.getCachedMapping('input', true)
-        const humanName = mapping[hashValue]
+        const humanName = mapping[assetId]
 
-        // Return human name for display, fallback to hash
-        return humanName || hashValue
+        // Return human name for display, fallback to asset ID
+        return humanName || assetId
       },
       configurable: true
     })
@@ -237,19 +246,19 @@ function applyFilenameMappingToWidget(
         'input',
         true
       )
-      const hashValue = reverseMapping[selectedValue] || selectedValue
+      const assetId = reverseMapping[selectedValue] || selectedValue
 
-      // Set the hash value
-      mappingWidget.value = hashValue
+      // Set the asset ID
+      mappingWidget.value = assetId
 
-      // Call original setValue with hash value if it exists
+      // Call original setValue with asset ID if it exists
       if (originalSetValue) {
-        originalSetValue.call(mappingWidget, hashValue, options)
+        originalSetValue.call(mappingWidget, assetId, options)
       }
 
-      // Trigger callback with hash value
+      // Trigger callback with asset ID
       if (mappingWidget.callback) {
-        mappingWidget.callback.call(mappingWidget, hashValue)
+        mappingWidget.callback.call(mappingWidget, assetId)
       }
     } else {
       mappingWidget.value = selectedValue
@@ -273,14 +282,14 @@ function applyFilenameMappingToWidget(
           'input',
           true
         )
-        const hashValue = reverseMapping[selectedValue] || selectedValue
+        const assetId = reverseMapping[selectedValue] || selectedValue
 
-        // Set the hash value
-        mappingWidget.value = hashValue
+        // Set the asset ID
+        mappingWidget.value = assetId
 
-        // Call original callback with hash value
+        // Call original callback with asset ID
         if (originalCallback) {
-          originalCallback.call(mappingWidget, hashValue)
+          originalCallback.call(mappingWidget, assetId)
         }
       } else {
         mappingWidget.value = selectedValue
