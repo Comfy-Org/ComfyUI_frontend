@@ -57,6 +57,8 @@ const config: KnipConfig = {
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration
   vue: true,
+  // Ignore virtual module imports from unplugin-icons
+  ignoreDependencies: ['^~icons/.*'],
   // Only check for unused files, disable all other rules
   // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
   rules: {
@@ -70,7 +72,8 @@ const config: KnipConfig = {
     nsExports: 'off',
     nsTypes: 'off',
     types: 'off',
-    unlisted: 'off'
+    unlisted: 'off',
+    unresolved: 'off'
   },
   // Include dependencies analysis
   includeEntryExports: true,
