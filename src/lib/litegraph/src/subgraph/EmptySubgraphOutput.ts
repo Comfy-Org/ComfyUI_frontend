@@ -7,7 +7,6 @@ import { zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 
 import { SubgraphOutput } from './SubgraphOutput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
-import { isSubgraphOutputNode } from './subgraphUtils'
 
 /**
  * A virtual slot that simply creates a new output slot when connected to.
@@ -29,11 +28,7 @@ export class EmptySubgraphOutput extends SubgraphOutput {
     node: LGraphNode,
     afterRerouteId?: RerouteId
   ): LLink | undefined {
-    if (!isSubgraphOutputNode(this.parent)) {
-      console.error('Invalid parent type for EmptySubgraphOutput')
-      return
-    }
-    const { subgraph } = this.parent
+    const { subgraph } = this.parent as SubgraphOutputNode
     const existingNames = subgraph.outputs.map((x) => x.name)
 
     const name = nextUniqueName(slot.name, existingNames)
