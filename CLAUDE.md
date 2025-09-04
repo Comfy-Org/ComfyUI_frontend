@@ -119,11 +119,34 @@ const value = api.getServerFeature('config_name', defaultValue)  // Get config
 **Documentation:**
 - Settings system: `docs/SETTINGS.md`
 - Feature flags system: `docs/FEATURE_FLAGS.md`
+- Widget integration: `docs/WIDGET_INTEGRATION_GUIDE.md`
+
+## Widget Integration
+
+When working on **integrating Vue components with LiteGraph widgets** (replacing combo widgets, creating modal interfaces, or bridging the Vue app layer with the LiteGraph system), always reference:
+
+**📖 `docs/WIDGET_INTEGRATION_GUIDE.md`**
+
+This guide contains:
+- Complete architectural patterns for Vue ↔ LiteGraph communication
+- Working vs broken code examples
+- Common error solutions (`canvas.graph_mouse`, modal sizing, etc.)
+- Testing strategies and console log patterns
+- ComponentWidgetImpl usage patterns
+
+**When to use this guide:**
+- Replacing standard widgets with custom Vue components
+- Creating modal dialogs triggered from widgets
+- Implementing asset browsers, model selectors, or similar interfaces
+- Debugging widget value updates or communication issues
+- Any work involving `ComponentWidgetImpl`, widget composables, or widget registration
 
 ## Common Pitfalls
 
-- NEVER use `any` type - use proper TypeScript types
-- NEVER use `as any` type assertions - fix the underlying type issue
-- NEVER use `--no-verify` flag when committing
-- NEVER delete or disable tests to make them pass
-- NEVER circumvent quality checks
+IMPORTANT: Ultra think about this list before every change and follow every guideline:
+1. NEVER use `any` type - use proper TypeScript types
+1. NEVER use `as any` type assertions - fix the underlying type issue
+1. NEVER use `--no-verify` flag when committing
+1. NEVER delete or disable tests to make them pass
+1. NEVER circumvent quality checks
+1. NEVER lint the entire source directory, only lint files you are modifying.
