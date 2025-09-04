@@ -3,7 +3,7 @@
     <SidebarTabTemplate
       v-if="!isHelpOpen"
       :title="$t('sideToolbar.nodeLibrary')"
-      class="bg-[var(--p-tree-background)]"
+      class="bg-(--p-tree-background)"
     >
       <template #tool-buttons>
         <Button
