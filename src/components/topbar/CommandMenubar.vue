@@ -26,6 +26,12 @@
       'comfy-command-menu-top': isTopMenu,
       'comfy-command-menu-compact': isCompactHeight
     }"
+    :pt="{
+      submenu: () =>
+        isCompactHeight
+          ? { class: 'absolute max-h-[90vh] overflow-y-auto' }
+          : undefined
+    }"
     @show="onMenuShow"
   >
     <template #item="{ item, props }">
@@ -345,15 +351,7 @@ const isCompactHeight = computed(() => windowHeight.value < 700)
   left: calc(100% + 15px) !important;
   top: -4px !important;
 }
-
-/* Force submenus to open to the right on compact heights */
-.comfy-command-menu-compact .p-tieredmenu-submenu {
-  position: absolute;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-/* Ensure the help menu container tethers from bottom to top */
+/* Help (last) submenu upward offset in compact mode */
 .comfy-command-menu-compact
   .p-tieredmenu-root-list
   > .p-tieredmenu-item:last-of-type
