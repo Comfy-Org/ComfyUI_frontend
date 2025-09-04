@@ -4,7 +4,7 @@
  */
 import { nextTick, reactive, readonly } from 'vue'
 
-import { layoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
@@ -99,6 +99,9 @@ export interface GraphNodeManager {
 }
 
 export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
+  // Get layout mutations composable
+  const { moveNode, resizeNode, createNode, deleteNode, setSource } =
+    useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
   const nodeState = reactive(new Map<string, NodeState>())
@@ -487,7 +490,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
       // Push position change to layout store
       // Source is already set to 'canvas' in detectChangesInRAF
-      void layoutMutations.moveNode(id, { x: node.pos[0], y: node.pos[1] })
+      void moveNode(id, { x: node.pos[0], y: node.pos[1] })
 
       return true
     }
@@ -509,7 +512,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
       // Push size change to layout store
       // Source is already set to 'canvas' in detectChangesInRAF
-      void layoutMutations.resizeNode(id, {
+      void resizeNode(id, {
         width: node.size[0],
         height: node.size[1]
       })
@@ -554,7 +557,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   }
 
   /**
-   * Main RAF change detection function - now simplified with extracted helpers
+   * Main RAF change detection function
    */
   const detectChangesInRAF = () => {
     const startTime = performance.now()
@@ -565,7 +568,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     let sizeUpdates = 0
 
     // Set source for all canvas-driven updates
-    layoutMutations.setSource(LayoutSource.Canvas)
+    setSource(LayoutSource.Canvas)
 
     // Process each node for changes
     for (const node of graph._nodes) {
@@ -625,8 +628,8 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     spatialIndex.insert(id, bounds, id)
 
     // Add node to layout store
-    layoutMutations.setSource(LayoutSource.Canvas)
-    void layoutMutations.createNode(id, {
+    setSource(LayoutSource.Canvas)
+    void createNode(id, {
       position: { x: node.pos[0], y: node.pos[1] },
       size: { width: node.size[0], height: node.size[1] },
       zIndex: node.order || 0,
@@ -652,8 +655,8 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     spatialIndex.remove(id)
 
     // Remove node from layout store
-    layoutMutations.setSource(LayoutSource.Canvas)
-    void layoutMutations.deleteNode(id)
+    setSource(LayoutSource.Canvas)
+    void deleteNode(id)
 
     // Clean up all tracking references
     nodeRefs.delete(id)
