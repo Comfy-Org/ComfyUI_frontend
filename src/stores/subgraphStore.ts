@@ -129,6 +129,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         defaultValue: this.filename
       })
     }
+    override unload(): void {
+      //Skip unloading. Even if a workflow is closed after editing,
+      //it must remain loaded in order to be added to the graph
+    }
   }
   const subgraphCache: Record<string, LoadedComfyWorkflow> = {}
   const typePrefix = 'SubgraphBlueprint.'
