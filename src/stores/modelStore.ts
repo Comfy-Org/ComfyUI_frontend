@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { api } from '@/scripts/api'
+import { useAssetStore } from '@/stores/assetStore'
+import type { Asset } from '@/types/assetTypes'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
@@ -180,8 +182,21 @@ export class ModelFolder {
   }
 }
 
+/** Transforms an Asset to ComfyModelDef */
+function assetToComfyModelDef(
+  asset: Asset,
+  pathIndex: number = 0
+): ComfyModelDef {
+  const model = new ComfyModelDef(asset.filename, 'checkpoints', pathIndex)
+  model.title = asset.name
+  model.description = asset.metadata?.description || ''
+  model.tags = asset.tags || []
+  return model
+}
+
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
+  const assetStore = useAssetStore()
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -194,14 +209,53 @@ export const useModelStore = defineStore('models', () => {
   )
 
   /**
+   * Loads mock checkpoint models from assetStore
+   */
+  async function loadMockCheckpoints() {
+    await assetStore.loadCheckpointAssets()
+
+    // Create checkpoints folder if it doesn't exist
+    if (!modelFolderNames.value.includes('checkpoints')) {
+      modelFolderNames.value.push('checkpoints')
+      modelFolderByName.value['checkpoints'] = new ModelFolder('checkpoints')
+    }
+
+    const checkpointsFolder = modelFolderByName.value['checkpoints']
+    checkpointsFolder.models = {}
+    checkpointsFolder.state = ResourceState.Loading
+
+    // Transform assets to ComfyModelDef and populate folder
+    assetStore.assets.forEach((asset, index) => {
+      const model = assetToComfyModelDef(asset, index)
+      checkpointsFolder.models[model.key] = model
+    })
+
+    checkpointsFolder.state = ResourceState.Loaded
+  }
+
+  /**
    * Loads the model folders from the server
    */
   async function loadModelFolders() {
-    const resData = await api.getModelFolders()
-    modelFolderNames.value = resData.map((folder) => folder.name)
-    modelFolderByName.value = {}
-    for (const folderName of modelFolderNames.value) {
-      modelFolderByName.value[folderName] = new ModelFolder(folderName)
+    try {
+      const resData = await api.getModelFolders()
+      if (resData && resData.length > 0) {
+        modelFolderNames.value = resData.map((folder) => folder.name)
+        modelFolderByName.value = {}
+        for (const folderName of modelFolderNames.value) {
+          modelFolderByName.value[folderName] = new ModelFolder(folderName)
+        }
+      } else {
+        // No folders returned, use mock data
+        console.warn(
+          'No model folders returned from backend, using mock checkpoint data'
+        )
+        await loadMockCheckpoints()
+      }
+    } catch (error) {
+      // If backend fails, fall back to mock data
+      console.warn('Backend unavailable, using mock checkpoint data', error)
+      await loadMockCheckpoints()
     }
   }
 
@@ -223,6 +277,7 @@ export const useModelStore = defineStore('models', () => {
     models,
     modelFolders,
     loadModelFolders,
+    loadMockCheckpoints,
     loadModels,
     getLoadedModelFolder
   }
