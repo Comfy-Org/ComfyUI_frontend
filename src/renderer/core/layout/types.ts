@@ -31,12 +31,9 @@ export interface Bounds {
   height: number
 }
 
-// ID types for type safety
 export type NodeId = string
-export type SlotId = string
-export type ConnectionId = string
-export type LinkId = number // Aligned with Litegraph's numeric LinkId
-export type RerouteId = number // Aligned with Litegraph's numeric RerouteId
+export type LinkId = number
+export type RerouteId = number
 
 // Layout data structures
 export interface NodeLayout {
@@ -83,16 +80,6 @@ export interface RerouteLayout {
   radius: number
   bounds: Bounds
 }
-
-export interface ConnectionLayout {
-  id: ConnectionId
-  sourceSlot: SlotId
-  targetSlot: SlotId
-  // Control points for curved connections
-  controlPoints?: Point[]
-}
-
-// CRDT Operation Types
 
 /**
  * Meta-only base for all operations - contains common fields
@@ -259,140 +246,6 @@ export type LayoutOperation =
   | DeleteRerouteOperation
   | MoveRerouteOperation
 
-// Legacy alias for compatibility
-export type AnyLayoutOperation = LayoutOperation
-
-/**
- * Type guards for operations
- */
-export const isOperationMeta = (op: unknown): op is OperationMeta => {
-  return (
-    typeof op === 'object' &&
-    op !== null &&
-    'timestamp' in op &&
-    'actor' in op &&
-    'source' in op &&
-    'type' in op
-  )
-}
-
-/**
- * Entity-specific helper functions
- */
-export const isNodeOperation = (op: LayoutOperation): boolean => {
-  return 'entity' in op && (op as any).entity === 'node'
-}
-
-export const isLinkOperation = (op: LayoutOperation): boolean => {
-  return 'entity' in op && (op as any).entity === 'link'
-}
-
-export const isRerouteOperation = (op: LayoutOperation): boolean => {
-  return 'entity' in op && (op as any).entity === 'reroute'
-}
-
-export const isMoveNodeOperation = (
-  op: LayoutOperation
-): op is MoveNodeOperation => op.type === 'moveNode'
-
-export const isResizeNodeOperation = (
-  op: LayoutOperation
-): op is ResizeNodeOperation => op.type === 'resizeNode'
-
-export const isCreateNodeOperation = (
-  op: LayoutOperation
-): op is CreateNodeOperation => op.type === 'createNode'
-
-export const isDeleteNodeOperation = (
-  op: LayoutOperation
-): op is DeleteNodeOperation => op.type === 'deleteNode'
-
-export const isSetNodeVisibilityOperation = (
-  op: LayoutOperation
-): op is SetNodeVisibilityOperation => op.type === 'setNodeVisibility'
-
-export const isBatchUpdateOperation = (
-  op: LayoutOperation
-): op is BatchUpdateOperation => op.type === 'batchUpdate'
-
-export const isCreateLinkOperation = (
-  op: LayoutOperation
-): op is CreateLinkOperation => op.type === 'createLink'
-
-export const isDeleteLinkOperation = (
-  op: LayoutOperation
-): op is DeleteLinkOperation => op.type === 'deleteLink'
-
-export const isCreateRerouteOperation = (
-  op: LayoutOperation
-): op is CreateRerouteOperation => op.type === 'createReroute'
-
-export const isDeleteRerouteOperation = (
-  op: LayoutOperation
-): op is DeleteRerouteOperation => op.type === 'deleteReroute'
-
-export const isMoveRerouteOperation = (
-  op: LayoutOperation
-): op is MoveRerouteOperation => op.type === 'moveReroute'
-
-/**
- * Helper function to get affected node IDs from any operation
- * Useful for change notifications and cache invalidation
- */
-export const getAffectedNodeIds = (op: LayoutOperation): NodeId[] => {
-  switch (op.type) {
-    case 'moveNode':
-    case 'resizeNode':
-    case 'setNodeZIndex':
-    case 'createNode':
-    case 'deleteNode':
-    case 'setNodeVisibility':
-    case 'batchUpdate':
-      return [(op as NodeOpBase).nodeId]
-    case 'createLink': {
-      const createLink = op as CreateLinkOperation
-      return [createLink.sourceNodeId, createLink.targetNodeId]
-    }
-    case 'deleteLink':
-      // Link deletion doesn't directly affect nodes
-      return []
-    case 'createReroute':
-    case 'deleteReroute':
-    case 'moveReroute':
-      // Reroute operations don't directly affect nodes
-      return []
-    default:
-      return []
-  }
-}
-
-/**
- * Operation application interface
- */
-export interface OperationApplicator<
-  T extends LayoutOperation = LayoutOperation
-> {
-  canApply(operation: T): boolean
-  apply(operation: T): void
-  reverse(operation: T): void
-}
-
-/**
- * Operation serialization for network/storage
- */
-export interface OperationSerializer {
-  serialize(operation: LayoutOperation): string
-  deserialize(data: string): LayoutOperation
-}
-
-/**
- * Conflict resolution strategy
- */
-export interface ConflictResolver {
-  resolve(op1: LayoutOperation, op2: LayoutOperation): LayoutOperation[]
-}
-
-// Change notification types
 export interface LayoutChange {
   type: 'create' | 'update' | 'delete'
   nodeIds: NodeId[]
@@ -466,12 +319,4 @@ export interface LayoutStore {
   setActor(actor: string): void
   getCurrentSource(): LayoutSource
   getCurrentActor(): string
-}
-
-// CRDT-ready operation log (for future CRDT integration)
-export interface OperationLog {
-  operations: LayoutOperation[]
-  addOperation(operation: LayoutOperation): void
-  getOperationsSince(timestamp: number): LayoutOperation[]
-  getOperationsByActor(actor: string): LayoutOperation[]
 }

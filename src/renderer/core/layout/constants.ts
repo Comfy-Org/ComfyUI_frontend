@@ -38,18 +38,6 @@ export const PERFORMANCE_CONFIG = {
 } as const
 
 /**
- * Default values for node layout
- */
-export const NODE_DEFAULTS = {
-  /** Default node size when not specified */
-  SIZE: { width: 200, height: 100 },
-  /** Default z-index for new nodes */
-  Z_INDEX: 0,
-  /** Default visibility state */
-  VISIBLE: true
-} as const
-
-/**
  * Actor and source identifiers
  */
 export const ACTOR_CONFIG = {

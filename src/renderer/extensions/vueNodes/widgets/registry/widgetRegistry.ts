@@ -71,10 +71,3 @@ export const widgetTypeToComponent: Record<string, Component> = {
   [WidgetType.TREESELECT]: WidgetTreeSelect,
   [WidgetType.MARKDOWN]: WidgetMarkdown
 }
-
-/**
- * Helper function to get widget component by type
- */
-export function getWidgetComponent(type: string): Component | undefined {
-  return widgetTypeToComponent[type]
-}

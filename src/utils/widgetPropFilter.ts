@@ -27,11 +27,11 @@ export const PANEL_EXCLUDED_PROPS = [
   'overlayClass'
 ] as const
 
-export const IMAGE_EXCLUDED_PROPS = [
-  ...STANDARD_EXCLUDED_PROPS,
-  'imageClass',
-  'imageStyle'
-] as const
+// export const IMAGE_EXCLUDED_PROPS = [
+//   ...STANDARD_EXCLUDED_PROPS,
+//   'imageClass',
+//   'imageStyle'
+// ] as const
 
 export const GALLERIA_EXCLUDED_PROPS = [
   ...STANDARD_EXCLUDED_PROPS,
@@ -47,11 +47,6 @@ export const GALLERIA_EXCLUDED_PROPS = [
 export const BADGE_EXCLUDED_PROPS = [
   ...STANDARD_EXCLUDED_PROPS,
   'badgeClass'
-] as const
-
-export const LABEL_EXCLUDED_PROPS = [
-  ...PANEL_EXCLUDED_PROPS,
-  'labelStyle'
 ] as const
 
 /**

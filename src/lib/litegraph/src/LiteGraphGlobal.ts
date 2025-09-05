@@ -45,12 +45,6 @@ export const COMFY_VUE_NODE_DIMENSIONS = {
 } as const
 
 /**
- * Type for component height keys
- */
-export type ComponentHeightKey =
-  keyof typeof COMFY_VUE_NODE_DIMENSIONS.components
-
-/**
  * The Global Scope. It contains all the registered node classes.
  */
 export class LiteGraphGlobal {
