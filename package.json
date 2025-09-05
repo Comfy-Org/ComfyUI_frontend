@@ -148,6 +148,5 @@
     "vuefire": "^3.2.1",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
-  },
-  "packageManager": "pnpm@10.6.5+sha1.da220e966c2db3275efb5928cf8f3592681b106b"
+  }
 }
