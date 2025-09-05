@@ -150,9 +150,7 @@
       :style="{ borderColor: '#262729' }"
     >
       <div class="flex flex-col items-center gap-2 w-full py-4">
-        <!-- Quick and dirty file type detection for testing -->
-        <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-        <span class="text-xs opacity-60"> Drop your file or </span>
+        <span class="text-xs opacity-60"> {{ $t('Drop your file or') }} </span>
         <div>
           <Button
             label="Browse Files"
@@ -183,12 +181,8 @@ import Button from 'primevue/button'
 import Select from 'primevue/select'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
-// import { useI18n } from 'vue-i18n' // Commented out for testing
-
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
-// const { t } = useI18n() // Commented out for testing
 
 const props = defineProps<{
   widget: SimplifiedWidget<File[] | null>
@@ -200,7 +194,6 @@ const emit = defineEmits<{
   'update:modelValue': [value: File[] | null]
 }>()
 
-// Use the composable for consistent widget value handling
 const { localValue, onChange } = useWidgetValue({
   widget: props.widget,
   modelValue: props.modelValue,

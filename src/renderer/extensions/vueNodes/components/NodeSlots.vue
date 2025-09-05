@@ -1,7 +1,6 @@
 <template>
-  <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
-    ⚠️ Node Slots Error
+    {{ $t('Node Slots Error') }}
   </div>
   <div v-else class="lg-node-slots flex justify-between">
     <div v-if="filteredInputs.length" class="flex flex-col gap-1">

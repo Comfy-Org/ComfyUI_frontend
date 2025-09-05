@@ -1,7 +1,6 @@
 <template>
-  <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
   <div v-if="renderError" class="node-error p-4 text-red-500 text-sm">
-    ⚠️ Node Header Error
+    {{ $t('Node Header Error') }}
   </div>
   <div
     v-else

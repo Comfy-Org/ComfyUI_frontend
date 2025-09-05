@@ -1,7 +1,6 @@
 <template>
-  <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
   <div v-if="renderError" class="node-error p-2 text-red-500 text-sm">
-    ⚠️ Node Widgets Error
+    {{ $t('Node Widgets Error') }}
   </div>
   <div v-else class="lg-node-widgets flex flex-col gap-2 pr-4">
     <div

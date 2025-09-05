@@ -152,7 +152,12 @@
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
-    "moreWorkflows": "More workflows"
+    "moreWorkflows": "More workflows",
+    "nodeRenderError": "Node Render Error",
+    "nodeContentError": "Node Content Error",
+    "nodeHeaderError": "Node Header Error",
+    "nodeSlotsError": "Node Slots Error",
+    "nodeWidgetsError": "Node Widgets Error"
   },
   "manager": {
     "title": "Custom Nodes Manager",
