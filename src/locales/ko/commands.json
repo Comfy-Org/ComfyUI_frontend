@@ -282,7 +282,7 @@
     "label": "필수 하단 패널 전환"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "보기 컨트롤 하단 패널 전환"
+    "label": "뷰 컨트롤 하단 패널 전환"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
     "label": "키 바인딩 대화상자 표시"
