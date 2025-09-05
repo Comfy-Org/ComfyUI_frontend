@@ -420,10 +420,10 @@ onMounted(async () => {
 
   // Initialize conflict detection after GraphCanvas is ready
   // This ensures SystemStats and Manager state are properly loaded
-  const conflictDetection = useConflictDetection()
+  // Also This ensures ComfyApp is initialized which implies ComfyApi.init was called and feature flags were negotiated
   const managerState = useManagerState()
   if (managerState.isManagerEnabled.value)
-    void conflictDetection.initializeConflictDetection()
+    void useConflictDetection().initializeConflictDetection()
 
   // Start watching for locale change after the initial value is loaded.
   watch(
