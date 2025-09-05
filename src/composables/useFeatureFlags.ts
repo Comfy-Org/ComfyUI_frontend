@@ -12,10 +12,9 @@ export enum ServerFeatureFlag {
 }
 
 /**
- * Composable for reactive access to feature flags
+ * Composable for reactive access to server-side feature flags
  */
 export function useFeatureFlags() {
-  // Create reactive state that tracks server feature flags
   const flags = reactive({
     get supportsPreviewMetadata() {
       return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
@@ -28,10 +27,8 @@ export function useFeatureFlags() {
     }
   })
 
-  // Create a reactive computed for any feature flag
-  const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) => {
-    return computed(() => api.getServerFeature(featurePath, defaultValue))
-  }
+  const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) =>
+    computed(() => api.getServerFeature(featurePath, defaultValue))
 
   return {
     flags: readonly(flags),

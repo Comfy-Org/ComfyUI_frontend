@@ -343,6 +343,14 @@
   "Comfy_Validation_Workflows": {
     "name": "ワークフローを検証"
   },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Vueノードレンダリングを有効化",
+    "tooltip": "ノードをキャンバス要素の代わりにVueコンポーネントとしてレンダリングします。実験的な機能です。"
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "Vueウィジェットを有効化",
+    "tooltip": "ウィジェットをVueノード内のVueコンポーネントとしてレンダリングします。"
+  },
   "Comfy_WidgetControlMode": {
     "name": "ウィジェット制御モード",
     "options": {

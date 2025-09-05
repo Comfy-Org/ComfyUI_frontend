@@ -285,7 +285,7 @@
     "label": "Alternar panel inferior de controles de vista"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "Mostrar diálogo de atajos de teclado"
+    "label": "Mostrar diálogo de combinaciones de teclas"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Alternar Modo de Enfoque"

@@ -2,6 +2,8 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { Reroute, RerouteId } from './Reroute'
@@ -14,12 +16,13 @@ import type {
   LinkSegment,
   ReadonlyLinkNetwork
 } from './interfaces'
-import { Subgraph } from './litegraph'
 import type {
   Serialisable,
   SerialisableLLink,
   SubgraphIO
 } from './types/serialisation'
+
+const layoutMutations = useLayoutMutations()
 
 export type LinkId = number
 
@@ -460,19 +463,15 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       reroute.linkIds.delete(this.id)
       if (!keepReroutes && !reroute.totalLinks) {
         network.reroutes.delete(reroute.id)
+        // Delete reroute from Layout Store
+        layoutMutations.setSource(LayoutSource.Canvas)
+        layoutMutations.deleteReroute(reroute.id)
       }
     }
     network.links.delete(this.id)
-
-    if (this.originIsIoNode && network instanceof Subgraph) {
-      const subgraphInput = network.inputs.at(this.origin_slot)
-      if (!subgraphInput)
-        throw new Error('Invalid link - subgraph input not found')
-
-      subgraphInput.events.dispatch('input-disconnected', {
-        input: subgraphInput
-      })
-    }
+    // Delete link from Layout Store
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.deleteLink(this.id)
   }
 
   /**
