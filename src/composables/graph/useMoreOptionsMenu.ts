@@ -4,19 +4,18 @@ import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
 import ILucideAlignStartHorizontal from '~icons/lucide/align-start-horizontal'
 import ILucideBan from '~icons/lucide/ban'
 import ILucideBox from '~icons/lucide/box'
-import ILucideClipboard from '~icons/lucide/clipboard'
 import ILucideCopy from '~icons/lucide/copy'
 import ILucideDownload from '~icons/lucide/download'
 import ILucideExpand from '~icons/lucide/expand'
 import ILucideExternalLink from '~icons/lucide/external-link'
 import ILucideFolderPlus from '~icons/lucide/folder-plus'
+import ILucideFrame from '~icons/lucide/frame'
 import ILucideGroup from '~icons/lucide/group'
 import ILucideInfo from '~icons/lucide/info'
 import ILucideMaximize2 from '~icons/lucide/maximize-2'
 import ILucideMinimize2 from '~icons/lucide/minimize-2'
 import ILucideMoveDiagonal2 from '~icons/lucide/move-diagonal-2'
 import ILucidePalette from '~icons/lucide/palette'
-import ILucidePanelTop from '~icons/lucide/panel-top'
 import ILucidePin from '~icons/lucide/pin'
 import ILucidePinOff from '~icons/lucide/pin-off'
 import ILucidePlay from '~icons/lucide/play'
@@ -24,6 +23,7 @@ import ILucideShrink from '~icons/lucide/shrink'
 import ILucideTrash2 from '~icons/lucide/trash-2'
 import ILucideZapOff from '~icons/lucide/zap-off'
 
+import { useFrameNodes } from '@/composables/graph/useFrameNodes'
 import { useNodeArrangement } from '@/composables/graph/useNodeArrangement'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useNodeInfo } from '@/composables/graph/useNodeInfo'
@@ -31,7 +31,6 @@ import { useSelectionOperations } from '@/composables/graph/useSelectionOperatio
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
 export interface MenuOption {
   label?: string
@@ -41,6 +40,7 @@ export interface MenuOption {
   type?: 'divider'
   action?: () => void
   submenu?: SubMenuOption[]
+  badge?: BadgeVariant
 }
 
 export interface SubMenuOption {
@@ -55,19 +55,21 @@ export interface NodeSelectionState {
   pinned: boolean
   bypassed: boolean
 }
+export enum BadgeVariant {
+  NEW = 'new',
+  DEPRECATED = 'deprecated'
+}
 
 /**
  * Composable for managing the More Options menu configuration
  */
 export function useMoreOptionsMenu() {
   const { t } = useI18n()
-  const canvasStore = useCanvasStore()
   const {
     copySelection,
     duplicateSelection,
     deleteSelection,
-    renameSelection,
-    pasteSelection
+    renameSelection
   } = useSelectionOperations()
 
   const { shapeOptions, applyShape, applyColor, colorOptions, isLightTheme } =
@@ -95,14 +97,11 @@ export function useMoreOptionsMenu() {
     hasImageNode,
     hasOutputNodesSelected,
     hasMultipleSelection,
-    hasSingleSelection,
     computeSelectionFlags
   } = useSelectionState()
 
-  // Backwards compatibility local aliases
   const hasSubgraphs = hasSubgraphsComputed
   const hasMultipleNodes = hasMultipleSelection
-  const hasSingleNode = hasSingleSelection
 
   // Internal version to force menu rebuild after state mutations
   const optionsVersion = ref(0)
@@ -181,16 +180,11 @@ export function useMoreOptionsMenu() {
     }
   }
 
-  const showPropertiesPanel = () => {
-    const node = selectedNodes.value[0]
-    if (!node) return
-    canvasStore.canvas?.showShowNodePanel(node)
-  }
-
   const convertToGroupNodes = () => {
     const commandStore = useCommandStore()
     void commandStore.execute('Comfy.GroupNode.ConvertSelectedNodesToGroupNode')
   }
+  const { frameNodes } = useFrameNodes()
 
   const alignSubmenu = computed((): SubMenuOption[] =>
     alignOptions.map((align) => ({
@@ -234,6 +228,70 @@ export function useMoreOptionsMenu() {
     const hasSubgraphsSelected = hasSubgraphs.value
     const options: MenuOption[] = []
 
+    options.push(
+      {
+        label: t('contextMenu.Rename'),
+        action: renameSelection
+      },
+
+      {
+        label: t('contextMenu.Copy'),
+        shortcut: 'Ctrl+C',
+        action: copySelection
+      },
+      {
+        label: t('contextMenu.Duplicate'),
+        shortcut: 'Ctrl+D',
+        action: duplicateSelection
+      }
+    )
+
+    options.push({ type: 'divider' })
+
+    if (nodeDef.value) {
+      options.push({
+        label: t('contextMenu.Node Info'),
+        icon: markRaw(ILucideInfo),
+        action: showNodeHelp
+      })
+    }
+
+    options.push({
+      label: t('contextMenu.Adjust Size'),
+      icon: markRaw(ILucideMoveDiagonal2),
+      action: adjustNodeSize
+    })
+
+    options.push(
+      {
+        label: states.collapsed
+          ? t('contextMenu.Expand Node')
+          : t('contextMenu.Minimize Node'),
+        icon: markRaw(states.collapsed ? ILucideMaximize2 : ILucideMinimize2),
+        action: () => {
+          toggleNodeCollapse()
+          bump()
+        }
+      },
+      {
+        label: t('contextMenu.Shape'),
+        icon: markRaw(ILucideBox),
+        hasSubmenu: true,
+        submenu: shapeSubmenu.value,
+        action: () => {}
+      },
+      {
+        label: t('contextMenu.Color'),
+        icon: markRaw(ILucidePalette),
+        hasSubmenu: true,
+        submenu: colorSubmenu.value,
+        action: () => {}
+      },
+      {
+        type: 'divider'
+      }
+    )
+
     if (hasImageNode.value) {
       options.push(
         {
@@ -254,102 +312,9 @@ export function useMoreOptionsMenu() {
           label: t('contextMenu.Save Image'),
           icon: markRaw(ILucideDownload),
           action: saveImage
-        },
-        {
-          type: 'divider'
         }
       )
     }
-
-    options.push(
-      {
-        label: t('contextMenu.Rename'),
-        action: renameSelection
-      },
-      {
-        type: 'divider'
-      },
-      {
-        label: t('contextMenu.Copy'),
-        shortcut: 'Ctrl+C',
-        action: copySelection
-      },
-      {
-        label: t('contextMenu.Duplicate'),
-        shortcut: 'Ctrl+D',
-        action: duplicateSelection
-      }
-    )
-
-    // Add paste option if not already added (for single nodes)
-    if (!hasMultipleNodes.value) {
-      options.push({
-        label: t('contextMenu.Paste'),
-        icon: markRaw(ILucideClipboard),
-        shortcut: 'Ctrl+V',
-        action: pasteSelection
-      })
-    }
-
-    options.push({ type: 'divider' })
-
-    // Show Node Info only when a single node/subgraph with a definition is selected
-    if (nodeDef.value) {
-      options.push({
-        label: t('contextMenu.Node Info'),
-        icon: markRaw(ILucideInfo),
-        action: showNodeHelp
-      })
-    }
-
-    options.push({
-      label: t('contextMenu.Adjust Size'),
-      icon: markRaw(ILucideMoveDiagonal2),
-      action: adjustNodeSize
-    })
-
-    if (hasSingleNode.value) {
-      options.push({
-        label: t('contextMenu.Properties Panel'),
-        icon: markRaw(ILucidePanelTop),
-        action: showPropertiesPanel
-      })
-    }
-
-    options.push(
-      // Show appropriate collapse/expand option based on current state
-      {
-        label: states.collapsed
-          ? t('contextMenu.Expand Node')
-          : t('contextMenu.Minimize Node'),
-        icon: markRaw(states.collapsed ? ILucideMaximize2 : ILucideMinimize2),
-        action: () => {
-          toggleNodeCollapse()
-          bump()
-        }
-      },
-      {
-        type: 'divider'
-      },
-      {
-        label: t('contextMenu.Shape'),
-        icon: markRaw(ILucideBox),
-        hasSubmenu: true,
-        submenu: shapeSubmenu.value,
-        action: () => {} // No-op for submenu items
-      },
-      {
-        label: t('contextMenu.Color'),
-        icon: markRaw(ILucidePalette),
-        hasSubmenu: true,
-        submenu: colorSubmenu.value,
-        action: () => {} // No-op for submenu items
-      },
-      {
-        type: 'divider'
-      }
-      // only show when subgraph is selected
-    )
 
     // Add appropriate subgraph option based on selection
     if (hasSubgraphsSelected) {
@@ -367,28 +332,38 @@ export function useMoreOptionsMenu() {
       options.push({
         label: t('contextMenu.Convert to Subgraph'),
         icon: markRaw(ILucideShrink),
-        action: convertToSubgraph
+        action: convertToSubgraph,
+        badge: BadgeVariant.NEW
       })
     }
 
-    // Add remaining options
-    options.push(
-      {
-        type: 'divider'
-      },
-      // Show appropriate pin option based on current state
-      {
-        label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
-        icon: markRaw(states.pinned ? ILucidePinOff : ILucidePin),
-        action: () => {
-          toggleNodePin()
-          bump()
+    if (hasMultipleNodes.value) {
+      options.push(
+        {
+          label: t('contextMenu.Convert to Group Node'),
+          icon: markRaw(ILucideGroup),
+          action: convertToGroupNodes,
+          badge: BadgeVariant.DEPRECATED
+        },
+        {
+          label: t('g.frameNodes'),
+          icon: markRaw(ILucideFrame),
+          action: frameNodes
         }
-      },
-      {
-        type: 'divider'
+      )
+    }
+
+    options.push({ type: 'divider' })
+
+    // Add remaining options
+    options.push({
+      label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
+      icon: markRaw(states.pinned ? ILucidePinOff : ILucidePin),
+      action: () => {
+        toggleNodePin()
+        bump()
       }
-    )
+    })
 
     // Add alignment and distribution options for multiple nodes
     if (hasMultipleNodes.value) {
@@ -398,23 +373,19 @@ export function useMoreOptionsMenu() {
           icon: markRaw(ILucideAlignStartHorizontal),
           hasSubmenu: true,
           submenu: alignSubmenu.value,
-          action: () => {} // No-op for submenu items
+          action: () => {}
         },
         {
           label: t('contextMenu.Distribute Nodes'),
           icon: markRaw(ILucideAlignCenterHorizontal),
           hasSubmenu: true,
           submenu: distributeSubmenu.value,
-          action: () => {} // No-op for submenu items
-        },
-        {
-          type: 'divider'
+          action: () => {}
         }
       )
     }
 
     options.push({
-      // Show appropriate bypass option based on current state
       label: states.bypassed
         ? t('contextMenu.Remove Bypass')
         : t('contextMenu.Bypass'),
@@ -435,26 +406,6 @@ export function useMoreOptionsMenu() {
     }
 
     options.push({ type: 'divider' })
-
-    // Add paste and convert to group for multiple nodes
-    if (hasMultipleNodes.value) {
-      options.push(
-        {
-          label: t('contextMenu.Paste'),
-          icon: markRaw(ILucideClipboard),
-          shortcut: 'Ctrl+V',
-          action: pasteSelection
-        },
-        {
-          label: t('contextMenu.Convert to Group Nodes'),
-          icon: markRaw(ILucideGroup),
-          action: convertToGroupNodes
-        },
-        {
-          type: 'divider'
-        }
-      )
-    }
 
     options.push({
       label: t('contextMenu.Delete'),

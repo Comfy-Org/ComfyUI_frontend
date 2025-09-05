@@ -156,7 +156,7 @@
     "duplicate": "Duplicate",
     "subgraphCreated": "Subgraph created successfully",
     "pleaseSelectNodesToSave": "Please select nodes to save to library",
-    "frameNodes": "Frame Nodes",
+    "frameNodes": "Frame Selection",
     "moreWorkflows": "More workflows"
   },
   "manager": {
@@ -330,14 +330,15 @@
     "Distribute Nodes": "Distribute Nodes",
     "Remove Bypass": "Remove Bypass",
     "Run Branch": "Run Branch",
-    "Convert to Group Nodes": "Convert to Group Nodes",
     "Delete": "Delete",
     "Top": "Top",
     "Bottom": "Bottom",
     "Left": "Left",
     "Right": "Right",
     "Horizontal": "Horizontal",
-    "Vertical": "Vertical"
+    "Vertical": "Vertical",
+    "new":"new",
+    "deprecated": "deprecated"
   },
   "icon": {
     "bookmark": "Bookmark",

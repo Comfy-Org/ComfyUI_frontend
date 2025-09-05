@@ -71,12 +71,12 @@ export function useNodeCustomization() {
     {
       name: 'default',
       localizedName: t('shape.default'),
-      value: RenderShape.BOX
+      value: RenderShape.ROUND
     },
     {
-      name: 'round',
-      localizedName: t('shape.round'),
-      value: RenderShape.ROUND
+      name: 'box',
+      localizedName: t('shape.box'),
+      value: RenderShape.BOX
     },
     {
       name: 'card',
@@ -157,7 +157,7 @@ export function useNodeCustomization() {
     if (selectedNodes.length === 0) return null
 
     const firstNode = selectedNodes[0]
-    const currentShape = firstNode.shape ?? RenderShape.BOX
+    const currentShape = firstNode.shape ?? RenderShape.ROUND
 
     return (
       shapeOptions.find((option) => option.value === currentShape) ??
