@@ -24,29 +24,18 @@ const config: KnipConfig = {
   ],
   tailwind: true,
   vite: {
-    config: [
-      'vite.config.{js,mjs,ts,cjs,mts,cts}',
-      'vite.*.config.{js,mjs,ts,cjs,mts,cts}'
-    ]
+    config: ['vite?(.*).config.mts']
   },
   vitest: {
-    config: [
-      'vitest.config.{js,mjs,ts,cjs,mts,cts}',
-      'vitest.{workspace,projects}.{js,mjs,ts,cjs,mts,cts,json}',
-      'vitest.*.config.{js,mjs,ts,cjs,mts,cts,json}'
-    ],
+    config: ['vitest?(.*).config.ts'],
     entry: [
       '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
       '**/__mocks__/**/*.[jt]s?(x)'
     ]
   },
   playwright: {
-    config: ['playwright.config.ts', 'playwright.i18n.config.ts'],
-    entry: [
-      '**/*.@(spec|test).?(c|m)[jt]s?(x)',
-      'browser_tests/*.ts',
-      'browser_tests/utils/*.ts'
-    ]
+    config: ['playwright?(.*).config.ts'],
+    entry: ['**/*.@(spec|test).?(c|m)[jt]s?(x)', 'browser_tests/**/*.ts']
   },
   // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
   rules: {
