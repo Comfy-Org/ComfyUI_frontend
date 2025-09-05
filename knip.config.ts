@@ -12,43 +12,23 @@ const config: KnipConfig = {
   ],
   ignoreBinaries: ['only-allow', 'openapi-typescript'],
   ignoreDependencies: [
+    '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
     '@primevue/icons',
-    '@iconify/json',
     'tailwindcss',
     'tailwindcss-primeui', // Need to figure out why tailwind plugin isn't applying
     // Dev
     '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
-    // Generated files
-    'dist/**',
-    'types/**',
-    'node_modules/**',
-    // Config files that might not show direct usage
-    '.husky/**',
-    // Temporary or cache files
-    '.vite/**',
-    'coverage/**',
-    // i18n config
-    '.i18nrc.cjs',
-    // Test setup files
-    'browser_tests/globalSetup.ts',
-    'browser_tests/globalTeardown.ts',
-    'browser_tests/utils/**',
-    // Scripts
-    'scripts/**',
     // Auto generated manager types
     'src/types/generatedManagerTypes.ts',
+    'src/types/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts',
-    // Generated file: openapi
-    'src/types/comfyRegistryTypes.ts'
+    'src/scripts/ui/components/splitButton.ts'
   ],
-  // Vue-specific configuration
-  vue: true,
   tailwind: true,
   vite: {
     config: [
@@ -65,6 +45,14 @@ const config: KnipConfig = {
     entry: [
       '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
       '**/__mocks__/**/*.[jt]s?(x)'
+    ]
+  },
+  playwright: {
+    config: ['playwright.config.ts', 'playwright.i18n.config.ts'],
+    entry: [
+      '**/*.@(spec|test).?(c|m)[jt]s?(x)',
+      'browser_tests/*.ts',
+      'browser_tests/utils/*.ts'
     ]
   },
   // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
