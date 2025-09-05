@@ -90,12 +90,27 @@ const slotElRef = ref<HTMLElement | null>(null)
 watch(
   connectionDotRef,
   (newValue) => {
+    console.debug('[InputSlot] ConnectionDot ref changed:', {
+      nodeId: props.nodeId,
+      slotIndex: props.index,
+      hasNewValue: !!newValue,
+      hasSlotElRef: !!newValue?.slotElRef,
+      slotElRefValue: newValue?.slotElRef?.value
+    })
     if (newValue?.slotElRef) {
       slotElRef.value = newValue.slotElRef.value
     }
   },
   { immediate: true }
 )
+
+console.debug('[InputSlot] Registering slot:', {
+  nodeId: props.nodeId,
+  slotIndex: props.index,
+  hasNodeId: !!props.nodeId,
+  nodeIdValue: props.nodeId ?? '',
+  hasTransformState: !!transformState
+})
 
 useDomSlotRegistration({
   nodeId: props.nodeId ?? '',

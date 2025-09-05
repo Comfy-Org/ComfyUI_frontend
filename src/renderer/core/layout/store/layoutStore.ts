@@ -381,9 +381,23 @@ class LayoutStoreImpl implements LayoutStore {
         existing.position.x === layout.position.x &&
         existing.position.y === layout.position.y
       ) {
+        console.debug('[SlotLayout] No change detected, skipping update:', {
+          key,
+          nodeId: layout.nodeId,
+          type: layout.type,
+          index: layout.index
+        })
         return
       }
     } else {
+      console.debug('[SlotLayout] Adding new slot:', {
+        key,
+        nodeId: layout.nodeId,
+        type: layout.type,
+        index: layout.index,
+        bounds: layout.bounds,
+        position: layout.position
+      })
       logger.debug('Adding slot:', {
         nodeId: layout.nodeId,
         type: layout.type,
@@ -393,24 +407,64 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     if (existing) {
+      console.debug('[SlotLayout] Updating existing slot:', {
+        key,
+        nodeId: layout.nodeId,
+        type: layout.type,
+        index: layout.index,
+        oldBounds: existing.bounds,
+        newBounds: layout.bounds,
+        oldPosition: existing.position,
+        newPosition: layout.position
+      })
       // Update spatial index
       this.slotSpatialIndex.update(key, layout.bounds)
     } else {
+      console.debug('[SlotLayout] Inserting slot into spatial index:', {
+        key,
+        nodeId: layout.nodeId,
+        type: layout.type,
+        index: layout.index
+      })
       // Insert into spatial index
       this.slotSpatialIndex.insert(key, layout.bounds)
     }
 
     this.slotLayouts.set(key, layout)
+    console.debug('[SlotLayout] Slot layout saved to map:', {
+      key,
+      totalSlots: this.slotLayouts.size
+    })
   }
 
   /**
    * Delete slot layout data
    */
   deleteSlotLayout(key: string): void {
+    const existing = this.slotLayouts.get(key)
+    console.debug('[SlotLayout] Deleting slot:', {
+      key,
+      existed: !!existing,
+      slotInfo: existing
+        ? {
+            nodeId: existing.nodeId,
+            type: existing.type,
+            index: existing.index
+          }
+        : null
+    })
+
     const deleted = this.slotLayouts.delete(key)
     if (deleted) {
+      console.debug('[SlotLayout] Removing slot from spatial index:', { key })
       // Remove from spatial index
       this.slotSpatialIndex.remove(key)
+      console.debug('[SlotLayout] Slot deleted successfully:', {
+        key,
+        remainingSlots: this.slotLayouts.size
+      })
+    } else {
+      console.debug('[SlotLayout] Slot was not in map:', { key })
     }
   }
 
@@ -418,17 +472,28 @@ class LayoutStoreImpl implements LayoutStore {
    * Delete all slot layouts for a node
    */
   deleteNodeSlotLayouts(nodeId: NodeId): void {
+    console.debug('[SlotLayout] Deleting all slots for node:', { nodeId })
     const keysToDelete: string[] = []
     for (const [key, layout] of this.slotLayouts) {
       if (layout.nodeId === nodeId) {
         keysToDelete.push(key)
       }
     }
+    console.debug('[SlotLayout] Found slots to delete:', {
+      nodeId,
+      slotCount: keysToDelete.length,
+      keys: keysToDelete
+    })
     for (const key of keysToDelete) {
       this.slotLayouts.delete(key)
       // Remove from spatial index
       this.slotSpatialIndex.remove(key)
     }
+    console.debug('[SlotLayout] Node slots deleted:', {
+      nodeId,
+      deletedCount: keysToDelete.length,
+      remainingSlots: this.slotLayouts.size
+    })
   }
 
   /**
@@ -436,8 +501,17 @@ class LayoutStoreImpl implements LayoutStore {
    * Used when switching rendering modes (Vue ↔ LiteGraph)
    */
   clearAllSlotLayouts(): void {
+    const previousCount = this.slotLayouts.size
+    console.debug('[SlotLayout] Clearing all slot layouts:', {
+      previousCount,
+      operation: 'clearAll'
+    })
     this.slotLayouts.clear()
     this.slotSpatialIndex.clear()
+    console.debug('[SlotLayout] All slots cleared:', {
+      previousCount,
+      currentCount: this.slotLayouts.size
+    })
   }
 
   /**
@@ -487,7 +561,19 @@ class LayoutStoreImpl implements LayoutStore {
    * Get slot layout data
    */
   getSlotLayout(key: string): SlotLayout | null {
-    return this.slotLayouts.get(key) || null
+    const layout = this.slotLayouts.get(key) || null
+    console.debug('[SlotLayout] Getting slot layout:', {
+      key,
+      found: !!layout,
+      slotInfo: layout
+        ? {
+            nodeId: layout.nodeId,
+            type: layout.type,
+            index: layout.index
+          }
+        : null
+    })
+    return layout
   }
 
   /**
@@ -666,13 +752,28 @@ class LayoutStoreImpl implements LayoutStore {
     }
     const candidateSlotKeys = this.slotSpatialIndex.query(searchArea)
 
+    console.debug('[SlotLayout] Querying slot at point:', {
+      point,
+      searchArea,
+      candidateCount: candidateSlotKeys.length,
+      totalSlots: this.slotLayouts.size
+    })
+
     // Check precise bounds for candidates
     for (const key of candidateSlotKeys) {
       const slotLayout = this.slotLayouts.get(key)
       if (slotLayout && this.pointInBounds(point, slotLayout.bounds)) {
+        console.debug('[SlotLayout] Found slot at point:', {
+          key,
+          nodeId: slotLayout.nodeId,
+          type: slotLayout.type,
+          index: slotLayout.index,
+          bounds: slotLayout.bounds
+        })
         return slotLayout
       }
     }
+    console.debug('[SlotLayout] No slot found at point:', { point })
     return null
   }
 
@@ -1261,6 +1362,11 @@ class LayoutStoreImpl implements LayoutStore {
   private updateNodeSlotPositions(nodeId: NodeId, _nodePosition: Point): void {
     // Mark all slots for this node as potentially stale
     // The layout sync system will recalculate positions on the next frame
+    console.debug('[SlotLayout] Updating node slot positions:', {
+      nodeId,
+      nodePosition: _nodePosition
+    })
+
     const slotsToRemove: string[] = []
 
     for (const [key, slotLayout] of this.slotLayouts) {
@@ -1269,11 +1375,23 @@ class LayoutStoreImpl implements LayoutStore {
       }
     }
 
+    console.debug('[SlotLayout] Marking slots for recalculation:', {
+      nodeId,
+      slotCount: slotsToRemove.length,
+      keys: slotsToRemove
+    })
+
     // Remove from spatial index so they'll be recalculated
     for (const key of slotsToRemove) {
       this.slotSpatialIndex.remove(key)
       this.slotLayouts.delete(key)
     }
+
+    console.debug('[SlotLayout] Slots removed for recalculation:', {
+      nodeId,
+      removedCount: slotsToRemove.length,
+      remainingSlots: this.slotLayouts.size
+    })
   }
 
   // Helper methods
