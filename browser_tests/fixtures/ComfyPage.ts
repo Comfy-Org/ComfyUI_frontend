@@ -734,10 +734,39 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async zoom(deltaY: number, steps: number = 1) {
-    await this.page.mouse.move(10, 10)
+  async zoom(
+    deltaY: number,
+    steps: number = 1,
+    wheelDeltaY?: number,
+    position?: Position
+  ) {
+    const targetPos = position || { x: 10, y: 10 }
+    await this.page.mouse.move(targetPos.x, targetPos.y)
     for (let i = 0; i < steps; i++) {
-      await this.page.mouse.wheel(0, deltaY)
+      if (wheelDeltaY !== undefined) {
+        // Dispatch a custom wheel event with wheelDeltaY property
+        await this.page.evaluate(
+          ({ deltaY, wheelDeltaY, x, y }) => {
+            const canvas = document.getElementById('graph-canvas')
+            if (!canvas) return
+            const event = new WheelEvent('wheel', {
+              deltaY: deltaY,
+              deltaX: 0,
+              deltaMode: 0,
+              clientX: x,
+              clientY: y,
+              bubbles: true,
+              cancelable: true
+            })
+            // Add custom wheelDeltaY property
+            ;(event as any).wheelDeltaY = wheelDeltaY
+            canvas.dispatchEvent(event)
+          },
+          { deltaY, wheelDeltaY, x: targetPos.x, y: targetPos.y }
+        )
+      } else {
+        await this.page.mouse.wheel(0, deltaY)
+      }
     }
     await this.nextFrame()
   }

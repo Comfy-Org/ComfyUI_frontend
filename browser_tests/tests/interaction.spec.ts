@@ -854,15 +854,14 @@ test.describe('Canvas Navigation', () => {
     })
 
     test('Mouse wheel should zoom in/out', async ({ comfyPage }) => {
-      await comfyPage.page.mouse.move(400, 300)
-      await comfyPage.page.mouse.wheel(0, -120)
-      await comfyPage.nextFrame()
+      const position = { x: 400, y: 300 }
+      // Use custom zoom method with wheelDeltaY to simulate mouse wheel
+      await comfyPage.zoom(-120, 1, 120, position)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'legacy-wheel-zoom-in.png'
       )
 
-      await comfyPage.page.mouse.wheel(0, 240)
-      await comfyPage.nextFrame()
+      await comfyPage.zoom(240, 1, -240, position)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'legacy-wheel-zoom-out.png'
       )
@@ -923,7 +922,23 @@ test.describe('Canvas Navigation', () => {
     test('Ctrl + mouse wheel should zoom in/out', async ({ comfyPage }) => {
       await comfyPage.page.mouse.move(400, 300)
       await comfyPage.page.keyboard.down('Control')
-      await comfyPage.page.mouse.wheel(0, -120)
+      // Dispatch custom wheel event with wheelDeltaY and Control key
+      await comfyPage.page.evaluate(() => {
+        const canvas = document.getElementById('graph-canvas')
+        if (!canvas) return
+        const event = new WheelEvent('wheel', {
+          deltaY: -120,
+          deltaX: 0,
+          deltaMode: 0,
+          clientX: 400,
+          clientY: 300,
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+        ;(event as any).wheelDeltaY = 120
+        canvas.dispatchEvent(event)
+      })
       await comfyPage.page.keyboard.up('Control')
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -931,7 +946,22 @@ test.describe('Canvas Navigation', () => {
       )
 
       await comfyPage.page.keyboard.down('Control')
-      await comfyPage.page.mouse.wheel(0, 240)
+      await comfyPage.page.evaluate(() => {
+        const canvas = document.getElementById('graph-canvas')
+        if (!canvas) return
+        const event = new WheelEvent('wheel', {
+          deltaY: 240,
+          deltaX: 0,
+          deltaMode: 0,
+          clientX: 400,
+          clientY: 300,
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+        ;(event as any).wheelDeltaY = -240
+        canvas.dispatchEvent(event)
+      })
       await comfyPage.page.keyboard.up('Control')
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -1017,10 +1047,26 @@ test.describe('Canvas Navigation', () => {
 
     await expect(comfyPage.canvas).toHaveScreenshot('standard-initial.png')
 
-    await comfyPage.page.mouse.move(400, 300)
+    const position = { x: 400, y: 300 }
 
+    // Pan right with Shift + wheel
     await comfyPage.page.keyboard.down('Shift')
-    await comfyPage.page.mouse.wheel(0, 120)
+    await comfyPage.page.evaluate(({ x, y }) => {
+      const canvas = document.getElementById('graph-canvas')
+      if (!canvas) return
+      const event = new WheelEvent('wheel', {
+        deltaY: 120,
+        deltaX: 0,
+        deltaMode: 0,
+        clientX: x,
+        clientY: y,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      })
+      ;(event as any).wheelDeltaY = -120
+      canvas.dispatchEvent(event)
+    }, position)
     await comfyPage.page.keyboard.up('Shift')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -1028,7 +1074,22 @@ test.describe('Canvas Navigation', () => {
     )
 
     await comfyPage.page.keyboard.down('Shift')
-    await comfyPage.page.mouse.wheel(0, -240)
+    await comfyPage.page.evaluate(({ x, y }) => {
+      const canvas = document.getElementById('graph-canvas')
+      if (!canvas) return
+      const event = new WheelEvent('wheel', {
+        deltaY: -240,
+        deltaX: 0,
+        deltaMode: 0,
+        clientX: x,
+        clientY: y,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      })
+      ;(event as any).wheelDeltaY = 240
+      canvas.dispatchEvent(event)
+    }, position)
     await comfyPage.page.keyboard.up('Shift')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -1036,7 +1097,22 @@ test.describe('Canvas Navigation', () => {
     )
 
     await comfyPage.page.keyboard.down('Shift')
-    await comfyPage.page.mouse.wheel(0, 120)
+    await comfyPage.page.evaluate(({ x, y }) => {
+      const canvas = document.getElementById('graph-canvas')
+      if (!canvas) return
+      const event = new WheelEvent('wheel', {
+        deltaY: 120,
+        deltaX: 0,
+        deltaMode: 0,
+        clientX: x,
+        clientY: y,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      })
+      ;(event as any).wheelDeltaY = -120
+      canvas.dispatchEvent(event)
+    }, position)
     await comfyPage.page.keyboard.up('Shift')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
