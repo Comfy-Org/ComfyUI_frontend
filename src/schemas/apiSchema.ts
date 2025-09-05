@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { fromZodError } from 'zod-validation-error'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
@@ -279,18 +278,6 @@ export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
 // `/history`
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
 export type TaskItem = z.infer<typeof zTaskItem>
-
-export function validateTaskItem(taskItem: unknown) {
-  const result = zTaskItem.safeParse(taskItem)
-  if (!result.success) {
-    const zodError = fromZodError(result.error)
-    // TODO accept a callback to report error.
-    console.warn(
-      `Invalid TaskItem: ${JSON.stringify(taskItem)}\n${zodError.message}`
-    )
-  }
-  return result
-}
 
 const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())

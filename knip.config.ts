@@ -16,6 +16,7 @@ const config: KnipConfig = {
     'tests-ui/**/*.{js,ts,vue}',
     '*.{js,ts,mts}'
   ],
+  ignoreBinaries: ['only-allow', 'openapi-typescript'],
   ignoreDependencies: [
     '@primeuix/forms',
     '@primeuix/styled',
@@ -59,7 +60,11 @@ const config: KnipConfig = {
     'src/components/button/TextButton.vue',
     'src/components/card/CardTitle.vue',
     'src/components/card/CardDescription.vue',
-    'src/components/input/SingleSelect.vue'
+    'src/components/input/SingleSelect.vue',
+    // Used by a custom node (that should move off of this)
+    'src/scripts/ui/components/splitButton.ts',
+    // Generated file: openapi
+    'src/types/comfyRegistryTypes.ts'
   ],
   ignoreExportsUsedInFile: true,
   // Vue-specific configuration
@@ -68,15 +73,12 @@ const config: KnipConfig = {
   // Only check for unused files, disable all other rules
   // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
   rules: {
-    binaries: 'off',
-    classMembers: 'off',
-    duplicates: 'off',
-    enumMembers: 'off',
-    exports: 'off',
-    nsExports: 'off',
-    nsTypes: 'off',
-    types: 'off'
+    classMembers: 'off'
   },
+  tags: [
+    '-knipIgnoreUnusedButUsedByCustomNodes',
+    '-knipIgnoreUnusedButUsedByVueNodesBranch'
+  ],
   // Include dependencies analysis
   includeEntryExports: true
 }
