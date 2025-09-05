@@ -6,7 +6,7 @@
       :placeholder="placeHolder || 'Search...'"
       type="text"
       unstyled
-      class="w-full p-0 border-none outline-none bg-transparent text-xs text-neutral dark-theme:text-white"
+      class="w-full p-0 border-none outline-hidden bg-transparent text-xs text-neutral dark-theme:text-white"
     />
   </div>
 </template>

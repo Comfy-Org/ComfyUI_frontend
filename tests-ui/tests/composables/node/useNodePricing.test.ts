@@ -1780,4 +1780,86 @@ describe('useNodePricing', () => {
       })
     })
   })
+
+  describe('dynamic pricing - ByteDance Seedance video nodes', () => {
+    it('should return base 10s range for PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.18-$1.22/Run')
+    })
+
+    it('should scale to half for 5s PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '5' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.59-$0.61/Run')
+    })
+
+    it('should scale for 8s PRO 480p on ByteDanceImageToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '8' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.18-$0.19/Run')
+    })
+
+    it('should scale correctly for 12s PRO 720p on ByteDanceFirstLastFrameNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '12' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.61-$0.67/Run')
+    })
+
+    it('should collapse to a single value when min and max round equal for LITE 480p 3s on ByteDanceImageReferenceNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageReferenceNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'duration', value: '3' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05/Run') // 0.17..0.18 scaled by 0.3 both round to 0.05
+    })
+
+    it('should return Token-based when required widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const missingModel = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+      const missingResolution = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' }
+      ])
+      const missingDuration = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      expect(getNodeDisplayPrice(missingModel)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingResolution)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingDuration)).toBe('Token-based')
+    })
+  })
 })

@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
+      playwright-version: ${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
     steps:
       - name: Checkout ComfyUI
         uses: actions/checkout@v4
@@ -44,7 +45,6 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
 
-
       - name: Cache tool outputs
         uses: actions/cache@v4
         with:
@@ -67,6 +67,13 @@ jobs:
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
+      - name: Playwright Version
+        id: playwright-version
+        run:  |
+          PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
+          echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+        working-directory: ComfyUI_frontend
+
       - name: Save cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
         with:
@@ -75,7 +82,8 @@ jobs:
             ComfyUI_frontend
           key: comfyui-setup-${{ steps.cache-key.outputs.key }}
 
-  playwright-tests:
+  # Sharded chromium tests
+  playwright-tests-chromium-sharded:
     needs: setup
     runs-on: ubuntu-latest
     permissions:
@@ -83,7 +91,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+        shardTotal: [8]
     steps:
       - name: Wait for cache propagation
         run: sleep 10
@@ -107,6 +116,85 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          pip install wait-for-it
+        working-directory: ComfyUI
+
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: cache-playwright-browsers
+        with:
+          path: '~/.cache/ms-playwright'
+          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
+
+      - name: Install Playwright Browsers
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Install Playwright Browsers (operating system dependencies)
+        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Start ComfyUI server
+        run: |
+          python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+        working-directory: ComfyUI
+
+      - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        id: playwright
+        run: npx playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        working-directory: ComfyUI_frontend
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ../blob-report
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-chromium-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
+  playwright-tests:
+    # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
+    timeout-minutes: 15
+    needs: setup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium-2x, chromium-0.5x, mobile-chrome]
+    steps:
+      - name: Wait for cache propagation
+        run: sleep 10
+
+      - name: Restore cached setup
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          fail-on-cache-miss: true
+          path: |
+            ComfyUI
+            ComfyUI_frontend
+          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
       - name: Install requirements
         run: |
@@ -116,24 +204,28 @@ jobs:
           pip install wait-for-it
         working-directory: ComfyUI
 
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: cache-playwright-browsers
+        with:
+          path: '~/.cache/ms-playwright'
+          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
+
+      - name: Install Playwright Browsers
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Install Playwright Browsers (operating system dependencies)
+        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps
+        working-directory: ComfyUI_frontend
+
       - name: Start ComfyUI server
         run: |
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ matrix.browser }}
-          restore-keys: |
-            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
-            playwright-browsers-${{ runner.os }}-
-
-      - name: Install Playwright Browsers
-        run: npx playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
@@ -141,9 +233,54 @@ jobs:
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
-        if: always() # note: use always() to allow results to be upload/report even tests failed.
+        if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
 
+  # Merge sharded test reports
+  merge-reports:
+    needs: [playwright-tests-chromium-sharded]
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Checkout ComfyUI_frontend
+        uses: actions/checkout@v4
+        with:
+          repository: 'Comfy-Org/ComfyUI_frontend'
+          path: 'ComfyUI_frontend'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+          cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+        working-directory: ComfyUI_frontend
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          path: ComfyUI_frontend/all-blob-reports
+          pattern: blob-report-chromium-*
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        working-directory: ComfyUI_frontend
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-chromium
+          path: ComfyUI_frontend/playwright-report/
+          retention-days: 30
