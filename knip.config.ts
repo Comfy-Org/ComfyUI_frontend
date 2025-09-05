@@ -34,8 +34,6 @@ const config: KnipConfig = {
     'coverage/**',
     // i18n config
     '.i18nrc.cjs',
-    // Vitest litegraph config
-    'vitest.litegraph.config.ts',
     // Test setup files
     'browser_tests/globalSetup.ts',
     'browser_tests/globalTeardown.ts',
@@ -56,6 +54,17 @@ const config: KnipConfig = {
     config: [
       'vite.config.{js,mjs,ts,cjs,mts,cts}',
       'vite.*.config.{js,mjs,ts,cjs,mts,cts}'
+    ]
+  },
+  vitest: {
+    config: [
+      'vitest.config.{js,mjs,ts,cjs,mts,cts}',
+      'vitest.{workspace,projects}.{js,mjs,ts,cjs,mts,cts,json}',
+      'vitest.*.config.{js,mjs,ts,cjs,mts,cts,json}'
+    ],
+    entry: [
+      '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
+      '**/__mocks__/**/*.[jt]s?(x)'
     ]
   },
   // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
