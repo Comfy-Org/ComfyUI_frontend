@@ -1,7 +1,12 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  entry: ['build/**/*.ts', 'scripts/**/*.{js,ts}', 'src/main.ts'],
+  entry: [
+    'build/**/*.ts',
+    'scripts/**/*.{js,ts}',
+    'src/main.ts',
+    'src/assets/css/style.css'
+  ],
   project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
   ignoreBinaries: ['only-allow', 'openapi-typescript'],
   ignoreDependencies: [
@@ -10,8 +15,6 @@ const config: KnipConfig = {
     '@primeuix/styled',
     '@primeuix/utils',
     '@primevue/icons',
-    'tailwindcss',
-    'tailwindcss-primeui', // Need to figure out why tailwind plugin isn't applying
     // Dev
     '@trivago/prettier-plugin-sort-imports'
   ],
@@ -22,7 +25,13 @@ const config: KnipConfig = {
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts'
   ],
-  tailwind: true,
+  compilers: {
+    // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
+    css: (text: string) =>
+      [
+        ...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)
+      ].join('\n')
+  },
   vite: {
     config: ['vite?(.*).config.mts']
   },
