@@ -6,7 +6,6 @@ import { WidgetType, widgetTypeToComponent } from '../registry/widgetRegistry'
 
 /**
  * Static mapping of LiteGraph widget types to Vue widget component names
- * Moved outside function to prevent recreation on every call
  */
 const TYPE_TO_ENUM_MAP: Record<string, string> = {
   // Number inputs
