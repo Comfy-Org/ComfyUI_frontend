@@ -46,10 +46,6 @@ const config: KnipConfig = {
     config: ['playwright?(.*).config.ts'],
     entry: ['**/*.@(spec|test).?(c|m)[jt]s?(x)', 'browser_tests/**/*.ts']
   },
-  // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
-  rules: {
-    classMembers: 'off'
-  },
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
     '-knipIgnoreUnusedButUsedByVueNodesBranch'
