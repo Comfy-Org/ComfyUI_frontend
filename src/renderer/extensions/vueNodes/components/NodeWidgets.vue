@@ -50,10 +50,10 @@ import { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import {
-  ESSENTIAL_WIDGET_TYPES,
-  useWidgetRenderer
-} from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer'
-import { widgetTypeToComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+  getComponent,
+  isEssential,
+  shouldRenderAsVue
+} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 import InputSlot from './InputSlot.vue'
@@ -66,9 +66,6 @@ interface NodeWidgetsProps {
 }
 
 const props = defineProps<NodeWidgetsProps>()
-
-// Use widget renderer composable
-const { getWidgetComponent, shouldRenderAsVue } = useWidgetRenderer()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -110,14 +107,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!widget.type) continue
     if (!shouldRenderAsVue(widget)) continue
 
-    if (
-      lodLevel === LODLevel.REDUCED &&
-      !ESSENTIAL_WIDGET_TYPES.has(widget.type)
-    )
-      continue
+    if (lodLevel === LODLevel.REDUCED && !isEssential(widget.type)) continue
 
-    const componentName = getWidgetComponent(widget.type)
-    const vueComponent = widgetTypeToComponent[componentName] || WidgetInputText
+    const vueComponent = getComponent(widget.type) || WidgetInputText
 
     const simplified: SimplifiedWidget = {
       name: widget.name,

@@ -1,93 +1,100 @@
 import { describe, expect, it } from 'vitest'
 
-import { useWidgetRenderer } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer'
-import { WidgetType } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetColorPicker from '@/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue'
+import WidgetFileUpload from '@/renderer/extensions/vueNodes/widgets/components/WidgetFileUpload.vue'
+import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
+import WidgetMarkdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue'
+import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+import WidgetSlider from '@/renderer/extensions/vueNodes/widgets/components/WidgetSlider.vue'
+import WidgetTextarea from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
+import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
+import {
+  getComponent,
+  isEssential,
+  shouldRenderAsVue
+} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
-describe('useWidgetRenderer', () => {
-  const { getWidgetComponent, shouldRenderAsVue } = useWidgetRenderer()
-
-  describe('getWidgetComponent', () => {
+describe('widgetRegistry', () => {
+  describe('getComponent', () => {
     // Test number type mappings
     describe('number types', () => {
-      it('should map number type to NUMBER widget', () => {
-        expect(getWidgetComponent('number')).toBe(WidgetType.NUMBER)
+      it('should map int types to slider widget', () => {
+        expect(getComponent('int')).toBe(WidgetSlider)
+        expect(getComponent('INT')).toBe(WidgetSlider)
       })
 
-      it('should map slider type to SLIDER widget', () => {
-        expect(getWidgetComponent('slider')).toBe(WidgetType.SLIDER)
-      })
-
-      it('should map INT type to INT widget', () => {
-        expect(getWidgetComponent('INT')).toBe(WidgetType.INT)
-      })
-
-      it('should map FLOAT type to FLOAT widget', () => {
-        expect(getWidgetComponent('FLOAT')).toBe(WidgetType.FLOAT)
+      it('should map float types to slider widget', () => {
+        expect(getComponent('float')).toBe(WidgetSlider)
+        expect(getComponent('FLOAT')).toBe(WidgetSlider)
+        expect(getComponent('number')).toBe(WidgetSlider)
+        expect(getComponent('slider')).toBe(WidgetSlider)
       })
     })
 
     // Test text type mappings
     describe('text types', () => {
-      it('should map text variations to STRING widget', () => {
-        expect(getWidgetComponent('text')).toBe(WidgetType.STRING)
-        expect(getWidgetComponent('string')).toBe(WidgetType.STRING)
-        expect(getWidgetComponent('STRING')).toBe(WidgetType.STRING)
+      it('should map text variations to input text widget', () => {
+        expect(getComponent('text')).toBe(WidgetInputText)
+        expect(getComponent('string')).toBe(WidgetInputText)
+        expect(getComponent('STRING')).toBe(WidgetInputText)
       })
 
-      it('should map multiline text types to TEXTAREA widget', () => {
-        expect(getWidgetComponent('multiline')).toBe(WidgetType.TEXTAREA)
-        expect(getWidgetComponent('textarea')).toBe(WidgetType.TEXTAREA)
-        expect(getWidgetComponent('MARKDOWN')).toBe(WidgetType.MARKDOWN)
-        expect(getWidgetComponent('customtext')).toBe(WidgetType.TEXTAREA)
+      it('should map multiline text types to textarea widget', () => {
+        expect(getComponent('multiline')).toBe(WidgetTextarea)
+        expect(getComponent('textarea')).toBe(WidgetTextarea)
+        expect(getComponent('TEXTAREA')).toBe(WidgetTextarea)
+        expect(getComponent('customtext')).toBe(WidgetTextarea)
+      })
+
+      it('should map markdown to markdown widget', () => {
+        expect(getComponent('MARKDOWN')).toBe(WidgetMarkdown)
+        expect(getComponent('markdown')).toBe(WidgetMarkdown)
       })
     })
 
     // Test selection type mappings
     describe('selection types', () => {
-      it('should map combo types to COMBO widget', () => {
-        expect(getWidgetComponent('combo')).toBe(WidgetType.COMBO)
-        expect(getWidgetComponent('COMBO')).toBe(WidgetType.COMBO)
+      it('should map combo types to select widget', () => {
+        expect(getComponent('combo')).toBe(WidgetSelect)
+        expect(getComponent('COMBO')).toBe(WidgetSelect)
       })
     })
 
     // Test boolean type mappings
     describe('boolean types', () => {
-      it('should map boolean types to appropriate widgets', () => {
-        expect(getWidgetComponent('toggle')).toBe(WidgetType.TOGGLESWITCH)
-        expect(getWidgetComponent('boolean')).toBe(WidgetType.BOOLEAN)
-        expect(getWidgetComponent('BOOLEAN')).toBe(WidgetType.BOOLEAN)
+      it('should map boolean types to toggle switch widget', () => {
+        expect(getComponent('toggle')).toBe(WidgetToggleSwitch)
+        expect(getComponent('boolean')).toBe(WidgetToggleSwitch)
+        expect(getComponent('BOOLEAN')).toBe(WidgetToggleSwitch)
       })
     })
 
     // Test advanced widget mappings
     describe('advanced widgets', () => {
-      it('should map color types to COLOR widget', () => {
-        expect(getWidgetComponent('color')).toBe(WidgetType.COLOR)
-        expect(getWidgetComponent('COLOR')).toBe(WidgetType.COLOR)
+      it('should map color types to color picker widget', () => {
+        expect(getComponent('color')).toBe(WidgetColorPicker)
+        expect(getComponent('COLOR')).toBe(WidgetColorPicker)
       })
 
-      it('should map file types to FILEUPLOAD widget', () => {
-        expect(getWidgetComponent('file')).toBe(WidgetType.FILEUPLOAD)
-        expect(getWidgetComponent('FILEUPLOAD')).toBe(WidgetType.FILEUPLOAD)
+      it('should map file types to file upload widget', () => {
+        expect(getComponent('file')).toBe(WidgetFileUpload)
+        expect(getComponent('fileupload')).toBe(WidgetFileUpload)
+        expect(getComponent('FILEUPLOAD')).toBe(WidgetFileUpload)
       })
 
-      it('should map button types to BUTTON widget', () => {
-        expect(getWidgetComponent('button')).toBe(WidgetType.BUTTON)
-        expect(getWidgetComponent('BUTTON')).toBe(WidgetType.BUTTON)
+      it('should map button types to button widget', () => {
+        expect(getComponent('button')).toBe(WidgetButton)
+        expect(getComponent('BUTTON')).toBe(WidgetButton)
       })
     })
 
     // Test fallback behavior
     describe('fallback behavior', () => {
-      it('should return STRING widget for unknown types', () => {
-        expect(getWidgetComponent('unknown')).toBe(WidgetType.STRING)
-        expect(getWidgetComponent('custom_widget')).toBe(WidgetType.STRING)
-        expect(getWidgetComponent('')).toBe(WidgetType.STRING)
-      })
-
-      it('should return STRING widget for unmapped but valid types', () => {
-        expect(getWidgetComponent('datetime')).toBe(WidgetType.STRING)
-        expect(getWidgetComponent('json')).toBe(WidgetType.STRING)
+      it('should return null for unknown types', () => {
+        expect(getComponent('unknown')).toBe(null)
+        expect(getComponent('custom_widget')).toBe(null)
+        expect(getComponent('')).toBe(null)
       })
     })
   })
@@ -105,17 +112,42 @@ describe('useWidgetRenderer', () => {
 
     it('should return true for widgets with mapped types', () => {
       expect(shouldRenderAsVue({ type: 'text' })).toBe(true)
-      expect(shouldRenderAsVue({ type: 'number' })).toBe(true)
+      expect(shouldRenderAsVue({ type: 'int' })).toBe(true)
       expect(shouldRenderAsVue({ type: 'combo' })).toBe(true)
     })
 
-    it('should return true even for unknown types (fallback to STRING)', () => {
-      expect(shouldRenderAsVue({ type: 'unknown_type' })).toBe(true)
+    it('should return false for unknown types', () => {
+      expect(shouldRenderAsVue({ type: 'unknown_type' })).toBe(false)
     })
 
     it('should respect options while checking type', () => {
       const widget = { type: 'text', options: { someOption: 'value' } }
       expect(shouldRenderAsVue(widget)).toBe(true)
+    })
+  })
+
+  describe('isEssential', () => {
+    it('should identify essential widget types', () => {
+      expect(isEssential('int')).toBe(true)
+      expect(isEssential('INT')).toBe(true)
+      expect(isEssential('float')).toBe(true)
+      expect(isEssential('FLOAT')).toBe(true)
+      expect(isEssential('boolean')).toBe(true)
+      expect(isEssential('BOOLEAN')).toBe(true)
+      expect(isEssential('combo')).toBe(true)
+      expect(isEssential('COMBO')).toBe(true)
+    })
+
+    it('should identify non-essential widget types', () => {
+      expect(isEssential('button')).toBe(false)
+      expect(isEssential('color')).toBe(false)
+      expect(isEssential('chart')).toBe(false)
+      expect(isEssential('fileupload')).toBe(false)
+    })
+
+    it('should return false for unknown types', () => {
+      expect(isEssential('unknown')).toBe(false)
+      expect(isEssential('')).toBe(false)
     })
   })
 
@@ -125,12 +157,12 @@ describe('useWidgetRenderer', () => {
       expect(shouldRenderAsVue(widget)).toBe(true)
     })
 
-    it('should handle case sensitivity correctly', () => {
+    it('should handle case sensitivity correctly through aliases', () => {
       // Test that both lowercase and uppercase work
-      expect(getWidgetComponent('string')).toBe(WidgetType.STRING)
-      expect(getWidgetComponent('STRING')).toBe(WidgetType.STRING)
-      expect(getWidgetComponent('combo')).toBe(WidgetType.COMBO)
-      expect(getWidgetComponent('COMBO')).toBe(WidgetType.COMBO)
+      expect(getComponent('string')).toBe(WidgetInputText)
+      expect(getComponent('STRING')).toBe(WidgetInputText)
+      expect(getComponent('combo')).toBe(WidgetSelect)
+      expect(getComponent('COMBO')).toBe(WidgetSelect)
     })
   })
 })

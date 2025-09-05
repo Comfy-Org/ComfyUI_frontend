@@ -3,7 +3,6 @@
  */
 import type { Component } from 'vue'
 
-// Component imports
 import WidgetButton from '../components/WidgetButton.vue'
 import WidgetChart from '../components/WidgetChart.vue'
 import WidgetColorPicker from '../components/WidgetColorPicker.vue'
@@ -20,54 +19,132 @@ import WidgetTextarea from '../components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
 import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
 
-/**
- * Enum of all available widget types
- */
-export enum WidgetType {
-  BUTTON = 'BUTTON',
-  STRING = 'STRING',
-  INT = 'INT',
-  FLOAT = 'FLOAT',
-  NUMBER = 'NUMBER',
-  BOOLEAN = 'BOOLEAN',
-  COMBO = 'COMBO',
-  COLOR = 'COLOR',
-  MULTISELECT = 'MULTISELECT',
-  SELECTBUTTON = 'SELECTBUTTON',
-  SLIDER = 'SLIDER',
-  TEXTAREA = 'TEXTAREA',
-  TOGGLESWITCH = 'TOGGLESWITCH',
-  CHART = 'CHART',
-  IMAGECOMPARE = 'IMAGECOMPARE',
-  GALLERIA = 'GALLERIA',
-  FILEUPLOAD = 'FILEUPLOAD',
-  TREESELECT = 'TREESELECT',
-  MARKDOWN = 'MARKDOWN'
+interface WidgetDefinition {
+  component: Component
+  aliases: string[]
+  essential: boolean
 }
 
-/**
- * Maps widget types to their corresponding Vue components
- * Components will be added as they are implemented
- */
-export const widgetTypeToComponent: Record<string, Component> = {
-  // Components will be uncommented as they are implemented
-  [WidgetType.BUTTON]: WidgetButton,
-  [WidgetType.STRING]: WidgetInputText,
-  [WidgetType.INT]: WidgetSlider,
-  [WidgetType.FLOAT]: WidgetSlider,
-  [WidgetType.NUMBER]: WidgetSlider, // For compatibility
-  [WidgetType.BOOLEAN]: WidgetToggleSwitch,
-  [WidgetType.COMBO]: WidgetSelect,
-  [WidgetType.COLOR]: WidgetColorPicker,
-  [WidgetType.MULTISELECT]: WidgetMultiSelect,
-  [WidgetType.SELECTBUTTON]: WidgetSelectButton,
-  [WidgetType.SLIDER]: WidgetSlider,
-  [WidgetType.TEXTAREA]: WidgetTextarea,
-  [WidgetType.TOGGLESWITCH]: WidgetToggleSwitch,
-  [WidgetType.CHART]: WidgetChart,
-  [WidgetType.IMAGECOMPARE]: WidgetImageCompare,
-  [WidgetType.GALLERIA]: WidgetGalleria,
-  [WidgetType.FILEUPLOAD]: WidgetFileUpload,
-  [WidgetType.TREESELECT]: WidgetTreeSelect,
-  [WidgetType.MARKDOWN]: WidgetMarkdown
+const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
+  [
+    'button',
+    { component: WidgetButton, aliases: ['BUTTON'], essential: false }
+  ],
+  [
+    'string',
+    {
+      component: WidgetInputText,
+      aliases: ['STRING', 'text'],
+      essential: false
+    }
+  ],
+  ['int', { component: WidgetSlider, aliases: ['INT'], essential: true }],
+  [
+    'float',
+    {
+      component: WidgetSlider,
+      aliases: ['FLOAT', 'number', 'slider'],
+      essential: true
+    }
+  ],
+  [
+    'boolean',
+    {
+      component: WidgetToggleSwitch,
+      aliases: ['BOOLEAN', 'toggle'],
+      essential: true
+    }
+  ],
+  ['combo', { component: WidgetSelect, aliases: ['COMBO'], essential: true }],
+  [
+    'color',
+    { component: WidgetColorPicker, aliases: ['COLOR'], essential: false }
+  ],
+  [
+    'multiselect',
+    { component: WidgetMultiSelect, aliases: ['MULTISELECT'], essential: false }
+  ],
+  [
+    'selectbutton',
+    {
+      component: WidgetSelectButton,
+      aliases: ['SELECTBUTTON'],
+      essential: false
+    }
+  ],
+  [
+    'textarea',
+    {
+      component: WidgetTextarea,
+      aliases: ['TEXTAREA', 'multiline', 'customtext'],
+      essential: false
+    }
+  ],
+  ['chart', { component: WidgetChart, aliases: ['CHART'], essential: false }],
+  [
+    'imagecompare',
+    {
+      component: WidgetImageCompare,
+      aliases: ['IMAGECOMPARE'],
+      essential: false
+    }
+  ],
+  [
+    'galleria',
+    { component: WidgetGalleria, aliases: ['GALLERIA'], essential: false }
+  ],
+  [
+    'fileupload',
+    {
+      component: WidgetFileUpload,
+      aliases: ['FILEUPLOAD', 'file'],
+      essential: false
+    }
+  ],
+  [
+    'treeselect',
+    { component: WidgetTreeSelect, aliases: ['TREESELECT'], essential: false }
+  ],
+  [
+    'markdown',
+    { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
+  ]
+]
+
+// Build lookup maps
+const widgets = new Map<string, WidgetDefinition>()
+const aliasMap = new Map<string, string>()
+
+for (const [type, def] of coreWidgetDefinitions) {
+  widgets.set(type, def)
+  for (const alias of def.aliases) {
+    aliasMap.set(alias, type)
+  }
+}
+
+// Utility functions
+const getCanonicalType = (type: string): string => aliasMap.get(type) || type
+
+export const getComponent = (type: string): Component | null => {
+  const canonicalType = getCanonicalType(type)
+  return widgets.get(canonicalType)?.component || null
+}
+
+export const isSupported = (type: string): boolean => {
+  const canonicalType = getCanonicalType(type)
+  return widgets.has(canonicalType)
+}
+
+export const isEssential = (type: string): boolean => {
+  const canonicalType = getCanonicalType(type)
+  return widgets.get(canonicalType)?.essential || false
+}
+
+export const shouldRenderAsVue = (widget: {
+  type?: string
+  options?: Record<string, unknown>
+}): boolean => {
+  if (widget.options?.canvasOnly) return false
+  if (!widget.type) return false
+  return isSupported(widget.type)
 }
