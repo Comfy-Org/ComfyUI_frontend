@@ -640,18 +640,18 @@ export function useConflictDetection() {
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
-      // Check if manager is enabled before proceeding
+      // Check if manager is new Manager before proceeding
       const { useManagerState } = await import('@/composables/useManagerState')
       const managerState = useManagerState()
 
-      if (!managerState.isManagerEnabled.value) {
+      if (!managerState.isNewManagerUI.value) {
         console.debug(
-          '[ConflictDetection] Manager is disabled, skipping conflict detection'
+          '[ConflictDetection] Manager is not new Manager, skipping conflict detection'
         )
         return
       }
 
-      // Manager is enabled, perform conflict detection
+      // Manager is new Manager, perform conflict detection
       // The useInstalledPacks will handle fetching installed list if needed
       await performConflictDetection()
     } catch (error) {
