@@ -3,23 +3,12 @@ import type {
   IBaseWidget,
   IBooleanWidget,
   IButtonWidget,
-  IChartWidget,
-  IColorWidget,
   IComboWidget,
   ICustomWidget,
-  IFileUploadWidget,
-  IGalleriaWidget,
-  IImageCompareWidget,
-  IImageWidget,
   IKnobWidget,
-  IMarkdownWidget,
-  IMultiSelectWidget,
   INumericWidget,
-  ISelectButtonWidget,
   ISliderWidget,
   IStringWidget,
-  ITextareaWidget,
-  ITreeSelectWidget,
   IWidget,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
@@ -184,77 +173,6 @@ export function isTextWidget(widget: IBaseWidget): widget is IStringWidget {
 /** Type guard: Narrow **from {@link IBaseWidget}** to {@link ICustomWidget}. */
 export function isCustomWidget(widget: IBaseWidget): widget is ICustomWidget {
   return widget.type === 'custom'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IFileUploadWidget}. */
-export function isFileUploadWidget(
-  widget: IBaseWidget
-): widget is IFileUploadWidget {
-  return widget.type === 'fileupload'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IColorWidget}. */
-export function isColorWidget(widget: IBaseWidget): widget is IColorWidget {
-  return widget.type === 'color'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IMarkdownWidget}. */
-export function isMarkdownWidget(
-  widget: IBaseWidget
-): widget is IMarkdownWidget {
-  return widget.type === 'markdown'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IImageWidget}. */
-export function isImageWidget(widget: IBaseWidget): widget is IImageWidget {
-  return widget.type === 'image'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link ITreeSelectWidget}. */
-export function isTreeSelectWidget(
-  widget: IBaseWidget
-): widget is ITreeSelectWidget {
-  return widget.type === 'treeselect'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IMultiSelectWidget}. */
-export function isMultiSelectWidget(
-  widget: IBaseWidget
-): widget is IMultiSelectWidget {
-  return widget.type === 'multiselect'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IChartWidget}. */
-export function isChartWidget(widget: IBaseWidget): widget is IChartWidget {
-  return widget.type === 'chart'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IGalleriaWidget}. */
-export function isGalleriaWidget(
-  widget: IBaseWidget
-): widget is IGalleriaWidget {
-  return widget.type === 'galleria'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link IImageCompareWidget}. */
-export function isImageCompareWidget(
-  widget: IBaseWidget
-): widget is IImageCompareWidget {
-  return widget.type === 'imagecompare'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link ISelectButtonWidget}. */
-export function isSelectButtonWidget(
-  widget: IBaseWidget
-): widget is ISelectButtonWidget {
-  return widget.type === 'selectbutton'
-}
-
-/** Type guard: Narrow **from {@link IBaseWidget}** to {@link ITextareaWidget}. */
-export function isTextareaWidget(
-  widget: IBaseWidget
-): widget is ITextareaWidget {
-  return widget.type === 'textarea'
 }
 
 // #endregion Type Guards
