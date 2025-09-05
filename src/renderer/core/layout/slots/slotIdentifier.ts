@@ -6,7 +6,7 @@
  * @TODO Replace this concatenated string with root cause fix
  */
 
-export interface SlotIdentifier {
+interface SlotIdentifier {
   nodeId: string
   index: number
   isInput: boolean

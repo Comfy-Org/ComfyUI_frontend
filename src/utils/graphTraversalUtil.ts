@@ -394,7 +394,7 @@ export function getAllNonIoNodesInSubgraph(subgraph: Subgraph): LGraphNode[] {
 /**
  * Options for traverseNodesDepthFirst function
  */
-export interface TraverseNodesOptions<T> {
+interface TraverseNodesOptions<T> {
   /** Function called for each node during traversal */
   visitor?: (node: LGraphNode, context: T) => T
   /** Initial context value */
@@ -449,7 +449,7 @@ export function traverseNodesDepthFirst<T = void>(
 /**
  * Options for collectFromNodes function
  */
-export interface CollectFromNodesOptions<T, C> {
+interface CollectFromNodesOptions<T, C> {
   /** Function that returns data to collect for each node */
   collector?: (node: LGraphNode, context: C) => T | null
   /** Function that builds context for child nodes */

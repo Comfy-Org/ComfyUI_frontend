@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useToastStore } from '@/stores/toastStore'
 import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 
-export interface UseFrontendVersionMismatchWarningOptions {
+interface UseFrontendVersionMismatchWarningOptions {
   immediate?: boolean
 }
 

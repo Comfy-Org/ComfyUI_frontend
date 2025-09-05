@@ -2,7 +2,7 @@ import { onUnmounted, ref } from 'vue'
 
 import type { LGraphCanvas } from '../../lib/litegraph/src/litegraph'
 
-export interface CanvasTransformSyncOptions {
+interface CanvasTransformSyncOptions {
   /**
    * Whether to automatically start syncing when canvas is available
    * @default true
@@ -10,7 +10,7 @@ export interface CanvasTransformSyncOptions {
   autoStart?: boolean
 }
 
-export interface CanvasTransformSyncCallbacks {
+interface CanvasTransformSyncCallbacks {
   /**
    * Called when sync starts
    */

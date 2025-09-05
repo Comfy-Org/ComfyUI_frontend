@@ -35,7 +35,7 @@ const createContainer = () => {
 const createTimeout = (ms: number) =>
   new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
 
-export const useNodePreview = <T extends MediaElement>(
+const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
 ) => {

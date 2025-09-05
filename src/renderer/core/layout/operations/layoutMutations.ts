@@ -19,7 +19,7 @@ import {
 
 const logger = log.getLogger('LayoutMutations')
 
-export interface LayoutMutations {
+interface LayoutMutations {
   // Single node operations (synchronous, CRDT-ready)
   moveNode(nodeId: NodeId, position: Point): void
   resizeNode(nodeId: NodeId, size: Size): void
