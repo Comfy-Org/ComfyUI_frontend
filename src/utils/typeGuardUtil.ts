@@ -56,24 +56,3 @@ export const isSlotObject = (obj: unknown): obj is INodeSlot => {
     'boundingRect' in obj
   )
 }
-
-/**
- * Type guard for safe number conversion
- */
-export const isValidNumber = (value: unknown): value is number => {
-  return typeof value === 'number' && !isNaN(value) && isFinite(value)
-}
-
-/**
- * Type guard for safe string conversion
- */
-export const isValidString = (value: unknown): value is string => {
-  return typeof value === 'string'
-}
-
-/**
- * Type guard for arrays with safe bounds checking
- */
-export const isNonEmptyArray = <T>(value: unknown): value is T[] => {
-  return Array.isArray(value) && value.length > 0
-}
