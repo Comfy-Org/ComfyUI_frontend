@@ -5,6 +5,7 @@
       value: $t('g.bookmark'),
       showDelay: 1000
     }"
+    data-testid="add-to-library"
     class="help-button"
     text
     severity="secondary"

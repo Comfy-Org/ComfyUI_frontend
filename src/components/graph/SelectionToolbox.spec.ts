@@ -16,6 +16,13 @@ vi.mock('@/composables/graph/useCanvasInteractions', () => ({
   }))
 }))
 
+vi.mock('@/composables/canvas/useSelectionToolboxPosition', () => ({
+  useSelectionToolboxPosition: vi.fn(() => ({
+    visible: { value: true }
+  })),
+  resetMoreOptionsState: vi.fn()
+}))
+
 vi.mock('@/composables/element/useRetriggerableAnimation', () => ({
   useRetriggerableAnimation: vi.fn(() => ({
     shouldAnimate: { value: false }
@@ -78,6 +85,14 @@ describe('SelectionToolbox', () => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
 
+    // Mock the canvas to avoid "getCanvas: canvas is null" errors
+    canvasStore.canvas = {
+      setDirty: vi.fn(),
+      state: {
+        selectionChanged: false
+      }
+    } as any
+
     vi.clearAllMocks()
   })
 
@@ -97,28 +112,42 @@ describe('SelectionToolbox', () => {
           },
           InfoButton: { template: '<div class="info-button" />' },
           ColorPickerButton: {
-            template: '<div class="color-picker-button" />'
+            template:
+              '<button data-testid="color-picker-button" class="color-picker-button" />'
           },
           FrameNodes: { template: '<div class="frame-nodes" />' },
-          BookmarkButton: { template: '<div class="bookmark-button" />' },
-          BypassButton: { template: '<div class="bypass-button" />' },
+          PublishButton: {
+            template:
+              '<button data-testid="add-to-library" class="bookmark-button" />'
+          },
+          BypassButton: {
+            template:
+              '<button data-testid="bypass-button" class="bypass-button" />'
+          },
           PinButton: { template: '<div class="pin-button" />' },
           Load3DViewerButton: {
             template: '<div class="load-3d-viewer-button" />'
           },
           MaskEditorButton: { template: '<div class="mask-editor-button" />' },
-          DeleteButton: { template: '<div class="delete-button" />' },
+          DeleteButton: {
+            template:
+              '<button data-testid="delete-button" class="delete-button" />'
+          },
           RefreshSelectionButton: {
             template: '<div class="refresh-button" />'
           },
           ExecuteButton: { template: '<div class="execute-button" />' },
           ConvertToSubgraphButton: {
-            template: '<div class="convert-to-subgraph-button" />'
+            template:
+              '<button data-testid="convert-to-subgraph-button" class="convert-to-subgraph-button" />'
           },
           ExtensionCommandButton: {
             template: '<div class="extension-command-button" />'
           },
-          MoreOptions: { template: '<div class="more-options" />' },
+          MoreOptions: {
+            template:
+              '<button data-testid="more-options-button" class="more-options" />'
+          },
           VerticalDivider: { template: '<div class="vertical-divider" />' }
         }
       }
@@ -154,7 +183,9 @@ describe('SelectionToolbox', () => {
       // Single node selection
       canvasStore.selectedItems = [{ type: 'TestNode' }] as any
       const wrapper = mountComponent()
-      expect(wrapper.find('.color-picker-button').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="color-picker-button"]').exists()).toBe(
+        true
+      )
 
       // Multiple node selection
       canvasStore.selectedItems = [
@@ -163,7 +194,9 @@ describe('SelectionToolbox', () => {
       ] as any
       wrapper.unmount()
       const wrapper2 = mountComponent()
-      expect(wrapper2.find('.color-picker-button').exists()).toBe(true)
+      expect(
+        wrapper2.find('[data-testid="color-picker-button"]').exists()
+      ).toBe(true)
     })
 
     it('should show frame nodes only for multiple selections', () => {
@@ -191,7 +224,7 @@ describe('SelectionToolbox', () => {
       // Single subgraph selection
       canvasStore.selectedItems = [mockSubgraph] as any
       const wrapper = mountComponent()
-      expect(wrapper.find('.bookmark-button').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="add-to-library"]').exists()).toBe(true)
 
       // Single regular node selection
       canvasStore.selectedItems = [
@@ -199,14 +232,16 @@ describe('SelectionToolbox', () => {
       ] as any
       wrapper.unmount()
       const wrapper2 = mountComponent()
-      expect(wrapper2.find('.bookmark-button').exists()).toBe(false)
+      expect(wrapper2.find('[data-testid="add-to-library"]').exists()).toBe(
+        false
+      )
     })
 
     it('should show bypass button for appropriate selections', () => {
       // Single node selection
       canvasStore.selectedItems = [{ type: 'TestNode' }] as any
       const wrapper = mountComponent()
-      expect(wrapper.find('.bypass-button').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="bypass-button"]').exists()).toBe(true)
 
       // Multiple node selection
       canvasStore.selectedItems = [
@@ -215,19 +250,20 @@ describe('SelectionToolbox', () => {
       ] as any
       wrapper.unmount()
       const wrapper2 = mountComponent()
-      expect(wrapper2.find('.bypass-button').exists()).toBe(true)
+      expect(wrapper2.find('[data-testid="bypass-button"]').exists()).toBe(true)
     })
 
     it('should show common buttons for all selections', () => {
       canvasStore.selectedItems = [{ type: 'TestNode' }] as any
       const wrapper = mountComponent()
 
-      expect(wrapper.find('.pin-button').exists()).toBe(true)
-      expect(wrapper.find('.delete-button').exists()).toBe(true)
-      expect(wrapper.find('.refresh-button').exists()).toBe(true)
-      expect(wrapper.find('.execute-button').exists()).toBe(true)
-      expect(wrapper.find('.convert-to-subgraph-button').exists()).toBe(true)
-      expect(wrapper.find('.more-options').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="delete-button"]').exists()).toBe(true)
+      expect(
+        wrapper.find('[data-testid="convert-to-subgraph-button"]').exists()
+      ).toBe(true)
+      expect(wrapper.find('[data-testid="more-options-button"]').exists()).toBe(
+        true
+      )
     })
 
     it('should show mask editor only for single image nodes', async () => {

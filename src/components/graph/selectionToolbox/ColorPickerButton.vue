@@ -6,6 +6,7 @@
         value: localizedCurrentColorName ?? t('color.noColor'),
         showDelay: 512
       }"
+      data-testid="color-picker-button"
       severity="secondary"
       text
       @click="() => (showColorPicker = !showColorPicker)"

@@ -6,6 +6,7 @@
       showDelay: 1000
     }"
     severity="secondary"
+    data-testid="convert-to-subgraph-button"
     text
     @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
@@ -20,6 +21,7 @@
       showDelay: 1000
     }"
     severity="secondary"
+    data-testid="convert-to-subgraph-button"
     text
     @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
