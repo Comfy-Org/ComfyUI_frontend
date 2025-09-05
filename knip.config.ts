@@ -2,14 +2,7 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   entry: ['build/**/*.ts', 'scripts/**/*.{js,ts}', 'src/main.ts'],
-  project: [
-    'browser_tests/**/*.{js,ts}',
-    'build/**/*.{js,ts,vue}',
-    'scripts/**/*.{js,ts}',
-    'src/**/*.{js,ts,vue}',
-    'tests-ui/**/*.{js,ts,vue}',
-    '*.{js,ts,mts}'
-  ],
+  project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
   ignoreBinaries: ['only-allow', 'openapi-typescript'],
   ignoreDependencies: [
     '@iconify/json',
