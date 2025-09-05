@@ -160,6 +160,8 @@ const pickGpu = (value: typeof selected.value) => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .p-tag {
   --p-tag-gap: 0.5rem;
 }
@@ -184,10 +186,10 @@ div.selected {
 }
 
 .gpu-button {
-  @apply w-1/2 m-0 cursor-pointer rounded-lg flex flex-col items-center justify-around bg-neutral-800 bg-opacity-50 hover:bg-opacity-75 transition-colors;
+  @apply w-1/2 m-0 cursor-pointer rounded-lg flex flex-col items-center justify-around bg-neutral-800/50 hover:bg-neutral-800/75 transition-colors;
 
   &.selected {
-    @apply opacity-100 bg-neutral-700 bg-opacity-50 hover:bg-opacity-60;
+    @apply opacity-100 bg-neutral-700/50 hover:bg-neutral-700/60;
   }
 }
 

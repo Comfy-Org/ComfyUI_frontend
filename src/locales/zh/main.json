@@ -309,6 +309,7 @@
     "disabling": "禁用中",
     "dismiss": "关闭",
     "download": "下载",
+    "dropYourFileOr": "拖放您的文件或",
     "duplicate": "复制",
     "edit": "编辑",
     "empty": "空",
@@ -551,37 +552,7 @@
     "updateConsent": "您之前选择了报告崩溃。我们现在正在跟踪基于事件的度量，以帮助识别错误并改进应用程序。我们不收集任何个人可识别信息。"
   },
   "issueReport": {
-    "contactFollowUp": "跟进联系我",
-    "contactSupportDescription": "请填写下方表格提交您的报告",
-    "contactSupportTitle": "联系支持",
-    "describeTheProblem": "描述问题",
-    "email": "电子邮箱",
-    "feedbackTitle": "通过提供反馈帮助我们改进ComfyUI",
-    "helpFix": "帮助修复这个",
-    "helpTypes": {
-      "billingPayments": "账单 / 支付",
-      "bugReport": "错误报告",
-      "giveFeedback": "提交反馈",
-      "loginAccessIssues": "登录 / 访问问题",
-      "somethingElse": "其他"
-    },
-    "notifyResolve": "解决时通知我",
-    "provideAdditionalDetails": "提供额外的详细信息（可选）",
-    "provideEmail": "提供您的电子邮件（可选）",
-    "rating": "评分",
-    "selectIssue": "选择问题",
-    "stackTrace": "堆栈跟踪",
-    "submitErrorReport": "提交错误报告（可选）",
-    "systemStats": "系统状态",
-    "validation": {
-      "descriptionRequired": "描述为必填项",
-      "helpTypeRequired": "帮助类型为必选项",
-      "invalidEmail": "请输入有效的电子邮件地址",
-      "maxLength": "消息过长",
-      "selectIssueType": "请选择一个问题类型"
-    },
-    "whatCanWeInclude": "请说明报告中需要包含的内容",
-    "whatDoYouNeedHelpWith": "您需要什么帮助？"
+    "helpFix": "帮助修复这个"
   },
   "load3d": {
     "applyingTexture": "应用纹理中...",
@@ -763,7 +734,7 @@
     "instantTooltip": "工作流将会在生成完成后立即执行",
     "interrupt": "取消当前任务",
     "light": "淺色",
-    "manageExtensions": "管理擴充功能",
+    "manageExtensions": "管理扩展功能",
     "onChange": "更改时",
     "onChangeTooltip": "一旦进行更改，工作流将添加到执行队列",
     "queue": "队列面板",
@@ -861,11 +832,14 @@
     "Show Settings Dialog": "显示设置对话框",
     "Sign Out": "退出登录",
     "Toggle Essential Bottom Panel": "切换基础底部面板",
+    "Toggle Bottom Panel": "切换底部面板",
+    "Toggle Focus Mode": "切换专注模式",
     "Toggle Logs Bottom Panel": "切换日志底部面板",
     "Toggle Search Box": "切换搜索框",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
+    "Toggle Workflows Sidebar": "切换工作流侧边栏",
     "Toggle the Custom Nodes Manager": "切换自定义节点管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切换自定义节点管理器进度条",
     "Undo": "撤销",
@@ -882,7 +856,11 @@
     "renderBypassState": "渲染绕过状态",
     "renderErrorState": "渲染错误状态",
     "showGroups": "显示框架/分组",
-    "showLinks": "显示连接"
+    "showLinks": "显示连接",
+    "sideToolbar_modelLibrary": "侧边工具栏.模型库",
+    "sideToolbar_nodeLibrary": "侧边工具栏.节点库",
+    "sideToolbar_queue": "侧边工具栏.队列",
+    "sideToolbar_workflows": "侧边工具栏.工作流"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不再显示此消息",
@@ -1199,6 +1177,7 @@
     "UV": "UV",
     "User": "用户",
     "Validation": "验证",
+    "Vue Nodes": "Vue 节点",
     "Window": "窗口",
     "Workflow": "工作流"
   },

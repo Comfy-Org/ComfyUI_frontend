@@ -123,6 +123,8 @@ const handleForgotPassword = async (
 </script>
 
 <style scoped>
+@reference '../../../../assets/css/style.css';
+
 .text-link-disabled {
   @apply opacity-50 cursor-not-allowed;
 }

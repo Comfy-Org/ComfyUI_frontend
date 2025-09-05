@@ -385,7 +385,7 @@ var styles = `
     height: var(--mask-editor-top-bar-height);
     align-items: center;
     background: var(--comfy-menu-bg);
-    flex-shrink: 0;
+    shrink: 0;
   }
   #maskEditor_topBarTitle {
     margin: 0;

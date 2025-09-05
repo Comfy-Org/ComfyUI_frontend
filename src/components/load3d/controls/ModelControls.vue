@@ -12,7 +12,7 @@
       </Button>
       <div
         v-show="showUpDirection"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -43,7 +43,7 @@
       </Button>
       <div
         v-show="showMaterialMode"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 rounded-lg shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -74,7 +74,7 @@
       </Button>
       <div
         v-show="showEdgeThreshold"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
         style="width: 150px"
       >
         <label class="text-white text-xs mb-1 block"

@@ -110,7 +110,7 @@ const pt = computed(() => ({
   label: {
     class:
       // Align with MultiSelect labelContainer spacing
-      'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 outline-none'
+      'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 outline-hidden'
   },
   dropdown: {
     class:
@@ -134,7 +134,7 @@ const pt = computed(() => ({
     class: [
       // Row layout
       'flex items-center justify-between gap-3 px-3 py-2',
-      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+      'hover:bg-neutral-100/50 hover:dark-theme:bg-zinc-700/50',
       // Selected state + check icon
       { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected },
       // Add focus state for keyboard navigation
