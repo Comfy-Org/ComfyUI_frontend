@@ -127,7 +127,7 @@ export function useConflictDetection() {
       }
 
       systemEnvironment.value = environment
-      console.log(
+      console.debug(
         '[ConflictDetection] System environment detection completed:',
         environment
       )
@@ -427,7 +427,7 @@ export function useConflictDetection() {
         Object.entries(bulkResult).forEach(([packageId, failInfo]) => {
           if (failInfo !== null) {
             importFailures[packageId] = failInfo
-            console.log(
+            console.debug(
               `[ConflictDetection] Import failure found for ${packageId}:`,
               failInfo
             )
@@ -500,7 +500,7 @@ export function useConflictDetection() {
    */
   async function performConflictDetection(): Promise<ConflictDetectionResponse> {
     if (isDetecting.value) {
-      console.log('[ConflictDetection] Already detecting, skipping')
+      console.debug('[ConflictDetection] Already detecting, skipping')
       return {
         success: false,
         error_message: 'Already detecting conflicts',
@@ -556,7 +556,10 @@ export function useConflictDetection() {
       detectionSummary.value = summary
       lastDetectionTime.value = new Date().toISOString()
 
-      console.log('[ConflictDetection] Conflict detection completed:', summary)
+      console.debug(
+        '[ConflictDetection] Conflict detection completed:',
+        summary
+      )
 
       // Store conflict results for later UI display
       // Dialog will be shown based on specific events, not on app mount
@@ -568,7 +571,7 @@ export function useConflictDetection() {
         // Merge conflicts for packages with the same name
         const mergedConflicts = mergeConflictsByPackageName(conflictedResults)
 
-        console.log(
+        console.debug(
           '[ConflictDetection] Conflicts detected (stored for UI):',
           mergedConflicts
         )
@@ -671,13 +674,13 @@ export function useConflictDetection() {
    * Check if conflicts should trigger modal display after "What's New" dismissal
    */
   async function shouldShowConflictModalAfterUpdate(): Promise<boolean> {
-    console.log(
+    console.debug(
       '[ConflictDetection] Checking if conflict modal should show after update...'
     )
 
     // Ensure conflict detection has run
     if (detectionResults.value.length === 0) {
-      console.log(
+      console.debug(
         '[ConflictDetection] No detection results, running conflict detection...'
       )
       await performConflictDetection()
@@ -689,7 +692,7 @@ export function useConflictDetection() {
     const hasActualConflicts = hasConflicts.value
     const canShowModal = acknowledgment.shouldShowConflictModal.value
 
-    console.log('[ConflictDetection] Modal check:', {
+    console.debug('[ConflictDetection] Modal check:', {
       hasConflicts: hasActualConflicts,
       canShowModal: canShowModal,
       conflictedPackagesCount: conflictedPackages.value.length
