@@ -24,11 +24,26 @@
       :size="14"
       class="opacity-60"
     />
+    <Badge
+      v-if="props.option.badge"
+      :severity="props.option.badge === 'new' ? 'info' : 'secondary'"
+      :value="t(props.option.badge)"
+      :class="{
+        'bg-[#0B8CE9] rounded-4xl': props.option.badge === 'new',
+        'bg-[#000] rounded-4xl': props.option.badge === 'deprecated',
+        'text-white uppercase text-[9px] h-4 px-1 gap-2.5': true
+      }"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import Badge from 'primevue/badge'
+import { useI18n } from 'vue-i18n'
+
 import type { MenuOption } from '@/composables/graph/useMoreOptionsMenu'
+
+const { t } = useI18n()
 
 interface Props {
   option: MenuOption

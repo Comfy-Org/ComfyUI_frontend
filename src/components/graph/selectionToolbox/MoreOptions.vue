@@ -93,10 +93,6 @@ function getButtonEl(): HTMLElement | null {
   return el instanceof HTMLElement ? el : null
 }
 
-// -- Position / transform sync -------------------------------------------------
-// New approach: directly set overlay style (no hide/show churn) so we can smoothly track canvas.
-// We assume PrimeVue Popover root element structure: container with style.left/top when positioned.
-// We'll derive center-top alignment similar to initial placement (button center, below button + margin).
 let lastLogTs = 0
 const LOG_INTERVAL = 120 // ms
 let overlayElCache: HTMLElement | null = null
@@ -258,7 +254,7 @@ const setSubmenuRef = (key: string, el: any) => {
 
 const pt = computed(() => ({
   root: {
-    class: 'absolute z-50'
+    class: 'absolute z-50 w-[300px] px-[12]'
   },
   content: {
     class: [
