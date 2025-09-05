@@ -347,25 +347,4 @@ describe('TransformPane', () => {
       expect(wrapper.find('[data-node-id="test"]').exists()).toBe(true)
     })
   })
-
-  describe('viewport prop handling', () => {
-    it('should handle missing viewport prop', async () => {
-      wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      // Should not crash when viewport is undefined
-      expect(wrapper.exists()).toBe(true)
-
-      expect(wrapper.text()).toContain('800x600')
-
-      await wrapper.setProps({
-        viewport: { width: 1920, height: 1080 }
-      })
-
-      expect(wrapper.text()).toContain('1920x1080')
-    })
-  })
 })

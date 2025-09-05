@@ -20,7 +20,6 @@ import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas
-  viewport?: { width: number; height: number }
 }
 
 const props = defineProps<TransformPaneProps>()
