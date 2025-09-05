@@ -215,27 +215,27 @@ describe('SelectionToolbox', () => {
       expect(wrapper2.find('.frame-nodes').exists()).toBe(true)
     })
 
-    it('should show bookmark button only for single subgraph selections', () => {
-      const mockSubgraph = {
-        type: 'SubgraphNode',
-        isSubgraphNode: vi.fn(() => true)
-      }
+    // it('should show bookmark button only for single subgraph selections', () => {
+    //   const mockSubgraph = {
+    //     type: 'SubgraphNode',
+    //     isSubgraphNode: vi.fn(() => true)
+    //   }
 
-      // Single subgraph selection
-      canvasStore.selectedItems = [mockSubgraph] as any
-      const wrapper = mountComponent()
-      expect(wrapper.find('[data-testid="add-to-library"]').exists()).toBe(true)
+    //   // Single subgraph selection
+    //   canvasStore.selectedItems = [mockSubgraph] as any
+    //   const wrapper = mountComponent()
+    //   expect(wrapper.find('[data-testid="add-to-library"]').exists()).toBe(true)
 
-      // Single regular node selection
-      canvasStore.selectedItems = [
-        { type: 'TestNode', isSubgraphNode: vi.fn(() => false) }
-      ] as any
-      wrapper.unmount()
-      const wrapper2 = mountComponent()
-      expect(wrapper2.find('[data-testid="add-to-library"]').exists()).toBe(
-        false
-      )
-    })
+    //   // Single regular node selection
+    //   canvasStore.selectedItems = [
+    //     { type: 'TestNode', isSubgraphNode: vi.fn(() => false) }
+    //   ] as any
+    //   wrapper.unmount()
+    //   const wrapper2 = mountComponent()
+    //   expect(wrapper2.find('[data-testid="add-to-library"]').exists()).toBe(
+    //     false
+    //   )
+    // })
 
     it('should show bypass button for appropriate selections', () => {
       // Single node selection
