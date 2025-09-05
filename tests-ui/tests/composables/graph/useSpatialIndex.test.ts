@@ -427,24 +427,6 @@ describe('useSpatialIndex', () => {
     })
   })
 
-  describe('getDebugVisualization', () => {
-    it('should return null when debug is disabled', () => {
-      const { getDebugVisualization } = spatialIndex
-
-      expect(getDebugVisualization()).toBeNull()
-    })
-
-    it('should return debug info when enabled', () => {
-      const debugIndex = useSpatialIndex({ enableDebugVisualization: true })
-      debugIndex.initialize()
-
-      const debug = debugIndex.getDebugVisualization()
-      expect(debug).not.toBeNull()
-      expect(debug).toHaveProperty('size')
-      expect(debug).toHaveProperty('tree')
-    })
-  })
-
   describe('metrics', () => {
     it('should track performance metrics', () => {
       const { metrics, updateNode, queryViewport } = spatialIndex

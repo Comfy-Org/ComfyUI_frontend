@@ -28,14 +28,6 @@ export const useManagerStateStore = defineStore('managerState', () => {
       'extension.manager.supports_v4'
     )
 
-    console.log('[Manager State Debug]', {
-      systemStats: systemStats?.system?.argv,
-      clientSupportsV4,
-      serverSupportsV4,
-      hasLegacyManager,
-      extensions: extensionStore.extensions.map((e) => e.name)
-    })
-
     // Check command line args first
     if (systemStats?.system?.argv?.includes('--disable-manager')) {
       return ManagerUIState.DISABLED // comfyui_manager package not installed

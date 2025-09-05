@@ -295,21 +295,6 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Experimental.ToggleVueNodeDebugPanel',
-      label: () =>
-        `Experimental: ${
-          useSettingStore().get('Comfy.VueNodes.DebugPanel.Visible')
-            ? 'Hide'
-            : 'Show'
-        } Vue Node Debug Panel`,
-      function: async () => {
-        const settingStore = useSettingStore()
-        const current =
-          settingStore.get('Comfy.VueNodes.DebugPanel.Visible') ?? false
-        await settingStore.set('Comfy.VueNodes.DebugPanel.Visible', !current)
-      }
-    },
-    {
       id: 'Comfy.Canvas.FitView',
       icon: 'pi pi-expand',
       label: 'Fit view to selected nodes',

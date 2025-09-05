@@ -105,62 +105,6 @@ describe('TransformPane', () => {
     })
   })
 
-  describe('debug overlay', () => {
-    it('should not show debug overlay by default', () => {
-      wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      expect(wrapper.find('.viewport-debug-overlay').exists()).toBe(false)
-    })
-
-    it('should show debug overlay when enabled', () => {
-      wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas,
-          viewport: { width: 1920, height: 1080 },
-          showDebugOverlay: true
-        }
-      })
-
-      expect(wrapper.find('.viewport-debug-overlay').exists()).toBe(true)
-    })
-
-    it('should display viewport dimensions in debug overlay', () => {
-      wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas,
-          viewport: { width: 1280, height: 720 },
-          showDebugOverlay: true
-        }
-      })
-
-      const debugOverlay = wrapper.find('.viewport-debug-overlay')
-      expect(debugOverlay.text()).toContain('Viewport: 1280x720')
-    })
-
-    it('should include device pixel ratio in debug overlay', () => {
-      // Mock device pixel ratio
-      Object.defineProperty(window, 'devicePixelRatio', {
-        writable: true,
-        value: 2
-      })
-
-      wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas,
-          viewport: { width: 1920, height: 1080 },
-          showDebugOverlay: true
-        }
-      })
-
-      const debugOverlay = wrapper.find('.viewport-debug-overlay')
-      expect(debugOverlay.text()).toContain('DPR: 2')
-    })
-  })
-
   describe('RAF synchronization', () => {
     it('should start RAF sync on mount', async () => {
       wrapper = mount(TransformPane, {
@@ -405,26 +349,15 @@ describe('TransformPane', () => {
   })
 
   describe('viewport prop handling', () => {
-    it('should handle missing viewport prop', () => {
+    it('should handle missing viewport prop', async () => {
       wrapper = mount(TransformPane, {
         props: {
-          canvas: mockCanvas,
-          showDebugOverlay: true
+          canvas: mockCanvas
         }
       })
 
       // Should not crash when viewport is undefined
       expect(wrapper.exists()).toBe(true)
-    })
-
-    it('should update debug overlay when viewport changes', async () => {
-      wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas,
-          viewport: { width: 800, height: 600 },
-          showDebugOverlay: true
-        }
-      })
 
       expect(wrapper.text()).toContain('800x600')
 

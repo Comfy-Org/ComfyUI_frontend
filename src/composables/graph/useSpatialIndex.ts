@@ -11,7 +11,6 @@ export interface SpatialIndexOptions {
   worldBounds?: Bounds
   maxDepth?: number
   maxItemsPerNode?: number
-  enableDebugVisualization?: boolean
   updateDebounceMs?: number
 }
 
@@ -43,9 +42,6 @@ export const useSpatialIndex = (options: SpatialIndexOptions = {}) => {
     treeDepth: 0,
     rebuildCount: 0
   })
-
-  // Debug visualization data (unused for now but may be used in future)
-  // const debugBounds = ref<Bounds[]>([])
 
   // Initialize QuadTree
   const initialize = (bounds: Bounds = defaultBounds) => {
@@ -173,13 +169,6 @@ export const useSpatialIndex = (options: SpatialIndexOptions = {}) => {
     batchUpdate(updates)
   }
 
-  // Get debug visualization data
-  const getDebugVisualization = () => {
-    if (!quadTree.value || !options.enableDebugVisualization) return null
-
-    return quadTree.value.getDebugInfo()
-  }
-
   // Debounced update for performance
   const debouncedUpdateNode = useDebounceFn(
     updateNode,
@@ -202,9 +191,6 @@ export const useSpatialIndex = (options: SpatialIndexOptions = {}) => {
 
     // Metrics
     metrics: computed(() => metrics),
-
-    // Debug
-    getDebugVisualization,
 
     // Direct access to QuadTree (for advanced usage)
     quadTree: computed(() => quadTree.value)

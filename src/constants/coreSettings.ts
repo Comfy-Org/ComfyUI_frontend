@@ -964,13 +964,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Render nodes as Vue components instead of canvas. Hidden; toggle via Experimental keybinding.',
     defaultValue: false,
-    experimental: true
-  },
-  {
-    id: 'Comfy.VueNodes.DebugPanel.Visible',
-    name: 'Vue Nodes Debug Panel Visible (hidden)',
-    type: 'hidden',
-    defaultValue: false,
-    experimental: true
+    experimental: true,
+    versionAdded: '1.27.1'
   }
 ]

@@ -8248,12 +8248,8 @@ export class LGraphCanvas
 
         let reroute: Reroute | undefined
         if (rerouteLayout) {
-          console.debug('✅ Using LayoutStore for reroute query', {
-            rerouteLayout
-          })
           reroute = this.graph.getReroute(rerouteLayout.id)
         } else {
-          console.debug('⚠️ Falling back to old reroute query method')
           reroute = this.graph.getRerouteOnPos(
             event.canvasX,
             event.canvasY,
