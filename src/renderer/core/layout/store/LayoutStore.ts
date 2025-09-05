@@ -39,7 +39,15 @@ import {
 } from '@/renderer/core/layout/types'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
+type YEventChange = {
+  action: 'add' | 'update' | 'delete'
+  oldValue: unknown
+}
+
 const logger = log.getLogger('LayoutStore')
+
+// Constants
+const REROUTE_RADIUS = 8
 
 class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
@@ -90,11 +98,11 @@ class LayoutStoreImpl implements LayoutStore {
     this.rerouteSpatialIndex = new SpatialIndexManager()
 
     // Listen for Yjs changes and trigger Vue reactivity
-    this.ynodes.observe((event) => {
+    this.ynodes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
 
       // Trigger all affected node refs
-      event.changes.keys.forEach((_change, key) => {
+      event.changes.keys.forEach((_change: YEventChange, key: string) => {
         const trigger = this.nodeTriggers.get(key)
         if (trigger) {
           trigger()
@@ -103,61 +111,18 @@ class LayoutStoreImpl implements LayoutStore {
     })
 
     // Listen for link changes and update spatial indexes
-    this.ylinks.observe((event) => {
+    this.ylinks.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
       event.changes.keys.forEach((change, linkIdStr) => {
-        const linkId = Number(linkIdStr) as LinkId
-        if (change.action === 'delete') {
-          this.linkLayouts.delete(linkId)
-          // Clean up any segment layouts for this link
-          const keysToDelete: string[] = []
-          for (const [key] of this.linkSegmentLayouts) {
-            if (key.startsWith(`${linkId}:`)) {
-              keysToDelete.push(key)
-            }
-          }
-          for (const key of keysToDelete) {
-            this.linkSegmentLayouts.delete(key)
-            this.linkSegmentSpatialIndex.remove(key)
-          }
-        } else {
-          // Link was added or updated - geometry will be computed separately
-          // This just tracks that the link exists in CRDT
-        }
+        this.handleLinkChange(change, linkIdStr)
       })
     })
 
     // Listen for reroute changes and update spatial indexes
-    this.yreroutes.observe((event) => {
+    this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
       event.changes.keys.forEach((change, rerouteIdStr) => {
-        // Yjs Map keys are strings, convert to number for layout operations
-        const rerouteId = Number(rerouteIdStr) as RerouteId
-
-        if (change.action === 'delete') {
-          this.rerouteLayouts.delete(rerouteId) // Use numeric ID for layout map
-          this.rerouteSpatialIndex.remove(rerouteIdStr) // Use string for spatial index
-        } else if (change.action === 'update' || change.action === 'add') {
-          const rerouteData = this.yreroutes.get(rerouteIdStr) // Use string for Yjs
-          if (rerouteData) {
-            const pos = rerouteData.get('position') as Point
-            if (pos) {
-              // Update reroute layout when position changes
-              const layout: RerouteLayout = {
-                id: rerouteId, // Use numeric ID
-                position: pos,
-                radius: 8,
-                bounds: {
-                  x: pos.x - 8,
-                  y: pos.y - 8,
-                  width: 16,
-                  height: 16
-                }
-              }
-              this.updateRerouteLayout(rerouteId, layout)
-            }
-          }
-        }
+        this.handleRerouteChange(change, rerouteIdStr)
       })
     })
   }
@@ -938,16 +903,23 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     const size = ynode.get('size') as { width: number; height: number }
-    ynode.set('position', operation.position)
-    this.updateNodeBounds(ynode, operation.position, size)
-
-    // Update spatial index
-    this.spatialIndex.update(operation.nodeId, {
+    const newBounds = {
       x: operation.position.x,
       y: operation.position.y,
       width: size.width,
       height: size.height
-    })
+    }
+
+    // Update spatial index FIRST, synchronously to prevent race conditions
+    // Hit detection queries can run before CRDT updates complete
+    this.spatialIndex.update(operation.nodeId, newBounds)
+
+    // Update associated slot positions synchronously
+    this.updateNodeSlotPositions(operation.nodeId, operation.position)
+
+    // Then update CRDT
+    ynode.set('position', operation.position)
+    this.updateNodeBounds(ynode, operation.position, size)
 
     change.nodeIds.push(operation.nodeId)
   }
@@ -960,16 +932,23 @@ class LayoutStoreImpl implements LayoutStore {
     if (!ynode) return
 
     const position = ynode.get('position') as Point
-    ynode.set('size', operation.size)
-    this.updateNodeBounds(ynode, position, operation.size)
-
-    // Update spatial index
-    this.spatialIndex.update(operation.nodeId, {
+    const newBounds = {
       x: position.x,
       y: position.y,
       width: operation.size.width,
       height: operation.size.height
-    })
+    }
+
+    // Update spatial index FIRST, synchronously to prevent race conditions
+    // Hit detection queries can run before CRDT updates complete
+    this.spatialIndex.update(operation.nodeId, newBounds)
+
+    // Update associated slot positions synchronously (size changes may affect slot positions)
+    this.updateNodeSlotPositions(operation.nodeId, position)
+
+    // Then update CRDT
+    ynode.set('size', operation.size)
+    this.updateNodeBounds(ynode, position, operation.size)
 
     change.nodeIds.push(operation.nodeId)
   }
@@ -1015,6 +994,18 @@ class LayoutStoreImpl implements LayoutStore {
     // Clean up associated slot layouts
     this.deleteNodeSlotLayouts(operation.nodeId)
 
+    // Clean up associated links
+    const linksToDelete = this.findLinksConnectedToNode(operation.nodeId)
+
+    // Delete the associated links
+    for (const linkId of linksToDelete) {
+      this.ylinks.delete(String(linkId))
+      this.linkLayouts.delete(linkId)
+
+      // Clean up link segment layouts
+      this.cleanupLinkSegments(linkId)
+    }
+
     change.type = 'delete'
     change.nodeIds.push(operation.nodeId)
   }
@@ -1046,16 +1037,7 @@ class LayoutStoreImpl implements LayoutStore {
     this.ylinks.delete(String(operation.linkId))
     this.linkLayouts.delete(operation.linkId)
     // Clean up any segment layouts for this link
-    const keysToDelete: string[] = []
-    for (const [key] of this.linkSegmentLayouts) {
-      if (key.startsWith(`${operation.linkId}:`)) {
-        keysToDelete.push(key)
-      }
-    }
-    for (const key of keysToDelete) {
-      this.linkSegmentLayouts.delete(key)
-      this.linkSegmentSpatialIndex.remove(key)
-    }
+    this.cleanupLinkSegments(operation.linkId)
 
     change.type = 'delete'
   }
@@ -1132,6 +1114,147 @@ class LayoutStoreImpl implements LayoutStore {
     })
   }
 
+  /**
+   * Find all links connected to a specific node
+   */
+  private findLinksConnectedToNode(nodeId: NodeId): LinkId[] {
+    const connectedLinks: LinkId[] = []
+    this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
+      const linkId = Number(linkIdStr) as LinkId
+      const sourceNodeId = linkData.get('sourceNodeId') as NodeId
+      const targetNodeId = linkData.get('targetNodeId') as NodeId
+
+      if (sourceNodeId === nodeId || targetNodeId === nodeId) {
+        connectedLinks.push(linkId)
+      }
+    })
+    return connectedLinks
+  }
+
+  /**
+   * Handle link change events
+   */
+  private handleLinkChange(change: YEventChange, linkIdStr: string): void {
+    if (change.action === 'delete') {
+      const linkId = Number(linkIdStr) as LinkId
+      this.cleanupLinkData(linkId)
+    }
+    // Link was added or updated - geometry will be computed separately
+    // This just tracks that the link exists in CRDT
+  }
+
+  /**
+   * Clean up all data associated with a link
+   */
+  private cleanupLinkData(linkId: LinkId): void {
+    this.linkLayouts.delete(linkId)
+    this.cleanupLinkSegments(linkId)
+  }
+
+  /**
+   * Clean up all segment layouts for a link
+   */
+  private cleanupLinkSegments(linkId: LinkId): void {
+    const keysToDelete: string[] = []
+    for (const [key] of this.linkSegmentLayouts) {
+      if (key.startsWith(`${linkId}:`)) {
+        keysToDelete.push(key)
+      }
+    }
+
+    for (const key of keysToDelete) {
+      this.linkSegmentLayouts.delete(key)
+      this.linkSegmentSpatialIndex.remove(key)
+    }
+  }
+
+  /**
+   * Handle reroute change events
+   */
+  private handleRerouteChange(
+    change: YEventChange,
+    rerouteIdStr: string
+  ): void {
+    const rerouteId = Number(rerouteIdStr) as RerouteId
+
+    if (change.action === 'delete') {
+      this.handleRerouteDelete(rerouteId, rerouteIdStr)
+    } else if (change.action === 'update' || change.action === 'add') {
+      this.handleRerouteAddOrUpdate(rerouteId, rerouteIdStr)
+    }
+  }
+
+  /**
+   * Handle reroute deletion
+   */
+  private handleRerouteDelete(
+    rerouteId: RerouteId,
+    rerouteIdStr: string
+  ): void {
+    this.rerouteLayouts.delete(rerouteId)
+    this.rerouteSpatialIndex.remove(rerouteIdStr)
+  }
+
+  /**
+   * Handle reroute add or update
+   */
+  private handleRerouteAddOrUpdate(
+    rerouteId: RerouteId,
+    rerouteIdStr: string
+  ): void {
+    const rerouteData = this.yreroutes.get(rerouteIdStr)
+    if (!rerouteData) return
+
+    const position = rerouteData.get('position') as Point
+    if (!position) return
+
+    const layout = this.createRerouteLayout(rerouteId, position)
+    this.updateRerouteLayout(rerouteId, layout)
+  }
+
+  /**
+   * Create reroute layout from position
+   */
+  private createRerouteLayout(
+    rerouteId: RerouteId,
+    position: Point
+  ): RerouteLayout {
+    return {
+      id: rerouteId,
+      position,
+      radius: REROUTE_RADIUS,
+      bounds: {
+        x: position.x - REROUTE_RADIUS,
+        y: position.y - REROUTE_RADIUS,
+        width: REROUTE_RADIUS * 2,
+        height: REROUTE_RADIUS * 2
+      }
+    }
+  }
+
+  /**
+   * Update slot positions when a node moves
+   * TODO: This should be handled by the layout sync system (useSlotLayoutSync)
+   * rather than manually here. For now, we'll mark affected slots as needing recalculation.
+   */
+  private updateNodeSlotPositions(nodeId: NodeId, _nodePosition: Point): void {
+    // Mark all slots for this node as potentially stale
+    // The layout sync system will recalculate positions on the next frame
+    const slotsToRemove: string[] = []
+
+    for (const [key, slotLayout] of this.slotLayouts) {
+      if (slotLayout.nodeId === nodeId) {
+        slotsToRemove.push(key)
+      }
+    }
+
+    // Remove from spatial index so they'll be recalculated
+    for (const key of slotsToRemove) {
+      this.slotSpatialIndex.remove(key)
+      this.slotLayouts.delete(key)
+    }
+  }
+
   // Helper methods
   private layoutToYNode(layout: NodeLayout): Y.Map<unknown> {
     const ynode = new Y.Map<unknown>()
@@ -1186,7 +1309,7 @@ class LayoutStoreImpl implements LayoutStore {
   // CRDT-specific methods
   getOperationsSince(timestamp: number): LayoutOperation[] {
     const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op) => {
+    this.yoperations.forEach((op: LayoutOperation) => {
       if (op && op.timestamp > timestamp) {
         operations.push(op)
       }
@@ -1196,7 +1319,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   getOperationsByActor(actor: string): LayoutOperation[] {
     const operations: LayoutOperation[] = []
-    this.yoperations.forEach((op) => {
+    this.yoperations.forEach((op: LayoutOperation) => {
       if (op && op.actor === actor) {
         operations.push(op)
       }
