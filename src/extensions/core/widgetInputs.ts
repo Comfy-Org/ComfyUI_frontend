@@ -593,7 +593,7 @@ app.registerExtension({
       const node = LiteGraph.createNode('PrimitiveNode')
       if (!node) return r
 
-      app.graph.add(node)
+      this.graph?.add(node)
 
       // Calculate a position that wont directly overlap another node
       const pos: [number, number] = [
