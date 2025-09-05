@@ -182,6 +182,62 @@ export const useDialogService = () => {
     })
   }
 
+  function parseError(error: Error) {
+    const filename =
+      'fileName' in error
+        ? (error.fileName as string)
+        : error.stack?.match(/(\/extensions\/.*\.js)/)?.[1]
+
+    const extensionFile = filename
+      ? filename.substring(filename.indexOf('/extensions/'))
+      : undefined
+
+    return {
+      errorMessage: error.toString(),
+      stackTrace: error.stack,
+      extensionFile
+    }
+  }
+
+  /**
+   * Show a error dialog to the user when an error occurs.
+   * @param error The error to show
+   * @param options The options for the dialog
+   */
+  function showErrorDialog(
+    error: unknown,
+    options: {
+      title?: string
+      reportType?: string
+    } = {}
+  ) {
+    const errorProps: {
+      errorMessage: string
+      stackTrace?: string
+      extensionFile?: string
+    } =
+      error instanceof Error
+        ? parseError(error)
+        : {
+            errorMessage: String(error)
+          }
+
+    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+      error: {
+        exceptionType: options.title ?? 'Unknown Error',
+        exceptionMessage: errorProps.errorMessage,
+        traceback: errorProps.stackTrace ?? t('errorDialog.noStackTrace'),
+        reportType: options.reportType
+      }
+    }
+
+    dialogStore.showDialog({
+      key: 'global-error',
+      component: ErrorDialogContent,
+      props
+    })
+  }
+
   function showManagerProgressDialog(options?: {
     props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
   }) {
@@ -492,6 +548,7 @@ export const useDialogService = () => {
     showUpdatePasswordDialog,
     showExtensionDialog,
     prompt,
+    showErrorDialog,
     confirm,
     toggleManagerDialog,
     toggleManagerProgressDialog,
