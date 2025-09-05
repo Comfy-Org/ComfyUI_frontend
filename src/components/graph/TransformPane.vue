@@ -21,7 +21,6 @@ import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 interface TransformPaneProps {
   canvas?: LGraphCanvas
   viewport?: { width: number; height: number }
-  showDebugOverlay?: boolean
 }
 
 const props = defineProps<TransformPaneProps>()
