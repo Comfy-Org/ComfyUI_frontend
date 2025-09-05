@@ -3,7 +3,6 @@ import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useManagerState } from '@/composables/useManagerState'
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
@@ -637,15 +636,6 @@ export function useConflictDetection() {
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
-      // Check if manager is disabled before running conflict detection
-      const managerState = useManagerState()
-      if (!managerState.isManagerEnabled.value) {
-        console.log(
-          '[ConflictDetection] Manager is disabled, skipping conflict detection'
-        )
-        return
-      }
-
       // Simply perform conflict detection
       // The useInstalledPacks will handle fetching installed list if needed
       await performConflictDetection()

@@ -106,6 +106,7 @@ import { useContextMenuTranslation } from '@/composables/useContextMenuTranslati
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
+import { useManagerState } from '@/composables/useManagerState'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
@@ -420,7 +421,9 @@ onMounted(async () => {
   // Initialize conflict detection after GraphCanvas is ready
   // This ensures SystemStats and Manager state are properly loaded
   const conflictDetection = useConflictDetection()
-  void conflictDetection.initializeConflictDetection()
+  const managerState = useManagerState()
+  if (managerState.isManagerEnabled.value)
+    void conflictDetection.initializeConflictDetection()
 
   // Start watching for locale change after the initial value is loaded.
   watch(
