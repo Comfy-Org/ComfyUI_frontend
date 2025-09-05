@@ -554,6 +554,7 @@ test.describe('Canvas Interaction', () => {
 
     // Release space
     await comfyPage.page.keyboard.up('Space')
+    await comfyPage.nextFrame()
     expect(await getCursorStyle()).toBe('default')
 
     // Move mouse - cursor should remain default
