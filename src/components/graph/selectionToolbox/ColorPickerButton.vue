@@ -51,11 +51,14 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
-import { computed, ref, watch } from 'vue'
+import { Raw, computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import type { ColorOption as CanvasColorOption } from '@/lib/litegraph/src/litegraph'
+import type {
+  ColorOption as CanvasColorOption,
+  Positionable
+} from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LiteGraph,
@@ -147,15 +150,23 @@ const localizedCurrentColorName = computed(() => {
   )
   return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
 })
-
+const updateColorSelectionFromNode = (
+  newSelectedItems: Raw<Positionable[]>
+) => {
+  showColorPicker.value = false
+  selectedColorOption.value = null
+  currentColorOption.value = getItemsColorOption(newSelectedItems)
+}
 watch(
   () => canvasStore.selectedItems,
   (newSelectedItems) => {
-    showColorPicker.value = false
-    selectedColorOption.value = null
-    currentColorOption.value = getItemsColorOption(newSelectedItems)
-  }
+    updateColorSelectionFromNode(newSelectedItems)
+  },
+  { immediate: true }
 )
+onMounted(() => {
+  updateColorSelectionFromNode(canvasStore.selectedItems)
+})
 </script>
 
 <style scoped>

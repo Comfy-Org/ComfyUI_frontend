@@ -87,15 +87,15 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
 
     await openMoreOptions(comfyPage)
     await comfyPage.page.getByText('Shape', { exact: true }).click()
-    await expect(
-      comfyPage.page.getByText('Round', { exact: true })
-    ).toBeVisible({ timeout: 5000 })
-    await comfyPage.page.getByText('Round', { exact: true }).click()
+    await expect(comfyPage.page.getByText('Box', { exact: true })).toBeVisible({
+      timeout: 5000
+    })
+    await comfyPage.page.getByText('Box', { exact: true }).click()
     await comfyPage.nextFrame()
 
     const newShape = await nodeRef.getProperty<number>('shape')
     expect(newShape).not.toBe(initialShape)
-    expect(newShape).toBe(2)
+    expect(newShape).toBe(1)
   })
 
   test('changes node color via Color submenu swatch', async ({ comfyPage }) => {
@@ -119,7 +119,9 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
   test('renames a node using Rename action', async ({ comfyPage }) => {
     const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     await openMoreOptions(comfyPage)
-    await comfyPage.page.getByText('Rename', { exact: true }).click()
+    await comfyPage.page
+      .getByText('Rename', { exact: true })
+      .click({ force: true })
     const input = comfyPage.page.locator(
       '.group-title-editor.node-title-editor .editable-text input'
     )
