@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.27.0",
+  "version": "1.27.1",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -39,7 +39,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
-    "@executeautomation/playwright-mcp-server": "^1.0.6",
     "@iconify/tailwind": "^1.2.0",
     "@intlify/eslint-plugin-vue-i18n": "^3.2.0",
     "@lobehub/i18n-cli": "^1.25.1",
