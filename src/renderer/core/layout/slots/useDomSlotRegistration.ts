@@ -67,19 +67,8 @@ interface SlotRegistrationOptions {
 export function useDomSlotRegistration(options: SlotRegistrationOptions) {
   const { nodeId, slotIndex, isInput, element: elRef, transform } = options
 
-  console.debug('[useDomSlotRegistration] Called with:', {
-    nodeId,
-    slotIndex,
-    isInput,
-    hasElement: !!elRef,
-    elementValue: elRef?.value,
-    hasTransform: !!transform,
-    hasScreenToCanvas: !!transform?.screenToCanvas
-  })
-
   // Early return if no nodeId
   if (!nodeId || nodeId === '') {
-    console.debug('[useDomSlotRegistration] Early return - no nodeId')
     return {
       remeasure: () => {}
     }
@@ -96,32 +85,11 @@ export function useDomSlotRegistration(options: SlotRegistrationOptions) {
   const measureAndCacheOffset = () => {
     // Skip if component was unmounted
     if (!mountedComponents.has(componentToken)) {
-      console.debug(
-        '[useDomSlotRegistration] Skipping measure - component unmounted:',
-        { nodeId, slotKey }
-      )
       return
     }
 
     const el = elRef.value
-    console.debug('[useDomSlotRegistration] measureAndCacheOffset:', {
-      nodeId,
-      slotKey,
-      hasElement: !!el,
-      element: el,
-      hasTransform: !!transform?.screenToCanvas
-    })
-
     if (!el || !transform?.screenToCanvas) {
-      console.debug(
-        '[useDomSlotRegistration] Cannot measure - missing element or transform:',
-        {
-          nodeId,
-          slotKey,
-          hasElement: !!el,
-          hasTransform: !!transform?.screenToCanvas
-        }
-      )
       return
     }
 
@@ -203,15 +171,6 @@ export function useDomSlotRegistration(options: SlotRegistrationOptions) {
   }
 
   onMounted(async () => {
-    console.debug('[useDomSlotRegistration] onMounted:', {
-      nodeId,
-      slotKey,
-      slotIndex,
-      isInput,
-      hasElement: !!elRef.value,
-      hasTransform: !!transform?.screenToCanvas
-    })
-
     // Mark component as mounted
     mountedComponents.add(componentToken)
 

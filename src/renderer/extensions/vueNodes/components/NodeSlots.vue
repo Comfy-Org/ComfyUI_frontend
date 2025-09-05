@@ -50,15 +50,6 @@ const props = defineProps<NodeSlotsProps>()
 
 const nodeInfo = computed(() => {
   const info = props.nodeData || props.node || null
-  console.debug('[NodeSlots] nodeInfo computed:', {
-    hasNodeData: !!props.nodeData,
-    hasNode: !!props.node,
-    nodeId: info?.id,
-    nodeIdType: typeof info?.id,
-    nodeTitle: info?.title,
-    inputCount: info?.inputs?.length ?? 0,
-    outputCount: info?.outputs?.length ?? 0
-  })
   return info
 })
 
