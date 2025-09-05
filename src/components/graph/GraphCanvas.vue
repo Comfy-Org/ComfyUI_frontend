@@ -31,7 +31,7 @@
     class="w-full h-full touch-none"
   />
 
-  <!-- TransformPane for Vue node rendering (development) -->
+  <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="isVueNodesEnabled && canvasStore.canvas && comfyAppReady"
     :canvas="canvasStore.canvas as LGraphCanvas"
@@ -598,7 +598,7 @@ const loadCustomNodesI18n = async () => {
       i18n.global.mergeLocaleMessage(locale, message)
     })
   } catch (error) {
-    // Ignore i18n loading errors - not critical
+    console.error('Failed to load custom nodes i18n', error)
   }
 }
 
@@ -615,7 +615,7 @@ onMounted(async () => {
   useCopy()
   usePaste()
   useWorkflowAutoSave()
-  useVueFeatureFlags() // Automatically syncs Vue nodes flag with LiteGraph
+  useVueFeatureFlags()
 
   comfyApp.vueAppReady = true
 
@@ -719,19 +719,14 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  // Clean up node manager
   if (nodeManager) {
     nodeManager.cleanup()
     nodeManager = null
   }
-
-  // Clean up slot layout sync
   if (slotSync) {
     slotSync.stop()
     slotSync = null
   }
-
-  // Clean up link layout sync
   if (linkSync) {
     linkSync.stop()
     linkSync = null
