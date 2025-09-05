@@ -22,7 +22,7 @@
         <ColorPickerButton v-if="showColorPicker" />
         <FrameNodes v-if="showFrameNodes" />
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-        <PublishButton v-if="showBookmark" />
+        <!-- <PublishButton v-if="showBookmark" /> -->
         <MaskEditorButton v-if="showMaskEditor" />
         <VerticalDivider
           v-if="showAnyPrimaryActions && showAnyControlActions"
@@ -71,7 +71,6 @@ import { useCanvasStore } from '@/stores/graphStore'
 
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import MoreOptions from './selectionToolbox/MoreOptions.vue'
-import PublishButton from './selectionToolbox/PublishButton.vue'
 import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
 
 const commandStore = useCommandStore()
