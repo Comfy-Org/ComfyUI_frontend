@@ -70,7 +70,7 @@ export function useSlotLayoutSync() {
     if (!graph) return
 
     // Initial registration for all nodes in the current graph
-    for (const node of graph._nodes) {
+    for (const node of graph.nodes) {
       computeAndRegisterSlots(node)
     }
 
