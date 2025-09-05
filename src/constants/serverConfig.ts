@@ -1,5 +1,4 @@
 import {
-  AutoLaunch,
   CrossAttentionMethod,
   CudaMalloc,
   FloatingPointPrecision,
@@ -19,32 +18,6 @@ export interface ServerConfig<T> extends FormItem {
   // Override the default value getter with a custom function.
   getValue?: (value: T) => Record<string, ServerConfigValue>
 }
-
-export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<any>[] = [
-  // Launch behavior
-  {
-    id: 'auto-launch',
-    name: 'Automatically opens in the browser on startup',
-    category: ['Launch'],
-    type: 'combo',
-    options: Object.values(AutoLaunch),
-    defaultValue: AutoLaunch.Auto,
-    getValue: (value: AutoLaunch) => {
-      switch (value) {
-        case AutoLaunch.Auto:
-          return {}
-        case AutoLaunch.Enable:
-          return {
-            ['auto-launch']: true
-          }
-        case AutoLaunch.Disable:
-          return {
-            ['disable-auto-launch']: true
-          }
-      }
-    }
-  }
-]
 
 export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   // Network settings

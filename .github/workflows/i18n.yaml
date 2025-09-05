@@ -25,6 +25,13 @@ jobs:
         key: i18n-tools-cache-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
         restore-keys: |
           i18n-tools-cache-${{ runner.os }}-
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
+        restore-keys: |
+          playwright-browsers-${{ runner.os }}-
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
@@ -34,7 +41,7 @@ jobs:
       run: pnpm dev:electron &
       working-directory: ComfyUI_frontend
     - name: Update en.json
-      run: pnpm collect-i18n -- scripts/collect-i18n-general.ts
+      run: pnpm collect-i18n
       env:
         PLAYWRIGHT_TEST_URL: http://localhost:5173
       working-directory: ComfyUI_frontend

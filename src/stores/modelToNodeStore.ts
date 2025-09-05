@@ -83,6 +83,10 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('loras', 'LoraLoaderModelOnly', 'lora_name')
     quickRegister('vae', 'VAELoader', 'vae_name')
     quickRegister('controlnet', 'ControlNetLoader', 'control_net_name')
+    quickRegister('unet', 'UNETLoader', 'unet_name')
+    quickRegister('upscale_models', 'UpscaleModelLoader', 'model_name')
+    quickRegister('style_models', 'StyleModelLoader', 'style_model')
+    quickRegister('gligen', 'GLIGENLoader', 'gligen_name')
   }
 
   return {

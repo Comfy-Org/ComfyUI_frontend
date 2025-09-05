@@ -1,96 +1,104 @@
 <template>
-  <div class="relative inline-block">
-    <MultiSelect
-      v-model="selectedItems"
-      :options="filteredOptions"
-      option-label="name"
-      unstyled
-      :placeholder="label"
-      :max-selected-labels="0"
-      :pt="pt"
+  <!-- 
+    Note: Unlike SingleSelect, we don't need an explicit options prop because:
+    1. Our value template only shows a static label (not dynamic based on selection)
+    2. We display a count badge instead of actual selected labels
+    3. All PrimeVue props (including options) are passed via v-bind="$attrs"
+    
+    option-label="name" is required because our option template directly accesses option.name
+    max-selected-labels="0" is required to show count badge instead of selected item labels
+  -->
+  <MultiSelect
+    v-model="selectedItems"
+    v-bind="$attrs"
+    option-label="name"
+    unstyled
+    :max-selected-labels="0"
+    :pt="pt"
+  >
+    <template
+      v-if="showSearchBox || showSelectedCount || showClearButton"
+      #header
     >
-      <template
-        v-if="hasSearchBox || showSelectedCount || hasClearButton"
-        #header
-      >
-        <div class="p-2 flex flex-col gap-y-4 pb-0">
-          <SearchBox
-            v-if="hasSearchBox"
-            v-model="searchQuery"
-            :has-border="true"
-            :place-holder="searchPlaceholder"
-          />
-          <div class="flex items-center justify-between">
-            <span
-              v-if="showSelectedCount"
-              class="text-sm text-neutral-400 dark-theme:text-zinc-500 px-1"
-            >
-              {{
-                selectedCount > 0
-                  ? $t('g.itemsSelected', { selectedCount })
-                  : $t('g.itemSelected', { selectedCount })
-              }}
-            </span>
-            <TextButton
-              v-if="hasClearButton"
-              :label="$t('g.clearAll')"
-              type="transparent"
-              size="fit-content"
-              class="text-sm !text-blue-500 !dark-theme:text-blue-600"
-              @click.stop="selectedItems = []"
-            />
-          </div>
-          <div class="h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
-        </div>
-      </template>
-
-      <!-- Trigger value (keep text scale identical) -->
-      <template #value>
-        <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
-          {{ label }}
-        </span>
-      </template>
-
-      <!-- Chevron size identical to current -->
-      <template #dropdownicon>
-        <i-lucide:chevron-down class="text-lg text-neutral-400" />
-      </template>
-
-      <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
-      <template #option="slotProps">
-        <div class="flex items-center gap-2">
-          <div
-            class="flex h-4 w-4 p-0.5 flex-shrink-0 items-center justify-center rounded border-[3px] transition-all duration-200"
-            :class="
-              slotProps.selected
-                ? 'border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
-                : 'border-neutral-300 dark-theme:border-zinc-600 bg-neutral-100 dark-theme:bg-zinc-700'
-            "
+      <div class="p-2 flex flex-col pb-0">
+        <SearchBox
+          v-if="showSearchBox"
+          v-model="searchQuery"
+          :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
+          :show-order="true"
+          :place-holder="searchPlaceholder"
+        />
+        <div
+          v-if="showSelectedCount || showClearButton"
+          class="mt-2 flex items-center justify-between"
+        >
+          <span
+            v-if="showSelectedCount"
+            class="text-sm text-neutral-400 dark-theme:text-zinc-500 px-1"
           >
-            <i-lucide:check
-              v-if="slotProps.selected"
-              class="text-xs text-bold text-white"
-            />
-          </div>
-          <span class="truncate" :title="slotProps.option.name">{{
-            slotProps.option.name
-          }}</span>
+            {{
+              selectedCount > 0
+                ? $t('g.itemsSelected', { selectedCount })
+                : $t('g.itemSelected', { selectedCount })
+            }}
+          </span>
+          <TextButton
+            v-if="showClearButton"
+            :label="$t('g.clearAll')"
+            type="transparent"
+            size="fit-content"
+            class="text-sm text-blue-500! dark-theme:text-blue-600!"
+            @click.stop="selectedItems = []"
+          />
         </div>
-      </template>
-    </MultiSelect>
+        <div class="mt-4 h-px bg-zinc-200 dark-theme:bg-zinc-700"></div>
+      </div>
+    </template>
 
-    <!-- Selected count badge -->
-    <div
-      v-if="selectedCount > 0"
-      class="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 dark-theme:bg-blue-500 text-xs font-semibold text-white"
-    >
-      {{ selectedCount }}
-    </div>
-  </div>
+    <!-- Trigger value (keep text scale identical) -->
+    <template #value>
+      <span class="text-sm text-zinc-700 dark-theme:text-gray-200">
+        {{ label }}
+      </span>
+      <span
+        v-if="selectedCount > 0"
+        class="pointer-events-none absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 dark-theme:bg-blue-500 text-xs font-semibold text-white"
+      >
+        {{ selectedCount }}
+      </span>
+    </template>
+
+    <!-- Chevron size identical to current -->
+    <template #dropdownicon>
+      <i-lucide:chevron-down class="text-lg text-neutral-400" />
+    </template>
+
+    <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
+    <template #option="slotProps">
+      <div class="flex items-center gap-2">
+        <div
+          class="flex h-4 w-4 p-0.5 shrink-0 items-center justify-center rounded transition-all duration-200"
+          :class="
+            slotProps.selected
+              ? 'border-[3px] border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
+              : 'border-[1px] border-neutral-300 dark-theme:border-zinc-600 bg-neutral-100 dark-theme:bg-zinc-700'
+          "
+        >
+          <i-lucide:check
+            v-if="slotProps.selected"
+            class="text-xs text-bold text-white"
+          />
+        </div>
+        <Button class="border-none outline-none bg-transparent" unstyled>{{
+          slotProps.option.name
+        }}</Button>
+      </div>
+    </template>
+  </MultiSelect>
 </template>
 
 <script setup lang="ts">
-import Fuse from 'fuse.js'
+import Button from 'primevue/button'
 import MultiSelect, {
   MultiSelectPassThroughMethodOptions
 } from 'primevue/multiselect'
@@ -102,26 +110,29 @@ import TextButton from '../button/TextButton.vue'
 
 type Option = { name: string; value: string }
 
+defineOptions({
+  inheritAttrs: false
+})
+
 interface Props {
   /** Input label shown on the trigger button */
   label?: string
-  /** Static options for the multiselect (when not using async search) */
-  options: Option[]
   /** Show search box in the panel header */
-  hasSearchBox?: boolean
+  showSearchBox?: boolean
   /** Show selected count text in the panel header */
   showSelectedCount?: boolean
   /** Show "Clear all" action in the panel header */
-  hasClearButton?: boolean
+  showClearButton?: boolean
   /** Placeholder for the search input */
   searchPlaceholder?: string
+  // Note: options prop is intentionally omitted.
+  // It's passed via $attrs to maximize PrimeVue API compatibility
 }
 const {
   label,
-  options,
-  hasSearchBox = false,
+  showSearchBox = false,
   showSelectedCount = false,
-  hasClearButton = false,
+  showClearButton = false,
   searchPlaceholder = 'Search...'
 } = defineProps<Props>()
 
@@ -131,40 +142,10 @@ const selectedItems = defineModel<Option[]>({
 const searchQuery = defineModel<string>('searchQuery')
 const selectedCount = computed(() => selectedItems.value.length)
 
-// Fuse.js configuration for fuzzy search
-const fuseOptions = {
-  keys: ['name', 'value'],
-  threshold: 0.3,
-  includeScore: true
-}
-
-// Create Fuse instance
-const fuse = computed(() => new Fuse(options, fuseOptions))
-
-// Filtered options based on search
-const filteredOptions = computed(() => {
-  if (!hasSearchBox || !searchQuery.value?.trim()) {
-    return options
-  }
-
-  const searchResults = fuse.value.search(searchQuery.value)
-  const matchingOptions = searchResults.map((result) => result.item)
-
-  // Always include selected items, even if they don't match the search
-  const selectedValues = selectedItems.value.map((item) => item.value)
-  const selectedOptionsNotInResults = options.filter(
-    (option) =>
-      selectedValues.includes(option.value) &&
-      !matchingOptions.some((matching) => matching.value === option.value)
-  )
-
-  return [...selectedOptionsNotInResults, ...matchingOptions]
-})
-
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: [
-      'relative inline-flex cursor-pointer select-none w-full',
+      'relative inline-flex cursor-pointer select-none',
       'rounded-lg bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
       'transition-all duration-200 ease-in-out',
       'border-[2.5px] border-solid',
@@ -186,18 +167,25 @@ const pt = computed(() => ({
   },
   header: () => ({
     class:
-      hasSearchBox || showSelectedCount || hasClearButton ? 'block' : 'hidden'
+      showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
   }),
   // Overlay & list visuals unchanged
   overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 shadow-lg max-h-64 overflow-hidden',
+    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700',
   list: {
-    class:
-      'flex flex-col gap-1 p-0 list-none border-none text-xs max-h-52 overflow-y-auto'
+    class: 'flex flex-col gap-1 p-0 list-none border-none text-xs'
   },
-  // Option row hover tone identical
-  option:
-    'flex gap-1 items-center p-2 hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
+  // Option row hover and focus tone
+  option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
+    class: [
+      'flex gap-1 items-center p-2',
+      'hover:bg-neutral-100/50 hover:dark-theme:bg-zinc-700/50',
+      // Add focus/highlight state for keyboard navigation
+      {
+        'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context?.focused
+      }
+    ]
+  }),
   // Hide built-in checkboxes entirely via PT (no :deep)
   pcHeaderCheckbox: {
     root: { class: 'hidden' },

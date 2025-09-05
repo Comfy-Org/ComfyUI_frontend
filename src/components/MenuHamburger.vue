@@ -56,7 +56,9 @@ const positionCSS = computed<CSSProperties>(() =>
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 .comfy-menu-hamburger {
-  @apply fixed z-[9999] flex flex-row;
+  @apply fixed z-9999 flex flex-row;
 }
 </style>

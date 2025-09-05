@@ -27,6 +27,15 @@
       "title": "API 金鑰",
       "whitelistInfo": "關於未列入白名單的網站"
     },
+    "deleteAccount": {
+      "cancel": "取消",
+      "confirm": "刪除帳號",
+      "confirmMessage": "您確定要刪除您的帳號嗎？此操作無法復原，且將永久移除您所有的資料。",
+      "confirmTitle": "刪除帳號",
+      "deleteAccount": "刪除帳號",
+      "success": "帳號已刪除",
+      "successDetail": "您的帳號已成功刪除。"
+    },
     "login": {
       "andText": "以及",
       "confirmPasswordLabel": "確認密碼",
@@ -278,6 +287,7 @@
     "color": "顏色",
     "comingSoon": "即將推出",
     "command": "指令",
+    "commandProhibited": "指令 {command} 已被禁止。如需更多資訊，請聯絡管理員。",
     "community": "社群",
     "completed": "已完成",
     "confirm": "確認",
@@ -300,6 +310,7 @@
     "disabling": "停用中",
     "dismiss": "關閉",
     "download": "下載",
+    "dropYourFileOr": "拖放您的檔案或",
     "duplicate": "複製",
     "edit": "編輯",
     "empty": "空",
@@ -313,6 +324,7 @@
     "feedback": "意見回饋",
     "filter": "篩選",
     "findIssues": "尋找問題",
+    "firstTimeUIMessage": "這是您第一次使用新介面。若要返回舊介面，請前往「選單」>「使用新介面」>「關閉」。",
     "frontendNewer": "前端版本 {frontendVersion} 可能與後端版本 {backendVersion} 不相容。",
     "frontendOutdated": "前端版本 {frontendVersion} 已過時。後端需要 {requiredVersion} 或更高版本。",
     "goToNode": "前往節點",
@@ -410,17 +422,12 @@
   },
   "graphCanvasMenu": {
     "fitView": "適合視窗",
-    "focusMode": "專注模式",
-    "hand": "拖曳",
-    "hideLinks": "隱藏連結",
     "panMode": "平移模式",
     "resetView": "重設視圖",
-    "select": "選取",
     "selectMode": "選取模式",
-    "showLinks": "顯示連結",
+    "toggleLinkVisibility": "切換連結顯示",
     "toggleMinimap": "切換小地圖",
     "zoomIn": "放大",
-    "zoomOptions": "縮放選項",
     "zoomOut": "縮小"
   },
   "groupNode": {
@@ -542,46 +549,12 @@
     "updateConsent": "您先前已選擇回報當機。現在我們會追蹤事件型統計資料，以協助找出錯誤並改進應用程式。不會收集任何可識別個人身分的資訊。"
   },
   "issueReport": {
-    "contactFollowUp": "需要聯絡我以便後續追蹤",
-    "contactSupportDescription": "請填寫下列表單並提交您的報告",
-    "contactSupportTitle": "聯絡客服支援",
-    "describeTheProblem": "請描述問題",
-    "email": "電子郵件",
-    "feedbackTitle": "協助我們改進 ComfyUI，請提供您的回饋",
-    "helpFix": "協助修復此問題",
-    "helpTypes": {
-      "billingPayments": "帳單／付款問題",
-      "bugReport": "錯誤回報",
-      "giveFeedback": "提供回饋",
-      "loginAccessIssues": "登入／存取問題",
-      "somethingElse": "其他"
-    },
-    "notifyResolve": "問題解決時通知我",
-    "provideAdditionalDetails": "提供更多細節",
-    "provideEmail": "請提供您的電子郵件（選填）",
-    "rating": "評分",
-    "selectIssue": "請選擇問題",
-    "stackTrace": "堆疊追蹤",
-    "submitErrorReport": "提交錯誤報告（選填）",
-    "systemStats": "系統狀態",
-    "validation": {
-      "descriptionRequired": "請填寫問題描述",
-      "helpTypeRequired": "請選擇協助類型",
-      "invalidEmail": "請輸入有效的電子郵件地址",
-      "maxLength": "訊息過長",
-      "selectIssueType": "請選擇問題類型"
-    },
-    "whatCanWeInclude": "請說明報告中要包含哪些內容",
-    "whatDoYouNeedHelpWith": "您需要什麼協助？"
+    "helpFix": "協助修復此問題"
   },
   "load3d": {
     "applyingTexture": "正在套用材質貼圖...",
     "backgroundColor": "背景顏色",
     "camera": "相機",
-    "cameraType": {
-      "orthographic": "正交",
-      "perspective": "透視"
-    },
     "clearRecording": "清除錄影",
     "edgeThreshold": "邊緣閾值",
     "export": "匯出",
@@ -602,7 +575,6 @@
       "wireframe": "線框"
     },
     "model": "模型",
-    "openIn3DViewer": "在 3D 檢視器中開啟",
     "previewOutput": "預覽輸出",
     "removeBackgroundImage": "移除背景圖片",
     "resizeNodeMatchOutput": "調整節點以符合輸出",
@@ -613,22 +585,8 @@
     "switchCamera": "切換相機",
     "switchingMaterialMode": "正在切換材質模式...",
     "upDirection": "上方方向",
-    "upDirections": {
-      "original": "原始"
-    },
     "uploadBackgroundImage": "上傳背景圖片",
-    "uploadTexture": "上傳材質貼圖",
-    "viewer": {
-      "apply": "套用",
-      "cameraSettings": "相機設定",
-      "cameraType": "相機類型",
-      "cancel": "取消",
-      "exportSettings": "匯出設定",
-      "lightSettings": "燈光設定",
-      "modelSettings": "模型設定",
-      "sceneSettings": "場景設定",
-      "title": "3D 檢視器（測試版）"
-    }
+    "uploadTexture": "上傳材質貼圖"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "需要 ComfyUI {version}：",
@@ -675,6 +633,9 @@
     "installationQueue": "安裝佇列",
     "lastUpdated": "最後更新",
     "latestVersion": "最新版本",
+    "legacyManagerUI": "使用舊版介面",
+    "legacyManagerUIDescription": "若要使用舊版管理介面，請以 --enable-manager-legacy-ui 啟動 ComfyUI",
+    "legacyMenuNotAvailable": "舊版管理選單不可用，已預設切換至新版管理選單。",
     "license": "授權條款",
     "loadingVersions": "正在載入版本...",
     "nightlyVersion": "每夜建置版",
@@ -757,7 +718,6 @@
     "manageExtensions": "管理擴充功能",
     "onChange": "變更時",
     "onChangeTooltip": "每當有變更時，工作流程會排入佇列",
-    "queue": "佇列面板",
     "refresh": "重新整理節點定義",
     "resetView": "重設畫布視圖",
     "run": "執行",
@@ -773,8 +733,10 @@
     "Bottom Panel": "底部面板",
     "Browse Templates": "瀏覽範本",
     "Bypass/Unbypass Selected Nodes": "繞過/取消繞過選取節點",
-    "Canvas Performance": "畫布效能",
+    "Canvas Toggle Link Visibility": "切換連結可見性",
     "Canvas Toggle Lock": "切換畫布鎖定",
+    "Canvas Toggle Minimap": "畫布切換小地圖",
+    "Check for Custom Node Updates": "檢查自訂節點更新",
     "Check for Updates": "檢查更新",
     "Clear Pending Tasks": "清除待處理任務",
     "Clear Workflow": "清除工作流程",
@@ -788,29 +750,27 @@
     "Contact Support": "聯絡支援",
     "Convert Selection to Subgraph": "將選取內容轉為子圖",
     "Convert selected nodes to group node": "將選取節點轉為群組節點",
+    "Custom Nodes (Legacy)": "自訂節點（舊版）",
+    "Custom Nodes Manager": "自訂節點管理員",
     "Decrease Brush Size in MaskEditor": "在 MaskEditor 中減小筆刷大小",
     "Delete Selected Items": "刪除選取項目",
     "Desktop User Guide": "桌面應用程式使用指南",
     "Duplicate Current Workflow": "複製目前工作流程",
     "Edit": "編輯",
-    "Exit Subgraph": "離開子圖",
     "Export": "匯出",
     "Export (API)": "匯出（API）",
-    "File": "檔案",
     "Fit Group To Contents": "群組貼合內容",
-    "Focus Mode": "專注模式",
+    "Fit view to selected nodes": "視圖貼合選取節點",
     "Give Feedback": "提供意見回饋",
     "Group Selected Nodes": "群組選取節點",
     "Help": "說明",
-    "Help Center": "說明中心",
     "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大筆刷大小",
+    "Install Missing Custom Nodes": "安裝缺少的自訂節點",
     "Interrupt": "中斷",
     "Load Default Workflow": "載入預設工作流程",
-    "Lock Canvas": "鎖定畫布",
     "Manage group nodes": "管理群組節點",
     "Manager": "管理員",
-    "Minimap": "縮圖地圖",
-    "Model Library": "模型庫",
+    "Manager Menu (Legacy)": "管理員選單（舊版）",
     "Move Selected Nodes Down": "選取節點下移",
     "Move Selected Nodes Left": "選取節點左移",
     "Move Selected Nodes Right": "選取節點右移",
@@ -818,10 +778,7 @@
     "Mute/Unmute Selected Nodes": "靜音/取消靜音選取節點",
     "New": "新增",
     "Next Opened Workflow": "下一個已開啟的工作流程",
-    "Node Library": "節點庫",
-    "Node Links": "節點連結",
     "Open": "開啟",
-    "Open 3D Viewer (Beta) for Selected Node": "為選取的節點開啟 3D 檢視器（Beta 版）",
     "Open Custom Nodes Folder": "開啟自訂節點資料夾",
     "Open DevTools": "開啟開發者工具",
     "Open Inputs Folder": "開啟輸入資料夾",
@@ -834,7 +791,6 @@
     "Pin/Unpin Selected Items": "釘選/取消釘選選取項目",
     "Pin/Unpin Selected Nodes": "釘選/取消釘選選取節點",
     "Previous Opened Workflow": "上一個已開啟的工作流程",
-    "Queue Panel": "佇列面板",
     "Queue Prompt": "加入提示至佇列",
     "Queue Prompt (Front)": "將提示加入佇列前端",
     "Queue Selected Output Nodes": "將選取的輸出節點加入佇列",
@@ -857,23 +813,21 @@
     "Toggle Terminal Bottom Panel": "切換終端機底部面板",
     "Toggle Theme (Dark/Light)": "切換主題（深色/淺色）",
     "Toggle View Controls Bottom Panel": "切換檢視控制底部面板",
+    "Toggle Bottom Panel": "切換下方面板",
+    "Toggle Focus Mode": "切換專注模式",
+    "Toggle Model Library Sidebar": "切換模型庫側邊欄",
+    "Toggle Node Library Sidebar": "切換節點庫側邊欄",
+    "Toggle Queue Sidebar": "切換佇列側邊欄",
+    "Toggle Workflows Sidebar": "切換工作流程側邊欄",
     "Toggle the Custom Nodes Manager": "切換自訂節點管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切換自訂節點管理器進度條",
     "Undo": "復原",
     "Ungroup selected group nodes": "取消群組選取的群組節點",
-    "Unlock Canvas": "解除鎖定畫布",
-    "Unpack the selected Subgraph": "解包所選子圖",
-    "Workflows": "工作流程",
+    "Unload Models": "卸載模型",
+    "Unload Models and Execution Cache": "卸載模型與執行快取",
+    "Workflow": "工作流程",
     "Zoom In": "放大",
-    "Zoom Out": "縮小",
-    "Zoom to fit": "縮放至適合大小"
-  },
-  "minimap": {
-    "nodeColors": "節點顏色",
-    "renderBypassState": "顯示繞過狀態",
-    "renderErrorState": "顯示錯誤狀態",
-    "showGroups": "顯示框架／群組",
-    "showLinks": "顯示連結"
+    "Zoom Out": "縮小"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "不要再顯示此訊息",
@@ -1141,7 +1095,6 @@
   },
   "settingsCategories": {
     "3D": "3D",
-    "3DViewer": "3D 檢視器",
     "API Nodes": "API 節點",
     "About": "關於",
     "Appearance": "外觀",
@@ -1190,34 +1143,14 @@
     "UV": "UV",
     "User": "使用者",
     "Validation": "驗證",
+    "Vue Nodes": "Vue 節點",
     "Window": "視窗",
     "Workflow": "工作流程"
-  },
-  "shortcuts": {
-    "essentials": "基本",
-    "keyboardShortcuts": "鍵盤快捷鍵",
-    "manageShortcuts": "管理快捷鍵",
-    "noKeybinding": "無快捷鍵",
-    "subcategories": {
-      "node": "節點",
-      "panelControls": "面板控制",
-      "queue": "佇列",
-      "view": "檢視",
-      "workflow": "工作流程"
-    },
-    "viewControls": "檢視控制"
   },
   "sideToolbar": {
     "browseTemplates": "瀏覽範例模板",
     "downloads": "下載",
     "helpCenter": "說明中心",
-    "labels": {
-      "models": "模型",
-      "nodes": "節點",
-      "queue": "佇列",
-      "templates": "範本",
-      "workflows": "工作流程"
-    },
     "logout": "登出",
     "modelLibrary": "模型庫",
     "newBlankWorkflow": "建立新的空白工作流程",
@@ -1255,7 +1188,6 @@
       },
       "showFlatList": "顯示平面清單"
     },
-    "templates": "範本",
     "workflowTab": {
       "confirmDelete": "您確定要刪除這個工作流程嗎？",
       "confirmDeleteTitle": "刪除工作流程？",
@@ -1302,8 +1234,6 @@
       "Video": "影片",
       "Video API": "影片 API"
     },
-    "loadingMore": "正在載入更多範本...",
-    "searchPlaceholder": "搜尋範本...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",
@@ -1626,7 +1556,6 @@
     "failedToExportModel": "無法將模型匯出為 {format}",
     "failedToFetchBalance": "取得餘額失敗：{error}",
     "failedToFetchLogs": "無法取得伺服器日誌",
-    "failedToInitializeLoad3dViewer": "初始化 3D 檢視器失敗",
     "failedToInitiateCreditPurchase": "啟動點數購買失敗：{error}",
     "failedToPurchaseCredits": "購買點數失敗：{error}",
     "fileLoadError": "無法在 {fileName} 中找到工作流程",
@@ -1701,11 +1630,5 @@
     "enterFilename": "輸入檔案名稱",
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程"
-  },
-  "zoomControls": {
-    "hideMinimap": "隱藏小地圖",
-    "label": "縮放控制",
-    "showMinimap": "顯示小地圖",
-    "zoomToFit": "縮放至適合大小"
   }
 }

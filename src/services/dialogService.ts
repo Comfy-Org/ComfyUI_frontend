@@ -5,7 +5,6 @@ import WorkflowTemplateSelector from '@/components/custom/widget/WorkflowTemplat
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import ManagerProgressDialogContent from '@/components/dialog/content/ManagerProgressDialogContent.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
@@ -16,6 +15,9 @@ import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsD
 import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
 import ManagerDialogContent from '@/components/dialog/content/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/components/dialog/content/manager/ManagerHeader.vue'
+import NodeConflictDialogContent from '@/components/dialog/content/manager/NodeConflictDialogContent.vue'
+import NodeConflictFooter from '@/components/dialog/content/manager/NodeConflictFooter.vue'
+import NodeConflictHeader from '@/components/dialog/content/manager/NodeConflictHeader.vue'
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
@@ -29,6 +31,7 @@ import {
   type ShowDialogOptions,
   useDialogStore
 } from '@/stores/dialogStore'
+import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -152,16 +155,6 @@ export const useDialogService = () => {
     })
   }
 
-  function showIssueReportDialog(
-    props: InstanceType<typeof IssueReportDialogContent>['$props']
-  ) {
-    dialogStore.showDialog({
-      key: 'global-issue-report',
-      component: IssueReportDialogContent,
-      props
-    })
-  }
-
   function showManagerDialog(
     props: InstanceType<typeof ManagerDialogContent>['$props'] = {}
   ) {
@@ -178,9 +171,9 @@ export const useDialogService = () => {
                 'bg-gray-500 dark-theme:bg-neutral-700 w-9 h-9 p-1.5 rounded-full text-white'
             }
           },
-          header: { class: '!py-0 px-6 !m-0 h-[68px]' },
+          header: { class: 'py-0! px-6 m-0! h-[68px]' },
           content: {
-            class: '!p-0 h-full w-[90vw] max-w-full flex-1 overflow-hidden'
+            class: 'p-0! h-full w-[90vw] max-w-full flex-1 overflow-hidden'
           },
           root: { class: 'manager-dialog' }
         }
@@ -205,67 +198,11 @@ export const useDialogService = () => {
         position: 'bottom',
         pt: {
           root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: '!p-0' },
-          header: { class: '!p-0 border-none' },
-          footer: { class: '!p-0 border-none' }
+          content: { class: 'p-0!' },
+          header: { class: 'p-0! border-none' },
+          footer: { class: 'p-0! border-none' }
         }
       }
-    })
-  }
-
-  function parseError(error: Error) {
-    const filename =
-      'fileName' in error
-        ? (error.fileName as string)
-        : error.stack?.match(/(\/extensions\/.*\.js)/)?.[1]
-
-    const extensionFile = filename
-      ? filename.substring(filename.indexOf('/extensions/'))
-      : undefined
-
-    return {
-      errorMessage: error.toString(),
-      stackTrace: error.stack,
-      extensionFile
-    }
-  }
-
-  /**
-   * Show a error dialog to the user when an error occurs.
-   * @param error The error to show
-   * @param options The options for the dialog
-   */
-  function showErrorDialog(
-    error: unknown,
-    options: {
-      title?: string
-      reportType?: string
-    } = {}
-  ) {
-    const errorProps: {
-      errorMessage: string
-      stackTrace?: string
-      extensionFile?: string
-    } =
-      error instanceof Error
-        ? parseError(error)
-        : {
-            errorMessage: String(error)
-          }
-
-    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
-      error: {
-        exceptionType: options.title ?? 'Unknown Error',
-        exceptionMessage: errorProps.errorMessage,
-        traceback: errorProps.stackTrace ?? t('errorDialog.noStackTrace'),
-        reportType: options.reportType
-      }
-    }
-
-    dialogStore.showDialog({
-      key: 'global-error',
-      component: ErrorDialogContent,
-      props
     })
   }
 
@@ -400,7 +337,7 @@ export const useDialogService = () => {
       props: options,
       dialogComponentProps: {
         pt: {
-          header: { class: '!p-3' }
+          header: { class: 'p-3!' }
         }
       }
     })
@@ -474,10 +411,10 @@ export const useDialogService = () => {
           class: 'rounded-2xl overflow-hidden'
         },
         header: {
-          class: '!p-0 hidden'
+          class: 'p-0! hidden'
         },
         content: {
-          class: '!p-0 !m-0'
+          class: 'p-0! m-0!'
         }
       }
     }
@@ -491,6 +428,54 @@ export const useDialogService = () => {
     })
   }
 
+  function showNodeConflictDialog(
+    options: {
+      showAfterWhatsNew?: boolean
+      conflictedPackages?: ConflictDetectionResult[]
+      dialogComponentProps?: DialogComponentProps
+      buttonText?: string
+      onButtonClick?: () => void
+    } = {}
+  ) {
+    const {
+      dialogComponentProps,
+      buttonText,
+      onButtonClick,
+      showAfterWhatsNew,
+      conflictedPackages
+    } = options
+
+    return dialogStore.showDialog({
+      key: 'global-node-conflict',
+      headerComponent: NodeConflictHeader,
+      footerComponent: NodeConflictFooter,
+      component: NodeConflictDialogContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class:
+                '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5 bg-gray-500 dark-theme:bg-neutral-700 text-white'
+            }
+          }
+        },
+        ...dialogComponentProps
+      },
+      props: {
+        showAfterWhatsNew,
+        conflictedPackages
+      },
+      footerProps: {
+        buttonText,
+        onButtonClick
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -499,10 +484,8 @@ export const useDialogService = () => {
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
     showWorkflowTemplateSelectorDialog,
-    showIssueReportDialog,
     showManagerDialog,
     showManagerProgressDialog,
-    showErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showTopUpCreditsDialog,
@@ -512,6 +495,7 @@ export const useDialogService = () => {
     confirm,
     toggleManagerDialog,
     toggleManagerProgressDialog,
-    showLayoutDialog
+    showLayoutDialog,
+    showNodeConflictDialog
   }
 }

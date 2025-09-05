@@ -4,7 +4,7 @@
     :class="
       active
         ? 'bg-neutral-100 dark-theme:bg-zinc-700 text-neutral'
-        : 'text-neutral hover:bg-zinc-100 hover:dark-theme:bg-zinc-700/50'
+        : 'text-neutral hover:bg-zinc-100 dark-theme:hover:bg-zinc-700/50'
     "
     role="button"
     @click="onClick"

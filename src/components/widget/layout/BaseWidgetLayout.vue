@@ -41,7 +41,7 @@
             v-if="$slots.header"
             class="w-full h-16 px-6 py-4 flex justify-between gap-2"
           >
-            <div class="flex-1 flex gap-2 flex-shrink-0">
+            <div class="flex-1 flex gap-2 shrink-0">
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">
                 <i-lucide:panel-left v-if="!showLeftPanel" class="text-sm" />
                 <i-lucide:panel-left-close v-else class="text-sm" />
