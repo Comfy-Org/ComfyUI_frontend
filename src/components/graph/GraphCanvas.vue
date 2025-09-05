@@ -33,7 +33,7 @@
 
   <!-- TransformPane for Vue node rendering (development) -->
   <TransformPane
-    v-if="transformPaneEnabled && canvasStore.canvas && comfyAppReady"
+    v-if="isVueNodesEnabled && canvasStore.canvas && comfyAppReady"
     :canvas="canvasStore.canvas as LGraphCanvas"
     @transform-update="handleTransformUpdate"
   >
@@ -175,7 +175,7 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags (Vue-related)
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-const transformPaneEnabled = computed(() => shouldRenderVueNodes.value)
+const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
 
 // Vue node lifecycle management - initialize after graph is ready
 let nodeManager: ReturnType<typeof useGraphNodeManager> | null = null
@@ -287,7 +287,7 @@ const disposeNodeManagerAndSyncs = () => {
 
 // Watch for transformPaneEnabled to gate the node manager lifecycle
 watch(
-  () => transformPaneEnabled.value && Boolean(comfyApp.graph),
+  () => isVueNodesEnabled.value && Boolean(comfyApp.graph),
   (enabled) => {
     if (enabled) {
       initializeNodeManager()
@@ -305,7 +305,7 @@ const nodesToRender = computed(() => {
   // Access trigger to force re-evaluation after nodeManager initialization
   void nodeDataTrigger.value
 
-  if (!comfyApp.graph || !transformPaneEnabled.value) {
+  if (!comfyApp.graph || !isVueNodesEnabled.value) {
     return []
   }
 
@@ -647,7 +647,7 @@ onMounted(async () => {
   // This handles the case where Vue nodes are enabled but the graph starts empty
   // TODO: Replace this with a reactive graph mutations observer when available
   if (
-    transformPaneEnabled.value &&
+    isVueNodesEnabled.value &&
     comfyApp.graph &&
     !nodeManager &&
     comfyApp.graph._nodes.length === 0
@@ -658,7 +658,7 @@ onMounted(async () => {
       comfyApp.graph.onNodeAdded = originalOnNodeAdded
 
       // Initialize node manager if needed
-      if (transformPaneEnabled.value && !nodeManager) {
+      if (isVueNodesEnabled.value && !nodeManager) {
         initializeNodeManager()
       }
 
