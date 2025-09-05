@@ -20,6 +20,11 @@ export function useLayoutSync() {
    * This is one-way: Layout → LiteGraph only
    */
   function startSync(canvas: any) {
+    // Ensure previous subscription is cleared before starting a new one
+    if (unsubscribe) {
+      unsubscribe()
+      unsubscribe = null
+    }
     if (!canvas?.graph) return
 
     // Subscribe to layout changes

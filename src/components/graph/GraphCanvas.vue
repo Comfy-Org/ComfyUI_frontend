@@ -181,10 +181,12 @@ const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
 let nodeManager: ReturnType<typeof useGraphNodeManager> | null = null
 let cleanupNodeManager: (() => void) | null = null
 
-// Slot layout sync management
-let slotSync: ReturnType<typeof useSlotLayoutSync> | null = null
+// Slot/link layout sync management
+const slotSync = useSlotLayoutSync()
 let slotSyncStarted = false
-let linkSync: ReturnType<typeof useLinkLayoutSync> | null = null
+const linkSync = useLinkLayoutSync()
+let linkSyncStarted = false
+const layoutSync = useLayoutSync()
 const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
 const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
 const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
@@ -238,13 +240,12 @@ const initializeNodeManager = () => {
   }
 
   // Initialize layout sync (one-way: Layout Store → LiteGraph)
-  const { startSync } = useLayoutSync()
-  startSync(canvasStore.canvas)
+  layoutSync.startSync(canvasStore.canvas)
 
   // Initialize link layout sync for event-driven updates
-  linkSync = useLinkLayoutSync()
   if (canvasStore.canvas) {
     linkSync.start(canvasStore.canvas as LGraphCanvas)
+    linkSyncStarted = true
   }
 
   // Force computed properties to re-evaluate
@@ -262,10 +263,13 @@ const disposeNodeManagerAndSyncs = () => {
   cleanupNodeManager = null
 
   // Clean up link layout sync
-  if (linkSync) {
+  if (linkSyncStarted) {
     linkSync.stop()
-    linkSync = null
+    linkSyncStarted = false
   }
+
+  // Stop layout sync when leaving Vue nodes mode
+  layoutSync.stopSync()
 
   // Reset reactive maps to inert defaults
   vueNodeData.value = new Map()
@@ -309,7 +313,6 @@ watch(
     }
 
     // Start sync if not in Vue mode and not already started
-    if (!slotSync) slotSync = useSlotLayoutSync()
     if (!slotSyncStarted && !isVueNodesEnabled.value) {
       const started = slotSync.attemptStart(canvas as LGraphCanvas)
       slotSyncStarted = started
@@ -339,7 +342,6 @@ watch(
     if (!canvasStore.canvas || !comfyApp.graph) return
 
     // Ensure slot sync is active
-    if (!slotSync) slotSync = useSlotLayoutSync()
     if (!slotSyncStarted) {
       const started = slotSync.attemptStart(canvasStore.canvas as LGraphCanvas)
       slotSyncStarted = started
@@ -773,14 +775,15 @@ onUnmounted(() => {
     nodeManager.cleanup()
     nodeManager = null
   }
-  if (slotSync) {
+  if (slotSyncStarted) {
     slotSync.stop()
-    slotSync = null
     slotSyncStarted = false
   }
-  if (linkSync) {
+  if (linkSyncStarted) {
     linkSync.stop()
-    linkSync = null
+    linkSyncStarted = false
   }
+  // Ensure layout sync stops
+  layoutSync.stopSync()
 })
 </script>

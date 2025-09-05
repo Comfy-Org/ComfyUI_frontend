@@ -258,6 +258,8 @@ export function useLinkLayoutSync() {
    * Start link layout sync with event-driven functionality
    */
   function start(canvasInstance: LGraphCanvas): void {
+    // Avoid duplicate subscriptions/handlers if start is called again
+    stop()
     canvas = canvasInstance
     graph = canvas.graph
     if (!graph) return
