@@ -143,6 +143,36 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
+/** Asset API Types - Based on ComfyUI /api/assets endpoints */
+interface Asset {
+  id: string
+  name: string
+  asset_hash: string
+  size: number
+  mime_type: string | null
+  tags: string[]
+  preview_url: string | null
+  created_at: string
+  updated_at: string
+  last_access_time: string | null
+}
+
+interface AssetResponse {
+  assets: Asset[]
+  total: number
+  has_more: boolean
+}
+
+interface AssetApiError {
+  code: string
+  message: string
+  details?: Record<string, unknown>
+}
+
+interface AssetApiErrorResponse {
+  error: AssetApiError
+}
+
 export class UnauthorizedError extends Error {}
 
 /** Ensures workers get a fair shake. */
@@ -727,6 +757,175 @@ export class ComfyApi extends EventTarget {
       )
       return null
     }
+  }
+
+  private formatErrorMessage(
+    error: AssetApiError,
+    res: Response,
+    context: string
+  ): string {
+    const errorCode = error?.code
+    const errorMessage = error?.message
+
+    // Handle specific error codes with user-friendly messages
+    switch (errorCode) {
+      case 'INVALID_QUERY':
+        return `Unable to ${context}: The search criteria are invalid. Please try with different filters.`
+      case 'ASSET_NOT_FOUND':
+        return `Unable to ${context}: The requested asset could not be found or you may not have access to it.`
+      case 'INVALID_JSON':
+        return `Unable to ${context}: The request format is invalid. Please try again.`
+      case 'BAD_REQUEST':
+        return `Unable to ${context}: ${errorMessage || 'There was an issue with the request'}. Please check your input and try again.`
+      case 'BACKEND_UNSUPPORTED':
+        return `Unable to ${context}: This operation is not supported by the server. Please check if you have the latest version.`
+      case 'EMPTY_UPLOAD':
+        return `Unable to ${context}: No file was provided for upload. Please select a file and try again.`
+      case 'FILE_NOT_FOUND':
+        return `Unable to ${context}: The requested file could not be found on the server.`
+      case 'HASH_MISMATCH':
+        return `Unable to ${context}: File verification failed. The file may be corrupted. Please try uploading again.`
+      case 'INTERNAL':
+        return `Unable to ${context}: An internal server error occurred. Please try again later or contact support.`
+      case 'INVALID_BODY':
+        return `Unable to ${context}: The request data is invalid. Please check your input and try again.`
+      case 'INVALID_HASH':
+        return `Unable to ${context}: The provided file hash is invalid. Please check the hash format and try again.`
+      case 'INVALID_ID':
+        return `Unable to ${context}: The asset ID is invalid. Please check the ID and try again.`
+      case 'MISSING_FILE':
+        return `Unable to ${context}: The required file is missing. Please ensure the file is uploaded and try again.`
+      case 'UNSUPPORTED_MEDIA_TYPE':
+        return `Unable to ${context}: This file type is not supported. Please use a supported file format.`
+      case 'UPLOAD_IO_ERROR':
+        return `Unable to ${context}: File upload failed due to a storage error. Please try again.`
+      default:
+        // Handle by status code if no specific error code
+        if (res.status === 400) {
+          return `Unable to ${context}: Invalid request. Please check your input and try again.`
+        } else if (res.status === 404) {
+          return `Unable to ${context}: The requested resource was not found.`
+        } else if (res.status >= 500) {
+          return `Unable to ${context}: A server error occurred. Please try again later.`
+        }
+        return `Unable to ${context}: ${errorMessage || `Server returned ${res.status}`}. Please try again.`
+    }
+  }
+
+  /**
+   * Fetches assets from the API with consistent error handling and INVALID_QUERY graceful fallback
+   */
+  private async fetchAssetsWithGracefulError(
+    url: string,
+    context: string
+  ): Promise<AssetResponse | null> {
+    const res = await this.fetchApi(url)
+
+    if (!res.ok) {
+      let errorData: AssetApiErrorResponse | null = null
+
+      try {
+        errorData = await res.json()
+      } catch {
+        throw new Error(
+          `Unable to ${context}: Server returned ${res.status}. Please try again.`
+        )
+      }
+
+      // For INVALID_QUERY errors, return null for graceful handling
+      if (errorData?.error?.code === 'INVALID_QUERY') {
+        return null
+      }
+
+      const errorMessage = errorData?.error
+        ? this.formatErrorMessage(errorData.error, res, context)
+        : `Unable to ${context}: Server returned ${res.status}. Please try again.`
+      throw new Error(errorMessage)
+    }
+
+    const data: AssetResponse = await res.json()
+    return data
+  }
+
+  /**
+   * Validates that an asset has the expected structure and tags
+   */
+  private isValidAsset(asset: Asset, requiredTags?: string[]): boolean {
+    if (!asset.name || !asset.tags || !Array.isArray(asset.tags)) {
+      return false
+    }
+
+    return (
+      !requiredTags || requiredTags.every((tag) => asset.tags.includes(tag))
+    )
+  }
+
+  /**
+   * Gets a list of model folder keys from the asset API (eg ['checkpoints', 'loras', ...])
+   * @returns The list of model folder keys
+   */
+  async getAssetModelFolders(): Promise<{ name: string; folders: string[] }[]> {
+    const data = await this.fetchAssetsWithGracefulError(
+      '/assets?tags=models',
+      'load model folders'
+    )
+
+    if (!data?.assets) {
+      return []
+    }
+
+    const folderNames = new Set<string>()
+
+    for (const asset of data.assets) {
+      if (!this.isValidAsset(asset)) {
+        continue
+      }
+
+      for (const tag of asset.tags) {
+        if (tag === 'models') {
+          continue
+        }
+        folderNames.add(tag)
+      }
+    }
+
+    return Array.from(folderNames).map((name) => ({
+      name,
+      folders: []
+    }))
+  }
+
+  /**
+   * Gets a list of models in the specified folder from the asset API
+   * @param {string} folder The folder to list models from, such as 'checkpoints'
+   * @returns The list of model filenames within the specified folder
+   */
+  async getAssetModels(
+    folder: string
+  ): Promise<{ name: string; pathIndex: number }[]> {
+    const data = await this.fetchAssetsWithGracefulError(
+      `/assets?tags=models,${folder}`,
+      `load models for ${folder}`
+    )
+
+    if (!data?.assets) {
+      return []
+    }
+
+    const models: { name: string; pathIndex: number }[] = []
+
+    for (const asset of data.assets) {
+      if (!this.isValidAsset(asset, ['models', folder])) {
+        continue
+      }
+
+      models.push({
+        name: asset.name,
+        pathIndex: 0
+      })
+    }
+
+    return models
   }
 
   /**
