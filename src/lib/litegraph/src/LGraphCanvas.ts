@@ -6,7 +6,7 @@ import {
   type LinkRenderContext,
   LitegraphLinkAdapter
 } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'

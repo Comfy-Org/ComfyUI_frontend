@@ -6,7 +6,7 @@
  */
 import { onUnmounted } from 'vue'
 
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 /**
  * Composable for syncing LiteGraph with the Layout system

@@ -21,7 +21,7 @@ import {
 } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 import { getSlotKey } from './slotIdentifier'

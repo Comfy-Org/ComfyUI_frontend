@@ -7,7 +7,7 @@
 import { computed, inject } from 'vue'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource, type Point } from '@/renderer/core/layout/types'
 
 /**

@@ -33,7 +33,7 @@ import {
   type Point,
   type RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {

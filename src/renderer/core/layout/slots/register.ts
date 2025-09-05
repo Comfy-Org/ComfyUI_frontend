@@ -12,7 +12,7 @@ import {
   calculateInputSlotPos,
   calculateOutputSlotPos
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 
 import { getSlotKey } from './slotIdentifier'

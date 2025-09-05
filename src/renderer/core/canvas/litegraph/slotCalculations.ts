@@ -16,7 +16,7 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 export interface SlotPositionContext {
   /** Node's X position in graph coordinates */

@@ -10,7 +10,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { type SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { registerNodeSlots } from '@/renderer/core/layout/slots/register'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 /**
  * Compute and register slot layouts for a node

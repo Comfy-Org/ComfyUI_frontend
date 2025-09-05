@@ -17,7 +17,7 @@ import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 
 const logger = log.getLogger('useLinkLayoutSync')
