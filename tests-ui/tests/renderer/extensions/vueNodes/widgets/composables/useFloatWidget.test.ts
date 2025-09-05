@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { _for_testing } from '@/composables/widgets/useFloatWidget'
+import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
