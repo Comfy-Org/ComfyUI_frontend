@@ -43,9 +43,8 @@ const widgetTree = computed(() => {
     //widget has connected link. Should not be displayed
     .filter((i) => !i[1].computedDisabled)
   //TODO: filter enabled/disabled items while keeping order
-  console.log(intn)
   return buildTree(intn, (item: [unknown, unknown]) =>
-    [`${item[0].title}: ${item[1].name}`]
+    [`${item[0].title}(${item[0].id}): ${item[1].name}`]
   )
 })
 
@@ -55,7 +54,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 
     return {
       key: node.key,
-      label: node.leaf ? node.data.display_name : node.label,
       leaf: node.leaf,
       data: node.data,
       label: node.label,
@@ -63,6 +61,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
           return 'pi pi-minus'
       },
       children,
+      onToggle: () => console.log(widgetTree,node),
       draggable: true,
     }
   }

@@ -34,7 +34,7 @@ const updateWidgets = () => {
     const widget = widgetState.widget
 
     // Early exit for non-visible widgets
-    if (!widget.isVisible()) {
+    if (!widget.isVisible() || !widgetState.active) {
       widgetState.visible = false
       continue
     }

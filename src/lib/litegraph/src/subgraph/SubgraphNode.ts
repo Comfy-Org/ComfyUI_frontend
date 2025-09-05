@@ -594,6 +594,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return this.addProxyFromOverlay({__proto__:overlay})
   }
   addProxyFromOverlay(overlay: Object) {
+    overlay.label = `${overlay.nodeId}: ${overlay.widgetName}`
     overlay.graph = this.subgraph
     overlay.isProxyWidget = true
     //TODO: Add minimal caching for linkedWidget?
@@ -625,7 +626,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         }
         //NOTE: p may be undefined
         let r = rest.at(-1)
-        if (['y', 'last_y', 'width', 'computedHeight', 'afterQueued', 'beforeQueued', 'onRemove', 'isProxyWidget'].includes(p))
+        if (['y', 'last_y', 'width', 'computedHeight', 'afterQueued', 'beforeQueued', 'onRemove', 'isProxyWidget', 'label'].includes(p))
           t = overlay
         else {
           t = lw

@@ -42,6 +42,7 @@ onMounted(() => {
 })
 
 function onClick(e) {
+  //props.node?.onToggle()
   const nodeId = props.node.data[0].id
   const widgetName = props.node.data[1].name
   const node = props.node.data[2]
@@ -56,15 +57,17 @@ function onClick(e) {
     }
     isShown.value = true
   } else {
-    //FIXME: widget name collisions
     const index = node.widgets.findIndex((w) => w.name === widgetName)
     if (index < 0) throw new Error("Can't disable missing widget")
-    const w = node.widgets.splice(index, 1)
+    const [w] = node.widgets.splice(index, 1)
     if (widgetStates.has(w.id)) {
       widgetStates.get(w.id).active = false
     }
     const { properties } = node
-    properties.proxyWidgets = properties.proxyWidgets.filter((p) => p[1] !== widgetName)
+    properties.proxyWidgets = properties.proxyWidgets.filter((p) => {
+    return p[1] !== widgetName 
+      //NOTE: intentional loose as nodeId is often string/int
+      || p[0] != nodeId})
 
     isShown.value = false
   }
@@ -73,7 +76,4 @@ function onClick(e) {
 </script>
 
 <style scoped>
-.node-lib-node-container {
-  @apply h-full w-full;
-}
 </style>
