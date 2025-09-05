@@ -396,6 +396,8 @@ export class CanvasPointer {
     ) {
       this.#bufferLinuxEvent(event, now)
     }
+
+    console.log('Detected device:', this.detectedDevice)
   }
 
   /**
