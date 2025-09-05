@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <div
     class="transform-pane"
@@ -8,37 +7,6 @@
   >
     <!-- Vue nodes will be rendered here -->
     <slot />
-
-    <!-- DEV ONLY: Viewport bounds visualization -->
-    <div
-      v-if="props.showDebugOverlay"
-      class="viewport-debug-overlay"
-      :style="{
-        position: 'absolute',
-        left: '10px',
-        top: '10px',
-        border: '2px solid red',
-        width: (props.viewport?.width || 0) - 20 + 'px',
-        height: (props.viewport?.height || 0) - 20 + 'px',
-        pointerEvents: 'none',
-        opacity: 0.5
-      }"
-    >
-      <div
-        style="
-          position: absolute;
-          top: 0;
-          left: 0;
-          background: red;
-          color: white;
-          padding: 2px 5px;
-          font-size: 10px;
-        "
-      >
-        Viewport: {{ props.viewport?.width }}x{{ props.viewport?.height }} DPR:
-        {{ devicePixelRatio }}
-      </div>
-    </div>
   </div>
 </template>
 
@@ -57,9 +25,6 @@ interface TransformPaneProps {
 }
 
 const props = defineProps<TransformPaneProps>()
-
-// Get device pixel ratio for display
-const devicePixelRatio = window.devicePixelRatio || 1
 
 // Transform state management
 const {
