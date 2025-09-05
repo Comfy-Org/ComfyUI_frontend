@@ -236,14 +236,7 @@
                 </div>
               </template>
               <template #top-right>
-                <IconButton
-                  v-if="template.tutorialUrl"
-                  v-tooltip.bottom="$t('g.seeTutorial')"
-                  class="!bg-white !text-neutral-900"
-                  @click.stop="openTutorial(template)"
-                >
-                  <i-lucide:info />
-                </IconButton>
+                <!-- Tutorial button moved to card bottom for better UX -->
               </template>
               <template #bottom-right>
                 <template v-if="template.tags && template.tags.length > 0">
@@ -268,29 +261,50 @@
           </template>
           <template #bottom>
             <CardBottom>
-              <div class="px-4 py-3">
-                <h3
-                  class="line-clamp-2 text-lg font-normal mb-1"
-                  :title="
-                    getTemplateTitle(
-                      template,
-                      template.sourceModule || 'default'
-                    )
-                  "
-                >
-                  {{
-                    getTemplateTitle(
-                      template,
-                      template.sourceModule || 'default'
-                    )
-                  }}
-                </h3>
-                <p
-                  class="line-clamp-2 text-sm text-muted"
-                  :title="getTemplateDescription(template)"
-                >
-                  {{ getTemplateDescription(template) }}
-                </p>
+              <div class="flex flex-col px-4 py-3 flex-1">
+                <div class="flex-1">
+                  <h3
+                    class="line-clamp-2 text-lg font-normal mb-1"
+                    :title="
+                      getTemplateTitle(
+                        template,
+                        template.sourceModule || 'default'
+                      )
+                    "
+                  >
+                    {{
+                      getTemplateTitle(
+                        template,
+                        template.sourceModule || 'default'
+                      )
+                    }}
+                  </h3>
+                  <div class="flex justify-between gap-2">
+                    <p
+                      class="line-clamp-2 text-sm text-muted mb-3"
+                      :title="getTemplateDescription(template)"
+                    >
+                      {{ getTemplateDescription(template) }}
+                    </p>
+                    <div
+                      v-if="template.tutorialUrl"
+                      class="flex flex-col-reverse justify-center"
+                    >
+                      <button
+                        v-tooltip.bottom="$t('g.seeTutorial')"
+                        :class="[
+                          'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] dark-theme:bg-[#262729] w-8 h-8 cursor-pointer transition-opacity duration-200',
+                          hoveredTemplates[template.name]
+                            ? 'opacity-100'
+                            : 'opacity-0 pointer-events-none'
+                        ]"
+                        @click.stop="openTutorial(template)"
+                      >
+                        <i class="icon-[comfy--dark-info] w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardBottom>
           </template>
@@ -360,7 +374,6 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
