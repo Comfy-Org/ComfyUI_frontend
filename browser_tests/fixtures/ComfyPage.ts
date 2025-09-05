@@ -272,10 +272,12 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
-    mockReleases = true
+    mockReleases = true,
+    mockManagerDisabled = true
   }: {
     clearStorage?: boolean
     mockReleases?: boolean
+    mockManagerDisabled?: boolean
   } = {}) {
     await this.goto()
 
@@ -327,6 +329,25 @@ export class ComfyPage {
         // window['app'].extensionManager => GraphView ready
         window['app'] && window['app'].extensionManager
     )
+
+    // Mock manager feature flag AFTER app is ready
+    if (mockManagerDisabled) {
+      await this.page.evaluate(() => {
+        // Store original getServerFeature function
+        const api = window['app']?.api
+        if (api && api.getServerFeature) {
+          const originalGetServerFeature = api.getServerFeature.bind(api)
+
+          // Override to disable manager by default
+          api.getServerFeature = function (feature: string) {
+            if (feature === 'extension.manager.supports_v4') {
+              return false // Disable manager in tests
+            }
+            return originalGetServerFeature(feature)
+          }
+        }
+      })
+    }
     await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
     await this.nextFrame()
   }
