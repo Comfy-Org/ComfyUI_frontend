@@ -19,14 +19,14 @@ export interface NodeState {
   culled: boolean
 }
 
-export interface NodeMetadata {
+interface NodeMetadata {
   lastRenderTime: number
   cachedBounds: DOMRect | null
   lodLevel: 'high' | 'medium' | 'low'
   spatialIndex?: QuadTree<string>
 }
 
-export interface PerformanceMetrics {
+interface PerformanceMetrics {
   fps: number
   frameTime: number
   updateTime: number
@@ -60,12 +60,12 @@ export interface VueNodeData {
   }
 }
 
-export interface SpatialMetrics {
+interface SpatialMetrics {
   queryTime: number
   nodesInIndex: number
 }
 
-export interface GraphNodeManager {
+interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
   vueNodeData: ReadonlyMap<string, VueNodeData>
   nodeState: ReadonlyMap<string, NodeState>

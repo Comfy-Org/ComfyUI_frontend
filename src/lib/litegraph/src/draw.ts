@@ -48,7 +48,7 @@ export interface IDrawBoundingOptions {
   lineWidth?: number
 }
 
-export interface IDrawTextInAreaOptions {
+interface IDrawTextInAreaOptions {
   /** The canvas to draw the text on. */
   ctx: CanvasRenderingContext2D
   /** The text to draw. */

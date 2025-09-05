@@ -65,7 +65,6 @@ const config: KnipConfig = {
     // Generated file: openapi
     'src/types/comfyRegistryTypes.ts'
   ],
-  ignoreExportsUsedInFile: true,
   // Vue-specific configuration
   vue: true,
   tailwind: true,

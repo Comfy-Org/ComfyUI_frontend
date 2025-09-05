@@ -1,4 +1,4 @@
-export function getFromPngBuffer(buffer: ArrayBuffer) {
+function getFromPngBuffer(buffer: ArrayBuffer) {
   // Get the PNG data as a Uint8Array
   const pngData = new Uint8Array(buffer)
   const dataView = new DataView(pngData.buffer)

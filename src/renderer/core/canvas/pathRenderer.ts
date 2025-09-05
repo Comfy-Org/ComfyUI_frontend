@@ -38,7 +38,7 @@ export interface LinkRenderData {
   centerAngle?: number
 }
 
-export interface RenderStyle {
+interface RenderStyle {
   mode: RenderMode
   connectionWidth: number
   borderWidth?: number
@@ -51,7 +51,7 @@ export interface RenderStyle {
   highQuality?: boolean
 }
 
-export interface RenderColors {
+interface RenderColors {
   default: string
   byType: Record<string, string>
   highlighted: string

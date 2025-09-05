@@ -5,7 +5,7 @@
  * @param b - The second number.
  * @returns The GCD of the two numbers.
  */
-export const gcd = (a: number, b: number): number => {
+const gcd = (a: number, b: number): number => {
   return b === 0 ? a : gcd(b, a % b)
 }
 
