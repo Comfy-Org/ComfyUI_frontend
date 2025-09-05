@@ -303,17 +303,15 @@ watch(
     }
 
     // Canvas changed - restart sync
-    if (oldCanvas && oldCanvas !== canvas) {
-      if (slotSync && slotSyncStarted) {
-        slotSync.stop()
-        slotSyncStarted = false
-      }
+    if (oldCanvas && oldCanvas !== canvas && slotSync && slotSyncStarted) {
+      slotSync.stop()
+      slotSyncStarted = false
     }
 
     // Start sync if not in Vue mode and not already started
     if (!slotSync) slotSync = useSlotLayoutSync()
     if (!slotSyncStarted && !isVueNodesEnabled.value) {
-      const started = slotSync.start(canvas as LGraphCanvas)
+      const started = slotSync.attemptStart(canvas as LGraphCanvas)
       slotSyncStarted = started
     }
   },
@@ -334,16 +332,17 @@ watch(
         slotSyncStarted = false
       }
       // DOM will re-register via useDomSlotRegistration
-    } else {
-      // Switching TO LiteGraph
-      if (canvasStore.canvas && comfyApp.graph) {
-        // Ensure slot sync is active
-        if (!slotSync) slotSync = useSlotLayoutSync()
-        if (!slotSyncStarted) {
-          const started = slotSync.start(canvasStore.canvas as LGraphCanvas)
-          slotSyncStarted = started
-        }
-      }
+      return
+    }
+
+    // Switching TO LiteGraph
+    if (!canvasStore.canvas || !comfyApp.graph) return
+
+    // Ensure slot sync is active
+    if (!slotSync) slotSync = useSlotLayoutSync()
+    if (!slotSyncStarted) {
+      const started = slotSync.attemptStart(canvasStore.canvas as LGraphCanvas)
+      slotSyncStarted = started
     }
   },
   { immediate: false }
