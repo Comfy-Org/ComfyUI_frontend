@@ -32,7 +32,14 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
+import {
+  type ComponentPublicInstance,
+  computed,
+  inject,
+  onErrorCaptured,
+  ref,
+  watchEffect
+} from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
@@ -83,33 +90,16 @@ const transformState = inject<TransformState | undefined>(
   undefined
 )
 
-const connectionDotRef = ref<{ slotElRef: Ref<HTMLElement> }>()
+const connectionDotRef = ref<ComponentPublicInstance<{
+  slotElRef: HTMLElement | undefined
+}> | null>(null)
 const slotElRef = ref<HTMLElement | null>(null)
 
-// Watch for connection dot ref changes and sync the element ref
-watch(
-  connectionDotRef,
-  (newValue) => {
-    console.debug('[InputSlot] ConnectionDot ref changed:', {
-      nodeId: props.nodeId,
-      slotIndex: props.index,
-      hasNewValue: !!newValue,
-      hasSlotElRef: !!newValue?.slotElRef,
-      slotElRefValue: newValue?.slotElRef?.value
-    })
-    if (newValue?.slotElRef) {
-      slotElRef.value = newValue.slotElRef.value
-    }
-  },
-  { immediate: true }
-)
-
-console.debug('[InputSlot] Registering slot:', {
-  nodeId: props.nodeId,
-  slotIndex: props.index,
-  hasNodeId: !!props.nodeId,
-  nodeIdValue: props.nodeId ?? '',
-  hasTransformState: !!transformState
+// Watch for when the child component's ref becomes available
+// Vue automatically unwraps the Ref when exposing it
+watchEffect(() => {
+  const el = connectionDotRef.value?.slotElRef
+  slotElRef.value = el || null
 })
 
 useDomSlotRegistration({
