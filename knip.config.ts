@@ -26,7 +26,6 @@ const config: KnipConfig = {
     'tailwindcss',
     'tailwindcss-primeui', // Need to figure out why tailwind plugin isn't applying
     // Dev
-    '@executeautomation/playwright-mcp-server',
     '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
