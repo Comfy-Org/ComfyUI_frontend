@@ -3624,15 +3624,13 @@ export class LGraphCanvas
     if (e.type == 'keydown') {
       // TODO: Switch
       if (e.key === ' ') {
-        // space - only switch to pan mode if we're in standard mode and not already in pan/read_only mode
-        if (LiteGraph.canvasNavigationMode === 'standard' && !this.read_only) {
-          this.read_only = true
-          if (this._previously_dragging_canvas === null) {
-            this._previously_dragging_canvas = this.dragging_canvas
-          }
-          this.dragging_canvas = this.pointer.isDown
-          block_default = true
+        // space
+        this.read_only = true
+        if (this._previously_dragging_canvas === null) {
+          this._previously_dragging_canvas = this.dragging_canvas
         }
+        this.dragging_canvas = this.pointer.isDown
+        block_default = true
       } else if (e.key === 'Escape') {
         // esc
         if (this.linkConnector.isConnecting) {
