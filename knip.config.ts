@@ -2,14 +2,14 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   entry: [
-    'build/**/*.ts',
-    'scripts/**/*.{js,ts}',
+    '{build,scripts}/**/*.{js,ts}',
     'src/main.ts',
     'src/assets/css/style.css'
   ],
   project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
   ignoreBinaries: ['only-allow', 'openapi-typescript'],
   ignoreDependencies: [
+    // Weird importmap things
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
