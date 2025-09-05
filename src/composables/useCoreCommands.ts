@@ -283,6 +283,18 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Experimental.ToggleVueNodes',
+      label: () =>
+        `Experimental: ${
+          useSettingStore().get('Comfy.VueNodes.Enabled') ? 'Disable' : 'Enable'
+        } Vue Nodes`,
+      function: async () => {
+        const settingStore = useSettingStore()
+        const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
+        await settingStore.set('Comfy.VueNodes.Enabled', !current)
+      }
+    },
+    {
       id: 'Comfy.Canvas.FitView',
       icon: 'pi pi-expand',
       label: 'Fit view to selected nodes',
