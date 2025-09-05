@@ -9,9 +9,6 @@ import type { components } from './comfyRegistryTypes'
 
 // Re-export core types from Registry API
 export type Node = components['schemas']['Node']
-export type NodeVersion = components['schemas']['NodeVersion']
-export type NodeStatus = components['schemas']['NodeStatus']
-export type NodeVersionStatus = components['schemas']['NodeVersionStatus']
 
 /**
  * Conflict types that can be detected in the system
@@ -26,22 +23,6 @@ export type ConflictType =
   | 'accelerator' // GPU/accelerator incompatibility
   | 'banned' // Banned package
   | 'pending' // Security verification pending
-
-/**
- * Version comparison operators
- * @enum {string}
- */
-export type VersionOperator = '>=' | '>' | '<=' | '<' | '==' | '!='
-
-/**
- * Version requirement specification
- */
-export interface VersionRequirement {
-  /** @description Comparison operator for version checking */
-  operator: VersionOperator
-  /** @description Target version string */
-  version: string
-}
 
 /**
  * Node Pack requirements from Registry API

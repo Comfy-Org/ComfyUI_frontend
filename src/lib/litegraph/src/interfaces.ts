@@ -5,6 +5,7 @@ import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
+import { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { LinkDirection, RenderShape } from './types/globalEnums'
@@ -277,9 +278,6 @@ export type KeysOfType<T, Match> = Exclude<
   undefined
 >
 
-/** A new type that contains only the properties of T that are of type Match */
-export type PickByType<T, Match> = { [P in keyof T]: Extract<T[P], Match> }
-
 /** The names of all (optional) methods and functions in T */
 export type MethodNames<T> = KeysOfType<T, ((...args: any) => any) | undefined>
 
@@ -471,6 +469,7 @@ export interface DefaultConnectionColors {
 
 export interface ISubgraphInput extends INodeInputSlot {
   _listenerController?: AbortController
+  _subgraphSlot: SubgraphInput
 }
 
 /**

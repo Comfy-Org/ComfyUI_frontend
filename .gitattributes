@@ -9,6 +9,7 @@
 *.mts text eol=lf
 *.ts text eol=lf
 *.vue text eol=lf
+*.yaml text eol=lf
 
 # Generated files
 src/types/comfyRegistryTypes.ts linguist-generated=true
