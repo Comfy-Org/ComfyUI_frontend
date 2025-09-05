@@ -78,7 +78,8 @@ export function useConflictDetection() {
     try {
       // Get system stats from store (primary source of system information)
       const systemStatsStore = useSystemStatsStore()
-      if (!systemStatsStore.systemStats) {
+      // Wait for systemStats to be initialized if not already
+      if (!systemStatsStore.isInitialized) {
         await systemStatsStore.fetchSystemStats()
       }
 
@@ -639,7 +640,18 @@ export function useConflictDetection() {
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
-      // Simply perform conflict detection
+      // Check if manager is enabled before proceeding
+      const { useManagerState } = await import('@/composables/useManagerState')
+      const managerState = useManagerState()
+
+      if (!managerState.isManagerEnabled.value) {
+        console.debug(
+          '[ConflictDetection] Manager is disabled, skipping conflict detection'
+        )
+        return
+      }
+
+      // Manager is enabled, perform conflict detection
       // The useInstalledPacks will handle fetching installed list if needed
       await performConflictDetection()
     } catch (error) {

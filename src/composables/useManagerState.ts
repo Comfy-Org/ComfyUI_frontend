@@ -24,6 +24,12 @@ export function useManagerState() {
    */
   const managerUIState = readonly(
     computed((): ManagerUIState => {
+      // Wait for systemStats to be initialized
+      if (!systemStatsStore.isInitialized) {
+        // Default to NEW_UI while loading
+        return ManagerUIState.DISABLED
+      }
+
       // Get current values
       const systemStats = systemStatsStore.systemStats
       const clientSupportsV4 =
