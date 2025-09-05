@@ -32,7 +32,16 @@ import { useNodeInfo } from '@/composables/graph/useNodeInfo'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
+import {
+  LGraphEventMode,
+  type LGraphGroup,
+  type LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { isLGraphGroup } from '@/utils/litegraphUtil'
 
 export interface MenuOption {
   label?: string
@@ -92,6 +101,7 @@ export function useMoreOptionsMenu() {
   } = useNodeInfo()
 
   const {
+    selectedItems,
     selectedNodes,
     nodeDef,
     showNodeHelp,
@@ -227,6 +237,17 @@ export function useMoreOptionsMenu() {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     optionsVersion.value
     const states = computeSelectionFlags()
+    const canvasStore = useCanvasStore()
+    const workflowStore = useWorkflowStore()
+    const settingStore = useSettingStore()
+    // Detect single group selection context (and no nodes explicitly selected)
+    const selectedGroups = selectedItems.value.filter(
+      isLGraphGroup
+    ) as LGraphGroup[]
+    const groupContext: LGraphGroup | null =
+      selectedGroups.length === 1 && selectedNodes.value.length === 0
+        ? selectedGroups[0]
+        : null
     const hasSubgraphsSelected = hasSubgraphs.value
     const options: MenuOption[] = []
 
@@ -258,41 +279,94 @@ export function useMoreOptionsMenu() {
       })
     }
 
-    options.push({
-      label: t('contextMenu.Adjust Size'),
-      icon: markRaw(MoveDiagonal2),
-      action: adjustNodeSize
-    })
-
-    options.push(
-      {
-        label: states.collapsed
-          ? t('contextMenu.Expand Node')
-          : t('contextMenu.Minimize Node'),
-        icon: markRaw(states.collapsed ? Maximize2 : Minimize2),
+    if (groupContext) {
+      options.push({
+        label: 'Fit Group To Nodes',
+        icon: markRaw(MoveDiagonal2),
         action: () => {
-          toggleNodeCollapse()
-          bump()
+          try {
+            groupContext.recomputeInsideNodes()
+          } catch (e) {
+            // ignore if graph missing
+          }
+          const padding = settingStore.get('Comfy.GroupSelectedNodes.Padding')
+          groupContext.resizeTo(groupContext.children, padding)
+          groupContext.graph?.change()
+          canvasStore.canvas?.setDirty(true, true)
+          workflowStore.activeWorkflow?.changeTracker?.checkState()
         }
-      },
-      {
+      })
+    } else {
+      options.push({
+        label: t('contextMenu.Adjust Size'),
+        icon: markRaw(MoveDiagonal2),
+        action: adjustNodeSize
+      })
+    }
+
+    // Collapse / Shape / Color section
+    if (groupContext) {
+      // Removed individual group node collapse/expand option per request
+      // Shape submenu applied to group nodes
+      options.push({
         label: t('contextMenu.Shape'),
         icon: markRaw(Box),
         hasSubmenu: true,
-        submenu: shapeSubmenu.value,
+        submenu: shapeOptions.map((shape) => ({
+          label: shape.localizedName,
+          action: () => {
+            const nodes = (groupContext.nodes || []) as LGraphNode[]
+            nodes.forEach((node) => (node.shape = shape.value))
+            canvasStore.canvas?.emitBeforeChange()
+            canvasStore.canvas?.setDirty(true, true)
+            canvasStore.canvas?.graph?.afterChange()
+            canvasStore.canvas?.emitAfterChange()
+            workflowStore.activeWorkflow?.changeTracker?.checkState()
+            bump()
+          }
+        })),
         action: () => {}
-      },
-      {
+      })
+      // Color submenu can still operate on group (group is colorable) so reuse existing
+      options.push({
         label: t('contextMenu.Color'),
         icon: markRaw(Palette),
         hasSubmenu: true,
         submenu: colorSubmenu.value,
         action: () => {}
-      },
-      {
-        type: 'divider'
-      }
-    )
+      })
+      options.push({ type: 'divider' })
+    } else {
+      options.push(
+        {
+          label: states.collapsed
+            ? t('contextMenu.Expand Node')
+            : t('contextMenu.Minimize Node'),
+          icon: markRaw(states.collapsed ? Maximize2 : Minimize2),
+          action: () => {
+            toggleNodeCollapse()
+            bump()
+          }
+        },
+        {
+          label: t('contextMenu.Shape'),
+          icon: markRaw(Box),
+          hasSubmenu: true,
+          submenu: shapeSubmenu.value,
+          action: () => {}
+        },
+        {
+          label: t('contextMenu.Color'),
+          icon: markRaw(Palette),
+          hasSubmenu: true,
+          submenu: colorSubmenu.value,
+          action: () => {}
+        },
+        {
+          type: 'divider'
+        }
+      )
+    }
 
     if (hasImageNode.value) {
       options.push(
@@ -357,15 +431,17 @@ export function useMoreOptionsMenu() {
 
     options.push({ type: 'divider' })
 
-    // Add remaining options
-    options.push({
-      label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
-      icon: markRaw(states.pinned ? PinOff : Pin),
-      action: () => {
-        toggleNodePin()
-        bump()
-      }
-    })
+    // Add remaining options (hide Pin/Unpin for group selection)
+    if (!groupContext) {
+      options.push({
+        label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
+        icon: markRaw(states.pinned ? PinOff : Pin),
+        action: () => {
+          toggleNodePin()
+          bump()
+        }
+      })
+    }
 
     // Add alignment and distribution options for multiple nodes
     if (hasMultipleNodes.value) {
@@ -387,17 +463,91 @@ export function useMoreOptionsMenu() {
       )
     }
 
-    options.push({
-      label: states.bypassed
-        ? t('contextMenu.Remove Bypass')
-        : t('contextMenu.Bypass'),
-      icon: markRaw(states.bypassed ? ZapOff : Ban),
-      shortcut: 'Ctrl+B',
-      action: () => {
-        toggleNodeBypass()
-        bump()
+    if (groupContext) {
+      try {
+        groupContext.recomputeInsideNodes()
+      } catch (e) {
+        // ignore
       }
-    })
+      const groupNodes = (groupContext.nodes || []) as LGraphNode[]
+      if (groupNodes.length) {
+        let allSame = true
+        for (let i = 1; i < groupNodes.length; i++) {
+          if (groupNodes[i].mode !== groupNodes[0].mode) {
+            allSame = false
+            break
+          }
+        }
+        const pushModeAction = (label: string, mode: LGraphEventMode) => {
+          options.push({
+            label: t(`selectionToolbox.${label}`),
+            icon: markRaw(
+              mode === LGraphEventMode.BYPASS
+                ? Ban
+                : mode === LGraphEventMode.NEVER
+                  ? ZapOff
+                  : Play
+            ),
+            action: () => {
+              groupNodes.forEach((n) => {
+                n.mode = mode
+              })
+              canvasStore.canvas?.setDirty(true, true)
+              groupContext.graph?.change()
+              workflowStore.activeWorkflow?.changeTracker?.checkState()
+              bump()
+            }
+          })
+        }
+        if (allSame) {
+          const current = groupNodes[0].mode
+          switch (current) {
+            case LGraphEventMode.ALWAYS:
+              pushModeAction('Set Group Nodes to Never', LGraphEventMode.NEVER)
+              pushModeAction('Bypass Group Nodes', LGraphEventMode.BYPASS)
+              break
+            case LGraphEventMode.NEVER:
+              pushModeAction(
+                'Set Group Nodes to Always',
+                LGraphEventMode.ALWAYS
+              )
+              pushModeAction('Bypass Group Nodes', LGraphEventMode.BYPASS)
+              break
+            case LGraphEventMode.BYPASS:
+              pushModeAction(
+                'Set Group Nodes to Always',
+                LGraphEventMode.ALWAYS
+              )
+              pushModeAction('Set Group Nodes to Never', LGraphEventMode.NEVER)
+              break
+            default:
+              pushModeAction(
+                'Set Group Nodes to Always',
+                LGraphEventMode.ALWAYS
+              )
+              pushModeAction('Set Group Nodes to Never', LGraphEventMode.NEVER)
+              pushModeAction('Bypass Group Nodes', LGraphEventMode.BYPASS)
+              break
+          }
+        } else {
+          pushModeAction('Set Group Nodes to Always', LGraphEventMode.ALWAYS)
+          pushModeAction('Set Group Nodes to Never', LGraphEventMode.NEVER)
+          pushModeAction('Bypass Group Nodes', LGraphEventMode.BYPASS)
+        }
+      }
+    } else {
+      options.push({
+        label: states.bypassed
+          ? t('contextMenu.Remove Bypass')
+          : t('contextMenu.Bypass'),
+        icon: markRaw(states.bypassed ? ZapOff : Ban),
+        shortcut: 'Ctrl+B',
+        action: () => {
+          toggleNodeBypass()
+          bump()
+        }
+      })
+    }
 
     if (hasOutputNodesSelected.value) {
       options.push({

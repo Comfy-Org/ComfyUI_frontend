@@ -160,7 +160,8 @@
     "nodeContentError": "Node Content Error",
     "nodeHeaderError": "Node Header Error",
     "nodeSlotsError": "Node Slots Error",
-    "nodeWidgetsError": "Node Widgets Error"
+    "nodeWidgetsError": "Node Widgets Error",
+    "frameNodes": "Frame Nodes"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -340,7 +341,7 @@
     "Right": "Right",
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
-    "new":"new",
+    "new": "new",
     "deprecated": "deprecated"
   },
   "icon": {
@@ -1775,7 +1776,10 @@
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"
-    }
+    },
+    "Set Group Nodes to Never": "Set Group Nodes to Never",
+    "Bypass Group Nodes": "Bypass Group Nodes",
+    "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "chatHistory": {
     "cancelEdit": "Cancel",
