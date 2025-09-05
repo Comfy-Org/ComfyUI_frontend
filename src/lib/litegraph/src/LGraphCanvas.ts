@@ -3674,16 +3674,11 @@ export class LGraphCanvas
       }
     } else if (e.type == 'keyup') {
       if (e.key === ' ') {
-        // space - only revert if we had temporarily switched to pan mode
-        if (
-          LiteGraph.canvasNavigationMode === 'standard' &&
-          this._previously_dragging_canvas !== null
-        ) {
-          this.read_only = false
-          this.dragging_canvas =
-            (this._previously_dragging_canvas ?? false) && this.pointer.isDown
-          this._previously_dragging_canvas = null
-        }
+        // space
+        this.read_only = false
+        this.dragging_canvas =
+          (this._previously_dragging_canvas ?? false) && this.pointer.isDown
+        this._previously_dragging_canvas = null
       }
 
       for (const node of Object.values(this.selected_nodes)) {
