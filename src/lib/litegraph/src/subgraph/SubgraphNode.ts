@@ -578,11 +578,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   onPropertyChanged(k, property) {
     if (k !== "proxyWidgets") return
-    this.widgets = this.widgets.filter((w) => !w.isProxyWidget)
+      this.widgets = this.widgets.filter((w) => !w.isProxyWidget)
     setTimeout(() => {
       for (const [nodeId, widgetName] of property)
-	this.addProxyFromOverlay({
-	  __proto__:{nodeId, widgetName}})
+        this.addProxyFromOverlay({
+          __proto__:{nodeId, widgetName}})
     }, 0)
 
   }
@@ -604,32 +604,37 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       let g = graph
       let n = undefined
       for (let id of nodeId.split(':')) {
-	n = g?._nodes_by_id?.[id]
-	graph = n?.subgraph
+        n = g?._nodes_by_id?.[id]
+        graph = n?.subgraph
       }
       if (!n) return
-      return n.widgets.find((w) => w.name === widgetName)
+        return n.widgets.find((w) => w.name === widgetName)
     }
     const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function(t,p,...rest) {
-	if (s == 'get' && p == '_overlay')
-	  return overlay
-	const lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
-	if (s == 'get' && p == 'node') {
-	  return subgraphNode
-	}
-	//NOTE: p may be undefined
-	let r = rest.at(-1)
-	if (['y', 'last_y', 'width', 'computedHeight', 'computedDisabled', 'afterQueued', 'beforeQueued', 'onRemove', 'isProxyWidget'].includes(p))
-	  t = overlay
-	else {
-	  t = lw
-	  if (!t)
-	   t = {__proto__: overlay, draw: drawDisconnected}
-	  if (p == "value")
-	    r = t
-	}
-	return Reflect[s](t,p,...rest.slice(0,-1),r)
+        if (s == 'get' && p == '_overlay')
+          return overlay
+        const lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
+        if (s == 'get' && p == 'node') {
+          return subgraphNode
+        }
+        if (s == 'set' && p == 'computedDisabled') {
+          //ignore setting, calc actual
+          lw.computedDisabled = lw.disabled || lw.node.getSlotFromWidget(lw)?.link != null
+          return true
+        }
+        //NOTE: p may be undefined
+        let r = rest.at(-1)
+        if (['y', 'last_y', 'width', 'computedHeight', 'afterQueued', 'beforeQueued', 'onRemove', 'isProxyWidget'].includes(p))
+          t = overlay
+        else {
+          t = lw
+          if (!t)
+            t = {__proto__: overlay, draw: drawDisconnected}
+          if (p == "value")
+            r = t
+        }
+        return Reflect[s](t,p,...rest.slice(0,-1),r)
       }
       return [s, func]
     }))
