@@ -35,9 +35,6 @@
   <TransformPane
     v-if="transformPaneEnabled && canvasStore.canvas && comfyAppReady"
     :canvas="canvasStore.canvas as LGraphCanvas"
-    :viewport="canvasViewport"
-    :show-debug-overlay="showPerformanceOverlay"
-    @raf-status-change="rafActive = $event"
     @transform-update="handleTransformUpdate"
   >
     <!-- Vue nodes rendered based on graph nodes -->
@@ -63,23 +60,6 @@
     />
   </TransformPane>
 
-  <!-- Debug Panel (Development Only) -->
-  <VueNodeDebugPanel
-    v-if="debugPanelVisible"
-    v-model:debug-override-vue-nodes="debugOverrideVueNodes"
-    v-model:show-performance-overlay="showPerformanceOverlay"
-    :canvas-viewport="canvasViewport"
-    :vue-nodes-count="vueNodesCount"
-    :nodes-in-viewport="nodesInViewport"
-    :performance-metrics="performanceMetrics"
-    :current-f-p-s="currentFPS"
-    :last-transform-time="lastTransformTime"
-    :raf-active="rafActive"
-    :is-dev-mode-enabled="isDevModeEnabled"
-    :should-render-vue-nodes="shouldRenderVueNodes"
-    :transform-pane-enabled="transformPaneEnabled"
-  />
-
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
 
@@ -99,7 +79,6 @@ import {
   computed,
   onMounted,
   onUnmounted,
-  reactive,
   ref,
   shallowRef,
   watch,
@@ -115,7 +94,6 @@ import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import TransformPane from '@/components/graph/TransformPane.vue'
-import VueNodeDebugPanel from '@/components/graph/debug/VueNodeDebugPanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
@@ -195,93 +173,9 @@ const selectionToolboxEnabled = computed(() =>
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
 // Feature flags (Vue-related)
-const { shouldRenderVueNodes, isDevModeEnabled } = useVueFeatureFlags()
+const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-// TransformPane enabled when Vue nodes are enabled OR debug override
-const debugOverrideVueNodes = ref(false)
-// Persist debug panel visibility in settings so core commands can toggle it
-const debugPanelVisible = computed({
-  get: () => settingStore.get('Comfy.VueNodes.DebugPanel.Visible') ?? false,
-  set: (v: boolean) => {
-    void settingStore.set('Comfy.VueNodes.DebugPanel.Visible', v)
-  }
-})
-const transformPaneEnabled = computed(
-  () => shouldRenderVueNodes.value || debugOverrideVueNodes.value
-)
-// Account for browser zoom/DPI scaling
-const getActualViewport = () => {
-  // Get the actual canvas element dimensions which account for zoom
-  const canvas = canvasRef.value
-  if (canvas) {
-    return {
-      width: canvas.clientWidth,
-      height: canvas.clientHeight
-    }
-  }
-  // Fallback to window dimensions
-  return {
-    width: window.innerWidth,
-    height: window.innerHeight
-  }
-}
-
-const canvasViewport = ref(getActualViewport())
-
-// Debug metrics - use shallowRef for frequently updating values
-const vueNodesCount = shallowRef(0)
-const nodesInViewport = shallowRef(0)
-const currentFPS = shallowRef(0)
-const lastTransformTime = shallowRef(0)
-const rafActive = shallowRef(false)
-
-// Rendering options
-const showPerformanceOverlay = ref(false)
-
-// FPS tracking
-let lastTime = performance.now()
-let frameCount = 0
-let fpsRafId: number | null = null
-
-const updateFPS = () => {
-  frameCount++
-  const currentTime = performance.now()
-  if (currentTime >= lastTime + 1000) {
-    currentFPS.value = Math.round(
-      (frameCount * 1000) / (currentTime - lastTime)
-    )
-    frameCount = 0
-    lastTime = currentTime
-  }
-  if (transformPaneEnabled.value) {
-    fpsRafId = requestAnimationFrame(updateFPS)
-  }
-}
-
-// Start FPS tracking when TransformPane is enabled
-watch(transformPaneEnabled, (enabled) => {
-  if (enabled) {
-    fpsRafId = requestAnimationFrame(updateFPS)
-  } else {
-    // Stop FPS tracking
-    if (fpsRafId !== null) {
-      cancelAnimationFrame(fpsRafId)
-      fpsRafId = null
-    }
-  }
-})
-
-// Update viewport on resize
-useEventListener(window, 'resize', () => {
-  canvasViewport.value = getActualViewport()
-})
-
-// Also update when canvas is ready
-watch(canvasRef, () => {
-  if (canvasRef.value) {
-    canvasViewport.value = getActualViewport()
-  }
-})
+const transformPaneEnabled = computed(() => shouldRenderVueNodes.value)
 
 // Vue node lifecycle management - initialize after graph is ready
 let nodeManager: ReturnType<typeof useGraphNodeManager> | null = null
@@ -299,13 +193,6 @@ const nodeSizes = ref<ReadonlyMap<string, { width: number; height: number }>>(
   new Map()
 )
 let detectChangesInRAF = () => {}
-const performanceMetrics = reactive({
-  frameTime: 0,
-  updateTime: 0,
-  nodeCount: 0,
-  culledCount: 0,
-  adaptiveQuality: false
-})
 
 // Initialize node manager when graph becomes available
 // Add a reactivity trigger to force computed re-evaluation
@@ -321,7 +208,6 @@ const initializeNodeManager = () => {
   nodePositions.value = nodeManager.nodePositions
   nodeSizes.value = nodeManager.nodeSizes
   detectChangesInRAF = nodeManager.detectChangesInRAF
-  Object.assign(performanceMetrics, nodeManager.performanceMetrics)
 
   // Initialize layout system with existing nodes
   const nodes = comfyApp.graph._nodes.map((node: any) => ({
@@ -397,11 +283,6 @@ const disposeNodeManagerAndSyncs = () => {
   nodeState.value = new Map()
   nodePositions.value = new Map()
   nodeSizes.value = new Map()
-  // Reset metrics
-  performanceMetrics.frameTime = 0
-  performanceMetrics.updateTime = 0
-  performanceMetrics.nodeCount = 0
-  performanceMetrics.culledCount = 0
 }
 
 // Watch for transformPaneEnabled to gate the node manager lifecycle
@@ -420,10 +301,7 @@ watch(
 // Transform state for viewport culling
 const { syncWithCanvas } = useTransformState()
 
-// Replace problematic computed property with proper reactive system
 const nodesToRender = computed(() => {
-  // Access performanceMetrics to trigger on RAF updates
-  void performanceMetrics.updateTime
   // Access trigger to force re-evaluation after nodeManager initialization
   void nodeDataTrigger.value
 
@@ -442,9 +320,6 @@ const nodesToRender = computed(() => {
     syncWithCanvas(comfyApp.canvas)
 
     const ds = canvas.ds
-
-    // Access transform time to make this reactive to transform changes
-    void lastTransformTime.value
 
     // Work in screen space - viewport is simply the canvas element size
     const viewport_width = canvas.canvas.width
@@ -483,40 +358,11 @@ const nodesToRender = computed(() => {
   return allNodes
 })
 
-// Remove side effects from computed - use watchers instead
-watch(
-  () => vueNodeData.value.size,
-  (count) => {
-    vueNodesCount.value = count
-  },
-  { immediate: true }
-)
-
-watch(
-  () => nodesToRender.value.length,
-  (count) => {
-    nodesInViewport.value = count
-  }
-)
-
-// Update performance metrics when node counts change
-watch(
-  () => [vueNodeData.value.size, nodesToRender.value.length],
-  ([totalNodes, visibleNodes]) => {
-    performanceMetrics.nodeCount = totalNodes
-    performanceMetrics.culledCount = totalNodes - visibleNodes
-  }
-)
-
-// Integrate change detection with TransformPane RAF
-// Track previous transform to detect changes
 let lastScale = 1
 let lastOffsetX = 0
 let lastOffsetY = 0
 
-const handleTransformUpdate = (time: number) => {
-  lastTransformTime.value = time
-
+const handleTransformUpdate = () => {
   // Sync transform state only when it changes (avoids reflows)
   if (comfyApp.canvas?.ds) {
     const currentScale = comfyApp.canvas.ds.scale
@@ -538,9 +384,7 @@ const handleTransformUpdate = (time: number) => {
   // Detect node changes during transform updates
   detectChangesInRAF()
 
-  // Update performance metrics
-  performanceMetrics.frameTime = time
-
+  // Trigger reactivity for nodesToRender
   void nodesToRender.value.length
 }
 
@@ -867,12 +711,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  // Clean up FPS tracking
-  if (fpsRafId !== null) {
-    cancelAnimationFrame(fpsRafId)
-    fpsRafId = null
-  }
-
   // Clean up node manager
   if (nodeManager) {
     nodeManager.cleanup()
