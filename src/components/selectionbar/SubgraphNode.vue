@@ -32,33 +32,22 @@ const { t } = useI18n()
 
 const canvasStore = useCanvasStore()
 
-const items = ref(null)
 const expandedKeys = ref<Record<string, boolean>>({})
-
-watchDebounced(items,() => {
-  console.log(items.value.map(i => `${i[0].title}: ${i[1].name}`))
-  }, { debounce: 500 }
-)
 
 const widgetTree = computed(() => {
   const node = canvasStore.selectedItems[0] ?? {}
   const interiorNodes = node?.subgraph?.nodes ?? []
-  if (!interiorNodes) {
-    items.value = null
-    return
-  }
   node.widgets ??= []
   const intn = interiorNodes.map((n) =>
     n.widgets?.map((w) => [n, w, node]) ?? []).flat(1)
-  //items.value = intn
+    //widget has connected link. Should not be displayed
+    .filter((i) => !i[1].computedDisabled)
   //TODO: filter enabled/disabled items while keeping order
   console.log(intn)
   return buildTree(intn, (item: [unknown, unknown]) =>
     [`${item[0].title}: ${item[1].name}`]
   )
 })
-
-
 
 const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
   const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
@@ -77,9 +66,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       draggable: true,
     }
   }
-  console.log(widgetTree.value)
   const ret =  fillNodeInfo(widgetTree.value)
-  console.log(ret)
   return ret
 })
 

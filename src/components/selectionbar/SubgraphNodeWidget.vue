@@ -20,6 +20,7 @@
 import { ref, onMounted } from 'vue'
 import Button from 'primevue/button'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useCanvasStore } from '@/stores/graphStore'
 
 function hasWidget() {
   const node = props.node.data[2]
@@ -45,7 +46,6 @@ function onClick(e) {
   const widgetName = props.node.data[1].name
   const node = props.node.data[2]
 
-  console.log(isShown.value)
   const { widgetStates } = useDomWidgetStore()
   if (!isShown.value) {
     const w = node.addProxyWidget(`${nodeId}`, widgetName)
@@ -63,8 +63,12 @@ function onClick(e) {
     if (widgetStates.has(w.id)) {
       widgetStates.get(w.id).active = false
     }
+    const { properties } = node
+    properties.proxyWidgets = properties.proxyWidgets.filter((p) => p[1] !== widgetName)
+
     isShown.value = false
   }
+  useCanvasStore().canvas.setDirty(true)
 }
 </script>
 
