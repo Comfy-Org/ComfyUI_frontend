@@ -59,7 +59,8 @@ describe('useManagerState', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
           system: { argv: ['python', 'main.py', '--disable-manager'] }
-        }
+        },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
@@ -75,7 +76,8 @@ describe('useManagerState', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
           system: { argv: ['python', 'main.py', '--enable-manager-legacy-ui'] }
-        }
+        },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
@@ -89,7 +91,8 @@ describe('useManagerState', () => {
 
     it('should return NEW_UI state when client and server both support v4', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
@@ -110,7 +113,8 @@ describe('useManagerState', () => {
 
     it('should return LEGACY_UI state when server supports v4 but client does not', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: false
@@ -131,7 +135,8 @@ describe('useManagerState', () => {
 
     it('should return LEGACY_UI state when legacy manager extension exists', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useFeatureFlags).mockReturnValue({
@@ -149,7 +154,8 @@ describe('useManagerState', () => {
 
     it('should return NEW_UI state when server feature flags are undefined', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(api.getServerFeature).mockReturnValue(undefined)
@@ -168,7 +174,8 @@ describe('useManagerState', () => {
 
     it('should return LEGACY_UI state when server does not support v4', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(api.getServerFeature).mockReturnValue(false)
@@ -187,7 +194,8 @@ describe('useManagerState', () => {
 
     it('should handle null systemStats gracefully', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: null
+        systemStats: null,
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
@@ -210,7 +218,8 @@ describe('useManagerState', () => {
   describe('helper properties', () => {
     it('isManagerEnabled should return true when state is not DISABLED', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
@@ -228,7 +237,8 @@ describe('useManagerState', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
           system: { argv: ['python', 'main.py', '--disable-manager'] }
-        }
+        },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
@@ -241,7 +251,8 @@ describe('useManagerState', () => {
 
     it('isNewManagerUI should return true when state is NEW_UI', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
@@ -259,7 +270,8 @@ describe('useManagerState', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
           system: { argv: ['python', 'main.py', '--enable-manager-legacy-ui'] }
-        }
+        },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
@@ -272,7 +284,8 @@ describe('useManagerState', () => {
 
     it('shouldShowInstallButton should return true only for NEW_UI', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
@@ -288,7 +301,8 @@ describe('useManagerState', () => {
 
     it('shouldShowManagerButtons should return true when not DISABLED', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
-        systemStats: { system: { argv: ['python', 'main.py'] } }
+        systemStats: { system: { argv: ['python', 'main.py'] } },
+        isInitialized: true
       } as any)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true

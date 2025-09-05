@@ -86,15 +86,11 @@ describe('MissingCoreNodesMessage', () => {
     expect(wrapper.findComponent(Message).exists()).toBe(true)
   })
 
-  it('fetches and displays current ComfyUI version', async () => {
-    // Start with no systemStats to trigger fetch
-    mockSystemStatsStore.fetchSystemStats.mockImplementation(() => {
-      // Simulate the fetch setting the systemStats
-      mockSystemStatsStore.systemStats = {
-        system: { comfyui_version: '1.0.0' }
-      }
-      return Promise.resolve()
-    })
+  it('displays current ComfyUI version when available', async () => {
+    // Set systemStats directly (store auto-fetches with useAsyncState)
+    mockSystemStatsStore.systemStats = {
+      system: { comfyui_version: '1.0.0' }
+    }
 
     const missingCoreNodes = {
       '1.2.0': [createMockNode('TestNode', '1.2.0')]
@@ -102,20 +98,18 @@ describe('MissingCoreNodesMessage', () => {
 
     const wrapper = mountComponent({ missingCoreNodes })
 
-    // Wait for all async operations
-    await nextTick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    // Wait for component to render
     await nextTick()
 
-    expect(mockSystemStatsStore.fetchSystemStats).toHaveBeenCalled()
+    // No need to check if fetchSystemStats was called since useAsyncState auto-fetches
     expect(wrapper.text()).toContain(
       'Some nodes require a newer version of ComfyUI (current: 1.0.0)'
     )
   })
 
   it('displays generic message when version is unavailable', async () => {
-    // Mock fetchSystemStats to resolve without setting systemStats
-    mockSystemStatsStore.fetchSystemStats.mockResolvedValue(undefined)
+    // No systemStats set - version unavailable
+    mockSystemStatsStore.systemStats = null
 
     const missingCoreNodes = {
       '1.2.0': [createMockNode('TestNode', '1.2.0')]
