@@ -259,84 +259,8 @@ export const isComboInputSpec = (
   return inputSpec.type === 'COMBO'
 }
 
-export const isColorInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is ColorInputSpec => {
-  return inputSpec.type === 'COLOR'
-}
-
-export const isFileUploadInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is FileUploadInputSpec => {
-  return inputSpec.type === 'FILEUPLOAD'
-}
-
-export const isImageInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is ImageInputSpec => {
-  return inputSpec.type === 'IMAGE'
-}
-
-export const isImageCompareInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is ImageCompareInputSpec => {
-  return inputSpec.type === 'IMAGECOMPARE'
-}
-
-export const isMarkdownInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is MarkdownInputSpec => {
-  return inputSpec.type === 'MARKDOWN'
-}
-
-export const isTreeSelectInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is TreeSelectInputSpec => {
-  return inputSpec.type === 'TREESELECT'
-}
-
-export const isMultiSelectInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is MultiSelectInputSpec => {
-  return inputSpec.type === 'MULTISELECT'
-}
-
 export const isChartInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is ChartInputSpec => {
   return inputSpec.type === 'CHART'
-}
-
-export const isGalleriaInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is GalleriaInputSpec => {
-  return inputSpec.type === 'GALLERIA'
-}
-
-export const isSelectButtonInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is SelectButtonInputSpec => {
-  return inputSpec.type === 'SELECTBUTTON'
-}
-
-export const isTextareaInputSpec = (
-  inputSpec: InputSpec
-): inputSpec is TextareaInputSpec => {
-  return inputSpec.type === 'TEXTAREA'
-}
-
-/**
- * Check if a node definition is a valid ComfyUI node definition.
- *
- * Note: This is just a simple check against the V1 schema.
- *
- * @param nodeDef - The node definition to check.
- * @returns True if the node definition is valid, false otherwise.
- */
-export const isComfyNodeDef = (nodeDef: unknown): nodeDef is ComfyNodeDef => {
-  return (
-    !!nodeDef &&
-    typeof nodeDef === 'object' &&
-    ['inputs', 'outputs'].every((key) => key in nodeDef)
-  )
 }
