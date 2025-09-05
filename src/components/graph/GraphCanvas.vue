@@ -302,10 +302,15 @@ watch(
 const { syncWithCanvas } = useTransformState()
 
 const nodesToRender = computed(() => {
+  // Early return for zero overhead when Vue nodes are disabled
+  if (!isVueNodesEnabled.value) {
+    return []
+  }
+
   // Access trigger to force re-evaluation after nodeManager initialization
   void nodeDataTrigger.value
 
-  if (!comfyApp.graph || !isVueNodesEnabled.value) {
+  if (!comfyApp.graph) {
     return []
   }
 
@@ -363,6 +368,11 @@ let lastOffsetX = 0
 let lastOffsetY = 0
 
 const handleTransformUpdate = () => {
+  // Skip all work if Vue nodes are disabled
+  if (!isVueNodesEnabled.value) {
+    return
+  }
+
   // Sync transform state only when it changes (avoids reflows)
   if (comfyApp.canvas?.ds) {
     const currentScale = comfyApp.canvas.ds.scale
@@ -643,28 +653,26 @@ onMounted(async () => {
 
   comfyAppReady.value = true
 
-  // Set up a one-time listener for when the first node is added
-  // This handles the case where Vue nodes are enabled but the graph starts empty
-  // TODO: Replace this with a reactive graph mutations observer when available
-  if (
-    isVueNodesEnabled.value &&
-    comfyApp.graph &&
-    !nodeManager &&
-    comfyApp.graph._nodes.length === 0
-  ) {
-    const originalOnNodeAdded = comfyApp.graph.onNodeAdded
-    comfyApp.graph.onNodeAdded = function (node: any) {
-      // Restore original handler
-      comfyApp.graph.onNodeAdded = originalOnNodeAdded
+  // Set up Vue node initialization only when enabled
+  if (isVueNodesEnabled.value) {
+    // Set up a one-time listener for when the first node is added
+    // This handles the case where Vue nodes are enabled but the graph starts empty
+    // TODO: Replace this with a reactive graph mutations observer when available
+    if (comfyApp.graph && !nodeManager && comfyApp.graph._nodes.length === 0) {
+      const originalOnNodeAdded = comfyApp.graph.onNodeAdded
+      comfyApp.graph.onNodeAdded = function (node: any) {
+        // Restore original handler
+        comfyApp.graph.onNodeAdded = originalOnNodeAdded
 
-      // Initialize node manager if needed
-      if (isVueNodesEnabled.value && !nodeManager) {
-        initializeNodeManager()
-      }
+        // Initialize node manager if needed
+        if (isVueNodesEnabled.value && !nodeManager) {
+          initializeNodeManager()
+        }
 
-      // Call original handler
-      if (originalOnNodeAdded) {
-        originalOnNodeAdded.call(this, node)
+        // Call original handler
+        if (originalOnNodeAdded) {
+          originalOnNodeAdded.call(this, node)
+        }
       }
     }
   }
