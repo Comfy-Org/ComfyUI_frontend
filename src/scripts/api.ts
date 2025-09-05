@@ -143,6 +143,8 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
+/** Asset API Types - Based on ComfyUI /api/assets endpoints */
+
 export class UnauthorizedError extends Error {}
 
 /** Ensures workers get a fair shake. */
@@ -1019,7 +1021,14 @@ export class ComfyApi extends EventTarget {
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
-    return (await axios.get(this.internalURL('/folder_paths'))).data
+    const response = await axios
+      .get(this.internalURL('/folder_paths'))
+      .catch(() => null)
+    if (!response) {
+      const { generateAllStandardPaths } = await import('@/utils/modelPaths')
+      return generateAllStandardPaths()
+    }
+    return response.data
   }
 
   /* Frees memory by unloading models and optionally freeing execution cache
