@@ -2,8 +2,8 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
+import { useManagerState } from '@/composables/useManagerState'
 import { api } from '@/scripts/api'
-import { useManagerStateStore } from '@/stores/managerStateStore'
 import { components } from '@/types/generatedManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -54,8 +54,8 @@ export const useComfyManagerService = () => {
 
   // Check if manager service should be available
   const isManagerServiceAvailable = () => {
-    const managerStore = useManagerStateStore()
-    return managerStore.isNewManagerUI()
+    const managerState = useManagerState()
+    return managerState.isNewManagerUI()
   }
 
   const handleRequestError = (

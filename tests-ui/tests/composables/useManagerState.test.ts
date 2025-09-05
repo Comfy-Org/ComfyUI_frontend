@@ -1,13 +1,9 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { ManagerUIState, useManagerState } from '@/composables/useManagerState'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock dependencies
@@ -53,9 +49,8 @@ vi.mock('@/stores/toastStore', () => ({
   }))
 }))
 
-describe('useManagerStateStore', () => {
+describe('useManagerState', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.clearAllMocks()
   })
 
@@ -71,9 +66,9 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.DISABLED)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.DISABLED)
     })
 
     it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
@@ -87,9 +82,9 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return NEW_UI state when client and server both support v4', () => {
@@ -108,9 +103,9 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
     })
 
     it('should return LEGACY_UI state when server supports v4 but client does not', () => {
@@ -129,9 +124,9 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return LEGACY_UI state when legacy manager extension exists', () => {
@@ -147,9 +142,9 @@ describe('useManagerStateStore', () => {
         extensions: [{ name: 'Comfy.CustomNodesManager' }]
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return NEW_UI state when server feature flags are undefined', () => {
@@ -166,9 +161,9 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
     })
 
     it('should return LEGACY_UI state when server does not support v4', () => {
@@ -185,9 +180,9 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should handle null systemStats gracefully', () => {
@@ -206,9 +201,9 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
+      const managerState = useManagerState()
 
-      expect(store.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
+      expect(managerState.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
     })
   })
 
@@ -225,8 +220,8 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
-      expect(store.isManagerEnabled()).toBe(true)
+      const managerState = useManagerState()
+      expect(managerState.isManagerEnabled()).toBe(true)
     })
 
     it('isManagerEnabled should return false when state is DISABLED', () => {
@@ -240,8 +235,8 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
-      expect(store.isManagerEnabled()).toBe(false)
+      const managerState = useManagerState()
+      expect(managerState.isManagerEnabled()).toBe(false)
     })
 
     it('isNewManagerUI should return true when state is NEW_UI', () => {
@@ -256,8 +251,8 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
-      expect(store.isNewManagerUI()).toBe(true)
+      const managerState = useManagerState()
+      expect(managerState.isNewManagerUI()).toBe(true)
     })
 
     it('isLegacyManagerUI should return true when state is LEGACY_UI', () => {
@@ -271,8 +266,8 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
-      expect(store.isLegacyManagerUI()).toBe(true)
+      const managerState = useManagerState()
+      expect(managerState.isLegacyManagerUI()).toBe(true)
     })
 
     it('shouldShowInstallButton should return true only for NEW_UI', () => {
@@ -287,8 +282,8 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
-      expect(store.shouldShowInstallButton()).toBe(true)
+      const managerState = useManagerState()
+      expect(managerState.shouldShowInstallButton()).toBe(true)
     })
 
     it('shouldShowManagerButtons should return true when not DISABLED', () => {
@@ -303,8 +298,8 @@ describe('useManagerStateStore', () => {
         extensions: []
       } as any)
 
-      const store = useManagerStateStore()
-      expect(store.shouldShowManagerButtons()).toBe(true)
+      const managerState = useManagerState()
+      expect(managerState.shouldShowManagerButtons()).toBe(true)
     })
   })
 })

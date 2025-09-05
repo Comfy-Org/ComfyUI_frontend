@@ -1,5 +1,6 @@
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { ManagerUIState, useManagerState } from '@/composables/useManagerState'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
@@ -24,10 +25,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -731,7 +728,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
-        await useManagerStateStore().openManager({
+        await useManagerState().openManager({
           showToastOnLegacyError: true
         })
       }
@@ -742,8 +739,8 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
       function: async () => {
-        const managerStore = useManagerStateStore()
-        const state = managerStore.getManagerUIState()
+        const managerState = useManagerState()
+        const state = managerState.getManagerUIState()
 
         // For DISABLED state, show error toast instead of opening settings
         if (state === ManagerUIState.DISABLED) {
@@ -756,7 +753,7 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
 
-        await managerStore.openManager({
+        await managerState.openManager({
           initialTab: ManagerTab.UpdateAvailable,
           showToastOnLegacyError: false
         })
@@ -768,7 +765,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
       function: async () => {
-        await useManagerStateStore().openManager({
+        await useManagerState().openManager({
           initialTab: ManagerTab.Missing,
           showToastOnLegacyError: false
         })
@@ -878,7 +875,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'mdi mdi-puzzle-outline',
       label: 'Manager',
       function: async () => {
-        await useManagerStateStore().openManager({
+        await useManagerState().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
@@ -946,7 +943,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        await useManagerStateStore().openManager({
+        await useManagerState().openManager({
           legacyCommand: 'Comfy.Manager.CustomNodesManager.ToggleVisibility',
           showToastOnLegacyError: true,
           isLegacyOnly: true
@@ -959,7 +956,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        await useManagerStateStore().openManager({
+        await useManagerState().openManager({
           showToastOnLegacyError: true,
           isLegacyOnly: true
         })

@@ -142,9 +142,9 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
+import { useManagerState } from '@/composables/useManagerState'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
-import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { ManagerTab } from '@/types/comfyManagerTypes'
@@ -314,7 +314,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
-        await useManagerStateStore().openManager({
+        await useManagerState().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })

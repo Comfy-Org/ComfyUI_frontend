@@ -83,10 +83,10 @@ import { useI18n } from 'vue-i18n'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import { useManagerState } from '@/composables/useManagerState'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useManagerStateStore } from '@/stores/managerStateStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -102,6 +102,8 @@ const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
+
+const managerState = useManagerState()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
@@ -135,10 +137,8 @@ const showSettings = (defaultPanel?: string) => {
   })
 }
 
-const managerStateStore = useManagerStateStore()
-
 const showManageExtensions = async () => {
-  await managerStateStore.openManager({
+  await managerState.openManager({
     initialTab: ManagerTab.All,
     showToastOnLegacyError: false
   })

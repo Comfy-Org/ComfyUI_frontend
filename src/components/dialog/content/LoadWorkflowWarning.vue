@@ -58,8 +58,8 @@ import { computed } from 'vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
+import { useManagerState } from '@/composables/useManagerState'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useManagerStateStore } from '@/stores/managerStateStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
@@ -74,6 +74,7 @@ const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
 const comfyManagerStore = useComfyManagerStore()
+const managerState = useManagerState()
 
 // Check if any of the missing packs are currently being installed
 const isInstalling = computed(() => {
@@ -104,20 +105,18 @@ const uniqueNodes = computed(() => {
     })
 })
 
-const managerStateStore = useManagerStateStore()
-
 // Show manager buttons unless manager is disabled
 const showManagerButtons = computed(() => {
-  return managerStateStore.shouldShowManagerButtons()
+  return managerState.shouldShowManagerButtons()
 })
 
 // Only show Install All button for NEW_UI (new manager with v4 support)
 const showInstallAllButton = computed(() => {
-  return managerStateStore.shouldShowInstallButton()
+  return managerState.shouldShowInstallButton()
 })
 
 const openManager = async () => {
-  await managerStateStore.openManager({
+  await managerState.openManager({
     initialTab: ManagerTab.Missing,
     showToastOnLegacyError: true
   })

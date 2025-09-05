@@ -1,5 +1,3 @@
-import { defineStore } from 'pinia'
-
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
@@ -14,7 +12,7 @@ export enum ManagerUIState {
   NEW_UI = 'new'
 }
 
-export const useManagerStateStore = defineStore('managerState', () => {
+export function useManagerState() {
   const systemStatsStore = useSystemStatsStore()
 
   /**
@@ -179,4 +177,4 @@ export const useManagerStateStore = defineStore('managerState', () => {
     shouldShowManagerButtons,
     openManager
   }
-})
+}
