@@ -41,9 +41,9 @@
           <!-- Model Filter -->
           <MultiSelect
             v-model="selectedModelObjects"
+            :show-search-box="true"
             :label="modelFilterLabel"
             :options="modelOptions"
-            :has-search-box="true"
             :search-placeholder="
               $t('templateWorkflows.searchModels', 'Search models...')
             "

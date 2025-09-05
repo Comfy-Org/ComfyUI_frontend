@@ -62,13 +62,11 @@
               <div
                 class="flex flex-wrap absolute bottom-4 left-4 px-1 pointer-events-auto gap-2"
               >
-                <span
+                <SquareChip
                   v-for="tag in template.tags"
                   :key="tag"
-                  class="px-2 py-1 text-xs bg-surface-100 dark-theme:bg-surface-800 text-surface-300 dark-theme:text-surface-300 rounded backdrop-blur-sm bg-[#D9D9D9]/40"
-                >
-                  {{ tag }}
-                </span>
+                  :label="tag"
+                />
               </div>
             </div>
           </template>
@@ -120,6 +118,7 @@ import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
+import SquareChip from '@/components/chip/SquareChip.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
