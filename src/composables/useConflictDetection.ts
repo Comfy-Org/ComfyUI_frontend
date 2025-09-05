@@ -639,7 +639,7 @@ export function useConflictDetection() {
     try {
       // Check if manager is disabled before running conflict detection
       const managerState = useManagerState()
-      if (!managerState.isManagerEnabled()) {
+      if (!managerState.isManagerEnabled.value) {
         console.log(
           '[ConflictDetection] Manager is disabled, skipping conflict detection'
         )

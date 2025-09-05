@@ -54,7 +54,7 @@ describe('useManagerState', () => {
     vi.clearAllMocks()
   })
 
-  describe('getManagerUIState function', () => {
+  describe('managerUIState property', () => {
     it('should return DISABLED state when --disable-manager is present', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: {
@@ -68,7 +68,7 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.DISABLED)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.DISABLED)
     })
 
     it('should return LEGACY_UI state when --enable-manager-legacy-ui is present', () => {
@@ -84,7 +84,7 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return NEW_UI state when client and server both support v4', () => {
@@ -105,7 +105,7 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.NEW_UI)
     })
 
     it('should return LEGACY_UI state when server supports v4 but client does not', () => {
@@ -126,7 +126,7 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return LEGACY_UI state when legacy manager extension exists', () => {
@@ -144,7 +144,7 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should return NEW_UI state when server feature flags are undefined', () => {
@@ -163,7 +163,7 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.NEW_UI)
     })
 
     it('should return LEGACY_UI state when server does not support v4', () => {
@@ -182,7 +182,7 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.LEGACY_UI)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.LEGACY_UI)
     })
 
     it('should handle null systemStats gracefully', () => {
@@ -203,11 +203,11 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
 
-      expect(managerState.getManagerUIState()).toBe(ManagerUIState.NEW_UI)
+      expect(managerState.managerUIState.value).toBe(ManagerUIState.NEW_UI)
     })
   })
 
-  describe('helper functions', () => {
+  describe('helper properties', () => {
     it('isManagerEnabled should return true when state is not DISABLED', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: { system: { argv: ['python', 'main.py'] } }
@@ -221,7 +221,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.isManagerEnabled()).toBe(true)
+      expect(managerState.isManagerEnabled.value).toBe(true)
     })
 
     it('isManagerEnabled should return false when state is DISABLED', () => {
@@ -236,7 +236,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.isManagerEnabled()).toBe(false)
+      expect(managerState.isManagerEnabled.value).toBe(false)
     })
 
     it('isNewManagerUI should return true when state is NEW_UI', () => {
@@ -252,7 +252,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.isNewManagerUI()).toBe(true)
+      expect(managerState.isNewManagerUI.value).toBe(true)
     })
 
     it('isLegacyManagerUI should return true when state is LEGACY_UI', () => {
@@ -267,7 +267,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.isLegacyManagerUI()).toBe(true)
+      expect(managerState.isLegacyManagerUI.value).toBe(true)
     })
 
     it('shouldShowInstallButton should return true only for NEW_UI', () => {
@@ -283,7 +283,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.shouldShowInstallButton()).toBe(true)
+      expect(managerState.shouldShowInstallButton.value).toBe(true)
     })
 
     it('shouldShowManagerButtons should return true when not DISABLED', () => {
@@ -299,7 +299,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.shouldShowManagerButtons()).toBe(true)
+      expect(managerState.shouldShowManagerButtons.value).toBe(true)
     })
   })
 })

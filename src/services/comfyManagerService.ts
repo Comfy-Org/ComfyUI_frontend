@@ -55,7 +55,7 @@ export const useComfyManagerService = () => {
   // Check if manager service should be available
   const isManagerServiceAvailable = () => {
     const managerState = useManagerState()
-    return managerState.isNewManagerUI()
+    return managerState.isNewManagerUI.value
   }
 
   const handleRequestError = (

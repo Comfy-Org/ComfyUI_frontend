@@ -740,7 +740,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.17.0',
       function: async () => {
         const managerState = useManagerState()
-        const state = managerState.getManagerUIState()
+        const state = managerState.managerUIState.value
 
         // For DISABLED state, show error toast instead of opening settings
         if (state === ManagerUIState.DISABLED) {
