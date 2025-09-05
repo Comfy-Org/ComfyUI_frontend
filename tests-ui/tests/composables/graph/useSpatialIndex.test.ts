@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSpatialIndex } from '@/composables/graph/useSpatialIndex'
 
-import { createBounds } from '../../helpers/nodeTestHelpers'
-
 // Mock @vueuse/core
 vi.mock('@vueuse/core', () => ({
   useDebounceFn: (fn: (...args: any[]) => any) => fn // Return function directly for testing
@@ -32,7 +30,7 @@ describe('useSpatialIndex', () => {
 
     it('should initialize with custom bounds', () => {
       const { initialize, quadTree } = spatialIndex
-      const customBounds = createBounds(0, 0, 5000, 3000)
+      const customBounds = { x: 0, y: 0, width: 5000, height: 3000 }
 
       initialize(customBounds)
 
@@ -79,11 +77,21 @@ describe('useSpatialIndex', () => {
       updateNode('node1', { x: 500, y: 500 }, { width: 200, height: 100 })
 
       // Query old position - should not find node
-      const oldResults = queryViewport(createBounds(50, 50, 300, 200))
+      const oldResults = queryViewport({
+        x: 50,
+        y: 50,
+        width: 300,
+        height: 200
+      })
       expect(oldResults).not.toContain('node1')
 
       // Query new position - should find node
-      const newResults = queryViewport(createBounds(450, 450, 300, 200))
+      const newResults = queryViewport({
+        x: 450,
+        y: 450,
+        width: 300,
+        height: 200
+      })
       expect(newResults).toContain('node1')
     })
 
@@ -213,7 +221,7 @@ describe('useSpatialIndex', () => {
       const { queryViewport } = spatialIndex
 
       // Query top-left quadrant
-      const results = queryViewport(createBounds(-50, -50, 200, 200))
+      const results = queryViewport({ x: -50, y: -50, width: 200, height: 200 })
       expect(results).toContain('node1')
       expect(results).not.toContain('node2')
       expect(results).not.toContain('node3')
@@ -224,7 +232,7 @@ describe('useSpatialIndex', () => {
       const { queryViewport } = spatialIndex
 
       // Query entire area
-      const results = queryViewport(createBounds(-50, -50, 400, 400))
+      const results = queryViewport({ x: -50, y: -50, width: 400, height: 400 })
       expect(results).toHaveLength(4)
       expect(results).toContain('node1')
       expect(results).toContain('node2')
@@ -235,14 +243,19 @@ describe('useSpatialIndex', () => {
     it('should return empty array for empty region', () => {
       const { queryViewport } = spatialIndex
 
-      const results = queryViewport(createBounds(1000, 1000, 100, 100))
+      const results = queryViewport({
+        x: 1000,
+        y: 1000,
+        width: 100,
+        height: 100
+      })
       expect(results).toEqual([])
     })
 
     it('should update metrics after query', () => {
       const { queryViewport, metrics } = spatialIndex
 
-      queryViewport(createBounds(0, 0, 300, 300))
+      queryViewport({ x: 0, y: 0, width: 300, height: 300 })
 
       expect(metrics.value.queryTime).toBeGreaterThan(0)
       expect(metrics.value.visibleNodes).toBe(4)
@@ -251,7 +264,12 @@ describe('useSpatialIndex', () => {
     it('should handle query when quadTree is null', () => {
       const freshIndex = useSpatialIndex()
 
-      const results = freshIndex.queryViewport(createBounds(0, 0, 100, 100))
+      const results = freshIndex.queryViewport({
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100
+      })
       expect(results).toEqual([])
     })
   })
@@ -337,7 +355,7 @@ describe('useSpatialIndex', () => {
       const { clear, queryViewport, metrics } = spatialIndex
 
       // Do a query to set visible nodes
-      queryViewport(createBounds(0, 0, 500, 500))
+      queryViewport({ x: 0, y: 0, width: 500, height: 500 })
       expect(metrics.value.visibleNodes).toBe(2)
 
       clear()
@@ -381,11 +399,21 @@ describe('useSpatialIndex', () => {
       expect(metrics.value.rebuildCount).toBe(2)
 
       // Old nodes should be gone
-      const oldResults = queryViewport(createBounds(-50, -50, 100, 100))
+      const oldResults = queryViewport({
+        x: -50,
+        y: -50,
+        width: 100,
+        height: 100
+      })
       expect(oldResults).not.toContain('old1')
 
       // New nodes should be findable
-      const newResults = queryViewport(createBounds(50, 50, 200, 200))
+      const newResults = queryViewport({
+        x: 50,
+        y: 50,
+        width: 200,
+        height: 200
+      })
       expect(newResults).toContain('new1')
       expect(newResults).toContain('new2')
     })
@@ -435,7 +463,7 @@ describe('useSpatialIndex', () => {
       expect(metrics.value.totalNodes).toBe(1)
 
       // Query
-      queryViewport(createBounds(-50, -50, 200, 200))
+      queryViewport({ x: -50, y: -50, width: 200, height: 200 })
       expect(metrics.value.queryTime).toBeGreaterThan(0)
       expect(metrics.value.visibleNodes).toBe(1)
     })
@@ -448,7 +476,7 @@ describe('useSpatialIndex', () => {
       updateNode('point', { x: 100, y: 100 }, { width: 0, height: 0 })
 
       // Should still be findable
-      const results = queryViewport(createBounds(50, 50, 100, 100))
+      const results = queryViewport({ x: 50, y: 50, width: 100, height: 100 })
       expect(results).toContain('point')
     })
 
@@ -457,7 +485,12 @@ describe('useSpatialIndex', () => {
 
       updateNode('negative', { x: -500, y: -500 }, { width: 100, height: 100 })
 
-      const results = queryViewport(createBounds(-600, -600, 200, 200))
+      const results = queryViewport({
+        x: -600,
+        y: -600,
+        width: 200,
+        height: 200
+      })
       expect(results).toContain('negative')
     })
 
@@ -467,7 +500,7 @@ describe('useSpatialIndex', () => {
       updateNode('huge', { x: 0, y: 0 }, { width: 5000, height: 5000 })
 
       // Should be found even when querying small area within it
-      const results = queryViewport(createBounds(100, 100, 10, 10))
+      const results = queryViewport({ x: 100, y: 100, width: 10, height: 10 })
       expect(results).toContain('huge')
     })
   })
