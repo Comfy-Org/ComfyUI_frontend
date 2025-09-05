@@ -11,6 +11,17 @@ LiteGraphGlobal {
   "CARD_SHAPE": 4,
   "CENTER": 5,
   "CIRCLE_SHAPE": 3,
+  "COMFY_VUE_NODE_DIMENSIONS": {
+    "components": {
+      "HEADER_HEIGHT": 34,
+      "SLOT_HEIGHT": 24,
+      "STANDARD_WIDGET_HEIGHT": 30,
+    },
+    "spacing": {
+      "BETWEEN_SLOTS_AND_BODY": 8,
+      "BETWEEN_WIDGETS": 8,
+    },
+  },
   "CONNECTING_LINK_COLOR": "#AFA",
   "Classes": {
     "InputIndicators": [Function],
@@ -199,5 +210,6 @@ LiteGraphGlobal {
   "truncateWidgetValuesFirst": false,
   "use_uuids": false,
   "uuidv4": [Function],
+  "vueNodesMode": false,
 }
 `;

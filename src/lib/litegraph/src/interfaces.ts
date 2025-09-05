@@ -5,6 +5,7 @@ import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
+import { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { LinkDirection, RenderShape } from './types/globalEnums'
@@ -471,6 +472,7 @@ export interface DefaultConnectionColors {
 
 export interface ISubgraphInput extends INodeInputSlot {
   _listenerController?: AbortController
+  _subgraphSlot: SubgraphInput
 }
 
 /**
