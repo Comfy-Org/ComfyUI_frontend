@@ -183,6 +183,7 @@ let cleanupNodeManager: (() => void) | null = null
 
 // Slot layout sync management
 let slotSync: ReturnType<typeof useSlotLayoutSync> | null = null
+let slotSyncStarted = false
 let linkSync: ReturnType<typeof useLinkLayoutSync> | null = null
 const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
 const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
@@ -240,12 +241,6 @@ const initializeNodeManager = () => {
   const { startSync } = useLayoutSync()
   startSync(canvasStore.canvas)
 
-  // Initialize slot layout sync for hit detection
-  slotSync = useSlotLayoutSync()
-  if (canvasStore.canvas) {
-    slotSync.start(canvasStore.canvas as LGraphCanvas)
-  }
-
   // Initialize link layout sync for event-driven updates
   linkSync = useLinkLayoutSync()
   if (canvasStore.canvas) {
@@ -265,12 +260,6 @@ const disposeNodeManagerAndSyncs = () => {
   }
   nodeManager = null
   cleanupNodeManager = null
-
-  // Clean up slot layout sync
-  if (slotSync) {
-    slotSync.stop()
-    slotSync = null
-  }
 
   // Clean up link layout sync
   if (linkSync) {
@@ -296,6 +285,68 @@ watch(
     }
   },
   { immediate: true }
+)
+
+// Ensure slot layout sync starts whenever a canvas is available (LiteGraph mode)
+watch(
+  () => canvasStore.canvas,
+  (canvas, oldCanvas) => {
+    if (!canvas) {
+      // Canvas was removed - stop sync if active
+      if (slotSync && slotSyncStarted) {
+        slotSync.stop()
+        slotSyncStarted = false
+      }
+      // Clear any stale slot layouts when canvas is torn down
+      layoutStore.clearAllSlotLayouts()
+      return
+    }
+
+    // Canvas changed - restart sync
+    if (oldCanvas && oldCanvas !== canvas) {
+      if (slotSync && slotSyncStarted) {
+        slotSync.stop()
+        slotSyncStarted = false
+      }
+    }
+
+    // Start sync if not in Vue mode and not already started
+    if (!slotSync) slotSync = useSlotLayoutSync()
+    if (!slotSyncStarted && !isVueNodesEnabled.value) {
+      const started = slotSync.start(canvas as LGraphCanvas)
+      slotSyncStarted = started
+    }
+  },
+  { immediate: true }
+)
+
+// On rendering mode change, clear slot layouts and manage slot sync
+watch(
+  () => isVueNodesEnabled.value,
+  (enabled) => {
+    // Always clear invalid slot layouts from the prior mode
+    layoutStore.clearAllSlotLayouts()
+
+    if (enabled) {
+      // Switching TO Vue: Stop slot sync to avoid duplicate registration
+      if (slotSync && slotSyncStarted) {
+        slotSync.stop()
+        slotSyncStarted = false
+      }
+      // DOM will re-register via useDomSlotRegistration
+    } else {
+      // Switching TO LiteGraph
+      if (canvasStore.canvas && comfyApp.graph) {
+        // Ensure slot sync is active
+        if (!slotSync) slotSync = useSlotLayoutSync()
+        if (!slotSyncStarted) {
+          const started = slotSync.start(canvasStore.canvas as LGraphCanvas)
+          slotSyncStarted = started
+        }
+      }
+    }
+  },
+  { immediate: false }
 )
 
 // Transform state for viewport culling
@@ -726,6 +777,7 @@ onUnmounted(() => {
   if (slotSync) {
     slotSync.stop()
     slotSync = null
+    slotSyncStarted = false
   }
   if (linkSync) {
     linkSync.stop()
