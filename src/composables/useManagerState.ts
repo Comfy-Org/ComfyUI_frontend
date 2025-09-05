@@ -26,7 +26,7 @@ export function useManagerState() {
     computed((): ManagerUIState => {
       // Wait for systemStats to be initialized
       if (!systemStatsStore.isInitialized) {
-        // Default to NEW_UI while loading
+        // Default to DISABLED while loading
         return ManagerUIState.DISABLED
       }
 
