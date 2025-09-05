@@ -13,7 +13,6 @@
     :style="{
       height: slotHeight + 'px'
     }"
-    @pointerdown="handleClick"
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -63,10 +62,6 @@ interface InputSlotProps {
 
 const props = defineProps<InputSlotProps>()
 
-const emit = defineEmits<{
-  'slot-click': [event: PointerEvent]
-}>()
-
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
@@ -82,13 +77,6 @@ const slotColor = computed(() => getSlotColor(props.slotData.type))
 
 // Get slot height from litegraph constants
 const slotHeight = COMFY_VUE_NODE_DIMENSIONS.components.SLOT_HEIGHT
-
-// Handle click events
-const handleClick = (event: PointerEvent) => {
-  if (!props.readonly) {
-    emit('slot-click', event)
-  }
-}
 
 const transformState = inject<TransformState | undefined>(
   'transformState',
