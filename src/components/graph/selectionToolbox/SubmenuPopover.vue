@@ -33,7 +33,7 @@
           :style="{ backgroundColor: subOption.color }"
         />
         <template v-else-if="!subOption.color">
-          <ILucideCheck
+          <Check
             v-if="isShapeSelected(subOption)"
             :size="16"
             class="flex-shrink-0"
@@ -47,9 +47,9 @@
 </template>
 
 <script setup lang="ts">
+import { Check } from 'lucide-vue-next'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
-import ILucideCheck from '~icons/lucide/check'
 
 import {
   type MenuOption,

@@ -1,27 +1,29 @@
+import {
+  AlignCenterHorizontal,
+  AlignStartHorizontal,
+  Ban,
+  Box,
+  Copy,
+  Download,
+  Expand,
+  ExternalLink,
+  FolderPlus,
+  Frame,
+  Group,
+  Info,
+  Maximize2,
+  Minimize2,
+  MoveDiagonal2,
+  Palette,
+  Pin,
+  PinOff,
+  Play,
+  Shrink,
+  Trash2,
+  ZapOff
+} from 'lucide-vue-next'
 import { type Component, computed, markRaw, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
-import ILucideAlignStartHorizontal from '~icons/lucide/align-start-horizontal'
-import ILucideBan from '~icons/lucide/ban'
-import ILucideBox from '~icons/lucide/box'
-import ILucideCopy from '~icons/lucide/copy'
-import ILucideDownload from '~icons/lucide/download'
-import ILucideExpand from '~icons/lucide/expand'
-import ILucideExternalLink from '~icons/lucide/external-link'
-import ILucideFolderPlus from '~icons/lucide/folder-plus'
-import ILucideFrame from '~icons/lucide/frame'
-import ILucideGroup from '~icons/lucide/group'
-import ILucideInfo from '~icons/lucide/info'
-import ILucideMaximize2 from '~icons/lucide/maximize-2'
-import ILucideMinimize2 from '~icons/lucide/minimize-2'
-import ILucideMoveDiagonal2 from '~icons/lucide/move-diagonal-2'
-import ILucidePalette from '~icons/lucide/palette'
-import ILucidePin from '~icons/lucide/pin'
-import ILucidePinOff from '~icons/lucide/pin-off'
-import ILucidePlay from '~icons/lucide/play'
-import ILucideShrink from '~icons/lucide/shrink'
-import ILucideTrash2 from '~icons/lucide/trash-2'
-import ILucideZapOff from '~icons/lucide/zap-off'
 
 import { useFrameNodes } from '@/composables/graph/useFrameNodes'
 import { useNodeArrangement } from '@/composables/graph/useNodeArrangement'
@@ -251,14 +253,14 @@ export function useMoreOptionsMenu() {
     if (nodeDef.value) {
       options.push({
         label: t('contextMenu.Node Info'),
-        icon: markRaw(ILucideInfo),
+        icon: markRaw(Info),
         action: showNodeHelp
       })
     }
 
     options.push({
       label: t('contextMenu.Adjust Size'),
-      icon: markRaw(ILucideMoveDiagonal2),
+      icon: markRaw(MoveDiagonal2),
       action: adjustNodeSize
     })
 
@@ -267,7 +269,7 @@ export function useMoreOptionsMenu() {
         label: states.collapsed
           ? t('contextMenu.Expand Node')
           : t('contextMenu.Minimize Node'),
-        icon: markRaw(states.collapsed ? ILucideMaximize2 : ILucideMinimize2),
+        icon: markRaw(states.collapsed ? Maximize2 : Minimize2),
         action: () => {
           toggleNodeCollapse()
           bump()
@@ -275,14 +277,14 @@ export function useMoreOptionsMenu() {
       },
       {
         label: t('contextMenu.Shape'),
-        icon: markRaw(ILucideBox),
+        icon: markRaw(Box),
         hasSubmenu: true,
         submenu: shapeSubmenu.value,
         action: () => {}
       },
       {
         label: t('contextMenu.Color'),
-        icon: markRaw(ILucidePalette),
+        icon: markRaw(Palette),
         hasSubmenu: true,
         submenu: colorSubmenu.value,
         action: () => {}
@@ -300,17 +302,17 @@ export function useMoreOptionsMenu() {
         },
         {
           label: t('contextMenu.Open Image'),
-          icon: markRaw(ILucideExternalLink),
+          icon: markRaw(ExternalLink),
           action: openImage
         },
         {
           label: t('contextMenu.Copy Image'),
-          icon: markRaw(ILucideCopy),
+          icon: markRaw(Copy),
           action: copyImage
         },
         {
           label: t('contextMenu.Save Image'),
-          icon: markRaw(ILucideDownload),
+          icon: markRaw(Download),
           action: saveImage
         }
       )
@@ -320,18 +322,18 @@ export function useMoreOptionsMenu() {
     if (hasSubgraphsSelected) {
       options.push({
         label: t('contextMenu.Add Subgraph to Library'),
-        icon: markRaw(ILucideFolderPlus),
+        icon: markRaw(FolderPlus),
         action: addSubgraphToLibrary
       })
       options.push({
         label: t('contextMenu.Unpack Subgraph'),
-        icon: markRaw(ILucideExpand),
+        icon: markRaw(Expand),
         action: unpackSubgraph
       })
     } else {
       options.push({
         label: t('contextMenu.Convert to Subgraph'),
-        icon: markRaw(ILucideShrink),
+        icon: markRaw(Shrink),
         action: convertToSubgraph,
         badge: BadgeVariant.NEW
       })
@@ -341,13 +343,13 @@ export function useMoreOptionsMenu() {
       options.push(
         {
           label: t('contextMenu.Convert to Group Node'),
-          icon: markRaw(ILucideGroup),
+          icon: markRaw(Group),
           action: convertToGroupNodes,
           badge: BadgeVariant.DEPRECATED
         },
         {
           label: t('g.frameNodes'),
-          icon: markRaw(ILucideFrame),
+          icon: markRaw(Frame),
           action: frameNodes
         }
       )
@@ -358,7 +360,7 @@ export function useMoreOptionsMenu() {
     // Add remaining options
     options.push({
       label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
-      icon: markRaw(states.pinned ? ILucidePinOff : ILucidePin),
+      icon: markRaw(states.pinned ? PinOff : Pin),
       action: () => {
         toggleNodePin()
         bump()
@@ -370,14 +372,14 @@ export function useMoreOptionsMenu() {
       options.push(
         {
           label: t('contextMenu.Align Selected To'),
-          icon: markRaw(ILucideAlignStartHorizontal),
+          icon: markRaw(AlignStartHorizontal),
           hasSubmenu: true,
           submenu: alignSubmenu.value,
           action: () => {}
         },
         {
           label: t('contextMenu.Distribute Nodes'),
-          icon: markRaw(ILucideAlignCenterHorizontal),
+          icon: markRaw(AlignCenterHorizontal),
           hasSubmenu: true,
           submenu: distributeSubmenu.value,
           action: () => {}
@@ -389,7 +391,7 @@ export function useMoreOptionsMenu() {
       label: states.bypassed
         ? t('contextMenu.Remove Bypass')
         : t('contextMenu.Bypass'),
-      icon: markRaw(states.bypassed ? ILucideZapOff : ILucideBan),
+      icon: markRaw(states.bypassed ? ZapOff : Ban),
       shortcut: 'Ctrl+B',
       action: () => {
         toggleNodeBypass()
@@ -400,7 +402,7 @@ export function useMoreOptionsMenu() {
     if (hasOutputNodesSelected.value) {
       options.push({
         label: t('contextMenu.Run Branch'),
-        icon: markRaw(ILucidePlay),
+        icon: markRaw(Play),
         action: runBranch
       })
     }
@@ -409,7 +411,7 @@ export function useMoreOptionsMenu() {
 
     options.push({
       label: t('contextMenu.Delete'),
-      icon: markRaw(ILucideTrash2),
+      icon: markRaw(Trash2),
       shortcut: 'Delete',
       action: deleteSelection
     })

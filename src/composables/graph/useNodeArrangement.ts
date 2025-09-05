@@ -1,11 +1,13 @@
+import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignStartVertical
+} from 'lucide-vue-next'
 import { type Component, markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ILucideAlignCenterHorizontal from '~icons/lucide/align-center-horizontal'
-import ILucideAlignCenterVertical from '~icons/lucide/align-center-vertical'
-import ILucideAlignEndHorizontal from '~icons/lucide/align-end-horizontal'
-import ILucideAlignEndVertical from '~icons/lucide/align-end-vertical'
-import ILucideAlignStartHorizontal from '~icons/lucide/align-start-horizontal'
-import ILucideAlignStartVertical from '~icons/lucide/align-start-vertical'
 
 import type { Direction } from '@/lib/litegraph/src/interfaces'
 import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
@@ -40,25 +42,25 @@ export function useNodeArrangement() {
       name: 'top',
       localizedName: t('contextMenu.Top'),
       value: 'top',
-      icon: markRaw(ILucideAlignStartVertical)
+      icon: markRaw(AlignStartVertical)
     },
     {
       name: 'bottom',
       localizedName: t('contextMenu.Bottom'),
       value: 'bottom',
-      icon: markRaw(ILucideAlignEndVertical)
+      icon: markRaw(AlignEndVertical)
     },
     {
       name: 'left',
       localizedName: t('contextMenu.Left'),
       value: 'left',
-      icon: markRaw(ILucideAlignStartHorizontal)
+      icon: markRaw(AlignStartHorizontal)
     },
     {
       name: 'right',
       localizedName: t('contextMenu.Right'),
       value: 'right',
-      icon: markRaw(ILucideAlignEndHorizontal)
+      icon: markRaw(AlignEndHorizontal)
     }
   ]
 
@@ -67,13 +69,13 @@ export function useNodeArrangement() {
       name: 'horizontal',
       localizedName: t('contextMenu.Horizontal'),
       value: true,
-      icon: markRaw(ILucideAlignCenterHorizontal)
+      icon: markRaw(AlignCenterHorizontal)
     },
     {
       name: 'vertical',
       localizedName: t('contextMenu.Vertical'),
       value: false,
-      icon: markRaw(ILucideAlignCenterVertical)
+      icon: markRaw(AlignCenterVertical)
     }
   ]
 
