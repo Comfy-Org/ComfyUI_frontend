@@ -40,6 +40,7 @@ const config: KnipConfig = {
     'coverage/**',
     // i18n config
     '.i18nrc.cjs',
+    'playwright.i18n.config.ts',
     // Vitest litegraph config
     'vitest.litegraph.config.ts',
     // Test setup files
