@@ -1,7 +1,7 @@
 import { merge } from 'es-toolkit/compat'
 import { Component } from 'vue'
 
-import WorkflowTemplateSelector from '@/components/custom/widget/WorkflowTemplateSelector.vue'
+import NewWorkflowTemplateSelectorDialog from '@/components/custom/widget/NewWorkflowTemplateSelectorDialog.vue'
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
@@ -145,7 +145,7 @@ export const useDialogService = () => {
 
     showLayoutDialog({
       key: 'global-workflow-template-selector',
-      component: WorkflowTemplateSelector,
+      component: NewWorkflowTemplateSelectorDialog,
       // Pass through sizing hint so inner layout adapts to parent rather than viewport
       props: {
         onClose: () =>
