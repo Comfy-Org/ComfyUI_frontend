@@ -383,76 +383,6 @@ export function createTestSubgraphData(
 }
 
 /**
- * Creates a complex subgraph with multiple nodes and connections.
- * Useful for testing realistic scenarios.
- * @param nodeCount Number of internal nodes to create
- * @returns Complex subgraph data structure
- */
-export function createComplexSubgraphData(
-  nodeCount: number = 5
-): ExportedSubgraph {
-  const nodes = []
-  const links: Record<
-    string,
-    {
-      id: number
-      origin_id: number
-      origin_slot: number
-      target_id: number
-      target_slot: number
-      type: string
-    }
-  > = {}
-
-  // Create internal nodes
-  for (let i = 0; i < nodeCount; i++) {
-    nodes.push({
-      id: i + 1, // Start from 1 to avoid conflicts with IO nodes
-      type: 'basic/test',
-      pos: [100 + i * 150, 200],
-      size: [120, 60],
-      inputs: [{ name: 'in', type: '*', link: null }],
-      outputs: [{ name: 'out', type: '*', links: [] }],
-      properties: { value: i },
-      flags: {},
-      mode: 0
-    })
-  }
-
-  // Create some internal links
-  for (let i = 0; i < nodeCount - 1; i++) {
-    const linkId = i + 1
-    links[linkId] = {
-      id: linkId,
-      origin_id: i + 1,
-      origin_slot: 0,
-      target_id: i + 2,
-      target_slot: 0,
-      type: '*'
-    }
-  }
-
-  return createTestSubgraphData({
-    // @ts-expect-error TODO: Fix after merge - nodes parameter type
-    nodes,
-    // @ts-expect-error TODO: Fix after merge - links parameter type
-    links,
-    inputs: [
-      // @ts-expect-error TODO: Fix after merge - input object type
-      { name: 'input1', type: 'number', pos: [0, 0] },
-      // @ts-expect-error TODO: Fix after merge - input object type
-      { name: 'input2', type: 'string', pos: [0, 1] }
-    ],
-    outputs: [
-      // @ts-expect-error TODO: Fix after merge - output object type
-      { name: 'output1', type: 'number', pos: [0, 0] },
-      // @ts-expect-error TODO: Fix after merge - output object type
-      { name: 'output2', type: 'string', pos: [0, 1] }
-    ]
-  })
-}
-
-/**
  * Creates an event capture system for testing event sequences.
  * @param eventTarget The event target to monitor
  * @param eventTypes Array of event types to capture
@@ -491,40 +421,6 @@ export function createEventCapture<T = unknown>(
     getEventsByType: (type: string) =>
       capturedEvents.filter((e) => e.type === type)
   }
-}
-
-/**
- * Utility to log subgraph structure for debugging tests.
- * @param subgraph The subgraph to inspect
- * @param label Optional label for the log output
- */
-export function logSubgraphStructure(
-  subgraph: Subgraph,
-  label: string = 'Subgraph'
-): void {
-  console.log(`\n=== ${label} Structure ===`)
-  console.log(`Name: ${subgraph.name}`)
-  console.log(`ID: ${subgraph.id}`)
-  console.log(`Inputs: ${subgraph.inputs.length}`)
-  console.log(`Outputs: ${subgraph.outputs.length}`)
-  console.log(`Nodes: ${subgraph.nodes.length}`)
-  console.log(`Links: ${subgraph.links.size}`)
-
-  if (subgraph.inputs.length > 0) {
-    console.log(
-      'Input details:',
-      subgraph.inputs.map((i) => ({ name: i.name, type: i.type }))
-    )
-  }
-
-  if (subgraph.outputs.length > 0) {
-    console.log(
-      'Output details:',
-      subgraph.outputs.map((o) => ({ name: o.name, type: o.type }))
-    )
-  }
-
-  console.log('========================\n')
 }
 
 // Re-export expect from vitest for convenience

@@ -30,34 +30,6 @@ export function satisfiesVersion(version: string, range: string): boolean {
 }
 
 /**
- * Compares two versions and returns the difference type
- * @param version1 First version
- * @param version2 Second version
- * @returns Difference type or null if comparison fails
- */
-export function getVersionDifference(
-  version1: string,
-  version2: string
-): semver.ReleaseType | null {
-  try {
-    const clean1 = cleanVersion(version1)
-    const clean2 = cleanVersion(version2)
-    return semver.diff(clean1, clean2)
-  } catch {
-    return null
-  }
-}
-
-/**
- * Checks if a version is valid according to semver
- * @param version Version string to validate
- * @returns true if version is valid
- */
-export function isValidVersion(version: string): boolean {
-  return semver.valid(version) !== null
-}
-
-/**
  * Checks version compatibility and returns conflict details.
  * Supports all semver ranges including >=, <=, >, <, ~, ^ operators.
  * @param type Conflict type (e.g., 'comfyui_version', 'frontend_version')

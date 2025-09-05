@@ -343,6 +343,14 @@
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
   },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Enable Vue node rendering",
+    "tooltip": "Render nodes as Vue components instead of canvas elements. Experimental feature."
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "Enable Vue widgets",
+    "tooltip": "Render widgets as Vue components within Vue nodes."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget control mode",
     "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.",

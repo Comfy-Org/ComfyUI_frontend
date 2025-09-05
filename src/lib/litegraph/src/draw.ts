@@ -1,7 +1,7 @@
 import type { Rectangle } from './infrastructure/Rectangle'
 import type { CanvasColour, Rect } from './interfaces'
 import { LiteGraph } from './litegraph'
-import { LinkDirection, RenderShape, TitleMode } from './types/globalEnums'
+import { RenderShape, TitleMode } from './types/globalEnums'
 
 const ELLIPSIS = '\u2026'
 const TWO_DOT_LEADER = '\u2025'
@@ -22,12 +22,7 @@ export enum SlotShape {
 }
 
 /** @see LinkDirection */
-export enum SlotDirection {
-  Up = LinkDirection.UP,
-  Right = LinkDirection.RIGHT,
-  Down = LinkDirection.DOWN,
-  Left = LinkDirection.LEFT
-}
+export enum SlotDirection {}
 
 export enum LabelPosition {
   Left = 'left',
