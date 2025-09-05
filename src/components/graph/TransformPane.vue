@@ -25,7 +25,6 @@ interface TransformPaneProps {
 
 const props = defineProps<TransformPaneProps>()
 
-// Transform state management
 const {
   camera,
   transformStyle,
@@ -35,17 +34,12 @@ const {
   isNodeInViewport
 } = useTransformState()
 
-// Transform settling detection for re-rasterization optimization
 const canvasElement = computed(() => props.canvas?.canvas)
-const { isTransforming } = useTransformSettling(canvasElement, {
+const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
   settleDelay: 200,
   trackPan: true
 })
 
-// Use isTransforming for the CSS class (aliased for clarity)
-const isInteracting = isTransforming
-
-// Provide transform utilities to child components
 provide('transformState', {
   camera,
   canvasToScreen,
@@ -53,7 +47,6 @@ provide('transformState', {
   isNodeInViewport
 })
 
-// Event delegation for node interactions
 const handlePointerDown = (event: PointerEvent) => {
   const target = event.target as HTMLElement
   const nodeElement = target.closest('[data-node-id]')
@@ -64,7 +57,6 @@ const handlePointerDown = (event: PointerEvent) => {
   }
 }
 
-// Canvas transform synchronization
 const emit = defineEmits<{
   rafStatusChange: [active: boolean]
   transformUpdate: [time: number]
