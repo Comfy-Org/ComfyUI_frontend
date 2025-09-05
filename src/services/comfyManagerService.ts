@@ -35,7 +35,6 @@ enum ManagerRoute {
   QUEUE_TASK = 'manager/queue/task'
 }
 
-// Always use v2 API for New Manager (no dynamic switching needed)
 const managerApiClient = axios.create({
   baseURL: api.apiURL('/v2/'),
   headers: {
