@@ -15,7 +15,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import { getSlotKey } from '@/renderer/core/layout/slots/SlotIdentifier'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 export interface SlotPositionContext {

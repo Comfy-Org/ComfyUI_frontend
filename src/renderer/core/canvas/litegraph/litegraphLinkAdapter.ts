@@ -22,6 +22,7 @@ import {
   LinkMarkerShape,
   LinkRenderType
 } from '@/lib/litegraph/src/types/globalEnums'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
   type ArrowShape,
   CanvasPathRenderer,
@@ -31,8 +32,7 @@ import {
   type RenderContext as PathRenderContext,
   type Point,
   type RenderMode
-} from '@/renderer/core/canvas/PathRenderer'
-import { getSlotPosition } from '@/renderer/core/canvas/litegraph/SlotCalculations'
+} from '@/renderer/core/canvas/pathRenderer'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 

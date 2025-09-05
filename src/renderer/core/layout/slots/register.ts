@@ -11,11 +11,11 @@ import {
   type SlotPositionContext,
   calculateInputSlotPos,
   calculateOutputSlotPos
-} from '@/renderer/core/canvas/litegraph/SlotCalculations'
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 
-import { getSlotKey } from './SlotIdentifier'
+import { getSlotKey } from './slotIdentifier'
 
 /**
  * Register slot layout with the layout store for hit testing

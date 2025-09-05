@@ -4,8 +4,8 @@ import {
   calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
   calculateOutputSlotPos
-} from '@/renderer/core/canvas/litegraph/SlotCalculations'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/LayoutMutations'
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScale } from './DragAndScale'

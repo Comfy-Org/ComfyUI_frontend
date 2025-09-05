@@ -5,7 +5,7 @@ import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import {
   type LinkRenderContext,
   LitegraphLinkAdapter
-} from '@/renderer/core/canvas/litegraph/LitegraphLinkAdapter'
+} from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 
 import { CanvasPointer } from './CanvasPointer'

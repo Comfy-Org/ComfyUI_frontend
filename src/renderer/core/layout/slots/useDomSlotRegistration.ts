@@ -24,7 +24,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/LayoutStore'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
-import { getSlotKey } from './SlotIdentifier'
+import { getSlotKey } from './slotIdentifier'
 
 export type TransformState = {
   screenToCanvas: (p: LayoutPoint) => LayoutPoint
