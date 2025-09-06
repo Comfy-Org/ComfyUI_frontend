@@ -29,8 +29,10 @@
       :severity="props.option.badge === 'new' ? 'info' : 'secondary'"
       :value="t(props.option.badge)"
       :class="{
-        'bg-[#0B8CE9] rounded-4xl': props.option.badge === 'new',
-        'bg-[#000] rounded-4xl': props.option.badge === 'deprecated',
+        'bg-[#31B9F4] dark-theme:bg-[#0B8CE9] rounded-4xl':
+          props.option.badge === 'new',
+        'bg-[#9C9EAB] dark-theme:bg-[#000] rounded-4xl':
+          props.option.badge === 'deprecated',
         'text-white uppercase text-[9px] h-4 px-1 gap-2.5': true
       }"
     />
