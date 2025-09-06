@@ -28,7 +28,7 @@ export function useManagerState() {
   const managerUIState = readonly(
     computed((): ManagerUIState => {
       // Wait for systemStats to be initialized
-      if (!systemInitialized) {
+      if (!systemInitialized.value) {
         // Default to DISABLED while loading
         return ManagerUIState.DISABLED
       }
