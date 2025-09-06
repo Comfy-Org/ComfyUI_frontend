@@ -184,8 +184,6 @@ export function useCoreCommands(): ComfyCommand[] {
             const subgraph = app.canvas.subgraph
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
-          } else {
-            app.graph.clear()
           }
           api.dispatchCustomEvent('graphCleared')
         }

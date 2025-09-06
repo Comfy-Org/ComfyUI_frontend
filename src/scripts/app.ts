@@ -1765,6 +1765,12 @@ export class ComfyApp {
     executionStore.lastExecutionError = null
 
     useDomWidgetStore().clear()
+
+    // Subgraph does not properly implement `clear` and the parent class's
+    // (`LGraph`) `clear` breaks the subgraph structure.
+    if (this.graph && !this.canvas.subgraph) {
+      this.graph.clear()
+    }
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
