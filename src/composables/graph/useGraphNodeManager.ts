@@ -235,11 +235,15 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     }
     if (typeof value === 'object') {
       // Check if it's a File array
-      if (Array.isArray(value) && value.every((item) => item instanceof File)) {
-        return value as File[]
+      if (
+        Array.isArray(value) &&
+        value.length > 0 &&
+        value.every((item): item is File => item instanceof File)
+      ) {
+        return value
       }
       // Otherwise it's a generic object
-      return value as object
+      return value
     }
     // If none of the above, return undefined
     console.warn(`Invalid widget value type: ${typeof value}`, value)
