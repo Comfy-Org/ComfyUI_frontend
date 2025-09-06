@@ -46,7 +46,7 @@ test.describe('Node Help', () => {
 
       // Click the help button in the selection toolbox
       const helpButton = comfyPage.selectionToolbox.locator(
-        'button:has(.pi-question-circle)'
+        'button:has(.help-button)'
       )
       await expect(helpButton).toBeVisible()
       await helpButton.click()

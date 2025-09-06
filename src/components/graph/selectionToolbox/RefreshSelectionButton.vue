@@ -4,6 +4,7 @@
     v-tooltip.top="t('g.refreshNode')"
     severity="secondary"
     text
+    data-testid="refresh-button"
     @click="refreshSelected"
   >
     <i-lucide:refresh-cw class="w-4 h-4" />
