@@ -411,6 +411,15 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Clear all slot layouts and their spatial index (O(1) operations)
+   * Used when switching rendering modes (Vue ↔ LiteGraph)
+   */
+  clearAllSlotLayouts(): void {
+    this.slotLayouts.clear()
+    this.slotSpatialIndex.clear()
+  }
+
+  /**
    * Update reroute layout data
    */
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void {
