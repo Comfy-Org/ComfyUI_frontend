@@ -183,6 +183,7 @@ let cleanupNodeManager: (() => void) | null = null
 
 // Slot layout sync management
 let slotSync: ReturnType<typeof useSlotLayoutSync> | null = null
+let slotSyncStarted = false
 let linkSync: ReturnType<typeof useLinkLayoutSync> | null = null
 const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
 const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
@@ -240,12 +241,6 @@ const initializeNodeManager = () => {
   const { startSync } = useLayoutSync()
   startSync(canvasStore.canvas)
 
-  // Initialize slot layout sync for hit detection
-  slotSync = useSlotLayoutSync()
-  if (canvasStore.canvas) {
-    slotSync.start(canvasStore.canvas as LGraphCanvas)
-  }
-
   // Initialize link layout sync for event-driven updates
   linkSync = useLinkLayoutSync()
   if (canvasStore.canvas) {
@@ -265,12 +260,6 @@ const disposeNodeManagerAndSyncs = () => {
   }
   nodeManager = null
   cleanupNodeManager = null
-
-  // Clean up slot layout sync
-  if (slotSync) {
-    slotSync.stop()
-    slotSync = null
-  }
 
   // Clean up link layout sync
   if (linkSync) {
@@ -293,6 +282,37 @@ watch(
       initializeNodeManager()
     } else {
       disposeNodeManagerAndSyncs()
+    }
+  },
+  { immediate: true }
+)
+
+// Consolidated watch for slot layout sync management
+watch(
+  [() => canvasStore.canvas, () => isVueNodesEnabled.value],
+  ([canvas, vueMode], [, oldVueMode]) => {
+    const modeChanged = vueMode !== oldVueMode
+
+    // Clear stale slot layouts when switching modes
+    if (modeChanged) {
+      layoutStore.clearAllSlotLayouts()
+    }
+
+    // Switching to Vue
+    if (vueMode && slotSyncStarted) {
+      slotSync?.stop()
+      slotSyncStarted = false
+    }
+
+    // Switching to LG
+    const shouldRun = Boolean(canvas?.graph) && !vueMode
+    if (shouldRun && !slotSyncStarted && canvas) {
+      // Initialize slot sync if not already created
+      if (!slotSync) {
+        slotSync = useSlotLayoutSync()
+      }
+      const started = slotSync.attemptStart(canvas as LGraphCanvas)
+      slotSyncStarted = started
     }
   },
   { immediate: true }
@@ -723,10 +743,11 @@ onUnmounted(() => {
     nodeManager.cleanup()
     nodeManager = null
   }
-  if (slotSync) {
-    slotSync.stop()
-    slotSync = null
+  if (slotSyncStarted) {
+    slotSync?.stop()
+    slotSyncStarted = false
   }
+  slotSync = null
   if (linkSync) {
     linkSync.stop()
     linkSync = null
