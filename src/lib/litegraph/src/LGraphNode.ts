@@ -1718,7 +1718,7 @@ export class LGraphNode
       }
     }
 
-    const minWidth = LiteGraph.NODE_WIDTH * (widgets?.length ? 1.5 : 1)
+    const minWidth = LiteGraph.NODE_WIDTH
     // Text + slot width + centre padding
     const centrePadding = input_width && output_width ? 5 : 0
     const slotsWidth =
