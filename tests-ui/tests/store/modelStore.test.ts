@@ -93,9 +93,8 @@ describe('useModelStore', () => {
     store = useModelStore()
     await store.loadModelFolders()
     const folderStore = await store.getLoadedModelFolder('checkpoints')
-    expect(folderStore).not.toBeNull()
-    if (!folderStore) return
-    expect(Object.keys(folderStore.models).length).toBe(3)
+    expect(folderStore).toBeDefined()
+    expect(Object.keys(folderStore!.models)).toHaveLength(3)
   })
 
   it('should load model metadata', async () => {
@@ -103,9 +102,8 @@ describe('useModelStore', () => {
     store = useModelStore()
     await store.loadModelFolders()
     const folderStore = await store.getLoadedModelFolder('checkpoints')
-    expect(folderStore).not.toBeNull()
-    if (!folderStore) return
-    const model = folderStore.models['0/sdxl.safetensors']
+    expect(folderStore).toBeDefined()
+    const model = folderStore!.models['0/sdxl.safetensors']
     await model.load()
     expect(model.title).toBe('Title of sdxl.safetensors')
     expect(model.architecture_id).toBe('stable-diffusion-xl-base-v1')
@@ -122,9 +120,8 @@ describe('useModelStore', () => {
     store = useModelStore()
     await store.loadModelFolders()
     const folderStore = await store.getLoadedModelFolder('checkpoints')
-    expect(folderStore).not.toBeNull()
-    if (!folderStore) return
-    const model = folderStore.models['0/noinfo.safetensors']
+    expect(folderStore).toBeDefined()
+    const model = folderStore!.models['0/noinfo.safetensors']
     await model.load()
     expect(model.file_name).toBe('noinfo.safetensors')
     expect(model.title).toBe('noinfo')
@@ -172,8 +169,8 @@ describe('useModelStore', () => {
 
       expect(api.getModels).toHaveBeenCalledWith('checkpoints')
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(0)
-      expect(folderStore).not.toBeNull()
-      expect(Object.keys(folderStore!.models).length).toBe(3)
+      expect(folderStore).toBeDefined()
+      expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })
 
     it('should use asset API for loading models when UseAssetAPI setting is true', async () => {
@@ -184,8 +181,8 @@ describe('useModelStore', () => {
 
       expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
       expect(api.getModels).toHaveBeenCalledTimes(0)
-      expect(folderStore).not.toBeNull()
-      expect(Object.keys(folderStore!.models).length).toBe(3)
+      expect(folderStore).toBeDefined()
+      expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })
   })
 })

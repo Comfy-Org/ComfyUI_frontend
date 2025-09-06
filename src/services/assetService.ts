@@ -2,6 +2,24 @@ import { api } from '@/scripts/api'
 
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'
+const MISSING_TAG = 'missing'
+
+// Legacy model directory order (excluding blacklisted configs, custom_nodes)
+const LEGACY_ORDER = [
+  'checkpoints',
+  'clip',
+  'clip_vision',
+  'controlnet',
+  'diffusion_models',
+  'embeddings',
+  'gligen',
+  'hypernetworks',
+  'loras',
+  'style_models',
+  'unet',
+  'upscale_models',
+  'vae'
+] as const
 
 // Types for asset API responses
 interface AssetResponse {
@@ -39,7 +57,14 @@ function createAssetService() {
     return await res.json()
   }
   /**
-   * Gets a list of model folder keys from the asset API (eg ['checkpoints', 'loras', ...])
+   * Gets a list of model folder keys from the asset API
+   *
+   * Logic:
+   * 1. Always start with LEGACY_ORDER
+   * 2. Find any unknown folders
+   * 3. Sort unknowns alphabetically and append
+   * 4. Map to final format with standard paths
+   *
    * @returns The list of model folder keys
    */
   async function getAssetModelFolders(): Promise<
@@ -66,22 +91,30 @@ function createAssetService() {
     const validModelFolders = new Set<string>()
     for (const directory of allStandardDirectories) {
       const config = getDirectoryConfig(directory)
-      if (config) {
-        validModelFolders.add(directory)
-        config.aliases.forEach((alias) => validModelFolders.add(alias))
+      if (!config) continue
+      validModelFolders.add(directory)
+      for (const alias of config.aliases) {
+        validModelFolders.add(alias)
       }
     }
 
-    // Extract folder names from assets, but only include valid model directories
+    // Extract folder names from assets, but only include valid model directories and exclude missing assets
     const discoveredFolders = new Set<string>()
     if (data?.assets) {
-      data.assets
+      const validTags = data.assets
         .filter((asset): asset is Asset =>
-          Boolean(asset && Array.isArray(asset.tags))
+          Boolean(
+            asset &&
+              Array.isArray(asset.tags) &&
+              !asset.tags.includes(MISSING_TAG)
+          )
         )
         .flatMap((asset) => asset.tags)
         .filter((tag) => tag !== MODELS_TAG && validModelFolders.has(tag))
-        .forEach((tag) => discoveredFolders.add(tag))
+
+      for (const tag of validTags) {
+        discoveredFolders.add(tag)
+      }
     }
 
     // Combine all standard directories with discovered valid folders
@@ -91,19 +124,16 @@ function createAssetService() {
     ])
     const standardPaths = generateAllStandardPaths()
 
-    return Array.from(allFolders)
-      .sort((a, b) => {
-        // Sort by legacy directory order, with unknown directories at the end
-        const configA = getDirectoryConfig(a)
-        const configB = getDirectoryConfig(b)
-        const orderA = configA?.order ?? 999
-        const orderB = configB?.order ?? 999
-        return orderA - orderB
-      })
-      .map((name) => ({
-        name,
-        folders: standardPaths[name] || []
-      }))
+    // Legacy order first, then any unknown folders alphabetically
+    const legacySet = new Set<string>(LEGACY_ORDER)
+    const unknownFolders = Array.from(allFolders)
+      .filter((folder) => !legacySet.has(folder))
+      .sort()
+
+    return [...LEGACY_ORDER, ...unknownFolders].map((name) => ({
+      name,
+      folders: standardPaths[name] || []
+    }))
   }
 
   /**
@@ -119,23 +149,22 @@ function createAssetService() {
       `models for ${folder}`
     )
 
-    if (!data?.assets) {
-      return []
-    }
-
-    return data.assets
-      .filter((asset): asset is Asset =>
-        Boolean(
-          asset &&
-            asset.name &&
-            Array.isArray(asset.tags) &&
-            asset.tags.includes(folder)
-        )
-      )
-      .map((asset) => ({
-        name: asset.name,
-        pathIndex: 0
-      }))
+    return !data?.assets
+      ? []
+      : data.assets
+          .filter((asset): asset is Asset =>
+            Boolean(
+              asset &&
+                asset.name &&
+                Array.isArray(asset.tags) &&
+                asset.tags.includes(folder) &&
+                !asset.tags.includes(MISSING_TAG)
+            )
+          )
+          .map((asset) => ({
+            name: asset.name,
+            pathIndex: 0
+          }))
   }
 
   return {
