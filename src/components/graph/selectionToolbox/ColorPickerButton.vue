@@ -147,7 +147,8 @@ watch(
     showColorPicker.value = false
     selectedColorOption.value = null
     currentColorOption.value = getItemsColorOption(newSelectedItems)
-  }
+  },
+  { immediate: true }
 )
 </script>
 
