@@ -29,7 +29,7 @@
           <!-- Conflict Warning Banner -->
           <div
             v-if="shouldShowManagerBanner"
-            class="bg-yellow-600 bg-opacity-20 border border-yellow-400 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6 relative"
+            class="bg-yellow-500/20 rounded-lg p-4 mt-3 mb-4 flex items-center gap-6 relative"
           >
             <i class="pi pi-exclamation-triangle text-yellow-600 text-lg"></i>
             <div class="flex flex-col gap-2 flex-1">
@@ -46,14 +46,13 @@
                 {{ $t('manager.conflicts.warningBanner.button') }}
               </p>
             </div>
-            <button
-              type="button"
-              class="absolute top-2 right-2 w-6 h-6 border-none outline-none bg-transparent flex items-center justify-center text-yellow-600 rounded transition-colors"
-              :aria-label="$t('g.close')"
+            <IconButton
+              class="absolute top-0 right-0"
+              type="transparent"
               @click="dismissWarningBanner"
             >
-              <i class="pi pi-times text-sm"></i>
-            </button>
+              <i class="pi pi-times text-white text-xs"></i>
+            </IconButton>
           </div>
           <RegistrySearchBar
             v-model:searchQuery="searchQuery"
@@ -138,6 +137,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import IconButton from '@/components/button/IconButton.vue'
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
