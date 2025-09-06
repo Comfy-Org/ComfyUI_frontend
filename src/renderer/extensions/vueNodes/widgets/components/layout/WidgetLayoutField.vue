@@ -1,20 +1,13 @@
 <script setup lang="ts">
-import { COMFY_VUE_NODE_DIMENSIONS } from '@/lib/litegraph/src/litegraph'
 import { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 defineProps<{
   widget: Pick<SimplifiedWidget<string | number | undefined>, 'name'>
 }>()
-
-// Get widget height from litegraph constants
-const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 </script>
 
 <template>
-  <div
-    class="flex items-center justify-between gap-2"
-    :style="{ height: widgetHeight + 'px' }"
-  >
+  <div class="flex items-center justify-between gap-2 h-[30px]">
     <p
       v-if="widget.name"
       class="text-sm text-[#888682] dark-theme:text-[#9FA2BD] font-normal flex-1 truncate w-20"
