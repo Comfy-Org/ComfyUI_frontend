@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Modo de navegación del lienzo",
     "options": {
-      "Left-Click Pan (Legacy)": "Desplazamiento con clic izquierdo (Legado)",
+      "Drag Navigation": "Navegación por arrastre",
       "Standard (New)": "Estándar (Nuevo)"
     }
   },
@@ -342,6 +342,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "Validar flujos de trabajo"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Habilitar renderizado de nodos Vue",
+    "tooltip": "Renderiza los nodos como componentes Vue en lugar de elementos canvas. Función experimental."
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "Habilitar widgets de Vue",
+    "tooltip": "Renderiza los widgets como componentes de Vue dentro de los nodos de Vue."
   },
   "Comfy_WidgetControlMode": {
     "name": "Modo de control del widget",

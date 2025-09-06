@@ -1,3 +1,4 @@
+import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
@@ -130,6 +131,8 @@ export const useNodeVideo = (node: LGraphNode) => {
   let minHeight = DEFAULT_VIDEO_SIZE
   let minWidth = DEFAULT_VIDEO_SIZE
 
+  const { handleWheel, handlePointer } = useCanvasInteractions()
+
   const setMinDimensions = (video: HTMLVideoElement) => {
     const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
       fitDimensionsToNodeWidth(
@@ -146,6 +149,12 @@ export const useNodeVideo = (node: LGraphNode) => {
     new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
+
+      // Add event listeners for canvas interactions
+      video.addEventListener('wheel', handleWheel)
+      video.addEventListener('pointermove', handlePointer)
+      video.addEventListener('pointerdown', handlePointer)
+
       video.onloadeddata = () => {
         setMinDimensions(video)
         resolve(video)

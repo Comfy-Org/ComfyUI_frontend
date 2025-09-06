@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "畫布導航模式",
     "options": {
-      "Left-Click Pan (Legacy)": "左鍵拖曳平移（舊版）",
+      "Drag Navigation": "拖曳導覽",
       "Standard (New)": "標準（新）"
     }
   },
@@ -342,6 +342,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "驗證工作流程"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "啟用 Vue 節點渲染",
+    "tooltip": "將節點以 Vue 元件而非畫布元素方式渲染。實驗性功能。"
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "啟用 Vue 小工具",
+    "tooltip": "在 Vue 節點中以 Vue 元件渲染小工具。"
   },
   "Comfy_WidgetControlMode": {
     "name": "元件控制模式",

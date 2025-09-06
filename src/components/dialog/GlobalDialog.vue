@@ -29,7 +29,7 @@
     />
 
     <template v-if="item.footerComponent" #footer>
-      <component :is="item.footerComponent" />
+      <component :is="item.footerComponent" v-bind="item.footerProps" />
     </template>
   </Dialog>
 </template>
@@ -43,6 +43,8 @@ const dialogStore = useDialogStore()
 </script>
 
 <style>
+@reference '../../assets/css/style.css';
+
 .global-dialog .p-dialog-header {
   @apply p-2 2xl:p-[var(--p-dialog-header-padding)];
   @apply pb-0;

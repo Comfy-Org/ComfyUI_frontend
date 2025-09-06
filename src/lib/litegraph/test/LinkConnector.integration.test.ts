@@ -334,12 +334,9 @@ describe('LinkConnector Integration', () => {
         } = graph.getNodeById(nodeId)!
 
         expect(input.link).toBeNull()
-        // @ts-expect-error toBeOneOf not in type definitions
         expect(output.links?.length).toBeOneOf([0, undefined])
 
-        // @ts-expect-error toBeOneOf not in type definitions
         expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-        // @ts-expect-error toBeOneOf not in type definitions
         expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
       }
     })
@@ -537,12 +534,9 @@ describe('LinkConnector Integration', () => {
         } = graph.getNodeById(nodeId)!
 
         expect(input.link).toBeNull()
-        // @ts-expect-error toBeOneOf not in type definitions
         expect(output.links?.length).toBeOneOf([0, undefined])
 
-        // @ts-expect-error toBeOneOf not in type definitions
         expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-        // @ts-expect-error toBeOneOf not in type definitions
         expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
       }
     })
@@ -856,12 +850,9 @@ describe('LinkConnector Integration', () => {
       } = graph.getNodeById(nodeId)!
 
       expect(input.link).toBeNull()
-      // @ts-expect-error toBeOneOf not in type definitions
       expect(output.links?.length).toBeOneOf([0, undefined])
 
-      // @ts-expect-error toBeOneOf not in type definitions
       expect(input._floatingLinks?.size).toBeOneOf([0, undefined])
-      // @ts-expect-error toBeOneOf not in type definitions
       expect(output._floatingLinks?.size).toBeOneOf([0, undefined])
     }
   })

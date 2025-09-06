@@ -41,15 +41,12 @@ test.describe('Node Help', () => {
       // Select the node with panning to ensure toolbox is visible
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
-      // Wait for selection overlay container and toolbox to appear
-      await expect(
-        comfyPage.page.locator('.selection-overlay-container')
-      ).toBeVisible()
-      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+      // Wait for selection toolbox to appear
+      await expect(comfyPage.selectionToolbox).toBeVisible()
 
       // Click the help button in the selection toolbox
-      const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button:has(.pi-question-circle)'
+      const helpButton = comfyPage.selectionToolbox.locator(
+        'button:has(.pi-question-circle)'
       )
       await expect(helpButton).toBeVisible()
       await helpButton.click()

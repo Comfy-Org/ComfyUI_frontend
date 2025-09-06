@@ -1,0 +1,126 @@
+name: PR Storybook Comment
+
+on:
+  workflow_run:
+    workflows: ['Chromatic']
+    types: [requested, completed]
+
+jobs:
+  comment-storybook:
+    runs-on: ubuntu-latest
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend'
+      && github.event.workflow_run.event == 'pull_request'
+      && startsWith(github.event.workflow_run.head_branch, 'version-bump-')
+    permissions:
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
+            });
+
+            if (pullRequests.length === 0) {
+              console.log('No open PR found for this branch');
+              return null;
+            }
+
+            return pullRequests[0].number;
+
+      - name: Log when no PR found
+        if: steps.pr.outputs.result == 'null'
+        run: |
+          echo "⚠️ No open PR found for branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
+          echo "Repository: ${{ github.event.workflow_run.repository.full_name }}"
+          echo "Event: ${{ github.event.workflow_run.event }}"
+
+      - name: Get workflow run details
+        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
+        id: workflow-run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+
+            return {
+              conclusion: run.data.conclusion,
+              html_url: run.data.html_url
+            };
+
+      - name: Get completion time
+        id: completion-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+
+      - name: Comment PR - Storybook Started
+        if: steps.pr.outputs.result != 'null' && github.event.action == 'requested'
+        uses: edumserrano/find-create-or-update-comment@82880b65c8a3a6e4c70aa05a204995b6c9696f53 # v3.0.0
+        with:
+          issue-number: ${{ steps.pr.outputs.result }}
+          body-includes: '<!-- STORYBOOK_BUILD_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: replace
+          body: |
+            <!-- STORYBOOK_BUILD_STATUS -->
+            ## 🎨 Storybook Build Status
+
+            <img alt='comfy-loading-gif' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px' style='vertical-align: middle; margin-right: 4px;' /> **Build is starting...** 
+
+            ⏰ Started at: ${{ steps.completion-time.outputs.time }} UTC
+
+            ### 🚀 Building Storybook
+            - 📦 Installing dependencies...
+            - 🔧 Building Storybook components...
+            - 🎨 Running Chromatic visual tests...
+
+            ---
+            ⏱️ Please wait while the Storybook build is in progress...
+
+      - name: Comment PR - Storybook Complete
+        if: steps.pr.outputs.result != 'null' && github.event.action == 'completed'
+        uses: edumserrano/find-create-or-update-comment@82880b65c8a3a6e4c70aa05a204995b6c9696f53 # v3.0.0
+        with:
+          issue-number: ${{ steps.pr.outputs.result }}
+          body-includes: '<!-- STORYBOOK_BUILD_STATUS -->'
+          comment-author: 'github-actions[bot]'
+          edit-mode: replace
+          body: |
+            <!-- STORYBOOK_BUILD_STATUS -->
+            ## 🎨 Storybook Build Status
+
+            ${{
+              fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '✅'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'skipped' && '⏭️'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'cancelled' && '🚫'
+              || '❌'
+            }} **${{
+              fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && 'Build completed successfully!'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'skipped' && 'Build skipped.'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'cancelled' && 'Build cancelled.'
+              || 'Build failed!'
+            }}**
+
+            ⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC
+
+            ### 🔗 Links
+            - [📊 View Workflow Run](${{ fromJSON(steps.workflow-run.outputs.result).html_url }})
+
+            ---
+            ${{
+              fromJSON(steps.workflow-run.outputs.result).conclusion == 'success' && '🎉 Your Storybook is ready for review!'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'skipped' && 'ℹ️ Chromatic was skipped for this PR.'
+              || fromJSON(steps.workflow-run.outputs.result).conclusion == 'cancelled' && 'ℹ️ The Chromatic run was cancelled.'
+              || '⚠️ Please check the workflow logs for error details.'
+            }}

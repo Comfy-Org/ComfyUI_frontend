@@ -19,14 +19,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+          key: update-manager-tools-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            update-manager-tools-cache-${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache ComfyUI-Manager repository
+        uses: actions/cache@v4
+        with:
+          path: ComfyUI-Manager
+          key: comfyui-manager-repo-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            comfyui-manager-repo-${{ runner.os }}-
 
       - name: Checkout ComfyUI-Manager repository
         uses: actions/checkout@v4
@@ -64,7 +86,7 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated ComfyUI-Manager API types..."
-          npm run lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts
+          pnpm lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts
 
       - name: Check for changes
         id: check-changes

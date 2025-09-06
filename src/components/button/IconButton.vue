@@ -1,5 +1,5 @@
 <template>
-  <Button unstyled :class="buttonStyle" @click="onClick">
+  <Button unstyled :class="buttonStyle" :disabled="disabled" @click="onClick">
     <slot></slot>
   </Button>
 </template>
@@ -11,6 +11,7 @@ import { computed } from 'vue'
 import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
   getBaseButtonClasses,
+  getBorderButtonTypeClasses,
   getButtonTypeClasses,
   getIconButtonSizeClasses
 } from '@/types/buttonTypes'
@@ -22,6 +23,8 @@ interface IconButtonProps extends BaseButtonProps {
 const {
   size = 'md',
   type = 'secondary',
+  border = false,
+  disabled = false,
   class: className,
   onClick
 } = defineProps<IconButtonProps>()
@@ -29,7 +32,9 @@ const {
 const buttonStyle = computed(() => {
   const baseClasses = `${getBaseButtonClasses()} p-0`
   const sizeClasses = getIconButtonSizeClasses(size)
-  const typeClasses = getButtonTypeClasses(type)
+  const typeClasses = border
+    ? getBorderButtonTypeClasses(type)
+    : getButtonTypeClasses(type)
 
   return [baseClasses, sizeClasses, typeClasses, className]
     .filter(Boolean)

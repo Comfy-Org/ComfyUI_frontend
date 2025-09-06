@@ -9,9 +9,9 @@
 
 # Bash commands
 
-- `npm run typecheck` Run the typechecker
-- `npm run build` Build the project
-- `npm run lint:fix` Run ESLint
+- `pnpm typecheck` Run the typechecker
+- `pnpm build` Build the project
+- `pnpm lint:fix` Run ESLint
 
 # Code style
 
@@ -22,7 +22,7 @@
 
 # Workflow
 
-- Be sure to typecheck when you’re done making a series of code changes
+- Be sure to typecheck when you're done making a series of code changes
 - Prefer running single tests, and not the whole test suite, for performance
 
 # Testing Guidelines

@@ -94,6 +94,8 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 </style>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .side-bar-button {
   width: var(--sidebar-width);
   height: calc(var(--sidebar-width) + 0.5rem);
@@ -109,7 +111,7 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 }
 
 .side-bar-button-label {
-  @apply text-[10px] text-center whitespace-nowrap;
+  @apply text-[10px] text-center;
   line-height: 1;
 }
 
