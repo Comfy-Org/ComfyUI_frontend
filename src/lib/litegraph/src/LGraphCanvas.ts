@@ -3623,17 +3623,33 @@ export class LGraphCanvas
 
     // Detect if this is a trackpad gesture or mouse wheel
     const isTrackpad = this.pointer.isTrackpadGesture(e)
-    const isCtrlOrMacMeta =
-      e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
-    const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
-      // Legacy mode or standard mode with ctrl - use wheel for zoom
-      if (isTrackpad) {
-        // Trackpad gesture - use smooth scaling
-        scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
-        this.ds.changeScale(scale, [e.clientX, e.clientY], false)
+    // we need to separate trackpad from mouse because trackpad has different logic on standard
+    // mouse:
+    // 1. wheel scroll without ctrl = zoom in/out canvas
+    // 2. wheel scroll with ctrl = zoom in/out canvas
+    // trackpad:
+    // 1. two finger scroll = pan canvas
+    // 2. two finger pitch to zoom (included ctrl) = zoom in/out canvas
+    if (isTrackpad) {
+      const factor = 0.18
+
+      if (LiteGraph.canvasNavigationMode === 'standard') {
+        if (e.ctrlKey || e.metaKey) {
+          scale *= 1 + e.deltaY * (1 - this.zoom_speed) * factor
+          this.ds.changeScale(scale, [e.clientX, e.clientY], false)
+        } else {
+          this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+          this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
+        }
       } else {
+        scale *= 1 + e.deltaY * (1 - this.zoom_speed) * factor
+        this.ds.changeScale(scale, [e.clientX, e.clientY], false)
+      }
+    } else {
+      const isZoomModifier = !e.altKey && !e.shiftKey
+
+      if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
         // Mouse wheel - use stepped scaling
         if (e.deltaY < 0) {
           scale *= this.zoom_speed
@@ -3641,17 +3657,16 @@ export class LGraphCanvas
           scale *= 1 / this.zoom_speed
         }
         this.ds.changeScale(scale, [e.clientX, e.clientY])
-      }
-    } else {
-      // Standard mode without ctrl - use wheel / gestures to pan
-      // Trackpads and mice work on significantly different scales
-      const factor = isTrackpad ? 0.18 : 0.008_333
-
-      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
-        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
       } else {
-        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
-        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
+        // Standard mode without ctrl - use wheel to pan
+        const factor = 0.008_333
+
+        if (e.shiftKey && e.deltaX === 0) {
+          this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
+        } else {
+          this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+          this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
+        }
       }
     }
 
