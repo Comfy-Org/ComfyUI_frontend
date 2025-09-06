@@ -34,14 +34,15 @@ jobs:
           # Check for existing backport PRs for this PR number
           EXISTING_BACKPORTS=$(gh pr list --state all --search "backport-${PR_NUMBER}-to" --json title,headRefName,baseRefName | jq -r '.[].headRefName')
           
-          if [ -n "$EXISTING_BACKPORTS" ]; then
-            echo "Found existing backport PRs:"
-            echo "$EXISTING_BACKPORTS"
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "::notice::Backport PRs already exist for PR #${PR_NUMBER}, skipping to avoid duplicates"
-          else
+          if [ -z "$EXISTING_BACKPORTS" ]; then
             echo "skip=false" >> $GITHUB_OUTPUT
+            return
           fi
+          
+          echo "Found existing backport PRs:"
+          echo "$EXISTING_BACKPORTS"
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "::warning::Backport PRs already exist for PR #${PR_NUMBER}, skipping to avoid duplicates"
 
       - name: Extract version labels
         if: steps.check-existing.outputs.skip != 'true'
