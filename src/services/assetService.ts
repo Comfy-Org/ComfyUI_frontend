@@ -1,4 +1,9 @@
 import { api } from '@/scripts/api'
+import {
+  generateAllStandardPaths,
+  getDirectoryConfig,
+  getLegacyDirectoryOrder
+} from '@/utils/modelPaths'
 
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'
@@ -74,12 +79,6 @@ function createAssetService() {
       `${ASSETS_ENDPOINT}?tags=${MODELS_TAG}`,
       'model folders'
     )
-
-    const {
-      generateAllStandardPaths,
-      getLegacyDirectoryOrder,
-      getDirectoryConfig
-    } = await import('@/utils/modelPaths')
 
     // Get all standard model directories, excluding blacklisted ones to match experimental API
     const folderBlacklist = ['configs', 'custom_nodes']

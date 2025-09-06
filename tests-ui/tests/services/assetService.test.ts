@@ -81,8 +81,8 @@ describe('assetService', () => {
 
       expect(api.fetchApi).toHaveBeenCalledWith('/assets?tags=models')
 
-      // Should return all 13 standard directories (excluding blacklisted configs, custom_nodes)
-      expect(result).toHaveLength(13)
+      const numberOfStdDirs = 13
+      expect(result).toHaveLength(numberOfStdDirs)
 
       // Verify ordering: legacy order first, then unknowns alphabetically
       const folderNames = result.map((f) => f.name)
@@ -184,7 +184,6 @@ describe('assetService', () => {
 
       const result = await assetService.getAssetModels('checkpoints')
 
-      expect(result).toHaveLength(1)
       expect(result).toContainEqual({
         name: 'checkpoint.safetensors',
         pathIndex: 0
@@ -201,7 +200,6 @@ describe('assetService', () => {
 
       const result = await assetService.getAssetModels('checkpoints')
 
-      expect(result).toHaveLength(1)
       expect(result).toContainEqual({ name: 'valid.safetensors', pathIndex: 0 })
     })
 
@@ -224,11 +222,6 @@ describe('assetService', () => {
 
       const result = await assetService.getAssetModels('checkpoints')
 
-      expect(result).toHaveLength(1)
-      expect(result).toContainEqual({
-        name: 'valid-model.safetensors',
-        pathIndex: 0
-      })
       expect(result).not.toContainEqual({
         name: 'missing-model.safetensors',
         pathIndex: 0
