@@ -161,5 +161,61 @@ describe('useManagerQueue', () => {
       expect(taskHistory.value).toHaveProperty('task1')
       expect(taskHistory.value).not.toHaveProperty('task2')
     })
+
+    it('normalizes pack IDs when updating installed packs', () => {
+      const queue = createManagerQueue()
+
+      const mockState = {
+        history: {},
+        running_queue: [],
+        pending_queue: [],
+        installed_packs: {
+          'ComfyUI-GGUF@1_1_4': {
+            enabled: false,
+            cnr_id: 'ComfyUI-GGUF',
+            ver: '1.1.4'
+          },
+          'test-pack': {
+            enabled: true,
+            cnr_id: 'test-pack',
+            ver: '2.0.0'
+          }
+        }
+      }
+
+      queue.updateTaskState(mockState)
+
+      // Packs should be accessible by normalized keys
+      expect(installedPacks.value['ComfyUI-GGUF']).toEqual({
+        enabled: false,
+        cnr_id: 'ComfyUI-GGUF',
+        ver: '1.1.4'
+      })
+      expect(installedPacks.value['test-pack']).toEqual({
+        enabled: true,
+        cnr_id: 'test-pack',
+        ver: '2.0.0'
+      })
+
+      // Version suffixed keys should not exist
+      expect(installedPacks.value['ComfyUI-GGUF@1_1_4']).toBeUndefined()
+    })
+
+    it('handles empty installed_packs gracefully', () => {
+      const queue = createManagerQueue()
+
+      const mockState: any = {
+        history: {},
+        running_queue: [],
+        pending_queue: [],
+        installed_packs: undefined
+      }
+
+      // Should not throw
+      expect(() => queue.updateTaskState(mockState)).not.toThrow()
+
+      // installedPacks should remain unchanged
+      expect(installedPacks.value).toEqual({})
+    })
   })
 })
