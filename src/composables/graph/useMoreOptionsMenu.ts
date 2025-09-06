@@ -122,7 +122,7 @@ export function useMoreOptionsMenu() {
     if (groupContext) {
       // Group context: Shape, Color, Divider
       options.push(getGroupShapeOptions(groupContext, bump))
-      options.push(getGroupColorOptions())
+      options.push(getGroupColorOptions(groupContext, bump))
       options.push({ type: 'divider' })
     } else {
       // Node context: Expand/Minimize, Shape, Color, Divider

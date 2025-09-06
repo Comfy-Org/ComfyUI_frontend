@@ -62,11 +62,13 @@ export function useGroupMenuOptions() {
         workflowStore.activeWorkflow?.changeTracker?.checkState()
         bump()
       }
-    })),
-    action: () => {}
+    }))
   })
 
-  const getGroupColorOptions = (): MenuOption => ({
+  const getGroupColorOptions = (
+    groupContext: LGraphGroup,
+    bump: () => void
+  ): MenuOption => ({
     label: t('contextMenu.Color'),
     icon: markRaw(Palette),
     hasSubmenu: true,
@@ -76,12 +78,17 @@ export function useGroupMenuOptions() {
         ? colorOption.value.light
         : colorOption.value.dark,
       action: () => {
-        // Apply color to group - this would need the group context
-        // For now, this is a placeholder
-        console.log('Apply color to group:', colorOption.name)
+        groupContext.color = isLightTheme.value
+          ? colorOption.value.light
+          : colorOption.value.dark
+        canvasStore.canvas?.emitBeforeChange()
+        canvasStore.canvas?.setDirty(true, true)
+        canvasStore.canvas?.graph?.afterChange()
+        canvasStore.canvas?.emitAfterChange()
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        bump()
       }
-    })),
-    action: () => {}
+    }))
   })
 
   const getGroupModeOptions = (
