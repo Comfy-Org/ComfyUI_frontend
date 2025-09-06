@@ -1,4 +1,4 @@
-# 4. Centralized Layout Management with CRDT
+# 3. Centralized Layout Management with CRDT
 
 Date: 2025-08-27
 

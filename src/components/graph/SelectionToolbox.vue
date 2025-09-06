@@ -2,12 +2,12 @@
   <div
     ref="toolboxRef"
     style="transform: translate(var(--tb-x), var(--tb-y))"
-    class="fixed left-0 top-0 z-40"
+    class="fixed left-0 top-0 z-40 pointer-events-none"
   >
     <Transition name="slide-up">
       <Panel
         v-if="visible"
-        class="selection-toolbox absolute left-1/2 rounded-lg"
+        class="rounded-lg selection-toolbox pointer-events-auto"
         :style="`backgroundColor: ${containerStyles.backgroundColor};`"
         :pt="{
           header: 'hidden',
@@ -146,7 +146,6 @@ onUnmounted(() => {
 <style scoped>
 .selection-toolbox {
   transform: translateX(-50%) translateY(-120%);
-  will-change: transform, opacity;
 }
 
 @keyframes slideUp {

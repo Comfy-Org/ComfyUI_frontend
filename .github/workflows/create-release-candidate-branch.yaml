@@ -128,45 +128,6 @@ jobs:
           echo "- Critical security patches"
           echo "- Documentation updates"
 
-      - name: Create branch protection rules
-        if: steps.check_version.outputs.is_minor_bump == 'true' && env.branch_exists != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH_NAME="${{ steps.check_version.outputs.branch_name }}"
-
-          # Create branch protection using GitHub API
-          echo "Setting up branch protection for $BRANCH_NAME..."
-
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/branches/$BRANCH_NAME/protection" \
-            -d '{
-              "required_status_checks": {
-                "strict": true,
-                "contexts": ["lint-and-format", "test", "playwright-tests"]
-              },
-              "enforce_admins": false,
-              "required_pull_request_reviews": {
-                "required_approving_review_count": 1,
-                "dismiss_stale_reviews": true
-              },
-              "restrictions": null,
-              "allow_force_pushes": false,
-              "allow_deletions": false
-            }')
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          if [[ "$HTTP_CODE" -eq 200 ]] || [[ "$HTTP_CODE" -eq 201 ]]; then
-            echo "✅ Branch protection successfully applied"
-          else
-            echo "⚠️  Failed to apply branch protection (HTTP $HTTP_CODE)"
-            echo "Response: $BODY"
-            # Don't fail the workflow, just warn
-          fi
 
       - name: Post summary
         if: steps.check_version.outputs.is_minor_bump == 'true'
