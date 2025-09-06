@@ -227,20 +227,14 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
     }
   }
 
-  // Vue-idiomatic public API with proper reactivity
   return {
-    // Reactive state - already readonly maps from manager
     vueNodeData,
     nodeState,
     nodePositions,
     nodeSizes,
     nodeDataTrigger: readonly(nodeDataTrigger),
-
-    // Reactive manager access - no more getter anti-pattern
     nodeManager: readonly(nodeManager),
     detectChangesInRAF: readonly(detectChangesInRAF),
-
-    // Computed derived state
     isNodeManagerReady,
 
     // Lifecycle methods
