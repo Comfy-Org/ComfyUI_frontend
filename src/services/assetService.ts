@@ -50,26 +50,60 @@ function createAssetService() {
       'model folders'
     )
 
-    if (!data?.assets) {
-      return []
+    const {
+      generateAllStandardPaths,
+      getLegacyDirectoryOrder,
+      getDirectoryConfig
+    } = await import('@/utils/modelPaths')
+
+    // Get all standard model directories, excluding blacklisted ones to match experimental API
+    const folderBlacklist = ['configs', 'custom_nodes']
+    const allStandardDirectories = new Set(
+      getLegacyDirectoryOrder().filter((dir) => !folderBlacklist.includes(dir))
+    )
+
+    // Get all valid model directory names and aliases from the config
+    const validModelFolders = new Set<string>()
+    for (const directory of allStandardDirectories) {
+      const config = getDirectoryConfig(directory)
+      if (config) {
+        validModelFolders.add(directory)
+        config.aliases.forEach((alias) => validModelFolders.add(alias))
+      }
     }
 
-    const folderNames = new Set(
+    // Extract folder names from assets, but only include valid model directories
+    const discoveredFolders = new Set<string>()
+    if (data?.assets) {
       data.assets
         .filter((asset): asset is Asset =>
           Boolean(asset && Array.isArray(asset.tags))
         )
         .flatMap((asset) => asset.tags)
-        .filter((tag) => tag !== MODELS_TAG)
-    )
+        .filter((tag) => tag !== MODELS_TAG && validModelFolders.has(tag))
+        .forEach((tag) => discoveredFolders.add(tag))
+    }
 
-    const { generateAllStandardPaths } = await import('@/utils/modelPaths')
+    // Combine all standard directories with discovered valid folders
+    const allFolders = new Set([
+      ...allStandardDirectories,
+      ...discoveredFolders
+    ])
     const standardPaths = generateAllStandardPaths()
 
-    return Array.from(folderNames).map((name) => ({
-      name,
-      folders: standardPaths[name] || []
-    }))
+    return Array.from(allFolders)
+      .sort((a, b) => {
+        // Sort by legacy directory order, with unknown directories at the end
+        const configA = getDirectoryConfig(a)
+        const configB = getDirectoryConfig(b)
+        const orderA = configA?.order ?? 999
+        const orderB = configB?.order ?? 999
+        return orderA - orderB
+      })
+      .map((name) => ({
+        name,
+        folders: standardPaths[name] || []
+      }))
   }
 
   /**
