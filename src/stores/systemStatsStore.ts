@@ -1,31 +1,33 @@
+import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 
 import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { isElectron } from '@/utils/envUtil'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
-  const systemStats = ref<SystemStats | null>(null)
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-
-  async function fetchSystemStats() {
-    isLoading.value = true
-    error.value = null
-
+  const fetchSystemStatsData = async () => {
     try {
-      systemStats.value = await api.getSystemStats()
+      return await api.getSystemStats()
     } catch (err) {
-      error.value =
-        err instanceof Error
-          ? err.message
-          : 'An error occurred while fetching system stats'
       console.error('Error fetching system stats:', err)
-    } finally {
-      isLoading.value = false
+      throw err
     }
   }
+
+  const {
+    state: systemStats,
+    isLoading,
+    error,
+    isReady: isInitialized,
+    execute: refetchSystemStats
+  } = useAsyncState<SystemStats | null>(
+    fetchSystemStatsData,
+    null, // initial value
+    {
+      immediate: true
+    }
+  )
 
   function getFormFactor(): string {
     if (!systemStats.value?.system?.os) {
@@ -62,7 +64,8 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
     systemStats,
     isLoading,
     error,
-    fetchSystemStats,
+    isInitialized,
+    refetchSystemStats,
     getFormFactor
   }
 })

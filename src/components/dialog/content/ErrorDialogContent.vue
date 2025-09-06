@@ -105,7 +105,7 @@ const showContactSupport = async () => {
 
 onMounted(async () => {
   if (!systemStatsStore.systemStats) {
-    await systemStatsStore.fetchSystemStats()
+    await systemStatsStore.refetchSystemStats()
   }
 
   try {
