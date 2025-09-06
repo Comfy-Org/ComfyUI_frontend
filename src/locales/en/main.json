@@ -1004,6 +1004,7 @@
   "menuLabels": {
     "Workflow": "Workflow",
     "Edit": "Edit",
+    "View": "View",
     "Manager": "Manager",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
