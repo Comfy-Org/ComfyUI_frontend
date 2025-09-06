@@ -99,11 +99,10 @@ class LayoutStoreImpl implements LayoutStore {
     bounds: { x: 0, y: 0, width: 100, height: 50 }
   }
 
-  private static readonly REROUTE_DEFAULTS: Omit<
-    RerouteData,
-    'id' | 'parentId'
-  > = {
+  private static readonly REROUTE_DEFAULTS: RerouteData = {
+    id: 0,
     position: { x: 0, y: 0 },
+    parentId: 0,
     linkIds: []
   }
 
@@ -205,18 +204,11 @@ class LayoutStoreImpl implements LayoutStore {
   private getRerouteField<K extends keyof RerouteData>(
     yreroute: Y.Map<unknown>,
     field: K,
-    defaultValue?: RerouteData[K]
+    defaultValue: RerouteData[K] = LayoutStoreImpl.REROUTE_DEFAULTS[field]
   ): RerouteData[K] {
     const typedReroute = yreroute as TypedYMap<RerouteData>
     const value = typedReroute.get(field)
-    if (value !== undefined) return value
-    if (defaultValue !== undefined) return defaultValue
-    if (field in LayoutStoreImpl.REROUTE_DEFAULTS) {
-      return (LayoutStoreImpl.REROUTE_DEFAULTS as any)[field]
-    }
-    throw new Error(
-      `No default value available for reroute field: ${String(field)}`
-    )
+    return value ?? defaultValue
   }
 
   /**
