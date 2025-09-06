@@ -4,6 +4,8 @@ const config: KnipConfig = {
   entry: [
     '{build,scripts}/**/*.{js,ts}',
     'src/main.ts',
+    'src/types/index.ts',
+    'src/scripts/ui/menu/index.ts',
     'src/assets/css/style.css'
   ],
   project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
@@ -49,9 +51,7 @@ const config: KnipConfig = {
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
     '-knipIgnoreUnusedButUsedByVueNodesBranch'
-  ],
-  // Include dependencies analysis
-  includeEntryExports: true
+  ]
 }
 
 export default config
