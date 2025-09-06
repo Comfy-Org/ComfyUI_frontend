@@ -1,76 +1,109 @@
 <template>
-  <div class="flex flex-col gap-6 w-[600px]">
+  <div class="flex flex-col gap-8 w-full max-w-3xl mx-auto select-none">
     <!-- Installation Path Section -->
-    <div class="flex flex-col gap-4">
-      <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.chooseInstallationLocation') }}
+    <div class="grow flex flex-col gap-6 text-neutral-300">
+      <h2
+        class="text-3xl text-neutral-100 text-center italic"
+        style="font-family: 'ABC ROM Black Italic', sans-serif"
+      >
+        {{ $t('install.locationPicker.title') }}
       </h2>
 
-      <p class="text-neutral-400 my-0">
-        {{ $t('install.installLocationDescription') }}
+      <p class="text-center text-neutral-400 px-12">
+        {{ $t('install.locationPicker.subtitle') }}
       </p>
 
-      <div class="flex gap-2">
-        <IconField class="flex-1">
-          <InputText
-            v-model="installPath"
-            class="w-full"
-            :class="{ 'p-invalid': pathError }"
-            @update:model-value="validatePath"
-            @focus="onFocus"
-          />
-          <InputIcon
-            v-tooltip.top="$t('install.installLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </IconField>
-        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
+      <!-- Path Input -->
+      <div class="flex gap-2 px-12">
+        <InputText
+          v-model="installPath"
+          :placeholder="$t('install.locationPicker.pathPlaceholder')"
+          class="flex-1 bg-neutral-800/50 border-neutral-700 text-neutral-200 placeholder:text-neutral-500"
+          :class="{ 'p-invalid': pathError }"
+          @update:model-value="validatePath"
+          @focus="onFocus"
+        />
+        <Button
+          icon="pi pi-folder-open"
+          severity="secondary"
+          class="bg-neutral-700 hover:bg-neutral-600 border-0"
+          @click="browsePath"
+        />
       </div>
 
-      <Message v-if="pathError" severity="error" class="whitespace-pre-line">
-        {{ pathError }}
-      </Message>
-      <Message v-if="pathExists" severity="warn">
-        {{ $t('install.pathExists') }}
-      </Message>
-      <Message v-if="nonDefaultDrive" severity="warn">
-        {{ $t('install.nonDefaultDrive') }}
-      </Message>
-    </div>
+      <!-- Error Messages -->
+      <div v-if="pathError || pathExists || nonDefaultDrive" class="px-12">
+        <Message
+          v-if="pathError"
+          severity="error"
+          class="whitespace-pre-line w-full"
+        >
+          {{ pathError }}
+        </Message>
+        <Message v-if="pathExists" severity="warn" class="w-full">
+          {{ $t('install.pathExists') }}
+        </Message>
+        <Message v-if="nonDefaultDrive" severity="warn" class="w-full">
+          {{ $t('install.nonDefaultDrive') }}
+        </Message>
 
-    <!-- System Paths Info -->
-    <div class="bg-neutral-800 p-4 rounded-lg">
-      <h3 class="text-lg font-medium mt-0 mb-3 text-neutral-100">
-        {{ $t('install.systemLocations') }}
-      </h3>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2">
-          <i class="pi pi-folder text-neutral-400" />
-          <span class="text-neutral-400">App Data:</span>
-          <span class="text-neutral-200">{{ appData }}</span>
-          <span
-            v-tooltip="$t('install.appDataLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <i class="pi pi-desktop text-neutral-400" />
-          <span class="text-neutral-400">App Path:</span>
-          <span class="text-neutral-200">{{ appPath }}</span>
-          <span
-            v-tooltip="$t('install.appPathLocationTooltip')"
-            class="pi pi-info-circle"
-          />
-        </div>
+        <!-- Divider -->
+        <Divider class="border-neutral-700" />
+      </div>
+
+      <!-- Collapsible Sections using PrimeVue Accordion -->
+      <div class="px-12">
+        <Accordion
+          v-model:value="activeAccordionIndex"
+          :multiple="true"
+          class="location-picker-accordion"
+          :pt="{
+            root: 'bg-transparent border-0',
+            panel: {
+              root: 'border-0 mb-0'
+            },
+            header: {
+              root: 'bg-transparent border-0',
+              content:
+                'text-neutral-400 hover:text-neutral-300 px-0 py-3 flex items-center gap-3',
+              toggleicon: 'text-xs order-first mr-0'
+            },
+            content: {
+              root: 'bg-transparent border-0',
+              content: 'text-neutral-500 text-sm pl-7 pb-3 pt-0'
+            }
+          }"
+        >
+          <AccordionPanel value="0">
+            <AccordionHeader>
+              {{ $t('install.locationPicker.migrateFromExisting') }}
+            </AccordionHeader>
+            <AccordionContent>
+              {{ $t('install.locationPicker.migrateDescription') }}
+            </AccordionContent>
+          </AccordionPanel>
+
+          <AccordionPanel value="1">
+            <AccordionHeader>
+              {{ $t('install.locationPicker.chooseDownloadServers') }}
+            </AccordionHeader>
+            <AccordionContent>
+              {{ $t('install.locationPicker.downloadServersDescription') }}
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Accordion from 'primevue/accordion'
+import AccordionContent from 'primevue/accordioncontent'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionPanel from 'primevue/accordionpanel'
 import Button from 'primevue/button'
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
+import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
@@ -84,19 +117,17 @@ const installPath = defineModel<string>('installPath', { required: true })
 const pathError = defineModel<string>('pathError', { required: true })
 const pathExists = ref(false)
 const nonDefaultDrive = ref(false)
-const appData = ref('')
-const appPath = ref('')
 const inputTouched = ref(false)
+
+// Accordion state - array of active panel values
+const activeAccordionIndex = ref<string[] | undefined>(undefined)
 
 const electron = electronAPI()
 
-// Get system paths on component mount
+// Get default install path on component mount
 onMounted(async () => {
   const paths = await electron.getSystemPaths()
-  appData.value = paths.appData
-  appPath.value = paths.appPath
   installPath.value = paths.defaultInstallPath
-
   await validatePath(paths.defaultInstallPath)
 })
 
@@ -151,3 +182,38 @@ const onFocus = async () => {
   await validatePath(installPath.value)
 }
 </script>
+
+<style scoped>
+/* Style the accordion to match the mockup */
+:deep(.location-picker-accordion) {
+  .p-accordionpanel {
+    border: none;
+    background: transparent;
+  }
+
+  .p-accordionheader {
+    background: transparent;
+    border: none;
+  }
+
+  .p-accordioncontent {
+    background: transparent;
+    border: none;
+  }
+
+  /* Override default chevron icons to use right/down */
+  .p-accordionheader-toggle-icon {
+    &::before {
+      content: '\e933' !important; /* pi-chevron-right */
+    }
+  }
+
+  .p-accordionpanel-active {
+    .p-accordionheader-toggle-icon {
+      &::before {
+        content: '\e902' !important; /* pi-chevron-down */
+      }
+    }
+  }
+}
+</style>

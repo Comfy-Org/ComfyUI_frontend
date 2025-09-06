@@ -1,5 +1,8 @@
 <template>
-  <div ref="rootEl" class="relative overflow-hidden h-full w-full bg-black">
+  <div
+    ref="rootEl"
+    class="relative overflow-hidden h-full w-full bg-neutral-900"
+  >
     <div class="p-terminal rounded-none h-full w-full p-2">
       <div ref="terminalEl" class="h-full terminal-host" />
     </div>
@@ -23,12 +26,14 @@ onUnmounted(() => emit('unmounted'))
 </script>
 
 <style scoped>
+@reference '../../../../assets/css/style.css';
+
 :deep(.p-terminal) .xterm {
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 :deep(.p-terminal) .xterm-screen {
-  background-color: black;
-  overflow-y: hidden;
+  @apply bg-neutral-900;
+  overflow: hidden;
 }
 </style>
