@@ -67,20 +67,10 @@ export function useSelectionState() {
     () => filterOutputNodes(selectedNodes.value).length > 0
   )
 
-  const selectedNodesStates = computed<NodeSelectionState>(() => {
-    const nodes = selectedNodes.value
-    if (!nodes.length)
-      return { collapsed: false, pinned: false, bypassed: false }
-    return {
-      collapsed: nodes.some((n) => n.flags?.collapsed),
-      pinned: nodes.some((n) => n.pinned),
-      bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
-    }
-  })
-
-  // On-demand computation (non-reactive) so callers can fetch fresh flags
-  const computeSelectionFlags = (): NodeSelectionState => {
-    const nodes = selectedNodes.value
+  // Helper function to compute selection flags (reused by both computed and function)
+  const computeSelectionStatesFromNodes = (
+    nodes: LGraphNode[]
+  ): NodeSelectionState => {
     if (!nodes.length)
       return { collapsed: false, pinned: false, bypassed: false }
     return {
@@ -89,6 +79,14 @@ export function useSelectionState() {
       bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
     }
   }
+
+  const selectedNodesStates = computed<NodeSelectionState>(() =>
+    computeSelectionStatesFromNodes(selectedNodes.value)
+  )
+
+  // On-demand computation (non-reactive) so callers can fetch fresh flags
+  const computeSelectionFlags = (): NodeSelectionState =>
+    computeSelectionStatesFromNodes(selectedNodes.value)
 
   /** Toggle node help sidebar/panel for the single selected node (if any). */
   const showNodeHelp = () => {
@@ -115,13 +113,10 @@ export function useSelectionState() {
   }
 
   return {
-    // raw
     selectedItems,
     selectedNodes,
-    // definitions & help
     nodeDef,
     showNodeHelp,
-    // counts / booleans
     hasAnySelection,
     hasSingleSelection,
     hasMultipleSelection,
@@ -131,7 +126,6 @@ export function useSelectionState() {
     hasSubgraphs,
     hasImageNode,
     hasOutputNodesSelected,
-    // aggregate states
     selectedNodesStates,
     computeSelectionFlags
   }
