@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
+import { useManagerState } from '@/composables/useManagerState'
 import { api } from '@/scripts/api'
 import { components } from '@/types/generatedManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -44,10 +45,17 @@ const managerApiClient = axios.create({
 /**
  * Service for interacting with the ComfyUI Manager API
  * Provides methods for managing packs, ComfyUI-Manager queue operations, and system functions
+ * Note: This service should only be used when Manager state is NEW_UI
  */
 export const useComfyManagerService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Check if manager service should be available
+  const isManagerServiceAvailable = () => {
+    const managerState = useManagerState()
+    return managerState.isNewManagerUI.value
+  }
 
   const handleRequestError = (
     err: unknown,
@@ -86,6 +94,12 @@ export const useComfyManagerService = () => {
     }
   ): Promise<T | null> => {
     const { errorContext, routeSpecificErrors, isQueueOperation } = options
+
+    // Block service calls if not in NEW_UI state
+    if (!isManagerServiceAvailable()) {
+      error.value = 'Manager service is not available in current mode'
+      return null
+    }
 
     isLoading.value = true
     error.value = null
@@ -150,6 +164,10 @@ export const useComfyManagerService = () => {
     signal?: AbortSignal
   ) => {
     const errorContext = 'Fetching bulk import failure information'
+
+    if (!params.cnr_ids?.length && !params.urls?.length) {
+      return {}
+    }
 
     return executeRequest<components['schemas']['ImportFailInfoBulkResponse']>(
       () =>

@@ -61,7 +61,7 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
     const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
     if (nodeDef?.nodeSource.type === 'core') {
       if (!systemStatsStore.systemStats) {
-        await systemStatsStore.fetchSystemStats()
+        await systemStatsStore.refetchSystemStats()
       }
       return {
         id: CORE_NODES_PACK_NAME,
