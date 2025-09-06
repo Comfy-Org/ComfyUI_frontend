@@ -1,6 +1,6 @@
 <template>
   <div class="settings-container">
-    <ScrollPanel class="settings-sidebar flex-shrink-0 p-2 w-48 2xl:w-64">
+    <ScrollPanel class="settings-sidebar shrink-0 p-2 w-48 2xl:w-64">
       <SearchBox
         v-model:modelValue="searchQuery"
         class="settings-search-box w-full mb-2"
@@ -41,7 +41,6 @@
         >
           <template #header>
             <CurrentUserMessage v-if="tabValue === 'Comfy'" />
-            <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
             <ColorPaletteMessage v-if="tabValue === 'Appearance'" />
           </template>
           <SettingsPanel :setting-groups="sortedGroups(category)" />
@@ -76,7 +75,6 @@ import { flattenTree } from '@/utils/treeUtil'
 
 import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
 import CurrentUserMessage from './setting/CurrentUserMessage.vue'
-import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
 
@@ -120,7 +118,7 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
 }
 
 const handleSearch = (query: string) => {
-  handleSearchBase(query)
+  handleSearchBase(query.trim())
   activeCategory.value = query ? null : defaultCategory.value
 }
 

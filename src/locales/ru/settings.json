@@ -32,7 +32,7 @@
   "Comfy_Canvas_NavigationMode": {
     "name": "Режим навигации по холсту",
     "options": {
-      "Left-Click Pan (Legacy)": "Перемещение левой кнопкой (устаревший)",
+      "Drag Navigation": "Перетаскивание",
       "Standard (New)": "Стандартный (новый)"
     }
   },
@@ -342,6 +342,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "Проверка рабочих процессов"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Включить рендеринг узлов через Vue",
+    "tooltip": "Отображать узлы как компоненты Vue вместо элементов canvas. Экспериментальная функция."
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "Включить виджеты Vue",
+    "tooltip": "Отображать виджеты как компоненты Vue внутри узлов Vue."
   },
   "Comfy_WidgetControlMode": {
     "name": "Режим управления виджетом",

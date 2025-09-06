@@ -1,22 +1,52 @@
 # ComfyUI Frontend Project Guidelines
 
+## Repository Setup
+
+For first-time setup, use the Claude command:
+```
+/setup_repo
+```
+This bootstraps the monorepo with dependencies, builds, tests, and dev server verification.
+
+**Prerequisites:** Node.js >= 24, Git repository, available ports (5173, 6006)
+
 ## Quick Commands
 
-- `npm run`: See all available commands
-- `npm run typecheck`: Type checking
-- `npm run lint`: Linting
-- `npm run format`: Prettier formatting
-- `npm run test:component`: Run component tests with browser environment
-- `npm run test:unit`: Run all unit tests
-- `npm run test:unit -- tests-ui/tests/example.test.ts`: Run single test file
+- `pnpm`: See all available commands
+- `pnpm dev`: Start development server (port 5173, via nx)
+- `pnpm typecheck`: Type checking
+- `pnpm build`: Build for production (via nx)
+- `pnpm lint`: Linting (via nx)
+- `pnpm format`: Prettier formatting
+- `pnpm test:component`: Run component tests with browser environment
+- `pnpm test:unit`: Run all unit tests
+- `pnpm test:browser`: Run E2E tests via Playwright
+- `pnpm test:unit -- tests-ui/tests/example.test.ts`: Run single test file
+- `pnpm storybook`: Start Storybook development server (port 6006)
+- `pnpm knip`: Detect unused code and dependencies
+
+## Monorepo Architecture
+
+The project now uses **Nx** for build orchestration and task management:
+
+- **Task Orchestration**: Commands like `dev`, `build`, `lint`, and `test:browser` run via Nx
+- **Caching**: Nx provides intelligent caching for faster rebuilds
+- **Configuration**: Managed through `nx.json` with plugins for ESLint, Storybook, Vite, and Playwright
+- **Dependencies**: Nx handles dependency graph analysis and parallel execution
+
+Key Nx features:
+- Build target caching and incremental builds
+- Parallel task execution across the monorepo
+- Plugin-based architecture for different tools
 
 ## Development Workflow
 
-1. Make code changes
-2. Run tests (see subdirectory CLAUDE.md files)
-3. Run typecheck, lint, format
-4. Check README updates
-5. Consider docs.comfy.org updates
+1. **First-time setup**: Run `/setup_repo` Claude command
+2. Make code changes
+3. Run tests (see subdirectory CLAUDE.md files)
+4. Run typecheck, lint, format
+5. Check README updates
+6. Consider docs.comfy.org updates
 
 ## Git Conventions
 
@@ -52,6 +82,44 @@ When referencing Comfy-Org repos:
 2. Use GitHub API for branches/PRs/metadata
 3. Curl GitHub website if needed
 
+## Settings and Feature Flags Quick Reference
+
+### Settings Usage
+```typescript
+const settingStore = useSettingStore()
+const value = settingStore.get('Comfy.SomeSetting')     // Get setting
+await settingStore.set('Comfy.SomeSetting', newValue)   // Update setting
+```
+
+### Dynamic Defaults
+```typescript
+{
+  id: 'Comfy.Example.Setting',
+  defaultValue: () => window.innerWidth < 1024 ? 'small' : 'large'  // Runtime context
+}
+```
+
+### Version-Based Defaults
+```typescript
+{
+  id: 'Comfy.Example.Feature',
+  defaultValue: 'legacy',
+  defaultsByInstallVersion: { '1.25.0': 'enhanced' }  // Gradual rollout
+}
+```
+
+### Feature Flags
+```typescript
+if (api.serverSupportsFeature('feature_name')) {  // Check capability
+  // Use enhanced feature
+}
+const value = api.getServerFeature('config_name', defaultValue)  // Get config
+```
+
+**Documentation:**
+- Settings system: `docs/SETTINGS.md`
+- Feature flags system: `docs/FEATURE_FLAGS.md`
+
 ## Common Pitfalls
 
 - NEVER use `any` type - use proper TypeScript types
@@ -59,3 +127,6 @@ When referencing Comfy-Org repos:
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
+- NEVER use `dark:` prefix - always use `dark-theme:` for dark mode styles, for example: `dark-theme:text-white dark-theme:bg-black`
+- NEVER use `:class="[]"` to merge class names - always use `import { cn } from '@/utils/tailwindUtil'`, for example: `<div :class="cn('bg-red-500', { 'bg-blue-500': condition })" />`
+

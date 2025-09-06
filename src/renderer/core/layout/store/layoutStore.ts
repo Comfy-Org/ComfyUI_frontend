@@ -1,0 +1,1347 @@
+/**
+ * Layout Store - Single Source of Truth
+ *
+ * Uses Yjs for efficient local state management and future collaboration.
+ * CRDT ensures conflict-free operations for both single and multi-user scenarios.
+ */
+import log from 'loglevel'
+import { type ComputedRef, type Ref, computed, customRef } from 'vue'
+import * as Y from 'yjs'
+
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+import type {
+  CreateLinkOperation,
+  CreateNodeOperation,
+  CreateRerouteOperation,
+  DeleteLinkOperation,
+  DeleteNodeOperation,
+  DeleteRerouteOperation,
+  LayoutOperation,
+  MoveNodeOperation,
+  MoveRerouteOperation,
+  ResizeNodeOperation,
+  SetNodeZIndexOperation
+} from '@/renderer/core/layout/types'
+import {
+  type Bounds,
+  type LayoutChange,
+  LayoutSource,
+  type LayoutStore,
+  type LinkId,
+  type LinkLayout,
+  type LinkSegmentLayout,
+  type NodeId,
+  type NodeLayout,
+  type Point,
+  type RerouteId,
+  type RerouteLayout,
+  type SlotLayout
+} from '@/renderer/core/layout/types'
+import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
+
+type YEventChange = {
+  action: 'add' | 'update' | 'delete'
+  oldValue: unknown
+}
+
+const logger = log.getLogger('LayoutStore')
+
+// Constants
+const REROUTE_RADIUS = 8
+
+class LayoutStoreImpl implements LayoutStore {
+  // Yjs document and shared data structures
+  private ydoc = new Y.Doc()
+  private ynodes: Y.Map<Y.Map<unknown>> // Maps nodeId -> Y.Map containing NodeLayout data
+  private ylinks: Y.Map<Y.Map<unknown>> // Maps linkId -> Y.Map containing link data
+  private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
+  private yoperations: Y.Array<LayoutOperation> // Operation log
+
+  // Vue reactivity layer
+  private version = 0
+  private currentSource: LayoutSource =
+    ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
+  private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
+    .toString(36)
+    .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
+
+  // Change listeners
+  private changeListeners = new Set<(change: LayoutChange) => void>()
+
+  // CustomRef cache and trigger functions
+  private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
+  private nodeTriggers = new Map<NodeId, () => void>()
+
+  // New data structures for hit testing
+  private linkLayouts = new Map<LinkId, LinkLayout>()
+  private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
+  private slotLayouts = new Map<string, SlotLayout>()
+  private rerouteLayouts = new Map<RerouteId, RerouteLayout>()
+
+  // Spatial index managers
+  private spatialIndex: SpatialIndexManager // For nodes
+  private linkSegmentSpatialIndex: SpatialIndexManager // For link segments (single index for all link geometry)
+  private slotSpatialIndex: SpatialIndexManager // For slots
+  private rerouteSpatialIndex: SpatialIndexManager // For reroutes
+
+  constructor() {
+    // Initialize Yjs data structures
+    this.ynodes = this.ydoc.getMap('nodes')
+    this.ylinks = this.ydoc.getMap('links')
+    this.yreroutes = this.ydoc.getMap('reroutes')
+    this.yoperations = this.ydoc.getArray('operations')
+
+    // Initialize spatial index managers
+    this.spatialIndex = new SpatialIndexManager()
+    this.linkSegmentSpatialIndex = new SpatialIndexManager() // Single index for all link geometry
+    this.slotSpatialIndex = new SpatialIndexManager()
+    this.rerouteSpatialIndex = new SpatialIndexManager()
+
+    // Listen for Yjs changes and trigger Vue reactivity
+    this.ynodes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
+      this.version++
+
+      // Trigger all affected node refs
+      event.changes.keys.forEach((_change: YEventChange, key: string) => {
+        const trigger = this.nodeTriggers.get(key)
+        if (trigger) {
+          trigger()
+        }
+      })
+    })
+
+    // Listen for link changes and update spatial indexes
+    this.ylinks.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
+      this.version++
+      event.changes.keys.forEach((change, linkIdStr) => {
+        this.handleLinkChange(change, linkIdStr)
+      })
+    })
+
+    // Listen for reroute changes and update spatial indexes
+    this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
+      this.version++
+      event.changes.keys.forEach((change, rerouteIdStr) => {
+        this.handleRerouteChange(change, rerouteIdStr)
+      })
+    })
+  }
+
+  /**
+   * Get or create a customRef for a node layout
+   */
+  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
+    let nodeRef = this.nodeRefs.get(nodeId)
+
+    if (!nodeRef) {
+      nodeRef = customRef<NodeLayout | null>((track, trigger) => {
+        // Store the trigger so we can call it when Yjs changes
+        this.nodeTriggers.set(nodeId, trigger)
+
+        return {
+          get: () => {
+            track()
+            const ynode = this.ynodes.get(nodeId)
+            const layout = ynode ? this.yNodeToLayout(ynode) : null
+            return layout
+          },
+          set: (newLayout: NodeLayout | null) => {
+            if (newLayout === null) {
+              // Delete operation
+              const existing = this.ynodes.get(nodeId)
+              if (existing) {
+                this.applyOperation({
+                  type: 'deleteNode',
+                  entity: 'node',
+                  nodeId,
+                  timestamp: Date.now(),
+                  source: this.currentSource,
+                  actor: this.currentActor,
+                  previousLayout: this.yNodeToLayout(existing)
+                })
+              }
+            } else {
+              // Update operation - detect what changed
+              const existing = this.ynodes.get(nodeId)
+              if (!existing) {
+                // Create operation
+                this.applyOperation({
+                  type: 'createNode',
+                  entity: 'node',
+                  nodeId,
+                  layout: newLayout,
+                  timestamp: Date.now(),
+                  source: this.currentSource,
+                  actor: this.currentActor
+                })
+              } else {
+                const existingLayout = this.yNodeToLayout(existing)
+
+                // Check what properties changed
+                if (
+                  existingLayout.position.x !== newLayout.position.x ||
+                  existingLayout.position.y !== newLayout.position.y
+                ) {
+                  this.applyOperation({
+                    type: 'moveNode',
+                    entity: 'node',
+                    nodeId,
+                    position: newLayout.position,
+                    previousPosition: existingLayout.position,
+                    timestamp: Date.now(),
+                    source: this.currentSource,
+                    actor: this.currentActor
+                  })
+                }
+                if (
+                  existingLayout.size.width !== newLayout.size.width ||
+                  existingLayout.size.height !== newLayout.size.height
+                ) {
+                  this.applyOperation({
+                    type: 'resizeNode',
+                    entity: 'node',
+                    nodeId,
+                    size: newLayout.size,
+                    previousSize: existingLayout.size,
+                    timestamp: Date.now(),
+                    source: this.currentSource,
+                    actor: this.currentActor
+                  })
+                }
+                if (existingLayout.zIndex !== newLayout.zIndex) {
+                  this.applyOperation({
+                    type: 'setNodeZIndex',
+                    entity: 'node',
+                    nodeId,
+                    zIndex: newLayout.zIndex,
+                    previousZIndex: existingLayout.zIndex,
+                    timestamp: Date.now(),
+                    source: this.currentSource,
+                    actor: this.currentActor
+                  })
+                }
+              }
+            }
+            trigger()
+          }
+        }
+      })
+
+      this.nodeRefs.set(nodeId, nodeRef)
+    }
+
+    return nodeRef
+  }
+
+  /**
+   * Get nodes within bounds (reactive)
+   */
+  getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]> {
+    return computed(() => {
+      // Touch version for reactivity
+      void this.version
+
+      const result: NodeId[] = []
+      for (const [nodeId] of this.ynodes) {
+        const ynode = this.ynodes.get(nodeId)
+        if (ynode) {
+          const layout = this.yNodeToLayout(ynode)
+          if (layout && this.boundsIntersect(layout.bounds, bounds)) {
+            result.push(nodeId)
+          }
+        }
+      }
+      return result
+    })
+  }
+
+  /**
+   * Get all nodes as a reactive map
+   */
+  getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>> {
+    return computed(() => {
+      // Touch version for reactivity
+      void this.version
+
+      const result = new Map<NodeId, NodeLayout>()
+      for (const [nodeId] of this.ynodes) {
+        const ynode = this.ynodes.get(nodeId)
+        if (ynode) {
+          const layout = this.yNodeToLayout(ynode)
+          if (layout) {
+            result.set(nodeId, layout)
+          }
+        }
+      }
+      return result
+    })
+  }
+
+  /**
+   * Get current version for change detection
+   */
+  getVersion(): ComputedRef<number> {
+    return computed(() => this.version)
+  }
+
+  /**
+   * Query node at point (non-reactive for performance)
+   */
+  queryNodeAtPoint(point: Point): NodeId | null {
+    const nodes: Array<[NodeId, NodeLayout]> = []
+
+    for (const [nodeId] of this.ynodes) {
+      const ynode = this.ynodes.get(nodeId)
+      if (ynode) {
+        const layout = this.yNodeToLayout(ynode)
+        if (layout) {
+          nodes.push([nodeId, layout])
+        }
+      }
+    }
+
+    // Sort by zIndex (top to bottom)
+    nodes.sort(([, a], [, b]) => b.zIndex - a.zIndex)
+
+    for (const [nodeId, layout] of nodes) {
+      if (this.pointInBounds(point, layout.bounds)) {
+        return nodeId
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Query nodes in bounds (non-reactive for performance)
+   */
+  queryNodesInBounds(bounds: Bounds): NodeId[] {
+    return this.spatialIndex.query(bounds)
+  }
+
+  /**
+   * Update link layout data (for geometry/debug, no separate spatial index)
+   */
+  updateLinkLayout(linkId: LinkId, layout: LinkLayout): void {
+    const existing = this.linkLayouts.get(linkId)
+
+    // Short-circuit if bounds and centerPos unchanged
+    if (
+      existing &&
+      existing.bounds.x === layout.bounds.x &&
+      existing.bounds.y === layout.bounds.y &&
+      existing.bounds.width === layout.bounds.width &&
+      existing.bounds.height === layout.bounds.height &&
+      existing.centerPos.x === layout.centerPos.x &&
+      existing.centerPos.y === layout.centerPos.y
+    ) {
+      // Only update path if provided (for hit detection)
+      if (layout.path) {
+        existing.path = layout.path
+      }
+      return
+    }
+
+    this.linkLayouts.set(linkId, layout)
+  }
+
+  /**
+   * Delete link layout data
+   */
+  deleteLinkLayout(linkId: LinkId): void {
+    const deleted = this.linkLayouts.delete(linkId)
+    if (deleted) {
+      // Clean up any segment layouts for this link
+      const keysToDelete: string[] = []
+      for (const [key] of this.linkSegmentLayouts) {
+        if (key.startsWith(`${linkId}:`)) {
+          keysToDelete.push(key)
+        }
+      }
+      for (const key of keysToDelete) {
+        this.linkSegmentLayouts.delete(key)
+        this.linkSegmentSpatialIndex.remove(key)
+      }
+    }
+  }
+
+  /**
+   * Update slot layout data
+   */
+  updateSlotLayout(key: string, layout: SlotLayout): void {
+    const existing = this.slotLayouts.get(key)
+
+    if (existing) {
+      // Update spatial index
+      this.slotSpatialIndex.update(key, layout.bounds)
+    } else {
+      // Insert into spatial index
+      this.slotSpatialIndex.insert(key, layout.bounds)
+    }
+
+    this.slotLayouts.set(key, layout)
+  }
+
+  /**
+   * Delete slot layout data
+   */
+  deleteSlotLayout(key: string): void {
+    const deleted = this.slotLayouts.delete(key)
+    if (deleted) {
+      // Remove from spatial index
+      this.slotSpatialIndex.remove(key)
+    }
+  }
+
+  /**
+   * Delete all slot layouts for a node
+   */
+  deleteNodeSlotLayouts(nodeId: NodeId): void {
+    const keysToDelete: string[] = []
+    for (const [key, layout] of this.slotLayouts) {
+      if (layout.nodeId === nodeId) {
+        keysToDelete.push(key)
+      }
+    }
+    for (const key of keysToDelete) {
+      this.slotLayouts.delete(key)
+      // Remove from spatial index
+      this.slotSpatialIndex.remove(key)
+    }
+  }
+
+  /**
+   * Clear all slot layouts and their spatial index (O(1) operations)
+   * Used when switching rendering modes (Vue ↔ LiteGraph)
+   */
+  clearAllSlotLayouts(): void {
+    this.slotLayouts.clear()
+    this.slotSpatialIndex.clear()
+  }
+
+  /**
+   * Update reroute layout data
+   */
+  updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void {
+    const existing = this.rerouteLayouts.get(rerouteId)
+
+    if (!existing) {
+      logger.debug('Adding reroute layout:', {
+        rerouteId,
+        position: layout.position,
+        bounds: layout.bounds
+      })
+    }
+
+    if (existing) {
+      // Update spatial index
+      this.rerouteSpatialIndex.update(String(rerouteId), layout.bounds) // Spatial index uses strings
+    } else {
+      // Insert into spatial index
+      this.rerouteSpatialIndex.insert(String(rerouteId), layout.bounds) // Spatial index uses strings
+    }
+
+    this.rerouteLayouts.set(rerouteId, layout)
+  }
+
+  /**
+   * Delete reroute layout data
+   */
+  deleteRerouteLayout(rerouteId: RerouteId): void {
+    const deleted = this.rerouteLayouts.delete(rerouteId)
+    if (deleted) {
+      // Remove from spatial index
+      this.rerouteSpatialIndex.remove(String(rerouteId)) // Spatial index uses strings
+    }
+  }
+
+  /**
+   * Get link layout data
+   */
+  getLinkLayout(linkId: LinkId): LinkLayout | null {
+    return this.linkLayouts.get(linkId) || null
+  }
+
+  /**
+   * Get slot layout data
+   */
+  getSlotLayout(key: string): SlotLayout | null {
+    return this.slotLayouts.get(key) || null
+  }
+
+  /**
+   * Get reroute layout data
+   */
+  getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null {
+    return this.rerouteLayouts.get(rerouteId) || null
+  }
+
+  /**
+   * Helper to create internal key for link segment
+   */
+  private makeLinkSegmentKey(
+    linkId: LinkId,
+    rerouteId: RerouteId | null
+  ): string {
+    return `${linkId}:${rerouteId ?? 'final'}`
+  }
+
+  /**
+   * Update link segment layout data
+   */
+  updateLinkSegmentLayout(
+    linkId: LinkId,
+    rerouteId: RerouteId | null,
+    layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
+  ): void {
+    const key = this.makeLinkSegmentKey(linkId, rerouteId)
+    const existing = this.linkSegmentLayouts.get(key)
+
+    // Short-circuit if bounds and centerPos unchanged (prevents spatial index churn)
+    if (
+      existing &&
+      existing.bounds.x === layout.bounds.x &&
+      existing.bounds.y === layout.bounds.y &&
+      existing.bounds.width === layout.bounds.width &&
+      existing.bounds.height === layout.bounds.height &&
+      existing.centerPos.x === layout.centerPos.x &&
+      existing.centerPos.y === layout.centerPos.y
+    ) {
+      // Only update path if provided (for hit detection)
+      if (layout.path) {
+        existing.path = layout.path
+      }
+      return
+    }
+
+    const fullLayout: LinkSegmentLayout = {
+      ...layout,
+      linkId,
+      rerouteId
+    }
+
+    if (!existing) {
+      logger.debug('Adding link segment:', {
+        linkId,
+        rerouteId,
+        bounds: layout.bounds,
+        hasPath: !!layout.path
+      })
+    }
+
+    if (existing) {
+      // Update spatial index
+      this.linkSegmentSpatialIndex.update(key, layout.bounds)
+    } else {
+      // Insert into spatial index
+      this.linkSegmentSpatialIndex.insert(key, layout.bounds)
+    }
+
+    this.linkSegmentLayouts.set(key, fullLayout)
+  }
+
+  /**
+   * Delete link segment layout data
+   */
+  deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void {
+    const key = this.makeLinkSegmentKey(linkId, rerouteId)
+    const deleted = this.linkSegmentLayouts.delete(key)
+    if (deleted) {
+      // Remove from spatial index
+      this.linkSegmentSpatialIndex.remove(key)
+    }
+  }
+
+  /**
+   * Query link segment at point (returns structured data)
+   */
+  queryLinkSegmentAtPoint(
+    point: Point,
+    ctx?: CanvasRenderingContext2D
+  ): { linkId: LinkId; rerouteId: RerouteId | null } | null {
+    // Determine tolerance from current canvas state (if available)
+    // - Use the caller-provided ctx.lineWidth (LGraphCanvas sets this to connections_width + padding)
+    // - Fall back to a sensible default when ctx is not provided
+    const hitWidth = ctx?.lineWidth ?? 10
+    const halfSize = Math.max(10, hitWidth) // keep a minimum window for spatial index
+
+    // Use spatial index to get candidate segments
+    const searchArea = {
+      x: point.x - halfSize,
+      y: point.y - halfSize,
+      width: halfSize * 2,
+      height: halfSize * 2
+    }
+    const candidateKeys = this.linkSegmentSpatialIndex.query(searchArea)
+
+    if (candidateKeys.length > 0) {
+      logger.debug('Checking link segments at point:', {
+        point,
+        candidateCount: candidateKeys.length,
+        tolerance: hitWidth
+      })
+    }
+
+    // Precise hit test only on candidates
+    for (const key of candidateKeys) {
+      const segmentLayout = this.linkSegmentLayouts.get(key)
+      if (!segmentLayout) continue
+
+      if (ctx && segmentLayout.path) {
+        // Match LiteGraph behavior: hit test uses device pixel ratio for coordinates
+        const dpi =
+          (typeof window !== 'undefined' && window?.devicePixelRatio) || 1
+        const hit = ctx.isPointInStroke(
+          segmentLayout.path,
+          point.x * dpi,
+          point.y * dpi
+        )
+
+        if (hit) {
+          logger.debug('Link segment hit:', {
+            linkId: segmentLayout.linkId,
+            rerouteId: segmentLayout.rerouteId,
+            point
+          })
+          return {
+            linkId: segmentLayout.linkId,
+            rerouteId: segmentLayout.rerouteId
+          }
+        }
+      } else if (this.pointInBounds(point, segmentLayout.bounds)) {
+        // Fallback to bounding box test
+        return {
+          linkId: segmentLayout.linkId,
+          rerouteId: segmentLayout.rerouteId
+        }
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Query link at point (derived from segment query)
+   */
+  queryLinkAtPoint(
+    point: Point,
+    ctx?: CanvasRenderingContext2D
+  ): LinkId | null {
+    // Invoke segment query and return just the linkId
+    const segment = this.queryLinkSegmentAtPoint(point, ctx)
+    return segment ? segment.linkId : null
+  }
+
+  /**
+   * Query slot at point
+   */
+  querySlotAtPoint(point: Point): SlotLayout | null {
+    // Use spatial index to get candidate slots
+    const searchArea = {
+      x: point.x - 10, // Tolerance for slot size
+      y: point.y - 10,
+      width: 20,
+      height: 20
+    }
+    const candidateSlotKeys = this.slotSpatialIndex.query(searchArea)
+
+    // Check precise bounds for candidates
+    for (const key of candidateSlotKeys) {
+      const slotLayout = this.slotLayouts.get(key)
+      if (slotLayout && this.pointInBounds(point, slotLayout.bounds)) {
+        return slotLayout
+      }
+    }
+    return null
+  }
+
+  /**
+   * Query reroute at point
+   */
+  queryRerouteAtPoint(point: Point): RerouteLayout | null {
+    // Use spatial index to get candidate reroutes
+    const maxRadius = 20 // Maximum expected reroute radius
+    const searchArea = {
+      x: point.x - maxRadius,
+      y: point.y - maxRadius,
+      width: maxRadius * 2,
+      height: maxRadius * 2
+    }
+    const candidateRerouteKeys = this.rerouteSpatialIndex.query(searchArea)
+
+    if (candidateRerouteKeys.length > 0) {
+      logger.debug('Checking reroutes at point:', {
+        point,
+        candidateCount: candidateRerouteKeys.length
+      })
+    }
+
+    // Check precise distance for candidates
+    for (const rerouteKey of candidateRerouteKeys) {
+      const rerouteId = Number(rerouteKey) as RerouteId // Convert string key back to numeric
+      const rerouteLayout = this.rerouteLayouts.get(rerouteId)
+      if (rerouteLayout) {
+        const dx = point.x - rerouteLayout.position.x
+        const dy = point.y - rerouteLayout.position.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
+
+        if (distance <= rerouteLayout.radius) {
+          logger.debug('Reroute hit:', {
+            rerouteId: rerouteLayout.id,
+            position: rerouteLayout.position,
+            distance
+          })
+          return rerouteLayout
+        }
+      }
+    }
+    return null
+  }
+
+  /**
+   * Query all items in bounds
+   */
+  queryItemsInBounds(bounds: Bounds): {
+    nodes: NodeId[]
+    links: LinkId[]
+    slots: string[]
+    reroutes: RerouteId[]
+  } {
+    // Query segments and union their linkIds
+    const segmentKeys = this.linkSegmentSpatialIndex.query(bounds)
+    const linkIds = new Set<LinkId>()
+    for (const key of segmentKeys) {
+      const segment = this.linkSegmentLayouts.get(key)
+      if (segment) {
+        linkIds.add(segment.linkId)
+      }
+    }
+
+    return {
+      nodes: this.queryNodesInBounds(bounds),
+      links: Array.from(linkIds),
+      slots: this.slotSpatialIndex.query(bounds),
+      reroutes: this.rerouteSpatialIndex
+        .query(bounds)
+        .map((key) => Number(key) as RerouteId) // Convert string keys to numeric
+    }
+  }
+
+  /**
+   * Apply a layout operation using Yjs transactions
+   */
+  applyOperation(operation: LayoutOperation): void {
+    // Create change object outside transaction so we can use it after
+    const change: LayoutChange = {
+      type: 'update',
+      nodeIds: [],
+      timestamp: operation.timestamp,
+      source: operation.source,
+      operation
+    }
+
+    // Use Yjs transaction for atomic updates
+    this.ydoc.transact(() => {
+      // Add operation to log
+      this.yoperations.push([operation])
+
+      // Apply the operation
+      this.applyOperationInTransaction(operation, change)
+    }, this.currentActor)
+
+    // Post-transaction updates
+    this.finalizeOperation(change)
+  }
+
+  /**
+   * Apply operation within a transaction
+   */
+  private applyOperationInTransaction(
+    operation: LayoutOperation,
+    change: LayoutChange
+  ): void {
+    switch (operation.type) {
+      case 'moveNode':
+        this.handleMoveNode(operation as MoveNodeOperation, change)
+        break
+      case 'resizeNode':
+        this.handleResizeNode(operation as ResizeNodeOperation, change)
+        break
+      case 'setNodeZIndex':
+        this.handleSetNodeZIndex(operation as SetNodeZIndexOperation, change)
+        break
+      case 'createNode':
+        this.handleCreateNode(operation as CreateNodeOperation, change)
+        break
+      case 'deleteNode':
+        this.handleDeleteNode(operation as DeleteNodeOperation, change)
+        break
+      case 'createLink':
+        this.handleCreateLink(operation as CreateLinkOperation, change)
+        break
+      case 'deleteLink':
+        this.handleDeleteLink(operation as DeleteLinkOperation, change)
+        break
+      case 'createReroute':
+        this.handleCreateReroute(operation as CreateRerouteOperation, change)
+        break
+      case 'deleteReroute':
+        this.handleDeleteReroute(operation as DeleteRerouteOperation, change)
+        break
+      case 'moveReroute':
+        this.handleMoveReroute(operation as MoveRerouteOperation, change)
+        break
+    }
+  }
+
+  /**
+   * Finalize operation after transaction
+   */
+  private finalizeOperation(change: LayoutChange): void {
+    // Update version
+    this.version++
+
+    // Manually trigger affected node refs after transaction
+    // This is needed because Yjs observers don't fire for property changes
+    change.nodeIds.forEach((nodeId) => {
+      const trigger = this.nodeTriggers.get(nodeId)
+      if (trigger) {
+        trigger()
+      }
+    })
+
+    // Notify listeners (after transaction completes)
+    setTimeout(() => this.notifyChange(change), 0)
+  }
+
+  /**
+   * Subscribe to layout changes
+   */
+  onChange(callback: (change: LayoutChange) => void): () => void {
+    this.changeListeners.add(callback)
+    return () => this.changeListeners.delete(callback)
+  }
+
+  /**
+   * Set the current operation source
+   */
+  setSource(source: LayoutSource): void {
+    this.currentSource = source
+  }
+
+  /**
+   * Set the current actor (for CRDT)
+   */
+  setActor(actor: string): void {
+    this.currentActor = actor
+  }
+
+  /**
+   * Get the current operation source
+   */
+  getCurrentSource(): LayoutSource {
+    return this.currentSource
+  }
+
+  /**
+   * Get the current actor
+   */
+  getCurrentActor(): string {
+    return this.currentActor
+  }
+
+  /**
+   * Initialize store with existing nodes
+   */
+  initializeFromLiteGraph(
+    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+  ): void {
+    this.ydoc.transact(() => {
+      this.ynodes.clear()
+      this.nodeRefs.clear()
+      this.nodeTriggers.clear()
+      this.spatialIndex.clear()
+      this.linkSegmentSpatialIndex.clear()
+      this.slotSpatialIndex.clear()
+      this.rerouteSpatialIndex.clear()
+      this.linkLayouts.clear()
+      this.linkSegmentLayouts.clear()
+      this.slotLayouts.clear()
+      this.rerouteLayouts.clear()
+
+      nodes.forEach((node, index) => {
+        const layout: NodeLayout = {
+          id: node.id.toString(),
+          position: { x: node.pos[0], y: node.pos[1] },
+          size: { width: node.size[0], height: node.size[1] },
+          zIndex: index,
+          visible: true,
+          bounds: {
+            x: node.pos[0],
+            y: node.pos[1],
+            width: node.size[0],
+            height: node.size[1]
+          }
+        }
+
+        this.ynodes.set(layout.id, this.layoutToYNode(layout))
+
+        // Add to spatial index
+        this.spatialIndex.insert(layout.id, layout.bounds)
+      })
+    }, 'initialization')
+  }
+
+  // Operation handlers
+  private handleMoveNode(
+    operation: MoveNodeOperation,
+    change: LayoutChange
+  ): void {
+    const ynode = this.ynodes.get(operation.nodeId)
+    if (!ynode) {
+      return
+    }
+
+    const size = ynode.get('size') as { width: number; height: number }
+    const newBounds = {
+      x: operation.position.x,
+      y: operation.position.y,
+      width: size.width,
+      height: size.height
+    }
+
+    // Update spatial index FIRST, synchronously to prevent race conditions
+    // Hit detection queries can run before CRDT updates complete
+    this.spatialIndex.update(operation.nodeId, newBounds)
+
+    // Update associated slot positions synchronously
+    this.updateNodeSlotPositions(operation.nodeId, operation.position)
+
+    // Then update CRDT
+    ynode.set('position', operation.position)
+    this.updateNodeBounds(ynode, operation.position, size)
+
+    change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleResizeNode(
+    operation: ResizeNodeOperation,
+    change: LayoutChange
+  ): void {
+    const ynode = this.ynodes.get(operation.nodeId)
+    if (!ynode) return
+
+    const position = ynode.get('position') as Point
+    const newBounds = {
+      x: position.x,
+      y: position.y,
+      width: operation.size.width,
+      height: operation.size.height
+    }
+
+    // Update spatial index FIRST, synchronously to prevent race conditions
+    // Hit detection queries can run before CRDT updates complete
+    this.spatialIndex.update(operation.nodeId, newBounds)
+
+    // Update associated slot positions synchronously (size changes may affect slot positions)
+    this.updateNodeSlotPositions(operation.nodeId, position)
+
+    // Then update CRDT
+    ynode.set('size', operation.size)
+    this.updateNodeBounds(ynode, position, operation.size)
+
+    change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleSetNodeZIndex(
+    operation: SetNodeZIndexOperation,
+    change: LayoutChange
+  ): void {
+    const ynode = this.ynodes.get(operation.nodeId)
+    if (!ynode) return
+
+    ynode.set('zIndex', operation.zIndex)
+    change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleCreateNode(
+    operation: CreateNodeOperation,
+    change: LayoutChange
+  ): void {
+    const ynode = this.layoutToYNode(operation.layout)
+    this.ynodes.set(operation.nodeId, ynode)
+
+    // Add to spatial index
+    this.spatialIndex.insert(operation.nodeId, operation.layout.bounds)
+
+    change.type = 'create'
+    change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleDeleteNode(
+    operation: DeleteNodeOperation,
+    change: LayoutChange
+  ): void {
+    if (!this.ynodes.has(operation.nodeId)) return
+
+    this.ynodes.delete(operation.nodeId)
+    this.nodeRefs.delete(operation.nodeId)
+    this.nodeTriggers.delete(operation.nodeId)
+
+    // Remove from spatial index
+    this.spatialIndex.remove(operation.nodeId)
+
+    // Clean up associated slot layouts
+    this.deleteNodeSlotLayouts(operation.nodeId)
+
+    // Clean up associated links
+    const linksToDelete = this.findLinksConnectedToNode(operation.nodeId)
+
+    // Delete the associated links
+    for (const linkId of linksToDelete) {
+      this.ylinks.delete(String(linkId))
+      this.linkLayouts.delete(linkId)
+
+      // Clean up link segment layouts
+      this.cleanupLinkSegments(linkId)
+    }
+
+    change.type = 'delete'
+    change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleCreateLink(
+    operation: CreateLinkOperation,
+    change: LayoutChange
+  ): void {
+    const linkData = new Y.Map<unknown>()
+    linkData.set('id', operation.linkId)
+    linkData.set('sourceNodeId', operation.sourceNodeId)
+    linkData.set('sourceSlot', operation.sourceSlot)
+    linkData.set('targetNodeId', operation.targetNodeId)
+    linkData.set('targetSlot', operation.targetSlot)
+
+    this.ylinks.set(String(operation.linkId), linkData)
+
+    // Link geometry will be computed separately when nodes move
+    // This just tracks that the link exists
+    change.type = 'create'
+  }
+
+  private handleDeleteLink(
+    operation: DeleteLinkOperation,
+    change: LayoutChange
+  ): void {
+    if (!this.ylinks.has(String(operation.linkId))) return
+
+    this.ylinks.delete(String(operation.linkId))
+    this.linkLayouts.delete(operation.linkId)
+    // Clean up any segment layouts for this link
+    this.cleanupLinkSegments(operation.linkId)
+
+    change.type = 'delete'
+  }
+
+  private handleCreateReroute(
+    operation: CreateRerouteOperation,
+    change: LayoutChange
+  ): void {
+    const rerouteData = new Y.Map<unknown>()
+    rerouteData.set('id', operation.rerouteId)
+    rerouteData.set('position', operation.position)
+    rerouteData.set('parentId', operation.parentId)
+    rerouteData.set('linkIds', operation.linkIds)
+
+    this.yreroutes.set(String(operation.rerouteId), rerouteData) // Yjs Map keys must be strings
+
+    // The observer will automatically update the spatial index
+    change.type = 'create'
+  }
+
+  private handleDeleteReroute(
+    operation: DeleteRerouteOperation,
+    change: LayoutChange
+  ): void {
+    if (!this.yreroutes.has(String(operation.rerouteId))) return // Yjs Map keys are strings
+
+    this.yreroutes.delete(String(operation.rerouteId)) // Yjs Map keys are strings
+    this.rerouteLayouts.delete(operation.rerouteId) // Layout map uses numeric ID
+    this.rerouteSpatialIndex.remove(String(operation.rerouteId)) // Spatial index uses strings
+
+    change.type = 'delete'
+  }
+
+  private handleMoveReroute(
+    operation: MoveRerouteOperation,
+    change: LayoutChange
+  ): void {
+    const yreroute = this.yreroutes.get(String(operation.rerouteId)) // Yjs Map keys are strings
+    if (!yreroute) return
+
+    yreroute.set('position', operation.position)
+
+    const pos = operation.position
+    const layout: RerouteLayout = {
+      id: operation.rerouteId,
+      position: pos,
+      radius: 8,
+      bounds: {
+        x: pos.x - 8,
+        y: pos.y - 8,
+        width: 16,
+        height: 16
+      }
+    }
+    this.updateRerouteLayout(operation.rerouteId, layout)
+
+    // Mark as update for listeners
+    change.type = 'update'
+  }
+
+  /**
+   * Update node bounds helper
+   */
+  private updateNodeBounds(
+    ynode: Y.Map<unknown>,
+    position: Point,
+    size: { width: number; height: number }
+  ): void {
+    ynode.set('bounds', {
+      x: position.x,
+      y: position.y,
+      width: size.width,
+      height: size.height
+    })
+  }
+
+  /**
+   * Find all links connected to a specific node
+   */
+  private findLinksConnectedToNode(nodeId: NodeId): LinkId[] {
+    const connectedLinks: LinkId[] = []
+    this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
+      const linkId = Number(linkIdStr) as LinkId
+      const sourceNodeId = linkData.get('sourceNodeId') as NodeId
+      const targetNodeId = linkData.get('targetNodeId') as NodeId
+
+      if (sourceNodeId === nodeId || targetNodeId === nodeId) {
+        connectedLinks.push(linkId)
+      }
+    })
+    return connectedLinks
+  }
+
+  /**
+   * Handle link change events
+   */
+  private handleLinkChange(change: YEventChange, linkIdStr: string): void {
+    if (change.action === 'delete') {
+      const linkId = Number(linkIdStr) as LinkId
+      this.cleanupLinkData(linkId)
+    }
+    // Link was added or updated - geometry will be computed separately
+    // This just tracks that the link exists in CRDT
+  }
+
+  /**
+   * Clean up all data associated with a link
+   */
+  private cleanupLinkData(linkId: LinkId): void {
+    this.linkLayouts.delete(linkId)
+    this.cleanupLinkSegments(linkId)
+  }
+
+  /**
+   * Clean up all segment layouts for a link
+   */
+  private cleanupLinkSegments(linkId: LinkId): void {
+    const keysToDelete: string[] = []
+    for (const [key] of this.linkSegmentLayouts) {
+      if (key.startsWith(`${linkId}:`)) {
+        keysToDelete.push(key)
+      }
+    }
+
+    for (const key of keysToDelete) {
+      this.linkSegmentLayouts.delete(key)
+      this.linkSegmentSpatialIndex.remove(key)
+    }
+  }
+
+  /**
+   * Handle reroute change events
+   */
+  private handleRerouteChange(
+    change: YEventChange,
+    rerouteIdStr: string
+  ): void {
+    const rerouteId = Number(rerouteIdStr) as RerouteId
+
+    if (change.action === 'delete') {
+      this.handleRerouteDelete(rerouteId)
+    } else {
+      this.handleRerouteUpsert(rerouteId)
+    }
+  }
+
+  /**
+   * Handle reroute deletion
+   */
+  private handleRerouteDelete(rerouteId: RerouteId): void {
+    this.rerouteLayouts.delete(rerouteId)
+    this.rerouteSpatialIndex.remove(String(rerouteId))
+  }
+
+  /**
+   * Handle reroute upsert (update if exists, create if not)
+   */
+  private handleRerouteUpsert(rerouteId: RerouteId): void {
+    const rerouteData = this.yreroutes.get(String(rerouteId))
+    if (!rerouteData) return
+
+    const position = rerouteData.get('position') as Point
+    if (!position) return
+
+    const layout = this.createRerouteLayout(rerouteId, position)
+    this.updateRerouteLayout(rerouteId, layout)
+  }
+
+  /**
+   * Create reroute layout from position
+   */
+  private createRerouteLayout(
+    rerouteId: RerouteId,
+    position: Point
+  ): RerouteLayout {
+    return {
+      id: rerouteId,
+      position,
+      radius: REROUTE_RADIUS,
+      bounds: {
+        x: position.x - REROUTE_RADIUS,
+        y: position.y - REROUTE_RADIUS,
+        width: REROUTE_RADIUS * 2,
+        height: REROUTE_RADIUS * 2
+      }
+    }
+  }
+
+  /**
+   * Update slot positions when a node moves
+   * TODO: This should be handled by the layout sync system (useSlotLayoutSync)
+   * rather than manually here. For now, we'll mark affected slots as needing recalculation.
+   */
+  private updateNodeSlotPositions(nodeId: NodeId, _nodePosition: Point): void {
+    // Mark all slots for this node as potentially stale
+    // The layout sync system will recalculate positions on the next frame
+    const slotsToRemove: string[] = []
+
+    for (const [key, slotLayout] of this.slotLayouts) {
+      if (slotLayout.nodeId === nodeId) {
+        slotsToRemove.push(key)
+      }
+    }
+
+    // Remove from spatial index so they'll be recalculated
+    for (const key of slotsToRemove) {
+      this.slotSpatialIndex.remove(key)
+      this.slotLayouts.delete(key)
+    }
+  }
+
+  // Helper methods
+  private layoutToYNode(layout: NodeLayout): Y.Map<unknown> {
+    const ynode = new Y.Map<unknown>()
+    ynode.set('id', layout.id)
+    ynode.set('position', layout.position)
+    ynode.set('size', layout.size)
+    ynode.set('zIndex', layout.zIndex)
+    ynode.set('visible', layout.visible)
+    ynode.set('bounds', layout.bounds)
+    return ynode
+  }
+
+  private yNodeToLayout(ynode: Y.Map<unknown>): NodeLayout {
+    return {
+      id: ynode.get('id') as string,
+      position: ynode.get('position') as Point,
+      size: ynode.get('size') as { width: number; height: number },
+      zIndex: ynode.get('zIndex') as number,
+      visible: ynode.get('visible') as boolean,
+      bounds: ynode.get('bounds') as Bounds
+    }
+  }
+
+  private notifyChange(change: LayoutChange): void {
+    this.changeListeners.forEach((listener) => {
+      try {
+        listener(change)
+      } catch (error) {
+        console.error('Error in layout change listener:', error)
+      }
+    })
+  }
+
+  private pointInBounds(point: Point, bounds: Bounds): boolean {
+    return (
+      point.x >= bounds.x &&
+      point.x <= bounds.x + bounds.width &&
+      point.y >= bounds.y &&
+      point.y <= bounds.y + bounds.height
+    )
+  }
+
+  private boundsIntersect(a: Bounds, b: Bounds): boolean {
+    return !(
+      a.x + a.width < b.x ||
+      b.x + b.width < a.x ||
+      a.y + a.height < b.y ||
+      b.y + b.height < a.y
+    )
+  }
+
+  // CRDT-specific methods
+  getOperationsSince(timestamp: number): LayoutOperation[] {
+    const operations: LayoutOperation[] = []
+    this.yoperations.forEach((op: LayoutOperation) => {
+      if (op && op.timestamp > timestamp) {
+        operations.push(op)
+      }
+    })
+    return operations
+  }
+
+  getOperationsByActor(actor: string): LayoutOperation[] {
+    const operations: LayoutOperation[] = []
+    this.yoperations.forEach((op: LayoutOperation) => {
+      if (op && op.actor === actor) {
+        operations.push(op)
+      }
+    })
+    return operations
+  }
+
+  /**
+   * Get the Yjs document for network sync (future feature)
+   */
+  getYDoc(): Y.Doc {
+    return this.ydoc
+  }
+
+  /**
+   * Apply updates from remote peers (future feature)
+   */
+  applyUpdate(update: Uint8Array): void {
+    Y.applyUpdate(this.ydoc, update)
+  }
+
+  /**
+   * Get state as update for sending to peers (future feature)
+   */
+  getStateAsUpdate(): Uint8Array {
+    return Y.encodeStateAsUpdate(this.ydoc)
+  }
+}
+
+// Create singleton instance
+export const layoutStore = new LayoutStoreImpl()

@@ -37,7 +37,7 @@
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
-    class="fixed z-[10000] text-[.8rem] px-2 py-2"
+    class="fixed z-10000 text-[.8rem] px-2 py-2"
     @blur="inputBlur(true)"
     @click.stop
     @keydown.enter="inputBlur(true)"
@@ -109,6 +109,7 @@ const rename = async (
   }
 }
 
+const isRoot = props.item.key === 'root'
 const menuItems = computed<MenuItem[]>(() => {
   return [
     {
@@ -122,7 +123,27 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       },
-      visible: props.item.key === 'root' && !props.item.isBlueprint
+      visible: isRoot && !props.item.isBlueprint
+    },
+    {
+      separator: true,
+      visible: isRoot
+    },
+    {
+      label: t('menuLabels.Save'),
+      icon: 'pi pi-save',
+      command: async () => {
+        await useCommandStore().execute('Comfy.SaveWorkflow')
+      },
+      visible: isRoot
+    },
+    {
+      label: t('menuLabels.Save As'),
+      icon: 'pi pi-save',
+      command: async () => {
+        await useCommandStore().execute('Comfy.SaveWorkflowAs')
+      },
+      visible: isRoot
     },
     {
       separator: true
@@ -148,7 +169,7 @@ const menuItems = computed<MenuItem[]>(() => {
     },
     {
       separator: true,
-      visible: props.item.key === 'root'
+      visible: isRoot
     },
     {
       label: props.item.isBlueprint
@@ -158,7 +179,7 @@ const menuItems = computed<MenuItem[]>(() => {
       command: async () => {
         await workflowService.deleteWorkflow(workflowStore.activeWorkflow!)
       },
-      visible: props.item.key === 'root'
+      visible: isRoot
     }
   ]
 })
@@ -206,6 +227,8 @@ const inputBlur = async (doRename: boolean) => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .p-breadcrumb-item-link,
 .p-breadcrumb-item-icon {
   @apply select-none;

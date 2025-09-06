@@ -2,9 +2,14 @@
 * text=auto
 
 # Force TS to LF to make the unixy scripts not break on Windows
+*.cjs text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.mjs text eol=lf
+*.mts text eol=lf
 *.ts text eol=lf
 *.vue text eol=lf
-*.js text eol=lf
+*.yaml text eol=lf
 
 # Generated files
 src/types/comfyRegistryTypes.ts linguist-generated=true

@@ -31,37 +31,74 @@
     class="w-full h-full touch-none"
   />
 
+  <!-- TransformPane for Vue node rendering -->
+  <TransformPane
+    v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
+    :canvas="comfyApp.canvas"
+    @transform-update="handleTransformUpdate"
+  >
+    <!-- Vue nodes rendered based on graph nodes -->
+    <VueGraphNode
+      v-for="nodeData in nodesToRender"
+      :key="nodeData.id"
+      :node-data="nodeData"
+      :position="nodePositions.get(nodeData.id)"
+      :size="nodeSizes.get(nodeData.id)"
+      :selected="nodeData.selected"
+      :readonly="false"
+      :executing="executionStore.executingNodeId === nodeData.id"
+      :error="
+        executionStore.lastExecutionError?.node_id === nodeData.id
+          ? 'Execution error'
+          : null
+      "
+      :zoom-level="canvasStore.canvas?.ds?.scale || 1"
+      :data-node-id="nodeData.id"
+      @node-click="handleNodeSelect"
+      @update:collapsed="handleNodeCollapse"
+      @update:title="handleNodeTitleUpdate"
+    />
+  </TransformPane>
+
   <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover />
+  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
   canvasStore.canvas to be initialized. -->
   <template v-if="comfyAppReady">
     <TitleEditor />
-    <SelectionOverlay v-if="selectionToolboxEnabled">
-      <SelectionToolbox />
-    </SelectionOverlay>
-    <DomWidgets />
+    <SelectionToolbox v-if="selectionToolboxEnabled" />
+    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
+    <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
 </template>
 
 <script setup lang="ts">
 import { useEventListener, whenever } from '@vueuse/core'
-import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  watch,
+  watchEffect
+} from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
-import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import SelectionOverlay from '@/components/graph/SelectionOverlay.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useNodeEventHandlers } from '@/composables/graph/useNodeEventHandlers'
+import { useViewportCulling } from '@/composables/graph/useViewportCulling'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -69,11 +106,15 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
 import { usePaste } from '@/composables/usePaste'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import TransformPane from '@/renderer/core/layout/TransformPane.vue'
+import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
+import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -89,12 +130,16 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const nodeSearchboxPopoverRef = shallowRef<InstanceType<
+  typeof NodeSearchboxPopover
+> | null>(null)
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
@@ -116,6 +161,33 @@ const selectionToolboxEnabled = computed(() =>
 )
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
+
+// Feature flags
+const { shouldRenderVueNodes } = useVueFeatureFlags()
+const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
+
+// Vue node system
+const vueNodeLifecycle = useVueNodeLifecycle(isVueNodesEnabled)
+const viewportCulling = useViewportCulling(
+  isVueNodesEnabled,
+  vueNodeLifecycle.vueNodeData,
+  vueNodeLifecycle.nodeDataTrigger,
+  vueNodeLifecycle.nodeManager
+)
+const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
+
+const nodePositions = vueNodeLifecycle.nodePositions
+const nodeSizes = vueNodeLifecycle.nodeSizes
+const nodesToRender = viewportCulling.nodesToRender
+
+const handleTransformUpdate = () => {
+  viewportCulling.handleTransformUpdate(
+    vueNodeLifecycle.detectChangesInRAF.value
+  )
+}
+const handleNodeSelect = nodeEventHandlers.handleNodeSelect
+const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
+const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -285,6 +357,7 @@ onMounted(async () => {
   useCopy()
   usePaste()
   useWorkflowAutoSave()
+  useVueFeatureFlags()
 
   comfyApp.vueAppReady = true
 
@@ -297,9 +370,6 @@ onMounted(async () => {
     await settingStore.loadSettingValues()
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      console.log(
-        'Failed loading user settings, user unauthorized, cleaning local Comfy.userId'
-      )
       localStorage.removeItem('Comfy.userId')
       localStorage.removeItem('Comfy.userName')
       window.location.reload()
@@ -318,11 +388,14 @@ onMounted(async () => {
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
+  useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
   window.app = comfyApp
   window.graph = comfyApp.graph
 
   comfyAppReady.value = true
+
+  vueNodeLifecycle.setupEmptyGraphListener()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
@@ -363,5 +436,9 @@ onMounted(async () => {
   )
 
   emit('ready')
+})
+
+onUnmounted(() => {
+  vueNodeLifecycle.cleanup()
 })
 </script>

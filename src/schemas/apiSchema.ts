@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { fromZodError } from 'zod-validation-error'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
@@ -280,18 +279,6 @@ export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
 export type TaskItem = z.infer<typeof zTaskItem>
 
-export function validateTaskItem(taskItem: unknown) {
-  const result = zTaskItem.safeParse(taskItem)
-  if (!result.success) {
-    const zodError = fromZodError(result.error)
-    // TODO accept a callback to report error.
-    console.warn(
-      `Invalid TaskItem: ${JSON.stringify(taskItem)}\n${zodError.message}`
-    )
-  }
-  return result
-}
-
 const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
@@ -461,11 +448,12 @@ const zSettings = z.object({
   'Comfy.Workflow.AutoSaveDelay': z.number(),
   'Comfy.Workflow.AutoSave': z.enum(['off', 'after delay']),
   'Comfy.RerouteBeta': z.boolean(),
-  'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
+  'LiteGraph.Canvas.MinFontSizeForLOD': z.number(),
   'Comfy.Canvas.SelectionToolbox': z.boolean(),
   'LiteGraph.Node.TooltipDelay': z.number(),
   'LiteGraph.ContextMenu.Scaling': z.boolean(),
   'LiteGraph.Reroute.SplineOffset': z.number(),
+  'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': z.number(),
   'Comfy.Toast.DisableReconnectingToast': z.boolean(),
   'Comfy.Workflow.Persist': z.boolean(),
   'Comfy.TutorialCompleted': z.boolean(),
@@ -478,6 +466,7 @@ const zSettings = z.object({
   'Comfy.Minimap.RenderBypassState': z.boolean(),
   'Comfy.Minimap.RenderErrorState': z.boolean(),
   'Comfy.Canvas.NavigationMode': z.string(),
+  'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
@@ -496,6 +485,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
+  'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
   'VHS.AdvancedPreviews': z.string(),

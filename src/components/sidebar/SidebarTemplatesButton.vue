@@ -1,6 +1,6 @@
 <template>
   <SidebarIcon
-    :icon="TemplateIcon"
+    icon="icon-[comfy--template]"
     :tooltip="$t('sideToolbar.templates')"
     :label="$t('sideToolbar.labels.templates')"
     :is-small="isSmall"
@@ -10,17 +10,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, markRaw } from 'vue'
+import { computed } from 'vue'
 
 import { useCommandStore } from '@/stores/commandStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 import SidebarIcon from './SidebarIcon.vue'
-
-// Import the custom template icon
-const TemplateIcon = markRaw(
-  defineAsyncComponent(() => import('virtual:icons/comfy/template'))
-)
 
 const settingStore = useSettingStore()
 const commandStore = useCommandStore()

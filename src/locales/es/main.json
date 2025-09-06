@@ -27,6 +27,15 @@
       "title": "Clave API",
       "whitelistInfo": "Acerca de los sitios no incluidos en la lista blanca"
     },
+    "deleteAccount": {
+      "cancel": "Cancelar",
+      "confirm": "Eliminar cuenta",
+      "confirmMessage": "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y eliminará permanentemente todos tus datos.",
+      "confirmTitle": "Eliminar cuenta",
+      "deleteAccount": "Eliminar cuenta",
+      "success": "Cuenta eliminada",
+      "successDetail": "Tu cuenta ha sido eliminada exitosamente."
+    },
     "login": {
       "andText": "y",
       "confirmPasswordLabel": "Confirmar contraseña",
@@ -278,6 +287,7 @@
     "color": "Color",
     "comingSoon": "Próximamente",
     "command": "Comando",
+    "commandProhibited": "El comando {command} está prohibido. Contacta a un administrador para más información.",
     "community": "Comunidad",
     "completed": "Completado",
     "confirm": "Confirmar",
@@ -300,6 +310,7 @@
     "disabling": "Deshabilitando",
     "dismiss": "Descartar",
     "download": "Descargar",
+    "dropYourFileOr": "Suelta tu archivo o",
     "duplicate": "Duplicar",
     "edit": "Editar",
     "empty": "Vacío",
@@ -342,6 +353,7 @@
     "micPermissionDenied": "Permiso de micrófono denegado",
     "migrate": "Migrar",
     "missing": "Faltante",
+    "moreWorkflows": "Más flujos de trabajo",
     "name": "Nombre",
     "newFolder": "Nueva carpeta",
     "next": "Siguiente",
@@ -410,17 +422,12 @@
   },
   "graphCanvasMenu": {
     "fitView": "Ajustar vista",
-    "focusMode": "Modo de enfoque",
-    "hand": "Mano",
-    "hideLinks": "Ocultar enlaces",
     "panMode": "Modo de desplazamiento",
     "resetView": "Restablecer vista",
-    "select": "Seleccionar",
     "selectMode": "Modo de selección",
-    "showLinks": "Mostrar enlaces",
+    "toggleLinkVisibility": "Alternar visibilidad de enlace",
     "toggleMinimap": "Alternar minimapa",
     "zoomIn": "Acercar",
-    "zoomOptions": "Opciones de zoom",
     "zoomOut": "Alejar"
   },
   "groupNode": {
@@ -542,46 +549,12 @@
     "updateConsent": "Anteriormente optaste por reportar fallos. Ahora estamos rastreando métricas basadas en eventos para ayudar a identificar errores y mejorar la aplicación. No se recoge ninguna información personal identificable."
   },
   "issueReport": {
-    "contactFollowUp": "Contáctame para seguimiento",
-    "contactSupportDescription": "Por favor, complete el siguiente formulario con su reporte",
-    "contactSupportTitle": "Contactar Soporte",
-    "describeTheProblem": "Describa el problema",
-    "email": "Correo electrónico",
-    "feedbackTitle": "Ayúdanos a mejorar ComfyUI proporcionando comentarios",
-    "helpFix": "Ayuda a Solucionar Esto",
-    "helpTypes": {
-      "billingPayments": "Facturación / Pagos",
-      "bugReport": "Reporte de error",
-      "giveFeedback": "Enviar comentarios",
-      "loginAccessIssues": "Problemas de inicio de sesión / acceso",
-      "somethingElse": "Otro"
-    },
-    "notifyResolve": "Notifícame cuando se resuelva",
-    "provideAdditionalDetails": "Proporciona detalles adicionales (opcional)",
-    "provideEmail": "Danos tu correo electrónico (opcional)",
-    "rating": "Calificación",
-    "selectIssue": "Seleccione el problema",
-    "stackTrace": "Rastreo de Pila",
-    "submitErrorReport": "Enviar Reporte de Error (Opcional)",
-    "systemStats": "Estadísticas del Sistema",
-    "validation": {
-      "descriptionRequired": "Se requiere una descripción",
-      "helpTypeRequired": "Se requiere el tipo de ayuda",
-      "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida",
-      "maxLength": "Mensaje demasiado largo",
-      "selectIssueType": "Por favor, seleccione un tipo de problema"
-    },
-    "whatCanWeInclude": "Especifique qué incluir en el reporte",
-    "whatDoYouNeedHelpWith": "¿Con qué necesita ayuda?"
+    "helpFix": "Ayuda a Solucionar Esto"
   },
   "load3d": {
     "applyingTexture": "Aplicando textura...",
     "backgroundColor": "Color de fondo",
     "camera": "Cámara",
-    "cameraType": {
-      "orthographic": "Ortográfica",
-      "perspective": "Perspectiva"
-    },
     "clearRecording": "Borrar grabación",
     "edgeThreshold": "Umbral de borde",
     "export": "Exportar",
@@ -602,7 +575,6 @@
       "wireframe": "Malla"
     },
     "model": "Modelo",
-    "openIn3DViewer": "Abrir en el visor 3D",
     "previewOutput": "Vista previa de salida",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
@@ -613,22 +585,8 @@
     "switchCamera": "Cambiar cámara",
     "switchingMaterialMode": "Cambiando modo de material...",
     "upDirection": "Dirección hacia arriba",
-    "upDirections": {
-      "original": "Original"
-    },
     "uploadBackgroundImage": "Subir imagen de fondo",
-    "uploadTexture": "Subir textura",
-    "viewer": {
-      "apply": "Aplicar",
-      "cameraSettings": "Configuración de la cámara",
-      "cameraType": "Tipo de cámara",
-      "cancel": "Cancelar",
-      "exportSettings": "Configuración de exportación",
-      "lightSettings": "Configuración de la luz",
-      "modelSettings": "Configuración del modelo",
-      "sceneSettings": "Configuración de la escena",
-      "title": "Visor 3D (Beta)"
-    }
+    "uploadTexture": "Subir textura"
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Requiere ComfyUI {version}:",
@@ -675,6 +633,9 @@
     "installationQueue": "Cola de Instalación",
     "lastUpdated": "Última Actualización",
     "latestVersion": "Última",
+    "legacyManagerUI": "Usar UI antigua",
+    "legacyManagerUIDescription": "Para usar la UI antigua del Manager, inicia ComfyUI con --enable-manager-legacy-ui",
+    "legacyMenuNotAvailable": "El menú del administrador antiguo no está disponible en esta versión de ComfyUI. Por favor, utiliza el nuevo menú del administrador en su lugar.",
     "license": "Licencia",
     "loadingVersions": "Cargando versiones...",
     "nightlyVersion": "Nocturna",
@@ -757,7 +718,6 @@
     "manageExtensions": "Gestionar extensiones",
     "onChange": "Al cambiar",
     "onChangeTooltip": "El flujo de trabajo se encolará una vez que se haga un cambio",
-    "queue": "Panel de cola",
     "refresh": "Actualizar definiciones de nodos",
     "resetView": "Restablecer vista del lienzo",
     "run": "Ejecutar",
@@ -773,8 +733,10 @@
     "Bottom Panel": "Panel inferior",
     "Browse Templates": "Explorar plantillas",
     "Bypass/Unbypass Selected Nodes": "Evitar/No evitar nodos seleccionados",
-    "Canvas Performance": "Rendimiento del lienzo",
+    "Canvas Toggle Link Visibility": "Alternar visibilidad de enlace en lienzo",
     "Canvas Toggle Lock": "Alternar bloqueo en lienzo",
+    "Canvas Toggle Minimap": "Lienzo: Alternar minimapa",
+    "Check for Custom Node Updates": "Buscar actualizaciones de nodos personalizados",
     "Check for Updates": "Buscar actualizaciones",
     "Clear Pending Tasks": "Borrar tareas pendientes",
     "Clear Workflow": "Borrar flujo de trabajo",
@@ -788,29 +750,27 @@
     "Contact Support": "Contactar soporte",
     "Convert Selection to Subgraph": "Convertir selección en subgrafo",
     "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
+    "Custom Nodes (Legacy)": "Nodos personalizados (heredado)",
+    "Custom Nodes Manager": "Administrador de Nodos Personalizados",
     "Decrease Brush Size in MaskEditor": "Disminuir tamaño del pincel en MaskEditor",
     "Delete Selected Items": "Eliminar elementos seleccionados",
     "Desktop User Guide": "Guía de usuario de escritorio",
     "Duplicate Current Workflow": "Duplicar flujo de trabajo actual",
     "Edit": "Editar",
-    "Exit Subgraph": "Salir de subgrafo",
     "Export": "Exportar",
     "Export (API)": "Exportar (API)",
-    "File": "Archivo",
     "Fit Group To Contents": "Ajustar grupo a contenidos",
-    "Focus Mode": "Modo de enfoque",
+    "Fit view to selected nodes": "Ajustar vista a los nodos seleccionados",
     "Give Feedback": "Dar retroalimentación",
     "Group Selected Nodes": "Agrupar nodos seleccionados",
     "Help": "Ayuda",
-    "Help Center": "Centro de ayuda",
     "Increase Brush Size in MaskEditor": "Aumentar tamaño del pincel en MaskEditor",
+    "Install Missing Custom Nodes": "Instalar nodos personalizados faltantes",
     "Interrupt": "Interrumpir",
     "Load Default Workflow": "Cargar flujo de trabajo predeterminado",
-    "Lock Canvas": "Bloquear lienzo",
     "Manage group nodes": "Gestionar nodos de grupo",
     "Manager": "Administrador",
-    "Minimap": "Minimapa",
-    "Model Library": "Biblioteca de modelos",
+    "Manager Menu (Legacy)": "Menú de gestión (heredado)",
     "Move Selected Nodes Down": "Mover nodos seleccionados hacia abajo",
     "Move Selected Nodes Left": "Mover nodos seleccionados hacia la izquierda",
     "Move Selected Nodes Right": "Mover nodos seleccionados hacia la derecha",
@@ -818,10 +778,7 @@
     "Mute/Unmute Selected Nodes": "Silenciar/Activar sonido de nodos seleccionados",
     "New": "Nuevo",
     "Next Opened Workflow": "Siguiente flujo de trabajo abierto",
-    "Node Library": "Biblioteca de nodos",
-    "Node Links": "Enlaces de nodos",
     "Open": "Abrir",
-    "Open 3D Viewer (Beta) for Selected Node": "Abrir visor 3D (Beta) para el nodo seleccionado",
     "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
     "Open DevTools": "Abrir DevTools",
     "Open Inputs Folder": "Abrir carpeta de entradas",
@@ -834,8 +791,6 @@
     "Pin/Unpin Selected Items": "Anclar/Desanclar elementos seleccionados",
     "Pin/Unpin Selected Nodes": "Anclar/Desanclar nodos seleccionados",
     "Previous Opened Workflow": "Flujo de trabajo abierto anterior",
-    "Publish": "Publicar",
-    "Queue Panel": "Panel de cola",
     "Queue Prompt": "Indicador de cola",
     "Queue Prompt (Front)": "Indicador de cola (Frente)",
     "Queue Selected Output Nodes": "Encolar nodos de salida seleccionados",
@@ -853,17 +808,27 @@
     "Show Settings Dialog": "Mostrar diálogo de configuración",
     "Sign Out": "Cerrar sesión",
     "Toggle Essential Bottom Panel": "Alternar panel inferior esencial",
+    "Toggle Bottom Panel": "Alternar panel inferior",
+    "Toggle Focus Mode": "Alternar modo de enfoque",
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
+    "Toggle Model Library Sidebar": "Alternar barra lateral de la biblioteca de modelos",
+    "Toggle Node Library Sidebar": "Alternar barra lateral de la biblioteca de nodos",
+    "Toggle Queue Sidebar": "Alternar barra lateral de la cola",
     "Toggle Search Box": "Alternar caja de búsqueda",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
     "Toggle View Controls Bottom Panel": "Alternar panel inferior de controles de vista",
+    "Toggle Workflows Sidebar": "Alternar barra lateral de los flujos de trabajo",
     "Toggle the Custom Nodes Manager": "Alternar el Administrador de Nodos Personalizados",
     "Toggle the Custom Nodes Manager Progress Bar": "Alternar la Barra de Progreso del Administrador de Nodos Personalizados",
     "Undo": "Deshacer",
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
+    "Unload Models": "Descargar modelos",
+    "Unload Models and Execution Cache": "Descargar modelos y caché de ejecución",
     "Unlock Canvas": "Desbloquear lienzo",
     "Unpack the selected Subgraph": "Desempaquetar el Subgrafo seleccionado",
+    "View": "Ver",
+    "Workflow": "Flujo de trabajo",
     "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
@@ -874,7 +839,11 @@
     "renderBypassState": "Mostrar estado de omisión",
     "renderErrorState": "Mostrar estado de error",
     "showGroups": "Mostrar marcos/grupos",
-    "showLinks": "Mostrar enlaces"
+    "showLinks": "Mostrar enlaces",
+    "sideToolbar_modelLibrary": "sideToolbar.bibliotecaDeModelos",
+    "sideToolbar_nodeLibrary": "sideToolbar.bibliotecaDeNodos",
+    "sideToolbar_queue": "sideToolbar.cola",
+    "sideToolbar_workflows": "sideToolbar.flujosDeTrabajo"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "No mostrar esto de nuevo",
@@ -1142,7 +1111,6 @@
   },
   "settingsCategories": {
     "3D": "3D",
-    "3DViewer": "Visor 3D",
     "API Nodes": "Nodos API",
     "About": "Acerca de",
     "Appearance": "Apariencia",
@@ -1191,34 +1159,14 @@
     "UV": "UV",
     "User": "Usuario",
     "Validation": "Validación",
+    "Vue Nodes": "Nodos Vue",
     "Window": "Ventana",
     "Workflow": "Flujo de Trabajo"
-  },
-  "shortcuts": {
-    "essentials": "Esenciales",
-    "keyboardShortcuts": "Atajos de teclado",
-    "manageShortcuts": "Gestionar atajos",
-    "noKeybinding": "Sin asignación de tecla",
-    "subcategories": {
-      "node": "Nodo",
-      "panelControls": "Controles del panel",
-      "queue": "Cola",
-      "view": "Vista",
-      "workflow": "Flujo de trabajo"
-    },
-    "viewControls": "Controles de vista"
   },
   "sideToolbar": {
     "browseTemplates": "Explorar plantillas de ejemplo",
     "downloads": "Descargas",
     "helpCenter": "Centro de ayuda",
-    "labels": {
-      "models": "Modelos",
-      "nodes": "Nodos",
-      "queue": "Cola",
-      "templates": "Plantillas",
-      "workflows": "Flujos de trabajo"
-    },
     "logout": "Cerrar sesión",
     "modelLibrary": "Biblioteca de modelos",
     "newBlankWorkflow": "Crear un nuevo flujo de trabajo en blanco",
@@ -1256,7 +1204,6 @@
       },
       "showFlatList": "Mostrar lista plana"
     },
-    "templates": "Plantillas",
     "workflowTab": {
       "confirmDelete": "¿Estás seguro de que quieres eliminar este flujo de trabajo?",
       "confirmDeleteTitle": "¿Eliminar flujo de trabajo?",
@@ -1307,8 +1254,6 @@
       "Video": "Video",
       "Video API": "API de Video"
     },
-    "loadingMore": "Cargando más plantillas...",
-    "searchPlaceholder": "Buscar plantillas...",
     "template": {
       "3D": {
         "3d_hunyuan3d_image_to_model": "Hunyuan3D 2.0",
@@ -1631,7 +1576,6 @@
     "failedToExportModel": "Error al exportar modelo como {format}",
     "failedToFetchBalance": "No se pudo obtener el saldo: {error}",
     "failedToFetchLogs": "Error al obtener los registros del servidor",
-    "failedToInitializeLoad3dViewer": "No se pudo inicializar el visor 3D",
     "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",
     "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "fileLoadError": "No se puede encontrar el flujo de trabajo en {fileName}",
@@ -1706,11 +1650,5 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo"
-  },
-  "zoomControls": {
-    "hideMinimap": "Ocultar minimapa",
-    "label": "Controles de zoom",
-    "showMinimap": "Mostrar minimapa",
-    "zoomToFit": "Ajustar al zoom"
   }
 }

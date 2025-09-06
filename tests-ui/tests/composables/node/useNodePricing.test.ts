@@ -8,7 +8,12 @@ import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 function createMockNode(
   nodeTypeName: string,
   widgets: Array<{ name: string; value: any }> = [],
-  isApiNode = true
+  isApiNode = true,
+  inputs: Array<{
+    name: string
+    connected?: boolean
+    useLinksArray?: boolean
+  }> = []
 ): LGraphNode {
   const mockWidgets = widgets.map(({ name, value }) => ({
     name,
@@ -16,7 +21,16 @@ function createMockNode(
     type: 'combo'
   })) as IComboWidget[]
 
-  return {
+  const mockInputs =
+    inputs.length > 0
+      ? inputs.map(({ name, connected, useLinksArray }) =>
+          useLinksArray
+            ? { name, links: connected ? [1] : [] }
+            : { name, link: connected ? 1 : null }
+        )
+      : undefined
+
+  const node: any = {
     id: Math.random().toString(),
     widgets: mockWidgets,
     constructor: {
@@ -25,7 +39,24 @@ function createMockNode(
         api_node: isApiNode
       }
     }
-  } as unknown as LGraphNode
+  }
+
+  if (mockInputs) {
+    node.inputs = mockInputs
+    // Provide the common helpers some frontend code may call
+    node.findInputSlot = function (portName: string) {
+      return this.inputs?.findIndex((i: any) => i.name === portName) ?? -1
+    }
+    node.isInputConnected = function (idx: number) {
+      const port = this.inputs?.[idx]
+      if (!port) return false
+      if (typeof port.link !== 'undefined') return port.link != null
+      if (Array.isArray(port.links)) return port.links.length > 0
+      return false
+    }
+  }
+
+  return node as LGraphNode
 }
 
 describe('useNodePricing', () => {
@@ -363,34 +394,51 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - IdeogramV3', () => {
-    it('should return $0.09 for Quality rendering speed', () => {
+    it('should return correct prices for IdeogramV3 node', () => {
       const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('IdeogramV3', [
-        { name: 'rendering_speed', value: 'Quality' }
-      ])
 
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.09/Run')
-    })
+      const testCases = [
+        {
+          rendering_speed: 'Quality',
+          character_image: false,
+          expected: '$0.09/Run'
+        },
+        {
+          rendering_speed: 'Quality',
+          character_image: true,
+          expected: '$0.20/Run'
+        },
+        {
+          rendering_speed: 'Default',
+          character_image: false,
+          expected: '$0.06/Run'
+        },
+        {
+          rendering_speed: 'Default',
+          character_image: true,
+          expected: '$0.15/Run'
+        },
+        {
+          rendering_speed: 'Turbo',
+          character_image: false,
+          expected: '$0.03/Run'
+        },
+        {
+          rendering_speed: 'Turbo',
+          character_image: true,
+          expected: '$0.10/Run'
+        }
+      ]
 
-    it('should return $0.06 for Balanced rendering speed', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('IdeogramV3', [
-        { name: 'rendering_speed', value: 'Balanced' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.06/Run')
-    })
-
-    it('should return $0.03 for Turbo rendering speed', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('IdeogramV3', [
-        { name: 'rendering_speed', value: 'Turbo' }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$0.03/Run')
+      testCases.forEach(({ rendering_speed, character_image, expected }) => {
+        const node = createMockNode(
+          'IdeogramV3',
+          [{ name: 'rendering_speed', value: rendering_speed }],
+          true,
+          [{ name: 'character_image', connected: character_image }]
+        )
+        expect(getNodeDisplayPrice(node)).toBe(expected)
+      })
     })
 
     it('should return range when rendering_speed widget is missing', () => {
@@ -935,7 +983,11 @@ describe('useNodePricing', () => {
           const { getRelevantWidgetNames } = useNodePricing()
 
           const widgetNames = getRelevantWidgetNames('IdeogramV3')
-          expect(widgetNames).toEqual(['rendering_speed', 'num_images'])
+          expect(widgetNames).toEqual([
+            'rendering_speed',
+            'num_images',
+            'character_image'
+          ])
         })
       })
 
@@ -1561,6 +1613,14 @@ describe('useNodePricing', () => {
         const price = getNodeDisplayPrice(node)
         expect(price).toBe('Token-based')
       })
+
+      it('should return static price for GeminiImageNode', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        const node = createMockNode('GeminiImageNode')
+
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('$0.03 per 1K tokens')
+      })
     })
 
     describe('Additional RunwayML edge cases', () => {
@@ -1694,6 +1754,112 @@ describe('useNodePricing', () => {
           '$0.1-0.4/Run (varies with quad, style, texture & quality)'
         )
       })
+
+      it('should return correct pricing for exposed ByteDance models', () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+
+        const testCases = [
+          {
+            node_name: 'ByteDanceImageNode',
+            model: 'seedream-3-0-t2i-250415',
+            expected: '$0.03/Run'
+          },
+          {
+            node_name: 'ByteDanceImageEditNode',
+            model: 'seededit-3-0-i2i-250628',
+            expected: '$0.03/Run'
+          }
+        ]
+
+        testCases.forEach(({ node_name, model, expected }) => {
+          const node = createMockNode(node_name, [
+            { name: 'model', value: model }
+          ])
+          expect(getNodeDisplayPrice(node)).toBe(expected)
+        })
+      })
+    })
+  })
+
+  describe('dynamic pricing - ByteDance Seedance video nodes', () => {
+    it('should return base 10s range for PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.18-$1.22/Run')
+    })
+
+    it('should scale to half for 5s PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '5' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.59-$0.61/Run')
+    })
+
+    it('should scale for 8s PRO 480p on ByteDanceImageToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '8' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.18-$0.19/Run')
+    })
+
+    it('should scale correctly for 12s PRO 720p on ByteDanceFirstLastFrameNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '12' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.61-$0.67/Run')
+    })
+
+    it('should collapse to a single value when min and max round equal for LITE 480p 3s on ByteDanceImageReferenceNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageReferenceNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'duration', value: '3' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05/Run') // 0.17..0.18 scaled by 0.3 both round to 0.05
+    })
+
+    it('should return Token-based when required widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const missingModel = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+      const missingResolution = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' }
+      ])
+      const missingDuration = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      expect(getNodeDisplayPrice(missingModel)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingResolution)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingDuration)).toBe('Token-based')
     })
   })
 })

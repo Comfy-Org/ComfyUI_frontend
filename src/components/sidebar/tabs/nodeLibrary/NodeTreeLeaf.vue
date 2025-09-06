@@ -190,6 +190,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference '../../../../assets/css/style.css';
+
 .node-lib-node-container {
   @apply h-full w-full;
 }

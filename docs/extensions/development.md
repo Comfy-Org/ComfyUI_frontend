@@ -105,7 +105,7 @@ The alternative would have been breaking all existing extensions or staying with
 
 Build the frontend for full functionality:
 ```bash
-npm run build
+pnpm build
 ```
 
 For faster iteration during development, use watch mode:
