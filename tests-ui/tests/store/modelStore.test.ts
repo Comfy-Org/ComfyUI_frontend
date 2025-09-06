@@ -9,8 +9,22 @@ vi.mock('@/scripts/api', () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
+    getAssetModels: vi.fn(),
+    getAssetModelFolders: vi.fn(),
     viewMetadata: vi.fn()
   }
+}))
+
+// Mock the setting store to use legacy API (not asset API)
+vi.mock('@/stores/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: vi.fn((key: string) => {
+      if (key === 'Comfy.Assets.UseAssetAPI') {
+        return false // Use legacy API for these tests
+      }
+      return false
+    })
+  }))
 }))
 
 function enableMocks() {

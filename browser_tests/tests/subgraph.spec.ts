@@ -309,7 +309,7 @@ test.describe('Subgraph Operations', () => {
       })
 
       // Wait for dialog to appear
-      await comfyPage.page.waitForTimeout(200)
+      await comfyPage.waitForDialogStable()
       await comfyPage.nextFrame()
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -656,7 +656,7 @@ test.describe('Subgraph Operations', () => {
 
       await comfyPage.rightClickSubgraphInputSlot('text')
       await comfyPage.clickLitegraphContextMenuItem('Remove Slot')
-      await comfyPage.page.waitForTimeout(200)
+      await comfyPage.waitForCanvasStable()
 
       // Wait for breadcrumb to be visible
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
@@ -673,7 +673,7 @@ test.describe('Subgraph Operations', () => {
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()
-      await comfyPage.page.waitForTimeout(300)
+      await comfyPage.waitForCanvasStable()
 
       // Check that the subgraph node has no widgets after removing the text slot
       const widgetCount = await comfyPage.page.evaluate(() => {
@@ -749,7 +749,7 @@ test.describe('Subgraph Operations', () => {
 
       // Reload the page
       await comfyPage.page.reload()
-      await comfyPage.page.waitForTimeout(1024)
+      await comfyPage.waitForCanvasStable(2000)
 
       // Navigate into subgraph
       const subgraphNode = await comfyPage.getNodeRefById('2')

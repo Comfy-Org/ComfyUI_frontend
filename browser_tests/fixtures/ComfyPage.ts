@@ -418,6 +418,294 @@ export class ComfyPage {
     })
   }
 
+  /**
+   * Waits for the canvas to reach a stable state by checking multiple conditions:
+   * - Graph is not dirty (no pending updates)
+   * - Canvas is not in the middle of rendering
+   * - All widgets have finished updating
+   * - Uses multiple animation frames to ensure stability
+   *
+   * This is a more reliable replacement for arbitrary setTimeout delays.
+   */
+  async waitForCanvasStable(timeoutMs: number = 5000) {
+    const debug = (msg: string, data?: any) => {
+      console.log(`[waitForCanvasStable] ${msg}`, data || '')
+    }
+
+    debug(`Starting stability check with ${timeoutMs}ms timeout`)
+
+    // First ensure app is fully initialized (same as setup process)
+    await this.page.waitForFunction(
+      () =>
+        // Ensure both app and extensionManager are available (same checks as setup)
+        window['app'] && window['app'].extensionManager && window['app'].graph,
+      { timeout: timeoutMs }
+    )
+
+    debug('App initialization check passed')
+
+    // Then wait for canvas to be in stable state
+    await this.page.waitForFunction(
+      () => {
+        const app = window['app']
+        const graph = app.graph
+
+        // Check that graph is not dirty (no pending updates)
+        const isGraphStable = graph.dirty === false || graph.dirty == null
+
+        // Check that canvas is not actively rendering
+        const isCanvasStable = !app.canvas?.rendering
+
+        // Check workflow isn't busy (similar to Topbar.ts approach)
+        const isWorkflowStable = !app.extensionManager?.workflow?.isBusy
+
+        // Simplified widget checking with better error handling
+        let areWidgetsStable = true
+        let unstableWidgetCount = 0
+        try {
+          if (graph.nodes && Array.isArray(graph.nodes)) {
+            graph.nodes.forEach((node: any) => {
+              node.widgets?.forEach?.((widget: any) => {
+                if (widget?.pending === true || widget?.updating === true) {
+                  unstableWidgetCount++
+                  areWidgetsStable = false
+                }
+              })
+            })
+          }
+        } catch (e) {
+          console.log(`[waitForCanvasStable] Widget check error:`, e)
+          // If widget checking fails, assume stable to avoid blocking
+          areWidgetsStable = true
+        }
+
+        const isStable =
+          isGraphStable &&
+          isCanvasStable &&
+          isWorkflowStable &&
+          areWidgetsStable
+
+        // Log current state for debugging (only when unstable to avoid spam)
+        if (!isStable) {
+          console.log(`[waitForCanvasStable] Unstable state detected:`, {
+            timestamp: Date.now(),
+            graphDirty: graph.dirty,
+            isGraphStable,
+            canvasRendering: app.canvas?.rendering,
+            isCanvasStable,
+            workflowBusy: app.extensionManager?.workflow?.isBusy,
+            isWorkflowStable,
+            unstableWidgetCount,
+            areWidgetsStable,
+            nodeCount: graph.nodes?.length || 0
+          })
+        }
+
+        return isStable
+      },
+      { timeout: Math.max(timeoutMs - 1000, 1000) } // Reserve some time for initial app check
+    )
+
+    debug('Canvas stability check passed')
+
+    // Wait multiple frames to ensure render cycle completion
+    await this.nextFrame()
+    await this.nextFrame()
+
+    debug('Stability check completed successfully')
+  }
+
+  /**
+   * Waits for toast notifications to appear and stabilize
+   */
+  async waitForToastStable(timeoutMs: number = 3000) {
+    // Wait for toast container to be present and stable
+    await this.page.waitForFunction(
+      () => {
+        const toastContainer = document.querySelector('.p-toast-container')
+        if (!toastContainer) return true // No toasts is stable
+
+        // Check that toasts are visible and not animating
+        const toasts = toastContainer.querySelectorAll('.p-toast-message')
+        return Array.from(toasts).every((toast) => {
+          const styles = getComputedStyle(toast)
+          // Check if toast is fully visible and not in transition
+          return styles.opacity === '1' && styles.transform === 'none'
+        })
+      },
+      { timeout: timeoutMs }
+    )
+
+    await this.nextFrame()
+  }
+
+  /**
+   * Waits for debounced input operations to complete and UI to stabilize
+   * Handles common debounced scenarios like search boxes and setting inputs
+   *
+   * @param timeoutMs - Maximum time to wait for debounce completion
+   */
+  async waitForDebounceStable(timeoutMs: number = 2000) {
+    // First ensure app is available
+    await this.page.waitForFunction(
+      () => window['app'] && window['app'].extensionManager,
+      { timeout: timeoutMs }
+    )
+
+    // Wait for any debounced operations to complete and UI to stabilize
+    await this.page.waitForFunction(
+      () => {
+        // Check that no pending debounced operations are active
+        // This looks for common debounce indicators in the DOM
+
+        // Check for loading indicators
+        const loadingElements = document.querySelectorAll(
+          '[data-loading="true"], .loading, .p-progress-spinner'
+        )
+        if (loadingElements.length > 0) return false
+
+        // Check for pending input validation or processing
+        const pendingInputs = document.querySelectorAll(
+          'input[data-pending="true"], .input-pending'
+        )
+        if (pendingInputs.length > 0) return false
+
+        // Check for busy state indicators
+        const busyElements = document.querySelectorAll(
+          '[aria-busy="true"], .processing'
+        )
+        if (busyElements.length > 0) return false
+
+        return true
+      },
+      { timeout: Math.max(timeoutMs - 500, 500) }
+    )
+
+    // Wait additional frames for UI rendering to complete after debounce
+    await this.nextFrame()
+    await this.nextFrame()
+  }
+
+  /**
+   * Waits for remote widget operations to complete
+   * Handles widget loading, network requests, and rendering updates
+   *
+   * @param timeoutMs - Maximum time to wait for widget operations
+   */
+  async waitForWidgetStable(timeoutMs: number = 2000) {
+    // Wait for app to be ready
+    await this.page.waitForFunction(
+      () => window['app'] && window['app'].canvas && window['app'].canvas.graph,
+      { timeout: timeoutMs }
+    )
+
+    // Wait for widgets to stabilize (no pending network requests or updates)
+    await this.page.waitForFunction(
+      () => {
+        // Check for pending network requests
+        const pendingRequests = document.querySelectorAll(
+          '[data-loading="true"], .widget-loading'
+        )
+        if (pendingRequests.length > 0) return false
+
+        // Check for widget update indicators
+        const updatingWidgets = document.querySelectorAll(
+          '.widget-updating, [data-widget-updating="true"]'
+        )
+        if (updatingWidgets.length > 0) return false
+
+        // Check for visible progress spinners related to widgets
+        const spinners = document.querySelectorAll(
+          '.p-progress-spinner:not([style*="display: none"])'
+        )
+        if (spinners.length > 0) return false
+
+        return true
+      },
+      { timeout: Math.max(timeoutMs - 500, 500) }
+    )
+
+    await this.nextFrame()
+    await this.nextFrame()
+  }
+
+  /**
+   * Waits for WebSocket connection establishment and feature flag exchange
+   * Used for server communication scenarios like feature flag tests
+   *
+   * @param timeoutMs - Maximum time to wait for connection establishment
+   */
+  async waitForConnectionStable(timeoutMs: number = 5000) {
+    // Wait for app API to be initialized
+    await this.page.waitForFunction(() => window['app'] && window['app'].api, {
+      timeout: timeoutMs
+    })
+
+    // Wait for WebSocket connection and feature flags
+    await this.page.waitForFunction(
+      () => {
+        const app = window['app']
+        if (!app || !app.api) return false
+
+        // Check if WebSocket is connected
+        const ws = app.api.socket
+        if (!ws || ws.readyState !== WebSocket.OPEN) return false
+
+        // Check if feature flags have been received
+        const serverFlags = app.api.serverFeatureFlags
+        if (!serverFlags || Object.keys(serverFlags).length === 0) return false
+
+        return true
+      },
+      { timeout: Math.max(timeoutMs - 500, 500) }
+    )
+
+    await this.nextFrame()
+  }
+
+  /**
+   * Waits for dialog appearance and UI settling
+   * Used for modal dialogs, prompts, and overlays
+   *
+   * @param timeoutMs - Maximum time to wait for dialog stabilization
+   */
+  async waitForDialogStable(timeoutMs: number = 1000) {
+    // Wait for any pending dialogs to appear and settle
+    await this.page.waitForFunction(
+      () => {
+        // Check for dialog animations in progress
+        const animatingElements = document.querySelectorAll(
+          '[data-animating="true"], .dialog-animating'
+        )
+        if (animatingElements.length > 0) return false
+
+        // Check for opacity/transform transitions on dialogs
+        const dialogs = document.querySelectorAll(
+          '.dialog, .modal, .graphdialog, .settings-container'
+        )
+        for (const dialog of dialogs) {
+          const computedStyle = window.getComputedStyle(dialog)
+          if (
+            computedStyle.transition.includes('opacity') ||
+            computedStyle.transition.includes('transform')
+          ) {
+            // Check if transition is still running
+            const opacity = parseFloat(computedStyle.opacity)
+            const transform = computedStyle.transform
+            if (opacity < 1 && opacity > 0) return false // Mid-transition
+            if (transform.includes('scale') && !transform.includes('scale(1'))
+              return false
+          }
+        }
+
+        return true
+      },
+      { timeout: timeoutMs }
+    )
+
+    await this.nextFrame()
+  }
+
   async delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }

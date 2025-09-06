@@ -91,7 +91,7 @@ test.describe('Feature Flags', () => {
     comfyPage
   }) => {
     // Wait for connection to establish
-    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.waitForConnectionStable()
 
     // Get the actual server feature flags from the backend
     const serverFlags = await comfyPage.page.evaluate(() => {
@@ -113,7 +113,7 @@ test.describe('Feature Flags', () => {
     comfyPage
   }) => {
     // Wait for connection
-    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.waitForConnectionStable()
 
     // Test serverSupportsFeature with real backend flags
     const supportsPreviewMetadata = await comfyPage.page.evaluate(() => {
@@ -167,7 +167,7 @@ test.describe('Feature Flags', () => {
     comfyPage
   }) => {
     // Wait for connection
-    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.waitForConnectionStable()
 
     // Test getServerFeature method
     const previewMetadataValue = await comfyPage.page.evaluate(() => {
@@ -196,7 +196,7 @@ test.describe('Feature Flags', () => {
     comfyPage
   }) => {
     // Wait for connection
-    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.waitForConnectionStable()
 
     // Test getServerFeatures returns all flags
     const allFeatures = await comfyPage.page.evaluate(() => {
@@ -245,7 +245,7 @@ test.describe('Feature Flags', () => {
     comfyPage
   }) => {
     // Wait for connection to establish
-    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.waitForConnectionStable()
 
     const immutabilityTest = await comfyPage.page.evaluate(() => {
       // Get a copy of server features

@@ -34,7 +34,7 @@ const createCacheKey = (config: RemoteWidgetConfig): string => {
 }
 
 const getBackoff = (retryCount: number) =>
-  Math.min(1000 * Math.pow(2, retryCount), 512)
+  Math.min(1000 * Math.pow(2, retryCount), 8192)
 
 const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
   entry?.data && entry?.timestamp && entry.timestamp > 0
