@@ -1482,6 +1482,12 @@ export class LGraph
     if (items.size === 0)
       throw new Error('Cannot convert to subgraph: nothing to convert')
     const { state, revision, config } = this
+    const firstChild = [...items][0]
+    if (items.size === 1 && firstChild instanceof LGraphGroup) {
+      items = new Set([firstChild])
+      firstChild.recomputeInsideNodes()
+      firstChild.children.forEach((n) => items.add(n))
+    }
 
     const {
       boundaryLinks,

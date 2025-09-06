@@ -6,11 +6,11 @@ import { nextTick, reactive, readonly } from 'vue'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 
 import type { LGraph, LGraphNode } from '../../lib/litegraph/src/litegraph'
-import { type Bounds, QuadTree } from '../../utils/spatial/QuadTree'
 
 export interface NodeState {
   visible: boolean

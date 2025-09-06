@@ -89,15 +89,12 @@ import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitter
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
-import MiniMap from '@/components/graph/MiniMap.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
-import TransformPane from '@/components/graph/TransformPane.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
-import { useTransformState } from '@/composables/element/useTransformState'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type {
@@ -117,12 +114,15 @@ import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import TransformPane from '@/renderer/core/layout/TransformPane.vue'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
 import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useTransformState } from '@/renderer/core/layout/useTransformState'
+import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -183,6 +183,7 @@ let cleanupNodeManager: (() => void) | null = null
 
 // Slot layout sync management
 let slotSync: ReturnType<typeof useSlotLayoutSync> | null = null
+let slotSyncStarted = false
 let linkSync: ReturnType<typeof useLinkLayoutSync> | null = null
 const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
 const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
@@ -240,12 +241,6 @@ const initializeNodeManager = () => {
   const { startSync } = useLayoutSync()
   startSync(canvasStore.canvas)
 
-  // Initialize slot layout sync for hit detection
-  slotSync = useSlotLayoutSync()
-  if (canvasStore.canvas) {
-    slotSync.start(canvasStore.canvas as LGraphCanvas)
-  }
-
   // Initialize link layout sync for event-driven updates
   linkSync = useLinkLayoutSync()
   if (canvasStore.canvas) {
@@ -265,12 +260,6 @@ const disposeNodeManagerAndSyncs = () => {
   }
   nodeManager = null
   cleanupNodeManager = null
-
-  // Clean up slot layout sync
-  if (slotSync) {
-    slotSync.stop()
-    slotSync = null
-  }
 
   // Clean up link layout sync
   if (linkSync) {
@@ -293,6 +282,37 @@ watch(
       initializeNodeManager()
     } else {
       disposeNodeManagerAndSyncs()
+    }
+  },
+  { immediate: true }
+)
+
+// Consolidated watch for slot layout sync management
+watch(
+  [() => canvasStore.canvas, () => isVueNodesEnabled.value],
+  ([canvas, vueMode], [, oldVueMode]) => {
+    const modeChanged = vueMode !== oldVueMode
+
+    // Clear stale slot layouts when switching modes
+    if (modeChanged) {
+      layoutStore.clearAllSlotLayouts()
+    }
+
+    // Switching to Vue
+    if (vueMode && slotSyncStarted) {
+      slotSync?.stop()
+      slotSyncStarted = false
+    }
+
+    // Switching to LG
+    const shouldRun = Boolean(canvas?.graph) && !vueMode
+    if (shouldRun && !slotSyncStarted && canvas) {
+      // Initialize slot sync if not already created
+      if (!slotSync) {
+        slotSync = useSlotLayoutSync()
+      }
+      const started = slotSync.attemptStart(canvas as LGraphCanvas)
+      slotSyncStarted = started
     }
   },
   { immediate: true }
@@ -723,10 +743,11 @@ onUnmounted(() => {
     nodeManager.cleanup()
     nodeManager = null
   }
-  if (slotSync) {
-    slotSync.stop()
-    slotSync = null
+  if (slotSyncStarted) {
+    slotSync?.stop()
+    slotSyncStarted = false
   }
+  slotSync = null
   if (linkSync) {
     linkSync.stop()
     linkSync = null

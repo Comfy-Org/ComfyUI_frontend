@@ -371,15 +371,6 @@ class LayoutStoreImpl implements LayoutStore {
   updateSlotLayout(key: string, layout: SlotLayout): void {
     const existing = this.slotLayouts.get(key)
 
-    if (!existing) {
-      logger.debug('Adding slot:', {
-        nodeId: layout.nodeId,
-        type: layout.type,
-        index: layout.index,
-        bounds: layout.bounds
-      })
-    }
-
     if (existing) {
       // Update spatial index
       this.slotSpatialIndex.update(key, layout.bounds)
@@ -417,6 +408,15 @@ class LayoutStoreImpl implements LayoutStore {
       // Remove from spatial index
       this.slotSpatialIndex.remove(key)
     }
+  }
+
+  /**
+   * Clear all slot layouts and their spatial index (O(1) operations)
+   * Used when switching rendering modes (Vue ↔ LiteGraph)
+   */
+  clearAllSlotLayouts(): void {
+    this.slotLayouts.clear()
+    this.slotSpatialIndex.clear()
   }
 
   /**

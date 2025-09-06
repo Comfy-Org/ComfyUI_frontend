@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import TransformPane from './TransformPane.vue'
+import TransformPane from '../TransformPane.vue'
 
 // Mock the transform state composable
 const mockTransformState = {
@@ -17,7 +17,7 @@ const mockTransformState = {
   isNodeInViewport: vi.fn()
 }
 
-vi.mock('@/composables/element/useTransformState', () => ({
+vi.mock('@/renderer/core/spatial/useTransformState', () => ({
   useTransformState: () => mockTransformState
 }))
 
