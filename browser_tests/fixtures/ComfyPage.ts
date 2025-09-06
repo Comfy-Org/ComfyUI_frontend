@@ -506,6 +506,47 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * Waits for debounced input operations to complete and UI to stabilize
+   * Handles common debounced scenarios like search boxes and setting inputs
+   * 
+   * @param timeoutMs - Maximum time to wait for debounce completion
+   */
+  async waitForDebounceStable(timeoutMs: number = 2000) {
+    // First ensure app is available 
+    await this.page.waitForFunction(
+      () => window['app'] && window['app'].extensionManager,
+      { timeout: timeoutMs }
+    )
+
+    // Wait for any debounced operations to complete and UI to stabilize
+    await this.page.waitForFunction(
+      () => {
+        // Check that no pending debounced operations are active
+        // This looks for common debounce indicators in the DOM
+        
+        // Check for loading indicators
+        const loadingElements = document.querySelectorAll('[data-loading="true"], .loading, .p-progress-spinner')
+        if (loadingElements.length > 0) return false
+
+        // Check for pending input validation or processing
+        const pendingInputs = document.querySelectorAll('input[data-pending="true"], .input-pending')
+        if (pendingInputs.length > 0) return false
+
+        // Check for busy state indicators
+        const busyElements = document.querySelectorAll('[aria-busy="true"], .processing')
+        if (busyElements.length > 0) return false
+
+        return true
+      },
+      { timeout: Math.max(timeoutMs - 500, 500) }
+    )
+
+    // Wait additional frames for UI rendering to complete after debounce
+    await this.nextFrame()
+    await this.nextFrame()
+  }
+
   async delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }

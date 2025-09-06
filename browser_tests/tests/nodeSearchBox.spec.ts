@@ -100,9 +100,8 @@ test.describe('Node search box', () => {
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
     await comfyPage.searchBox.input.fill(node)
     await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
-    // Wait for some time for the auto complete list to update.
-    // The auto complete list is debounced and may take some time to update.
-    await comfyPage.page.waitForTimeout(500)
+    // Wait for the auto complete list to update after debouncing
+    await comfyPage.waitForDebounceStable()
 
     const firstResult = comfyPage.searchBox.dropdown.locator('li').first()
     await expect(firstResult).toHaveAttribute('aria-label', node)
@@ -121,7 +120,8 @@ test.describe('Node search box', () => {
     await comfyPage.canvas.tap({
       position: screenCenter
     })
-    await comfyPage.page.waitForTimeout(256)
+    // Wait for search box UI to stabilize after canvas interaction
+    await comfyPage.waitForCanvasStable(500)
     await expect(comfyPage.searchBox.input).not.toHaveCount(0)
   })
 
