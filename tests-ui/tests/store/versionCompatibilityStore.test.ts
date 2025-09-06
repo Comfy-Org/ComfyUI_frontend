@@ -31,7 +31,7 @@ describe('useVersionCompatibilityStore', () => {
 
     mockSystemStatsStore = {
       systemStats: null,
-      fetchSystemStats: vi.fn()
+      refetchSystemStats: vi.fn()
     }
 
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
@@ -302,7 +302,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(mockSystemStatsStore.fetchSystemStats).toHaveBeenCalled()
+      expect(mockSystemStatsStore.refetchSystemStats).toHaveBeenCalled()
     })
 
     it('should not fetch system stats if already available', async () => {
@@ -315,7 +315,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(mockSystemStatsStore.fetchSystemStats).not.toHaveBeenCalled()
+      expect(mockSystemStatsStore.refetchSystemStats).not.toHaveBeenCalled()
     })
   })
 })

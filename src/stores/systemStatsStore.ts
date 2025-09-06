@@ -20,7 +20,7 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
     isLoading,
     error,
     isReady: isInitialized,
-    execute: fetchSystemStats
+    execute: refetchSystemStats
   } = useAsyncState<SystemStats | null>(
     fetchSystemStatsData,
     null, // initial value
@@ -65,7 +65,7 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
     isLoading,
     error,
     isInitialized,
-    fetchSystemStats,
+    refetchSystemStats,
     getFormFactor
   }
 })

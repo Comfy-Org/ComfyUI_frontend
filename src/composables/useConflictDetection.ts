@@ -80,7 +80,7 @@ export function useConflictDetection() {
       const systemStatsStore = useSystemStatsStore()
       // Wait for systemStats to be initialized if not already
       if (!systemStatsStore.isInitialized) {
-        await systemStatsStore.fetchSystemStats()
+        await systemStatsStore.refetchSystemStats()
       }
 
       // Fetch version information from backend (with error resilience)

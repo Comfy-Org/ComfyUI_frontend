@@ -49,7 +49,7 @@ describe('useReleaseStore', () => {
           comfyui_version: '1.0.0'
         }
       },
-      fetchSystemStats: vi.fn(),
+      refetchSystemStats: vi.fn(),
       getFormFactor: vi.fn(() => 'git-windows')
     }
 
@@ -339,7 +339,7 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(mockSystemStatsStore.fetchSystemStats).toHaveBeenCalled()
+      expect(mockSystemStatsStore.refetchSystemStats).toHaveBeenCalled()
     })
 
     it('should not set loading state when notifications disabled', async () => {
@@ -406,7 +406,7 @@ describe('useReleaseStore', () => {
 
       await store.fetchReleases()
 
-      expect(mockSystemStatsStore.fetchSystemStats).toHaveBeenCalled()
+      expect(mockSystemStatsStore.refetchSystemStats).toHaveBeenCalled()
       expect(mockReleaseService.getReleases).toHaveBeenCalled()
     })
   })
@@ -530,7 +530,7 @@ describe('useReleaseStore', () => {
       await store.initialize()
 
       // Should not fetch system stats when notifications disabled
-      expect(mockSystemStatsStore.fetchSystemStats).not.toHaveBeenCalled()
+      expect(mockSystemStatsStore.refetchSystemStats).not.toHaveBeenCalled()
     })
 
     it('should handle concurrent fetchReleases calls', async () => {

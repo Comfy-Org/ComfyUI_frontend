@@ -103,7 +103,7 @@ export const useVersionCompatibilityStore = defineStore(
 
     async function checkVersionCompatibility() {
       if (!systemStatsStore.systemStats) {
-        await systemStatsStore.fetchSystemStats()
+        await systemStatsStore.refetchSystemStats()
       }
     }
 

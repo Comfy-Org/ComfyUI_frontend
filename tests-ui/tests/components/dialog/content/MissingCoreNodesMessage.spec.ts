@@ -33,14 +33,14 @@ const createMockNode = (type: string, version?: string): LGraphNode =>
 describe('MissingCoreNodesMessage', () => {
   const mockSystemStatsStore = {
     systemStats: null as { system?: { comfyui_version?: string } } | null,
-    fetchSystemStats: vi.fn()
+    refetchSystemStats: vi.fn()
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset the mock store state
     mockSystemStatsStore.systemStats = null
-    mockSystemStatsStore.fetchSystemStats = vi.fn()
+    mockSystemStatsStore.refetchSystemStats = vi.fn()
     // @ts-expect-error - Mocking the return value of useSystemStatsStore for testing.
     // The actual store has more properties, but we only need these for our tests.
     useSystemStatsStore.mockReturnValue(mockSystemStatsStore)

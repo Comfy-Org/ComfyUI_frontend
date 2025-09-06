@@ -39,7 +39,7 @@ describe('useSystemStatsStore', () => {
     expect(store.isInitialized).toBe(true) // Should be initialized after fetch
   })
 
-  describe('fetchSystemStats', () => {
+  describe('refetchSystemStats', () => {
     it('should fetch system stats successfully', async () => {
       const mockStats = {
         system: {
@@ -58,7 +58,7 @@ describe('useSystemStatsStore', () => {
 
       vi.mocked(api.getSystemStats).mockResolvedValue(mockStats)
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
       expect(store.systemStats).toEqual(mockStats)
       expect(store.isLoading).toBe(false)
@@ -71,7 +71,7 @@ describe('useSystemStatsStore', () => {
       const error = new Error('API Error')
       vi.mocked(api.getSystemStats).mockRejectedValue(error)
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
       expect(store.systemStats).toBeNull() // Initial value stays null on error
       expect(store.isLoading).toBe(false)
@@ -81,7 +81,7 @@ describe('useSystemStatsStore', () => {
     it('should handle non-Error objects', async () => {
       vi.mocked(api.getSystemStats).mockRejectedValue('String error')
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
       expect(store.error).toBe('String error') // useAsyncState stores the actual error
     })
@@ -93,7 +93,7 @@ describe('useSystemStatsStore', () => {
       })
       vi.mocked(api.getSystemStats).mockReturnValue(promise)
 
-      const fetchPromise = store.fetchSystemStats()
+      const fetchPromise = store.refetchSystemStats()
       expect(store.isLoading).toBe(true)
 
       resolvePromise({})
@@ -120,7 +120,7 @@ describe('useSystemStatsStore', () => {
 
       vi.mocked(api.getSystemStats).mockResolvedValue(updatedStats)
 
-      await store.fetchSystemStats()
+      await store.refetchSystemStats()
 
       expect(store.systemStats).toEqual(updatedStats)
       expect(store.isLoading).toBe(false)

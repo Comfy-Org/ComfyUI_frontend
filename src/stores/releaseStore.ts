@@ -240,7 +240,7 @@ export const useReleaseStore = defineStore('release', () => {
     try {
       // Ensure system stats are loaded
       if (!systemStatsStore.systemStats) {
-        await systemStatsStore.fetchSystemStats()
+        await systemStatsStore.refetchSystemStats()
       }
 
       const fetchedReleases = await releaseService.getReleases({
