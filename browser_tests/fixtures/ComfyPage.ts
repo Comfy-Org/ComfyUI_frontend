@@ -428,26 +428,30 @@ export class ComfyPage {
    * This is a more reliable replacement for arbitrary setTimeout delays.
    */
   async waitForCanvasStable(timeoutMs: number = 5000) {
+    // First ensure app is fully initialized (same as setup process)
+    await this.page.waitForFunction(
+      () =>
+        // Ensure both app and extensionManager are available (same checks as setup)
+        window['app'] && window['app'].extensionManager && window['app'].graph,
+      { timeout: timeoutMs }
+    )
+
+    // Then wait for canvas to be in stable state
     await this.page.waitForFunction(
       () => {
-        // Check if app and graph are available
-        if (!window['app'] || !window['app'].graph) {
-          return false
-        }
-
         const app = window['app']
         const graph = app.graph
 
         // Check that graph is not dirty (no pending updates)
-        // Be defensive about property existence
         const isGraphStable = graph.dirty === false || graph.dirty == null
 
         // Check that canvas is not actively rendering
-        // Be defensive about property existence
         const isCanvasStable = !app.canvas?.rendering
 
-        // For now, simplify widget checking to avoid potential issues
-        // We'll enhance this later if needed
+        // Check workflow isn't busy (similar to Topbar.ts approach)
+        const isWorkflowStable = !app.extensionManager?.workflow?.isBusy
+
+        // Simplified widget checking with better error handling
         let areWidgetsStable = true
         try {
           if (graph.nodes && Array.isArray(graph.nodes)) {
@@ -463,9 +467,14 @@ export class ComfyPage {
           areWidgetsStable = true
         }
 
-        return isGraphStable && isCanvasStable && areWidgetsStable
+        return (
+          isGraphStable &&
+          isCanvasStable &&
+          isWorkflowStable &&
+          areWidgetsStable
+        )
       },
-      { timeout: timeoutMs }
+      { timeout: Math.max(timeoutMs - 1000, 1000) } // Reserve some time for initial app check
     )
 
     // Wait multiple frames to ensure render cycle completion
