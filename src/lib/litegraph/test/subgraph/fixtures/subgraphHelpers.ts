@@ -422,5 +422,3 @@ export function createEventCapture<T = unknown>(
       capturedEvents.filter((e) => e.type === type)
   }
 }
-
-// Re-export expect from vitest for convenience
