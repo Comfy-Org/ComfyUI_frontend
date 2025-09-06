@@ -48,7 +48,7 @@ test.describe('Combo text widget', () => {
     await comfyPage.page.keyboard.press('r')
 
     // Wait for nodes' widgets to be updated
-    await comfyPage.page.waitForTimeout(500)
+    await comfyPage.waitForCanvasStable()
 
     const refreshedComboValues = await getComboValues()
     expect(refreshedComboValues).not.toEqual(initialComboValues)
@@ -115,7 +115,7 @@ test.describe('Slider widget', () => {
 test.describe('Number widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/seed_widget')
-    await comfyPage.page.waitForTimeout(300)
+    await comfyPage.waitForCanvasStable()
 
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
@@ -139,7 +139,7 @@ test.describe('Dynamic widget manipulation', () => {
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.page.waitForTimeout(300)
+    await comfyPage.waitForCanvasStable()
 
     await comfyPage.page.evaluate(() => {
       window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
@@ -258,7 +258,7 @@ test.describe('Animated image widget', () => {
     await comfyPage.dragAndDropFile('animated_webp.webp', {
       dropPosition: { x, y }
     })
-    await comfyPage.page.waitForTimeout(200)
+    await comfyPage.waitForCanvasStable(1000)
 
     // Expect the filename combo value to be updated
     const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)

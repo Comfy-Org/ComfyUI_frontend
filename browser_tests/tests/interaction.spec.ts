@@ -302,8 +302,8 @@ test.describe('Node Interaction', () => {
       position: numberWidgetPos
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
-    // Wait for 1s so that it does not trigger the search box by double click.
-    await comfyPage.page.waitForTimeout(1000)
+    // Wait for canvas to stabilize so that it does not trigger the search box by double click.
+    await comfyPage.waitForCanvasStable()
     await comfyPage.canvas.click({
       position: {
         x: 10,
@@ -327,7 +327,8 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'prompt-dialog-opened-text.png'
     )
-    await comfyPage.page.waitForTimeout(1000)
+    // Wait for canvas to stabilize after dialog operations
+    await comfyPage.waitForCanvasStable()
     await comfyPage.canvas.click({
       position: {
         x: 10,
