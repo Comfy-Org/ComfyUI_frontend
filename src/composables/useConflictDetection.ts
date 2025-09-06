@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { uniqBy } from 'es-toolkit/compat'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
@@ -79,9 +80,7 @@ export function useConflictDetection() {
       // Get system stats from store (primary source of system information)
       const systemStatsStore = useSystemStatsStore()
       // Wait for systemStats to be initialized if not already
-      if (!systemStatsStore.isInitialized) {
-        await systemStatsStore.refetchSystemStats()
-      }
+      await until(systemStatsStore.isInitialized)
 
       // Fetch version information from backend (with error resilience)
       const [frontendVersion] = await Promise.allSettled([
