@@ -165,7 +165,7 @@ interface IDialogOptions {
 }
 
 /** @inheritdoc {@link LGraphCanvas.state} */
-export interface LGraphCanvasState {
+interface LGraphCanvasState {
   /** {@link Positionable} items are being dragged on the canvas. */
   draggingItems: boolean
   /** The canvas itself is being dragged. */

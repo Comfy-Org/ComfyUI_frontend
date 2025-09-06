@@ -2,7 +2,7 @@
  * Default colors for node slot types
  * Mirrors LiteGraph's slot_default_color_by_type
  */
-export const SLOT_TYPE_COLORS: Record<string, string> = {
+const SLOT_TYPE_COLORS: Record<string, string> = {
   number: '#AAD',
   string: '#DCA',
   boolean: '#DAA',

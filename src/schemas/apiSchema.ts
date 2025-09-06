@@ -318,7 +318,7 @@ const zDeviceStats = z.object({
   torch_vram_free: z.number()
 })
 
-export const zSystemStats = z.object({
+const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
     python_version: z.string(),
@@ -339,7 +339,6 @@ const zUser = z.object({
   // `users` is only available in multi-user server mode.
   users: z.record(z.string(), z.string()).optional()
 })
-const zUserData = z.array(z.array(z.string(), z.string()))
 const zUserDataFullInfo = z.object({
   path: z.string(),
   size: z.number(),
@@ -512,7 +511,6 @@ export type Settings = z.infer<typeof zSettings>
 export type DeviceStats = z.infer<typeof zDeviceStats>
 export type SystemStats = z.infer<typeof zSystemStats>
 export type User = z.infer<typeof zUser>
-export type UserData = z.infer<typeof zUserData>
 export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>

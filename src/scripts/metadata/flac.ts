@@ -1,4 +1,4 @@
-export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
+function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
 
   // Verify the FLAC signature

@@ -31,7 +31,7 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 
-export interface QueuedPrompt {
+interface QueuedPrompt {
   /**
    * The nodes that are queued to be executed. The key is the node id and the
    * value is a boolean indicating if the node has been executed.

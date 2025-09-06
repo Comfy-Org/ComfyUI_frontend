@@ -130,7 +130,7 @@ export const getComponent = (type: string): Component | null => {
   return widgets.get(canonicalType)?.component || null
 }
 
-export const isSupported = (type: string): boolean => {
+const isSupported = (type: string): boolean => {
   const canonicalType = getCanonicalType(type)
   return widgets.has(canonicalType)
 }

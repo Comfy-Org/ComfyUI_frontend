@@ -14,11 +14,10 @@ const releaseApiClient = axios.create({
 
 // Use generated types from OpenAPI spec
 export type ReleaseNote = components['schemas']['ReleaseNote']
-export type GetReleasesParams =
-  operations['getReleaseNotes']['parameters']['query']
+type GetReleasesParams = operations['getReleaseNotes']['parameters']['query']
 
 // Use generated error response type
-export type ErrorResponse = components['schemas']['ErrorResponse']
+type ErrorResponse = components['schemas']['ErrorResponse']
 
 // Release service for fetching release notes
 export const useReleaseService = () => {
