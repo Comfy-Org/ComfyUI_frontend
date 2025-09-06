@@ -5,11 +5,41 @@ import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformS
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
+import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 /**
  * Manages the position of the selection toolbox independently.
  * Uses CSS custom properties for performant transform updates.
  */
+
+// Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
+export const moreOptionsOpen = ref(false)
+export const forceCloseMoreOptionsSignal = ref(0)
+export const restoreMoreOptionsSignal = ref(0)
+export const moreOptionsRestorePending = ref(false)
+let moreOptionsWasOpenBeforeDrag = false
+let moreOptionsSelectionSignature: string | null = null
+
+function buildSelectionSignature(
+  store: ReturnType<typeof useCanvasStore>
+): string | null {
+  const c = store.canvas
+  if (!c) return null
+  const items = Array.from(c.selectedItems)
+  if (items.length !== 1) return null
+  const item: any = items[0]
+  if (isLGraphNode(item)) return `N:${item.id}`
+  if (isLGraphGroup(item)) return `G:${item.id}`
+  return null
+}
+
+function currentSelectionMatchesSignature(
+  store: ReturnType<typeof useCanvasStore>
+) {
+  if (!moreOptionsSelectionSignature) return false
+  return buildSelectionSignature(store) === moreOptionsSelectionSignature
+}
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -77,10 +107,17 @@ export function useSelectionToolboxPosition(
     () => canvasStore.getCanvas().state.selectionChanged,
     (changed) => {
       if (changed) {
+        if (moreOptionsRestorePending.value || moreOptionsSelectionSignature) {
+          moreOptionsRestorePending.value = false
+          moreOptionsWasOpenBeforeDrag = false
+          if (!moreOptionsOpen.value) {
+            moreOptionsSelectionSignature = null
+          } else {
+            moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
+          }
+        }
         updateSelectionBounds()
         canvasStore.getCanvas().state.selectionChanged = false
-
-        // Start transform sync if we have selection
         if (visible.value) {
           startSync()
         } else {
@@ -90,18 +127,59 @@ export function useSelectionToolboxPosition(
     },
     { immediate: true }
   )
+  watch(
+    () => moreOptionsOpen.value,
+    (v) => {
+      if (v) {
+        moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
+      } else if (!canvasStore.canvas?.state?.draggingItems) {
+        moreOptionsSelectionSignature = null
+        if (moreOptionsRestorePending.value)
+          moreOptionsRestorePending.value = false
+      }
+    }
+  )
 
   // Watch for dragging state
   watch(
     () => canvasStore.canvas?.state?.draggingItems,
     (dragging) => {
       if (dragging) {
-        // Hide during node dragging
         visible.value = false
+
+        if (moreOptionsOpen.value) {
+          const currentSig = buildSelectionSignature(canvasStore)
+          if (currentSig !== moreOptionsSelectionSignature) {
+            moreOptionsSelectionSignature = null
+          }
+          moreOptionsWasOpenBeforeDrag = true
+          moreOptionsOpen.value = false
+          moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
+          if (moreOptionsRestorePending.value) {
+            forceCloseMoreOptionsSignal.value++
+          } else {
+            moreOptionsWasOpenBeforeDrag = false
+          }
+        } else {
+          moreOptionsRestorePending.value = false
+          moreOptionsWasOpenBeforeDrag = false
+        }
       } else {
-        // Update after dragging ends
         requestAnimationFrame(() => {
           updateSelectionBounds()
+          const selectionMatches = currentSelectionMatchesSignature(canvasStore)
+          const shouldRestore =
+            moreOptionsWasOpenBeforeDrag &&
+            visible.value &&
+            moreOptionsRestorePending.value &&
+            selectionMatches
+
+          if (shouldRestore) {
+            restoreMoreOptionsSignal.value++
+          } else {
+            moreOptionsRestorePending.value = false
+          }
+          moreOptionsWasOpenBeforeDrag = false
         })
       }
     }
@@ -110,4 +188,12 @@ export function useSelectionToolboxPosition(
   return {
     visible
   }
+}
+
+// External cleanup utility to be called when SelectionToolbox component unmounts
+export function resetMoreOptionsState() {
+  moreOptionsOpen.value = false
+  moreOptionsRestorePending.value = false
+  moreOptionsWasOpenBeforeDrag = false
+  moreOptionsSelectionSignature = null
 }

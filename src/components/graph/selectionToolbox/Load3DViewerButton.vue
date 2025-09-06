@@ -8,6 +8,7 @@
     severity="secondary"
     text
     icon="pi pi-pencil"
+    icon-class="w-4 h-4"
     @click="open3DViewer"
   />
 </template>
@@ -16,20 +17,22 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { t } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
+import { isLoad3dNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
+const { selectedNodes } = useSelectionState()
 
 const is3DNode = computed(() => {
   const enable3DViewer = useSettingStore().get('Comfy.Load3D.3DViewerEnable')
-  const nodes = canvasStore.selectedItems.filter(isLGraphNode)
-
-  return nodes.length === 1 && nodes.some(isLoad3dNode) && enable3DViewer
+  return (
+    selectedNodes.value.length === 1 &&
+    selectedNodes.value.some(isLoad3dNode) &&
+    enable3DViewer
+  )
 })
 
 const open3DViewer = () => {
