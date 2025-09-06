@@ -1,6 +1,7 @@
 import { merge } from 'es-toolkit/compat'
 import { Component } from 'vue'
 
+import NewWorkflowTemplateSelectorDialog from '@/components/custom/widget/NewWorkflowTemplateSelectorDialog.vue'
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
@@ -120,10 +121,37 @@ export const useDialogService = () => {
       headerComponent: TemplateWorkflowsDialogHeader,
       dialogComponentProps: {
         pt: {
-          content: { class: 'px-0! overflow-y-hidden' }
+          root: { style: 'width: 90vw; height: 85vh; max-width: 1600px;' },
+          content: { class: '!px-0 overflow-x-hidden overflow-y-hidden' }
         }
       },
       props
+    })
+  }
+
+  function showWorkflowTemplateSelectorDialog() {
+    const layoutDefaultProps: DialogComponentProps = {
+      headless: true,
+      modal: true,
+      closable: false,
+      pt: {
+        content: { class: '!px-0 overflow-hidden h-full !py-0' },
+        // Let internal layout manage its own max-width; prevent child from exceeding and causing scrollWidth > clientWidth
+        root: {
+          style: 'width: 90vw; height: 85vh; max-width: 1400px; display: flex;'
+        }
+      }
+    }
+
+    showLayoutDialog({
+      key: 'global-workflow-template-selector',
+      component: NewWorkflowTemplateSelectorDialog,
+      // Pass through sizing hint so inner layout adapts to parent rather than viewport
+      props: {
+        onClose: () =>
+          dialogStore.closeDialog({ key: 'global-workflow-template-selector' })
+      },
+      dialogComponentProps: layoutDefaultProps
     })
   }
 
@@ -151,30 +179,6 @@ export const useDialogService = () => {
         }
       },
       props
-    })
-  }
-
-  function showManagerProgressDialog(options?: {
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
-  }) {
-    return dialogStore.showDialog({
-      key: 'global-manager-progress-dialog',
-      component: ManagerProgressDialogContent,
-      headerComponent: ManagerProgressHeader,
-      footerComponent: ManagerProgressFooter,
-      props: options?.props,
-      priority: 2,
-      dialogComponentProps: {
-        closable: false,
-        modal: false,
-        position: 'bottom',
-        pt: {
-          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: 'p-0!' },
-          header: { class: 'p-0! border-none' },
-          footer: { class: 'p-0! border-none' }
-        }
-      }
     })
   }
 
@@ -231,6 +235,30 @@ export const useDialogService = () => {
       key: 'global-error',
       component: ErrorDialogContent,
       props
+    })
+  }
+
+  function showManagerProgressDialog(options?: {
+    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
+  }) {
+    return dialogStore.showDialog({
+      key: 'global-manager-progress-dialog',
+      component: ManagerProgressDialogContent,
+      headerComponent: ManagerProgressHeader,
+      footerComponent: ManagerProgressFooter,
+      props: options?.props,
+      priority: 2,
+      dialogComponentProps: {
+        closable: false,
+        modal: false,
+        position: 'bottom',
+        pt: {
+          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
+          content: { class: 'p-0!' },
+          header: { class: 'p-0! border-none' },
+          footer: { class: 'p-0! border-none' }
+        }
+      }
     })
   }
 
@@ -511,15 +539,16 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
+    showWorkflowTemplateSelectorDialog,
     showManagerDialog,
     showManagerProgressDialog,
-    showErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
     prompt,
+    showErrorDialog,
     confirm,
     toggleManagerDialog,
     toggleManagerProgressDialog,

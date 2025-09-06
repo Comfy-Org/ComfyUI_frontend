@@ -57,7 +57,7 @@ const enrichedTemplates = computed(() => {
     return {
       ...template,
       title: getTemplateTitle(template, actualSourceModule),
-      description: getTemplateDescription(template, actualSourceModule)
+      description: getTemplateDescription(template)
     }
   })
 })
