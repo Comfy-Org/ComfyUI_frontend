@@ -107,12 +107,12 @@ const uniqueNodes = computed(() => {
 
 // Show manager buttons unless manager is disabled
 const showManagerButtons = computed(() => {
-  return managerState.shouldShowManagerButtons
+  return managerState.shouldShowManagerButtons.value
 })
 
 // Only show Install All button for NEW_UI (new manager with v4 support)
 const showInstallAllButton = computed(() => {
-  return managerState.shouldShowInstallButton
+  return managerState.shouldShowInstallButton.value
 })
 
 const openManager = async () => {

@@ -296,7 +296,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.shouldShowInstallButton).toBe(true)
+      expect(managerState.shouldShowInstallButton.value).toBe(true)
     })
 
     it('shouldShowManagerButtons should return true when not DISABLED', () => {
@@ -313,7 +313,7 @@ describe('useManagerState', () => {
       } as any)
 
       const managerState = useManagerState()
-      expect(managerState.shouldShowManagerButtons).toBe(true)
+      expect(managerState.shouldShowManagerButtons.value).toBe(true)
     })
   })
 })
