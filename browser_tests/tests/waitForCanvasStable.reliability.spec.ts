@@ -119,15 +119,15 @@ test.describe('waitForCanvasStable() Reliability Tests', () => {
   }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
 
-    // Artificially create an unstable state by making the graph perpetually dirty
+    // Artificially create an unstable state that persists beyond the timeout period
     await comfyPage.page.evaluate(() => {
       const interval = setInterval(() => {
         if (window['app'] && window['app'].graph) {
           window['app'].graph.dirty = true
         }
       }, 100)
-      // Clear after a short time to prevent infinite instability
-      setTimeout(() => clearInterval(interval), 2000)
+      // Clear after a longer time to ensure timeout occurs first (3 seconds > 1 second timeout)
+      setTimeout(() => clearInterval(interval), 3000)
     })
 
     // This should timeout after 1 second and throw an error

@@ -428,6 +428,12 @@ export class ComfyPage {
    * This is a more reliable replacement for arbitrary setTimeout delays.
    */
   async waitForCanvasStable(timeoutMs: number = 5000) {
+    const debug = (msg: string, data?: any) => {
+      console.log(`[waitForCanvasStable] ${msg}`, data || '')
+    }
+
+    debug(`Starting stability check with ${timeoutMs}ms timeout`)
+
     // First ensure app is fully initialized (same as setup process)
     await this.page.waitForFunction(
       () =>
@@ -435,6 +441,8 @@ export class ComfyPage {
         window['app'] && window['app'].extensionManager && window['app'].graph,
       { timeout: timeoutMs }
     )
+
+    debug('App initialization check passed')
 
     // Then wait for canvas to be in stable state
     await this.page.waitForFunction(
@@ -453,33 +461,58 @@ export class ComfyPage {
 
         // Simplified widget checking with better error handling
         let areWidgetsStable = true
+        let unstableWidgetCount = 0
         try {
           if (graph.nodes && Array.isArray(graph.nodes)) {
-            areWidgetsStable = !graph.nodes.some((node: any) => {
-              return node.widgets?.some?.(
-                (widget: any) =>
-                  widget?.pending === true || widget?.updating === true
-              )
+            graph.nodes.forEach((node: any) => {
+              node.widgets?.forEach?.((widget: any) => {
+                if (widget?.pending === true || widget?.updating === true) {
+                  unstableWidgetCount++
+                  areWidgetsStable = false
+                }
+              })
             })
           }
         } catch (e) {
+          console.log(`[waitForCanvasStable] Widget check error:`, e)
           // If widget checking fails, assume stable to avoid blocking
           areWidgetsStable = true
         }
 
-        return (
+        const isStable =
           isGraphStable &&
           isCanvasStable &&
           isWorkflowStable &&
           areWidgetsStable
-        )
+
+        // Log current state for debugging (only when unstable to avoid spam)
+        if (!isStable) {
+          console.log(`[waitForCanvasStable] Unstable state detected:`, {
+            timestamp: Date.now(),
+            graphDirty: graph.dirty,
+            isGraphStable,
+            canvasRendering: app.canvas?.rendering,
+            isCanvasStable,
+            workflowBusy: app.extensionManager?.workflow?.isBusy,
+            isWorkflowStable,
+            unstableWidgetCount,
+            areWidgetsStable,
+            nodeCount: graph.nodes?.length || 0
+          })
+        }
+
+        return isStable
       },
       { timeout: Math.max(timeoutMs - 1000, 1000) } // Reserve some time for initial app check
     )
 
+    debug('Canvas stability check passed')
+
     // Wait multiple frames to ensure render cycle completion
     await this.nextFrame()
     await this.nextFrame()
+
+    debug('Stability check completed successfully')
   }
 
   /**
