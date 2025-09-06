@@ -604,7 +604,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     // Set up widget callbacks BEFORE extracting data (critical order)
     setupNodeWidgetCallbacks(node)
 
-    // Extract safe data for Vue (now with proper callbacks)
+    // Extract safe data for Vue
     vueNodeData.set(id, extractVueNodeData(node))
 
     // Set up reactive tracking state

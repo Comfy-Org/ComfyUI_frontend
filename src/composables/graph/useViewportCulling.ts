@@ -27,12 +27,12 @@ export function useViewportCulling(
   const canvasStore = useCanvasStore()
   const { syncWithCanvas } = useTransformState()
 
-  // Transform tracking for performance optimization - reactive
+  // Transform tracking for performance optimization
   const lastScale = ref(1)
   const lastOffsetX = ref(0)
   const lastOffsetY = ref(0)
 
-  // Computed properties for transform state
+  // Current transform state
   const currentTransformState = computed(() => ({
     scale: lastScale.value,
     offsetX: lastOffsetX.value,
@@ -203,7 +203,7 @@ export function useViewportCulling(
     isNodeVisible,
     getViewportInfo,
 
-    // Reactive transform state
+    // Transform state
     currentTransformState: readonly(currentTransformState),
     lastScale: readonly(lastScale),
     lastOffsetX: readonly(lastOffsetX),

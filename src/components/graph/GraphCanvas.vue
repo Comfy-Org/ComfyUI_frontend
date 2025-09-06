@@ -162,11 +162,11 @@ const selectionToolboxEnabled = computed(() =>
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
-// Feature flags (Vue-related)
+// Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
 
-// Vue node system - using focused composables with proper reactivity
+// Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle(isVueNodesEnabled)
 const viewportCulling = useViewportCulling(
   isVueNodesEnabled,
@@ -176,12 +176,10 @@ const viewportCulling = useViewportCulling(
 )
 const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
-// Reactive refs from composables - no need for extraction
 const nodePositions = vueNodeLifecycle.nodePositions
 const nodeSizes = vueNodeLifecycle.nodeSizes
 const nodesToRender = viewportCulling.nodesToRender
 
-// Handlers - now using reactive detectChangesInRAF
 const handleTransformUpdate = () => {
   viewportCulling.handleTransformUpdate(
     vueNodeLifecycle.detectChangesInRAF.value
@@ -397,7 +395,6 @@ onMounted(async () => {
 
   comfyAppReady.value = true
 
-  // Set up Vue node initialization only when enabled
   vueNodeLifecycle.setupEmptyGraphListener()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(

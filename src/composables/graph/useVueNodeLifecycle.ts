@@ -33,12 +33,12 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
   )
   const cleanupNodeManager = shallowRef<(() => void) | null>(null)
 
-  // Reactive sync management
+  // Sync management
   const slotSync = shallowRef<ReturnType<typeof useSlotLayoutSync> | null>(null)
   const slotSyncStarted = ref(false)
   const linkSync = shallowRef<ReturnType<typeof useLinkLayoutSync> | null>(null)
 
-  // Reactive state for Vue node data
+  // Vue node data state
   const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
   const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
   const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
@@ -48,10 +48,10 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
     new Map()
   )
 
-  // RAF change detection function - reactive
+  // Change detection function
   const detectChangesInRAF = ref<() => void>(() => {})
 
-  // Reactivity trigger for forcing computed re-evaluation
+  // Trigger for forcing computed re-evaluation
   const nodeDataTrigger = ref(0)
 
   const isNodeManagerReady = computed(() => nodeManager.value !== null)
@@ -64,7 +64,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
     nodeManager.value = manager
     cleanupNodeManager.value = manager.cleanup
 
-    // Use the manager's reactive maps directly
+    // Use the manager's data maps
     vueNodeData.value = manager.vueNodeData
     nodeState.value = manager.nodeState
     nodePositions.value = manager.nodePositions
