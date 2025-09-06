@@ -9,6 +9,10 @@ vi.mock('@/utils/envUtil')
 vi.mock('@/services/releaseService')
 vi.mock('@/stores/settingStore')
 vi.mock('@/stores/systemStatsStore')
+vi.mock('@vueuse/core', () => ({
+  until: vi.fn(() => Promise.resolve()),
+  useStorage: vi.fn(() => ({ value: {} }))
+}))
 
 describe('useReleaseStore', () => {
   let store: ReturnType<typeof useReleaseStore>
@@ -49,6 +53,7 @@ describe('useReleaseStore', () => {
           comfyui_version: '1.0.0'
         }
       },
+      isInitialized: true,
       refetchSystemStats: vi.fn(),
       getFormFactor: vi.fn(() => 'git-windows')
     }
@@ -334,12 +339,15 @@ describe('useReleaseStore', () => {
     })
 
     it('should fetch system stats if not available', async () => {
+      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = null
+      mockSystemStatsStore.isInitialized = false
       mockReleaseService.getReleases.mockResolvedValue([mockRelease])
 
       await store.initialize()
 
-      expect(mockSystemStatsStore.refetchSystemStats).toHaveBeenCalled()
+      expect(until).toHaveBeenCalled()
+      expect(mockReleaseService.getReleases).toHaveBeenCalled()
     })
 
     it('should not set loading state when notifications disabled', async () => {
@@ -401,12 +409,14 @@ describe('useReleaseStore', () => {
     })
 
     it('should proceed with fetchReleases when system stats are not available', async () => {
+      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = null
+      mockSystemStatsStore.isInitialized = false
       mockReleaseService.getReleases.mockResolvedValue([mockRelease])
 
       await store.fetchReleases()
 
-      expect(mockSystemStatsStore.refetchSystemStats).toHaveBeenCalled()
+      expect(until).toHaveBeenCalled()
       expect(mockReleaseService.getReleases).toHaveBeenCalled()
     })
   })
