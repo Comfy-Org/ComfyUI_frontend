@@ -1,12 +1,14 @@
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import { normalizePackId } from '@/utils/packUtils'
 
 export function extractCustomNodeName(
   pythonModule: string | undefined
 ): string | null {
   const modules = pythonModule?.split('.') || []
   if (modules.length >= 2 && modules[0] === 'custom_nodes') {
-    return modules[1].split('@')[0]
+    // Use normalizePackId to remove version suffix
+    return normalizePackId(modules[1])
   }
   return null
 }
