@@ -21,10 +21,9 @@ export interface CacheEntry {
  */
 export class FileNameMappingService {
   private cache = new Map<FileType, CacheEntry>()
-  private readonly TTL = 5 * 60 * 1000 // 5 minutes
   private readonly MAX_MAPPING_SIZE = 10000 // Maximum entries per mapping
   private readonly MAX_FILENAME_LENGTH = 256 // Maximum filename length
-  private cleanupTimer: NodeJS.Timeout | null = null
+  private readonly RETRY_DELAY = 30 * 1000 // 30 seconds retry for failed fetches
 
   /**
    * Get filename mapping for the specified file type.
@@ -34,13 +33,22 @@ export class FileNameMappingService {
   async getMapping(fileType: FileType = 'input'): Promise<FileNameMapping> {
     const cached = this.cache.get(fileType)
 
-    // Return cached data if valid and not expired
-    if (cached && !this.isExpired(cached) && !cached.failed) {
+    // Return cached data if available and valid
+    if (cached && cached.data && !cached.failed) {
       return cached.data
     }
 
-    // Return cached data if we're already fetching or if previous fetch failed recently
-    if (cached?.fetchPromise || (cached?.failed && !this.shouldRetry(cached))) {
+    // Return cached data if we're already fetching
+    if (cached?.fetchPromise) {
+      return cached?.data ?? {}
+    }
+
+    // Only retry failed fetches after delay
+    if (
+      cached?.failed &&
+      cached.timestamp &&
+      Date.now() - cached.timestamp < this.RETRY_DELAY
+    ) {
       return cached?.data ?? {}
     }
 
@@ -93,7 +101,7 @@ export class FileNameMappingService {
   }
 
   /**
-   * Get cached mapping synchronously (returns empty object if not cached).
+   * Get cached mapping synchronously (returns stale data if expired).
    * @param fileType - The file type to get cached mapping for
    * @param deduplicated - Whether to return deduplicated names for display
    * @returns The cached mapping or empty object
@@ -103,15 +111,19 @@ export class FileNameMappingService {
     deduplicated: boolean = false
   ): FileNameMapping {
     const cached = this.cache.get(fileType)
-    if (cached && !this.isExpired(cached) && !cached.failed) {
+
+    // Always return cached data if available
+    // Mappings persist for the entire session
+    if (cached && cached.data) {
       // Return deduplicated mapping if requested and available
       if (deduplicated && cached.dedupData) {
         return cached.dedupData
       }
-      const result = cached.data
-      return result
+      return cached.data
     }
-    // Cache miss - return empty object
+
+    // Only return empty object if we truly have no data
+    // This should only happen on first load before initial fetch
     return {}
   }
 
@@ -196,9 +208,6 @@ export class FileNameMappingService {
       entry = { data: {}, timestamp: 0 }
       this.cache.set(cacheKey, entry)
     }
-
-    // Schedule cleanup if not already scheduled
-    this.scheduleCleanup()
 
     // Prevent concurrent requests for the same fileType
     if (entry.fetchPromise) {
@@ -306,15 +315,6 @@ export class FileNameMappingService {
     return validEntries
   }
 
-  private isExpired(entry: CacheEntry): boolean {
-    return Date.now() - entry.timestamp > this.TTL
-  }
-
-  private shouldRetry(entry: CacheEntry): boolean {
-    // Allow retry after 30 seconds for failed requests
-    return entry.timestamp > 0 && Date.now() - entry.timestamp > 30000
-  }
-
   /**
    * Deduplicate human-readable names when multiple hashes map to the same name.
    * Adds a suffix to duplicate names to make them unique.
@@ -414,47 +414,9 @@ export class FileNameMappingService {
   }
 
   /**
-   * Schedule automatic cleanup of expired cache entries
-   */
-  private scheduleCleanup(): void {
-    if (this.cleanupTimer) {
-      return // Already scheduled
-    }
-
-    // Schedule cleanup to run after TTL expires
-    this.cleanupTimer = setTimeout(() => {
-      this.cleanupExpiredEntries()
-      this.cleanupTimer = null
-    }, this.TTL)
-  }
-
-  /**
-   * Remove expired entries from cache to prevent memory leaks
-   */
-  private cleanupExpiredEntries(): void {
-    const entriesToDelete: FileType[] = []
-
-    // Find expired entries
-    this.cache.forEach((entry, fileType) => {
-      if (this.isExpired(entry) && !entry.fetchPromise) {
-        entriesToDelete.push(fileType)
-      }
-    })
-
-    // Remove expired entries
-    entriesToDelete.forEach((fileType) => {
-      this.cache.delete(fileType)
-    })
-  }
-
-  /**
    * Cleanup method for proper disposal
    */
   dispose(): void {
-    if (this.cleanupTimer) {
-      clearTimeout(this.cleanupTimer)
-      this.cleanupTimer = null
-    }
     this.cache.clear()
   }
 }
