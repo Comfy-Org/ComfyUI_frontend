@@ -2,7 +2,7 @@
  * Vue node lifecycle management for LiteGraph integration
  * Provides event-driven reactivity with performance optimizations
  */
-import { nextTick, reactive, readonly } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -789,16 +789,10 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
   }
 
   return {
-    vueNodeData: readonly(vueNodeData) as ReadonlyMap<string, VueNodeData>,
-    nodeState: readonly(nodeState) as ReadonlyMap<string, NodeState>,
-    nodePositions: readonly(nodePositions) as ReadonlyMap<
-      string,
-      { x: number; y: number }
-    >,
-    nodeSizes: readonly(nodeSizes) as ReadonlyMap<
-      string,
-      { width: number; height: number }
-    >,
+    vueNodeData,
+    nodeState,
+    nodePositions,
+    nodeSizes,
     getNode,
     setupEventListeners,
     cleanup,
@@ -807,7 +801,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     detectChangesInRAF,
     getVisibleNodeIds,
     performanceMetrics,
-    spatialMetrics: readonly(spatialMetrics),
+    spatialMetrics,
     getSpatialIndexDebugInfo: () => spatialIndex.getDebugInfo()
   }
 }

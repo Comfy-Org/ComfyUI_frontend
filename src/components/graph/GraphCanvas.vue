@@ -33,8 +33,8 @@
 
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
-    v-if="isVueNodesEnabled && canvasStore.canvas && comfyAppReady"
-    :canvas="canvasStore.canvas as LGraphCanvas"
+    v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
+    :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
   >
     <!-- Vue nodes rendered based on graph nodes -->
@@ -96,11 +96,9 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type {
-  NodeState,
-  VueNodeData
-} from '@/composables/graph/useGraphNodeManager'
+import { useNodeEventHandlers } from '@/composables/graph/useNodeEventHandlers'
+import { useViewportCulling } from '@/composables/graph/useViewportCulling'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -113,15 +111,8 @@ import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import TransformPane from '@/renderer/core/layout/TransformPane.vue'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
-import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
-import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import { useTransformState } from '@/renderer/core/layout/useTransformState'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError, api } from '@/scripts/api'
@@ -155,7 +146,6 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
-const layoutMutations = useLayoutMutations()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -174,298 +164,32 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
 // Feature flags (Vue-related)
 const { shouldRenderVueNodes } = useVueFeatureFlags()
-
 const isVueNodesEnabled = computed(() => shouldRenderVueNodes.value)
 
-// Vue node lifecycle management - initialize after graph is ready
-let nodeManager: ReturnType<typeof useGraphNodeManager> | null = null
-let cleanupNodeManager: (() => void) | null = null
-
-// Slot layout sync management
-let slotSync: ReturnType<typeof useSlotLayoutSync> | null = null
-let slotSyncStarted = false
-let linkSync: ReturnType<typeof useLinkLayoutSync> | null = null
-const vueNodeData = ref<ReadonlyMap<string, VueNodeData>>(new Map())
-const nodeState = ref<ReadonlyMap<string, NodeState>>(new Map())
-const nodePositions = ref<ReadonlyMap<string, { x: number; y: number }>>(
-  new Map()
+// Vue node system - using focused composables with proper reactivity
+const vueNodeLifecycle = useVueNodeLifecycle(isVueNodesEnabled)
+const viewportCulling = useViewportCulling(
+  isVueNodesEnabled,
+  vueNodeLifecycle.vueNodeData,
+  vueNodeLifecycle.nodeDataTrigger,
+  vueNodeLifecycle.nodeManager
 )
-const nodeSizes = ref<ReadonlyMap<string, { width: number; height: number }>>(
-  new Map()
-)
-let detectChangesInRAF = () => {}
+const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
-// Initialize node manager when graph becomes available
-// Add a reactivity trigger to force computed re-evaluation
-const nodeDataTrigger = ref(0)
+// Reactive refs from composables - no need for extraction
+const nodePositions = vueNodeLifecycle.nodePositions
+const nodeSizes = vueNodeLifecycle.nodeSizes
+const nodesToRender = viewportCulling.nodesToRender
 
-const initializeNodeManager = () => {
-  if (!comfyApp.graph || nodeManager) return
-  nodeManager = useGraphNodeManager(comfyApp.graph)
-  cleanupNodeManager = nodeManager.cleanup
-  // Use the manager's reactive maps directly
-  vueNodeData.value = nodeManager.vueNodeData
-  nodeState.value = nodeManager.nodeState
-  nodePositions.value = nodeManager.nodePositions
-  nodeSizes.value = nodeManager.nodeSizes
-  detectChangesInRAF = nodeManager.detectChangesInRAF
-
-  // Initialize layout system with existing nodes
-  const nodes = comfyApp.graph._nodes.map((node: any) => ({
-    id: node.id.toString(),
-    pos: node.pos,
-    size: node.size
-  }))
-  layoutStore.initializeFromLiteGraph(nodes)
-
-  // Seed reroutes into the Layout Store so hit-testing uses the new path
-  for (const reroute of comfyApp.graph.reroutes.values()) {
-    const [x, y] = reroute.pos
-    const parent = reroute.parentId ?? undefined
-    const linkIds = Array.from(reroute.linkIds)
-    layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
-  }
-
-  // Seed existing links into the Layout Store (topology only)
-  for (const link of comfyApp.graph._links.values()) {
-    layoutMutations.createLink(
-      link.id,
-      link.origin_id,
-      link.origin_slot,
-      link.target_id,
-      link.target_slot
-    )
-  }
-
-  // Initialize layout sync (one-way: Layout Store → LiteGraph)
-  const { startSync } = useLayoutSync()
-  startSync(canvasStore.canvas)
-
-  // Initialize link layout sync for event-driven updates
-  linkSync = useLinkLayoutSync()
-  if (canvasStore.canvas) {
-    linkSync.start(canvasStore.canvas as LGraphCanvas)
-  }
-
-  // Force computed properties to re-evaluate
-  nodeDataTrigger.value++
-}
-
-const disposeNodeManagerAndSyncs = () => {
-  if (!nodeManager) return
-  try {
-    cleanupNodeManager?.()
-  } catch {
-    /* empty */
-  }
-  nodeManager = null
-  cleanupNodeManager = null
-
-  // Clean up link layout sync
-  if (linkSync) {
-    linkSync.stop()
-    linkSync = null
-  }
-
-  // Reset reactive maps to inert defaults
-  vueNodeData.value = new Map()
-  nodeState.value = new Map()
-  nodePositions.value = new Map()
-  nodeSizes.value = new Map()
-}
-
-// Watch for transformPaneEnabled to gate the node manager lifecycle
-watch(
-  () => isVueNodesEnabled.value && Boolean(comfyApp.graph),
-  (enabled) => {
-    if (enabled) {
-      initializeNodeManager()
-    } else {
-      disposeNodeManagerAndSyncs()
-    }
-  },
-  { immediate: true }
-)
-
-// Consolidated watch for slot layout sync management
-watch(
-  [() => canvasStore.canvas, () => isVueNodesEnabled.value],
-  ([canvas, vueMode], [, oldVueMode]) => {
-    const modeChanged = vueMode !== oldVueMode
-
-    // Clear stale slot layouts when switching modes
-    if (modeChanged) {
-      layoutStore.clearAllSlotLayouts()
-    }
-
-    // Switching to Vue
-    if (vueMode && slotSyncStarted) {
-      slotSync?.stop()
-      slotSyncStarted = false
-    }
-
-    // Switching to LG
-    const shouldRun = Boolean(canvas?.graph) && !vueMode
-    if (shouldRun && !slotSyncStarted && canvas) {
-      // Initialize slot sync if not already created
-      if (!slotSync) {
-        slotSync = useSlotLayoutSync()
-      }
-      const started = slotSync.attemptStart(canvas as LGraphCanvas)
-      slotSyncStarted = started
-    }
-  },
-  { immediate: true }
-)
-
-// Transform state for viewport culling
-const { syncWithCanvas } = useTransformState()
-
-const nodesToRender = computed(() => {
-  // Early return for zero overhead when Vue nodes are disabled
-  if (!isVueNodesEnabled.value) {
-    return []
-  }
-
-  // Access trigger to force re-evaluation after nodeManager initialization
-  void nodeDataTrigger.value
-
-  if (!comfyApp.graph) {
-    return []
-  }
-
-  const allNodes = Array.from(vueNodeData.value.values())
-
-  // Apply viewport culling - check if node bounds intersect with viewport
-  if (nodeManager && canvasStore.canvas && comfyApp.canvas) {
-    const canvas = canvasStore.canvas
-    const manager = nodeManager
-
-    // Ensure transform is synced before checking visibility
-    syncWithCanvas(comfyApp.canvas)
-
-    const ds = canvas.ds
-
-    // Work in screen space - viewport is simply the canvas element size
-    const viewport_width = canvas.canvas.width
-    const viewport_height = canvas.canvas.height
-
-    // Add margin that represents a constant distance in canvas space
-    // Convert canvas units to screen pixels by multiplying by scale
-    const canvasMarginDistance = 200 // Fixed margin in canvas units
-    const margin_x = canvasMarginDistance * ds.scale
-    const margin_y = canvasMarginDistance * ds.scale
-
-    const filtered = allNodes.filter((nodeData) => {
-      const node = manager.getNode(nodeData.id)
-      if (!node) return false
-
-      // Transform node position to screen space (same as DOM widgets)
-      const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
-      const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
-      const screen_width = node.size[0] * ds.scale
-      const screen_height = node.size[1] * ds.scale
-
-      // Check if node bounds intersect with expanded viewport (in screen space)
-      const isVisible = !(
-        screen_x + screen_width < -margin_x ||
-        screen_x > viewport_width + margin_x ||
-        screen_y + screen_height < -margin_y ||
-        screen_y > viewport_height + margin_y
-      )
-
-      return isVisible
-    })
-
-    return filtered
-  }
-
-  return allNodes
-})
-
-let lastScale = 1
-let lastOffsetX = 0
-let lastOffsetY = 0
-
+// Handlers - now using reactive detectChangesInRAF
 const handleTransformUpdate = () => {
-  // Skip all work if Vue nodes are disabled
-  if (!isVueNodesEnabled.value) {
-    return
-  }
-
-  // Sync transform state only when it changes (avoids reflows)
-  if (comfyApp.canvas?.ds) {
-    const currentScale = comfyApp.canvas.ds.scale
-    const currentOffsetX = comfyApp.canvas.ds.offset[0]
-    const currentOffsetY = comfyApp.canvas.ds.offset[1]
-
-    if (
-      currentScale !== lastScale ||
-      currentOffsetX !== lastOffsetX ||
-      currentOffsetY !== lastOffsetY
-    ) {
-      syncWithCanvas(comfyApp.canvas)
-      lastScale = currentScale
-      lastOffsetX = currentOffsetX
-      lastOffsetY = currentOffsetY
-    }
-  }
-
-  // Detect node changes during transform updates
-  detectChangesInRAF()
-
-  // Trigger reactivity for nodesToRender
-  void nodesToRender.value.length
+  viewportCulling.handleTransformUpdate(
+    vueNodeLifecycle.detectChangesInRAF.value
+  )
 }
-
-// Node event handlers
-const handleNodeSelect = (event: PointerEvent, nodeData: VueNodeData) => {
-  if (!canvasStore.canvas || !nodeManager) return
-
-  const node = nodeManager.getNode(nodeData.id)
-  if (!node) return
-
-  if (!event.ctrlKey && !event.metaKey) {
-    canvasStore.canvas.deselectAllNodes()
-  }
-
-  canvasStore.canvas.selectNode(node)
-
-  // Bring node to front when clicked (similar to LiteGraph behavior)
-  // Skip if node is pinned
-  if (!node.flags?.pinned) {
-    layoutMutations.setSource(LayoutSource.Vue)
-    layoutMutations.bringNodeToFront(nodeData.id)
-  }
-  node.selected = true
-
-  canvasStore.updateSelectedItems()
-}
-
-// Handle node collapse state changes
-const handleNodeCollapse = (nodeId: string, collapsed: boolean) => {
-  if (!nodeManager) return
-
-  const node = nodeManager.getNode(nodeId)
-  if (!node) return
-
-  // Use LiteGraph's collapse method if the state needs to change
-  const currentCollapsed = node.flags?.collapsed ?? false
-  if (currentCollapsed !== collapsed) {
-    node.collapse()
-  }
-}
-
-// Handle node title updates
-const handleNodeTitleUpdate = (nodeId: string, newTitle: string) => {
-  if (!nodeManager) return
-
-  const node = nodeManager.getNode(nodeId)
-  if (!node) return
-
-  // Update the node title in LiteGraph for persistence
-  node.title = newTitle
-}
+const handleNodeSelect = nodeEventHandlers.handleNodeSelect
+const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
+const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
@@ -674,28 +398,7 @@ onMounted(async () => {
   comfyAppReady.value = true
 
   // Set up Vue node initialization only when enabled
-  if (isVueNodesEnabled.value) {
-    // Set up a one-time listener for when the first node is added
-    // This handles the case where Vue nodes are enabled but the graph starts empty
-    // TODO: Replace this with a reactive graph mutations observer when available
-    if (comfyApp.graph && !nodeManager && comfyApp.graph._nodes.length === 0) {
-      const originalOnNodeAdded = comfyApp.graph.onNodeAdded
-      comfyApp.graph.onNodeAdded = function (node: any) {
-        // Restore original handler
-        comfyApp.graph.onNodeAdded = originalOnNodeAdded
-
-        // Initialize node manager if needed
-        if (isVueNodesEnabled.value && !nodeManager) {
-          initializeNodeManager()
-        }
-
-        // Call original handler
-        if (originalOnNodeAdded) {
-          originalOnNodeAdded.call(this, node)
-        }
-      }
-    }
-  }
+  vueNodeLifecycle.setupEmptyGraphListener()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
@@ -739,18 +442,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (nodeManager) {
-    nodeManager.cleanup()
-    nodeManager = null
-  }
-  if (slotSyncStarted) {
-    slotSync?.stop()
-    slotSyncStarted = false
-  }
-  slotSync = null
-  if (linkSync) {
-    linkSync.stop()
-    linkSync = null
-  }
+  vueNodeLifecycle.cleanup()
 })
 </script>
