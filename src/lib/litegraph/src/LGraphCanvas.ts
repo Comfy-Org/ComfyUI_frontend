@@ -6,7 +6,6 @@ import {
   type LinkRenderContext,
   LitegraphLinkAdapter
 } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -5560,9 +5559,7 @@ export class LGraphCanvas
         const link = graph._links.get(link_id)
         if (!link) continue
 
-        const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
-          ? getSlotPosition(node, i, true)
-          : node.getInputPos(i)
+        const endPos = node.getInputPos(i)
 
         // find link info
         const start_node = graph.getNodeById(link.origin_id)
@@ -5572,9 +5569,7 @@ export class LGraphCanvas
         const startPos: Point =
           outputId === -1
             ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
-            : LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
-              ? getSlotPosition(start_node, outputId, false)
-              : start_node.getOutputPos(outputId)
+            : start_node.getOutputPos(outputId)
 
         const output = start_node.outputs[outputId]
         if (!output) continue
