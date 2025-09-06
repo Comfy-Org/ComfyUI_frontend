@@ -9,7 +9,8 @@ import {
   QUADTREE_CONFIG
 } from '@/renderer/core/layout/constants'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
-import { QuadTree } from '@/utils/spatial/QuadTree'
+
+import { QuadTree } from './QuadTree'
 
 /**
  * Cache entry for spatial queries
