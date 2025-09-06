@@ -84,10 +84,6 @@ export function isINodeInputSlot(slot: INodeSlot): slot is INodeInputSlot {
   return 'link' in slot
 }
 
-export function isINodeOutputSlot(slot: INodeSlot): slot is INodeOutputSlot {
-  return 'links' in slot
-}
-
 /**
  * Type guard: Whether this input slot is attached to a widget.
  * @param slot The slot to check.
