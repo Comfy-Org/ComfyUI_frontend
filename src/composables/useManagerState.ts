@@ -1,3 +1,4 @@
+import { storeToRefs } from 'pinia'
 import { computed, readonly } from 'vue'
 
 import { t } from '@/i18n'
@@ -16,6 +17,8 @@ export enum ManagerUIState {
 
 export function useManagerState() {
   const systemStatsStore = useSystemStatsStore()
+  const { systemStats, isInitialized: systemInitialized } =
+    storeToRefs(systemStatsStore)
 
   /**
    * The current manager UI state.
@@ -25,13 +28,12 @@ export function useManagerState() {
   const managerUIState = readonly(
     computed((): ManagerUIState => {
       // Wait for systemStats to be initialized
-      if (!systemStatsStore.isInitialized) {
+      if (!systemInitialized) {
         // Default to DISABLED while loading
         return ManagerUIState.DISABLED
       }
 
       // Get current values
-      const systemStats = systemStatsStore.systemStats
       const clientSupportsV4 =
         api.getClientFeatureFlags().supports_manager_v4_ui ?? false
 
@@ -40,11 +42,13 @@ export function useManagerState() {
       )
 
       // Check command line args first (highest priority)
-      if (systemStats?.system?.argv?.includes('--disable-manager')) {
+      if (systemStats.value?.system?.argv?.includes('--disable-manager')) {
         return ManagerUIState.DISABLED
       }
 
-      if (systemStats?.system?.argv?.includes('--enable-manager-legacy-ui')) {
+      if (
+        systemStats.value?.system?.argv?.includes('--enable-manager-legacy-ui')
+      ) {
         return ManagerUIState.LEGACY_UI
       }
 
@@ -177,6 +181,7 @@ export function useManagerState() {
             detail: t('manager.legacyMenuNotAvailable'),
             life: 3000
           })
+          dialogService.showManagerDialog({ initialTab: ManagerTab.All })
         } else {
           dialogService.showManagerDialog(
             options?.initialTab ? { initialTab: options.initialTab } : undefined

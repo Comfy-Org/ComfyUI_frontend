@@ -636,7 +636,7 @@ export function useConflictDetection() {
   /**
    * Error-resilient initialization (called on app mount).
    * Async function that doesn't block UI setup.
-   * Ensures proper order: installed -> system_stats -> versions bulk -> import_fail_info_bulk
+   * Ensures proper order: system_stats -> manager state -> installed -> versions bulk -> import_fail_info_bulk
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
