@@ -9,8 +9,8 @@
  */
 import { type Ref, computed, readonly, ref } from 'vue'
 
-import { useTransformState } from '@/renderer/core/layout/useTransformState'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useTransformState } from '@/renderer/core/layout/useTransformState'
 import { app as comfyApp } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 
