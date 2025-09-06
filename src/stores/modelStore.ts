@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 
 import { api } from '@/scripts/api'
 
+import { useSettingStore } from './settingStore'
+
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
   for (const key of keys) {
@@ -167,7 +169,16 @@ export class ModelFolder {
       return this
     }
     this.state = ResourceState.Loading
-    const models = await api.getModels(this.directory)
+
+    // Check if we should use Asset API - we need to access settings from the store context
+    // Since this is called from the store, we can access the setting store
+    const settingStore = useSettingStore()
+    const useAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
+
+    const models = useAssetAPI
+      ? await api.getAssetModels(this.directory)
+      : await api.getModels(this.directory)
+
     for (const model of models) {
       this.models[`${model.pathIndex}/${model.name}`] = new ComfyModelDef(
         model.name,
@@ -197,7 +208,13 @@ export const useModelStore = defineStore('models', () => {
    * Loads the model folders from the server
    */
   async function loadModelFolders() {
-    const resData = await api.getModelFolders()
+    const settingStore = useSettingStore()
+    const useAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
+
+    const resData = useAssetAPI
+      ? await api.getAssetModelFolders()
+      : await api.getModelFolders()
+
     modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
     for (const folderName of modelFolderNames.value) {

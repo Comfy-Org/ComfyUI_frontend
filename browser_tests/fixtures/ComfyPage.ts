@@ -418,6 +418,85 @@ export class ComfyPage {
     })
   }
 
+  /**
+   * Waits for the canvas to reach a stable state by checking multiple conditions:
+   * - Graph is not dirty (no pending updates)
+   * - Canvas is not in the middle of rendering
+   * - All widgets have finished updating
+   * - Uses multiple animation frames to ensure stability
+   *
+   * This is a more reliable replacement for arbitrary setTimeout delays.
+   */
+  async waitForCanvasStable(timeoutMs: number = 5000) {
+    await this.page.waitForFunction(
+      () => {
+        // Check if app and graph are available
+        if (!window['app'] || !window['app'].graph) {
+          return false
+        }
+
+        const app = window['app']
+        const graph = app.graph
+
+        // Check that graph is not dirty (no pending updates)
+        // Be defensive about property existence
+        const isGraphStable = graph.dirty === false || graph.dirty == null
+
+        // Check that canvas is not actively rendering
+        // Be defensive about property existence
+        const isCanvasStable = !app.canvas?.rendering
+
+        // For now, simplify widget checking to avoid potential issues
+        // We'll enhance this later if needed
+        let areWidgetsStable = true
+        try {
+          if (graph.nodes && Array.isArray(graph.nodes)) {
+            areWidgetsStable = !graph.nodes.some((node: any) => {
+              return node.widgets?.some?.(
+                (widget: any) =>
+                  widget?.pending === true || widget?.updating === true
+              )
+            })
+          }
+        } catch (e) {
+          // If widget checking fails, assume stable to avoid blocking
+          areWidgetsStable = true
+        }
+
+        return isGraphStable && isCanvasStable && areWidgetsStable
+      },
+      { timeout: timeoutMs }
+    )
+
+    // Wait multiple frames to ensure render cycle completion
+    await this.nextFrame()
+    await this.nextFrame()
+  }
+
+  /**
+   * Waits for toast notifications to appear and stabilize
+   */
+  async waitForToastStable(timeoutMs: number = 3000) {
+    // Wait for toast container to be present and stable
+    await this.page.waitForFunction(
+      () => {
+        const toastContainer = document.querySelector('.p-toast-container')
+        if (!toastContainer) return true // No toasts is stable
+
+        // Check that toasts are visible and not animating
+        const toasts = toastContainer.querySelectorAll('.p-toast-message')
+        return Array.from(toasts).every((toast) => {
+          const styles = getComputedStyle(toast)
+          // Check if toast is fully visible and not in transition
+          return styles.opacity === '1' && styles.transform === 'none'
+        })
+      },
+      { timeout: timeoutMs }
+    )
+
+    await this.nextFrame()
+  }
+
   async delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }

@@ -91,7 +91,9 @@ test.describe('Boolean widget', () => {
 test.describe('Slider widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
-    await comfyPage.page.waitForTimeout(300)
+    // OLD: await comfyPage.page.waitForTimeout(300)
+    // NEW: Wait for canvas to be stable after workflow load
+    await comfyPage.waitForCanvasStable()
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
 
