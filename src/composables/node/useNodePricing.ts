@@ -1031,6 +1031,15 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     StabilityUpscaleFastNode: {
       displayPrice: '$0.01/Run'
     },
+    StabilityTextToAudio: {
+      displayPrice: '$0.20/Run'
+    },
+    StabilityAudioToAudio: {
+      displayPrice: '$0.20/Run'
+    },
+    StabilityAudioInpaint: {
+      displayPrice: '$0.20/Run'
+    },
     VeoVideoGenerationNode: {
       displayPrice: (node: LGraphNode): string => {
         const durationWidget = node.widgets?.find(
