@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 // Mock stores
-vi.mock('@/stores/graphStore')
+vi.mock('@/renderer/core/canvas/canvasStore')
 vi.mock('@/stores/settingStore')
 vi.mock('@/scripts/app', () => ({
   app: {

@@ -34,7 +34,7 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/stores/graphStore', () => ({
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     getCanvas: () => (app as any).canvas
   })
