@@ -1004,6 +1004,8 @@
   "menuLabels": {
     "File": "File",
     "Edit": "Edit",
+    "View": "View",
+    "Manager": "Manager",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
     "Open Custom Nodes Folder": "Open Custom Nodes Folder",

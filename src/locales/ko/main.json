@@ -822,6 +822,11 @@
     "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
     "Unload Models": "모델 언로드",
     "Unload Models and Execution Cache": "모델 및 실행 캐시 언로드",
+    "Unlock Canvas": "캔버스 잠금 해제",
+    "Unpack the selected Subgraph": "선택한 서브그래프 풀기",
+    "View": "보기",
+    "Workflow": "워크플로",
+    "Workflows": "워크플로우",
     "Zoom In": "확대",
     "Zoom Out": "축소",
     "Zoom to fit": "화면에 맞추기"
