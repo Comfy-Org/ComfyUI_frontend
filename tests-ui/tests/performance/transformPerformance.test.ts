@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useTransformState } from '@/composables/element/useTransformState'
+import { useTransformState } from '@/renderer/core/layout/useTransformState'
 
 // Mock canvas context for testing
 const createMockCanvasContext = () => ({
