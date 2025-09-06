@@ -36,7 +36,7 @@ jobs:
           
           if [ -z "$EXISTING_BACKPORTS" ]; then
             echo "skip=false" >> $GITHUB_OUTPUT
-            return
+            exit 0
           fi
           
           echo "Found existing backport PRs:"
