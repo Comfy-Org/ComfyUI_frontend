@@ -50,6 +50,15 @@ const logger = log.getLogger('LayoutStore')
 // Constants
 const REROUTE_RADIUS = 8
 
+// Utility functions
+function asRerouteId(id: string | number): RerouteId {
+  return Number(id)
+}
+
+function asLinkId(id: string | number): LinkId {
+  return Number(id)
+}
+
 interface NodeLayoutData {
   id: NodeId
   position: Point
@@ -90,10 +99,11 @@ class LayoutStoreImpl implements LayoutStore {
     bounds: { x: 0, y: 0, width: 100, height: 50 }
   }
 
-  private static readonly REROUTE_DEFAULTS: RerouteData = {
-    id: 0 as RerouteId,
+  private static readonly REROUTE_DEFAULTS: Omit<
+    RerouteData,
+    'id' | 'parentId'
+  > = {
     position: { x: 0, y: 0 },
-    parentId: 0 as LinkId,
     linkIds: []
   }
 
@@ -195,19 +205,18 @@ class LayoutStoreImpl implements LayoutStore {
   private getRerouteField<K extends keyof RerouteData>(
     yreroute: Y.Map<unknown>,
     field: K,
-    defaultValue: RerouteData[K] = LayoutStoreImpl.REROUTE_DEFAULTS[field]
+    defaultValue?: RerouteData[K]
   ): RerouteData[K] {
     const typedReroute = yreroute as TypedYMap<RerouteData>
     const value = typedReroute.get(field)
-    return value ?? defaultValue
-  }
-
-  private asRerouteId(id: string | number): RerouteId {
-    return Number(id)
-  }
-
-  private asLinkId(id: string | number): LinkId {
-    return Number(id)
+    if (value !== undefined) return value
+    if (defaultValue !== undefined) return defaultValue
+    if (field in LayoutStoreImpl.REROUTE_DEFAULTS) {
+      return (LayoutStoreImpl.REROUTE_DEFAULTS as any)[field]
+    }
+    throw new Error(
+      `No default value available for reroute field: ${String(field)}`
+    )
   }
 
   /**
@@ -761,7 +770,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Check precise distance for candidates
     for (const rerouteKey of candidateRerouteKeys) {
-      const rerouteId = this.asRerouteId(rerouteKey)
+      const rerouteId = asRerouteId(rerouteKey)
       const rerouteLayout = this.rerouteLayouts.get(rerouteId)
       if (rerouteLayout) {
         const dx = point.x - rerouteLayout.position.x
@@ -806,7 +815,7 @@ class LayoutStoreImpl implements LayoutStore {
       slots: this.slotSpatialIndex.query(bounds),
       reroutes: this.rerouteSpatialIndex
         .query(bounds)
-        .map((key) => this.asRerouteId(key))
+        .map((key) => asRerouteId(key))
     }
   }
 
@@ -1203,7 +1212,7 @@ class LayoutStoreImpl implements LayoutStore {
   private findLinksConnectedToNode(nodeId: NodeId): LinkId[] {
     const connectedLinks: LinkId[] = []
     this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
-      const linkId = this.asLinkId(linkIdStr)
+      const linkId = asLinkId(linkIdStr)
       const sourceNodeId = this.getLinkField(linkData, 'sourceNodeId')
       const targetNodeId = this.getLinkField(linkData, 'targetNodeId')
 
@@ -1219,7 +1228,7 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private handleLinkChange(change: YEventChange, linkIdStr: string): void {
     if (change.action === 'delete') {
-      const linkId = this.asLinkId(linkIdStr)
+      const linkId = asLinkId(linkIdStr)
       this.cleanupLinkData(linkId)
     }
     // Link was added or updated - geometry will be computed separately
@@ -1258,7 +1267,7 @@ class LayoutStoreImpl implements LayoutStore {
     change: YEventChange,
     rerouteIdStr: string
   ): void {
-    const rerouteId = this.asRerouteId(rerouteIdStr)
+    const rerouteId = asRerouteId(rerouteIdStr)
 
     if (change.action === 'delete') {
       this.handleRerouteDelete(rerouteId, rerouteIdStr)
