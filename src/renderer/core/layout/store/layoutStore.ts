@@ -371,15 +371,6 @@ class LayoutStoreImpl implements LayoutStore {
   updateSlotLayout(key: string, layout: SlotLayout): void {
     const existing = this.slotLayouts.get(key)
 
-    if (!existing) {
-      logger.debug('Adding slot:', {
-        nodeId: layout.nodeId,
-        type: layout.type,
-        index: layout.index,
-        bounds: layout.bounds
-      })
-    }
-
     if (existing) {
       // Update spatial index
       this.slotSpatialIndex.update(key, layout.bounds)
