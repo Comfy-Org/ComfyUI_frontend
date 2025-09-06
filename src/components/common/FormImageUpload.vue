@@ -3,7 +3,7 @@
     <div class="flex gap-2 items-center">
       <div
         class="preview-box border rounded p-2 w-16 h-16 flex items-center justify-center"
-        :class="{ 'bg-gray-100 dark:bg-gray-800': !modelValue }"
+        :class="{ 'bg-gray-100 dark-theme:bg-gray-800': !modelValue }"
       >
         <img
           v-if="modelValue"
