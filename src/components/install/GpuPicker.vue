@@ -43,7 +43,10 @@
 
     <div class="text-base text-neutral-300 pt-12 px-24 h-16">
       <div v-show="selected === 'mps'" class="flex items-center gap-2">
-        <Tag :value="$t('install.gpuPicker.recommended')" />
+        <Tag
+          :value="$t('install.gpuPicker.recommended')"
+          class="!bg-white !text-black !rounded-full !normal-case !text-sm !font-medium !px-3"
+        />
         <i-lucide:badge-check class="text-neutral-300 text-lg" />
       </div>
     </div>
