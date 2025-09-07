@@ -12,12 +12,12 @@
           class="flex-1 overflow-auto"
           :style="{ scrollbarGutter: 'stable' }"
         >
-          <StepPanel value="0">
+          <StepPanel value="1">
             <div class="flex items-center justify-center h-full pr-8">
               <GpuPicker v-model:device="device" />
             </div>
           </StepPanel>
-          <StepPanel value="1">
+          <StepPanel value="2">
             <div class="flex items-center justify-center h-full pr-8">
               <InstallLocationPicker
                 v-model:install-path="installPath"
@@ -31,12 +31,12 @@
               />
             </div>
           </StepPanel>
-          <StepPanel value="2">
+          <StepPanel value="3">
             <div class="flex items-center justify-center h-full pr-8">
               <!-- Migration step is empty - content moved to accordion in step 2 -->
             </div>
           </StepPanel>
-          <StepPanel value="3">
+          <StepPanel value="4">
             <div class="flex items-center justify-center h-full pr-8">
               <DesktopSettingsConfiguration
                 v-model:autoUpdate="autoUpdate"
@@ -52,8 +52,8 @@
           :current-step
           :can-proceed
           :disable-location-step="noGpu"
-          :disable-migration-step="noGpu || hasError || highestStep < 1"
-          :disable-settings-step="noGpu || hasError || highestStep < 2"
+          :disable-migration-step="noGpu || hasError || highestStep < 2"
+          :disable-settings-step="noGpu || hasError || highestStep < 3"
           @previous="goToPreviousStep"
           @next="goToNextStep"
           @install="install"
@@ -96,7 +96,7 @@ const pypiMirror = ref('')
 const torchMirror = ref('')
 
 /** Current step in the stepper */
-const currentStep = ref('0')
+const currentStep = ref('1')
 
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
@@ -120,13 +120,13 @@ const noGpu = computed(() => typeof device.value !== 'string')
 // Computed property to determine if user can proceed to next step
 const canProceed = computed(() => {
   switch (currentStep.value) {
-    case '0':
-      return typeof device.value === 'string'
     case '1':
-      return pathError.value === ''
+      return typeof device.value === 'string'
     case '2':
-      return true // Migration step is now empty, always allow proceeding
+      return pathError.value === ''
     case '3':
+      return true // Migration step is now empty, always allow proceeding
+    case '4':
       return !hasError.value
     default:
       return false

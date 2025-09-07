@@ -2,7 +2,7 @@
   <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
     <!-- Back button -->
     <Button
-      v-if="currentStep !== '0'"
+      v-if="currentStep !== '1'"
       :label="$t('g.back')"
       severity="secondary"
       icon="pi pi-arrow-left"
@@ -13,26 +13,26 @@
 
     <!-- Step indicators in center -->
     <StepList class="flex justify-center items-center gap-3 select-none">
-      <Step value="0">
+      <Step value="1">
         {{ $t('install.gpu') }}
       </Step>
-      <Step value="1" :disabled="disableLocationStep">
+      <Step value="2" :disabled="disableLocationStep">
         {{ $t('install.installLocation') }}
       </Step>
-      <Step value="2" :disabled="disableMigrationStep">
+      <Step value="3" :disabled="disableMigrationStep">
         {{ $t('install.migration') }}
       </Step>
-      <Step value="3" :disabled="disableSettingsStep">
+      <Step value="4" :disabled="disableSettingsStep">
         {{ $t('install.desktopSettings') }}
       </Step>
     </StepList>
 
     <!-- Next/Install button -->
     <Button
-      :label="currentStep !== '3' ? $t('g.next') : $t('g.install')"
+      :label="currentStep !== '4' ? $t('g.next') : $t('g.install')"
       class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold transition-colors italic justify-self-end"
       :disabled="!canProceed"
-      @click="currentStep !== '3' ? $emit('next') : $emit('install')"
+      @click="currentStep !== '4' ? $emit('next') : $emit('install')"
     />
   </div>
 </template>
@@ -43,7 +43,7 @@ import Step from 'primevue/step'
 import StepList from 'primevue/steplist'
 
 defineProps<{
-  /** Current step index as string ('0', '1', '2', '3') */
+  /** Current step index as string ('1', '2', '3', '4') */
   currentStep: string
   /** Whether the user can proceed to the next step */
   canProceed: boolean
