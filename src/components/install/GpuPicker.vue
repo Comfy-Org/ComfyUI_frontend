@@ -1,59 +1,56 @@
 <template>
   <div
-    class="flex flex-col gap-8 w-full max-w-3xl mx-auto h-[30rem] select-none"
+    class="flex flex-col justify-between w-full max-w-3xl mx-auto h-[30rem] select-none"
   >
-    <!-- Installation Path Section -->
-    <div class="grow flex flex-col gap-6 text-neutral-300">
-      <h2
-        class="text-3xl text-neutral-100 text-center italic"
-        style="font-family: 'ABC ROM Black Italic', sans-serif"
-      >
-        {{ $t('install.gpuPicker.title') }}
-      </h2>
+    <h2
+      class="text-3xl text-neutral-100 text-center italic"
+      style="font-family: 'ABC ROM Black Italic', sans-serif"
+    >
+      {{ $t('install.gpuPicker.title') }}
+    </h2>
 
-      <!-- GPU Selection buttons -->
-      <div class="flex gap-6 justify-center mt-8">
-        <!-- Apple Metal -->
-        <HardwareOption
-          v-if="platform === 'darwin'"
-          :image-path="'/assets/images/apple-mps-logo.png'"
-          placeholder-text="Apple Metal"
-          subtitle="Apple Metal"
-          value="mps"
-          :selected="selected === 'mps'"
-          :recommended="true"
-          @click="pickGpu('mps')"
-        />
-        <!-- CPU -->
-        <HardwareOption
-          placeholder-text="CPU"
-          subtitle="Subtitle"
-          value="cpu"
-          :selected="selected === 'cpu'"
-          @click="pickGpu('cpu')"
-        />
-        <!-- Manual Install -->
-        <HardwareOption
-          placeholder-text="Manual Install"
-          subtitle="Subtitle"
-          value="unsupported"
-          :selected="selected === 'unsupported'"
-          @click="pickGpu('unsupported')"
-        />
-      </div>
+    <!-- GPU Selection buttons -->
+    <div class="flex gap-6 justify-center items-center">
+      <!-- Apple Metal -->
+      <HardwareOption
+        v-if="platform === 'darwin'"
+        :image-path="'/assets/images/apple-mps-logo.png'"
+        placeholder-text="Apple Metal"
+        subtitle="Apple Metal"
+        value="mps"
+        :selected="selected === 'mps'"
+        :recommended="true"
+        @click="pickGpu('mps')"
+      />
+      <!-- CPU -->
+      <HardwareOption
+        placeholder-text="CPU"
+        subtitle="Subtitle"
+        value="cpu"
+        :selected="selected === 'cpu'"
+        @click="pickGpu('cpu')"
+      />
+      <!-- Manual Install -->
+      <HardwareOption
+        placeholder-text="Manual Install"
+        subtitle="Subtitle"
+        value="unsupported"
+        :selected="selected === 'unsupported'"
+        @click="pickGpu('unsupported')"
+      />
+    </div>
 
-      <!-- Description text -->
-      <div class="mt-8 text-center text-base text-neutral-300 px-12">
-        <p v-if="selected === 'mps'" class="leading-relaxed">
-          {{ $t('install.gpuPicker.appleMetalDescription') }}
-        </p>
-        <p v-if="selected === 'cpu'" class="leading-relaxed">
-          {{ $t('install.gpuPicker.cpuDescription') }}
-        </p>
-        <p v-if="selected === 'unsupported'" class="leading-relaxed">
-          {{ $t('install.gpuPicker.manualDescription') }}
-        </p>
-      </div>
+    <!-- Description text -->
+    <div class="text-center text-base text-neutral-300 px-12">
+      <p v-if="selected === 'mps'" class="leading-relaxed">
+        {{ $t('install.gpuPicker.appleMetalDescription') }}
+      </p>
+      <p v-if="selected === 'cpu'" class="leading-relaxed">
+        {{ $t('install.gpuPicker.cpuDescription') }}
+      </p>
+      <p v-if="selected === 'unsupported'" class="leading-relaxed">
+        {{ $t('install.gpuPicker.manualDescription') }}
+      </p>
     </div>
   </div>
 </template>
