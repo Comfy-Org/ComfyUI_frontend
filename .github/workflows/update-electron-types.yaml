@@ -35,12 +35,12 @@ jobs:
             electron-types-tools-cache-${{ runner.os }}-
 
       - name: Update electron types
-        run: pnpm install @comfyorg/comfyui-electron-types@latest
+        run: pnpm install --workspace-root @comfyorg/comfyui-electron-types@latest
 
       - name: Get new version
         id: get-version
         run: |
-          NEW_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./pnpm-lock.yaml')).packages['node_modules/@comfyorg/comfyui-electron-types'].version)")
+          NEW_VERSION=$(pnpm list @comfyorg/comfyui-electron-types --json --depth=0 | jq -r '.[0].version')
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request

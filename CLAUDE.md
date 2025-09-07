@@ -82,6 +82,44 @@ When referencing Comfy-Org repos:
 2. Use GitHub API for branches/PRs/metadata
 3. Curl GitHub website if needed
 
+## Settings and Feature Flags Quick Reference
+
+### Settings Usage
+```typescript
+const settingStore = useSettingStore()
+const value = settingStore.get('Comfy.SomeSetting')     // Get setting
+await settingStore.set('Comfy.SomeSetting', newValue)   // Update setting
+```
+
+### Dynamic Defaults
+```typescript
+{
+  id: 'Comfy.Example.Setting',
+  defaultValue: () => window.innerWidth < 1024 ? 'small' : 'large'  // Runtime context
+}
+```
+
+### Version-Based Defaults
+```typescript
+{
+  id: 'Comfy.Example.Feature',
+  defaultValue: 'legacy',
+  defaultsByInstallVersion: { '1.25.0': 'enhanced' }  // Gradual rollout
+}
+```
+
+### Feature Flags
+```typescript
+if (api.serverSupportsFeature('feature_name')) {  // Check capability
+  // Use enhanced feature
+}
+const value = api.getServerFeature('config_name', defaultValue)  // Get config
+```
+
+**Documentation:**
+- Settings system: `docs/SETTINGS.md`
+- Feature flags system: `docs/FEATURE_FLAGS.md`
+
 ## Common Pitfalls
 
 - NEVER use `any` type - use proper TypeScript types
@@ -89,3 +127,6 @@ When referencing Comfy-Org repos:
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
+- NEVER use `dark:` prefix - always use `dark-theme:` for dark mode styles, for example: `dark-theme:text-white dark-theme:bg-black`
+- NEVER use `:class="[]"` to merge class names - always use `import { cn } from '@/utils/tailwindUtil'`, for example: `<div :class="cn('bg-red-500', { 'bg-blue-500': condition })" />`
+

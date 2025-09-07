@@ -170,8 +170,20 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "デフォルトのワークフローを読み込む"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "カスタムノードマネージャ"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "カスタムノード（ベータ版）"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "カスタムノード（レガシー）"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "マネージャーメニュー（レガシー）"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "不足しているパックをインストール"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "更新を確認"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "プログレスダイアログの切り替え"
@@ -184,6 +196,12 @@
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "選択したノードのマスクエディタを開く"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "モデルのアンロード"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "モデルと実行キャッシュのアンロード"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "新しい空のワークフロー"

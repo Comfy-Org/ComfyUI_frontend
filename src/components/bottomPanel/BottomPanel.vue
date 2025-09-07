@@ -40,8 +40,8 @@
         </div>
       </TabList>
     </Tabs>
-    <!-- h-0 to force the div to flex-grow -->
-    <div class="flex-grow h-0">
+    <!-- h-0 to force the div to grow -->
+    <div class="grow h-0">
       <ExtensionSlot
         v-if="
           bottomPanelStore.bottomPanelVisible &&
