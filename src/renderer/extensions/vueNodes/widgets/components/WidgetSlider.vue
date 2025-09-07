@@ -74,9 +74,9 @@ const precision = computed(() => {
 
 // Calculate the step value based on precision or widget options
 const stepValue = computed(() => {
-  // If step is explicitly defined in options, use it
-  if (props.widget.options?.step !== undefined) {
-    return String(props.widget.options.step)
+  // Use step2 (correct input spec value) instead of step (legacy 10x value)
+  if (props.widget.options?.step2 !== undefined) {
+    return String(props.widget.options.step2)
   }
   // Otherwise, derive from precision
   if (precision.value !== undefined) {

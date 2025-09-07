@@ -825,7 +825,11 @@
     "Ungroup selected group nodes": "取消群組選取的群組節點",
     "Unload Models": "卸載模型",
     "Unload Models and Execution Cache": "卸載模型與執行快取",
+    "Unlock Canvas": "解除鎖定畫布",
+    "Unpack the selected Subgraph": "解包所選子圖",
+    "View": "檢視",
     "Workflow": "工作流程",
+    "Workflows": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小"
   },

@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -240,7 +241,7 @@ export const useReleaseStore = defineStore('release', () => {
     try {
       // Ensure system stats are loaded
       if (!systemStatsStore.systemStats) {
-        await systemStatsStore.fetchSystemStats()
+        await until(systemStatsStore.isInitialized)
       }
 
       const fetchedReleases = await releaseService.getReleases({

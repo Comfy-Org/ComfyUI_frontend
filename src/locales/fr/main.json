@@ -825,7 +825,11 @@
     "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
     "Unload Models": "Décharger les modèles",
     "Unload Models and Execution Cache": "Décharger les modèles et le cache d'exécution",
+    "Unlock Canvas": "Déverrouiller le canevas",
+    "Unpack the selected Subgraph": "Décompresser le Subgraph sélectionné",
+    "View": "Afficher",
     "Workflow": "Flux de travail",
+    "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
     "Zoom to fit": "Ajuster à l'écran"

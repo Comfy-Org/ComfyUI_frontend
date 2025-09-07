@@ -371,15 +371,6 @@ class LayoutStoreImpl implements LayoutStore {
   updateSlotLayout(key: string, layout: SlotLayout): void {
     const existing = this.slotLayouts.get(key)
 
-    if (!existing) {
-      logger.debug('Adding slot:', {
-        nodeId: layout.nodeId,
-        type: layout.type,
-        index: layout.index,
-        bounds: layout.bounds
-      })
-    }
-
     if (existing) {
       // Update spatial index
       this.slotSpatialIndex.update(key, layout.bounds)
@@ -417,6 +408,15 @@ class LayoutStoreImpl implements LayoutStore {
       // Remove from spatial index
       this.slotSpatialIndex.remove(key)
     }
+  }
+
+  /**
+   * Clear all slot layouts and their spatial index (O(1) operations)
+   * Used when switching rendering modes (Vue ↔ LiteGraph)
+   */
+  clearAllSlotLayouts(): void {
+    this.slotLayouts.clear()
+    this.slotSpatialIndex.clear()
   }
 
   /**
@@ -1178,31 +1178,25 @@ class LayoutStoreImpl implements LayoutStore {
     const rerouteId = Number(rerouteIdStr) as RerouteId
 
     if (change.action === 'delete') {
-      this.handleRerouteDelete(rerouteId, rerouteIdStr)
-    } else if (change.action === 'update' || change.action === 'add') {
-      this.handleRerouteAddOrUpdate(rerouteId, rerouteIdStr)
+      this.handleRerouteDelete(rerouteId)
+    } else {
+      this.handleRerouteUpsert(rerouteId)
     }
   }
 
   /**
    * Handle reroute deletion
    */
-  private handleRerouteDelete(
-    rerouteId: RerouteId,
-    rerouteIdStr: string
-  ): void {
+  private handleRerouteDelete(rerouteId: RerouteId): void {
     this.rerouteLayouts.delete(rerouteId)
-    this.rerouteSpatialIndex.remove(rerouteIdStr)
+    this.rerouteSpatialIndex.remove(String(rerouteId))
   }
 
   /**
-   * Handle reroute add or update
+   * Handle reroute upsert (update if exists, create if not)
    */
-  private handleRerouteAddOrUpdate(
-    rerouteId: RerouteId,
-    rerouteIdStr: string
-  ): void {
-    const rerouteData = this.yreroutes.get(rerouteIdStr)
+  private handleRerouteUpsert(rerouteId: RerouteId): void {
+    const rerouteData = this.yreroutes.get(String(rerouteId))
     if (!rerouteData) return
 
     const position = rerouteData.get('position') as Point
@@ -1351,6 +1345,3 @@ class LayoutStoreImpl implements LayoutStore {
 
 // Create singleton instance
 export const layoutStore = new LayoutStoreImpl()
-
-// Export types for convenience
-export type { LayoutStore } from '@/renderer/core/layout/types'
