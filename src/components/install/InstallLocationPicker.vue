@@ -63,14 +63,14 @@
               root: 'border-0 mb-0'
             },
             header: {
-              root: 'bg-transparent border-0',
+              root: 'border-0',
               content:
-                'text-neutral-400 hover:text-neutral-300 px-0 py-3 flex items-center gap-3',
+                'text-neutral-400 hover:text-neutral-300 px-4 py-3 flex items-center gap-3',
               toggleicon: 'text-xs order-first mr-0'
             },
             content: {
               root: 'bg-transparent border-0',
-              content: 'text-neutral-500 text-sm pl-7 pb-3 pt-0'
+              content: 'text-neutral-500 text-sm pl-11 pb-3 pt-0'
             }
           }"
         >
@@ -202,8 +202,15 @@ const onFocus = async () => {
   }
 
   .p-accordionheader {
-    background: transparent;
+    background: rgba(38, 38, 38, 0.5); /* neutral-800 with 50% opacity */
     border: none;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: rgba(64, 64, 64, 0.5); /* neutral-700 with 50% opacity */
+    }
   }
 
   .p-accordioncontent {
