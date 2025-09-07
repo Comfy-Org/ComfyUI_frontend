@@ -291,7 +291,7 @@ const onFocus = async () => {
     background: rgba(38, 38, 38, 0.5); /* neutral-800 with 50% opacity */
     border: none;
     border-radius: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     transition: background-color 0.2s ease;
 
     &:hover {
@@ -299,13 +299,24 @@ const onFocus = async () => {
     }
   }
 
+  /* When panel is expanded, adjust header border radius */
+  .p-accordionpanel-active {
+    .p-accordionheader {
+      border-radius: 12px 12px 0 0; /* Round only top corners when expanded */
+      margin-bottom: 0;
+    }
+  }
+
   .p-accordioncontent {
-    background: transparent;
+    background: rgba(38, 38, 38, 0.5); /* Same background as header */
     border: none;
+    border-radius: 0 0 12px 12px; /* Round only bottom corners */
+    margin-bottom: 8px;
   }
 
   .p-accordioncontent-content {
     background: transparent;
+    padding: 12px 20px 20px 20px; /* Add padding for better spacing */
   }
 
   /* Override default chevron icons to use right/down */
