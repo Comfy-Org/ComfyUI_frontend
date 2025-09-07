@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-full max-w-3xl mx-auto h-[42rem] select-none">
+  <div class="flex flex-col w-full max-w-3xl mx-auto h-[40rem] select-none">
     <!-- Title at top -->
     <h2
       class="text-3xl text-neutral-100 text-center italic"
@@ -9,7 +9,7 @@
     </h2>
 
     <!-- GPU Selection buttons - takes up remaining space and centers content -->
-    <div class="flex-1 flex gap-6 justify-center items-center">
+    <div class="flex-1 flex gap-6 justify-center items-center pt-10">
       <!-- Apple Metal -->
       <HardwareOption
         v-if="platform === 'darwin'"
