@@ -595,6 +595,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
   /**
    * Handles node addition to the graph - sets up Vue state and spatial indexing
+   * Defers position extraction until after potential configure() calls
    */
   const handleNodeAdded = (
     node: LGraphNode,
@@ -618,26 +619,34 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       lastUpdate: performance.now(),
       culled: false
     })
-    nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-    nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
-    attachMetadata(node)
 
-    // Add to spatial index for viewport culling
-    const bounds: Bounds = {
-      x: node.pos[0],
-      y: node.pos[1],
-      width: node.size[0],
-      height: node.size[1]
-    }
-    spatialIndex.insert(id, bounds, id)
+    // Schedule position extraction after current call stack to allow configure() to complete
+    void nextTick(() => {
+      // Extract actual positions after configure() has potentially updated them
+      const finalPos = { x: node.pos[0], y: node.pos[1] }
+      const finalSize = { width: node.size[0], height: node.size[1] }
 
-    // Add node to layout store
-    setSource(LayoutSource.Canvas)
-    void createNode(id, {
-      position: { x: node.pos[0], y: node.pos[1] },
-      size: { width: node.size[0], height: node.size[1] },
-      zIndex: node.order || 0,
-      visible: true
+      nodePositions.set(id, finalPos)
+      nodeSizes.set(id, finalSize)
+      attachMetadata(node)
+
+      // Add to spatial index for viewport culling with final positions
+      const bounds: Bounds = {
+        x: finalPos.x,
+        y: finalPos.y,
+        width: finalSize.width,
+        height: finalSize.height
+      }
+      spatialIndex.insert(id, bounds, id)
+
+      // Add node to layout store with final positions
+      setSource(LayoutSource.Canvas)
+      void createNode(id, {
+        position: finalPos,
+        size: finalSize,
+        zIndex: node.order || 0,
+        visible: true
+      })
     })
 
     // Call original callback if provided
