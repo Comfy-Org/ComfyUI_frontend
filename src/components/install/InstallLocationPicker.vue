@@ -65,7 +65,7 @@
             header: {
               root: 'border-0',
               content:
-                'text-neutral-400 hover:text-neutral-300 px-4 py-3 flex items-center gap-3',
+                'text-neutral-400 hover:text-neutral-300 px-4 py-2 flex items-center gap-3',
               toggleicon: 'text-xs order-first mr-0'
             },
             content: {
@@ -204,7 +204,7 @@ const onFocus = async () => {
   .p-accordionheader {
     background: rgba(38, 38, 38, 0.5); /* neutral-800 with 50% opacity */
     border: none;
-    border-radius: 6px;
+    border-radius: 12px;
     margin-bottom: 8px;
     transition: background-color 0.2s ease;
 
