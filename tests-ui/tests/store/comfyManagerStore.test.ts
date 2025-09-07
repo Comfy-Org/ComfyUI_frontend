@@ -457,7 +457,7 @@ describe('useComfyManagerStore', () => {
         }
       }
 
-      ;(mockManagerService.listInstalledPacks as any).mockResolvedValue(
+      vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
         mockPacks
       )
 
@@ -498,7 +498,7 @@ describe('useComfyManagerStore', () => {
         }
       }
 
-      ;(mockManagerService.listInstalledPacks as any).mockResolvedValue(
+      vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
         mockPacks
       )
 
@@ -520,7 +520,7 @@ describe('useComfyManagerStore', () => {
         }
       }
 
-      ;(mockManagerService.listInstalledPacks as any).mockResolvedValue(
+      vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
         mockPacks
       )
 

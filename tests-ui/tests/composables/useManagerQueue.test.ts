@@ -197,7 +197,8 @@ describe('useManagerQueue', () => {
         ver: '2.0.0'
       })
 
-      // Version suffixed keys should not exist
+      // Version suffixed keys should not exist after normalization
+      // The pack should be accessible by its base name only (without @version)
       expect(installedPacks.value['ComfyUI-GGUF@1_1_4']).toBeUndefined()
     })
 
@@ -211,8 +212,8 @@ describe('useManagerQueue', () => {
         installed_packs: undefined
       }
 
-      // Should not throw
-      expect(() => queue.updateTaskState(mockState)).not.toThrow()
+      // Just call the function - if it throws, the test will fail automatically
+      queue.updateTaskState(mockState)
 
       // installedPacks should remain unchanged
       expect(installedPacks.value).toEqual({})
