@@ -4,7 +4,6 @@ import { ref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodeEventHandlers } from '@/composables/graph/useNodeEventHandlers'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { LayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 
 vi.mock('@/stores/graphStore')
 vi.mock('@/renderer/core/layout/operations/layoutMutations')
@@ -34,8 +33,7 @@ interface MockCanvasStore {
   updateSelectedItems: ReturnType<typeof vi.fn>
 }
 
-interface MockLayoutMutations
-  extends Pick<LayoutMutations, 'setSource' | 'bringNodeToFront'> {
+interface MockLayoutMutations {
   setSource: ReturnType<typeof vi.fn>
   bringNodeToFront: ReturnType<typeof vi.fn>
 }
