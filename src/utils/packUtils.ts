@@ -15,10 +15,6 @@ import { mapKeys } from 'es-toolkit/compat'
  *
  * @param packId - The pack ID that may contain a version suffix
  * @returns The normalized pack ID without version suffix
- *
- * @example
- * normalizePackId("ComfyUI-GGUF") // "ComfyUI-GGUF"
- * normalizePackId("ComfyUI-GGUF@1_1_4") // "ComfyUI-GGUF"
  */
 export function normalizePackId(packId: string): string {
   return packId.split('@')[0]
@@ -31,17 +27,6 @@ export function normalizePackId(packId: string): string {
  *
  * @param packs - Record of packs with potentially versioned keys
  * @returns Record with normalized keys
- *
- * @example
- * normalizePackKeys({
- *   "ComfyUI-GGUF": { ver: "1.1.4", enabled: true },
- *   "ComfyUI-Manager@2_0_0": { ver: "2.0.0", enabled: false }
- * })
- * // Returns:
- * // {
- * //   "ComfyUI-GGUF": { ver: "1.1.4", enabled: true },
- * //   "ComfyUI-Manager": { ver: "2.0.0", enabled: false }
- * // }
  */
 export function normalizePackKeys<T>(
   packs: Record<string, T>
