@@ -79,7 +79,10 @@
               {{ $t('install.locationPicker.migrateFromExisting') }}
             </AccordionHeader>
             <AccordionContent>
-              {{ $t('install.locationPicker.migrateDescription') }}
+              <MigrationPicker
+                v-model:sourcePath="migrationSourcePath"
+                v-model:migrationItemIds="migrationItemIds"
+              />
             </AccordionContent>
           </AccordionPanel>
 
@@ -109,12 +112,19 @@ import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
 
 const installPath = defineModel<string>('installPath', { required: true })
 const pathError = defineModel<string>('pathError', { required: true })
+const migrationSourcePath = defineModel<string>('migrationSourcePath', {
+  required: false
+})
+const migrationItemIds = defineModel<string[]>('migrationItemIds', {
+  required: false
+})
 const pathExists = ref(false)
 const nonDefaultDrive = ref(false)
 const inputTouched = ref(false)
