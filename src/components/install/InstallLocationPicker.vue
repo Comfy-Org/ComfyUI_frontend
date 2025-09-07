@@ -286,8 +286,10 @@ const onFocus = async () => {
     background: rgba(38, 38, 38, 0.5); /* neutral-800 with 50% opacity */
     border: none;
     border-radius: 12px;
-    margin-bottom: 8px;
-    transition: background-color 0.2s ease;
+    margin: 0.5rem 0 0 0;
+    transition:
+      background-color 0.2s ease,
+      border-radius 0.5s ease;
 
     &:hover {
       background: rgba(64, 64, 64, 0.5); /* neutral-700 with 50% opacity */
@@ -298,7 +300,6 @@ const onFocus = async () => {
   .p-accordionpanel-active {
     .p-accordionheader {
       border-radius: 12px 12px 0 0; /* Round only top corners when expanded */
-      margin-bottom: 0;
     }
   }
 
@@ -306,7 +307,6 @@ const onFocus = async () => {
     background: rgba(38, 38, 38, 0.5); /* Same background as header */
     border: none;
     border-radius: 0 0 12px 12px; /* Round only bottom corners */
-    margin-bottom: 8px;
   }
 
   .p-accordioncontent-content {
