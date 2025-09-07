@@ -1,30 +1,9 @@
 import { api } from '@/scripts/api'
-import {
-  generateAllStandardPaths,
-  getDirectoryConfig,
-  getLegacyDirectoryOrder
-} from '@/utils/modelPaths'
+import { generateAllStandardPaths } from '@/utils/modelPaths'
 
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'
 const MISSING_TAG = 'missing'
-
-// Legacy model directory order (excluding blacklisted configs, custom_nodes)
-const LEGACY_ORDER = [
-  'checkpoints',
-  'clip',
-  'clip_vision',
-  'controlnet',
-  'diffusion_models',
-  'embeddings',
-  'gligen',
-  'hypernetworks',
-  'loras',
-  'style_models',
-  'unet',
-  'upscale_models',
-  'vae'
-] as const
 
 // Types for asset API responses
 interface AssetResponse {
@@ -65,10 +44,9 @@ function createAssetService() {
    * Gets a list of model folder keys from the asset API
    *
    * Logic:
-   * 1. Always start with LEGACY_ORDER
-   * 2. Find any unknown folders
-   * 3. Sort unknowns alphabetically and append
-   * 4. Map to final format with standard paths
+   * 1. Extract directory names directly from asset tags
+   * 2. Filter out blacklisted directories
+   * 3. Return alphabetically sorted directories with assets
    *
    * @returns The list of model folder keys
    */
@@ -76,31 +54,17 @@ function createAssetService() {
     { name: string; folders: string[] }[]
   > {
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?tags=${MODELS_TAG}`,
+      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG}`,
       'model folders'
     )
 
-    // Get all standard model directories, excluding blacklisted ones to match experimental API
-    const folderBlacklist = ['configs', 'custom_nodes']
-    const allStandardDirectories = new Set(
-      getLegacyDirectoryOrder().filter((dir) => !folderBlacklist.includes(dir))
-    )
+    // Blacklist directories we don't want to show
+    const blacklistedDirectories = ['configs']
 
-    // Get all valid model directory names and aliases from the config
-    const validModelFolders = new Set<string>()
-    for (const directory of allStandardDirectories) {
-      const config = getDirectoryConfig(directory)
-      if (!config) continue
-      validModelFolders.add(directory)
-      for (const alias of config.aliases) {
-        validModelFolders.add(alias)
-      }
-    }
-
-    // Extract folder names from assets, but only include valid model directories and exclude missing assets
+    // Extract directory names from assets that actually exist, exclude missing assets
     const discoveredFolders = new Set<string>()
     if (data?.assets) {
-      const validTags = data.assets
+      const directoryTags = data.assets
         .filter((asset): asset is Asset =>
           Boolean(
             asset &&
@@ -109,27 +73,20 @@ function createAssetService() {
           )
         )
         .flatMap((asset) => asset.tags)
-        .filter((tag) => tag !== MODELS_TAG && validModelFolders.has(tag))
+        .filter(
+          (tag) => tag !== MODELS_TAG && !blacklistedDirectories.includes(tag)
+        )
 
-      for (const tag of validTags) {
+      for (const tag of directoryTags) {
         discoveredFolders.add(tag)
       }
     }
 
-    // Combine all standard directories with discovered valid folders
-    const allFolders = new Set([
-      ...allStandardDirectories,
-      ...discoveredFolders
-    ])
+    // Return only discovered folders in alphabetical order
+    const sortedFolders = Array.from(discoveredFolders).sort()
     const standardPaths = generateAllStandardPaths()
 
-    // Legacy order first, then any unknown folders alphabetically
-    const legacySet = new Set<string>(LEGACY_ORDER)
-    const unknownFolders = Array.from(allFolders)
-      .filter((folder) => !legacySet.has(folder))
-      .sort()
-
-    return [...LEGACY_ORDER, ...unknownFolders].map((name) => ({
+    return sortedFolders.map((name) => ({
       name,
       folders: standardPaths[name] || []
     }))
@@ -144,7 +101,7 @@ function createAssetService() {
     folder: string
   ): Promise<{ name: string; pathIndex: number }[]> {
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?tags=${MODELS_TAG},${folder}`,
+      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${folder}`,
       `models for ${folder}`
     )
 

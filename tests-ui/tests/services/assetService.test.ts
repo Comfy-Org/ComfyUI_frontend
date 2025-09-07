@@ -60,59 +60,126 @@ describe('assetService', () => {
   })
 
   describe('getAssetModelFolders', () => {
-    it('should return required folders with correct ordering and standard paths', async () => {
-      const assetsWithNonModelTags = [
+    it('should return only folders with actual assets', async () => {
+      const assetsWithRealisticTags = [
+        {
+          id: 'uuid-1',
+          name: 'checkpoint1.safetensors',
+          tags: ['models', 'checkpoints'],
+          size: 123456
+        },
+        {
+          id: 'uuid-2',
+          name: 'lora1.safetensors',
+          tags: ['models', 'loras'],
+          size: 654321
+        },
+        {
+          id: 'uuid-3',
+          name: 'vae1.safetensors',
+          tags: ['models', 'vae'],
+          size: 789012
+        }
+      ]
+      mockApiResponse(assetsWithRealisticTags)
+
+      const result = await assetService.getAssetModelFolders()
+
+      expect(api.fetchApi).toHaveBeenCalledWith('/assets?include_tags=models')
+
+      // Should return folders organized by secondary tags
+      expect(result).toHaveLength(3)
+
+      const folderNames = result.map((f) => f.name)
+      expect(folderNames).toEqual(['checkpoints', 'loras', 'vae'])
+
+      // All returned folders should have standard paths
+      expectStandardPaths('checkpoints', result)
+      expectStandardPaths('loras', result)
+      expectStandardPaths('vae', result)
+    })
+
+    it('should use tags directly as directory names', async () => {
+      const assetsWithDirectTags = [
         {
           id: 'uuid-1',
           name: 'model1.safetensors',
-          tags: ['models', 'checkpoints', 'images', 'backgrounds'],
+          tags: ['models', 'checkpoints'],
           size: 123456
         },
         {
           id: 'uuid-2',
           name: 'model2.safetensors',
-          tags: ['models', 'unknown_folder'],
+          tags: ['models', 'controlnet'],
           size: 654321
+        },
+        {
+          id: 'uuid-3',
+          name: 'model3.safetensors',
+          tags: ['models', 'embeddings'],
+          size: 789012
+        },
+        {
+          id: 'uuid-4',
+          name: 'model4.safetensors',
+          tags: ['models', 'vae'],
+          size: 111222
         }
       ]
-      mockApiResponse(assetsWithNonModelTags)
+      mockApiResponse(assetsWithDirectTags)
 
       const result = await assetService.getAssetModelFolders()
 
-      expect(api.fetchApi).toHaveBeenCalledWith('/assets?tags=models')
-
-      const numberOfStdDirs = 13
-      expect(result).toHaveLength(numberOfStdDirs)
-
-      // Verify ordering: legacy order first, then unknowns alphabetically
+      // Should use tags directly as directory names and sort alphabetically
+      expect(result).toHaveLength(4)
       const folderNames = result.map((f) => f.name)
-      const legacyOrder = [
+      expect(folderNames).toEqual([
         'checkpoints',
-        'clip',
-        'clip_vision',
         'controlnet',
-        'diffusion_models',
         'embeddings',
-        'gligen',
-        'hypernetworks',
-        'loras',
-        'style_models',
-        'unet',
-        'upscale_models',
         'vae'
+      ])
+
+      // All returned folders should have standard paths
+      expectStandardPaths('checkpoints', result)
+      expectStandardPaths('controlnet', result)
+      expectStandardPaths('embeddings', result)
+      expectStandardPaths('vae', result)
+    })
+
+    it('should filter out blacklisted tags even if they appear in assets', async () => {
+      const assetsWithBlacklisted = [
+        {
+          id: 'uuid-1',
+          name: 'checkpoint1.safetensors',
+          tags: ['models', 'checkpoints'],
+          size: 123456
+        },
+        {
+          id: 'uuid-2',
+          name: 'config.yaml',
+          tags: ['models', 'configs'], // Blacklisted
+          size: 654321
+        }
       ]
-      expect(folderNames).toEqual(legacyOrder)
+      mockApiResponse(assetsWithBlacklisted)
 
-      // All folders should have standard paths
-      for (const folderName of legacyOrder) {
-        expectStandardPaths(folderName, result)
-      }
+      const result = await assetService.getAssetModelFolders()
 
-      // Should NOT include non-model tags or blacklisted folders
-      expect(folderNames).not.toContain('images')
-      expect(folderNames).not.toContain('backgrounds')
+      // Should only return valid model directories, not blacklisted ones
+      expect(result).toHaveLength(1)
+      const folderNames = result.map((f) => f.name)
+      expect(folderNames).toEqual(['checkpoints'])
+
       expect(folderNames).not.toContain('configs')
-      expect(folderNames).not.toContain('custom_nodes')
+    })
+
+    it('should return empty array when no assets exist', async () => {
+      mockApiResponse([])
+
+      const result = await assetService.getAssetModelFolders()
+
+      expect(result).toHaveLength(0)
     })
 
     it('should handle fetch failure', async () => {
@@ -143,7 +210,7 @@ describe('assetService', () => {
       const result = await assetService.getAssetModels('checkpoints')
 
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?tags=models,checkpoints'
+        '/assets?include_tags=models,checkpoints'
       )
       expect(result).toEqual([
         expect.objectContaining({ name: 'model1.safetensors', pathIndex: 0 }),
