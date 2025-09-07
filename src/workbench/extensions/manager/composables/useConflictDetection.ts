@@ -79,43 +79,22 @@ export function useConflictDetection() {
   async function detectSystemEnvironment(): Promise<SystemEnvironment> {
     try {
       // Get system stats from store (primary source of system information)
-      const systemStatsStore = useSystemStatsStore()
       // Wait for systemStats to be initialized if not already
-      await until(systemStatsStore.isInitialized)
+      const { systemStats, isInitialized: systemStatsInitialized } =
+        useSystemStatsStore()
+      await until(systemStatsInitialized)
 
-      // Fetch version information from backend (with error resilience)
-      const [frontendVersion] = await Promise.allSettled([
-        fetchFrontendVersion()
-      ])
-
-      // Extract system information from system stats
-      const systemStats = systemStatsStore.systemStats
-      const comfyuiVersion = systemStats?.system?.comfyui_version || 'unknown'
-
-      // Use system stats for OS detection (more accurate than browser detection)
-      const systemOS = systemStats?.system?.os || 'unknown'
-
-      // Extract architecture from system stats device information
-      const architecture = extractArchitectureFromSystemStats(systemStats)
+      const frontendVersion = await fetchFrontendVersion()
 
       // Detect GPU/accelerator information from system stats
       const acceleratorInfo = extractAcceleratorInfo(systemStats)
 
-      // Enhanced OS detection using multiple sources
-      const detectedOS = detectOSFromSystemStats(systemOS, systemStats)
-
       const environment: SystemEnvironment = {
-        // Version information (use 'unknown' on failure)
-        comfyui_version: comfyuiVersion,
-        frontend_version:
-          frontendVersion.status === 'fulfilled'
-            ? frontendVersion.value
-            : 'unknown',
+        comfyui_version: systemStats?.system.comfyui_version ?? '',
+        frontend_version: frontendVersion,
 
         // Platform information (from system stats)
-        os: detectedOS,
-        platform_details: systemOS,
-        architecture: architecture,
+        os: systemStats?.system.os ?? '',
 
         // GPU/accelerator information
         available_accelerators: acceleratorInfo.available,
@@ -123,8 +102,7 @@ export function useConflictDetection() {
         gpu_memory_mb: acceleratorInfo.memory_mb,
 
         // Runtime information
-        node_env: import.meta.env.MODE as 'development' | 'production',
-        user_agent: navigator.userAgent
+        node_env: import.meta.env.MODE as 'development' | 'production'
       }
 
       systemEnvironment.value = environment
@@ -151,13 +129,10 @@ export function useConflictDetection() {
       const fallbackEnvironment: SystemEnvironment = {
         comfyui_version: 'unknown',
         frontend_version: frontendVersion,
-        os: detectOSFromSystemStats(navigator.platform),
-        platform_details: navigator.platform,
-        architecture: getArchitecture(),
+        os: 'unknown',
         available_accelerators: ['CPU'],
         primary_accelerator: 'CPU',
-        node_env: import.meta.env.MODE as 'development' | 'production',
-        user_agent: navigator.userAgent
+        node_env: import.meta.env.MODE as 'development' | 'production'
       }
 
       systemEnvironment.value = fallbackEnvironment
@@ -179,7 +154,7 @@ export function useConflictDetection() {
    *
    * @returns Promise that resolves to array of node pack requirements
    */
-  async function fetchPackageRequirements(): Promise<NodePackRequirements[]> {
+  async function fetchNodePackRequirements(): Promise<NodePackRequirements[]> {
     try {
       // Step 1: Use installed packs composable instead of direct API calls
       await startFetchInstalled() // Ensure data is loaded
@@ -251,8 +226,10 @@ export function useConflictDetection() {
       // not just the ones that exist in Registry (installedPacks)
       for (const installedPack of installedPacksWithVersions.value) {
         const packageId = installedPack.id
+
+        // !!!!! 질문: 여기서 버전 데이터가 왜 있음 ???
         const versionData = versionDataMap.get(packageId)
-        const installedVersion = installedPack.version || 'unknown'
+        const installedVersion = installedPack.version
 
         // Check if package is enabled using store method
         const isEnabled = managerStore.isPackEnabled(packageId)
@@ -321,7 +298,7 @@ export function useConflictDetection() {
    */
   function detectPackageConflicts(
     packageReq: NodePackRequirements,
-    sysEnv: SystemEnvironment
+    systemEnvInfo: SystemEnvironment
   ): ConflictDetectionResult {
     const conflicts: ConflictDetail[] = []
 
@@ -337,7 +314,7 @@ export function useConflictDetection() {
     if (!isCompatibleWithAll(packageReq.supported_comfyui_version)) {
       const versionConflict = checkVersionConflict(
         'comfyui_version',
-        sysEnv.comfyui_version,
+        systemEnvInfo.comfyui_version,
         packageReq.supported_comfyui_version!
       )
       if (versionConflict) conflicts.push(versionConflict)
@@ -347,7 +324,7 @@ export function useConflictDetection() {
     if (!isCompatibleWithAll(packageReq.supported_comfyui_frontend_version)) {
       const versionConflict = checkVersionConflict(
         'frontend_version',
-        sysEnv.frontend_version,
+        systemEnvInfo.frontend_version,
         packageReq.supported_comfyui_frontend_version!
       )
       if (versionConflict) conflicts.push(versionConflict)
@@ -355,7 +332,10 @@ export function useConflictDetection() {
 
     // 3. OS compatibility check
     if (!isCompatibleWithAll(packageReq.supported_os)) {
-      const osConflict = checkOSConflict(packageReq.supported_os!, sysEnv.os)
+      const osConflict = checkOSConflict(
+        packageReq.supported_os!,
+        systemEnvInfo.os
+      )
       if (osConflict) conflicts.push(osConflict)
     }
 
@@ -363,7 +343,7 @@ export function useConflictDetection() {
     if (!isCompatibleWithAll(packageReq.supported_accelerators)) {
       const acceleratorConflict = checkAcceleratorConflict(
         packageReq.supported_accelerators!,
-        sysEnv.available_accelerators
+        systemEnvInfo.available_accelerators
       )
       if (acceleratorConflict) conflicts.push(acceleratorConflict)
     }
@@ -516,16 +496,16 @@ export function useConflictDetection() {
 
     try {
       // 1. Collect system environment information
-      const sysEnv = await detectSystemEnvironment()
+      const systemEnvInfo = await detectSystemEnvironment()
 
       // 2. Collect package requirement information
-      const packageRequirements = await fetchPackageRequirements()
+      const packageRequirements = await fetchNodePackRequirements()
 
       // 3. Detect conflicts for each package (parallel processing)
       const conflictDetectionTasks = packageRequirements.map(
         async (packageReq) => {
           try {
-            return detectPackageConflicts(packageReq, sysEnv)
+            return detectPackageConflicts(packageReq, systemEnvInfo)
           } catch (error) {
             console.warn(
               `[ConflictDetection] Failed to detect conflicts for package ${packageReq.name}:`,
@@ -593,7 +573,7 @@ export function useConflictDetection() {
           success: true,
           summary,
           results: mergedConflicts,
-          detected_system_environment: sysEnv
+          detected_system_environment: systemEnvInfo
         }
         return response
       } else {
@@ -606,7 +586,7 @@ export function useConflictDetection() {
         success: true,
         summary,
         results: allResults,
-        detected_system_environment: sysEnv
+        detected_system_environment: systemEnvInfo
       }
 
       return response
@@ -771,18 +751,18 @@ export function useConflictDetection() {
 
     // Check ComfyUI version compatibility
     // First try latest_version (most accurate), then fallback to top level
-    const comfyuiVersionRequirement =
+    const comfyUIVersionRequirement =
       ('latest_version' in node
         ? node.latest_version?.supported_comfyui_version
         : null) || node.supported_comfyui_version
 
-    if (comfyuiVersionRequirement) {
+    if (comfyUIVersionRequirement) {
       const currentComfyUIVersion = systemStats.system?.comfyui_version
       if (currentComfyUIVersion && currentComfyUIVersion !== 'unknown') {
         const versionConflict = utilCheckVersionCompatibility(
           'comfyui_version',
           currentComfyUIVersion,
-          comfyuiVersionRequirement
+          comfyUIVersionRequirement
         )
         if (versionConflict) {
           conflicts.push(versionConflict)
@@ -925,155 +905,61 @@ async function fetchFrontendVersion(): Promise<string> {
 }
 
 /**
- * Detects system architecture from user agent.
- * Note: Browser architecture detection has limitations and may not be 100% accurate.
- * @returns Architecture string
- */
-function getArchitecture(): string {
-  const ua = navigator.userAgent.toLowerCase()
-  if (ua.includes('arm64') || ua.includes('aarch64')) return 'arm64'
-  if (ua.includes('arm')) return 'arm'
-  if (ua.includes('x86_64') || ua.includes('x64')) return 'x64'
-  if (ua.includes('x86')) return 'x86'
-  return 'unknown'
-}
-
-/**
- * Normalizes OS values from Registry API to match our SupportedOS type.
- * Registry Admin guide specifies: Windows, macOS, Linux
- * @param osValues OS values from Registry API
+ * Normalizes OS values from the Registry API to match our SupportedOS type.
+ *
+ * Rules:
+ * - Registry Admin guide specifies: Windows, macOS, Linux
+ * - null, undefined, or an empty array → treated as "supports all OS"
+ * - ['OS Independent'] → treated as "supports all OS"
+ * - Otherwise, map each string to a standard OS value
+ *
+ * @param osValues OS values from the Registry API
  * @returns Normalized OS values
  */
 function normalizeOSValues(
-  osValues: string[] | undefined
+  osValues: string[] | null | undefined
 ): Node['supported_os'] {
+  // Default set meaning "supports all OS"
+  const allOS: Node['supported_os'] = ['Windows', 'macOS', 'Linux']
+
+  // null, undefined, or empty array → all OS
   if (!osValues || osValues.length === 0) {
-    return []
+    return allOS
   }
 
-  return osValues.map((os) => {
-    // Map to standard Registry values (case-sensitive)
-    if (os === 'Windows' || os.toLowerCase().includes('win')) {
-      return 'Windows'
-    }
-    if (os === 'macOS' || os.toLowerCase().includes('mac') || os === 'darwin') {
-      return 'macOS'
-    }
-    if (os === 'Linux' || os.toLowerCase().includes('linux')) {
-      return 'Linux'
-    }
-    if (os.toLowerCase() === 'any') {
-      return 'any'
-    }
+  // If the array contains "OS Independent" → all OS
+  if (osValues.some((os) => os.toLowerCase() === 'os independent')) {
+    return allOS
+  }
 
-    // Return as-is if it matches standard format
-    return os
+  // Map each value to standardized OS names
+  return osValues.flatMap((os) => {
+    const lower = os.toLowerCase()
+    if (os === 'Windows' || lower.includes('win')) return ['Windows']
+    if (os === 'macOS' || lower.includes('mac') || os === 'darwin')
+      return ['macOS']
+    if (os === 'Linux' || lower.includes('linux')) return ['Linux']
+    // Ignore anything unrecognized
+    return []
   })
 }
 
 /**
- * Detects operating system from system stats OS string and additional system information.
+ * Detects operating system from system stats OS string.
  * @param systemOS OS string from system stats API
- * @param systemStats Full system stats object for additional context
  * @returns Operating system type
  */
-function detectOSFromSystemStats(
-  systemOS: string,
-  systemStats?: SystemStats | null
-): string {
+// TODO: move to type file
+type OS_TYPE = 'Windows' | 'Linux' | 'MacOS' | 'unknown'
+
+function systemStatsToSupportOs(systemOS: string): OS_TYPE {
   const os = systemOS.toLowerCase()
 
-  // Handle specific OS strings (return Registry standard format)
-  if (os.includes('darwin') || os.includes('mac')) return 'macOS'
+  if (os.includes('win')) return 'Windows'
   if (os.includes('linux')) return 'Linux'
-  if (os.includes('win') || os === 'nt') return 'Windows'
+  if (os.includes('darwin')) return 'MacOS'
 
-  // Handle Python's os.name values
-  if (os === 'posix') {
-    // posix could be macOS or Linux, need additional detection
-
-    // Method 1: Check for MPS device (Metal Performance Shaders = macOS)
-    if (systemStats?.devices) {
-      const hasMpsDevice = systemStats.devices.some(
-        (device) => device.type === 'mps'
-      )
-      if (hasMpsDevice) {
-        return 'macOS' // Registry standard format
-      }
-    }
-
-    // Method 2: Check user agent as fallback
-    const userAgent = navigator.userAgent.toLowerCase()
-    if (userAgent.includes('mac')) return 'macOS'
-    if (userAgent.includes('linux')) return 'Linux'
-
-    // Default to 'any' if we can't determine
-    return 'any'
-  }
-
-  return 'any'
-}
-
-/**
- * Extracts architecture information from system stats.
- * @param systemStats System stats data from API
- * @returns Architecture string
- */
-function extractArchitectureFromSystemStats(
-  systemStats: SystemStats | null
-): string {
-  try {
-    if (systemStats?.devices && systemStats.devices.length > 0) {
-      // Check if we have MPS device (indicates Apple Silicon)
-      const hasMpsDevice = systemStats.devices.some(
-        (device) => device.type === 'mps'
-      )
-
-      if (hasMpsDevice) {
-        // MPS is only available on Apple Silicon Macs
-        return 'arm64'
-      }
-
-      // Check device names for architecture hints (fallback)
-      for (const device of systemStats.devices) {
-        if (!device?.name || typeof device.name !== 'string') {
-          continue
-        }
-
-        const deviceName = device.name.toLowerCase()
-
-        // Apple Silicon detection
-        if (
-          deviceName.includes('apple m1') ||
-          deviceName.includes('apple m2') ||
-          deviceName.includes('apple m3') ||
-          deviceName.includes('apple m4')
-        ) {
-          return 'arm64'
-        }
-
-        // Intel/AMD detection
-        if (
-          deviceName.includes('intel') ||
-          deviceName.includes('amd') ||
-          deviceName.includes('nvidia') ||
-          deviceName.includes('geforce') ||
-          deviceName.includes('radeon')
-        ) {
-          return 'x64'
-        }
-      }
-    }
-
-    // Fallback to basic User-Agent detection if system stats don't provide clear info
-    return getArchitecture()
-  } catch (error) {
-    console.warn(
-      '[ConflictDetection] Failed to extract architecture from system stats:',
-      error
-    )
-    return getArchitecture()
-  }
+  return 'unknown'
 }
 
 /**
@@ -1172,17 +1058,17 @@ function extractAcceleratorInfo(systemStats: SystemStats | null): {
  * Unified version conflict check using Registry API version strings.
  * Uses shared versionUtil functions for consistent version handling.
  * @param type Type of version being checked
- * @param currentVersion Current version string
+ * @param currentVersion Current version
  * @param supportedVersion Supported version from Registry
  * @returns Conflict detail if conflict exists, null otherwise
  */
 function checkVersionConflict(
   type: ConflictType,
-  currentVersion: string,
-  supportedVersion: string
+  currentVersion?: string,
+  supportedVersion?: string
 ): ConflictDetail | null {
-  // If current version is unknown, assume compatible (no conflict)
-  if (currentVersion === 'unknown') {
+  // If current version is undefined, assume compatible (no conflict)
+  if (!currentVersion) {
     return null
   }
 
@@ -1227,15 +1113,17 @@ function checkOSConflict(
   supportedOS: Node['supported_os'],
   currentOS: string
 ): ConflictDetail | null {
-  if (supportedOS?.includes('any') || supportedOS?.includes(currentOS)) {
-    return null
+  const currentOsBySupportOS = systemStatsToSupportOs(currentOS)
+  const hasOSConflict = !supportedOS?.includes(currentOsBySupportOS)
+  if (hasOSConflict) {
+    return {
+      type: 'os',
+      current_value: currentOsBySupportOS,
+      required_value: supportedOS ? supportedOS?.join(', ') : ''
+    }
   }
 
-  return {
-    type: 'os',
-    current_value: currentOS,
-    required_value: supportedOS ? supportedOS?.join(', ') : ''
-  }
+  return null
 }
 
 /**
@@ -1306,7 +1194,6 @@ function generateSummary(
     accelerator: 0,
     banned: 0,
     pending: 0
-    // python_version: 0
   }
 
   const conflictsByTypeDetails: Record<ConflictType, string[]> = {
@@ -1317,7 +1204,6 @@ function generateSummary(
     accelerator: [],
     banned: [],
     pending: []
-    // python_version: [],
   }
 
   let bannedCount = 0
@@ -1366,7 +1252,6 @@ function getEmptySummary(): ConflictDetectionSummary {
       accelerator: [],
       banned: [],
       pending: []
-      // python_version: [],
     },
     last_check_timestamp: new Date().toISOString(),
     check_duration_ms: 0
