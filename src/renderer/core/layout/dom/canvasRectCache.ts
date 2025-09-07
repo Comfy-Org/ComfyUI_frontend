@@ -17,7 +17,7 @@ type Rect = DOMRectReadOnly
 const containerRef = shallowRef<HTMLElement | null>(null)
 
 // Bind bounding measurement once; element may be resolved later
-const { x, y, width, height } = useElementBounding(containerRef, {
+const { x, y, width, height, update } = useElementBounding(containerRef, {
   // Track layout changes from resize; scrolling is disabled globally
   windowResize: true,
   windowScroll: false,
@@ -32,6 +32,8 @@ function ensureContainer() {
     containerRef.value = document.getElementById(
       'graph-canvas-container'
     ) as HTMLElement | null
+    // Force an immediate measurement once the element is resolved
+    if (containerRef.value) update()
   }
 }
 
@@ -61,18 +63,5 @@ export function getCanvasRect(): Rect {
 
 export function getCanvasClientOrigin() {
   ensureContainer()
-  const el = containerRef.value
-  // VueUse refs can be 0 on first read right after binding
-  // if the element was assigned in the same tick. In that case,
-  // synchronously read from getBoundingClientRect as a fallback
-  // to avoid returning a zero offset during initialization.
-  const lx = x.value || 0
-  const ly = y.value || 0
-  // Also check width/height to distinguish a legitimate (0,0)
-  // from an unmeasured state (all zeros)
-  if (el && lx === 0 && ly === 0 && width.value === 0 && height.value === 0) {
-    const rect = el.getBoundingClientRect()
-    return { left: rect.left, top: rect.top }
-  }
-  return { left: lx, top: ly }
+  return { left: x.value || 0, top: y.value || 0 }
 }
