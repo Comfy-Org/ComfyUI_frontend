@@ -9,6 +9,7 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
+import '../src/assets/css/fonts.css'
 import '../src/assets/css/style.css'
 import { i18n } from '../src/i18n'
 import '../src/lib/litegraph/public/css/litegraph.css'
