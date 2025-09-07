@@ -271,12 +271,14 @@ export const CpuSelected: Story = {
       // Wait for component to be fully mounted
       await nextTick()
 
-      // Select CPU option (second option)
-      const hardwareOptions = this.$el.querySelectorAll(
-        '.p-selectbutton-option'
-      )
-      if (hardwareOptions.length > 1) {
-        hardwareOptions[1].click() // Click CPU (second option)
+      // Find and click the CPU hardware option
+      const hardwareButtons = this.$el.querySelectorAll('.hardware-option')
+      // CPU is the button with "CPU" text
+      for (const button of hardwareButtons) {
+        if (button.textContent?.includes('CPU')) {
+          button.click()
+          break
+        }
       }
     },
     template: '<InstallView />'
@@ -294,12 +296,14 @@ export const ManualInstall: Story = {
       // Wait for component to be fully mounted
       await nextTick()
 
-      // Select Manual Install option (third option)
-      const hardwareOptions = this.$el.querySelectorAll(
-        '.p-selectbutton-option'
-      )
-      if (hardwareOptions.length > 2) {
-        hardwareOptions[2].click() // Click Manual Install (third option)
+      // Find and click the Manual Install hardware option
+      const hardwareButtons = this.$el.querySelectorAll('.hardware-option')
+      // Manual Install is the button with "Manual Install" text
+      for (const button of hardwareButtons) {
+        if (button.textContent?.includes('Manual Install')) {
+          button.click()
+          break
+        }
       }
     },
     template: '<InstallView />'
