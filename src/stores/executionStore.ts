@@ -5,6 +5,7 @@ import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   DisplayComponentWsMessage,
   ExecutedWsMessage,
@@ -28,7 +29,6 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
-import { useCanvasStore } from './graphStore'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 
 interface QueuedPrompt {

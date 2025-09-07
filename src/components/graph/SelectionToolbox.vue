@@ -63,9 +63,9 @@ import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionTo
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import MoreOptions from './selectionToolbox/MoreOptions.vue'

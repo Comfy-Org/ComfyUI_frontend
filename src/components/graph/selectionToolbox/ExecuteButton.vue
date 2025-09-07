@@ -21,8 +21,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { isOutputNode } from '@/utils/nodeFilterUtil'
 

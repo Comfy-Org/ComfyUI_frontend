@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 /**

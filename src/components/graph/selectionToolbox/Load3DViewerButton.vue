@@ -16,7 +16,10 @@
 import Button from 'primevue/button'
 
 import { t } from '@/i18n'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 

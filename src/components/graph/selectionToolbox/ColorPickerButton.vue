@@ -62,7 +62,7 @@ import {
   LiteGraph,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'

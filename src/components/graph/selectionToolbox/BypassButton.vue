@@ -20,6 +20,7 @@
 import Button from 'primevue/button'
 import { useI18n } from 'vue-i18n'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 const { t } = useI18n()

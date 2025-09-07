@@ -7,7 +7,7 @@ import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
