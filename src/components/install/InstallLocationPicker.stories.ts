@@ -17,7 +17,33 @@ const meta: Meta<typeof InstallLocationPicker> = {
         { name: 'neutral-950', value: '#0a0a0a' }
       ]
     }
-  }
+  },
+  decorators: [
+    () => {
+      // Mock electron API
+      ;(window as any).electronAPI = {
+        getSystemPaths: () =>
+          Promise.resolve({
+            defaultInstallPath: '/Users/username/ComfyUI'
+          }),
+        validateInstallPath: () =>
+          Promise.resolve({
+            isValid: true,
+            exists: false,
+            canWrite: true,
+            freeSpace: 100000000000,
+            requiredSpace: 10000000000,
+            isNonDefaultDrive: false
+          }),
+        validateComfyUISource: () =>
+          Promise.resolve({
+            isValid: true
+          }),
+        showDirectoryPicker: () => Promise.resolve('/Users/username/ComfyUI')
+      }
+      return { template: '<story />' }
+    }
+  ]
 }
 
 export default meta
