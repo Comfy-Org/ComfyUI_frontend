@@ -1,5 +1,4 @@
 import { useEventListener, whenever } from '@vueuse/core'
-import { mapKeys } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
@@ -14,6 +13,7 @@ import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
 import { TaskLog } from '@/types/comfyManagerTypes'
 import { components } from '@/types/generatedManagerTypes'
+import { normalizePackKeys } from '@/utils/packUtils'
 
 type InstallPackParams = components['schemas']['InstallPackParams']
 type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
@@ -185,12 +185,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const refreshInstalledList = async () => {
     const packs = await managerService.listInstalledPacks()
     if (packs) {
-      // The keys are 'cleaned' by stripping the version suffix.
-      // The pack object itself (the value) still contains the version info.
-      const packsWithCleanedKeys = mapKeys(packs, (_value, key) => {
-        return key.split('@')[0]
-      })
-      installedPacks.value = packsWithCleanedKeys
+      // Normalize pack keys to ensure consistent access
+      installedPacks.value = normalizePackKeys(packs)
     }
     isStale.value = false
   }
