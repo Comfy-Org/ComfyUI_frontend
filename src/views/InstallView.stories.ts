@@ -322,7 +322,7 @@ export const ErrorState: Story = {
         freeSpace: 100000000000,
         requiredSpace: 10000000000,
         isNonDefaultDrive: false,
-        error: 'Permission denied: Cannot write to this directory'
+        error: 'Story mock: Example error state'
       })
 
     return {
