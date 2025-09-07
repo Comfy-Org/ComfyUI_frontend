@@ -422,6 +422,7 @@ function getConfig(this: LGraphNode, widgetName: string) {
  * @param node The node to convert the widget to an input slot for.
  * @param widget The widget to convert to an input slot.
  * @returns The input slot that was converted from the widget or undefined if the widget is not found.
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export function convertToInput(
   node: LGraphNode,
@@ -592,7 +593,7 @@ app.registerExtension({
       const node = LiteGraph.createNode('PrimitiveNode')
       if (!node) return r
 
-      app.graph.add(node)
+      this.graph?.add(node)
 
       // Calculate a position that wont directly overlap another node
       const pos: [number, number] = [

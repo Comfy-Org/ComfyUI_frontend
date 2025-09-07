@@ -57,14 +57,23 @@
           class="w-8 h-8 mt-4"
           style="--pc-spinner-color: #000"
         />
-        <Button
-          v-else
-          class="mt-4 w-32"
-          severity="secondary"
-          :label="$t('auth.signOut.signOut')"
-          icon="pi pi-sign-out"
-          @click="handleSignOut"
-        />
+        <div v-else class="mt-4 flex flex-col gap-2">
+          <Button
+            class="w-32"
+            severity="secondary"
+            :label="$t('auth.signOut.signOut')"
+            icon="pi pi-sign-out"
+            @click="handleSignOut"
+          />
+          <Button
+            v-if="!isApiKeyLogin"
+            class="w-32"
+            severity="danger"
+            :label="$t('auth.deleteAccount.deleteAccount')"
+            icon="pi pi-trash"
+            @click="handleDeleteAccount"
+          />
+        </div>
       </div>
 
       <!-- Login Section -->
@@ -100,6 +109,7 @@ const dialogService = useDialogService()
 const {
   loading,
   isLoggedIn,
+  isApiKeyLogin,
   isEmailProvider,
   userDisplayName,
   userEmail,
@@ -107,6 +117,7 @@ const {
   providerName,
   providerIcon,
   handleSignOut,
-  handleSignIn
+  handleSignIn,
+  handleDeleteAccount
 } = useCurrentUser()
 </script>

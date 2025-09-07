@@ -6,7 +6,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
   <div class="_sb_node_preview">
     <div class="_sb_table">
       <div
-        class="node_header overflow-ellipsis mr-4"
+        class="node_header text-ellipsis mr-4"
         :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,

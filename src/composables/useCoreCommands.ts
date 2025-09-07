@@ -1,5 +1,6 @@
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { ManagerUIState, useManagerState } from '@/composables/useManagerState'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
@@ -33,6 +34,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
@@ -274,6 +276,18 @@ export function useCoreCommands(): ComfyCommand[] {
           ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
         )
         app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Experimental.ToggleVueNodes',
+      label: () =>
+        `Experimental: ${
+          useSettingStore().get('Comfy.VueNodes.Enabled') ? 'Disable' : 'Enable'
+        } Vue Nodes`,
+      function: async () => {
+        const settingStore = useSettingStore()
+        const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
+        await settingStore.set('Comfy.VueNodes.Enabled', !current)
       }
     },
     {
@@ -680,35 +694,12 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Feedback',
-      icon: 'pi pi-megaphone',
-      label: 'Give Feedback',
-      versionAdded: '1.8.2',
-      function: () => {
-        dialogService.showIssueReportDialog({
-          title: t('g.feedback'),
-          subtitle: t('issueReport.feedbackTitle'),
-          panelProps: {
-            errorType: 'Feedback',
-            defaultFields: ['SystemStats', 'Settings']
-          }
-        })
-      }
-    },
-    {
       id: 'Comfy.ContactSupport',
       icon: 'pi pi-question',
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        dialogService.showIssueReportDialog({
-          title: t('issueReport.contactSupportTitle'),
-          subtitle: t('issueReport.contactSupportDescription'),
-          panelProps: {
-            errorType: 'ContactSupport',
-            defaultFields: ['Workflow', 'Logs', 'SystemStats', 'Settings']
-          }
-        })
+        window.open('https://support.comfy.org/', '_blank')
       }
     },
     {
@@ -732,12 +723,52 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Manager.CustomNodesManager',
+      id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
       icon: 'pi pi-puzzle',
-      label: 'Toggle the Custom Nodes Manager',
+      label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
-      function: () => {
-        dialogService.toggleManagerDialog()
+      function: async () => {
+        await useManagerState().openManager({
+          showToastOnLegacyError: true
+        })
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowUpdateAvailablePacks',
+      icon: 'pi pi-sync',
+      label: 'Check for Custom Node Updates',
+      versionAdded: '1.17.0',
+      function: async () => {
+        const managerState = useManagerState()
+        const state = managerState.managerUIState.value
+
+        // For DISABLED state, show error toast instead of opening settings
+        if (state === ManagerUIState.DISABLED) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('manager.notAvailable'),
+            life: 3000
+          })
+          return
+        }
+
+        await managerState.openManager({
+          initialTab: ManagerTab.UpdateAvailable,
+          showToastOnLegacyError: false
+        })
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowMissingPacks',
+      icon: 'pi pi-exclamation-circle',
+      label: 'Install Missing Custom Nodes',
+      versionAdded: '1.17.0',
+      function: async () => {
+        await useManagerState().openManager({
+          initialTab: ManagerTab.Missing,
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -816,6 +847,7 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
+
         const { node } = res
         canvas.select(node)
         canvasStore.updateSelectedItems()
@@ -842,8 +874,11 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.OpenManagerDialog',
       icon: 'mdi mdi-puzzle-outline',
       label: 'Manager',
-      function: () => {
-        dialogService.showManagerDialog()
+      function: async () => {
+        await useManagerState().openManager({
+          initialTab: ManagerTab.All,
+          showToastOnLegacyError: false
+        })
       }
     },
     {
@@ -900,6 +935,71 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const modelSelectorDialog = useModelSelectorDialog()
         modelSelectorDialog.show()
+      }
+    },
+    {
+      id: 'Comfy.Manager.CustomNodesManager.ShowLegacyCustomNodesMenu',
+      icon: 'pi pi-bars',
+      label: 'Custom Nodes (Legacy)',
+      versionAdded: '1.16.4',
+      function: async () => {
+        await useManagerState().openManager({
+          legacyCommand: 'Comfy.Manager.CustomNodesManager.ToggleVisibility',
+          showToastOnLegacyError: true,
+          isLegacyOnly: true
+        })
+      }
+    },
+    {
+      id: 'Comfy.Manager.ShowLegacyManagerMenu',
+      icon: 'mdi mdi-puzzle',
+      label: 'Manager Menu (Legacy)',
+      versionAdded: '1.16.4',
+      function: async () => {
+        await useManagerState().openManager({
+          showToastOnLegacyError: true,
+          isLegacyOnly: true
+        })
+      }
+    },
+    {
+      id: 'Comfy.Memory.UnloadModels',
+      icon: 'mdi mdi-vacuum-outline',
+      label: 'Unload Models',
+      versionAdded: '1.16.4',
+      function: async () => {
+        if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('g.commandProhibited', {
+              command: 'Comfy.Memory.UnloadModels'
+            }),
+            life: 3000
+          })
+          return
+        }
+        await api.freeMemory({ freeExecutionCache: false })
+      }
+    },
+    {
+      id: 'Comfy.Memory.UnloadModelsAndExecutionCache',
+      icon: 'mdi mdi-vacuum-outline',
+      label: 'Unload Models and Execution Cache',
+      versionAdded: '1.16.4',
+      function: async () => {
+        if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
+          useToastStore().add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('g.commandProhibited', {
+              command: 'Comfy.Memory.UnloadModelsAndExecutionCache'
+            }),
+            life: 3000
+          })
+          return
+        }
+        await api.freeMemory({ freeExecutionCache: true })
       }
     }
   ]

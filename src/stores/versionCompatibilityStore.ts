@@ -1,4 +1,4 @@
-import { useStorage } from '@vueuse/core'
+import { until, useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import * as semver from 'semver'
 import { computed } from 'vue'
@@ -103,7 +103,7 @@ export const useVersionCompatibilityStore = defineStore(
 
     async function checkVersionCompatibility() {
       if (!systemStatsStore.systemStats) {
-        await systemStatsStore.fetchSystemStats()
+        await until(systemStatsStore.isInitialized)
       }
     }
 

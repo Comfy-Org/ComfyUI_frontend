@@ -7,15 +7,12 @@ on:
     branches-ignore:
       [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
 
-env:
-  DATE_FORMAT: '+%m/%d/%Y, %I:%M:%S %p'
-
 jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
-      sanitized-branch: ${{ steps.branch-info.outputs.sanitized }}
+      playwright-version: ${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
     steps:
       - name: Checkout ComfyUI
         uses: actions/checkout@v4
@@ -48,30 +45,6 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
 
-      - name: Get current time
-        id: current-time
-        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
-
-      - name: Comment PR - Tests Started
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        uses: edumserrano/find-create-or-update-comment@v3
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
-          comment-author: 'github-actions[bot]'
-          edit-mode: append
-          body: |
-            <!-- PLAYWRIGHT_TEST_STATUS -->
-
-            ---
-
-            <img alt='comfy-loading-gif' src="https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
-            <bold>[${{ steps.current-time.outputs.time }} UTC] Preparing browser tests across multiple browsers...</bold>
-
-            ---
-            *This comment will be updated when tests complete*
-
       - name: Cache tool outputs
         uses: actions/cache@v4
         with:
@@ -94,13 +67,12 @@ jobs:
         id: cache-key
         run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
 
-      - name: Generate sanitized branch name
-        id: branch-info
-        run: |
-          # Get branch name and sanitize it for Cloudflare branch names
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
-          echo "sanitized=${SANITIZED_BRANCH}" >> $GITHUB_OUTPUT
+      - name: Playwright Version
+        id: playwright-version
+        run:  |
+          PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
+          echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+        working-directory: ComfyUI_frontend
 
       - name: Save cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
@@ -110,17 +82,17 @@ jobs:
             ComfyUI_frontend
           key: comfyui-setup-${{ steps.cache-key.outputs.key }}
 
-  playwright-tests:
+  # Sharded chromium tests
+  playwright-tests-chromium-sharded:
     needs: setup
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
-      issues: write
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, chromium-2x, chromium-0.5x, mobile-chrome]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+        shardTotal: [8]
     steps:
       - name: Wait for cache propagation
         run: sleep 10
@@ -144,32 +116,85 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
-      - name: Get current time
-        id: current-time
-        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
-
-      - name: Set project name
-        id: project-name
+      - name: Install requirements
         run: |
-          if [ "${{ matrix.browser }}" = "chromium-0.5x" ]; then
-            echo "name=comfyui-playwright-chromium-0-5x" >> $GITHUB_OUTPUT
-          else
-            echo "name=comfyui-playwright-${{ matrix.browser }}" >> $GITHUB_OUTPUT
-          fi
-          echo "branch=${{ needs.setup.outputs.sanitized-branch }}" >> $GITHUB_OUTPUT
+          python -m pip install --upgrade pip
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          pip install wait-for-it
+        working-directory: ComfyUI
 
-      - name: Comment PR - Browser Test Started
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        uses: edumserrano/find-create-or-update-comment@v3
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: cache-playwright-browsers
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
-          comment-author: 'github-actions[bot]'
-          edit-mode: append
-          body: |
-            <img alt='comfy-loading-gif' src="https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686" width="14px" height="14px" style="vertical-align: middle; margin-left: 4px;" />
-            <bold>${{ matrix.browser }}</bold>: Running tests...
+          path: '~/.cache/ms-playwright'
+          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
+
+      - name: Install Playwright Browsers
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Install Playwright Browsers (operating system dependencies)
+        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Start ComfyUI server
+        run: |
+          python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+        working-directory: ComfyUI
+
+      - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        id: playwright
+        run: npx playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        working-directory: ComfyUI_frontend
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ../blob-report
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-chromium-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
+  playwright-tests:
+    # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
+    timeout-minutes: 15
+    needs: setup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium-2x, chromium-0.5x, mobile-chrome]
+    steps:
+      - name: Wait for cache propagation
+        run: sleep 10
+
+      - name: Restore cached setup
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          fail-on-cache-miss: true
+          path: |
+            ComfyUI
+            ComfyUI_frontend
+          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
       - name: Install requirements
         run: |
@@ -179,27 +204,28 @@ jobs:
           pip install wait-for-it
         working-directory: ComfyUI
 
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
+        id: cache-playwright-browsers
+        with:
+          path: '~/.cache/ms-playwright'
+          key: '${{ runner.os }}-playwright-browsers-${{ needs.setup.outputs.playwright-version }}'
+
+      - name: Install Playwright Browsers
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium --with-deps
+        working-directory: ComfyUI_frontend
+
+      - name: Install Playwright Browsers (operating system dependencies)
+        if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps
+        working-directory: ComfyUI_frontend
+
       - name: Start ComfyUI server
         run: |
           python main.py --cpu --multi-user --front-end-root ../ComfyUI_frontend/dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
         working-directory: ComfyUI
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-${{ matrix.browser }}
-          restore-keys: |
-            playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}-
-            playwright-browsers-${{ runner.os }}-
-
-      - name: Install Playwright Browsers
-        run: npx playwright install chromium --with-deps
-        working-directory: ComfyUI_frontend
-
-      - name: Install Wrangler
-        run: pnpm install -g wrangler
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
@@ -207,187 +233,54 @@ jobs:
         working-directory: ComfyUI_frontend
 
       - uses: actions/upload-artifact@v4
-        if: always() # note: use always() to allow results to be upload/report even tests failed.
+        if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
 
-      - name: Deploy to Cloudflare Pages (${{ matrix.browser }})
-        id: cloudflare-deploy
-        if: always()
-        continue-on-error: true
-        run: |
-          # Retry logic for wrangler deploy (3 attempts)
-          RETRY_COUNT=0
-          MAX_RETRIES=3
-          SUCCESS=false
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            echo "Deployment attempt $RETRY_COUNT of $MAX_RETRIES..."
-            
-            if npx wrangler pages deploy ComfyUI_frontend/playwright-report --project-name=${{ steps.project-name.outputs.name }} --branch=${{ steps.project-name.outputs.branch }}; then
-              SUCCESS=true
-              echo "Deployment successful on attempt $RETRY_COUNT"
-            else
-              echo "Deployment failed on attempt $RETRY_COUNT"
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "Retrying in 10 seconds..."
-                sleep 10
-              fi
-            fi
-          done
-          
-          if [ $SUCCESS = false ]; then
-            echo "All deployment attempts failed"
-            exit 1
-          fi
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Save deployment info for summary
-        if: always()
-        run: |
-          mkdir -p deployment-info
-          # Use step conclusion to determine test result
-          if [ "${{ steps.playwright.conclusion }}" = "success" ]; then
-            EXIT_CODE="0"
-          else
-            EXIT_CODE="1"
-          fi
-          DEPLOYMENT_URL="${{ steps.cloudflare-deploy.outputs.deployment-url || steps.cloudflare-deploy.outputs.url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }}"
-          echo "${{ matrix.browser }}|${EXIT_CODE}|${DEPLOYMENT_URL}" > deployment-info/${{ matrix.browser }}.txt
-
-      - name: Upload deployment info
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-info-${{ matrix.browser }}
-          path: deployment-info/
-          retention-days: 1
-
-      - name: Get completion time
-        id: completion-time
-        if: always()
-        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
-
-      - name: Comment PR - Browser Test Complete
-        if: always() && github.event_name == 'pull_request'
-        continue-on-error: true
-        uses: edumserrano/find-create-or-update-comment@v3
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
-          comment-author: 'github-actions[bot]'
-          edit-mode: append
-          body: |
-            ${{ steps.playwright.conclusion == 'success' && '✅' || '❌' }} **${{ matrix.browser }}**: ${{ steps.playwright.conclusion == 'success' && 'Tests passed!' || 'Tests failed!' }} [View Report](${{ steps.cloudflare-deploy.outputs.deployment-url || format('https://{0}.{1}.pages.dev', steps.project-name.outputs.branch, steps.project-name.outputs.name) }})
-
-  comment-summary:
-    needs: playwright-tests
+  # Merge sharded test reports
+  merge-reports:
+    needs: [playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request'
-    permissions:
-      pull-requests: write
+    if: ${{ !cancelled() }}
     steps:
-      - name: Download all deployment info
+      - name: Checkout ComfyUI_frontend
+        uses: actions/checkout@v4
+        with:
+          repository: 'Comfy-Org/ComfyUI_frontend'
+          path: 'ComfyUI_frontend'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+          cache-dependency-path: 'ComfyUI_frontend/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+        working-directory: ComfyUI_frontend
+
+      - name: Download blob reports
         uses: actions/download-artifact@v4
         with:
-          pattern: deployment-info-*
+          path: ComfyUI_frontend/all-blob-reports
+          pattern: blob-report-chromium-*
           merge-multiple: true
-          path: deployment-info
 
-      - name: Get completion time
-        id: completion-time
-        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
+      - name: Merge into HTML Report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        working-directory: ComfyUI_frontend
 
-      - name: Generate comment body
-        id: comment-body
-        run: |
-          echo "<!-- PLAYWRIGHT_TEST_STATUS -->" > comment.md
-          echo "## 🎭 Playwright Test Results" >> comment.md
-          echo "" >> comment.md
-
-          # Check if all tests passed
-          ALL_PASSED=true
-          for file in deployment-info/*.txt; do
-            if [ -f "$file" ]; then
-              browser=$(basename "$file" .txt)
-              info=$(cat "$file")
-              exit_code=$(echo "$info" | cut -d'|' -f2)
-              if [ "$exit_code" != "0" ]; then
-                ALL_PASSED=false
-                break
-              fi
-            fi
-          done
-
-          if [ "$ALL_PASSED" = "true" ]; then
-            echo "✅ **All tests passed across all browsers!**" >> comment.md
-          else
-            echo "❌ **Some tests failed!**" >> comment.md
-          fi
-
-          echo "" >> comment.md
-          echo "⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
-          echo "" >> comment.md
-          echo "### 📊 Test Reports by Browser" >> comment.md
-
-          for file in deployment-info/*.txt; do
-            if [ -f "$file" ]; then
-              browser=$(basename "$file" .txt)
-              info=$(cat "$file")
-              exit_code=$(echo "$info" | cut -d'|' -f2)
-              url=$(echo "$info" | cut -d'|' -f3)
-              
-              if [ "$exit_code" = "0" ]; then
-                status="✅"
-              else
-                status="❌"
-              fi
-              
-              echo "- $status **$browser**: [View Report]($url)" >> comment.md
-            fi
-          done
-
-          echo "" >> comment.md
-          echo "---" >> comment.md
-          if [ "$ALL_PASSED" = "true" ]; then
-            echo "🎉 Your tests are passing across all browsers!" >> comment.md
-          else
-            echo "⚠️ Please check the test reports for details on failures." >> comment.md
-          fi
-
-      - name: Comment PR - Tests Complete
-        continue-on-error: true
-        uses: edumserrano/find-create-or-update-comment@v3
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
-          comment-author: 'github-actions[bot]'
-          edit-mode: replace
-          body-path: comment.md
-
-      - name: Check test results and fail if needed
-        run: |
-          # Check if all tests passed and fail the job if not
-          ALL_PASSED=true
-          for file in deployment-info/*.txt; do
-            if [ -f "$file" ]; then
-              info=$(cat "$file")
-              exit_code=$(echo "$info" | cut -d'|' -f2)
-              if [ "$exit_code" != "0" ]; then
-                ALL_PASSED=false
-                break
-              fi
-            fi
-          done
-
-          if [ "$ALL_PASSED" = "false" ]; then
-            echo "❌ Tests failed in one or more browsers. Failing the CI job."
-            exit 1
-          else
-            echo "✅ All tests passed across all browsers!"
-          fi
+          name: playwright-report-chromium
+          path: ComfyUI_frontend/playwright-report/
+          retention-days: 30

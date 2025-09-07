@@ -375,17 +375,3 @@ LGraphNode.prototype.addDOMWidget = function <
 
   return widget
 }
-
-/**
- * Prunes widgets that are no longer in the graph.
- * @param nodes The nodes to prune widgets for.
- */
-export const pruneWidgets = (nodes: LGraphNode[]) => {
-  const nodeSet = new Set(nodes)
-  const domWidgetStore = useDomWidgetStore()
-  for (const { widget } of domWidgetStore.widgetStates.values()) {
-    if (!nodeSet.has(widget.node)) {
-      domWidgetStore.unregisterWidget(widget.id)
-    }
-  }
-}

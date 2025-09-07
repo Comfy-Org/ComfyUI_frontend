@@ -1,4 +1,4 @@
-import ModelSelector from '@/components/widget/ModelSelector.vue'
+import SampleModelSelector from '@/components/widget/SampleModelSelector.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -15,7 +15,7 @@ export const useModelSelectorDialog = () => {
   function show() {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component: ModelSelector,
+      component: SampleModelSelector,
       props: {
         onClose: hide
       }

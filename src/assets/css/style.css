@@ -1,6 +1,68 @@
-@layer primevue, tailwind-utilities;
+@layer theme, base, primevue, components, utilities;
+
+@import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/utilities' layer(utilities);
+
+@plugin "tailwindcss-primeui";
+
+@config '../../../tailwind.config.ts';
 
 @layer tailwind-utilities {
+  /* Set default values to prevent some styles from not working properly. */
+  *, ::before, ::after {
+    --tw-border-spacing-x: 0;
+    --tw-border-spacing-y: 0;
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+    --tw-rotate: 0;
+    --tw-skew-x: 0;
+    --tw-skew-y: 0;
+    --tw-scale-x: 1;
+    --tw-scale-y: 1;
+    --tw-pan-x: ;
+    --tw-pan-y: ;
+    --tw-pinch-zoom: ;
+    --tw-scroll-snap-strictness: proximity;
+    --tw-gradient-from-position: ;
+    --tw-gradient-via-position: ;
+    --tw-gradient-to-position: ;
+    --tw-ordinal: ;
+    --tw-slashed-zero: ;
+    --tw-numeric-figure: ;
+    --tw-numeric-spacing: ;
+    --tw-numeric-fraction: ;
+    --tw-ring-inset: ;
+    --tw-ring-offset-width: 0px;
+    --tw-ring-offset-color: #fff;
+    --tw-ring-color: rgb(66 153 225 / 0.5);
+    --tw-ring-offset-shadow: 0 0 #0000;
+    --tw-ring-shadow: 0 0 #0000;
+    --tw-shadow: 0 0 #0000;
+    --tw-shadow-colored: 0 0 #0000;
+    --tw-blur: ;
+    --tw-brightness: ;
+    --tw-contrast: ;
+    --tw-grayscale: ;
+    --tw-hue-rotate: ;
+    --tw-invert: ;
+    --tw-saturate: ;
+    --tw-sepia: ;
+    --tw-drop-shadow: ;
+    --tw-backdrop-blur: ;
+    --tw-backdrop-brightness: ;
+    --tw-backdrop-contrast: ;
+    --tw-backdrop-grayscale: ;
+    --tw-backdrop-hue-rotate: ;
+    --tw-backdrop-invert: ;
+    --tw-backdrop-opacity: ;
+    --tw-backdrop-saturate: ;
+    --tw-backdrop-sepia: ;
+    --tw-contain-size: ;
+    --tw-contain-layout: ;
+    --tw-contain-paint: ;
+    --tw-contain-style: ;
+  }
+
   @tailwind components;
   @tailwind utilities;
 }
@@ -27,7 +89,7 @@
   --content-fg: #000;
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
-  
+
   /* Code styling colors for help menu*/
   --code-text-color: rgba(0, 122, 255, 1);
   --code-bg-color: rgba(96, 165, 250, 0.2);
@@ -132,6 +194,188 @@ body {
 .comfy-markdown .tiptap td {
   padding: 0.5em;
   border: thin solid;
+}
+
+/* Shared markdown content styling for consistent rendering across components */
+.comfy-markdown-content {
+  /* Typography */
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+/* Headings */
+.comfy-markdown-content h1 {
+  font-size: 22px; /* text-[22px] */
+  font-weight: 700; /* font-bold */
+  margin-top: 2rem; /* mt-8 */
+  margin-bottom: 1rem; /* mb-4 */
+}
+
+.comfy-markdown-content h1:first-child {
+  margin-top: 0; /* first:mt-0 */
+}
+
+.comfy-markdown-content h2 {
+  font-size: 18px; /* text-[18px] */
+  font-weight: 700; /* font-bold */
+  margin-top: 2rem; /* mt-8 */
+  margin-bottom: 1rem; /* mb-4 */
+}
+
+.comfy-markdown-content h2:first-child {
+  margin-top: 0; /* first:mt-0 */
+}
+
+.comfy-markdown-content h3 {
+  font-size: 16px; /* text-[16px] */
+  font-weight: 700; /* font-bold */
+  margin-top: 2rem; /* mt-8 */
+  margin-bottom: 1rem; /* mb-4 */
+}
+
+.comfy-markdown-content h3:first-child {
+  margin-top: 0; /* first:mt-0 */
+}
+
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
+  margin-top: 2rem; /* mt-8 */
+  margin-bottom: 1rem; /* mb-4 */
+}
+
+.comfy-markdown-content h4:first-child,
+.comfy-markdown-content h5:first-child,
+.comfy-markdown-content h6:first-child {
+  margin-top: 0; /* first:mt-0 */
+}
+
+/* Paragraphs */
+.comfy-markdown-content p {
+  margin: 0 0 0.5em;
+}
+
+.comfy-markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* First child reset */
+.comfy-markdown-content *:first-child {
+  margin-top: 0; /* mt-0 */
+}
+
+/* Lists */
+.comfy-markdown-content ul,
+.comfy-markdown-content ol {
+  padding-left: 2rem; /* pl-8 */
+  margin: 0.5rem 0; /* my-2 */
+}
+
+/* Nested lists */
+.comfy-markdown-content ul ul,
+.comfy-markdown-content ol ol,
+.comfy-markdown-content ul ol,
+.comfy-markdown-content ol ul {
+  padding-left: 1.5rem; /* pl-6 */
+  margin: 0.5rem 0; /* my-2 */
+}
+
+.comfy-markdown-content li {
+  margin: 0.5rem 0; /* my-2 */
+}
+
+/* Code */
+.comfy-markdown-content code {
+  color: var(--code-text-color);
+  background-color: var(--code-bg-color);
+  border-radius: 0.25rem; /* rounded */
+  padding: 0.125rem 0.375rem; /* px-1.5 py-0.5 */
+  font-family: monospace;
+}
+
+.comfy-markdown-content pre {
+  background-color: var(--code-block-bg-color);
+  border-radius: 0.25rem; /* rounded */
+  padding: 1rem; /* p-4 */
+  margin: 1rem 0; /* my-4 */
+  overflow-x: auto; /* overflow-x-auto */
+}
+
+.comfy-markdown-content pre code {
+  background-color: transparent; /* bg-transparent */
+  padding: 0; /* p-0 */
+  color: var(--p-text-color);
+}
+
+/* Tables */
+.comfy-markdown-content table {
+  width: 100%; /* w-full */
+  border-collapse: collapse; /* border-collapse */
+}
+
+.comfy-markdown-content th,
+.comfy-markdown-content td {
+  padding: 0.5rem; /* px-2 py-2 */
+}
+
+.comfy-markdown-content th {
+  color: var(--fg-color);
+}
+
+.comfy-markdown-content td {
+  color: var(--drag-text);
+}
+
+.comfy-markdown-content tr {
+  border-bottom: 1px solid var(--content-bg);
+}
+
+.comfy-markdown-content tr:last-child {
+  border-bottom: none;
+}
+
+.comfy-markdown-content thead {
+  border-bottom: 1px solid var(--p-text-color);
+}
+
+/* Links */
+.comfy-markdown-content a {
+  color: var(--drag-text);
+  text-decoration: underline;
+}
+
+/* Media */
+.comfy-markdown-content img,
+.comfy-markdown-content video {
+  max-width: 100%; /* max-w-full */
+  height: auto; /* h-auto */
+  display: block; /* block */
+  margin-bottom: 1rem; /* mb-4 */
+}
+
+/* Blockquotes */
+.comfy-markdown-content blockquote {
+  border-left: 3px solid var(--p-primary-color, var(--primary-bg));
+  padding-left: 0.75em;
+  margin: 0.5em 0;
+  opacity: 0.8;
+}
+
+/* Horizontal rule */
+.comfy-markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--p-border-color, var(--border-color));
+  margin: 1em 0;
+}
+
+/* Strong and emphasis */
+.comfy-markdown-content strong {
+  font-weight: bold;
+}
+
+.comfy-markdown-content em {
+  font-style: italic;
 }
 
 .comfy-modal {
@@ -255,6 +499,7 @@ button.comfy-close-menu-btn {
 .comfy-modal button {
   color: var(--input-text);
   background-color: var(--comfy-input-bg);
+  border-width: initial;
   border-radius: 8px;
   border-color: var(--border-color);
   border-style: solid;
@@ -638,3 +883,92 @@ audio.comfy-audio.empty-audio-widget {
   width: calc(100vw - env(titlebar-area-width, 100vw));
 }
 /* End of [Desktop] Electron window specific styles */
+
+/* Vue Node LOD (Level of Detail) System */
+/* These classes control rendering detail based on zoom level */
+
+/* Minimal LOD (zoom <= 0.4) - Title only for performance */
+.lg-node--lod-minimal {
+  min-height: 32px;
+  transition: min-height 0.2s ease;
+  /* Performance optimizations */
+  text-shadow: none;
+  backdrop-filter: none;
+}
+
+.lg-node--lod-minimal .lg-node-body {
+  display: none !important;
+}
+
+/* Reduced LOD (0.4 < zoom <= 0.8) - Essential widgets, simplified styling */
+.lg-node--lod-reduced {
+  transition: opacity 0.1s ease;
+  /* Performance optimizations */
+  text-shadow: none;
+}
+
+.lg-node--lod-reduced .lg-widget-label,
+.lg-node--lod-reduced .lg-slot-label {
+  display: none;
+}
+
+.lg-node--lod-reduced .lg-slot {
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.lg-node--lod-reduced .lg-widget {
+  margin: 2px 0;
+  font-size: 0.875rem;
+}
+
+/* Full LOD (zoom > 0.8) - Complete detail rendering */
+.lg-node--lod-full {
+  /* Uses default styling - no overrides needed */
+}
+
+/* Smooth transitions between LOD levels */
+.lg-node {
+  transition: min-height 0.2s ease;
+  /* Disable text selection on all nodes */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.lg-node .lg-slot,
+.lg-node .lg-widget {
+  transition: opacity 0.1s ease, font-size 0.1s ease;
+}
+
+/* Performance optimization during canvas interaction */
+.transform-pane--interacting .lg-node * {
+  transition: none !important;
+}
+
+.transform-pane--interacting .lg-node {
+  will-change: transform;
+}
+
+/* Global performance optimizations for LOD */
+.lg-node--lod-minimal,
+.lg-node--lod-reduced {
+  /* Remove ALL expensive paint effects */
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  text-shadow: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  clip-path: none !important;
+}
+
+/* Reduce paint complexity for minimal LOD */
+.lg-node--lod-minimal {
+  /* Skip complex borders */
+  border-radius: 0 !important;
+  /* Use solid colors only */
+  background-image: none !important;
+}
+

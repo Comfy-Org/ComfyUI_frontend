@@ -12,8 +12,18 @@ export const CORE_MENU_COMMANDS = [
     ]
   ],
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],
+  [['Edit'], ['Comfy.ClearWorkflow']],
   [['Edit'], ['Comfy.OpenClipspace']],
   [['Edit'], ['Comfy.RefreshNodeDefinitions']],
+  [
+    ['Edit'],
+    [
+      'Comfy.RefreshNodeDefinitions',
+      'Comfy.Memory.UnloadModels',
+      'Comfy.Memory.UnloadModelsAndExecutionCache'
+    ]
+  ],
+  [['View'], []],
   [
     ['Help'],
     [
@@ -23,8 +33,5 @@ export const CORE_MENU_COMMANDS = [
       'Comfy.Help.OpenComfyUIForum'
     ]
   ],
-  [
-    ['Help'],
-    ['Comfy.Help.AboutComfyUI', 'Comfy.Feedback', 'Comfy.ContactSupport']
-  ]
+  [['Help'], ['Comfy.Help.AboutComfyUI', 'Comfy.ContactSupport']]
 ]

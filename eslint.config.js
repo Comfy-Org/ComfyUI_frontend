@@ -62,6 +62,8 @@ export default [
       '@typescript-eslint/prefer-as-const': 'off',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
+      // Enforce dark-theme: instead of dark: prefix
+      'vue/no-restricted-class': ['error', '/^dark:/'],
       // i18n rules
       '@intlify/vue-i18n/no-raw-text': [
         'error',

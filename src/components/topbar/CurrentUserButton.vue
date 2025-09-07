@@ -9,9 +9,7 @@
       aria-label="user profile"
       @click="popover?.toggle($event)"
     >
-      <div
-        class="flex items-center rounded-full bg-[var(--p-content-background)]"
-      >
+      <div class="flex items-center rounded-full bg-(--p-content-background)">
         <UserAvatar :photo-url="photoURL" />
 
         <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />

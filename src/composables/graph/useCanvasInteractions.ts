@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
 import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 /**
@@ -10,6 +11,7 @@ import { useSettingStore } from '@/stores/settingStore'
  */
 export function useCanvasInteractions() {
   const settingStore = useSettingStore()
+  const { getCanvas } = useCanvasStore()
 
   const isStandardNavMode = computed(
     () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
@@ -38,6 +40,27 @@ export function useCanvasInteractions() {
   }
 
   /**
+   * Handles pointer events from media elements that should potentially
+   * be forwarded to canvas (e.g., space+drag for panning)
+   */
+  const handlePointer = (event: PointerEvent) => {
+    // Check if canvas exists using established pattern
+    const canvas = getCanvas()
+    if (!canvas) return
+
+    // Check conditions for forwarding events to canvas
+    const isSpacePanningDrag = canvas.read_only && event.buttons === 1 // Space key pressed + left mouse drag
+    const isMiddleMousePanning = event.buttons === 4 // Middle mouse button for panning
+
+    if (isSpacePanningDrag || isMiddleMousePanning) {
+      event.preventDefault()
+      event.stopPropagation()
+      forwardEventToCanvas(event)
+      return
+    }
+  }
+
+  /**
    * Forwards an event to the LiteGraph canvas
    */
   const forwardEventToCanvas = (
@@ -54,6 +77,7 @@ export function useCanvasInteractions() {
 
   return {
     handleWheel,
+    handlePointer,
     forwardEventToCanvas
   }
 }

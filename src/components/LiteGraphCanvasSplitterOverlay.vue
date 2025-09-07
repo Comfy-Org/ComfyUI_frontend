@@ -79,6 +79,8 @@ const sidebarStateKey = computed(() => {
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 :deep(.p-splitter-gutter) {
   pointer-events: auto;
 }

@@ -25,13 +25,6 @@ export interface SettingOption {
   value?: any
 }
 
-export interface Setting {
-  id: keyof Settings
-  onChange?: (value: any, oldValue?: any) => void
-  name: string
-  render: () => HTMLElement
-}
-
 export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings
   defaultValue: any | (() => any)

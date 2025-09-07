@@ -50,9 +50,6 @@ export interface CanvasMouseEvent
     Readonly<CanvasPointerExtensions>,
     LegacyMouseEvent {}
 
-/** DragEvent with canvasX/Y and deltaX/Y properties */
-export interface CanvasDragEvent extends DragEvent, CanvasPointerExtensions {}
-
 export type CanvasEventDetail =
   | GenericEventDetail
   | GroupDoubleClickEventDetail

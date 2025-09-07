@@ -76,11 +76,11 @@ describe('NodePreview', () => {
     expect(wrapper.find('._sb_preview_badge').text()).toBe('Preview')
   })
 
-  it('applies overflow-ellipsis class to node header for text truncation', () => {
+  it('applies text-ellipsis class to node header for text truncation', () => {
     const wrapper = mountComponent()
     const nodeHeader = wrapper.find('.node_header')
 
-    expect(nodeHeader.classes()).toContain('overflow-ellipsis')
+    expect(nodeHeader.classes()).toContain('text-ellipsis')
     expect(nodeHeader.classes()).toContain('mr-4')
   })
 
@@ -105,7 +105,7 @@ describe('NodePreview', () => {
     expect(nodeHeader.attributes('title')).toBe(longNameNodeDef.display_name)
 
     // Verify overflow handling classes are applied
-    expect(nodeHeader.classes()).toContain('overflow-ellipsis')
+    expect(nodeHeader.classes()).toContain('text-ellipsis')
 
     // The actual text content should still be the full name (CSS handles truncation)
     expect(nodeHeader.text()).toContain(longNameNodeDef.display_name)

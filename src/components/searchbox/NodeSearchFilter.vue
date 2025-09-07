@@ -68,6 +68,8 @@ const submit = () => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 ._content {
   @apply flex flex-col space-y-2;
 }

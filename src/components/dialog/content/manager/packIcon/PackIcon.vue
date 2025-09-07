@@ -1,11 +1,37 @@
 <template>
-  <img
-    :src="isImageError ? DEFAULT_ICON : imgSrc"
-    :alt="nodePack.name + ' icon'"
-    class="object-contain rounded-lg max-h-72 max-w-72"
-    :style="{ width: cssWidth, height: cssHeight }"
-    @error="isImageError = true"
-  />
+  <div class="w-full max-w-[204] aspect-[2/1] rounded-lg overflow-hidden">
+    <!-- default banner show -->
+    <div v-if="showDefaultBanner" class="w-full h-full">
+      <img
+        :src="DEFAULT_BANNER"
+        alt="default banner"
+        class="w-full h-full object-cover"
+      />
+    </div>
+    <!-- banner_url or icon show -->
+    <div v-else class="relative w-full h-full">
+      <!-- blur background -->
+      <div
+        v-if="imgSrc"
+        class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        :style="{
+          backgroundImage: `url(${imgSrc})`,
+          filter: 'blur(10px)'
+        }"
+      ></div>
+      <!-- image -->
+      <img
+        :src="isImageError ? DEFAULT_BANNER : imgSrc"
+        :alt="nodePack.name + ' banner'"
+        :class="
+          isImageError
+            ? 'relative w-full h-full object-cover z-10'
+            : 'relative w-full h-full object-contain z-10'
+        "
+        @error="isImageError = true"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -13,29 +39,14 @@ import { computed, ref } from 'vue'
 
 import { components } from '@/types/comfyRegistryTypes'
 
-const DEFAULT_ICON = '/assets/images/fallback-gradient-avatar.svg'
+const DEFAULT_BANNER = '/assets/images/fallback-gradient-avatar.svg'
 
-const {
-  nodePack,
-  width = '4.5rem',
-  height = '4.5rem'
-} = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
-  width?: string
-  height?: string
 }>()
 
 const isImageError = ref(false)
-const shouldShowFallback = computed(
-  () => !nodePack.icon || nodePack.icon.trim() === '' || isImageError.value
-)
-const imgSrc = computed(() =>
-  shouldShowFallback.value ? DEFAULT_ICON : nodePack.icon
-)
 
-const convertToCssValue = (value: string | number) =>
-  typeof value === 'number' ? `${value}rem` : value
-
-const cssWidth = computed(() => convertToCssValue(width))
-const cssHeight = computed(() => convertToCssValue(height))
+const showDefaultBanner = computed(() => !nodePack.banner_url && !nodePack.icon)
+const imgSrc = computed(() => nodePack.banner_url || nodePack.icon)
 </script>
