@@ -2,6 +2,12 @@ import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   DisplayComponentWsMessage,
   EmbeddingsResponse,
@@ -31,15 +37,9 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type { ModelFile, ModelFolderInfo } from '@/schemas/assetSchema'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useToastStore } from '@/stores/toastStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string

@@ -13,7 +13,7 @@ import {
   ComfyLink,
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'

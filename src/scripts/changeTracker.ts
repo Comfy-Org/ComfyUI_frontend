@@ -3,11 +3,14 @@ import * as jsondiffpatch from 'jsondiffpatch'
 import log from 'loglevel'
 
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/ui/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 import { api } from './api'
 import type { ComfyApp } from './app'

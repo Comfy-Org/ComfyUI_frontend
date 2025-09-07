@@ -23,9 +23,9 @@ import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import { useI18n } from 'vue-i18n'
 
-import type { WorkflowJSON04 } from '@/schemas/comfyWorkflowSchema'
+import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { app } from '@/scripts/app'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 const { t } = useI18n()

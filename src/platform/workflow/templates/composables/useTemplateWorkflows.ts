@@ -1,15 +1,15 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
-} from '@/types/workflowTemplateTypes'
+} from '@/platform/workflow/templates/types/template'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()

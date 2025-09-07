@@ -1,9 +1,9 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { api } from '@/scripts/api'
-import { useWorkflowService } from '@/services/workflowService'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -12,7 +12,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/services/workflowService', () => ({
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: vi.fn(() => ({
     saveWorkflow: vi.fn()
   }))
@@ -28,7 +28,7 @@ vi.mock('@/stores/settingStore', () => ({
   }))
 }))
 
-vi.mock('@/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/ui/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     activeWorkflow: mockActiveWorkflow
   }))

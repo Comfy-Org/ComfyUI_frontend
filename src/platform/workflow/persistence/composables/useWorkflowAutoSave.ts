@@ -1,9 +1,9 @@
 import { computed, onUnmounted, watch } from 'vue'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { useWorkflowService } from '@/services/workflowService'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 
 export function useWorkflowAutoSave() {
   const workflowStore = useWorkflowStore()

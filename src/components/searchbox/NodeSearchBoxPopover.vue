@@ -45,11 +45,11 @@ import {
   LiteGraphCanvasEvent
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { FuseFilterWithValue } from '@/utils/fuseUtil'

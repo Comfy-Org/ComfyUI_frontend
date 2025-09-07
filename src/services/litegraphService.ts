@@ -24,8 +24,9 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { useWorkflowStore } from '@/platform/workflow/ui/stores/workflowStore'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -44,7 +45,6 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isImageNode,

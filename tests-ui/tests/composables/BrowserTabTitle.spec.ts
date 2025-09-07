@@ -34,7 +34,7 @@ vi.mock('@/stores/settingStore', () => ({
 const workflowStore = reactive({
   activeWorkflow: null as any
 })
-vi.mock('@/stores/workflowStore', () => ({
+vi.mock('@/platform/workflow/ui/stores/workflowStore', () => ({
   useWorkflowStore: () => workflowStore
 }))
 
