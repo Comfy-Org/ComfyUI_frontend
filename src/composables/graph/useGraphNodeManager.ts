@@ -4,6 +4,7 @@
  */
 import { nextTick, reactive } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
@@ -620,34 +621,47 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       culled: false
     })
 
-    // Schedule position extraction after current call stack to allow configure() to complete
-    void nextTick(() => {
+    const initializeVueNodeLayout = () => {
       // Extract actual positions after configure() has potentially updated them
-      const finalPos = { x: node.pos[0], y: node.pos[1] }
-      const finalSize = { width: node.size[0], height: node.size[1] }
+      const nodePosition = { x: node.pos[0], y: node.pos[1] }
+      const nodeSize = { width: node.size[0], height: node.size[1] }
 
-      nodePositions.set(id, finalPos)
-      nodeSizes.set(id, finalSize)
+      nodePositions.set(id, nodePosition)
+      nodeSizes.set(id, nodeSize)
       attachMetadata(node)
 
       // Add to spatial index for viewport culling with final positions
-      const bounds: Bounds = {
-        x: finalPos.x,
-        y: finalPos.y,
-        width: finalSize.width,
-        height: finalSize.height
+      const nodeBounds: Bounds = {
+        x: nodePosition.x,
+        y: nodePosition.y,
+        width: nodeSize.width,
+        height: nodeSize.height
       }
-      spatialIndex.insert(id, bounds, id)
+      spatialIndex.insert(id, nodeBounds, id)
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)
       void createNode(id, {
-        position: finalPos,
-        size: finalSize,
+        position: nodePosition,
+        size: nodeSize,
         zIndex: node.order || 0,
         visible: true
       })
-    })
+    }
+
+    // Check if we're in the middle of configuring the graph (workflow loading)
+    if (window.app?.configuringGraph) {
+      // During workflow loading - defer layout initialization until configure completes
+      // Chain our callback with any existing onAfterGraphConfigured callback
+      node.onAfterGraphConfigured = useChainCallback(
+        node.onAfterGraphConfigured,
+        initializeVueNodeLayout
+      )
+    } else {
+      // Not during workflow loading - initialize layout immediately
+      // This handles individual node additions during normal operation
+      initializeVueNodeLayout()
+    }
 
     // Call original callback if provided
     if (originalCallback) {
