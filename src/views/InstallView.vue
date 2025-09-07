@@ -197,4 +197,14 @@ onMounted(async () => {
 :deep(.p-steppanel) {
   @apply bg-transparent;
 }
+
+/* Remove default padding/margin from StepPanels to make scrollbar flush */
+:deep(.p-steppanels) {
+  @apply p-0 m-0;
+}
+
+/* Ensure StepPanel content container has no top/bottom padding */
+:deep(.p-steppanel-content) {
+  @apply pt-0 pb-0 pl-0 pr-0;
+}
 </style>
