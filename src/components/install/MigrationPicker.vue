@@ -2,10 +2,6 @@
   <div class="flex flex-col gap-6 w-[600px]">
     <!-- Source Location Section -->
     <div class="flex flex-col gap-4">
-      <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.migrateFromExistingInstallation') }}
-      </h2>
-
       <p class="text-neutral-400 my-0">
         {{ $t('install.migrationSourcePathDescription') }}
       </p>
