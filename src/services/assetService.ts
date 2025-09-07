@@ -1,5 +1,4 @@
 import { api } from '@/scripts/api'
-import { generateAllStandardPaths } from '@/utils/modelPaths'
 
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'
@@ -18,6 +17,47 @@ interface Asset {
   tags: string[]
   size: number
   created_at?: string
+}
+
+/**
+ * Type guard for validating asset structure
+ */
+function isValidAsset(asset: unknown): asset is Asset {
+  return (
+    asset !== null &&
+    typeof asset === 'object' &&
+    'id' in asset &&
+    'name' in asset &&
+    'tags' in asset &&
+    Array.isArray((asset as Asset).tags)
+  )
+}
+
+/**
+ * Creates predicate for filtering assets by folder and excluding missing ones
+ */
+function createAssetFolderFilter(folder?: string) {
+  return (asset: unknown): asset is Asset => {
+    if (!isValidAsset(asset) || asset.tags.includes(MISSING_TAG)) {
+      return false
+    }
+    if (folder && !asset.tags.includes(folder)) {
+      return false
+    }
+    return true
+  }
+}
+
+/**
+ * Creates predicate for filtering folder assets (requires name)
+ */
+function createFolderAssetFilter(folder: string) {
+  return (asset: unknown): asset is Asset => {
+    if (!isValidAsset(asset) || !asset.name) {
+      return false
+    }
+    return asset.tags.includes(folder) && !asset.tags.includes(MISSING_TAG)
+  }
 }
 
 /**
@@ -65,13 +105,7 @@ function createAssetService() {
     const discoveredFolders = new Set<string>()
     if (data?.assets) {
       const directoryTags = data.assets
-        .filter((asset): asset is Asset =>
-          Boolean(
-            asset &&
-              Array.isArray(asset.tags) &&
-              !asset.tags.includes(MISSING_TAG)
-          )
-        )
+        .filter(createAssetFolderFilter())
         .flatMap((asset) => asset.tags)
         .filter(
           (tag) => tag !== MODELS_TAG && !blacklistedDirectories.includes(tag)
@@ -84,12 +118,7 @@ function createAssetService() {
 
     // Return only discovered folders in alphabetical order
     const sortedFolders = Array.from(discoveredFolders).sort()
-    const standardPaths = generateAllStandardPaths()
-
-    return sortedFolders.map((name) => ({
-      name,
-      folders: standardPaths[name] || []
-    }))
+    return sortedFolders.map((name) => ({ name, folders: [] }))
   }
 
   /**
@@ -105,22 +134,12 @@ function createAssetService() {
       `models for ${folder}`
     )
 
-    return !data?.assets
-      ? []
-      : data.assets
-          .filter((asset): asset is Asset =>
-            Boolean(
-              asset &&
-                asset.name &&
-                Array.isArray(asset.tags) &&
-                asset.tags.includes(folder) &&
-                !asset.tags.includes(MISSING_TAG)
-            )
-          )
-          .map((asset) => ({
-            name: asset.name,
-            pathIndex: 0
-          }))
+    return data?.assets
+      ? data.assets.filter(createFolderAssetFilter(folder)).map((asset) => ({
+          name: asset.name,
+          pathIndex: 0
+        }))
+      : []
   }
 
   return {

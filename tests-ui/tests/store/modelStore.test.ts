@@ -143,43 +143,29 @@ describe('useModelStore', () => {
   })
 
   describe('API switching functionality', () => {
-    it('should use experimental API when UseAssetAPI setting is false', async () => {
-      enableMocks(false) // useAssetAPI = false
-      store = useModelStore()
-      await store.loadModelFolders()
-
-      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
-      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(0)
-    })
-
-    it('should use asset API when UseAssetAPI setting is true', async () => {
-      enableMocks(true) // useAssetAPI = true
-      store = useModelStore()
-      await store.loadModelFolders()
-
-      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(1)
-      expect(api.getModelFolders).toHaveBeenCalledTimes(0)
-    })
-
-    it('should use experimental API for loading models when UseAssetAPI setting is false', async () => {
+    it('should use experimental API for complete workflow when UseAssetAPI setting is false', async () => {
       enableMocks(false) // useAssetAPI = false
       store = useModelStore()
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
 
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(api.getModels).toHaveBeenCalledWith('checkpoints')
+      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(0)
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(0)
       expect(folderStore).toBeDefined()
       expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })
 
-    it('should use asset API for loading models when UseAssetAPI setting is true', async () => {
+    it('should use asset API for complete workflow when UseAssetAPI setting is true', async () => {
       enableMocks(true) // useAssetAPI = true
       store = useModelStore()
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
 
+      expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
+      expect(api.getModelFolders).toHaveBeenCalledTimes(0)
       expect(api.getModels).toHaveBeenCalledTimes(0)
       expect(folderStore).toBeDefined()
       expect(Object.keys(folderStore!.models)).toHaveLength(3)

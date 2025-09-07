@@ -682,10 +682,10 @@ export class ComfyApi extends EventTarget {
     if (res.status === 404) {
       return []
     }
-    const folderBlacklist = ['configs', 'custom_nodes']
-    return (await res.json()).filter(
-      (folder: string) => !folderBlacklist.includes(folder)
+    const folders = (await res.json()).filter(
+      (folder: string) => !['configs', 'custom_nodes'].includes(folder)
     )
+    return folders.map((name: string) => ({ name, folders: [] }))
   }
 
   /**
@@ -1025,8 +1025,7 @@ export class ComfyApi extends EventTarget {
       .get(this.internalURL('/folder_paths'))
       .catch(() => null)
     if (!response) {
-      const { generateAllStandardPaths } = await import('@/utils/modelPaths')
-      return generateAllStandardPaths()
+      return {} // Fallback: no filesystem paths known when API unavailable
     }
     return response.data
   }

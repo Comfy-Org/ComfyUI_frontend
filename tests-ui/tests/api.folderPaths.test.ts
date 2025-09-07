@@ -19,37 +19,12 @@ describe('getFolderPaths', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  it('falls back to mocked paths when legacy API unavailable', async () => {
+  it('returns empty object when legacy API unavailable (dynamic discovery)', async () => {
     vi.mocked(axios.get).mockRejectedValueOnce(new Error())
 
     const result = await api.getFolderPaths()
 
-    expect(Object.keys(result)).toEqual([
-      'checkpoints',
-      'clip',
-      'clip_vision',
-      'configs',
-      'controlnet',
-      'diffusion_models',
-      'embeddings',
-      'gligen',
-      'hypernetworks',
-      'loras',
-      'style_models',
-      'unet',
-      'upscale_models',
-      'vae'
-    ])
-  })
-
-  it('includes hierarchical paths in fallback', async () => {
-    vi.mocked(axios.get).mockRejectedValueOnce(new Error())
-
-    const result = await api.getFolderPaths()
-
-    expect(result.controlnet).toContain(
-      '/ComfyUI/models/controlnet/preprocessors'
-    )
-    expect(result.loras).toContain('/ComfyUI/models/loras/character')
+    // With dynamic discovery, we don't pre-generate directories when API is unavailable
+    expect(result).toEqual({})
   })
 })
