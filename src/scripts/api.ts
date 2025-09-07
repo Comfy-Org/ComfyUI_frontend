@@ -680,10 +680,11 @@ export class ComfyApi extends EventTarget {
     if (res.status === 404) {
       return []
     }
-    const folders = (await res.json()).filter(
-      (folder: string) => !['configs', 'custom_nodes'].includes(folder)
+    const folderBlacklist = ['configs', 'custom_nodes']
+    return (await res.json()).filter(
+      (folder: { name: string; folders: string[] }) =>
+        !folderBlacklist.includes(folder.name)
     )
-    return folders.map((name: string) => ({ name, folders: [] }))
   }
 
   /**

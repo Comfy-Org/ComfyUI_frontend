@@ -40,7 +40,7 @@ function enableMocks(useAssetAPI = false) {
   }
   vi.mocked(useSettingStore).mockReturnValue(mockSettingStore as any)
 
-  // Mock experimental API
+  // Mock experimental API - returns objects with name and folders properties
   vi.mocked(api.getModels).mockResolvedValue([
     { name: 'sdxl.safetensors', pathIndex: 0 },
     { name: 'sdv15.safetensors', pathIndex: 0 },
@@ -51,7 +51,7 @@ function enableMocks(useAssetAPI = false) {
     { name: 'vae', folders: ['/path/to/vae'] }
   ])
 
-  // Mock asset API
+  // Mock asset API - also returns objects with name and folders properties
   vi.mocked(assetService.getAssetModelFolders).mockResolvedValue([
     { name: 'checkpoints', folders: ['/path/to/checkpoints'] },
     { name: 'vae', folders: ['/path/to/vae'] }
@@ -149,6 +149,7 @@ describe('useModelStore', () => {
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
 
+      // Both APIs return objects with .name property, modelStore extracts folder.name in both cases
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
       expect(api.getModels).toHaveBeenCalledWith('checkpoints')
       expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(0)
@@ -163,6 +164,7 @@ describe('useModelStore', () => {
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
 
+      // Both APIs return objects with .name property, modelStore extracts folder.name in both cases
       expect(assetService.getAssetModelFolders).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(0)
