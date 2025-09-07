@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
 
+import { t } from '@/i18n'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
@@ -10,6 +11,7 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import { useDialogService } from '@/services/dialogService'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -24,7 +26,8 @@ import { isSubgraph } from '@/utils/typeGuardUtil'
 import { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {
-  static readonly basePath = 'workflows/'
+  static readonly basePath: string = 'workflows/'
+  readonly tintCanvasBg?: string
 
   /**
    * The change tracker for the workflow. Non-reactive raw object.
@@ -120,6 +123,14 @@ export class ComfyWorkflow extends UserFile {
     this.content = JSON.stringify(this.activeState)
     return await super.saveAs(path)
   }
+
+  async promptSave(): Promise<string | null> {
+    return await useDialogService().prompt({
+      title: t('workflowService.saveWorkflow'),
+      message: t('workflowService.enterFilename') + ':',
+      defaultValue: this.filename
+    })
+  }
 }
 
 export interface LoadedComfyWorkflow extends ComfyWorkflow {
@@ -139,6 +150,7 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
  */
 export interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
+  attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean
   openWorkflows: ComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
@@ -290,6 +302,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
+    comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
     console.debug('[workflowStore] open workflow', workflow.path)
     return loadedWorkflow
   }
@@ -304,11 +317,37 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     return newPath
   }
+  const saveAs = (
+    existingWorkflow: ComfyWorkflow,
+    path: string
+  ): ComfyWorkflow => {
+    const workflow: ComfyWorkflow = new (existingWorkflow.constructor as any)({
+      path,
+      modified: Date.now(),
+      size: -1
+    })
+    workflow.originalContent = workflow.content = existingWorkflow.content
+    workflowLookup.value[workflow.path] = workflow
+    return workflow
+  }
 
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
+    const existingWorkflow = workflows.value.find((w) => w.fullFilename == path)
+    if (
+      path &&
+      workflowData &&
+      existingWorkflow?.changeTracker &&
+      !existingWorkflow.directory.startsWith(
+        ComfyWorkflow.basePath.slice(0, -1)
+      )
+    ) {
+      existingWorkflow.changeTracker.reset(workflowData)
+      return existingWorkflow
+    }
+
     const workflow = new ComfyWorkflow({
       path: fullPath,
       modified: Date.now(),
@@ -357,7 +396,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const persistedWorkflows = computed(() =>
-    Array.from(workflows.value).filter((workflow) => workflow.isPersisted)
+    Array.from(workflows.value).filter(
+      (workflow) =>
+        workflow.isPersisted && !workflow.path.startsWith('subgraphs/')
+    )
   )
   const syncWorkflows = async (dir: string = '') => {
     await syncEntities(
@@ -647,6 +689,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   return {
     activeWorkflow,
+    attachWorkflow,
     isActive,
     openWorkflows,
     openedWorkflowIndexShift,
@@ -658,6 +701,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createTemporary,
     renameWorkflow,
     deleteWorkflow,
+    saveAs,
     saveWorkflow,
     reorderWorkflows,
 

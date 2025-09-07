@@ -1225,6 +1225,10 @@
     },
     "workflows": "워크플로"
   },
+  "subgraphStore": {
+    "blueprintName": "서브그래프 이름",
+    "saveBlueprint": "서브그래프를 라이브러리에 저장"
+  },
   "tabMenu": {
     "addToBookmarks": "북마크에 추가",
     "closeOtherTabs": "다른 탭 닫기",
