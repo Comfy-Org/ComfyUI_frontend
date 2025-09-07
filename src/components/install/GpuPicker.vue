@@ -43,11 +43,7 @@
 
     <div class="text-base text-neutral-300 pt-12 px-24 h-16">
       <div v-show="selected === 'mps'" class="flex items-center gap-2">
-        <span
-          class="bg-white text-black px-3 py-1 rounded-full text-sm font-medium"
-        >
-          {{ $t('install.gpuPicker.recommended') }}
-        </span>
+        <Tag :value="$t('install.gpuPicker.recommended')" />
         <i-lucide:badge-check class="text-neutral-300 text-lg" />
       </div>
     </div>
@@ -69,6 +65,7 @@
 
 <script setup lang="ts">
 import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
+import Tag from 'primevue/tag'
 
 import HardwareOption from '@/components/install/HardwareOption.vue'
 import { electronAPI } from '@/utils/envUtil'
