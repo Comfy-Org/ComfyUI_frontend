@@ -179,8 +179,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
   describe('system environment detection', () => {
     it('should collect system environment information successfully', async () => {
-      const { detectSystemEnvironment } = useConflictDetection()
-      const environment = await detectSystemEnvironment()
+      const { collectSystemEnvironment } = useConflictDetection()
+      const environment = await collectSystemEnvironment()
 
       expect(environment.comfyui_version).toBe('0.3.41')
       expect(environment.frontend_version).toBe('1.24.0-1')
@@ -196,8 +196,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
       )
       mockSystemStatsStore.systemStats = null
 
-      const { detectSystemEnvironment } = useConflictDetection()
-      const environment = await detectSystemEnvironment()
+      const { collectSystemEnvironment } = useConflictDetection()
+      const environment = await collectSystemEnvironment()
 
       expect(environment.comfyui_version).toBe('unknown')
       expect(environment.frontend_version).toBe('1.24.0-1')
@@ -266,8 +266,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.total_packages).toBeGreaterThanOrEqual(1)
@@ -315,8 +315,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
       // Mock Registry Service returning null (no packages found)
       mockRegistryService.getPackByVersion.mockResolvedValue(null)
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.total_packages).toBe(1)
@@ -338,8 +338,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
     it('should return empty array when local package information cannot be retrieved', async () => {
       mockComfyManagerService.listInstalledPacks.mockResolvedValue(null)
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.total_packages).toBe(0)
@@ -383,8 +383,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.conflicted_packages).toBe(0)
@@ -426,8 +426,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.conflicted_packages).toBe(1)
@@ -478,8 +478,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.conflicted_packages).toBe(1)
@@ -529,8 +529,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.banned_packages).toBe(1)
@@ -583,8 +583,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.banned_packages).toBe(1)
@@ -639,13 +639,13 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { hasConflicts, performConflictDetection } = useConflictDetection()
+      const { hasConflicts, runFullConflictAnalysis } = useConflictDetection()
 
       // Initial value should be false
       expect(hasConflicts.value).toBe(false)
 
       // Execute conflict detection
-      await performConflictDetection()
+      await runFullConflictAnalysis()
       await nextTick()
 
       // Should be true when conflicts are detected
@@ -686,10 +686,10 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { conflictedPackages, performConflictDetection } =
+      const { conflictedPackages, runFullConflictAnalysis } =
         useConflictDetection()
 
-      await performConflictDetection()
+      await runFullConflictAnalysis()
       await nextTick()
 
       expect(conflictedPackages.value.length).toBeGreaterThan(0)
@@ -746,10 +746,10 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { bannedPackages, performConflictDetection } =
+      const { bannedPackages, runFullConflictAnalysis } =
         useConflictDetection()
 
-      await performConflictDetection()
+      await runFullConflictAnalysis()
       await nextTick()
 
       expect(bannedPackages.value).toHaveLength(1)
@@ -772,8 +772,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.detected_system_environment?.comfyui_version).toBe(
@@ -787,8 +787,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         new Error('Service error')
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.total_packages).toBe(0)
@@ -836,8 +836,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true)
       expect(result.summary.total_packages).toBeGreaterThanOrEqual(1)
@@ -868,8 +868,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         new Error('Critical error')
       )
 
-      const { performConflictDetection } = useConflictDetection()
-      const result = await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
 
       expect(result.success).toBe(true) // Error resilience maintains success
       expect(result.summary.total_packages).toBe(0)
@@ -895,8 +895,8 @@ describe.skip('useConflictDetection with Registry Store', () => {
         status: 'NodeVersionStatusActive'
       })
 
-      const { performConflictDetection } = useConflictDetection()
-      await performConflictDetection()
+      const { runFullConflictAnalysis } = useConflictDetection()
+      await runFullConflictAnalysis()
 
       expect(mockAcknowledgment.checkComfyUIVersionChange).toHaveBeenCalledWith(
         '0.3.41'
@@ -951,11 +951,11 @@ describe.skip('useConflictDetection with Registry Store', () => {
         }
       )
 
-      const { shouldShowConflictModalAfterUpdate, performConflictDetection } =
+      const { shouldShowConflictModalAfterUpdate, runFullConflictAnalysis } =
         useConflictDetection()
 
       // First run conflict detection to populate conflicts
-      await performConflictDetection()
+      await runFullConflictAnalysis()
       await nextTick()
 
       // Now check if modal should show after update
@@ -973,10 +973,10 @@ describe.skip('useConflictDetection with Registry Store', () => {
         devices: []
       }
 
-      const { detectSystemEnvironment } = useConflictDetection()
+      const { collectSystemEnvironment } = useConflictDetection()
 
       // Detect system environment
-      const environment = await detectSystemEnvironment()
+      const environment = await collectSystemEnvironment()
 
       expect(environment.comfyui_version).toBe('0.3.41')
     })

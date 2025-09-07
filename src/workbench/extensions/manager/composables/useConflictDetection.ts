@@ -13,7 +13,7 @@ import type {
   ConflictDetectionSummary,
   ConflictType,
   Node,
-  NodePackRequirements,
+  NodeRequirements,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
 import { normalizePackId } from '@/utils/packUtils'
@@ -75,7 +75,7 @@ export function useConflictDetection() {
    * Continues with default values even if errors occur.
    * @returns Promise that resolves to system environment information
    */
-  async function detectSystemEnvironment(): Promise<SystemEnvironment> {
+  async function collectSystemEnvironment(): Promise<SystemEnvironment> {
     try {
       // Get system stats from store (primary source of system information)
       // Wait for systemStats to be initialized if not already
@@ -88,9 +88,7 @@ export function useConflictDetection() {
       const environment: SystemEnvironment = {
         comfyui_version: systemStats?.system.comfyui_version ?? '',
         frontend_version: frontendVersion,
-        // Platform information (from system stats)
         os: systemStats?.system.os ?? '',
-        // GPU/accelerator information
         accelerator: systemStats?.devices[0].type ?? ''
       }
 
@@ -126,7 +124,7 @@ export function useConflictDetection() {
    *
    * @returns Promise that resolves to array of node pack requirements
    */
-  async function fetchNodePackRequirements(): Promise<NodePackRequirements[]> {
+  async function buildNodeRequirements(): Promise<NodeRequirements[]> {
     try {
       // Step 1: Use installed packs composable instead of direct API calls
       await startFetchInstalled() // Ensure data is loaded
@@ -167,7 +165,7 @@ export function useConflictDetection() {
             abortController.value?.signal
           )
 
-          if (bulkResponse && bulkResponse.node_versions) {
+          if (bulkResponse && bulkResponse.node_versions?.length > 0) {
             // Process bulk response
             bulkResponse.node_versions.forEach((result) => {
               if (result.status === 'success' && result.node_version) {
@@ -192,30 +190,26 @@ export function useConflictDetection() {
       }
 
       // Step 5: Combine local installation data with Registry version data
-      const requirements: NodePackRequirements[] = []
+      const requirements: NodeRequirements[] = []
 
       // IMPORTANT: Use installedPacksWithVersions to check ALL installed packages
       // not just the ones that exist in Registry (installedPacks)
-      for (const installedPack of installedPacksWithVersions.value) {
-        const packageId = installedPack.id
-
-        // !!!!! 질문: 여기서 버전 데이터가 왜 있음 ???
-        const versionData = versionDataMap.get(packageId)
-        const installedVersion = installedPack.version
-
-        // Check if package is enabled using store method
-        const isEnabled = managerStore.isPackEnabled(packageId)
+      for (const installedPackVersion of installedPacksWithVersions.value) {
+        const versionData = versionDataMap.get(installedPackVersion.id)
+        const isEnabled = managerStore.isPackEnabled(installedPackVersion.id)
 
         // Find the pack info from Registry if available
-        const packInfo = installedPacks.value.find((p) => p.id === packageId)
+        const packInfo = installedPacks.value.find(
+          (p) => p.id === installedPackVersion.id
+        )
 
         if (versionData) {
           // Combine local installation data with version-specific Registry data
-          const requirement: NodePackRequirements = {
+          const requirement: NodeRequirements = {
             // Basic package info
-            id: packageId,
-            name: packInfo?.name || packageId,
-            installed_version: installedVersion,
+            id: installedPackVersion.id,
+            name: packInfo?.name || installedPackVersion.id,
+            installed_version: installedPackVersion.version,
             is_enabled: isEnabled,
 
             // Version-specific compatibility data
@@ -234,14 +228,14 @@ export function useConflictDetection() {
           requirements.push(requirement)
         } else {
           console.warn(
-            `[ConflictDetection] No Registry data found for ${packageId}, using fallback`
+            `[ConflictDetection] No Registry data found for ${installedPackVersion.id}, using fallback`
           )
 
           // Create fallback requirement without Registry data
-          const fallbackRequirement: NodePackRequirements = {
-            id: packageId,
-            name: packInfo?.name || packageId,
-            installed_version: installedVersion,
+          const fallbackRequirement: NodeRequirements = {
+            id: installedPackVersion.id,
+            name: packInfo?.name || installedPackVersion.id,
+            installed_version: installedPackVersion.version,
             is_enabled: isEnabled,
             is_banned: false,
             is_pending: false
@@ -268,8 +262,8 @@ export function useConflictDetection() {
    * @param sysEnv Current system environment
    * @returns Conflict detection result for the package
    */
-  function detectPackageConflicts(
-    packageReq: NodePackRequirements,
+  function analyzePackageConflicts(
+    packageReq: NodeRequirements,
     systemEnvInfo: SystemEnvironment
   ): ConflictDetectionResult {
     const conflicts: ConflictDetail[] = []
@@ -321,13 +315,13 @@ export function useConflictDetection() {
     }
 
     // 5. Banned package check using shared logic
-    const bannedConflict = getBannedConflictMessage(packageReq.is_banned)
+    const bannedConflict = createBannedConflict(packageReq.is_banned)
     if (bannedConflict) {
       conflicts.push(bannedConflict)
     }
 
     // 6. Registry data availability check using shared logic
-    const pendingConflict = getPendingConflictMessage(packageReq.is_pending)
+    const pendingConflict = createPendingConflict(packageReq.is_pending)
     if (pendingConflict) {
       conflicts.push(pendingConflict)
     }
@@ -451,7 +445,7 @@ export function useConflictDetection() {
    * Performs complete conflict detection.
    * @returns Promise that resolves to conflict detection response
    */
-  async function performConflictDetection(): Promise<ConflictDetectionResponse> {
+  async function runFullConflictAnalysis(): Promise<ConflictDetectionResponse> {
     if (isDetecting.value) {
       console.debug('[ConflictDetection] Already detecting, skipping')
       return {
@@ -468,16 +462,16 @@ export function useConflictDetection() {
 
     try {
       // 1. Collect system environment information
-      const systemEnvInfo = await detectSystemEnvironment()
+      const systemEnvInfo = await collectSystemEnvironment()
 
-      // 2. Collect package requirement information
-      const packageRequirements = await fetchNodePackRequirements()
+      // 2. Collect installed node requirement information
+      const installedNodeRequirements = await buildNodeRequirements()
 
       // 3. Detect conflicts for each package (parallel processing)
-      const conflictDetectionTasks = packageRequirements.map(
+      const conflictDetectionTasks = installedNodeRequirements.map(
         async (packageReq) => {
           try {
-            return detectPackageConflicts(packageReq, systemEnvInfo)
+            return analyzePackageConflicts(packageReq, systemEnvInfo)
           } catch (error) {
             console.warn(
               `[ConflictDetection] Failed to detect conflicts for package ${packageReq.name}:`,
@@ -573,7 +567,7 @@ export function useConflictDetection() {
       return {
         success: false,
         error_message: detectionError.value,
-        summary: detectionSummary.value || getEmptySummary(),
+        summary: detectionSummary.value || generateEmptySummary(),
         results: []
       }
     } finally {
@@ -607,7 +601,7 @@ export function useConflictDetection() {
 
       // Manager is new Manager, perform conflict detection
       // The useInstalledPacks will handle fetching installed list if needed
-      await performConflictDetection()
+      await runFullConflictAnalysis()
     } catch (error) {
       console.warn(
         '[ConflictDetection] Error during initialization (ignored):',
@@ -649,7 +643,7 @@ export function useConflictDetection() {
       console.debug(
         '[ConflictDetection] No detection results, running conflict detection...'
       )
-      await performConflictDetection()
+      await runFullConflictAnalysis()
     }
 
     // Check if this is a version update scenario
@@ -720,7 +714,7 @@ export function useConflictDetection() {
     }
 
     // Check banned package status using shared logic
-    const bannedConflict = getBannedConflictMessage(
+    const bannedConflict = createBannedConflict(
       node.status === 'NodeStatusBanned' ||
         node.status === 'NodeVersionStatusBanned'
     )
@@ -729,7 +723,7 @@ export function useConflictDetection() {
     }
 
     // Check pending status using shared logic
-    const pendingConflict = getPendingConflictMessage(
+    const pendingConflict = createPendingConflict(
       node.status === 'NodeVersionStatusPending'
     )
     if (pendingConflict) {
@@ -758,8 +752,8 @@ export function useConflictDetection() {
     securityPendingPackages,
 
     // Methods
-    performConflictDetection,
-    detectSystemEnvironment,
+    runFullConflictAnalysis,
+    collectSystemEnvironment,
     initializeConflictDetection,
     cancelRequests,
     shouldShowConflictModalAfterUpdate,
@@ -880,7 +874,7 @@ function normalizeOSValues(
 // TODO: move to type file
 type OS_TYPE = 'Windows' | 'Linux' | 'MacOS' | 'unknown'
 
-function systemStatsToSupportOs(systemOS?: string): OS_TYPE {
+function mapSystemOSToRegistry(systemOS?: string): OS_TYPE {
   const os = systemOS?.toLowerCase()
 
   if (os?.includes('win')) return 'Windows'
@@ -895,7 +889,7 @@ function systemStatsToSupportOs(systemOS?: string): OS_TYPE {
  * @param systemStats System stats data from store
  * @returns Accelerator information object
  */
-function extractAcceleratorInfo(systemDeviceType?: string): string {
+function mapDeviceTypeToAccelerator(systemDeviceType?: string): string {
   const deviceType = systemDeviceType?.toLowerCase()
 
   switch (deviceType) {
@@ -969,7 +963,7 @@ function checkOSConflict(
   supportedOS: Node['supported_os'],
   currentOS?: string
 ): ConflictDetail | null {
-  const currentOsBySupportOS = systemStatsToSupportOs(currentOS)
+  const currentOsBySupportOS = mapSystemOSToRegistry(currentOS)
   const hasOSConflict =
     currentOS && !supportedOS?.includes(currentOsBySupportOS)
   if (hasOSConflict) {
@@ -991,7 +985,7 @@ function checkAcceleratorConflict(
   currentAccelerator?: string
 ): ConflictDetail | null {
   const currentAcceleratorByAccelerator =
-    extractAcceleratorInfo(currentAccelerator)
+    mapDeviceTypeToAccelerator(currentAccelerator)
   const hasAcceleratorConflict =
     currentAccelerator &&
     !supportedAccelerators?.includes(currentAcceleratorByAccelerator)
@@ -1010,7 +1004,7 @@ function checkAcceleratorConflict(
 /**
  * Checks for banned package status conflicts.
  */
-function getBannedConflictMessage(isBanned?: boolean): ConflictDetail | null {
+function createBannedConflict(isBanned?: boolean): ConflictDetail | null {
   if (isBanned === true) {
     return {
       type: 'banned',
@@ -1024,7 +1018,7 @@ function getBannedConflictMessage(isBanned?: boolean): ConflictDetail | null {
 /**
  * Checks for pending package status conflicts.
  */
-function getPendingConflictMessage(isPending?: boolean): ConflictDetail | null {
+function createPendingConflict(isPending?: boolean): ConflictDetail | null {
   if (isPending === true) {
     return {
       type: 'pending',
@@ -1093,7 +1087,7 @@ function generateSummary(
 /**
  * Creates an empty summary for error cases.
  */
-function getEmptySummary(): ConflictDetectionSummary {
+function generateEmptySummary(): ConflictDetectionSummary {
   return {
     total_packages: 0,
     compatible_packages: 0,
