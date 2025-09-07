@@ -91,19 +91,21 @@
               {{ $t('install.locationPicker.chooseDownloadServers') }}
             </AccordionHeader>
             <AccordionContent>
-              {{ $t('install.locationPicker.downloadServersDescription') }}
+              <template
+                v-for="([item, modelValue], index) in mirrors"
+                :key="item.settingId + item.mirror"
+              >
+                <Divider v-if="index > 0" />
+
+                <MirrorItem
+                  v-model="modelValue.value"
+                  :item="item"
+                  @state-change="validationStates[index] = $event"
+                />
+              </template>
             </AccordionContent>
           </AccordionPanel>
         </Accordion>
-
-        <!-- Mirror Configuration moved from step 4 -->
-        <MirrorsConfiguration
-          v-model:pythonMirror="pythonMirror"
-          v-model:pypiMirror="pypiMirror"
-          v-model:torchMirror="torchMirror"
-          :device="device"
-          class="mt-6"
-        />
       </div>
     </div>
   </div>
@@ -111,6 +113,7 @@
 
 <script setup lang="ts">
 import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
+import { TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
 import Accordion from 'primevue/accordion'
 import AccordionContent from 'primevue/accordioncontent'
 import AccordionHeader from 'primevue/accordionheader'
@@ -119,12 +122,15 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import { onMounted, ref } from 'vue'
+import { ModelRef, computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
-import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
+import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
+import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
 import { electronAPI } from '@/utils/envUtil'
+import { isInChina } from '@/utils/networkUtil'
+import { ValidationState } from '@/utils/validationUtil'
 
 const { t } = useI18n()
 
@@ -160,11 +166,65 @@ const activeAccordionIndex = ref<string[] | undefined>(undefined)
 
 const electron = electronAPI()
 
+// Mirror configuration logic
+const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
+  const settingId = 'Comfy-Desktop.UV.TorchInstallMirror'
+  switch (device) {
+    case 'mps':
+      return {
+        settingId,
+        mirror: TorchMirrorUrl.NightlyCpu,
+        fallbackMirror: TorchMirrorUrl.NightlyCpu
+      }
+    case 'nvidia':
+      return {
+        settingId,
+        mirror: TorchMirrorUrl.Cuda,
+        fallbackMirror: TorchMirrorUrl.Cuda
+      }
+    case 'cpu':
+    default:
+      return {
+        settingId,
+        mirror: PYPI_MIRROR.mirror,
+        fallbackMirror: PYPI_MIRROR.fallbackMirror
+      }
+  }
+}
+
+const userIsInChina = ref(false)
+const useFallbackMirror = (mirror: UVMirror) => ({
+  ...mirror,
+  mirror: mirror.fallbackMirror
+})
+
+const mirrors = computed<[UVMirror, ModelRef<string>][]>(() =>
+  (
+    [
+      [PYTHON_MIRROR, pythonMirror],
+      [PYPI_MIRROR, pypiMirror],
+      [getTorchMirrorItem(device ?? 'cpu'), torchMirror]
+    ] as [UVMirror, ModelRef<string>][]
+  ).map(([item, modelValue]) => [
+    userIsInChina.value ? useFallbackMirror(item) : item,
+    modelValue
+  ])
+)
+
+const validationStates = ref<ValidationState[]>(
+  mirrors.value.map(() => ValidationState.IDLE)
+)
+// Validation state is not currently used in the UI but kept for future use
+// const validationState = computed(() => {
+//   return mergeValidationStates(validationStates.value)
+// })
+
 // Get default install path on component mount
 onMounted(async () => {
   const paths = await electron.getSystemPaths()
   installPath.value = paths.defaultInstallPath
   await validatePath(paths.defaultInstallPath)
+  userIsInChina.value = await isInChina()
 })
 
 const validatePath = async (path: string | undefined) => {
