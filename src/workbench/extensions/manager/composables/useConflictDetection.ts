@@ -1,8 +1,7 @@
 import { until } from '@vueuse/core'
-import { uniqBy } from 'es-toolkit/compat'
+import { find } from 'es-toolkit/compat'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
-import config from '@/config'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -11,16 +10,25 @@ import type {
   ConflictDetectionResponse,
   ConflictDetectionResult,
   ConflictDetectionSummary,
-  ConflictType,
   Node,
   NodeRequirements,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
-import { normalizePackId } from '@/utils/packUtils'
 import {
-  cleanVersion,
-  satisfiesVersion,
-  utilCheckVersionCompatibility
+  consolidateConflictsByPackage,
+  createBannedConflict,
+  createPendingConflict,
+  generateConflictSummary
+} from '@/utils/conflictUtils'
+import {
+  checkAcceleratorCompatibility,
+  checkOSCompatibility,
+  normalizeAcceleratorList,
+  normalizeOSList
+} from '@/utils/simpleCompatibility'
+import {
+  checkVersionCompatibility,
+  getFrontendVersion
 } from '@/utils/versionUtil'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -51,7 +59,7 @@ export function useConflictDetection() {
   const detectionResults = ref<ConflictDetectionResult[]>([])
   // Store merged conflicts separately for testing
   const storedMergedConflicts = ref<ConflictDetectionResult[]>([])
-  const detectionSummary = ref<ConflictDetectionSummary | null>(null)
+  const detectionSummary = ref<ConflictDetectionSummary | undefined>(undefined)
 
   // Registry API request cancellation
   const abortController = ref<AbortController | null>(null)
@@ -83,7 +91,7 @@ export function useConflictDetection() {
         useSystemStatsStore()
       await until(systemStatsInitialized)
 
-      const frontendVersion = await fetchFrontendVersion()
+      const frontendVersion = getFrontendVersion()
 
       const environment: SystemEnvironment = {
         comfyui_version: systemStats?.system.comfyui_version ?? '',
@@ -199,9 +207,9 @@ export function useConflictDetection() {
         const isEnabled = managerStore.isPackEnabled(installedPackVersion.id)
 
         // Find the pack info from Registry if available
-        const packInfo = installedPacks.value.find(
-          (p) => p.id === installedPackVersion.id
-        )
+        const packInfo = find(installedPacks.value, {
+          id: installedPackVersion.id
+        })
 
         if (versionData) {
           // Combine local installation data with version-specific Registry data
@@ -216,7 +224,9 @@ export function useConflictDetection() {
             supported_comfyui_version: versionData.supported_comfyui_version,
             supported_comfyui_frontend_version:
               versionData.supported_comfyui_frontend_version,
-            supported_os: normalizeOSValues(versionData.supported_os),
+            supported_os: normalizeOSList(
+              versionData.supported_os
+            ) as Node['supported_os'],
             supported_accelerators: versionData.supported_accelerators,
 
             // Status information
@@ -268,51 +278,35 @@ export function useConflictDetection() {
   ): ConflictDetectionResult {
     const conflicts: ConflictDetail[] = []
 
-    // Helper function to check if a value indicates "compatible with all"
-    const isCompatibleWithAll = (value: any): boolean => {
-      if (value === null || value === undefined) return true
-      if (typeof value === 'string' && value.trim() === '') return true
-      if (Array.isArray(value) && value.length === 0) return true
-      return false
-    }
-
     // 1. ComfyUI version conflict check
-    if (!isCompatibleWithAll(packageReq.supported_comfyui_version)) {
-      const versionConflict = checkVersionConflict(
-        'comfyui_version',
-        systemEnvInfo.comfyui_version,
-        packageReq.supported_comfyui_version!
-      )
-      if (versionConflict) conflicts.push(versionConflict)
-    }
+    const versionConflict = checkVersionCompatibility(
+      'comfyui_version',
+      systemEnvInfo.comfyui_version,
+      packageReq.supported_comfyui_version
+    )
+    if (versionConflict) conflicts.push(versionConflict)
 
     // 2. Frontend version conflict check
-    if (!isCompatibleWithAll(packageReq.supported_comfyui_frontend_version)) {
-      const versionConflict = checkVersionConflict(
-        'frontend_version',
-        systemEnvInfo.frontend_version,
-        packageReq.supported_comfyui_frontend_version!
-      )
-      if (versionConflict) conflicts.push(versionConflict)
-    }
+    const frontendConflict = checkVersionCompatibility(
+      'frontend_version',
+      systemEnvInfo.frontend_version,
+      packageReq.supported_comfyui_frontend_version
+    )
+    if (frontendConflict) conflicts.push(frontendConflict)
 
     // 3. OS compatibility check
-    if (!isCompatibleWithAll(packageReq.supported_os)) {
-      const osConflict = checkOSConflict(
-        packageReq.supported_os!,
-        systemEnvInfo.os
-      )
-      if (osConflict) conflicts.push(osConflict)
-    }
+    const osConflict = checkOSCompatibility(
+      packageReq.supported_os as any,
+      systemEnvInfo.os
+    )
+    if (osConflict) conflicts.push(osConflict)
 
     // 4. Accelerator compatibility check
-    if (!isCompatibleWithAll(packageReq.supported_accelerators)) {
-      const acceleratorConflict = checkAcceleratorConflict(
-        packageReq.supported_accelerators!,
-        systemEnvInfo.accelerator
-      )
-      if (acceleratorConflict) conflicts.push(acceleratorConflict)
-    }
+    const acceleratorConflict = checkAcceleratorCompatibility(
+      packageReq.supported_accelerators as any,
+      systemEnvInfo.accelerator
+    )
+    if (acceleratorConflict) conflicts.push(acceleratorConflict)
 
     // 5. Banned package check using shared logic
     const bannedConflict = createBannedConflict(packageReq.is_banned)
@@ -496,7 +490,10 @@ export function useConflictDetection() {
       const allResults = [...packageResults, ...importFailResults]
 
       // 6. Generate summary information
-      const summary = generateSummary(allResults, Date.now() - startTime)
+      const summary = generateConflictSummary(
+        allResults,
+        Date.now() - startTime
+      )
 
       // 7. Update state
       detectionResults.value = allResults
@@ -516,7 +513,7 @@ export function useConflictDetection() {
         )
 
         // Merge conflicts for packages with the same name
-        const mergedConflicts = mergeConflictsByPackageName(conflictedResults)
+        const mergedConflicts = consolidateConflictsByPackage(conflictedResults)
 
         console.debug(
           '[ConflictDetection] Conflicts detected (stored for UI):',
@@ -567,7 +564,7 @@ export function useConflictDetection() {
       return {
         success: false,
         error_message: detectionError.value,
-        summary: detectionSummary.value || generateEmptySummary(),
+        summary: detectionSummary.value,
         results: []
       }
     } finally {
@@ -665,7 +662,7 @@ export function useConflictDetection() {
    * Check compatibility for a node.
    * Used by components like PackVersionSelectorPopover.
    */
-  async function checkNodeCompatibility(
+  function checkNodeCompatibility(
     node: Node | components['schemas']['NodeVersion']
   ) {
     const systemStatsStore = useSystemStatsStore()
@@ -674,17 +671,20 @@ export function useConflictDetection() {
 
     const conflicts: ConflictDetail[] = []
 
-    // Check OS compatibility using centralized function
+    // Check OS compatibility
     const currentOS = systemStats.system?.os
-    const OSConflict = checkOSConflict(node.supported_os, currentOS)
-    if (OSConflict) {
-      conflicts.push(OSConflict)
+    const osConflict = checkOSCompatibility(
+      normalizeOSList(node.supported_os),
+      currentOS
+    )
+    if (osConflict) {
+      conflicts.push(osConflict)
     }
 
-    // Check Accelerator compatibility using centralized function
-    const currentAccelerator = systemStats.devices?.[0].type
-    const acceleratorConflict = checkAcceleratorConflict(
-      node.supported_accelerators,
+    // Check Accelerator compatibility
+    const currentAccelerator = systemStats.devices?.[0]?.type
+    const acceleratorConflict = checkAcceleratorCompatibility(
+      normalizeAcceleratorList(node.supported_accelerators),
       currentAccelerator
     )
     if (acceleratorConflict) {
@@ -693,7 +693,7 @@ export function useConflictDetection() {
 
     // Check ComfyUI version compatibility
     const currentComfyUIVersion = systemStats.system?.comfyui_version
-    const comfyUIVersionConflict = utilCheckVersionCompatibility(
+    const comfyUIVersionConflict = checkVersionCompatibility(
       'comfyui_version',
       currentComfyUIVersion,
       node.supported_comfyui_version
@@ -703,8 +703,8 @@ export function useConflictDetection() {
     }
 
     // Check ComfyUI Frontend version compatibility
-    const currentFrontendVersion = await fetchFrontendVersion()
-    const frontendVersionConflict = utilCheckVersionCompatibility(
+    const currentFrontendVersion = getFrontendVersion()
+    const frontendVersionConflict = checkVersionCompatibility(
       'frontend_version',
       currentFrontendVersion,
       node.supported_comfyui_frontend_version
@@ -760,350 +760,5 @@ export function useConflictDetection() {
 
     // Helper functions for other components
     checkNodeCompatibility
-  }
-}
-
-// Helper Functions Implementation
-
-/**
- * Merges conflict results for packages with the same name.
- * Combines all conflicts from different detection sources (registry, python, extension)
- * into a single result per package name.
- * @param conflicts Array of conflict detection results
- * @returns Array of merged conflict detection results
- */
-function mergeConflictsByPackageName(
-  conflicts: ConflictDetectionResult[]
-): ConflictDetectionResult[] {
-  const mergedMap = new Map<string, ConflictDetectionResult>()
-
-  conflicts.forEach((conflict) => {
-    // Normalize package name by removing version suffix (@1_0_3) for consistent merging
-    const normalizedPackageName = normalizePackId(conflict.package_name)
-
-    if (mergedMap.has(normalizedPackageName)) {
-      // Package already exists, merge conflicts
-      const existing = mergedMap.get(normalizedPackageName)!
-
-      // Combine all conflicts, avoiding duplicates using es-toolkit uniqBy for O(n) performance
-      const allConflicts = [...existing.conflicts, ...conflict.conflicts]
-      const uniqueConflicts = uniqBy(
-        allConflicts,
-        (conflict) =>
-          `${conflict.type}|${conflict.current_value}|${conflict.required_value}`
-      )
-
-      // Update the existing entry with normalized package name
-      mergedMap.set(normalizedPackageName, {
-        ...existing,
-        package_name: normalizedPackageName,
-        conflicts: uniqueConflicts,
-        has_conflict: uniqueConflicts.length > 0,
-        is_compatible: uniqueConflicts.length === 0
-      })
-    } else {
-      // New package, add with normalized package name
-      mergedMap.set(normalizedPackageName, {
-        ...conflict,
-        package_name: normalizedPackageName
-      })
-    }
-  })
-
-  return Array.from(mergedMap.values())
-}
-
-/**
- * Fetches frontend version from config.
- * @returns Promise that resolves to frontend version string
- */
-async function fetchFrontendVersion(): Promise<string> {
-  try {
-    // Get frontend version from vite build-time constant or fallback to config
-    return config.app_version || import.meta.env.VITE_APP_VERSION || 'unknown'
-  } catch {
-    return 'unknown'
-  }
-}
-
-/**
- * Normalizes OS values from the Registry API to match our SupportedOS type.
- *
- * Rules:
- * - Registry Admin guide specifies: Windows, macOS, Linux
- * - null, undefined, or an empty array → treated as "supports all OS"
- * - ['OS Independent'] → treated as "supports all OS"
- * - Otherwise, map each string to a standard OS value
- *
- * @param osValues OS values from the Registry API
- * @returns Normalized OS values
- */
-function normalizeOSValues(
-  osValues: string[] | null | undefined
-): Node['supported_os'] {
-  // Default set meaning "supports all OS"
-  const allOS: Node['supported_os'] = ['Windows', 'macOS', 'Linux']
-
-  // null, undefined, or empty array → all OS
-  if (!osValues || osValues.length === 0) {
-    return allOS
-  }
-
-  // If the array contains "OS Independent" → all OS
-  if (osValues.some((os) => os.toLowerCase() === 'os independent')) {
-    return allOS
-  }
-
-  // Map each value to standardized OS names
-  return osValues.flatMap((os) => {
-    const lower = os.toLowerCase()
-    if (os === 'Windows' || lower.includes('win')) return ['Windows']
-    if (os === 'macOS' || lower.includes('mac') || os === 'darwin')
-      return ['macOS']
-    if (os === 'Linux' || lower.includes('linux')) return ['Linux']
-    // Ignore anything unrecognized
-    return []
-  })
-}
-
-/**
- * Detects operating system from system stats OS string.
- * @param systemOS OS string from system stats API
- * @returns Operating system type
- */
-// TODO: move to type file
-type OS_TYPE = 'Windows' | 'Linux' | 'MacOS' | 'unknown'
-
-function mapSystemOSToRegistry(systemOS?: string): OS_TYPE {
-  const os = systemOS?.toLowerCase()
-
-  if (os?.includes('win')) return 'Windows'
-  if (os?.includes('linux')) return 'Linux'
-  if (os?.includes('darwin')) return 'MacOS'
-
-  return 'unknown'
-}
-
-/**
- * Extracts accelerator information from system stats.
- * @param systemStats System stats data from store
- * @returns Accelerator information object
- */
-function mapDeviceTypeToAccelerator(systemDeviceType?: string): string {
-  const deviceType = systemDeviceType?.toLowerCase()
-
-  switch (deviceType) {
-    case 'cuda':
-      return 'CUDA'
-    case 'mps':
-      return 'Metal'
-    case 'rocm':
-      return 'ROCm'
-    default:
-      return 'CPU'
-  }
-}
-
-/**
- * Unified version conflict check using Registry API version strings.
- * Uses shared versionUtil functions for consistent version handling.
- * @param type Type of version being checked
- * @param currentVersion Current version
- * @param supportedVersion Supported version from Registry
- * @returns Conflict detail if conflict exists, null otherwise
- */
-function checkVersionConflict(
-  type: ConflictType,
-  currentVersion?: string,
-  supportedVersion?: string
-): ConflictDetail | null {
-  // If current version is undefined, assume compatible (no conflict)
-  if (!currentVersion) {
-    return null
-  }
-
-  // If Registry doesn't specify version requirements, assume compatible
-  if (!supportedVersion || supportedVersion.trim() === '') {
-    return null
-  }
-
-  try {
-    // Clean the current version using shared utility
-    const cleanCurrent = cleanVersion(currentVersion)
-
-    // Check version compatibility using shared utility
-    const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
-
-    if (!isCompatible) {
-      return {
-        type,
-        current_value: currentVersion,
-        required_value: supportedVersion
-      }
-    }
-
-    return null
-  } catch (error) {
-    console.warn(
-      `[ConflictDetection] Failed to parse version requirement: ${supportedVersion}`,
-      error
-    )
-    return {
-      type,
-      current_value: currentVersion,
-      required_value: supportedVersion
-    }
-  }
-}
-
-/**
- * Checks for OS compatibility conflicts.
- */
-function checkOSConflict(
-  supportedOS: Node['supported_os'],
-  currentOS?: string
-): ConflictDetail | null {
-  const currentOsBySupportOS = mapSystemOSToRegistry(currentOS)
-  const hasOSConflict =
-    currentOS && !supportedOS?.includes(currentOsBySupportOS)
-  if (hasOSConflict) {
-    return {
-      type: 'os',
-      current_value: currentOsBySupportOS,
-      required_value: supportedOS ? supportedOS?.join(', ') : ''
-    }
-  }
-
-  return null
-}
-
-/**
- * Checks for accelerator compatibility conflicts.
- */
-function checkAcceleratorConflict(
-  supportedAccelerators: Node['supported_accelerators'],
-  currentAccelerator?: string
-): ConflictDetail | null {
-  const currentAcceleratorByAccelerator =
-    mapDeviceTypeToAccelerator(currentAccelerator)
-  const hasAcceleratorConflict =
-    currentAccelerator &&
-    !supportedAccelerators?.includes(currentAcceleratorByAccelerator)
-  if (hasAcceleratorConflict) {
-    return {
-      type: 'accelerator',
-      current_value: currentAcceleratorByAccelerator,
-      required_value: supportedAccelerators
-        ? supportedAccelerators.join(', ')
-        : ''
-    }
-  }
-  return null
-}
-
-/**
- * Checks for banned package status conflicts.
- */
-function createBannedConflict(isBanned?: boolean): ConflictDetail | null {
-  if (isBanned === true) {
-    return {
-      type: 'banned',
-      current_value: 'installed',
-      required_value: 'not_banned'
-    }
-  }
-  return null
-}
-
-/**
- * Checks for pending package status conflicts.
- */
-function createPendingConflict(isPending?: boolean): ConflictDetail | null {
-  if (isPending === true) {
-    return {
-      type: 'pending',
-      current_value: 'installed',
-      required_value: 'not_pending'
-    }
-  }
-  return null
-}
-
-/**
- * Generates summary of conflict detection results.
- */
-function generateSummary(
-  results: ConflictDetectionResult[],
-  durationMs: number
-): ConflictDetectionSummary {
-  const conflictsByType: Record<ConflictType, number> = {
-    comfyui_version: 0,
-    frontend_version: 0,
-    import_failed: 0,
-    os: 0,
-    accelerator: 0,
-    banned: 0,
-    pending: 0
-  }
-
-  const conflictsByTypeDetails: Record<ConflictType, string[]> = {
-    comfyui_version: [],
-    frontend_version: [],
-    import_failed: [],
-    os: [],
-    accelerator: [],
-    banned: [],
-    pending: []
-  }
-
-  let bannedCount = 0
-  let securityPendingCount = 0
-
-  results.forEach((result) => {
-    result.conflicts.forEach((conflict) => {
-      conflictsByType[conflict.type]++
-
-      if (!conflictsByTypeDetails[conflict.type].includes(result.package_id)) {
-        conflictsByTypeDetails[conflict.type].push(result.package_id)
-      }
-
-      if (conflict.type === 'banned') bannedCount++
-      if (conflict.type === 'pending') securityPendingCount++
-    })
-  })
-
-  return {
-    total_packages: results.length,
-    compatible_packages: results.filter((r) => r.is_compatible).length,
-    conflicted_packages: results.filter((r) => r.has_conflict).length,
-    banned_packages: bannedCount,
-    pending_packages: securityPendingCount,
-    conflicts_by_type_details: conflictsByTypeDetails,
-    last_check_timestamp: new Date().toISOString(),
-    check_duration_ms: durationMs
-  }
-}
-
-/**
- * Creates an empty summary for error cases.
- */
-function generateEmptySummary(): ConflictDetectionSummary {
-  return {
-    total_packages: 0,
-    compatible_packages: 0,
-    conflicted_packages: 0,
-    banned_packages: 0,
-    pending_packages: 0,
-    conflicts_by_type_details: {
-      comfyui_version: [],
-      frontend_version: [],
-      import_failed: [],
-      os: [],
-      accelerator: [],
-      banned: [],
-      pending: []
-    },
-    last_check_timestamp: new Date().toISOString(),
-    check_duration_ms: 0
   }
 }

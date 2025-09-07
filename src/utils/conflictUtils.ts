@@ -1,0 +1,123 @@
+import { groupBy, isEmpty, isNil, uniqBy } from 'es-toolkit/compat'
+
+import type {
+  ConflictDetail,
+  ConflictDetectionResult,
+  ConflictDetectionSummary,
+  ConflictType
+} from '@/types/conflictDetectionTypes'
+import { normalizePackId } from '@/utils/packUtils'
+
+/**
+ * Helper function to check if a value indicates "compatible with all"
+ * @param value Value to check
+ * @returns True if compatible with all
+ */
+export function isCompatibleWithAll(value: any): boolean {
+  return isNil(value) || isEmpty(value)
+}
+
+/**
+ * Checks for banned package status conflicts.
+ */
+export function createBannedConflict(
+  isBanned?: boolean
+): ConflictDetail | null {
+  if (isBanned === true) {
+    return {
+      type: 'banned',
+      current_value: 'installed',
+      required_value: 'not_banned'
+    }
+  }
+  return null
+}
+
+/**
+ * Checks for pending package status conflicts.
+ */
+export function createPendingConflict(
+  isPending?: boolean
+): ConflictDetail | null {
+  if (isPending === true) {
+    return {
+      type: 'pending',
+      current_value: 'installed',
+      required_value: 'not_pending'
+    }
+  }
+  return null
+}
+
+/**
+ * Groups and deduplicates conflicts by normalized package name.
+ * Consolidates multiple conflict sources (registry checks, import failures, disabled packages with version suffix)
+ * into a single UI entry per package.
+ *
+ * Example:
+ * - Input: [{name: "pack@1_0_3", conflicts: [...]}, {name: "pack", conflicts: [...]}]
+ * - Output: [{name: "pack", conflicts: [...combined unique conflicts...]}]
+ *
+ * @param conflicts Array of conflict detection results (may have duplicate packages with version suffixes)
+ * @returns Array of deduplicated conflict results grouped by normalized package name
+ */
+export function consolidateConflictsByPackage(
+  conflicts: ConflictDetectionResult[]
+): ConflictDetectionResult[] {
+  // Group conflicts by normalized package name using es-toolkit
+  const grouped = groupBy(conflicts, (conflict) =>
+    normalizePackId(conflict.package_name)
+  )
+
+  // Merge conflicts for each group
+  return Object.entries(grouped).map(([packageName, packageConflicts]) => {
+    // Flatten all conflicts from the group
+    const allConflicts = packageConflicts.flatMap((pc) => pc.conflicts)
+
+    // Remove duplicate conflicts using uniqBy
+    const uniqueConflicts = uniqBy(
+      allConflicts,
+      (conflict) =>
+        `${conflict.type}|${conflict.current_value}|${conflict.required_value}`
+    )
+
+    // Use the first item as base and update with merged data
+    const baseItem = packageConflicts[0]
+    return {
+      ...baseItem,
+      package_name: packageName, // Use normalized name
+      conflicts: uniqueConflicts,
+      has_conflict: uniqueConflicts.length > 0,
+      is_compatible: uniqueConflicts.length === 0
+    }
+  })
+}
+
+/**
+ * Generates summary of conflict detection results.
+ */
+export function generateConflictSummary(
+  results: ConflictDetectionResult[],
+  durationMs: number
+): ConflictDetectionSummary {
+  const conflictsByTypeDetails: Record<ConflictType, string[]> = {
+    comfyui_version: [],
+    frontend_version: [],
+    import_failed: [],
+    os: [],
+    accelerator: [],
+    banned: [],
+    pending: []
+  }
+
+  return {
+    total_packages: results.length,
+    compatible_packages: results.filter((r) => r.is_compatible).length,
+    conflicted_packages: results.filter((r) => r.has_conflict).length,
+    banned_packages: conflictsByTypeDetails['banned'].length,
+    pending_packages: conflictsByTypeDetails['pending'].length,
+    conflicts_by_type_details: conflictsByTypeDetails,
+    last_check_timestamp: new Date().toISOString(),
+    check_duration_ms: durationMs
+  }
+}
