@@ -52,61 +52,59 @@
       </div>
 
       <!-- Collapsible Sections using PrimeVue Accordion -->
-      <div class="px-12">
-        <Accordion
-          v-model:value="activeAccordionIndex"
-          :multiple="true"
-          class="location-picker-accordion"
-          :pt="{
+      <Accordion
+        v-model:value="activeAccordionIndex"
+        :multiple="true"
+        class="location-picker-accordion"
+        :pt="{
+          root: 'bg-transparent border-0',
+          panel: {
+            root: 'border-0 mb-0'
+          },
+          header: {
+            root: 'border-0',
+            content:
+              'text-neutral-400 hover:text-neutral-300 px-4 py-2 flex items-center gap-3',
+            toggleicon: 'text-xs order-first mr-0'
+          },
+          content: {
             root: 'bg-transparent border-0',
-            panel: {
-              root: 'border-0 mb-0'
-            },
-            header: {
-              root: 'border-0',
-              content:
-                'text-neutral-400 hover:text-neutral-300 px-4 py-2 flex items-center gap-3',
-              toggleicon: 'text-xs order-first mr-0'
-            },
-            content: {
-              root: 'bg-transparent border-0',
-              content: 'text-neutral-500 text-sm pl-11 pb-3 pt-0'
-            }
-          }"
-        >
-          <AccordionPanel value="0">
-            <AccordionHeader>
-              {{ $t('install.locationPicker.migrateFromExisting') }}
-            </AccordionHeader>
-            <AccordionContent>
-              <MigrationPicker
-                v-model:sourcePath="migrationSourcePath"
-                v-model:migrationItemIds="migrationItemIds"
+            content: 'text-neutral-500 text-sm pl-11 pb-3 pt-0'
+          }
+        }"
+      >
+        <AccordionPanel value="0">
+          <AccordionHeader>
+            {{ $t('install.locationPicker.migrateFromExisting') }}
+          </AccordionHeader>
+          <AccordionContent>
+            <MigrationPicker
+              v-model:sourcePath="migrationSourcePath"
+              v-model:migrationItemIds="migrationItemIds"
+            />
+          </AccordionContent>
+        </AccordionPanel>
+
+        <AccordionPanel value="1">
+          <AccordionHeader>
+            {{ $t('install.locationPicker.chooseDownloadServers') }}
+          </AccordionHeader>
+          <AccordionContent>
+            <template
+              v-for="([item, modelValue], index) in mirrors"
+              :key="item.settingId + item.mirror"
+            >
+              <Divider v-if="index > 0" />
+
+              <MirrorItem
+                v-model="modelValue.value"
+                :item="item"
+                @state-change="validationStates[index] = $event"
               />
-            </AccordionContent>
-          </AccordionPanel>
-
-          <AccordionPanel value="1">
-            <AccordionHeader>
-              {{ $t('install.locationPicker.chooseDownloadServers') }}
-            </AccordionHeader>
-            <AccordionContent>
-              <template
-                v-for="([item, modelValue], index) in mirrors"
-                :key="item.settingId + item.mirror"
-              >
-                <Divider v-if="index > 0" />
-
-                <MirrorItem
-                  v-model="modelValue.value"
-                  :item="item"
-                  @state-change="validationStates[index] = $event"
-                />
-              </template>
-            </AccordionContent>
-          </AccordionPanel>
-        </Accordion>
-      </div>
+            </template>
+          </AccordionContent>
+        </AccordionPanel>
+      </Accordion>
     </div>
   </div>
 </template>
@@ -273,8 +271,12 @@ const onFocus = async () => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 /* Style the accordion to match the mockup */
 :deep(.location-picker-accordion) {
+  @apply px-12;
+
   .p-accordionpanel {
     border: none;
     background: transparent;
