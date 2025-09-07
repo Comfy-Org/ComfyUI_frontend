@@ -1,3 +1,4 @@
+import { GEOMETRY } from '@/renderer/core/constants/geometry'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -38,7 +39,7 @@ export interface FloatingRerouteSlot {
 export class Reroute
   implements Positionable, LinkSegment, Serialisable<SerialisableReroute>
 {
-  static radius: number = 10
+  static radius: number = GEOMETRY.REROUTE_RADIUS
   /** Maximum distance from reroutes to their bezier curve control points. */
   static maxSplineOffset: number = 80
   static drawIdBadge: boolean = false

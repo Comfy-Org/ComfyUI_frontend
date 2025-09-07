@@ -8,6 +8,7 @@ import log from 'loglevel'
 import { type ComputedRef, type Ref, computed, customRef } from 'vue'
 import * as Y from 'yjs'
 
+import { GEOMETRY } from '@/renderer/core/constants/geometry'
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import type {
   CreateLinkOperation,
@@ -45,9 +46,6 @@ type YEventChange = {
 }
 
 const logger = log.getLogger('LayoutStore')
-
-// Constants
-const REROUTE_RADIUS = 8
 
 class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
@@ -638,10 +636,10 @@ class LayoutStoreImpl implements LayoutStore {
   querySlotAtPoint(point: Point): SlotLayout | null {
     // Use spatial index to get candidate slots
     const searchArea = {
-      x: point.x - 10, // Tolerance for slot size
-      y: point.y - 10,
-      width: 20,
-      height: 20
+      x: point.x - GEOMETRY.SLOT_HEIGHT, // Tolerance for slot size
+      y: point.y - GEOMETRY.SLOT_HEIGHT,
+      width: GEOMETRY.SLOT_HEIGHT * 2,
+      height: GEOMETRY.SLOT_HEIGHT * 2
     }
     const candidateSlotKeys = this.slotSpatialIndex.query(searchArea)
 
@@ -1084,12 +1082,12 @@ class LayoutStoreImpl implements LayoutStore {
     const layout: RerouteLayout = {
       id: operation.rerouteId,
       position: pos,
-      radius: 8,
+      radius: GEOMETRY.REROUTE_RADIUS,
       bounds: {
-        x: pos.x - 8,
-        y: pos.y - 8,
-        width: 16,
-        height: 16
+        x: pos.x - GEOMETRY.REROUTE_RADIUS,
+        y: pos.y - GEOMETRY.REROUTE_RADIUS,
+        width: GEOMETRY.REROUTE_RADIUS * 2,
+        height: GEOMETRY.REROUTE_RADIUS * 2
       }
     }
     this.updateRerouteLayout(operation.rerouteId, layout)
@@ -1216,12 +1214,12 @@ class LayoutStoreImpl implements LayoutStore {
     return {
       id: rerouteId,
       position,
-      radius: REROUTE_RADIUS,
+      radius: GEOMETRY.REROUTE_RADIUS,
       bounds: {
-        x: position.x - REROUTE_RADIUS,
-        y: position.y - REROUTE_RADIUS,
-        width: REROUTE_RADIUS * 2,
-        height: REROUTE_RADIUS * 2
+        x: position.x - GEOMETRY.REROUTE_RADIUS,
+        y: position.y - GEOMETRY.REROUTE_RADIUS,
+        width: GEOMETRY.REROUTE_RADIUS * 2,
+        height: GEOMETRY.REROUTE_RADIUS * 2
       }
     }
   }
