@@ -357,3 +357,48 @@ export const ErrorState: Story = {
     }
   }
 }
+
+// Story with warning state (non-default drive)
+export const WarningState: Story = {
+  render: () => {
+    // Override validation to return a warning about non-default drive
+    ;(window as any).electronAPI.validateInstallPath = () =>
+      Promise.resolve({
+        isValid: true,
+        exists: false,
+        canWrite: true,
+        freeSpace: 500_000_000_000,
+        requiredSpace: 10_000_000_000,
+        isNonDefaultDrive: true
+      })
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      async mounted() {
+        // Wait for component to be fully mounted
+        await nextTick()
+
+        // Select Apple Metal option to enable navigation
+        const hardwareOptions = this.$el.querySelectorAll('.hardware-option')
+        if (hardwareOptions.length > 0) {
+          hardwareOptions[0].click() // Click Apple Metal (first option)
+        }
+
+        await nextTick()
+
+        // Click Next to go to step 2 where warning will be shown
+        const buttons = Array.from(
+          this.$el.querySelectorAll('button')
+        ) as HTMLButtonElement[]
+        const nextBtn = buttons.find((btn) => btn.textContent?.includes('Next'))
+        if (nextBtn) {
+          nextBtn.click()
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
+}
