@@ -89,7 +89,7 @@ export interface ConflictDetectionSummary {
 export interface ConflictDetectionResponse {
   success: boolean
   error_message?: string
-  summary: ConflictDetectionSummary
+  summary?: ConflictDetectionSummary
   results: ConflictDetectionResult[]
   detected_system_environment?: Partial<SystemEnvironment>
 }
