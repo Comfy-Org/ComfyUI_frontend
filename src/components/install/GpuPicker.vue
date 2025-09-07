@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-full max-w-3xl mx-auto h-full select-none">
+  <div class="flex flex-col w-full max-w-3xl mx-auto min-h-[30rem] select-none">
     <!-- Title at top -->
     <h2
       class="text-3xl text-neutral-100 text-center italic"
