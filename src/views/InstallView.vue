@@ -4,7 +4,7 @@
     <div class="w-full h-full max-w-5xl mx-auto flex flex-col">
       <Stepper
         v-model:value="currentStep"
-        class="flex flex-col h-full p-8"
+        class="flex flex-col h-full pl-8 pt-8 pb-8 pr-0"
         @update:value="handleStepChange"
       >
         <!-- Main content area that grows to fill available space -->
@@ -13,12 +13,12 @@
           :style="{ scrollbarGutter: 'stable' }"
         >
           <StepPanel value="0">
-            <div class="flex items-center justify-center h-full">
+            <div class="flex items-center justify-center h-full pr-8">
               <GpuPicker v-model:device="device" />
             </div>
           </StepPanel>
           <StepPanel value="1">
-            <div class="flex items-center justify-center h-full">
+            <div class="flex items-center justify-center h-full pr-8">
               <InstallLocationPicker
                 v-model:install-path="installPath"
                 v-model:path-error="pathError"
@@ -32,7 +32,7 @@
             </div>
           </StepPanel>
           <StepPanel value="2">
-            <div class="flex items-center justify-center h-full">
+            <div class="flex items-center justify-center h-full pr-8">
               <!-- Migration step is empty - content moved to accordion in step 2 -->
               <div class="text-neutral-400 text-center">
                 <p>{{ $t('install.migrationStepEmpty') }}</p>
@@ -40,7 +40,7 @@
             </div>
           </StepPanel>
           <StepPanel value="3">
-            <div class="flex items-center justify-center h-full">
+            <div class="flex items-center justify-center h-full pr-8">
               <DesktopSettingsConfiguration
                 v-model:autoUpdate="autoUpdate"
                 v-model:allowMetrics="allowMetrics"
@@ -51,7 +51,7 @@
 
         <!-- Install footer with navigation -->
         <InstallFooter
-          class="pt-6 pb-4 max-w-2xl mx-auto w-full"
+          class="pt-6 pb-4 pr-8 max-w-2xl mx-auto w-full"
           :current-step
           :can-proceed
           :disable-location-step="noGpu"
