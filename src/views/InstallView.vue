@@ -8,7 +8,10 @@
         @update:value="handleStepChange"
       >
         <!-- Main content area that grows to fill available space -->
-        <StepPanels class="flex-1 overflow-auto">
+        <StepPanels
+          class="flex-1 overflow-auto"
+          :style="{ scrollbarGutter: 'stable' }"
+        >
           <StepPanel value="0">
             <div class="flex items-center justify-center h-full">
               <GpuPicker v-model:device="device" />
