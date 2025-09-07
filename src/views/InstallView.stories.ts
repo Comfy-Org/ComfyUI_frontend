@@ -1,19 +1,25 @@
 // eslint-disable-next-line storybook/no-renderer-packages
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { provide, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import InstallView from './InstallView.vue'
 
 // Create a mock router for stories
-const mockRouter = createRouter({
-  history: createMemoryHistory(),
-  routes: [
-    { path: '/', component: { template: '<div>Home</div>' } },
-    { path: '/server-start', component: { template: '<div>Server Start</div>' } },
-    { path: '/manual-configuration', component: { template: '<div>Manual Configuration</div>' } }
-  ]
-})
+const createMockRouter = () =>
+  createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', component: { template: '<div>Home</div>' } },
+      {
+        path: '/server-start',
+        component: { template: '<div>Server Start</div>' }
+      },
+      {
+        path: '/manual-configuration',
+        component: { template: '<div>Manual Configuration</div>' }
+      }
+    ]
+  })
 
 const meta: Meta<typeof InstallView> = {
   title: 'Views/InstallView',
@@ -30,7 +36,7 @@ const meta: Meta<typeof InstallView> = {
     }
   },
   decorators: [
-    (story, context) => {
+    (story) => {
       // Mock electron API
       ;(window as any).electronAPI = {
         getPlatform: () => 'darwin',
@@ -70,8 +76,6 @@ const meta: Meta<typeof InstallView> = {
 
       return {
         setup() {
-          // Provide the router to child components
-          provide('router', mockRouter)
           return {
             story
           }
@@ -87,222 +91,269 @@ type Story = StoryObj<typeof meta>
 
 // Default story - start at GPU selection
 export const GpuSelection: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      // The component will automatically start at step 0
-      return {}
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        // The component will automatically start at step 0
+        return {}
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story showing the install location step
 export const InstallLocation: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      // We'll programmatically advance to step 1 after mount
-      return {}
-    },
-    mounted() {
-      // Set the device first to enable navigation
-      const component = this.$el.querySelector('[data-pc-name="stepper"]')?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.currentStep = '1'
-        component.ctx.highestStep = 1
-      }
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        // We'll programmatically advance to step 1 after mount
+        return {}
+      },
+      mounted() {
+        // Set the device first to enable navigation
+        const component = this.$el.querySelector(
+          '[data-pc-name="stepper"]'
+        )?.__vueParentComponent
+        if (component) {
+          component.ctx.device = 'mps'
+          component.ctx.currentStep = '1'
+          component.ctx.highestStep = 1
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story showing the migration step (currently empty)
 export const MigrationStep: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      return {}
-    },
-    mounted() {
-      // Set the device and path to enable navigation
-      const component = this.$el.querySelector('[data-pc-name="stepper"]')?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.installPath = '/Users/username/ComfyUI'
-        component.ctx.currentStep = '2'
-        component.ctx.highestStep = 2
-      }
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      mounted() {
+        // Set the device and path to enable navigation
+        const component = this.$el.querySelector(
+          '[data-pc-name="stepper"]'
+        )?.__vueParentComponent
+        if (component) {
+          component.ctx.device = 'mps'
+          component.ctx.installPath = '/Users/username/ComfyUI'
+          component.ctx.currentStep = '2'
+          component.ctx.highestStep = 2
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story showing the desktop settings configuration
 export const DesktopSettings: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      return {}
-    },
-    mounted() {
-      // Set all required data to reach the settings step
-      const component = this.$el.querySelector('[data-pc-name="stepper"]')?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.installPath = '/Users/username/ComfyUI'
-        component.ctx.currentStep = '3'
-        component.ctx.highestStep = 3
-      }
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      mounted() {
+        // Set all required data to reach the settings step
+        const component = this.$el.querySelector(
+          '[data-pc-name="stepper"]'
+        )?.__vueParentComponent
+        if (component) {
+          component.ctx.device = 'mps'
+          component.ctx.installPath = '/Users/username/ComfyUI'
+          component.ctx.currentStep = '3'
+          component.ctx.highestStep = 3
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story with Windows platform (no Apple Metal option)
 export const WindowsPlatform: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      // Override the platform to Windows
-      ;(window as any).electronAPI.getPlatform = () => 'win32'
-      ;(window as any).electronAPI.Config.getDetectedGpu = () => Promise.resolve('nvidia')
-      
-      return {}
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    // Override the platform to Windows
+    ;(window as any).electronAPI.getPlatform = () => 'win32'
+    ;(window as any).electronAPI.Config.getDetectedGpu = () =>
+      Promise.resolve('nvidia')
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story with CPU selected
 export const CpuSelected: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      return {}
-    },
-    mounted() {
-      // Select CPU option
-      const component = this.$el.querySelector('[data-pc-name="stepper"]')?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'cpu'
-      }
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      mounted() {
+        // Select CPU option
+        const component = this.$el.querySelector(
+          '[data-pc-name="stepper"]'
+        )?.__vueParentComponent
+        if (component) {
+          component.ctx.device = 'cpu'
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story with manual install selected
 export const ManualInstall: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      return {}
-    },
-    mounted() {
-      // Select manual install option
-      const component = this.$el.querySelector('[data-pc-name="stepper"]')?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'unsupported'
-      }
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      mounted() {
+        // Select manual install option
+        const component = this.$el.querySelector(
+          '[data-pc-name="stepper"]'
+        )?.__vueParentComponent
+        if (component) {
+          component.ctx.device = 'unsupported'
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story with error state (invalid install path)
 export const ErrorState: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      // Override validation to return an error
-      ;(window as any).electronAPI.validateInstallPath = () =>
-        Promise.resolve({
-          isValid: false,
-          exists: false,
-          canWrite: false,
-          freeSpace: 100000000000,
-          requiredSpace: 10000000000,
-          isNonDefaultDrive: false,
-          error: 'Permission denied: Cannot write to this directory'
-        })
-      
-      return {}
-    },
-    mounted() {
-      // Navigate to install location step with error
-      const component = this.$el.querySelector('[data-pc-name="stepper"]')?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.currentStep = '1'
-        component.ctx.highestStep = 1
-        component.ctx.pathError = 'Permission denied: Cannot write to this directory'
-      }
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    // Override validation to return an error
+    ;(window as any).electronAPI.validateInstallPath = () =>
+      Promise.resolve({
+        isValid: false,
+        exists: false,
+        canWrite: false,
+        freeSpace: 100000000000,
+        requiredSpace: 10000000000,
+        isNonDefaultDrive: false,
+        error: 'Permission denied: Cannot write to this directory'
+      })
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      mounted() {
+        // Navigate to install location step with error
+        const component = this.$el.querySelector(
+          '[data-pc-name="stepper"]'
+        )?.__vueParentComponent
+        if (component) {
+          component.ctx.device = 'mps'
+          component.ctx.currentStep = '1'
+          component.ctx.highestStep = 1
+          component.ctx.pathError =
+            'Permission denied: Cannot write to this directory'
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Story showing complete flow ready to install
 export const ReadyToInstall: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      return {}
-    },
-    mounted() {
-      // Set all data as if user completed all steps
-      const component = this.$el.querySelector('[data-pc-name="stepper"]')?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.installPath = '/Users/username/ComfyUI'
-        component.ctx.autoUpdate = true
-        component.ctx.allowMetrics = true
-        component.ctx.migrationSourcePath = '/Users/username/ComfyUI-old'
-        component.ctx.migrationItemIds = ['models', 'custom_nodes']
-        component.ctx.currentStep = '3'
-        component.ctx.highestStep = 3
-      }
-    },
-    template: '<InstallView />'
-  })
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        return {}
+      },
+      mounted() {
+        // Set all data as if user completed all steps
+        const component = this.$el.querySelector(
+          '[data-pc-name="stepper"]'
+        )?.__vueParentComponent
+        if (component) {
+          component.ctx.device = 'mps'
+          component.ctx.installPath = '/Users/username/ComfyUI'
+          component.ctx.autoUpdate = true
+          component.ctx.allowMetrics = true
+          component.ctx.migrationSourcePath = '/Users/username/ComfyUI-old'
+          component.ctx.migrationItemIds = ['models', 'custom_nodes']
+          component.ctx.currentStep = '3'
+          component.ctx.highestStep = 3
+        }
+      },
+      template: '<InstallView />'
+    }
+  }
 }
 
 // Interactive story that allows full navigation
 export const Interactive: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // Provide router for the component
-      provide('router', mockRouter)
-      // This story allows full interaction through all steps
-      return {}
-    },
-    template: '<InstallView />'
-  }),
+  render: (_, { app }) => {
+    const router = createMockRouter()
+    app.use(router)
+
+    return {
+      components: { InstallView },
+      setup() {
+        // This story allows full interaction through all steps
+        return {}
+      },
+      template: '<InstallView />'
+    }
+  },
   parameters: {
     docs: {
       description: {
-        story: 'Fully interactive installation wizard. You can navigate through all steps, select options, and see how the flow works.'
+        story:
+          'Fully interactive installation wizard. You can navigate through all steps, select options, and see how the flow works.'
       }
     }
   }
