@@ -1,10 +1,10 @@
 <template>
   <BaseViewTemplate dark>
     <!-- Fixed height container with flexbox layout for proper content management -->
-    <div class="w-full h-full max-w-5xl mx-auto flex flex-col">
+    <div class="w-full h-full flex flex-col">
       <Stepper
         v-model:value="currentStep"
-        class="flex flex-col h-full pl-8 pt-8 pb-8 pr-0"
+        class="flex flex-col h-full"
         @update:value="handleStepChange"
       >
         <!-- Main content area that grows to fill available space -->
@@ -13,42 +13,34 @@
           :style="{ scrollbarGutter: 'stable' }"
         >
           <StepPanel value="1">
-            <div class="flex items-center justify-center h-full pr-8">
-              <GpuPicker v-model:device="device" />
-            </div>
+            <GpuPicker v-model:device="device" />
           </StepPanel>
           <StepPanel value="2">
-            <div class="flex items-center justify-center h-full pr-8">
-              <InstallLocationPicker
-                v-model:install-path="installPath"
-                v-model:path-error="pathError"
-                v-model:migrationSourcePath="migrationSourcePath"
-                v-model:migrationItemIds="migrationItemIds"
-                v-model:pythonMirror="pythonMirror"
-                v-model:pypiMirror="pypiMirror"
-                v-model:torchMirror="torchMirror"
-                :device="device"
-              />
-            </div>
+            <InstallLocationPicker
+              v-model:install-path="installPath"
+              v-model:path-error="pathError"
+              v-model:migrationSourcePath="migrationSourcePath"
+              v-model:migrationItemIds="migrationItemIds"
+              v-model:pythonMirror="pythonMirror"
+              v-model:pypiMirror="pypiMirror"
+              v-model:torchMirror="torchMirror"
+              :device="device"
+            />
           </StepPanel>
           <StepPanel value="3">
-            <div class="flex items-center justify-center h-full pr-8">
-              <!-- Migration step is empty - content moved to accordion in step 2 -->
-            </div>
+            <!-- Migration step is empty - content moved to accordion in step 2 -->
           </StepPanel>
           <StepPanel value="4">
-            <div class="flex items-center justify-center h-full pr-8">
-              <DesktopSettingsConfiguration
-                v-model:autoUpdate="autoUpdate"
-                v-model:allowMetrics="allowMetrics"
-              />
-            </div>
+            <DesktopSettingsConfiguration
+              v-model:autoUpdate="autoUpdate"
+              v-model:allowMetrics="allowMetrics"
+            />
           </StepPanel>
         </StepPanels>
 
         <!-- Install footer with navigation -->
         <InstallFooter
-          class="pt-6 pb-4 pr-8 max-w-2xl mx-auto w-full"
+          class="w-full max-w-2xl my-6 mx-auto"
           :current-step
           :can-proceed
           :disable-location-step="noGpu"
@@ -192,7 +184,7 @@ onMounted(async () => {
 @reference '../assets/css/style.css';
 
 :deep(.p-steppanel) {
-  @apply bg-transparent;
+  @apply mt-8 flex justify-center bg-transparent;
 }
 
 /* Remove default padding/margin from StepPanels to make scrollbar flush */
@@ -203,5 +195,21 @@ onMounted(async () => {
 /* Ensure StepPanel content container has no top/bottom padding */
 :deep(.p-steppanel-content) {
   @apply pt-0 pb-0 pl-0 pr-0;
+}
+
+/* Custom overlay scrollbar for WebKit browsers (Electron, Chrome) */
+:deep(.p-steppanels::-webkit-scrollbar) {
+  width: 1rem;
+}
+
+:deep(.p-steppanels::-webkit-scrollbar-track) {
+  background-color: transparent;
+}
+
+:deep(.p-steppanels::-webkit-scrollbar-thumb) {
+  background-color: hsl(0 0% 100% / 0.2);
+  border-radius: 0.5rem;
+  border: 0.25rem solid transparent;
+  background-clip: content-box;
 }
 </style>
