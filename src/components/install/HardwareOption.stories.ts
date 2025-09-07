@@ -1,9 +1,10 @@
+// eslint-disable-next-line storybook/no-renderer-packages
 import type { Meta, StoryObj } from '@storybook/vue3'
 
 import HardwareOption from './HardwareOption.vue'
 
 const meta: Meta<typeof HardwareOption> = {
-  title: 'Install/HardwareOption',
+  title: 'Desktop/Components/HardwareOption',
   component: HardwareOption,
   parameters: {
     layout: 'centered',

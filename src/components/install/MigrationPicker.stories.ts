@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import MigrationPicker from './MigrationPicker.vue'
 
 const meta: Meta<typeof MigrationPicker> = {
-  title: 'Install/MigrationPicker',
+  title: 'Desktop/Components/MigrationPicker',
   component: MigrationPicker,
   parameters: {
     layout: 'padded'
