@@ -136,22 +136,15 @@ const { t } = useI18n()
 
 const installPath = defineModel<string>('installPath', { required: true })
 const pathError = defineModel<string>('pathError', { required: true })
-const migrationSourcePath = defineModel<string>('migrationSourcePath', {
-  required: false
-})
-const migrationItemIds = defineModel<string[]>('migrationItemIds', {
-  required: false
-})
+const migrationSourcePath = defineModel<string>('migrationSourcePath')
+const migrationItemIds = defineModel<string[]>('migrationItemIds')
 const pythonMirror = defineModel<string>('pythonMirror', {
-  required: false,
   default: ''
 })
 const pypiMirror = defineModel<string>('pypiMirror', {
-  required: false,
   default: ''
 })
 const torchMirror = defineModel<string>('torchMirror', {
-  required: false,
   default: ''
 })
 
