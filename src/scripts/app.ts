@@ -1058,6 +1058,8 @@ export class ComfyApp {
       checkForRerouteMigration = false
     } = {}
   ) {
+    useWorkflowService().beforeLoadNewGraph()
+
     if (clean !== false) {
       this.clean()
     }
@@ -1093,7 +1095,6 @@ export class ComfyApp {
         severity: 'warn'
       })
     }
-    useWorkflowService().beforeLoadNewGraph()
     useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
