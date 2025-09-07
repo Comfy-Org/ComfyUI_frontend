@@ -207,10 +207,10 @@ export const zComfyNodeDef = z.object({
 })
 
 // Export types
-export type IntInputSpec = z.infer<typeof zIntInputSpec>
-export type FloatInputSpec = z.infer<typeof zFloatInputSpec>
-export type BooleanInputSpec = z.infer<typeof zBooleanInputSpec>
-export type StringInputSpec = z.infer<typeof zStringInputSpec>
+type IntInputSpec = z.infer<typeof zIntInputSpec>
+type FloatInputSpec = z.infer<typeof zFloatInputSpec>
+type BooleanInputSpec = z.infer<typeof zBooleanInputSpec>
+type StringInputSpec = z.infer<typeof zStringInputSpec>
 export type ComboInputSpec = z.infer<typeof zComboInputSpec>
 export type ColorInputSpec = z.infer<typeof zColorInputSpec>
 export type FileUploadInputSpec = z.infer<typeof zFileUploadInputSpec>

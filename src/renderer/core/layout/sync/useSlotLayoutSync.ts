@@ -16,7 +16,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
  * Compute and register slot layouts for a node
  * @param node LiteGraph node to process
  */
-export function computeAndRegisterSlots(node: LGraphNode): void {
+function computeAndRegisterSlots(node: LGraphNode): void {
   const nodeId = String(node.id)
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
 

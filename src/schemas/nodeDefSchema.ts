@@ -34,7 +34,7 @@ export const zBaseInputOptions = z
   })
   .passthrough()
 
-export const zNumericInputOptions = zBaseInputOptions.extend({
+const zNumericInputOptions = zBaseInputOptions.extend({
   min: z.number().optional(),
   max: z.number().optional(),
   step: z.number().optional(),

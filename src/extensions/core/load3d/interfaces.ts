@@ -48,7 +48,7 @@ export interface CaptureResult {
   lineart: string
 }
 
-export interface BaseManager {
+interface BaseManager {
   init(): void
   dispose(): void
   reset(): void

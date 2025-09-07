@@ -1,7 +1,7 @@
 import clsx, { type ClassArray } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
-export type { ClassValue, ClassArray, ClassDictionary } from 'clsx'
+export type { ClassValue } from 'clsx'
 
 export function cn(...inputs: ClassArray) {
   return twMerge(clsx(inputs))

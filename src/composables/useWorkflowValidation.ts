@@ -4,7 +4,7 @@ import { validateComfyWorkflow } from '@/schemas/comfyWorkflowSchema'
 import { useToastStore } from '@/stores/toastStore'
 import { fixBadLinks } from '@/utils/linkFixer'
 
-export interface ValidationResult {
+interface ValidationResult {
   graphData: ComfyWorkflowJSON | null
 }
 

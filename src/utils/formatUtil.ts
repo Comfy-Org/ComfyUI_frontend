@@ -83,7 +83,7 @@ export function formatSize(value?: number) {
  * - filename: 'file'
  * - suffix: 'txt'
  */
-export function getFilenameDetails(fullFilename: string) {
+function getFilenameDetails(fullFilename: string) {
   if (fullFilename.includes('.')) {
     return {
       filename: fullFilename.split('.').slice(0, -1).join('.'),
@@ -479,7 +479,7 @@ export function formatVersionAnchor(version: string): string {
 /**
  * Supported locale types for the application (from OpenAPI schema)
  */
-export type SupportedLocale = NonNullable<
+type SupportedLocale = NonNullable<
   operations['getReleaseNotes']['parameters']['query']['locale']
 >
 

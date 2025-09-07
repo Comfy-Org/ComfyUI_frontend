@@ -224,7 +224,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   }
 }
 
-export interface BuildNodeDefTreeOptions {
+interface BuildNodeDefTreeOptions {
   /**
    * Custom function to extract the tree path from a node definition.
    * If not provided, uses the default path based on nodeDef.nodePath.
