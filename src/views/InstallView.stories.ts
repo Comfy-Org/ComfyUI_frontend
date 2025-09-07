@@ -1,5 +1,6 @@
 // eslint-disable-next-line storybook/no-renderer-packages
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { provide } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import InstallView from './InstallView.vue'
@@ -91,13 +92,14 @@ type Story = StoryObj<typeof meta>
 
 // Default story - start at GPU selection
 export const GpuSelection: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         // The component will automatically start at step 1
         return {}
       },
@@ -108,13 +110,14 @@ export const GpuSelection: Story = {
 
 // Story showing the install location step
 export const InstallLocation: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         // We'll programmatically advance to step 2 after mount
         return {}
       },
@@ -136,13 +139,14 @@ export const InstallLocation: Story = {
 
 // Story showing the migration step (currently empty)
 export const MigrationStep: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         return {}
       },
       mounted() {
@@ -164,13 +168,14 @@ export const MigrationStep: Story = {
 
 // Story showing the desktop settings configuration
 export const DesktopSettings: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         return {}
       },
       mounted() {
@@ -192,9 +197,8 @@ export const DesktopSettings: Story = {
 
 // Story with Windows platform (no Apple Metal option)
 export const WindowsPlatform: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     // Override the platform to Windows
     ;(window as any).electronAPI.getPlatform = () => 'win32'
@@ -204,6 +208,8 @@ export const WindowsPlatform: Story = {
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         return {}
       },
       template: '<InstallView />'
@@ -213,13 +219,14 @@ export const WindowsPlatform: Story = {
 
 // Story with CPU selected
 export const CpuSelected: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         return {}
       },
       mounted() {
@@ -238,13 +245,14 @@ export const CpuSelected: Story = {
 
 // Story with manual install selected
 export const ManualInstall: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         return {}
       },
       mounted() {
@@ -263,9 +271,8 @@ export const ManualInstall: Story = {
 
 // Story with error state (invalid install path)
 export const ErrorState: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     // Override validation to return an error
     ;(window as any).electronAPI.validateInstallPath = () =>
@@ -282,6 +289,8 @@ export const ErrorState: Story = {
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         return {}
       },
       mounted() {
@@ -304,13 +313,14 @@ export const ErrorState: Story = {
 
 // Story showing complete flow ready to install
 export const ReadyToInstall: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         return {}
       },
       mounted() {
@@ -336,13 +346,14 @@ export const ReadyToInstall: Story = {
 
 // Interactive story that allows full navigation
 export const Interactive: Story = {
-  render: (_, { app }) => {
+  render: () => {
     const router = createMockRouter()
-    app.use(router)
 
     return {
       components: { InstallView },
       setup() {
+        // Provide router to child components
+        provide('router', router)
         // This story allows full interaction through all steps
         return {}
       },
