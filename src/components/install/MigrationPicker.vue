@@ -27,10 +27,7 @@
     </div>
 
     <!-- Migration Options -->
-    <div
-      v-if="isValidSource"
-      class="flex flex-col gap-4 bg-neutral-800 p-4 rounded-lg"
-    >
+    <div v-if="isValidSource" class="flex flex-col gap-4 p-4 rounded-lg">
       <h3 class="text-lg mt-0 font-medium text-neutral-100">
         {{ $t('install.selectItemsToMigrate') }}
       </h3>
