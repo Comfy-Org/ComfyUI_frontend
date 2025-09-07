@@ -46,9 +46,6 @@
         <Message v-if="nonDefaultDrive" severity="warn" class="w-full">
           {{ $t('install.nonDefaultDrive') }}
         </Message>
-
-        <!-- Divider -->
-        <Divider class="border-neutral-700" />
       </div>
 
       <!-- Collapsible Sections using PrimeVue Accordion -->
