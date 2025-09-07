@@ -1,6 +1,6 @@
 // eslint-disable-next-line storybook/no-renderer-packages
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { ref } from 'vue'
+import { provide, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import InstallView from './InstallView.vue'
@@ -70,12 +70,13 @@ const meta: Meta<typeof InstallView> = {
 
       return {
         setup() {
+          // Provide the router to child components
+          provide('router', mockRouter)
           return {
-            story,
-            router: mockRouter
+            story
           }
         },
-        template: '<div style="width: 100vw; height: 100vh;"><story :router="router" /></div>'
+        template: '<div style="width: 100vw; height: 100vh;"><story /></div>'
       }
     }
   ]
@@ -89,6 +90,8 @@ export const GpuSelection: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       // The component will automatically start at step 0
       return {}
     },
@@ -101,6 +104,8 @@ export const InstallLocation: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       // We'll programmatically advance to step 1 after mount
       return {}
     },
@@ -122,6 +127,8 @@ export const MigrationStep: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       return {}
     },
     mounted() {
@@ -143,6 +150,8 @@ export const DesktopSettings: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       return {}
     },
     mounted() {
@@ -164,6 +173,8 @@ export const WindowsPlatform: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       // Override the platform to Windows
       ;(window as any).electronAPI.getPlatform = () => 'win32'
       ;(window as any).electronAPI.Config.getDetectedGpu = () => Promise.resolve('nvidia')
@@ -179,6 +190,8 @@ export const CpuSelected: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       return {}
     },
     mounted() {
@@ -197,6 +210,8 @@ export const ManualInstall: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       return {}
     },
     mounted() {
@@ -215,6 +230,8 @@ export const ErrorState: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       // Override validation to return an error
       ;(window as any).electronAPI.validateInstallPath = () =>
         Promise.resolve({
@@ -248,6 +265,8 @@ export const ReadyToInstall: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       return {}
     },
     mounted() {
@@ -273,6 +292,8 @@ export const Interactive: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
+      // Provide router for the component
+      provide('router', mockRouter)
       // This story allows full interaction through all steps
       return {}
     },
