@@ -211,6 +211,10 @@ const onFocus = async () => {
     border: none;
   }
 
+  .p-accordioncontent-content {
+    background: transparent;
+  }
+
   /* Override default chevron icons to use right/down */
   .p-accordionheader-toggle-icon {
     &::before {
