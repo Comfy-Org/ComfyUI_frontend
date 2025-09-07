@@ -1214,6 +1214,10 @@
     },
     "workflows": "Рабочие процессы"
   },
+  "subgraphStore": {
+    "blueprintName": "Имя подграфа",
+    "saveBlueprint": "Сохранить подграф в библиотеку"
+  },
   "tabMenu": {
     "addToBookmarks": "Добавить в закладки",
     "closeOtherTabs": "Закрыть другие вкладки",

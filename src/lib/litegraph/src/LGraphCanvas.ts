@@ -667,6 +667,7 @@ export class LGraphCanvas
   _bg_img?: HTMLImageElement
   _pattern?: CanvasPattern
   _pattern_img?: HTMLImageElement
+  bg_tint?: string | CanvasGradient | CanvasPattern
   // TODO: This looks like another panel thing
   prompt_box?: PromptDialog | null
   search_box?: HTMLDivElement
@@ -3754,13 +3755,7 @@ export class LGraphCanvas
       e.stopImmediatePropagation()
     }
   }
-
-  /**
-   * Copies canvas items to an internal, app-specific clipboard backed by local storage.
-   * When called without parameters, it copies {@link selectedItems}.
-   * @param items The items to copy.  If nullish, all selected items are copied.
-   */
-  copyToClipboard(items?: Iterable<Positionable>): void {
+  _serializeItems(items?: Iterable<Positionable>): ClipboardItems {
     const serialisable: Required<ClipboardItems> = {
       nodes: [],
       groups: [],
@@ -3818,10 +3813,18 @@ export class LGraphCanvas
       const cloned = subgraph.clone(true).asSerialisable()
       serialisable.subgraphs.push(cloned)
     }
+    return serialisable
+  }
 
+  /**
+   * Copies canvas items to an internal, app-specific clipboard backed by local storage.
+   * When called without parameters, it copies {@link selectedItems}.
+   * @param items The items to copy.  If nullish, all selected items are copied.
+   */
+  copyToClipboard(items?: Iterable<Positionable>): void {
     localStorage.setItem(
       'litegrapheditor_clipboard',
-      JSON.stringify(serialisable)
+      JSON.stringify(this._serializeItems(items))
     )
   }
 
@@ -3854,6 +3857,14 @@ export class LGraphCanvas
   _pasteFromClipboard(
     options: IPasteFromClipboardOptions = {}
   ): ClipboardPasteResult | undefined {
+    const data = localStorage.getItem('litegrapheditor_clipboard')
+    if (!data) return
+    return this._deserializeItems(JSON.parse(data), options)
+  }
+  _deserializeItems(
+    parsed: ClipboardItems,
+    options: IPasteFromClipboardOptions
+  ): ClipboardPasteResult | undefined {
     const { connectInputs = false, position = this.graph_mouse } = options
 
     // if ctrl + shift + v is off, return when isConnectUnselected is true (shift is pressed) to maintain old behavior
@@ -3863,15 +3874,11 @@ export class LGraphCanvas
     )
       return
 
-    const data = localStorage.getItem('litegrapheditor_clipboard')
-    if (!data) return
-
     const { graph } = this
     if (!graph) throw new NullGraphError()
     graph.beforeChange()
 
     // Parse & initialise
-    const parsed: ClipboardItems = JSON.parse(data)
     parsed.nodes ??= []
     parsed.groups ??= []
     parsed.reroutes ??= []
@@ -5092,6 +5099,16 @@ export class LGraphCanvas
 
         ctx.globalAlpha = 1.0
         ctx.imageSmoothingEnabled = true
+      }
+      if (this.bg_tint) {
+        ctx.fillStyle = this.bg_tint
+        ctx.fillRect(
+          this.visible_area[0],
+          this.visible_area[1],
+          this.visible_area[2],
+          this.visible_area[3]
+        )
+        ctx.fillStyle = 'transparent'
       }
 
       // groups

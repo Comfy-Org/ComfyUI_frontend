@@ -1212,6 +1212,10 @@
     },
     "workflows": "Flux de travail"
   },
+  "subgraphStore": {
+    "blueprintName": "Nom du sous-graphe",
+    "saveBlueprint": "Enregistrer le sous-graphe dans la bibliothèque"
+  },
   "tabMenu": {
     "addToBookmarks": "Ajouter aux Favoris",
     "closeOtherTabs": "Fermer les autres onglets",
