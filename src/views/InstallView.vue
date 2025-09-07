@@ -12,7 +12,7 @@
           class="flex-1 overflow-auto"
           :style="{ scrollbarGutter: 'stable' }"
         >
-          <StepPanel value="1">
+          <StepPanel value="1" class="h-full flex">
             <GpuPicker v-model:device="device" />
           </StepPanel>
           <StepPanel value="2">
