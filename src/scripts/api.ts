@@ -143,8 +143,6 @@ interface ApiMessage<T extends keyof ApiCalls> {
   data: ApiCalls[T]
 }
 
-/** Asset API Types - Based on ComfyUI /api/assets endpoints */
-
 export class UnauthorizedError extends Error {}
 
 /** Ensures workers get a fair shake. */
