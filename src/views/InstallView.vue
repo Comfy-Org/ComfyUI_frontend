@@ -34,9 +34,6 @@
           <StepPanel value="2">
             <div class="flex items-center justify-center h-full pr-8">
               <!-- Migration step is empty - content moved to accordion in step 2 -->
-              <div class="text-neutral-400 text-center">
-                <p>{{ $t('install.migrationStepEmpty') }}</p>
-              </div>
             </div>
           </StepPanel>
           <StepPanel value="3">
