@@ -1,7 +1,6 @@
 <template>
-  <div
-    class="flex flex-col justify-between w-full max-w-3xl mx-auto h-[30rem] select-none"
-  >
+  <div class="flex flex-col w-full max-w-3xl mx-auto h-[30rem] select-none">
+    <!-- Title at top -->
     <h2
       class="text-3xl text-neutral-100 text-center italic"
       style="font-family: 'ABC ROM Black Italic', sans-serif"
@@ -9,8 +8,8 @@
       {{ $t('install.gpuPicker.title') }}
     </h2>
 
-    <!-- GPU Selection buttons -->
-    <div class="flex gap-6 justify-center items-center">
+    <!-- GPU Selection buttons - takes up remaining space and centers content -->
+    <div class="flex-1 flex gap-6 justify-center items-center">
       <!-- Apple Metal -->
       <HardwareOption
         v-if="platform === 'darwin'"
@@ -40,7 +39,7 @@
       />
     </div>
 
-    <!-- Description text -->
+    <!-- Description text at bottom -->
     <div class="text-center text-base text-neutral-300 px-12">
       <p v-if="selected === 'mps'" class="leading-relaxed">
         {{ $t('install.gpuPicker.appleMetalDescription') }}
