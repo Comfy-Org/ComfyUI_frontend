@@ -17,7 +17,7 @@ import type {
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
-export interface TestSubgraphOptions {
+interface TestSubgraphOptions {
   id?: UUID
   name?: string
   nodeCount?: number
@@ -27,20 +27,20 @@ export interface TestSubgraphOptions {
   outputs?: Array<{ name: string; type: ISlotType }>
 }
 
-export interface TestSubgraphNodeOptions {
+interface TestSubgraphNodeOptions {
   id?: NodeId
   pos?: [number, number]
   size?: [number, number]
 }
 
-export interface NestedSubgraphOptions {
+interface NestedSubgraphOptions {
   depth?: number
   nodesPerLevel?: number
   inputsPerSubgraph?: number
   outputsPerSubgraph?: number
 }
 
-export interface SubgraphStructureExpectation {
+interface SubgraphStructureExpectation {
   inputCount?: number
   outputCount?: number
   nodeCount?: number
@@ -49,7 +49,7 @@ export interface SubgraphStructureExpectation {
   hasOutputNode?: boolean
 }
 
-export interface CapturedEvent<T = unknown> {
+interface CapturedEvent<T = unknown> {
   type: string
   detail: T
   timestamp: number
@@ -422,6 +422,3 @@ export function createEventCapture<T = unknown>(
       capturedEvents.filter((e) => e.type === type)
   }
 }
-
-// Re-export expect from vitest for convenience
-export { expect } from 'vitest'

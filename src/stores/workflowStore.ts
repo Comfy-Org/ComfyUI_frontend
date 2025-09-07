@@ -148,7 +148,7 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
  * error TS7056: The inferred type of this node exceeds the maximum length the
  * compiler will serialize. An explicit type annotation is needed.
  */
-export interface WorkflowStore {
+interface WorkflowStore {
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean

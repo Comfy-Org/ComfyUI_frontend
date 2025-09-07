@@ -9,7 +9,7 @@ import { api } from '@/scripts/api'
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
 
-export interface CacheEntry<T> {
+interface CacheEntry<T> {
   data: T
   timestamp?: number
   error?: Error | null

@@ -94,19 +94,19 @@ export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object
 
-export interface INodePropertyInfo {
+interface INodePropertyInfo {
   name: string
   type?: string
   default_value: NodeProperty | undefined
 }
 
-export interface IMouseOverData {
+interface IMouseOverData {
   inputId?: number
   outputId?: number
   overWidget?: IBaseWidget
 }
 
-export interface ConnectByTypeOptions {
+interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
   /** Allow our wildcard slot to connect to typed slots on remote node. Default: true */
@@ -118,12 +118,12 @@ export interface ConnectByTypeOptions {
 }
 
 /** Internal type used for type safety when implementing generic checks for inputs & outputs */
-export interface IGenericLinkOrLinks {
+interface IGenericLinkOrLinks {
   links?: INodeOutputSlot['links']
   link?: INodeInputSlot['link']
 }
 
-export interface FindFreeSlotOptions {
+interface FindFreeSlotOptions {
   /** Slots matching these types will be ignored.  Default: [] */
   typesNotAccepted?: ISlotType[]
   /** If true, the slot itself is returned instead of the index.  Default: false */

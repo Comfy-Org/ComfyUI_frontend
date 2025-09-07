@@ -318,7 +318,7 @@ const zDeviceStats = z.object({
   torch_vram_free: z.number()
 })
 
-export const zSystemStats = z.object({
+const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
     python_version: z.string(),
