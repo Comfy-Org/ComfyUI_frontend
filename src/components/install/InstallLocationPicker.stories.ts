@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import InstallLocationPicker from './InstallLocationPicker.vue'
 
 const meta: Meta<typeof InstallLocationPicker> = {
-  title: 'Install/InstallLocationPicker',
+  title: 'Desktop/Components/InstallLocationPicker',
   component: InstallLocationPicker,
   parameters: {
     layout: 'padded',

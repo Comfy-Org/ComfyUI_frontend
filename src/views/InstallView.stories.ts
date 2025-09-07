@@ -23,7 +23,7 @@ const createMockRouter = () =>
   })
 
 const meta: Meta<typeof InstallView> = {
-  title: 'Views/InstallView',
+  title: 'Desktop/Views/InstallView',
   component: InstallView,
   parameters: {
     layout: 'fullscreen',
