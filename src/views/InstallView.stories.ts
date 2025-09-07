@@ -1,6 +1,6 @@
 // eslint-disable-next-line storybook/no-renderer-packages
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { provide } from 'vue'
+import { nextTick, provide } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import InstallView from './InstallView.vue'
@@ -112,18 +112,29 @@ export const InstallLocation: Story = {
   render: () => ({
     components: { InstallView },
     setup() {
-      // We'll programmatically advance to step 2 after mount
       return {}
     },
-    mounted() {
-      // Set the device first to enable navigation
-      const component = this.$el.querySelector(
-        '[data-pc-name="stepper"]'
-      )?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.currentStep = '2'
-        component.ctx.highestStep = 2
+    async mounted() {
+      // Wait for component to be fully mounted
+      await nextTick()
+
+      // Select Apple Metal option to enable navigation
+      const hardwareOptions = this.$el.querySelectorAll(
+        '.p-selectbutton-option'
+      )
+      if (hardwareOptions.length > 0) {
+        hardwareOptions[0].click() // Click Apple Metal (first option)
+      }
+
+      await nextTick()
+
+      // Click Next to go to step 2
+      const buttons = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn = buttons.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn) {
+        nextBtn.click()
       }
     },
     template: '<InstallView />'
@@ -137,16 +148,38 @@ export const MigrationStep: Story = {
     setup() {
       return {}
     },
-    mounted() {
-      // Set the device and path to enable navigation
-      const component = this.$el.querySelector(
-        '[data-pc-name="stepper"]'
-      )?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.installPath = '/Users/username/ComfyUI'
-        component.ctx.currentStep = '3'
-        component.ctx.highestStep = 3
+    async mounted() {
+      // Wait for component to be fully mounted
+      await nextTick()
+
+      // Select Apple Metal option to enable navigation
+      const hardwareOptions = this.$el.querySelectorAll(
+        '.p-selectbutton-option'
+      )
+      if (hardwareOptions.length > 0) {
+        hardwareOptions[0].click() // Click Apple Metal (first option)
+      }
+
+      await nextTick()
+
+      // Click Next to go to step 2
+      const buttons1 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn1 = buttons1.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn1) {
+        nextBtn1.click()
+      }
+
+      await nextTick()
+
+      // Click Next again to go to step 3
+      const buttons2 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn2 = buttons2.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn2) {
+        nextBtn2.click()
       }
     },
     template: '<InstallView />'
@@ -160,16 +193,49 @@ export const DesktopSettings: Story = {
     setup() {
       return {}
     },
-    mounted() {
-      // Set all required data to reach the settings step
-      const component = this.$el.querySelector(
-        '[data-pc-name="stepper"]'
-      )?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.installPath = '/Users/username/ComfyUI'
-        component.ctx.currentStep = '4'
-        component.ctx.highestStep = 4
+    async mounted() {
+      // Wait for component to be fully mounted
+      await nextTick()
+
+      // Select Apple Metal option to enable navigation
+      const hardwareOptions = this.$el.querySelectorAll(
+        '.p-selectbutton-option'
+      )
+      if (hardwareOptions.length > 0) {
+        hardwareOptions[0].click() // Click Apple Metal (first option)
+      }
+
+      await nextTick()
+
+      // Click Next to go to step 2
+      const buttons1 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn1 = buttons1.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn1) {
+        nextBtn1.click()
+      }
+
+      await nextTick()
+
+      // Click Next again to go to step 3
+      const buttons2 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn2 = buttons2.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn2) {
+        nextBtn2.click()
+      }
+
+      await nextTick()
+
+      // Click Next again to go to step 4
+      const buttons3 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn3 = buttons3.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn3) {
+        nextBtn3.click()
       }
     },
     template: '<InstallView />'
@@ -201,13 +267,16 @@ export const CpuSelected: Story = {
     setup() {
       return {}
     },
-    mounted() {
-      // Select CPU option
-      const component = this.$el.querySelector(
-        '[data-pc-name="stepper"]'
-      )?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'cpu'
+    async mounted() {
+      // Wait for component to be fully mounted
+      await nextTick()
+
+      // Select CPU option (second option)
+      const hardwareOptions = this.$el.querySelectorAll(
+        '.p-selectbutton-option'
+      )
+      if (hardwareOptions.length > 1) {
+        hardwareOptions[1].click() // Click CPU (second option)
       }
     },
     template: '<InstallView />'
@@ -221,13 +290,16 @@ export const ManualInstall: Story = {
     setup() {
       return {}
     },
-    mounted() {
-      // Select manual install option
-      const component = this.$el.querySelector(
-        '[data-pc-name="stepper"]'
-      )?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'unsupported'
+    async mounted() {
+      // Wait for component to be fully mounted
+      await nextTick()
+
+      // Select Manual Install option (third option)
+      const hardwareOptions = this.$el.querySelectorAll(
+        '.p-selectbutton-option'
+      )
+      if (hardwareOptions.length > 2) {
+        hardwareOptions[2].click() // Click Manual Install (third option)
       }
     },
     template: '<InstallView />'
@@ -254,17 +326,27 @@ export const ErrorState: Story = {
       setup() {
         return {}
       },
-      mounted() {
-        // Navigate to install location step with error
-        const component = this.$el.querySelector(
-          '[data-pc-name="stepper"]'
-        )?.__vueParentComponent
-        if (component) {
-          component.ctx.device = 'mps'
-          component.ctx.currentStep = '2'
-          component.ctx.highestStep = 2
-          component.ctx.pathError =
-            'Permission denied: Cannot write to this directory'
+      async mounted() {
+        // Wait for component to be fully mounted
+        await nextTick()
+
+        // Select Apple Metal option to enable navigation
+        const hardwareOptions = this.$el.querySelectorAll(
+          '.p-selectbutton-option'
+        )
+        if (hardwareOptions.length > 0) {
+          hardwareOptions[0].click() // Click Apple Metal (first option)
+        }
+
+        await nextTick()
+
+        // Click Next to go to step 2 where error will be shown
+        const buttons = Array.from(
+          this.$el.querySelectorAll('button')
+        ) as HTMLButtonElement[]
+        const nextBtn = buttons.find((btn) => btn.textContent?.includes('Next'))
+        if (nextBtn) {
+          nextBtn.click()
         }
       },
       template: '<InstallView />'
@@ -279,20 +361,54 @@ export const ReadyToInstall: Story = {
     setup() {
       return {}
     },
-    mounted() {
-      // Set all data as if user completed all steps
-      const component = this.$el.querySelector(
-        '[data-pc-name="stepper"]'
-      )?.__vueParentComponent
-      if (component) {
-        component.ctx.device = 'mps'
-        component.ctx.installPath = '/Users/username/ComfyUI'
-        component.ctx.autoUpdate = true
-        component.ctx.allowMetrics = true
-        component.ctx.migrationSourcePath = '/Users/username/ComfyUI-old'
-        component.ctx.migrationItemIds = ['models', 'custom_nodes']
-        component.ctx.currentStep = '4'
-        component.ctx.highestStep = 4
+    async mounted() {
+      // Wait for component to be fully mounted
+      await nextTick()
+
+      // Select Apple Metal option to enable navigation
+      const hardwareOptions = this.$el.querySelectorAll(
+        '.p-selectbutton-option'
+      )
+      if (hardwareOptions.length > 0) {
+        hardwareOptions[0].click() // Click Apple Metal (first option)
+      }
+
+      await nextTick()
+
+      // Click Next to go to step 2
+      const buttons1 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn1 = buttons1.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn1) {
+        nextBtn1.click()
+      }
+
+      await nextTick()
+
+      // Fill in migration options - accordion is already open by default
+      // Just continue to next step
+
+      await nextTick()
+
+      // Click Next again to go to step 3
+      const buttons2 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn2 = buttons2.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn2) {
+        nextBtn2.click()
+      }
+
+      await nextTick()
+
+      // Click Next again to go to step 4
+      const buttons3 = Array.from(
+        this.$el.querySelectorAll('button')
+      ) as HTMLButtonElement[]
+      const nextBtn3 = buttons3.find((btn) => btn.textContent?.includes('Next'))
+      if (nextBtn3) {
+        nextBtn3.click()
       }
     },
     template: '<InstallView />'
