@@ -19,15 +19,17 @@
               <InstallLocationPicker
                 v-model:install-path="installPath"
                 v-model:path-error="pathError"
+                v-model:migrationSourcePath="migrationSourcePath"
+                v-model:migrationItemIds="migrationItemIds"
               />
             </div>
           </StepPanel>
           <StepPanel value="2">
             <div class="flex items-center justify-center h-full">
-              <MigrationPicker
-                v-model:source-path="migrationSourcePath"
-                v-model:migration-item-ids="migrationItemIds"
-              />
+              <!-- Migration step is empty - content moved to accordion in step 2 -->
+              <div class="text-neutral-400 text-center">
+                <p>{{ $t('install.migrationStepEmpty') }}</p>
+              </div>
             </div>
           </StepPanel>
           <StepPanel value="3">
@@ -81,7 +83,6 @@ import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsCo
 import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallFooter from '@/components/install/InstallFooter.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
-import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
@@ -130,7 +131,7 @@ const canProceed = computed(() => {
     case '1':
       return pathError.value === ''
     case '2':
-      return true // Migration is optional
+      return true // Migration step is now empty, always allow proceeding
     case '3':
       return !hasError.value
     default:
