@@ -1,4 +1,5 @@
-function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
 
   // Verify the FLAC signature
