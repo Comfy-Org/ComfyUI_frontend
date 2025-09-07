@@ -98,7 +98,7 @@ export const GpuSelection: Story = {
     return {
       components: { InstallView },
       setup() {
-        // The component will automatically start at step 0
+        // The component will automatically start at step 1
         return {}
       },
       template: '<InstallView />'
@@ -115,7 +115,7 @@ export const InstallLocation: Story = {
     return {
       components: { InstallView },
       setup() {
-        // We'll programmatically advance to step 1 after mount
+        // We'll programmatically advance to step 2 after mount
         return {}
       },
       mounted() {
@@ -125,8 +125,8 @@ export const InstallLocation: Story = {
         )?.__vueParentComponent
         if (component) {
           component.ctx.device = 'mps'
-          component.ctx.currentStep = '1'
-          component.ctx.highestStep = 1
+          component.ctx.currentStep = '2'
+          component.ctx.highestStep = 2
         }
       },
       template: '<InstallView />'
@@ -153,8 +153,8 @@ export const MigrationStep: Story = {
         if (component) {
           component.ctx.device = 'mps'
           component.ctx.installPath = '/Users/username/ComfyUI'
-          component.ctx.currentStep = '2'
-          component.ctx.highestStep = 2
+          component.ctx.currentStep = '3'
+          component.ctx.highestStep = 3
         }
       },
       template: '<InstallView />'
@@ -181,8 +181,8 @@ export const DesktopSettings: Story = {
         if (component) {
           component.ctx.device = 'mps'
           component.ctx.installPath = '/Users/username/ComfyUI'
-          component.ctx.currentStep = '3'
-          component.ctx.highestStep = 3
+          component.ctx.currentStep = '4'
+          component.ctx.highestStep = 4
         }
       },
       template: '<InstallView />'
@@ -291,8 +291,8 @@ export const ErrorState: Story = {
         )?.__vueParentComponent
         if (component) {
           component.ctx.device = 'mps'
-          component.ctx.currentStep = '1'
-          component.ctx.highestStep = 1
+          component.ctx.currentStep = '2'
+          component.ctx.highestStep = 2
           component.ctx.pathError =
             'Permission denied: Cannot write to this directory'
         }
@@ -325,8 +325,8 @@ export const ReadyToInstall: Story = {
           component.ctx.allowMetrics = true
           component.ctx.migrationSourcePath = '/Users/username/ComfyUI-old'
           component.ctx.migrationItemIds = ['models', 'custom_nodes']
-          component.ctx.currentStep = '3'
-          component.ctx.highestStep = 3
+          component.ctx.currentStep = '4'
+          component.ctx.highestStep = 4
         }
       },
       template: '<InstallView />'
