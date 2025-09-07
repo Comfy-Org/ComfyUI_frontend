@@ -235,9 +235,6 @@
                   />
                 </div>
               </template>
-              <template #top-right>
-                <!-- Tutorial button moved to card bottom for better UX -->
-              </template>
               <template #bottom-right>
                 <template v-if="template.tags && template.tags.length > 0">
                   <SquareChip
