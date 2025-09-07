@@ -40,6 +40,16 @@ describe('WidgetSlider Value Binding', () => {
     })
   }
 
+  const getNumberInput = (wrapper: ReturnType<typeof mount>) => {
+    const input = wrapper.find('input[type="number"]')
+    if (!(input.element instanceof HTMLInputElement)) {
+      throw new Error(
+        'Number input element not found or is not an HTMLInputElement'
+      )
+    }
+    return { element: input.element }
+  }
+
   describe('Props and Values', () => {
     it('passes modelValue to slider component', () => {
       const widget = createMockWidget(5)
@@ -83,8 +93,8 @@ describe('WidgetSlider Value Binding', () => {
       const widget = createMockWidget(42)
       const wrapper = mountComponent(widget, 42)
 
-      const input = wrapper.find('input[type="number"]')
-      expect((input.element as HTMLInputElement).value).toBe('42')
+      const input = getNumberInput(wrapper)
+      expect(input.element.value).toBe('42')
     })
 
     it('disables components in readonly mode', () => {
@@ -94,37 +104,8 @@ describe('WidgetSlider Value Binding', () => {
       const slider = wrapper.findComponent({ name: 'Slider' })
       expect(slider.props('disabled')).toBe(true)
 
-      const input = wrapper.find('input[type="number"]')
-      expect((input.element as HTMLInputElement).disabled).toBe(true)
-    })
-  })
-
-  describe('Component Rendering', () => {
-    it('renders slider and input components', () => {
-      const widget = createMockWidget(5)
-      const wrapper = mountComponent(widget, 5)
-
-      expect(wrapper.findComponent({ name: 'Slider' }).exists()).toBe(true)
-      expect(wrapper.find('input[type="number"]').exists()).toBe(true)
-    })
-
-    it('displays initial value in input field', () => {
-      const widget = createMockWidget(42)
-      const wrapper = mountComponent(widget, 42)
-
-      const input = wrapper.find('input[type="number"]')
-      expect((input.element as HTMLInputElement).value).toBe('42')
-    })
-
-    it('disables components in readonly mode', () => {
-      const widget = createMockWidget(5)
-      const wrapper = mountComponent(widget, 5, true)
-
-      const slider = wrapper.findComponent({ name: 'Slider' })
-      expect(slider.props('disabled')).toBe(true)
-
-      const input = wrapper.find('input[type="number"]')
-      expect((input.element as HTMLInputElement).disabled).toBe(true)
+      const input = getNumberInput(wrapper)
+      expect(input.element.disabled).toBe(true)
     })
   })
 

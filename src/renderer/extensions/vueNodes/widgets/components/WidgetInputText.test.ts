@@ -22,25 +22,44 @@ describe('WidgetInputText Value Binding', () => {
     callback
   })
 
+  const mountComponent = (
+    widget: SimplifiedWidget<string>,
+    modelValue: string,
+    readonly = false
+  ) => {
+    return mount(WidgetInputText, {
+      global: {
+        plugins: [PrimeVue],
+        components: { InputText, Textarea }
+      },
+      props: {
+        widget,
+        modelValue,
+        readonly
+      }
+    })
+  }
+
+  const setInputValueAndTrigger = async (
+    wrapper: ReturnType<typeof mount>,
+    value: string,
+    trigger: 'blur' | 'keydown.enter' = 'blur'
+  ) => {
+    const input = wrapper.find('input[type="text"]')
+    if (!(input.element instanceof HTMLInputElement)) {
+      throw new Error('Input element not found or is not an HTMLInputElement')
+    }
+    await input.setValue(value)
+    await input.trigger(trigger)
+    return input
+  }
+
   describe('Vue Event Emission', () => {
     it('emits Vue event when input value changes on blur', async () => {
       const widget = createMockWidget('hello')
+      const wrapper = mountComponent(widget, 'hello')
 
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'hello',
-          readonly: false
-        }
-      })
-
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue('world')
-      await input.trigger('blur')
+      await setInputValueAndTrigger(wrapper, 'world', 'blur')
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
@@ -49,22 +68,9 @@ describe('WidgetInputText Value Binding', () => {
 
     it('emits Vue event when enter key is pressed', async () => {
       const widget = createMockWidget('initial')
+      const wrapper = mountComponent(widget, 'initial')
 
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'initial',
-          readonly: false
-        }
-      })
-
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue('new value')
-      await input.trigger('keydown.enter')
+      await setInputValueAndTrigger(wrapper, 'new value', 'keydown.enter')
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
@@ -73,22 +79,9 @@ describe('WidgetInputText Value Binding', () => {
 
     it('handles empty string values', async () => {
       const widget = createMockWidget('something')
+      const wrapper = mountComponent(widget, 'something')
 
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'something',
-          readonly: false
-        }
-      })
-
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue('')
-      await input.trigger('blur')
+      await setInputValueAndTrigger(wrapper, '')
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
@@ -97,23 +90,10 @@ describe('WidgetInputText Value Binding', () => {
 
     it('handles special characters correctly', async () => {
       const widget = createMockWidget('normal')
-
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'normal',
-          readonly: false
-        }
-      })
+      const wrapper = mountComponent(widget, 'normal')
 
       const specialText = 'special @#$%^&*()[]{}|\\:";\'<>?,./'
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue(specialText)
-      await input.trigger('blur')
+      await setInputValueAndTrigger(wrapper, specialText)
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
@@ -122,22 +102,9 @@ describe('WidgetInputText Value Binding', () => {
 
     it('handles missing callback gracefully', async () => {
       const widget = createMockWidget('test', {}, undefined)
+      const wrapper = mountComponent(widget, 'test')
 
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'test',
-          readonly: false
-        }
-      })
-
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue('new value')
-      await input.trigger('blur')
+      await setInputValueAndTrigger(wrapper, 'new value')
 
       // Should still emit Vue event
       const emitted = wrapper.emitted('update:modelValue')
@@ -149,22 +116,9 @@ describe('WidgetInputText Value Binding', () => {
   describe('User Interactions', () => {
     it('emits update:modelValue on blur', async () => {
       const widget = createMockWidget('original')
+      const wrapper = mountComponent(widget, 'original')
 
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'original',
-          readonly: false
-        }
-      })
-
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue('updated')
-      await input.trigger('blur')
+      await setInputValueAndTrigger(wrapper, 'updated')
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
@@ -173,22 +127,9 @@ describe('WidgetInputText Value Binding', () => {
 
     it('emits update:modelValue on enter key', async () => {
       const widget = createMockWidget('start')
+      const wrapper = mountComponent(widget, 'start')
 
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'start',
-          readonly: false
-        }
-      })
-
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue('finish')
-      await input.trigger('keydown.enter')
+      await setInputValueAndTrigger(wrapper, 'finish', 'keydown.enter')
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
@@ -199,39 +140,20 @@ describe('WidgetInputText Value Binding', () => {
   describe('Readonly Mode', () => {
     it('disables input when readonly', () => {
       const widget = createMockWidget('readonly test')
-
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'readonly test',
-          readonly: true
-        }
-      })
+      const wrapper = mountComponent(widget, 'readonly test', true)
 
       const input = wrapper.find('input[type="text"]')
-      expect((input.element as HTMLInputElement).disabled).toBe(true)
+      if (!(input.element instanceof HTMLInputElement)) {
+        throw new Error('Input element not found or is not an HTMLInputElement')
+      }
+      expect(input.element.disabled).toBe(true)
     })
   })
 
   describe('Component Rendering', () => {
     it('always renders InputText component', () => {
       const widget = createMockWidget('test value')
-
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'test value',
-          readonly: false
-        }
-      })
+      const wrapper = mountComponent(widget, 'test value')
 
       // WidgetInputText always uses InputText, not Textarea
       const input = wrapper.find('input[type="text"]')
@@ -246,23 +168,10 @@ describe('WidgetInputText Value Binding', () => {
   describe('Edge Cases', () => {
     it('handles very long strings', async () => {
       const widget = createMockWidget('short')
-
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'short',
-          readonly: false
-        }
-      })
+      const wrapper = mountComponent(widget, 'short')
 
       const longString = 'a'.repeat(10000)
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue(longString)
-      await input.trigger('blur')
+      await setInputValueAndTrigger(wrapper, longString)
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
@@ -271,23 +180,10 @@ describe('WidgetInputText Value Binding', () => {
 
     it('handles unicode characters', async () => {
       const widget = createMockWidget('ascii')
-
-      const wrapper = mount(WidgetInputText, {
-        global: {
-          plugins: [PrimeVue],
-          components: { InputText, Textarea }
-        },
-        props: {
-          widget,
-          modelValue: 'ascii',
-          readonly: false
-        }
-      })
+      const wrapper = mountComponent(widget, 'ascii')
 
       const unicodeText = '🎨 Unicode: αβγ 中文 العربية 🚀'
-      const input = wrapper.find('input[type="text"]')
-      await input.setValue(unicodeText)
-      await input.trigger('blur')
+      await setInputValueAndTrigger(wrapper, unicodeText)
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
