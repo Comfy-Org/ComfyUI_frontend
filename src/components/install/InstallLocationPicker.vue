@@ -95,12 +95,22 @@
             </AccordionContent>
           </AccordionPanel>
         </Accordion>
+
+        <!-- Mirror Configuration moved from step 4 -->
+        <MirrorsConfiguration
+          v-model:pythonMirror="pythonMirror"
+          v-model:pypiMirror="pypiMirror"
+          v-model:torchMirror="torchMirror"
+          :device="device"
+          class="mt-6"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import Accordion from 'primevue/accordion'
 import AccordionContent from 'primevue/accordioncontent'
 import AccordionHeader from 'primevue/accordionheader'
@@ -113,6 +123,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
+import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
@@ -125,6 +136,21 @@ const migrationSourcePath = defineModel<string>('migrationSourcePath', {
 const migrationItemIds = defineModel<string[]>('migrationItemIds', {
   required: false
 })
+const pythonMirror = defineModel<string>('pythonMirror', {
+  required: false,
+  default: ''
+})
+const pypiMirror = defineModel<string>('pypiMirror', {
+  required: false,
+  default: ''
+})
+const torchMirror = defineModel<string>('torchMirror', {
+  required: false,
+  default: ''
+})
+
+const { device } = defineProps<{ device: TorchDeviceType | null }>()
+
 const pathExists = ref(false)
 const nonDefaultDrive = ref(false)
 const inputTouched = ref(false)

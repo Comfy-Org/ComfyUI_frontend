@@ -21,6 +21,10 @@
                 v-model:path-error="pathError"
                 v-model:migrationSourcePath="migrationSourcePath"
                 v-model:migrationItemIds="migrationItemIds"
+                v-model:pythonMirror="pythonMirror"
+                v-model:pypiMirror="pypiMirror"
+                v-model:torchMirror="torchMirror"
+                :device="device"
               />
             </div>
           </StepPanel>
@@ -34,19 +38,10 @@
           </StepPanel>
           <StepPanel value="3">
             <div class="flex items-center justify-center h-full">
-              <div class="overflow-auto">
-                <DesktopSettingsConfiguration
-                  v-model:auto-update="autoUpdate"
-                  v-model:allow-metrics="allowMetrics"
-                />
-                <MirrorsConfiguration
-                  v-model:python-mirror="pythonMirror"
-                  v-model:pypi-mirror="pypiMirror"
-                  v-model:torch-mirror="torchMirror"
-                  :device="device"
-                  class="mt-6"
-                />
-              </div>
+              <DesktopSettingsConfiguration
+                v-model:autoUpdate="autoUpdate"
+                v-model:allowMetrics="allowMetrics"
+              />
             </div>
           </StepPanel>
         </StepPanels>
@@ -83,7 +78,6 @@ import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsCo
 import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallFooter from '@/components/install/InstallFooter.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
-import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
