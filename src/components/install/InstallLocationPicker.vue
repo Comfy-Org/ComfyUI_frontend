@@ -291,7 +291,7 @@ const onFocus = async () => {
     background: rgba(38, 38, 38, 0.5); /* neutral-800 with 50% opacity */
     border: none;
     border-radius: 12px;
-    margin-bottom: 0;
+    margin-bottom: 8px;
     transition: background-color 0.2s ease;
 
     &:hover {
