@@ -51,7 +51,9 @@
               type="transparent"
               @click="dismissWarningBanner"
             >
-              <i class="pi pi-times text-neutral text-xs"></i>
+              <i
+                class="pi pi-times text-neutral-900 dark-theme:text-white text-xs"
+              ></i>
             </IconButton>
           </div>
           <RegistrySearchBar
