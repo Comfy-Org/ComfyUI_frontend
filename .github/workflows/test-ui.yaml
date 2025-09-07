@@ -162,27 +162,6 @@ jobs:
           path: blob-report/
           retention-days: 1
 
-      # Save test result for deployment info (only on shard 1 to avoid duplicates)
-      - name: Save test result for chromium
-        if: always() && matrix.shardIndex == 1
-        run: |
-          # Use outcome to determine exit code (0 for success, 1 for failure/skipped)
-          if [ "${{ steps.playwright.outcome }}" = "success" ]; then
-            EXIT_CODE=0
-          else
-            EXIT_CODE=1
-          fi
-          # For sharded tests, we use the main chromium project name
-          echo "chromium|${EXIT_CODE}|https://comfyui-playwright-chromium.pages.dev" > deployment-info-chromium.txt
-        working-directory: ComfyUI_frontend
-
-      - uses: actions/upload-artifact@v4
-        if: always() && matrix.shardIndex == 1
-        with:
-          name: deployment-info-chromium
-          path: ComfyUI_frontend/deployment-info-chromium.txt
-          retention-days: 1
-
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
     timeout-minutes: 15
@@ -331,3 +310,25 @@ jobs:
           name: playwright-report-chromium
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
+
+      - name: Save deployment info for merged chromium report
+        if: always()
+        run: |
+          # Determine exit code based on the needs context
+          # The merge-reports job only runs if sharded tests complete (success, failure, or cancelled)
+          # We consider it successful only if all sharded tests succeeded
+          if [ "${{ needs.playwright-tests-chromium-sharded.result }}" = "success" ]; then
+            EXIT_CODE=0
+          else
+            EXIT_CODE=1
+          fi
+          
+          echo "chromium|${EXIT_CODE}|https://comfyui-playwright-chromium.pages.dev" > deployment-info-chromium.txt
+        working-directory: ComfyUI_frontend
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-info-chromium
+          path: ComfyUI_frontend/deployment-info-chromium.txt
+          retention-days: 1
