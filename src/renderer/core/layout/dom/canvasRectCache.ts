@@ -11,8 +11,6 @@
 import { useElementBounding } from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 
-type Rect = DOMRectReadOnly
-
 // Target container element (covers the canvas fully and shares its origin)
 const containerRef = shallowRef<HTMLElement | null>(null)
 
@@ -42,23 +40,10 @@ watch([x, y, width, height], () => {
   if (listeners.size) listeners.forEach((cb) => cb())
 })
 
-export function invalidate(notify = false) {
-  if (notify && listeners.size) listeners.forEach((cb) => cb())
-}
-
 export function onCanvasRectChange(cb: () => void): () => void {
   ensureContainer()
   listeners.add(cb)
   return () => listeners.delete(cb)
-}
-
-export function getCanvasRect(): Rect {
-  ensureContainer()
-  const lx = x.value || 0
-  const ly = y.value || 0
-  const w = width.value || 0
-  const h = height.value || 0
-  return new DOMRect(lx, ly, w, h)
 }
 
 export function getCanvasClientOrigin() {
