@@ -357,23 +357,3 @@ export const ErrorState: Story = {
     }
   }
 }
-
-// Interactive story that allows full navigation
-export const Interactive: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      // This story allows full interaction through all steps
-      return {}
-    },
-    template: '<InstallView />'
-  }),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Fully interactive installation wizard. You can navigate through all steps, select options, and see how the flow works.'
-      }
-    }
-  }
-}
