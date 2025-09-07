@@ -27,7 +27,7 @@ export type ConflictType =
  * Node Pack requirements from Registry API
  * Extends Node type with additional installation and compatibility metadata
  */
-export interface NodePackRequirements extends Node {
+export interface NodeRequirements extends Node {
   installed_version: string
   is_enabled: boolean
   is_banned: boolean
