@@ -18,7 +18,6 @@ export type ConflictType =
   | 'comfyui_version' // ComfyUI version mismatch
   | 'frontend_version' // Frontend version mismatch
   | 'import_failed'
-  // | 'python_version' // Python version mismatch
   | 'os' // Operating system incompatibility
   | 'accelerator' // GPU/accelerator incompatibility
   | 'banned' // Banned package
@@ -44,12 +43,9 @@ export interface SystemEnvironment {
   // Version information
   comfyui_version: string
   frontend_version: string
-  // python_version: string
 
   // Platform information
   os: string
-  platform_details: string
-  architecture: string
 
   // GPU/accelerator information
   available_accelerators: Node['supported_accelerators']
@@ -58,7 +54,6 @@ export interface SystemEnvironment {
 
   // Runtime information
   node_env: 'development' | 'production'
-  user_agent: string
 }
 
 /**
