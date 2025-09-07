@@ -47,7 +47,7 @@ export type BottomPanelExtension =
 /**
  * Defines message options in Toast component.
  */
-interface ToastMessageOptions {
+export interface ToastMessageOptions {
   /**
    * Severity level of the message.
    * @defaultValue info
@@ -112,7 +112,7 @@ export interface ExtensionManager {
   }
 }
 
-interface CommandManager {
+export interface CommandManager {
   commands: ComfyCommand[]
   execute(command: string, errorHandler?: (error: any) => void): void
 }

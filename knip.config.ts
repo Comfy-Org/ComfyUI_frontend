@@ -4,7 +4,6 @@ const config: KnipConfig = {
   entry: [
     '{build,scripts}/**/*.{js,ts}',
     'src/main.ts',
-    'src/types/index.ts',
     'src/scripts/ui/menu/index.ts',
     'src/assets/css/style.css'
   ],
