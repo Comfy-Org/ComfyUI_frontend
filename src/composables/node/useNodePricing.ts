@@ -1053,7 +1053,7 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         ) as IComboWidget
 
         if (!modelWidget || !generateAudioWidget) {
-          return '$2.00-6.00/Run (varies with model & audio generation)'
+          return '$0.80-3.20/Run (varies with model & audio generation)'
         }
 
         const model = String(modelWidget.value)
@@ -1061,13 +1061,13 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
           String(generateAudioWidget.value).toLowerCase() === 'true'
 
         if (model.includes('veo-3.0-fast-generate-001')) {
-          return generateAudio ? '$3.20/Run' : '$2.00/Run'
+          return generateAudio ? '$1.20/Run' : '$0.80/Run'
         } else if (model.includes('veo-3.0-generate-001')) {
-          return generateAudio ? '$6.00/Run' : '$4.00/Run'
+          return generateAudio ? '$3.20/Run' : '$1.60/Run'
         }
 
         // Default fallback
-        return '$2.00-6.00/Run'
+        return '$0.80-3.20/Run'
       }
     },
     LumaImageNode: {
