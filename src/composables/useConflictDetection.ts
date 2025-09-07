@@ -10,7 +10,6 @@ import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   ConflictDetail,
@@ -86,23 +85,13 @@ export function useConflictDetection() {
 
       const frontendVersion = await fetchFrontendVersion()
 
-      // Detect GPU/accelerator information from system stats
-      const acceleratorInfo = extractAcceleratorInfo(systemStats)
-
       const environment: SystemEnvironment = {
         comfyui_version: systemStats?.system.comfyui_version ?? '',
         frontend_version: frontendVersion,
-
         // Platform information (from system stats)
         os: systemStats?.system.os ?? '',
-
         // GPU/accelerator information
-        available_accelerators: acceleratorInfo.available,
-        primary_accelerator: acceleratorInfo.primary,
-        gpu_memory_mb: acceleratorInfo.memory_mb,
-
-        // Runtime information
-        node_env: import.meta.env.MODE as 'development' | 'production'
+        accelerator: systemStats?.devices[0].type ?? ''
       }
 
       systemEnvironment.value = environment
@@ -112,29 +101,12 @@ export function useConflictDetection() {
       )
       return environment
     } catch (error) {
-      console.warn(
-        '[ConflictDetection] Error during system environment detection:',
-        error
-      )
-
-      // Try to get frontend version even in fallback mode
-      let frontendVersion = 'unknown'
-      try {
-        frontendVersion = await fetchFrontendVersion()
-      } catch {
-        frontendVersion = 'unknown'
-      }
-
-      // Provide basic environment information even on error
       const fallbackEnvironment: SystemEnvironment = {
-        comfyui_version: 'unknown',
-        frontend_version: frontendVersion,
-        os: 'unknown',
-        available_accelerators: ['CPU'],
-        primary_accelerator: 'CPU',
-        node_env: import.meta.env.MODE as 'development' | 'production'
+        comfyui_version: undefined,
+        frontend_version: undefined,
+        os: undefined,
+        accelerator: undefined
       }
-
       systemEnvironment.value = fallbackEnvironment
       return fallbackEnvironment
     }
@@ -343,19 +315,19 @@ export function useConflictDetection() {
     if (!isCompatibleWithAll(packageReq.supported_accelerators)) {
       const acceleratorConflict = checkAcceleratorConflict(
         packageReq.supported_accelerators!,
-        systemEnvInfo.available_accelerators
+        systemEnvInfo.accelerator
       )
       if (acceleratorConflict) conflicts.push(acceleratorConflict)
     }
 
     // 5. Banned package check using shared logic
-    const bannedConflict = checkBannedStatus(packageReq.is_banned)
+    const bannedConflict = getBannedConflictMessage(packageReq.is_banned)
     if (bannedConflict) {
       conflicts.push(bannedConflict)
     }
 
     // 6. Registry data availability check using shared logic
-    const pendingConflict = checkPendingStatus(packageReq.is_pending)
+    const pendingConflict = getPendingConflictMessage(packageReq.is_pending)
     if (pendingConflict) {
       conflicts.push(pendingConflict)
     }
@@ -697,7 +669,7 @@ export function useConflictDetection() {
    * Check compatibility for a node.
    * Used by components like PackVersionSelectorPopover.
    */
-  function checkNodeCompatibility(
+  async function checkNodeCompatibility(
     node: Node | components['schemas']['NodeVersion']
   ) {
     const systemStatsStore = useSystemStatsStore()
@@ -707,90 +679,46 @@ export function useConflictDetection() {
     const conflicts: ConflictDetail[] = []
 
     // Check OS compatibility using centralized function
-    // First try latest_version (most accurate), then fallback to top level
-    const supportedOS =
-      ('latest_version' in node ? node.latest_version?.supported_os : null) ||
-      node.supported_os
-
-    if (supportedOS && supportedOS.length > 0) {
-      const currentOS = systemStats.system?.os || 'unknown'
-      const osConflict = checkOSConflict(supportedOS, currentOS)
-      if (osConflict) {
-        conflicts.push(osConflict)
-      }
+    const currentOS = systemStats.system?.os
+    const OSConflict = checkOSConflict(node.supported_os, currentOS)
+    if (OSConflict) {
+      conflicts.push(OSConflict)
     }
 
-    // Check accelerator compatibility using centralized function
-    // First try latest_version (most accurate), then fallback to top level
-    const supportedAccelerators =
-      ('latest_version' in node
-        ? node.latest_version?.supported_accelerators
-        : null) || node.supported_accelerators
-
-    if (supportedAccelerators && supportedAccelerators.length > 0) {
-      // Extract available accelerators from system stats
-      const acceleratorInfo = extractAcceleratorInfo(systemStats)
-      const availableAccelerators: Node['supported_accelerators'] = []
-
-      acceleratorInfo.available?.forEach((accel) => {
-        if (accel === 'CUDA') availableAccelerators.push('CUDA')
-        if (accel === 'Metal') availableAccelerators.push('Metal')
-        if (accel === 'CPU') availableAccelerators.push('CPU')
-      })
-
-      const acceleratorConflict = checkAcceleratorConflict(
-        supportedAccelerators,
-        availableAccelerators
-      )
-      if (acceleratorConflict) {
-        conflicts.push(acceleratorConflict)
-      }
+    // Check Accelerator compatibility using centralized function
+    const currentAccelerator = systemStats.devices?.[0].type
+    const acceleratorConflict = checkAcceleratorConflict(
+      node.supported_accelerators,
+      currentAccelerator
+    )
+    if (acceleratorConflict) {
+      conflicts.push(acceleratorConflict)
     }
 
     // Check ComfyUI version compatibility
-    // First try latest_version (most accurate), then fallback to top level
-    const comfyUIVersionRequirement =
-      ('latest_version' in node
-        ? node.latest_version?.supported_comfyui_version
-        : null) || node.supported_comfyui_version
-
-    if (comfyUIVersionRequirement) {
-      const currentComfyUIVersion = systemStats.system?.comfyui_version
-      if (currentComfyUIVersion && currentComfyUIVersion !== 'unknown') {
-        const versionConflict = utilCheckVersionCompatibility(
-          'comfyui_version',
-          currentComfyUIVersion,
-          comfyUIVersionRequirement
-        )
-        if (versionConflict) {
-          conflicts.push(versionConflict)
-        }
-      }
+    const currentComfyUIVersion = systemStats.system?.comfyui_version
+    const comfyUIVersionConflict = utilCheckVersionCompatibility(
+      'comfyui_version',
+      currentComfyUIVersion,
+      node.supported_comfyui_version
+    )
+    if (comfyUIVersionConflict) {
+      conflicts.push(comfyUIVersionConflict)
     }
 
     // Check ComfyUI Frontend version compatibility
-    // First try latest_version (most accurate), then fallback to top level
-    const frontendVersionRequirement =
-      ('latest_version' in node
-        ? node.latest_version?.supported_comfyui_frontend_version
-        : null) || node.supported_comfyui_frontend_version
-
-    if (frontendVersionRequirement) {
-      const currentFrontendVersion = config.app_version
-      if (currentFrontendVersion && currentFrontendVersion !== 'unknown') {
-        const versionConflict = utilCheckVersionCompatibility(
-          'frontend_version',
-          currentFrontendVersion,
-          frontendVersionRequirement
-        )
-        if (versionConflict) {
-          conflicts.push(versionConflict)
-        }
-      }
+    const currentFrontendVersion = await fetchFrontendVersion()
+    const frontendVersionConflict = utilCheckVersionCompatibility(
+      'frontend_version',
+      currentFrontendVersion,
+      node.supported_comfyui_frontend_version
+    )
+    if (frontendVersionConflict) {
+      conflicts.push(frontendVersionConflict)
     }
 
     // Check banned package status using shared logic
-    const bannedConflict = checkBannedStatus(
+    const bannedConflict = getBannedConflictMessage(
       node.status === 'NodeStatusBanned' ||
         node.status === 'NodeVersionStatusBanned'
     )
@@ -799,7 +727,7 @@ export function useConflictDetection() {
     }
 
     // Check pending status using shared logic
-    const pendingConflict = checkPendingStatus(
+    const pendingConflict = getPendingConflictMessage(
       node.status === 'NodeVersionStatusPending'
     )
     if (pendingConflict) {
@@ -950,12 +878,12 @@ function normalizeOSValues(
 // TODO: move to type file
 type OS_TYPE = 'Windows' | 'Linux' | 'MacOS' | 'unknown'
 
-function systemStatsToSupportOs(systemOS: string): OS_TYPE {
-  const os = systemOS.toLowerCase()
+function systemStatsToSupportOs(systemOS?: string): OS_TYPE {
+  const os = systemOS?.toLowerCase()
 
-  if (os.includes('win')) return 'Windows'
-  if (os.includes('linux')) return 'Linux'
-  if (os.includes('darwin')) return 'MacOS'
+  if (os?.includes('win')) return 'Windows'
+  if (os?.includes('linux')) return 'Linux'
+  if (os?.includes('darwin')) return 'MacOS'
 
   return 'unknown'
 }
@@ -965,90 +893,18 @@ function systemStatsToSupportOs(systemOS: string): OS_TYPE {
  * @param systemStats System stats data from store
  * @returns Accelerator information object
  */
-function extractAcceleratorInfo(systemStats: SystemStats | null): {
-  available: Node['supported_accelerators']
-  primary: string
-  memory_mb?: number
-} {
-  try {
-    if (systemStats?.devices && systemStats.devices.length > 0) {
-      const accelerators = new Set<string>()
-      let primaryDevice: string = 'CPU'
-      let totalMemory = 0
-      let maxDevicePriority = 0
+function extractAcceleratorInfo(systemDeviceType?: string): string {
+  const deviceType = systemDeviceType?.toLowerCase()
 
-      // Device type priority (higher = better)
-      const getDevicePriority = (type: string): number => {
-        switch (type.toLowerCase()) {
-          case 'cuda':
-            return 5
-          case 'mps':
-            return 4
-          case 'rocm':
-            return 3
-          case 'xpu':
-            return 2 // Intel GPU
-          case 'npu':
-            return 1 // Neural Processing Unit
-          case 'mlu':
-            return 1 // Cambricon MLU
-          case 'cpu':
-            return 0
-          default:
-            return 0
-        }
-      }
-
-      // Process all devices
-      for (const device of systemStats.devices) {
-        const deviceType = device.type.toLowerCase()
-        const priority = getDevicePriority(deviceType)
-
-        // Map device type to SupportedAccelerator (Registry standard format)
-        let acceleratorType: string = 'CPU'
-        if (deviceType === 'cuda') {
-          acceleratorType = 'CUDA'
-        } else if (deviceType === 'mps') {
-          acceleratorType = 'Metal' // MPS = Metal Performance Shaders
-        } else if (deviceType === 'rocm') {
-          acceleratorType = 'ROCm'
-        }
-
-        accelerators.add(acceleratorType)
-
-        // Update primary device if this one has higher priority
-        if (priority > maxDevicePriority) {
-          primaryDevice = acceleratorType
-          maxDevicePriority = priority
-        }
-
-        // Accumulate memory from all devices
-        if (device.vram_total) {
-          totalMemory += device.vram_total
-        }
-      }
-
-      accelerators.add('CPU') // CPU is always available
-
-      return {
-        available: Array.from(accelerators),
-        primary: primaryDevice,
-        memory_mb:
-          totalMemory > 0 ? Math.round(totalMemory / 1024 / 1024) : undefined
-      }
-    }
-  } catch (error) {
-    console.warn(
-      '[ConflictDetection] Failed to extract GPU information:',
-      error
-    )
-  }
-
-  // Default values
-  return {
-    available: ['CPU'],
-    primary: 'CPU',
-    memory_mb: undefined
+  switch (deviceType) {
+    case 'cuda':
+      return 'CUDA'
+    case 'mps':
+      return 'Metal'
+    case 'rocm':
+      return 'ROCm'
+    default:
+      return 'CPU'
   }
 }
 
@@ -1109,10 +965,11 @@ function checkVersionConflict(
  */
 function checkOSConflict(
   supportedOS: Node['supported_os'],
-  currentOS: string
+  currentOS?: string
 ): ConflictDetail | null {
   const currentOsBySupportOS = systemStatsToSupportOs(currentOS)
-  const hasOSConflict = !supportedOS?.includes(currentOsBySupportOS)
+  const hasOSConflict =
+    currentOS && !supportedOS?.includes(currentOsBySupportOS)
   if (hasOSConflict) {
     return {
       type: 'os',
@@ -1129,30 +986,29 @@ function checkOSConflict(
  */
 function checkAcceleratorConflict(
   supportedAccelerators: Node['supported_accelerators'],
-  availableAccelerators: Node['supported_accelerators']
+  currentAccelerator?: string
 ): ConflictDetail | null {
-  if (
-    supportedAccelerators?.includes('any') ||
-    supportedAccelerators?.some((acc) => availableAccelerators?.includes(acc))
-  ) {
-    return null
+  const currentAcceleratorByAccelerator =
+    extractAcceleratorInfo(currentAccelerator)
+  const hasAcceleratorConflict =
+    currentAccelerator &&
+    !supportedAccelerators?.includes(currentAcceleratorByAccelerator)
+  if (hasAcceleratorConflict) {
+    return {
+      type: 'accelerator',
+      current_value: currentAcceleratorByAccelerator,
+      required_value: supportedAccelerators
+        ? supportedAccelerators.join(', ')
+        : ''
+    }
   }
-
-  return {
-    type: 'accelerator',
-    current_value: availableAccelerators
-      ? availableAccelerators.join(', ')
-      : '',
-    required_value: supportedAccelerators
-      ? supportedAccelerators.join(', ')
-      : ''
-  }
+  return null
 }
 
 /**
  * Checks for banned package status conflicts.
  */
-function checkBannedStatus(isBanned?: boolean): ConflictDetail | null {
+function getBannedConflictMessage(isBanned?: boolean): ConflictDetail | null {
   if (isBanned === true) {
     return {
       type: 'banned',
@@ -1166,7 +1022,7 @@ function checkBannedStatus(isBanned?: boolean): ConflictDetail | null {
 /**
  * Checks for pending package status conflicts.
  */
-function checkPendingStatus(isPending?: boolean): ConflictDetail | null {
+function getPendingConflictMessage(isPending?: boolean): ConflictDetail | null {
   if (isPending === true) {
     return {
       type: 'pending',

@@ -41,19 +41,12 @@ export interface NodePackRequirements extends Node {
  */
 export interface SystemEnvironment {
   // Version information
-  comfyui_version: string
-  frontend_version: string
-
+  comfyui_version?: string
+  frontend_version?: string
   // Platform information
-  os: string
-
+  os?: string
   // GPU/accelerator information
-  available_accelerators: Node['supported_accelerators']
-  primary_accelerator: string
-  gpu_memory_mb?: number
-
-  // Runtime information
-  node_env: 'development' | 'production'
+  accelerator?: string
 }
 
 /**

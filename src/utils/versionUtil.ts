@@ -40,7 +40,7 @@ export function satisfiesVersion(version: string, range: string): boolean {
 export function utilCheckVersionCompatibility(
   type: ConflictType,
   currentVersion: string,
-  supportedVersion: string
+  supportedVersion?: string
 ): ConflictDetail | null {
   // If current version is unknown, assume compatible (no conflict)
   if (!currentVersion || currentVersion === 'unknown') {
