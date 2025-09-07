@@ -4,3 +4,6 @@
 
 # npm run format on litegraph merge (10,672 insertions, 7,327 deletions across 129 files)
 c53f197de2a3e0fa66b16dedc65c131235c1c4b6
+
+# Move canvas and transform utilities to renderer domain structure
+7650c55b4ff5f61071dbaffc73266259e0793e8e
