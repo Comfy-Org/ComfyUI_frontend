@@ -3,9 +3,10 @@ import type { KnipConfig } from 'knip'
 const config: KnipConfig = {
   entry: [
     '{build,scripts}/**/*.{js,ts}',
+    'src/assets/css/style.css',
     'src/main.ts',
     'src/scripts/ui/menu/index.ts',
-    'src/assets/css/style.css'
+    'src/types/index.ts'
   ],
   project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
   ignoreBinaries: ['only-allow', 'openapi-typescript'],
