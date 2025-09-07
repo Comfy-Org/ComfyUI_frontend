@@ -354,67 +354,6 @@ export const ErrorState: Story = {
   }
 }
 
-// Story showing complete flow ready to install
-export const ReadyToInstall: Story = {
-  render: () => ({
-    components: { InstallView },
-    setup() {
-      return {}
-    },
-    async mounted() {
-      // Wait for component to be fully mounted
-      await nextTick()
-
-      // Select Apple Metal option to enable navigation
-      const hardwareOptions = this.$el.querySelectorAll(
-        '.p-selectbutton-option'
-      )
-      if (hardwareOptions.length > 0) {
-        hardwareOptions[0].click() // Click Apple Metal (first option)
-      }
-
-      await nextTick()
-
-      // Click Next to go to step 2
-      const buttons1 = Array.from(
-        this.$el.querySelectorAll('button')
-      ) as HTMLButtonElement[]
-      const nextBtn1 = buttons1.find((btn) => btn.textContent?.includes('Next'))
-      if (nextBtn1) {
-        nextBtn1.click()
-      }
-
-      await nextTick()
-
-      // Fill in migration options - accordion is already open by default
-      // Just continue to next step
-
-      await nextTick()
-
-      // Click Next again to go to step 3
-      const buttons2 = Array.from(
-        this.$el.querySelectorAll('button')
-      ) as HTMLButtonElement[]
-      const nextBtn2 = buttons2.find((btn) => btn.textContent?.includes('Next'))
-      if (nextBtn2) {
-        nextBtn2.click()
-      }
-
-      await nextTick()
-
-      // Click Next again to go to step 4
-      const buttons3 = Array.from(
-        this.$el.querySelectorAll('button')
-      ) as HTMLButtonElement[]
-      const nextBtn3 = buttons3.find((btn) => btn.textContent?.includes('Next'))
-      if (nextBtn3) {
-        nextBtn3.click()
-      }
-    },
-    template: '<InstallView />'
-  })
-}
-
 // Interactive story that allows full navigation
 export const Interactive: Story = {
   render: () => ({
