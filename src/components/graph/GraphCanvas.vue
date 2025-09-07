@@ -44,7 +44,6 @@
       :node-data="nodeData"
       :position="nodePositions.get(nodeData.id)"
       :size="nodeSizes.get(nodeData.id)"
-      :selected="nodeData.selected"
       :readonly="false"
       :executing="executionStore.executingNodeId === nodeData.id"
       :error="
@@ -79,6 +78,7 @@ import {
   computed,
   onMounted,
   onUnmounted,
+  provide,
   ref,
   shallowRef,
   watch,
@@ -112,6 +112,7 @@ import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import TransformPane from '@/renderer/core/layout/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -188,6 +189,21 @@ const handleTransformUpdate = () => {
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
 const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
 const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
+
+// Provide selection state to all Vue nodes
+const selectedNodeIds = ref(new Set<string>())
+provide(SelectedNodeIdsKey, selectedNodeIds)
+watch(
+  () => canvasStore.selectedItems,
+  (newSelectedItems) => {
+    selectedNodeIds.value = new Set(
+      newSelectedItems
+        .filter((item) => item.id !== undefined)
+        .map((item) => String(item.id))
+    )
+  },
+  { immediate: true }
+)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
