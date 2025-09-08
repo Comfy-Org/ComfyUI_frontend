@@ -23,8 +23,9 @@
     <template #header-right-area>
       <div class="flex gap-2">
         <IconTextButton
-          type="primary"
-          :label="$t('templateWorkflows.resetFilters', 'Reset Filters')"
+          v-if="filteredCount !== totalCount"
+          type="secondary"
+          :label="$t('templateWorkflows.resetFilters', 'Clear Filters')"
           @click="resetFilters"
         >
           <template #icon>
@@ -124,13 +125,13 @@
       <!-- Template Cards Grid -->
       <div
         v-else
-        class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4"
+        class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4 py-4"
       >
         <CardContainer
           v-for="template in displayTemplates"
           :key="template.name"
           ref="cardRefs"
-          ratio="square"
+          ratio="none"
           :max-width="300"
           :min-width="200"
           class="cursor-pointer transition-transform hover:scale-[1.02]"
@@ -231,8 +232,8 @@
             </CardTop>
           </template>
           <template #bottom>
-            <CardBottom>
-              <div class="flex flex-col px-4 py-3 flex-1">
+            <CardBottom :full-height="false">
+              <div class="flex flex-col px-4 flex-1">
                 <div class="flex-1">
                   <h3
                     class="line-clamp-2 text-lg font-normal mb-1"
@@ -264,7 +265,7 @@
                       <button
                         v-tooltip.bottom="$t('g.seeTutorial')"
                         :class="[
-                          'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] dark-theme:bg-[#262729] w-8 h-8 cursor-pointer transition-opacity duration-200',
+                          'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
                           hoveredTemplates[template.name]
                             ? 'opacity-100'
                             : 'opacity-0 pointer-events-none'
