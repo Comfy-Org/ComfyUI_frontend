@@ -108,7 +108,6 @@ post_comment() {
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" \
                 --field body="$(cat "$temp_file")"
         else
-            # Create new comment
             gh pr comment "$PR_NUMBER" --body-file "$temp_file"
         fi
     else
