@@ -136,7 +136,7 @@
           class="cursor-pointer transition-transform hover:scale-[1.02]"
           @mouseenter="hoveredTemplates[template.name] = true"
           @mouseleave="hoveredTemplates[template.name] = false"
-          @click="onLoadWorkflow(template.name)"
+          @click="onLoadWorkflow(template)"
         >
           <template #top>
             <CardTop ratio="landscape">
@@ -144,32 +144,18 @@
                 <!-- Template Thumbnail -->
                 <div class="w-full h-full relative">
                   <template v-if="template.mediaType === 'audio'">
-                    <AudioThumbnail
-                      :src="
-                        getTemplateThumbnailUrl(
-                          template,
-                          template.sourceModule || 'default'
-                        )
-                      "
-                    />
+                    <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
                   </template>
                   <template
                     v-else-if="template.thumbnailVariant === 'compareSlider'"
                   >
                     <CompareSliderThumbnail
-                      :base-image-src="
-                        getTemplateThumbnailUrl(
-                          template,
-                          template.sourceModule || 'default'
-                        )
-                      "
-                      :overlay-image-src="
-                        getTemplateOverlayThumbnailUrl(template)
-                      "
+                      :base-image-src="getBaseThumbnailSrc(template)"
+                      :overlay-image-src="getOverlayThumbnailSrc(template)"
                       :alt="
                         getTemplateTitle(
                           template,
-                          template.sourceModule || 'default'
+                          getEffectiveSourceModule(template)
                         )
                       "
                       :is-hovered="hoveredTemplates[template.name]"
@@ -183,19 +169,12 @@
                     v-else-if="template.thumbnailVariant === 'hoverDissolve'"
                   >
                     <HoverDissolveThumbnail
-                      :base-image-src="
-                        getTemplateThumbnailUrl(
-                          template,
-                          template.sourceModule || 'default'
-                        )
-                      "
-                      :overlay-image-src="
-                        getTemplateOverlayThumbnailUrl(template)
-                      "
+                      :base-image-src="getBaseThumbnailSrc(template)"
+                      :overlay-image-src="getOverlayThumbnailSrc(template)"
                       :alt="
                         getTemplateTitle(
                           template,
-                          template.sourceModule || 'default'
+                          getEffectiveSourceModule(template)
                         )
                       "
                       :is-hovered="hoveredTemplates[template.name]"
@@ -207,16 +186,11 @@
                   </template>
                   <template v-else>
                     <DefaultThumbnail
-                      :src="
-                        getTemplateThumbnailUrl(
-                          template,
-                          template.sourceModule || 'default'
-                        )
-                      "
+                      :src="getBaseThumbnailSrc(template)"
                       :alt="
                         getTemplateTitle(
                           template,
-                          template.sourceModule || 'default'
+                          getEffectiveSourceModule(template)
                         )
                       "
                       :is-hovered="hoveredTemplates[template.name]"
@@ -265,14 +239,14 @@
                     :title="
                       getTemplateTitle(
                         template,
-                        template.sourceModule || 'default'
+                        getEffectiveSourceModule(template)
                       )
                     "
                   >
                     {{
                       getTemplateTitle(
                         template,
-                        template.sourceModule || 'default'
+                        getEffectiveSourceModule(template)
                       )
                     }}
                   </h3>
@@ -411,26 +385,17 @@ const {
   getTemplateDescription
 } = useTemplateWorkflows()
 
-// Get template overlay URL for compare/dissolve variants
-const getTemplateOverlayThumbnailUrl = (template: any) => {
-  const effectiveSourceModule = template.sourceModule || 'default'
-  if (
-    template.thumbnailVariant === 'compareSlider' ||
-    template.thumbnailVariant === 'hoverDissolve'
-  ) {
-    if (template.thumbnail && template.thumbnail.includes('|')) {
-      const [, overlayThumbnail] = template.thumbnail.split('|')
-      return getTemplateThumbnailUrl(
-        {
-          ...template,
-          thumbnail: overlayThumbnail
-        },
-        effectiveSourceModule,
-        '2'
-      )
-    }
-  }
-  return getTemplateThumbnailUrl(template, effectiveSourceModule)
+const getEffectiveSourceModule = (template: any) =>
+  template.sourceModule || 'default'
+
+const getBaseThumbnailSrc = (template: any) => {
+  const sm = getEffectiveSourceModule(template)
+  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
+}
+
+const getOverlayThumbnailSrc = (template: any) => {
+  const sm = getEffectiveSourceModule(template)
+  return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
 }
 
 // Open tutorial in new tab
@@ -653,10 +618,13 @@ watch(
 )
 
 // Methods
-const onLoadWorkflow = async (templateName: string) => {
-  loadingTemplate.value = templateName
+const onLoadWorkflow = async (template: any) => {
+  loadingTemplate.value = template.name
   try {
-    await loadWorkflowTemplate(templateName, 'default')
+    await loadWorkflowTemplate(
+      template.name,
+      getEffectiveSourceModule(template)
+    )
     onClose()
   } finally {
     loadingTemplate.value = null
