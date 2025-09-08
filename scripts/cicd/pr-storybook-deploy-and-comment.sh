@@ -94,8 +94,15 @@ post_comment() {
 
 # Main execution
 if [ "$STATUS" = "starting" ]; then
-    # Post starting comment
-    comment=$(cat <<EOF
+    # Check if this is a version-bump branch
+    IS_VERSION_BUMP="false"
+    if echo "$BRANCH_NAME" | grep -q "^version-bump-"; then
+        IS_VERSION_BUMP="true"
+    fi
+    
+    # Post starting comment with appropriate message
+    if [ "$IS_VERSION_BUMP" = "true" ]; then
+        comment=$(cat <<EOF
 $COMMENT_MARKER
 ## 🎨 Storybook Build Status
 
@@ -112,6 +119,25 @@ $COMMENT_MARKER
 ⏱️ Please wait while the Storybook build is in progress...
 EOF
 )
+    else
+        comment=$(cat <<EOF
+$COMMENT_MARKER
+## 🎨 Storybook Build Status
+
+<img alt='loading' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px'/> **Build is starting...**
+
+⏰ Started at: $START_TIME UTC
+
+### 🚀 Building Storybook
+- 📦 Installing dependencies...
+- 🔧 Building Storybook components...
+- 🌐 Preparing deployment to Cloudflare Pages...
+
+---
+⏱️ Please wait while the Storybook build is in progress...
+EOF
+)
+    fi
     post_comment "$comment"
     
 elif [ "$STATUS" = "completed" ]; then
