@@ -682,7 +682,8 @@ export class ComfyApi extends EventTarget {
     }
     const folderBlacklist = ['configs', 'custom_nodes']
     return (await res.json()).filter(
-      (folder: string) => !folderBlacklist.includes(folder)
+      (folder: { name: string; folders: string[] }) =>
+        !folderBlacklist.includes(folder.name)
     )
   }
 
@@ -1019,7 +1020,13 @@ export class ComfyApi extends EventTarget {
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
-    return (await axios.get(this.internalURL('/folder_paths'))).data
+    const response = await axios
+      .get(this.internalURL('/folder_paths'))
+      .catch(() => null)
+    if (!response) {
+      return {} // Fallback: no filesystem paths known when API unavailable
+    }
+    return response.data
   }
 
   /* Frees memory by unloading models and optionally freeing execution cache
