@@ -13,7 +13,11 @@
       :has-conflict="hasConflicts"
       :conflict-info="conflictInfo"
     />
-    <PackEnableToggle v-else :node-pack="nodePack" />
+    <PackEnableToggle
+      v-else
+      :has-conflict="hasConflicts"
+      :node-pack="nodePack"
+    />
   </div>
 </template>
 

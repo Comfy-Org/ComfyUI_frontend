@@ -1211,6 +1211,10 @@
     },
     "workflows": "工作流程"
   },
+  "subgraphStore": {
+    "blueprintName": "子圖名稱",
+    "saveBlueprint": "將子圖儲存到資料庫"
+  },
   "tabMenu": {
     "addToBookmarks": "加入書籤",
     "closeOtherTabs": "關閉其他分頁",

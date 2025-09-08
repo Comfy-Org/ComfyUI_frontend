@@ -2,7 +2,7 @@ import { useDebounceFn, useEventListener, useThrottleFn } from '@vueuse/core'
 import { ref } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-export interface TransformSettlingOptions {
+interface TransformSettlingOptions {
   /**
    * Delay in ms before transform is considered "settled" after last interaction
    * @default 200

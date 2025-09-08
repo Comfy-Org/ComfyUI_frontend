@@ -24,7 +24,7 @@ import { getSlotKey } from './slotIdentifier'
  * @param isInput Whether this is an input slot
  * @param position The slot position in graph coordinates
  */
-export function registerSlotLayout(
+function registerSlotLayout(
   nodeId: string,
   slotIndex: number,
   isInput: boolean,

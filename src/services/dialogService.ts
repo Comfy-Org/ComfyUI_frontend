@@ -35,6 +35,7 @@ import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 export type ConfirmationDialogType =
   | 'default'
   | 'overwrite'
+  | 'overwriteBlueprint'
   | 'delete'
   | 'dirtyClose'
   | 'reinstall'
