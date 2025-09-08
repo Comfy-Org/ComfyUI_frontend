@@ -1,12 +1,36 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Deploy Storybook to Cloudflare Pages and comment on PR
 # Usage: ./pr-storybook-deploy-and-comment.sh <pr_number> <branch_name> <status> [start_time]
 
+# Input validation
+# Validate PR number is numeric
+case "$1" in
+    ''|*[!0-9]*) 
+        echo "Error: PR_NUMBER must be numeric" >&2
+        exit 1
+        ;;
+esac
 PR_NUMBER="$1"
-BRANCH_NAME="$2"
+
+# Sanitize and validate branch name (allow alphanumeric, dots, dashes, underscores, slashes)
+BRANCH_NAME=$(echo "$2" | sed 's/[^a-zA-Z0-9._/-]//g')
+if [ -z "$BRANCH_NAME" ]; then
+    echo "Error: Invalid or empty branch name" >&2
+    exit 1
+fi
+
+# Validate status parameter
 STATUS="${3:-completed}"
+case "$STATUS" in
+    starting|completed) ;;
+    *) 
+        echo "Error: STATUS must be 'starting' or 'completed'" >&2
+        exit 1
+        ;;
+esac
+
 START_TIME="${4:-$(date -u '+%m/%d/%Y, %I:%M:%S %p')}"
 
 # Required environment variables
@@ -22,39 +46,44 @@ fi
 # Configuration
 COMMENT_MARKER="<!-- STORYBOOK_BUILD_STATUS -->"
 
-# Deploy Storybook report
+# Install wrangler if not available (output to stderr for debugging)
+if ! command -v wrangler > /dev/null 2>&1; then
+    echo "Installing wrangler v4..." >&2
+    npm install -g wrangler@^4.0.0 >&2 || {
+        echo "Failed to install wrangler" >&2
+        echo "failed"
+        exit 1
+    }
+fi
+
+# Deploy Storybook report, WARN: ensure inputs are sanitized before calling this function
 deploy_storybook() {
     dir="$1"
     branch="$2"
     
     [ ! -d "$dir" ] && echo "failed" && return
     
-    # Install wrangler if not available
-    if ! command -v wrangler > /dev/null 2>&1; then
-        echo "Installing wrangler..."
-        npm install -g wrangler
-    fi
-    
     project="comfyui-storybook"
     
-    echo "Deploying Storybook to project $project on branch $branch..."
+    echo "Deploying Storybook to project $project on branch $branch..." >&2
     
     # Try deployment up to 3 times
     i=1
     while [ $i -le 3 ]; do
-        echo "Deployment attempt $i of 3..."
-        if output=$(npx wrangler pages deploy "$dir" \
+        echo "Deployment attempt $i of 3..." >&2
+        # Branch is already sanitized, use it directly
+        if output=$(wrangler pages deploy "$dir" \
             --project-name="$project" \
             --branch="$branch" 2>&1); then
             
-            # Extract URL from output
-            url=$(echo "$output" | grep -oE 'https://[a-z0-9.-]+\.pages\.dev' | head -1)
+            # Extract URL from output (improved regex for valid URL characters)
+            url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
             result="${url:-https://${branch}.${project}.pages.dev}"
-            echo "Success! URL: $result"
-            echo "$result"
+            echo "Success! URL: $result" >&2
+            echo "$result"  # Only this goes to stdout for capture
             return
         else
-            echo "Deployment failed on attempt $i: $output"
+            echo "Deployment failed on attempt $i: $output" >&2
         fi
         [ $i -lt 3 ] && sleep 10
         i=$((i + 1))
@@ -70,13 +99,16 @@ post_comment() {
     echo "$body" > "$temp_file"
     
     if command -v gh > /dev/null 2>&1; then
-        # Find existing comment
-        existing=$(gh pr view "$PR_NUMBER" --comments --json comments \
-            --jq ".comments[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
+        # Find existing comment ID
+        existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
         
         if [ -n "$existing" ]; then
-            gh pr comment "$PR_NUMBER" --edit-last --body-file "$temp_file"
+            # Update specific comment by ID
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" \
+                --field body="$(cat "$temp_file")"
         else
+            # Create new comment
             gh pr comment "$PR_NUMBER" --body-file "$temp_file"
         fi
     else
@@ -137,7 +169,8 @@ EOF
     
 elif [ "$STATUS" = "completed" ]; then
     # Deploy and post completion comment
-    sanitized_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
+    # Convert branch name to Cloudflare-compatible format (lowercase, only alphanumeric and dashes)
+    cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
         sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
     
     echo "Looking for Storybook build in: $(pwd)/storybook-static"
@@ -146,7 +179,7 @@ elif [ "$STATUS" = "completed" ]; then
     deployment_url="Not deployed"
     if [ -d "storybook-static" ]; then
         echo "Found Storybook build, deploying..."
-        url=$(deploy_storybook "storybook-static" "$sanitized_branch")
+        url=$(deploy_storybook "storybook-static" "$cloudflare_branch")
         if [ "$url" != "failed" ] && [ -n "$url" ]; then
             deployment_url="[View Storybook]($url)"
         else
