@@ -634,7 +634,6 @@ export class ComfyUI {
               confirm('Clear workflow?')
             ) {
               app.clean()
-              app.graph.clear()
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }

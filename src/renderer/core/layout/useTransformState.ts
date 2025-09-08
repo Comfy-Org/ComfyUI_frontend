@@ -53,12 +53,12 @@ import { computed, reactive, readonly } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
-export interface Point {
+interface Point {
   x: number
   y: number
 }
 
-export interface Camera {
+interface Camera {
   x: number
   y: number
   z: number // scale/zoom

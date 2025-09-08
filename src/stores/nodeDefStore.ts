@@ -16,6 +16,7 @@ import type {
   ComfyOutputTypesSpec as ComfyOutputSpecV1
 } from '@/schemas/nodeDefSchema'
 import { NodeSearchService } from '@/services/nodeSearchService'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import {
   type NodeSource,
   NodeSourceType,
@@ -223,7 +224,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   }
 }
 
-export interface BuildNodeDefTreeOptions {
+interface BuildNodeDefTreeOptions {
   /**
    * Custom function to extract the tree path from a node definition.
    * If not provided, uses the default path based on nodeDef.nodePath.
@@ -291,8 +292,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
   const nodeDefFilters = ref<NodeDefFilter[]>([])
+  const subgraphStore = useSubgraphStore()
 
-  const nodeDefs = computed(() => Object.values(nodeDefsByName.value))
+  const nodeDefs = computed(() => {
+    return [
+      ...Object.values(nodeDefsByName.value),
+      ...subgraphStore.subgraphBlueprints
+    ]
+  })
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
@@ -383,7 +390,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     })
 
     // Subgraph nodes filter
-    // @todo Remove this filter when subgraph v2 is released
+    // Filter out litegraph typed subgraphs, saved blueprints are added in separately
     registerNodeDefFilter({
       id: 'core.subgraph',
       name: 'Hide Subgraph Nodes',

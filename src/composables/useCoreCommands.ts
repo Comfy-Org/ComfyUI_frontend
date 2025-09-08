@@ -28,6 +28,7 @@ import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -112,6 +113,15 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.PublishSubgraph',
+      icon: 'pi pi-save',
+      label: 'Publish Subgraph',
+      menubarLabel: 'Publish',
+      function: async () => {
+        await useSubgraphStore().publishSubgraph()
+      }
+    },
+    {
       id: 'Comfy.SaveWorkflowAs',
       icon: 'pi pi-save',
       label: 'Save Workflow As',
@@ -180,8 +190,6 @@ export function useCoreCommands(): ComfyCommand[] {
             const subgraph = app.canvas.subgraph
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
-          } else {
-            app.graph.clear()
           }
           api.dispatchCustomEvent('graphCleared')
         }
