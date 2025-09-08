@@ -209,33 +209,43 @@ jobs:
             "${{ github.head_ref }}" \
             "completed"
 
-  # Comment with Chromatic URLs for version-bump branches
-  comment-chromatic-urls:
-    needs: [chromatic-deployment]
+  # Update comment with Chromatic URLs for version-bump branches
+  update-comment-with-chromatic:
+    needs: [chromatic-deployment, deploy-and-comment]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && startsWith(github.head_ref, 'version-bump-') && needs.chromatic-deployment.outputs.chromatic-build-url != ''
     permissions:
       pull-requests: write
     steps:
-      - name: Add Chromatic URLs to PR
+      - name: Update comment with Chromatic URLs
         uses: actions/github-script@v7
         with:
           script: |
             const buildUrl = '${{ needs.chromatic-deployment.outputs.chromatic-build-url }}';
             const storybookUrl = '${{ needs.chromatic-deployment.outputs.chromatic-storybook-url }}';
             
-            if (buildUrl && storybookUrl) {
-              const comment = `## 🎨 Chromatic Visual Tests
+            // Find the existing Storybook comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.pull_request.number }}
+            });
+            
+            const storybookComment = comments.find(comment => 
+              comment.body.includes('<!-- STORYBOOK_BUILD_STATUS -->')
+            );
+            
+            if (storybookComment && buildUrl && storybookUrl) {
+              // Append Chromatic info to existing comment
+              const updatedBody = storybookComment.body.replace(
+                /---\n(.*)$/s,
+                `---\n### 🎨 Chromatic Visual Tests\n- 📊 [View Chromatic Build](${buildUrl})\n- 📚 [View Chromatic Storybook](${storybookUrl})\n\n$1`
+              );
               
-              - 📊 [View Chromatic Build](${buildUrl})
-              - 📚 [View Storybook](${storybookUrl})
-              
-              Chromatic will detect visual changes and UI regressions.`;
-              
-              await github.rest.issues.createComment({
+              await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: ${{ github.event.pull_request.number }},
-                body: comment
+                comment_id: storybookComment.id,
+                body: updatedBody
               });
             }

@@ -70,13 +70,18 @@ post_comment() {
     echo "$body" > "$temp_file"
     
     if command -v gh > /dev/null 2>&1; then
-        # Find existing comment
-        existing=$(gh pr view "$PR_NUMBER" --comments --json comments \
-            --jq ".comments[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
+        # Find existing comment with our marker
+        existing_id=$(gh pr view "$PR_NUMBER" --comments --json comments \
+            --jq ".comments[] | select(.author.login == \"github-actions[bot]\" and (.body | contains(\"$COMMENT_MARKER\"))) | .id" | head -1)
         
-        if [ -n "$existing" ]; then
-            gh pr comment "$PR_NUMBER" --edit-last --body-file "$temp_file"
+        if [ -n "$existing_id" ]; then
+            # Update the existing comment by ID
+            gh api \
+                --method PATCH \
+                "/repos/${GITHUB_REPOSITORY}/issues/comments/${existing_id}" \
+                -f body="$(cat "$temp_file")"
         else
+            # Create new comment
             gh pr comment "$PR_NUMBER" --body-file "$temp_file"
         fi
     else
