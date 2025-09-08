@@ -1,3 +1,4 @@
+import type { HintedString } from '@primevue/core'
 import { computed } from 'vue'
 
 /**
@@ -8,7 +9,7 @@ interface TransformCompatOverlayOptions {
    * Where to append the overlay. 'self' keeps overlay within component
    * for proper transform inheritance, 'body' teleports to document body
    */
-  appendTo?: string
+  appendTo?: HintedString<'body' | 'self'> | undefined | HTMLElement
   // Future: other props needed for transform compatibility
   // scrollTarget?: string | HTMLElement
   // autoZIndex?: boolean
