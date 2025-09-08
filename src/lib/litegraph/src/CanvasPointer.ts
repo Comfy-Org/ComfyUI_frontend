@@ -447,7 +447,8 @@ export class CanvasPointer {
       !navigator.platform.includes('Mac') &&
       event.deltaX === 0
     ) {
-      // As tested in real world, on non-Mac, trackpad wheelDeltaY is usually very close to deltaY while two-finger panning vertically (except for some mouse models, for example Logitech M705, on Linux the wheelDeltaY and detaY are exactly the same when scrolling normally)
+      // As tested in real world, on non-Mac, trackpad wheelDeltaY is usually very close to deltaY while two-finger panning vertically
+      // (except for some mouse models, for example Logitech M705, on Linux the wheelDeltaY and detaY are exactly the same when scrolling normally)
       if (Math.abs(Math.abs(event.deltaY) - Math.abs(wheelDeltaY)) < 2) {
         return true
       }
