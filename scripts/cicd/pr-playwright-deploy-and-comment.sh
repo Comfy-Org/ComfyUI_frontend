@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 # Deploy Playwright test reports to Cloudflare Pages and comment on PR
@@ -22,30 +22,31 @@ fi
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
 # Use dot notation for artifact names (as Playwright creates them)
-BROWSERS=("chromium" "chromium-2x" "chromium-0.5x" "mobile-chrome")
+BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome"
 
 # Deploy a single browser report
 deploy_report() {
-    local dir="$1"
-    local browser="$2"
-    local branch="$3"
+    dir="$1"
+    browser="$2"
+    branch="$3"
     
     [ ! -d "$dir" ] && echo "failed" && return
     
     # Install wrangler if not available
-    if ! command -v wrangler &> /dev/null; then
+    if ! command -v wrangler > /dev/null 2>&1; then
         echo "Installing wrangler..."
         npm install -g wrangler
     fi
     
     # Project name with dots converted to dashes for Cloudflare
-    local sanitized_browser="${browser//\./-}"
-    local project="comfyui-playwright-${sanitized_browser}"
+    sanitized_browser=$(echo "$browser" | sed 's/\./-/g')
+    project="comfyui-playwright-${sanitized_browser}"
     
     echo "Deploying $browser to project $project on branch $branch..."
     
     # Try deployment up to 3 times
-    for i in {1..3}; do
+    i=1
+    while [ $i -le 3 ]; do
         echo "Deployment attempt $i of 3..."
         if output=$(npx wrangler pages deploy "$dir" \
             --project-name="$project" \
@@ -61,6 +62,7 @@ deploy_report() {
             echo "Deployment failed on attempt $i: $output"
         fi
         [ $i -lt 3 ] && sleep 10
+        i=$((i + 1))
     done
     
     echo "failed"
@@ -68,11 +70,11 @@ deploy_report() {
 
 # Post or update GitHub comment
 post_comment() {
-    local body="$1"
-    local temp_file=$(mktemp)
+    body="$1"
+    temp_file=$(mktemp)
     echo "$body" > "$temp_file"
     
-    if command -v gh &> /dev/null; then
+    if command -v gh > /dev/null 2>&1; then
         # Find existing comment
         existing=$(gh pr view "$PR_NUMBER" --comments --json comments \
             --jq ".comments[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
@@ -122,44 +124,55 @@ else
     echo "Available reports:"
     ls -la reports/ 2>/dev/null || echo "Reports directory not found"
     
-    # Deploy all reports
-    declare -a urls
-    for browser in "${BROWSERS[@]}"; do
+    # Deploy all reports and collect URLs
+    urls=""
+    for browser in $BROWSERS; do
         if [ -d "reports/playwright-report-$browser" ]; then
             echo "Found report for $browser, deploying..."
             url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$sanitized_branch")
-            urls+=("$url")
             echo "Deployment result for $browser: $url"
         else
             echo "Report not found for $browser at reports/playwright-report-$browser"
-            urls+=("failed")
+            url="failed"
+        fi
+        # Append URL to list (space-separated)
+        if [ -z "$urls" ]; then
+            urls="$url"
+        else
+            urls="$urls $url"
         fi
     done
     
     # Generate completion comment
-    comment=$(cat <<EOF
-$COMMENT_MARKER
+    comment="$COMMENT_MARKER
 ## 🎭 Playwright Test Results
 
 ✅ **Tests completed successfully!**
 
 ⏰ Completed at: $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC
 
-### 📊 Test Reports by Browser
-EOF
-)
+### 📊 Test Reports by Browser"
     
-    for i in "${!BROWSERS[@]}"; do
-        # Display browser name (convert dots back for display)
-        local display_name="${BROWSERS[$i]}"
-        if [ "${urls[$i]}" != "failed" ] && [ -n "${urls[$i]}" ]; then
-            comment+=$'\n'"- ✅ **${display_name}**: [View Report](${urls[$i]})"
+    # Add browser results
+    i=0
+    for browser in $BROWSERS; do
+        # Get URL at position i
+        url=$(echo "$urls" | cut -d' ' -f$((i + 1)))
+        
+        if [ "$url" != "failed" ] && [ -n "$url" ]; then
+            comment="$comment
+- ✅ **${browser}**: [View Report](${url})"
         else
-            comment+=$'\n'"- ❌ **${display_name}**: Deployment failed"
+            comment="$comment
+- ❌ **${browser}**: Deployment failed"
         fi
+        i=$((i + 1))
     done
     
-    comment+=$'\n\n'"---"$'\n'"🎉 Click on the links above to view detailed test results for each browser configuration."
+    comment="$comment
+
+---
+🎉 Click on the links above to view detailed test results for each browser configuration."
     
     post_comment "$comment"
 fi
