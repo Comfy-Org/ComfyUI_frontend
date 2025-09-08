@@ -32,22 +32,22 @@ deploy_report() {
     
     [ ! -d "$dir" ] && echo "failed" && return
     
-    # Install wrangler if not available
+    # Install wrangler if not available (output to stderr for debugging)
     if ! command -v wrangler > /dev/null 2>&1; then
-        echo "Installing wrangler..."
-        npm install -g wrangler
+        echo "Installing wrangler..." >&2
+        npm install -g wrangler >&2
     fi
     
     # Project name with dots converted to dashes for Cloudflare
     sanitized_browser=$(echo "$browser" | sed 's/\./-/g')
     project="comfyui-playwright-${sanitized_browser}"
     
-    echo "Deploying $browser to project $project on branch $branch..."
+    echo "Deploying $browser to project $project on branch $branch..." >&2
     
     # Try deployment up to 3 times
     i=1
     while [ $i -le 3 ]; do
-        echo "Deployment attempt $i of 3..."
+        echo "Deployment attempt $i of 3..." >&2
         if output=$(npx wrangler pages deploy "$dir" \
             --project-name="$project" \
             --branch="$branch" 2>&1); then
@@ -55,11 +55,11 @@ deploy_report() {
             # Extract URL from output
             url=$(echo "$output" | grep -oE 'https://[a-z0-9.-]+\.pages\.dev' | head -1)
             result="${url:-https://${branch}.${project}.pages.dev}"
-            echo "Success! URL: $result"
-            echo "$result"
+            echo "Success! URL: $result" >&2
+            echo "$result"  # Only this goes to stdout for capture
             return
         else
-            echo "Deployment failed on attempt $i: $output"
+            echo "Deployment failed on attempt $i: $output" >&2
         fi
         [ $i -lt 3 ] && sleep 10
         i=$((i + 1))

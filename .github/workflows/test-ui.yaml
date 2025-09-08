@@ -8,31 +8,6 @@ on:
       [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
 
 jobs:
-  # Post starting comment for non-forked PRs
-  comment-on-pr-start:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
-    permissions:
-      pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Get start time
-        id: start-time
-        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
-        
-      - name: Post starting comment
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ github.event.pull_request.number }}" \
-            "${{ github.head_ref }}" \
-            "starting" \
-            "${{ steps.start-time.outputs.time }}"
-
   setup:
     runs-on: ubuntu-latest
     outputs:
@@ -309,6 +284,35 @@ jobs:
           name: playwright-report-chromium
           path: ComfyUI_frontend/playwright-report/
           retention-days: 30
+
+  #### BEGIN Deployment and commenting (non-forked PRs only)
+  # when using pull_request event, we have permission to comment directly
+  # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
+
+  # Post starting comment for non-forked PRs
+  comment-on-pr-start:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Get start time
+        id: start-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        
+      - name: Post starting comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
+          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "starting" \
+            "${{ steps.start-time.outputs.time }}"
           
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
@@ -341,3 +345,4 @@ jobs:
             "${{ github.event.pull_request.number }}" \
             "${{ github.head_ref }}" \
             "completed"
+  #### END Deployment and commenting (non-forked PRs only)
