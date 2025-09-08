@@ -1,4 +1,4 @@
-name: PR Playwright Deploy and Comment
+name: PR Playwright Deploy and Comment (Forked PRs)
 
 on:
   workflow_run:
@@ -9,228 +9,106 @@ env:
   DATE_FORMAT: '+%m/%d/%Y, %I:%M:%S %p'
 
 jobs:
+  # Check if this is a forked PR and set output
+  check-fork-status:
+    runs-on: ubuntu-latest
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.event.workflow_run.event == 'pull_request'
+    outputs:
+      is_fork: ${{ steps.check.outputs.is_fork }}
+      pr_number: ${{ steps.check.outputs.pr_number }}
+    steps:
+      - name: Check if PR is from fork
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Check if this is from a forked repository
+            const isForked = context.payload.workflow_run.head_repository.full_name !== context.payload.workflow_run.repository.full_name;
+            
+            if (!isForked) {
+              console.log('PR is not from a fork, skipping this workflow');
+              return { is_fork: false, pr_number: null };
+            }
+            
+            console.log(`PR is from forked repository: ${context.payload.workflow_run.head_repository.full_name}`);
+            
+            // For forked PRs, find the PR number
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+            
+            // Find PR by matching head SHA
+            const pr = pullRequests.find(pr => pr.head.sha === context.payload.workflow_run.head_sha);
+            
+            if (!pr) {
+              console.log('No open PR found for this forked branch');
+              return { is_fork: true, pr_number: null };
+            }
+            
+            console.log(`✅ Found PR #${pr.number} from fork`);
+            return { is_fork: true, pr_number: pr.number };
 
   comment-tests-starting:
+    needs: check-fork-status
     runs-on: ubuntu-latest
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.event.workflow_run.event == 'pull_request' && github.event.action == 'requested'
+    if: needs.check-fork-status.outputs.is_fork == 'true' && needs.check-fork-status.outputs.pr_number != 'null' && github.event.action == 'requested'
     permissions:
       pull-requests: write
       actions: read
     steps:
-      - name: Get PR number
-        id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: pullRequests } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
-            });
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            if (pullRequests.length === 0) {
-              console.log('No open PR found for this branch');
-              return null;
-            }
-
-            const prNumber = pullRequests[0].number;
-            console.log(`✅ Found PR #${prNumber} for branch: ${context.payload.workflow_run.head_branch}`);
-            return prNumber;
-
-      - name: Get completion time
-        id: completion-time
+      - name: Get start time
+        id: start-time
         run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
 
-      - name: Generate comment body for start
-        if: steps.pr.outputs.result != 'null'
-        id: comment-body-start
+      - name: Post starting comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          echo "<!-- PLAYWRIGHT_TEST_STATUS -->" > comment.md
-          echo "## 🎭 Playwright Test Results" >> comment.md
-          echo "" >> comment.md
-          echo "<img alt='comfy-loading-gif' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px' style='vertical-align: middle; margin-right: 4px;' /> **Tests are starting...** " >> comment.md
-          echo "" >> comment.md
-          echo "⏰ Started at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
-          echo "" >> comment.md
-          echo "### 🚀 Running Tests" >> comment.md
-          echo "- 🧪 **chromium**: Running tests..." >> comment.md
-          echo "- 🧪 **chromium-0.5x**: Running tests..." >> comment.md
-          echo "- 🧪 **chromium-2x**: Running tests..." >> comment.md
-          echo "- 🧪 **mobile-chrome**: Running tests..." >> comment.md
-          echo "" >> comment.md
-          echo "---" >> comment.md
-          echo "⏱️ Please wait while tests are running across all browsers..." >> comment.md
-
-      - name: Comment PR - Tests Started
-        if: steps.pr.outputs.result != 'null'
-        uses: edumserrano/find-create-or-update-comment@82880b65c8a3a6e4c70aa05a204995b6c9696f53 # v3.0.0
-        with:
-          issue-number: ${{ steps.pr.outputs.result }}
-          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
-          comment-author: 'github-actions[bot]'
-          edit-mode: replace
-          body-path: comment.md
+          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
+          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+            "${{ needs.check-fork-status.outputs.pr_number }}" \
+            "${{ github.event.workflow_run.head_branch }}" \
+            "starting" \
+            "${{ steps.start-time.outputs.time }}"
 
   deploy-and-comment:
+    needs: check-fork-status
     runs-on: ubuntu-latest
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.event.workflow_run.event == 'pull_request' && github.event.action == 'completed'
+    if: needs.check-fork-status.outputs.is_fork == 'true' && needs.check-fork-status.outputs.pr_number != 'null' && github.event.action == 'completed'
     permissions:
       actions: read
       pull-requests: write
     steps:
-      - name: Get PR info
-        id: pr-info
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: pullRequests } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
-            });
-            
-            if (pullRequests.length === 0) {
-              console.log('No open PR found for this branch');
-              return { number: null, sanitized_branch: null };
-            }
-            
-            const pr = pullRequests[0];
-            console.log(`✅ Found PR #${pr.number} for branch: ${context.payload.workflow_run.head_branch}`);
-            const branchName = context.payload.workflow_run.head_branch;
-            const sanitizedBranch = branchName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '');
-            
-            return {
-              number: pr.number,
-              sanitized_branch: sanitizedBranch
-            };
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Download all playwright reports
-        if: fromJSON(steps.pr-info.outputs.result).number != null
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
           pattern: playwright-report-*
           path: reports
-
-      - name: Deploy reports to Cloudflare Pages
-        if: fromJSON(steps.pr-info.outputs.result).number != null
-        id: deploy
+          
+      - name: Rename merged chromium report if exists
         run: |
-          # Install wrangler
-          npm install -g wrangler
-          
-          # Set branch name from PR info
-          BRANCH="${{ fromJSON(steps.pr-info.outputs.result).sanitized_branch }}"
-          
-          # Initialize results
-          echo "## Deployment URLs" >> $GITHUB_STEP_SUMMARY
-          
-          # Deploy each browser report
-          for browser_dir in reports/playwright-report-*; do
-            if [ -d "$browser_dir" ]; then
-              browser=$(basename "$browser_dir" | sed 's/playwright-report-//')
-              
-              # Set project name (handle numeric multipliers with dots)
-              # Convert any numeric multiplier patterns (e.g., 0.5x, 1.5x, 2.0x) to use dashes
-              project_name="comfyui-playwright-$(echo "$browser" | sed 's/\([0-9]\)\.\([0-9]\)/\1-\2/g')"
-              
-              echo "Deploying $browser to project $project_name..."
-              
-              # Deploy with retry logic
-              RETRY_COUNT=0
-              MAX_RETRIES=3
-              SUCCESS=false
-              
-              while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
-                RETRY_COUNT=$((RETRY_COUNT + 1))
-                echo "Attempt $RETRY_COUNT of $MAX_RETRIES for $browser..."
-                
-                # Capture output and deploy
-                OUTPUT=$(npx wrangler pages deploy "$browser_dir" \
-                  --project-name="$project_name" \
-                  --branch="$BRANCH" 2>&1) && SUCCESS=true || SUCCESS=false
-                
-                if [ $SUCCESS = true ]; then
-                  # Extract URL from output
-                  URL=$(echo "$OUTPUT" | grep -oE 'https://[a-z0-9.-]+\.pages\.dev' | head -1)
-                  if [ -z "$URL" ]; then
-                    # Fallback URL construction
-                    URL="https://${BRANCH}.${project_name}.pages.dev"
-                  fi
-                  # Replace dashes with underscores for valid output variable names
-                  output_name=$(echo "$browser" | tr '-' '_')
-                  echo "${output_name}_url=$URL" >> $GITHUB_OUTPUT
-                  echo "- **$browser**: $URL" >> $GITHUB_STEP_SUMMARY
-                  echo "✅ Deployed $browser successfully: $URL"
-                else
-                  echo "❌ Deployment failed for $browser on attempt $RETRY_COUNT"
-                  if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                    sleep 10
-                  fi
-                fi
-              done
-              
-              if [ $SUCCESS = false ]; then
-                output_name=$(echo "$browser" | tr '-' '_')
-                echo "${output_name}_url=" >> $GITHUB_OUTPUT
-                echo "- **$browser**: ❌ Deployment failed" >> $GITHUB_STEP_SUMMARY
-              fi
-            fi
-          done
+          if [ -d "reports/playwright-report-chromium-merged" ]; then
+            mv reports/playwright-report-chromium-merged reports/playwright-report-chromium
+          fi
+
+      - name: Deploy reports and comment on PR
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Get completion time
-        id: completion-time
-        run: echo "time=$(date -u '${{ env.DATE_FORMAT }}')" >> $GITHUB_OUTPUT
-
-      - name: Generate and post comment
-        if: fromJSON(steps.pr-info.outputs.result).number != null
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          echo "<!-- PLAYWRIGHT_TEST_STATUS -->" > comment.md
-          echo "## 🎭 Playwright Test Results" >> comment.md
-          echo "" >> comment.md
-          
-          # For now, we'll assume tests passed if we got here
-          # In a real scenario, you'd check test results from artifacts
-          echo "✅ **Tests completed successfully!**" >> comment.md
-          echo "" >> comment.md
-          echo "⏰ Completed at: ${{ steps.completion-time.outputs.time }} UTC" >> comment.md
-          echo "" >> comment.md
-          echo "### 📊 Test Reports by Browser" >> comment.md
-          
-          # Add links for each browser
-          for browser in chromium chromium-2x chromium-0.5x mobile-chrome; do
-            # Use the actual variable name format
-            var_name="${browser//-/_}_url"
-            url="${!var_name}"
-            
-            if [ -n "$url" ]; then
-              echo "- ✅ **$browser**: [View Report]($url)" >> comment.md
-            else
-              echo "- ❌ **$browser**: Deployment failed" >> comment.md
-            fi
-          done
-          
-          echo "" >> comment.md
-          echo "---" >> comment.md
-          echo "🎉 Click on the links above to view detailed test results for each browser configuration." >> comment.md
-        env:
-          chromium_url: ${{ steps.deploy.outputs.chromium_url }}
-          chromium_2x_url: ${{ steps.deploy.outputs.chromium_2x_url }}
-          chromium_0_5x_url: ${{ steps.deploy.outputs.chromium_0_5x_url }}
-          mobile_chrome_url: ${{ steps.deploy.outputs.mobile_chrome_url }}
-
-      - name: Comment PR
-        if: fromJSON(steps.pr-info.outputs.result).number != null
-        uses: edumserrano/find-create-or-update-comment@82880b65c8a3a6e4c70aa05a204995b6c9696f53 # v3.0.0
-        with:
-          issue-number: ${{ fromJSON(steps.pr-info.outputs.result).number }}
-          body-includes: '<!-- PLAYWRIGHT_TEST_STATUS -->'
-          comment-author: 'github-actions[bot]'
-          edit-mode: replace
-          body-path: comment.md
+          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
+          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+            "${{ needs.check-fork-status.outputs.pr_number }}" \
+            "${{ github.event.workflow_run.head_branch }}" \
+            "completed"
