@@ -9,8 +9,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
-  Point,
-  ReadOnlyPoint
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
@@ -138,7 +137,7 @@ export function getSlotPosition(
   node: LGraphNode,
   slotIndex: number,
   isInput: boolean
-): ReadOnlyPoint {
+): Point {
   // Try to get precise position from slot layout (DOM-registered)
   const slotKey = getSlotKey(String(node.id), slotIndex, isInput)
   const slotLayout = layoutStore.getSlotLayout(slotKey)
