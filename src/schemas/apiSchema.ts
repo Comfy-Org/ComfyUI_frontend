@@ -467,6 +467,7 @@ const zSettings = z.object({
   'Comfy.Minimap.RenderErrorState': z.boolean(),
   'Comfy.Canvas.NavigationMode': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
