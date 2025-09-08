@@ -91,10 +91,10 @@ function createAssetService() {
 
     return (
       data?.assets
-        ?.filter((asset) => {
-          if (asset.tags.includes(MISSING_TAG)) return false
-          return asset.tags.includes(folder)
-        })
+        ?.filter(
+          (asset) =>
+            !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
+        )
         ?.map((asset) => ({
           name: asset.name,
           pathIndex: 0

@@ -24,7 +24,6 @@ const zModelFolder = z.object({
 export const assetResponseSchema = zAssetResponse
 
 // Export types derived from Zod schemas
-export type Asset = z.infer<typeof zAsset>
 export type AssetResponse = z.infer<typeof zAssetResponse>
 export type ModelFolder = z.infer<typeof zModelFolder>
 
