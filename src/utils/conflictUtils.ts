@@ -1,4 +1,4 @@
-import { groupBy, isEmpty, isNil, uniqBy } from 'es-toolkit/compat'
+import { groupBy, uniqBy } from 'es-toolkit/compat'
 
 import type {
   ConflictDetail,
@@ -7,15 +7,6 @@ import type {
   ConflictType
 } from '@/types/conflictDetectionTypes'
 import { normalizePackId } from '@/utils/packUtils'
-
-/**
- * Helper function to check if a value indicates "compatible with all"
- * @param value Value to check
- * @returns True if compatible with all
- */
-export function isCompatibleWithAll(value: any): boolean {
-  return isNil(value) || isEmpty(value)
-}
 
 /**
  * Checks for banned package status conflicts.
