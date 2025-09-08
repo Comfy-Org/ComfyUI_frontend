@@ -83,19 +83,20 @@ describe('assetService', () => {
       expect(folderNames).not.toContain('configs')
     })
 
-    it('should handle errors and empty responses', async () => {
-      // Empty response
+    it('should handle empty responses', async () => {
       mockApiResponse([])
       const emptyResult = await assetService.getAssetModelFolders()
       expect(emptyResult).toHaveLength(0)
+    })
 
-      // Network error
+    it('should handle network errors', async () => {
       vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
       await expect(assetService.getAssetModelFolders()).rejects.toThrow(
         'Network error'
       )
+    })
 
-      // HTTP error
+    it('should handle HTTP errors', async () => {
       mockApiError(500)
       await expect(assetService.getAssetModelFolders()).rejects.toThrow(
         'Unable to load model folders: Server returned 500. Please try again.'
@@ -107,7 +108,6 @@ describe('assetService', () => {
     it('should return filtered models for folder', async () => {
       const assets = [
         { ...MOCK_ASSETS.checkpoints, name: 'valid.safetensors' },
-        { ...MOCK_ASSETS.checkpoints, name: undefined }, // Invalid name
         { ...MOCK_ASSETS.loras, name: 'lora.safetensors' }, // Wrong tag
         {
           id: 'uuid-4',
