@@ -188,7 +188,60 @@ export default {
           800: '#b38400',
           900: '#997200',
           950: '#664d00'
-        }
+        },
+
+        // Neutrals
+        'pure-black': '#000000',
+        'pure-white': '#FFFFFF',
+
+        // Charcoal palette
+        'charcoal-primary': '#171718',
+        'charcoal-secondary': '#202121',
+        'charcoal-tertiary': '#262729',
+        'charcoal-400': '#302F32',
+        'charcoal-500': '#313235',
+
+        // Stone palette
+        'stone-primary': '#444444',
+        'stone-secondary': '#828282',
+        'stone-tertiary': '#BBBBBB',
+
+        // Ivory palette
+        'ivory-primary': '#FDFBFA',
+        'ivory-secondary': '#FAF9F5',
+        'ivory-tertiary': '#F0EEE6',
+
+        // Gray palette
+        'gray-primary': '#EEEEEE',
+        'gray-secondary': '#F3F3F3',
+        'gray-tertiary': '#D9D9D9',
+        'gray-quaternary': '#E7E6E6',
+
+        // Sand palette
+        'sand-primary': '#E1DED5',
+        'sand-secondary': '#D6CFC2',
+        'sand-tertiary': '#888682',
+
+        // Slate palette
+        'slate-primary': '#9C9EAB',
+        'slate-secondary': '#9FA2BD',
+        'slate-tertiary': '#5B5E7D',
+
+        // Brand colors
+        'brand-yellow': '#F0FF41',
+        'brand-blue': '#172DD7',
+
+        // Accent colors
+        'blue-primary': '#0B8CE9',
+        'blue-secondary': '#31B9F4',
+        'blue-selection': 'rgba(11, 140, 233, 0.3)',
+        'success-primary': '#00CD72',
+        'success-secondary': '#47E469',
+        'warning-primary': '#FD9903',
+        'warning-secondary': '#FCBF64',
+        'danger-primary': '#C02323',
+        'danger-secondary': '#C83A27',
+        error: '#962A2A'
       },
 
       textColor: {
