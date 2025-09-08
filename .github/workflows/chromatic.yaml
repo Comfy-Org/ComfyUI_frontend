@@ -8,10 +8,38 @@ on:
     branches: [main]
 
 jobs:
+  # Post starting comment for non-forked PRs
+  comment-on-pr-start:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'version-bump-'))
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Get start time
+        id: start-time
+        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
+        
+      - name: Post starting comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
+          ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "starting" \
+            "${{ steps.start-time.outputs.time }}"
+
   chromatic-deployment:
     runs-on: ubuntu-latest
     # Only run for PRs from version-bump-* branches or manual triggers
     if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'version-bump-')
+    outputs:
+      conclusion: ${{ steps.job-status.outputs.conclusion }}
+      workflow-url: ${{ steps.workflow-url.outputs.url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,4 +82,67 @@ jobs:
           buildScriptName: build-storybook
           autoAcceptChanges: 'main' # Auto-accept changes on main branch
           exitOnceUploaded: true # Don't wait for UI tests to complete
+
+      - name: Set job status
+        id: job-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "conclusion=success" >> $GITHUB_OUTPUT
+          elif [ "${{ job.status }}" = "cancelled" ]; then
+            echo "conclusion=cancelled" >> $GITHUB_OUTPUT
+          elif [ "${{ job.status }}" = "skipped" ]; then
+            echo "conclusion=skipped" >> $GITHUB_OUTPUT
+          else
+            echo "conclusion=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get workflow URL
+        id: workflow-url
+        if: always()
+        run: |
+          echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      - name: Upload Storybook build
+        if: success() && github.event.pull_request.head.repo.fork == false
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: storybook-static/
+          retention-days: 7
+
+  # Deploy and comment for non-forked PRs only
+  deploy-and-comment:
+    needs: [chromatic-deployment]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && always()
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download Storybook build
+        if: needs.chromatic-deployment.outputs.conclusion == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-static
+          path: storybook-static
+          
+      - name: Make deployment script executable
+        run: chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
+        
+      - name: Deploy Storybook and comment on PR
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_CONCLUSION: ${{ needs.chromatic-deployment.outputs.conclusion }}
+          WORKFLOW_URL: ${{ needs.chromatic-deployment.outputs.workflow-url }}
+        run: |
+          ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
+            "completed"
 
