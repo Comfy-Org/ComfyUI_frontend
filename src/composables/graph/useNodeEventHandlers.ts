@@ -33,12 +33,20 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     const node = nodeManager.value.getNode(nodeData.id)
     if (!node) return
 
-    // Handle multi-select with Ctrl/Cmd key
-    if (!event.ctrlKey && !event.metaKey) {
-      canvasStore.canvas.deselectAllNodes()
-    }
+    const isMultiSelect = event.ctrlKey || event.metaKey
 
-    canvasStore.canvas.selectNode(node)
+    if (isMultiSelect) {
+      // Ctrl/Cmd+click -> toggle selection
+      if (node.selected) {
+        canvasStore.canvas.deselect(node)
+      } else {
+        canvasStore.canvas.select(node)
+      }
+    } else {
+      // Regular click -> single select
+      canvasStore.canvas.deselectAll()
+      canvasStore.canvas.select(node)
+    }
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
@@ -46,9 +54,6 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
       layoutMutations.setSource(LayoutSource.Vue)
       layoutMutations.bringNodeToFront(nodeData.id)
     }
-
-    // Ensure node selection state is set
-    node.selected = true
 
     // Update canvas selection tracking
     canvasStore.updateSelectedItems()
