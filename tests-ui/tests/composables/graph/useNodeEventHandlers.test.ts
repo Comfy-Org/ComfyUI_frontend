@@ -14,6 +14,15 @@ describe('useNodeEventHandlers', () => {
   let mockCanvasStore: any
   let mockLayoutMutations: any
 
+  const testNodeData: VueNodeData = {
+    id: 'node-1',
+    title: 'Test Node',
+    type: 'test',
+    mode: 0,
+    selected: false,
+    executing: false
+  }
+
   beforeEach(async () => {
     // Create mocked objects using vi.mockObject
     mockNode = {
@@ -66,16 +75,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      const nodeData: VueNodeData = {
-        id: 'node-1',
-        title: 'Test Node',
-        type: 'test',
-        mode: 0,
-        selected: false,
-        executing: false
-      }
-
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, testNodeData)
 
       expect(mockCanvas.deselectAll).toHaveBeenCalledOnce()
       expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
@@ -95,16 +95,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      const nodeData: VueNodeData = {
-        id: 'node-1',
-        title: 'Test Node',
-        type: 'test',
-        mode: 0,
-        selected: false,
-        executing: false
-      }
-
-      handleNodeSelect(ctrlClickEvent, nodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeData)
 
       expect(mockCanvas.deselectAll).not.toHaveBeenCalled()
       expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
@@ -123,16 +114,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: false
       })
 
-      const nodeData: VueNodeData = {
-        id: 'node-1',
-        title: 'Test Node',
-        type: 'test',
-        mode: 0,
-        selected: false,
-        executing: false
-      }
-
-      handleNodeSelect(ctrlClickEvent, nodeData)
+      handleNodeSelect(ctrlClickEvent, testNodeData)
 
       expect(mockCanvas.deselect).toHaveBeenCalledWith(mockNode)
       expect(mockCanvas.select).not.toHaveBeenCalled()
@@ -150,16 +132,7 @@ describe('useNodeEventHandlers', () => {
         metaKey: true
       })
 
-      const nodeData: VueNodeData = {
-        id: 'node-1',
-        title: 'Test Node',
-        type: 'test',
-        mode: 0,
-        selected: false,
-        executing: false
-      }
-
-      handleNodeSelect(metaClickEvent, nodeData)
+      handleNodeSelect(metaClickEvent, testNodeData)
 
       expect(mockCanvas.select).toHaveBeenCalledWith(mockNode)
       expect(mockCanvas.deselectAll).not.toHaveBeenCalled()
@@ -172,16 +145,7 @@ describe('useNodeEventHandlers', () => {
       mockNode.flags.pinned = false
 
       const event = new PointerEvent('pointerdown')
-      const nodeData: VueNodeData = {
-        id: 'node-1',
-        title: 'Test Node',
-        type: 'test',
-        mode: 0,
-        selected: false,
-        executing: false
-      }
-
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, testNodeData)
 
       expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
         'node-1'
@@ -195,16 +159,7 @@ describe('useNodeEventHandlers', () => {
       mockNode.flags.pinned = true
 
       const event = new PointerEvent('pointerdown')
-      const nodeData: VueNodeData = {
-        id: 'node-1',
-        title: 'Test Node',
-        type: 'test',
-        mode: 0,
-        selected: false,
-        executing: false
-      }
-
-      handleNodeSelect(event, nodeData)
+      handleNodeSelect(event, testNodeData)
 
       expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
     })
@@ -216,17 +171,8 @@ describe('useNodeEventHandlers', () => {
       mockCanvasStore.canvas = null
 
       const event = new PointerEvent('pointerdown')
-      const nodeData: VueNodeData = {
-        id: 'node-1',
-        title: 'Test Node',
-        type: 'test',
-        mode: 0,
-        selected: false,
-        executing: false
-      }
-
       expect(() => {
-        handleNodeSelect(event, nodeData)
+        handleNodeSelect(event, testNodeData)
       }).not.toThrow()
 
       expect(mockCanvas.select).not.toHaveBeenCalled()
