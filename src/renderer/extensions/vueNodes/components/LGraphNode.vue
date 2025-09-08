@@ -301,11 +301,14 @@ const nodeOutputs = useNodeOutputStore()
 const nodeImageUrls = ref<string[]>([])
 const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
   const node = getNodeByLocatorId(app.graph, props.nodeData.id)
-  if (node && newOutputs.images?.length) {
+  if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
     if (urls) {
       nodeImageUrls.value = urls
     }
+  } else {
+    // Clear URLs if no outputs or no images
+    nodeImageUrls.value = []
   }
 }
 

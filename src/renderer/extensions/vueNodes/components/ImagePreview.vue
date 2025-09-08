@@ -22,9 +22,9 @@
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages"
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0"
-          :title="$t('editOrMaskImage')"
-          :aria-label="$t('editOrMaskImage')"
+          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          :title="$t('g.editOrMaskImage')"
+          :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
           <i-lucide:venetian-mask class="w-4 h-4" />
@@ -32,9 +32,9 @@
 
         <!-- Download Button -->
         <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0"
-          :title="$t('downloadImage')"
-          :aria-label="$t('downloadImage')"
+          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          :title="$t('g.downloadImage')"
+          :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
           <i-lucide:download class="w-4 h-4" />
@@ -42,9 +42,9 @@
 
         <!-- Close Button -->
         <button
-          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0"
-          :title="$t('removeImage')"
-          :aria-label="$t('removeImage')"
+          class="action-btn bg-white text-black hover:bg-gray-100 rounded-lg p-2 shadow-sm transition-all duration-200 border-0 cursor-pointer"
+          :title="$t('g.removeImage')"
+          :aria-label="$t('g.removeImage')"
           @click="handleRemove"
         >
           <i-lucide:x class="w-4 h-4" />
@@ -60,13 +60,13 @@
           v-for="(_, index) in imageUrls"
           :key="index"
           :class="[
-            'w-2 h-2 rounded-full transition-all duration-200 border-0',
+            'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer',
             index === currentIndex
               ? 'bg-white'
               : 'bg-white/50 hover:bg-white/80'
           ]"
           :aria-label="
-            $t('viewImageOfTotal', {
+            $t('g.viewImageOfTotal', {
               index: index + 1,
               total: imageUrls.length
             })
