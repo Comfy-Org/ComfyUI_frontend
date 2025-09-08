@@ -363,23 +363,32 @@ export class CanvasPointer {
     const wheelDeltaY = (event as any).wheelDeltaY
     console.log('wheelDeltaY: ', wheelDeltaY)
 
-    // if deltaX is non-zero, it's definitely a trackpad
+    // if deltaX is non-zero, it's definitely a trackpad (but except for some mouse models, for example Logitech M705 which its wheel can pan horizontally)
     if (Math.abs(event.deltaX) !== 0) {
       this.detectedDevice = 'trackpad'
     } else if (wheelDeltaY !== undefined) {
       const absWheelDeltaY = Math.abs(wheelDeltaY)
 
-      // get this wheelDelta from real world testing
-      const wheelDeltaYThreshold = navigator.platform.includes('Mac') ? 30 : 75
+      // For some mouse models, for example Logitech M705, on Linux the wheelDeltaY and detaY are exactly the same when scrolling normally and value is 15 * 1/2, 1, 2, 3...8
+      const isMultipleOf15 = absWheelDeltaY % 15 === 0 || absWheelDeltaY === 7.5
 
-      if (absWheelDeltaY > wheelDeltaYThreshold) {
-        if (this.#isTrackpadPattern(event)) {
+      if (absWheelDeltaY === Math.abs(event.deltaY) && isMultipleOf15) {
+        this.detectedDevice = 'mouse'
+      } else {
+        // get this wheelDelta from real world testing
+        const wheelDeltaYThreshold = navigator.platform.includes('Mac')
+          ? 30
+          : 75
+
+        if (absWheelDeltaY > wheelDeltaYThreshold) {
+          if (this.#isTrackpadPattern(event)) {
+            this.detectedDevice = 'trackpad'
+          } else {
+            this.detectedDevice = 'mouse'
+          }
+        } else if (absWheelDeltaY > 0) {
           this.detectedDevice = 'trackpad'
-        } else {
-          this.detectedDevice = 'mouse'
         }
-      } else if (absWheelDeltaY > 0) {
-        this.detectedDevice = 'trackpad'
       }
     } else {
       // in case wheelDeltaY is undefined (e.g. Firefox), fall back to original pattern detection
@@ -438,7 +447,7 @@ export class CanvasPointer {
       !navigator.platform.includes('Mac') &&
       event.deltaX === 0
     ) {
-      // As tested in real world, on non-Mac, trackpad wheelDeltaY is usually very close to deltaY while two-finger panning vertically
+      // As tested in real world, on non-Mac, trackpad wheelDeltaY is usually very close to deltaY while two-finger panning vertically (except for some mouse models, for example Logitech M705, on Linux the wheelDeltaY and detaY are exactly the same when scrolling normally)
       if (Math.abs(Math.abs(event.deltaY) - Math.abs(wheelDeltaY)) < 2) {
         return true
       }
