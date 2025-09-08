@@ -10,7 +10,7 @@
   -->
   <MultiSelect
     v-model="selectedItems"
-    v-bind="$attrs"
+    v-bind="{ ...$attrs, options: filteredOptions }"
     option-label="name"
     unstyled
     :max-selected-labels="0"
@@ -98,11 +98,12 @@
 </template>
 
 <script setup lang="ts">
+import Fuse from 'fuse.js'
 import Button from 'primevue/button'
 import MultiSelect, {
   MultiSelectPassThroughMethodOptions
 } from 'primevue/multiselect'
-import { computed } from 'vue'
+import { computed, toRefs, useAttrs } from 'vue'
 
 import SearchBox from '@/components/input/SearchBox.vue'
 
@@ -128,19 +129,50 @@ interface Props {
   // Note: options prop is intentionally omitted.
   // It's passed via $attrs to maximize PrimeVue API compatibility
 }
+const props = defineProps<Props>()
 const {
   label,
-  showSearchBox = false,
-  showSelectedCount = false,
-  showClearButton = false,
+  showSearchBox,
+  showSelectedCount,
+  showClearButton,
   searchPlaceholder = 'Search...'
-} = defineProps<Props>()
+} = toRefs(props)
+const attrs = useAttrs()
 
 const selectedItems = defineModel<Option[]>({
   required: true
 })
-const searchQuery = defineModel<string>('searchQuery')
+const searchQuery = defineModel<string>('searchQuery', { default: '' })
 const selectedCount = computed(() => selectedItems.value.length)
+
+// Get the original options from attrs
+const originalOptions = computed(() => (attrs.options as Option[]) || [])
+
+const fuse = computed(
+  () =>
+    new Fuse(originalOptions.value, {
+      keys: ['name', 'value'],
+      threshold: 0.3,
+      includeScore: false
+    })
+)
+
+// Filter options based on search, but always include selected items
+const filteredOptions = computed(() => {
+  if (!searchQuery.value || searchQuery.value.trim() === '') {
+    return originalOptions.value
+  }
+
+  const searchResults = fuse.value
+    .search(searchQuery.value)
+    .map((result) => result.item)
+
+  const selectedButNotInResults = selectedItems.value.filter(
+    (item) => !searchResults.some((result) => result.value === item.value)
+  )
+
+  return [...selectedButNotInResults, ...searchResults]
+})
 
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
@@ -170,7 +202,9 @@ const pt = computed(() => ({
   },
   header: () => ({
     class:
-      showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
+      showSearchBox.value || showSelectedCount.value || showClearButton.value
+        ? 'block'
+        : 'hidden'
   }),
   // Overlay & list visuals unchanged
   overlay:
