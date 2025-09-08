@@ -4,6 +4,7 @@
  */
 import { nextTick, reactive } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
@@ -595,6 +596,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
   /**
    * Handles node addition to the graph - sets up Vue state and spatial indexing
+   * Defers position extraction until after potential configure() calls
    */
   const handleNodeAdded = (
     node: LGraphNode,
@@ -618,27 +620,48 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       lastUpdate: performance.now(),
       culled: false
     })
-    nodePositions.set(id, { x: node.pos[0], y: node.pos[1] })
-    nodeSizes.set(id, { width: node.size[0], height: node.size[1] })
-    attachMetadata(node)
 
-    // Add to spatial index for viewport culling
-    const bounds: Bounds = {
-      x: node.pos[0],
-      y: node.pos[1],
-      width: node.size[0],
-      height: node.size[1]
+    const initializeVueNodeLayout = () => {
+      // Extract actual positions after configure() has potentially updated them
+      const nodePosition = { x: node.pos[0], y: node.pos[1] }
+      const nodeSize = { width: node.size[0], height: node.size[1] }
+
+      nodePositions.set(id, nodePosition)
+      nodeSizes.set(id, nodeSize)
+      attachMetadata(node)
+
+      // Add to spatial index for viewport culling with final positions
+      const nodeBounds: Bounds = {
+        x: nodePosition.x,
+        y: nodePosition.y,
+        width: nodeSize.width,
+        height: nodeSize.height
+      }
+      spatialIndex.insert(id, nodeBounds, id)
+
+      // Add node to layout store with final positions
+      setSource(LayoutSource.Canvas)
+      void createNode(id, {
+        position: nodePosition,
+        size: nodeSize,
+        zIndex: node.order || 0,
+        visible: true
+      })
     }
-    spatialIndex.insert(id, bounds, id)
 
-    // Add node to layout store
-    setSource(LayoutSource.Canvas)
-    void createNode(id, {
-      position: { x: node.pos[0], y: node.pos[1] },
-      size: { width: node.size[0], height: node.size[1] },
-      zIndex: node.order || 0,
-      visible: true
-    })
+    // Check if we're in the middle of configuring the graph (workflow loading)
+    if (window.app?.configuringGraph) {
+      // During workflow loading - defer layout initialization until configure completes
+      // Chain our callback with any existing onAfterGraphConfigured callback
+      node.onAfterGraphConfigured = useChainCallback(
+        node.onAfterGraphConfigured,
+        initializeVueNodeLayout
+      )
+    } else {
+      // Not during workflow loading - initialize layout immediately
+      // This handles individual node additions during normal operation
+      initializeVueNodeLayout()
+    }
 
     // Call original callback if provided
     if (originalCallback) {
