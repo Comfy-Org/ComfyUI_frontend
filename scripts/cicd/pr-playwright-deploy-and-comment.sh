@@ -31,21 +31,32 @@ deploy_report() {
     
     [ ! -d "$dir" ] && echo "failed" && return
     
+    # Install wrangler if not available
+    if ! command -v wrangler &> /dev/null; then
+        echo "Installing wrangler..."
+        npm install -g wrangler
+    fi
+    
     # Project name with dots converted to dashes
     local project="comfyui-playwright-${browser//\./-}"
     
-    echo "Deploying $browser..."
+    echo "Deploying $browser to project $project on branch $branch..."
     
     # Try deployment up to 3 times
     for i in {1..3}; do
+        echo "Deployment attempt $i of 3..."
         if output=$(npx wrangler pages deploy "$dir" \
             --project-name="$project" \
             --branch="$branch" 2>&1); then
             
             # Extract URL from output
             url=$(echo "$output" | grep -oE 'https://[a-z0-9.-]+\.pages\.dev' | head -1)
-            echo "${url:-https://${branch}.${project}.pages.dev}"
+            result="${url:-https://${branch}.${project}.pages.dev}"
+            echo "Success! URL: $result"
+            echo "$result"
             return
+        else
+            echo "Deployment failed on attempt $i: $output"
         fi
         [ $i -lt 3 ] && sleep 10
     done
@@ -105,13 +116,20 @@ else
     sanitized_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
         sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
     
+    echo "Looking for reports in: $(pwd)/reports"
+    echo "Available reports:"
+    ls -la reports/ 2>/dev/null || echo "Reports directory not found"
+    
     # Deploy all reports
     declare -a urls
     for browser in "${BROWSERS[@]}"; do
         if [ -d "reports/playwright-report-$browser" ]; then
+            echo "Found report for $browser, deploying..."
             url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$sanitized_branch")
             urls+=("$url")
+            echo "Deployment result for $browser: $url"
         else
+            echo "Report not found for $browser at reports/playwright-report-$browser"
             urls+=("failed")
         fi
     done
