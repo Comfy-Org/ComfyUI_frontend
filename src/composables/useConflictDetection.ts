@@ -10,6 +10,7 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { RegistryAccelerator } from '@/types/compatibility.types'
 import type {
   ConflictDetail,
   ConflictDetectionResponse,
@@ -28,7 +29,6 @@ import {
 import {
   checkAcceleratorCompatibility,
   checkOSCompatibility,
-  normalizeAcceleratorList,
   normalizeOSList
 } from '@/utils/simpleCompatibility'
 import {
@@ -663,37 +663,30 @@ export function useConflictDetection() {
   function checkNodeCompatibility(
     node: Node | components['schemas']['NodeVersion']
   ) {
-    const systemStatsStore = useSystemStatsStore()
-    const systemStats = systemStatsStore.systemStats
-    if (!systemStats) return { hasConflict: false, conflicts: [] }
-
     const conflicts: ConflictDetail[] = []
 
     // Check OS compatibility
-    const currentOS = systemStats.system?.os
     const osConflict = checkOSCompatibility(
       normalizeOSList(node.supported_os),
-      currentOS
+      systemEnvironment.value?.os
     )
     if (osConflict) {
       conflicts.push(osConflict)
     }
 
     // Check Accelerator compatibility
-    const currentAccelerator = systemStats.devices?.[0]?.type
     const acceleratorConflict = checkAcceleratorCompatibility(
-      normalizeAcceleratorList(node.supported_accelerators),
-      currentAccelerator
+      node.supported_accelerators as RegistryAccelerator[],
+      systemEnvironment.value?.accelerator
     )
     if (acceleratorConflict) {
       conflicts.push(acceleratorConflict)
     }
 
     // Check ComfyUI version compatibility
-    const currentComfyUIVersion = systemStats.system?.comfyui_version
     const comfyUIVersionConflict = checkVersionCompatibility(
       'comfyui_version',
-      currentComfyUIVersion,
+      systemEnvironment.value?.comfyui_version,
       node.supported_comfyui_version
     )
     if (comfyUIVersionConflict) {

@@ -124,23 +124,3 @@ export function normalizeOSList(
 
   return validOS.length > 0 ? validOS : undefined
 }
-
-/**
- * Normalizes accelerator values from Registry API
- * @returns undefined if all accelerators supported, otherwise filtered valid list
- */
-export function normalizeAcceleratorList(
-  accelerators?: string[] | null
-): RegistryAccelerator[] | undefined {
-  if (isNil(accelerators) || isEmpty(accelerators)) return undefined
-
-  // Filter to valid Registry accelerator values only
-  const validAcc: RegistryAccelerator[] = []
-  accelerators.forEach((acc) => {
-    if (acc === 'CUDA' || acc === 'ROCm' || acc === 'Metal' || acc === 'CPU') {
-      if (!validAcc.includes(acc)) validAcc.push(acc)
-    }
-  })
-
-  return validAcc.length > 0 ? validAcc : undefined
-}
