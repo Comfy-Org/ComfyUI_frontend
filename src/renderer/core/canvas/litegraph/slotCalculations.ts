@@ -260,7 +260,7 @@ function calculateVueSlotPosition(
     // Y position relative to the node body top (not the header)
     slotCenterY =
       headerDifference +
-      regularInputCount * dimensions.SLOT_HEIGHT +
+      regularInputCount * (dimensions.SLOT_HEIGHT + spacing.BETWEEN_SLOTS) +
       (regularInputCount > 0 ? spacing.BETWEEN_SLOTS_AND_BODY : 0) +
       widgetIndex *
         (dimensions.STANDARD_WIDGET_HEIGHT + spacing.BETWEEN_WIDGETS) +
@@ -270,7 +270,7 @@ function calculateVueSlotPosition(
     // Slots start at the top of the body, but we need to account for Vue's larger header
     slotCenterY =
       headerDifference +
-      slotIndex * dimensions.SLOT_HEIGHT +
+      slotIndex * (dimensions.SLOT_HEIGHT + spacing.BETWEEN_SLOTS) +
       dimensions.SLOT_HEIGHT / 2
   }
 
