@@ -29,38 +29,39 @@ deploy_storybook() {
     
     [ ! -d "$dir" ] && echo "failed" && return
     
-    # Install wrangler if not available
+    # Install wrangler if not available (redirect to stderr for logging)
     if ! command -v wrangler > /dev/null 2>&1; then
-        echo "Installing wrangler..."
-        npm install -g wrangler
+        echo "Installing wrangler..." >&2
+        npm install -g wrangler >&2
     fi
     
     project="comfyui-storybook"
     
-    echo "Deploying Storybook to project $project on branch $branch..."
+    echo "Deploying Storybook to project $project on branch $branch..." >&2
     
     # Try deployment up to 3 times
     i=1
     while [ $i -le 3 ]; do
-        echo "Deployment attempt $i of 3..."
+        echo "Deployment attempt $i of 3..." >&2
         if output=$(npx wrangler pages deploy "$dir" \
             --project-name="$project" \
-            --branch="$branch" 2>&1); then
+            --branch="$branch" \
+            --commit-dirty=true 2>&1); then
             
             # Extract URL from output
             url=$(echo "$output" | grep -oE 'https://[a-z0-9.-]+\.pages\.dev' | head -1)
             result="${url:-https://${branch}.${project}.pages.dev}"
-            echo "Success! URL: $result"
-            echo "$result"
+            echo "Success! URL: $result" >&2
+            echo "$result"  # Only this goes to stdout and gets captured
             return
         else
-            echo "Deployment failed on attempt $i: $output"
+            echo "Deployment failed on attempt $i: $output" >&2
         fi
         [ $i -lt 3 ] && sleep 10
         i=$((i + 1))
     done
     
-    echo "failed"
+    echo "failed"  # Only this goes to stdout on failure
 }
 
 # Post or update GitHub comment
