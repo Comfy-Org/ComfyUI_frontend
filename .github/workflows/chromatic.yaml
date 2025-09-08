@@ -109,6 +109,8 @@ jobs:
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
       workflow-url: ${{ steps.workflow-url.outputs.url }}
+      chromatic-build-url: ${{ steps.chromatic.outputs.buildUrl }}
+      chromatic-storybook-url: ${{ steps.chromatic.outputs.storybookUrl }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,6 +152,7 @@ jobs:
           buildScriptName: build-storybook
           autoAcceptChanges: 'main' # Auto-accept changes on main branch
           exitOnceUploaded: true # Don't wait for UI tests to complete
+          onlyChanged: true # Only capture changed stories
 
       - name: Set job status
         id: job-status
@@ -170,14 +173,6 @@ jobs:
         if: always()
         run: |
           echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
-
-      - name: Upload Storybook build for Chromatic
-        if: success() && github.event.pull_request.head.repo.fork == false
-        uses: actions/upload-artifact@v4
-        with:
-          name: storybook-static-chromatic
-          path: storybook-static/
-          retention-days: 7
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
@@ -214,42 +209,33 @@ jobs:
             "${{ github.head_ref }}" \
             "completed"
 
-  # Deploy Chromatic build to Cloudflare for version-bump branches
-  deploy-chromatic-build:
+  # Comment with Chromatic URLs for version-bump branches
+  comment-chromatic-urls:
     needs: [chromatic-deployment]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && startsWith(github.head_ref, 'version-bump-') && always()
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && startsWith(github.head_ref, 'version-bump-') && needs.chromatic-deployment.outputs.chromatic-build-url != ''
     permissions:
       pull-requests: write
-      contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Download Chromatic Storybook build
-        if: needs.chromatic-deployment.outputs.conclusion == 'success'
-        uses: actions/download-artifact@v4
+      - name: Add Chromatic URLs to PR
+        uses: actions/github-script@v7
         with:
-          name: storybook-static-chromatic
-          path: storybook-static
-          
-      - name: Make deployment script executable
-        run: chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
-        
-      - name: Deploy Chromatic Storybook build
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          GITHUB_TOKEN: ${{ github.token }}
-          WORKFLOW_CONCLUSION: ${{ needs.chromatic-deployment.outputs.conclusion }}
-          WORKFLOW_URL: ${{ needs.chromatic-deployment.outputs.workflow-url }}
-        run: |
-          # Deploy without commenting since main job already commented
-          if [ -d "storybook-static" ]; then
-            npm install -g wrangler
-            branch=$(echo "${{ github.head_ref }}" | tr '[:upper:]' '[:lower:]' | \
-              sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
-            npx wrangler pages deploy storybook-static \
-              --project-name="comfyui-storybook-chromatic" \
-              --branch="$branch" || true
-          fi
+          script: |
+            const buildUrl = '${{ needs.chromatic-deployment.outputs.chromatic-build-url }}';
+            const storybookUrl = '${{ needs.chromatic-deployment.outputs.chromatic-storybook-url }}';
+            
+            if (buildUrl && storybookUrl) {
+              const comment = `## 🎨 Chromatic Visual Tests
+              
+              - 📊 [View Chromatic Build](${buildUrl})
+              - 📚 [View Storybook](${storybookUrl})
+              
+              Chromatic will detect visual changes and UI regressions.`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: ${{ github.event.pull_request.number }},
+                body: comment
+              });
+            }
