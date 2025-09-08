@@ -1,4 +1,4 @@
-name: 'Chromatic'
+name: Storybook and Chromatic CI
 
 # - [Automate Chromatic with GitHub Actions • Chromatic docs]( https://www.chromatic.com/docs/github-actions/ )
 
