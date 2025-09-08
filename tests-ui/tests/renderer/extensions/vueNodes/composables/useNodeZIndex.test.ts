@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useNodeZIndex } from '@/composables/graph/useNodeZIndex'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 
 // Mock the layout mutations module
 const mockLayoutMutations = {
