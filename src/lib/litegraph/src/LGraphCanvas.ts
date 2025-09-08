@@ -5561,10 +5561,7 @@ export class LGraphCanvas
         if (!link) continue
 
         const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
-          ? (() => {
-              const p = getSlotPosition(node, i, true)
-              return new Float32Array([p[0], p[1]]) // TODO: Workaround ReadOnlyPoint to Point
-            })()
+          ? getSlotPosition(node, i, true)
           : node.getInputPos(i)
 
         // find link info
@@ -5576,10 +5573,7 @@ export class LGraphCanvas
           outputId === -1
             ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
             : LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
-              ? (() => {
-                  const p = getSlotPosition(start_node, outputId, false)
-                  return new Float32Array([p[0], p[1]]) // TODO: Workaround ReadOnlyPoint to Point
-                })()
+              ? getSlotPosition(start_node, outputId, false)
               : start_node.getOutputPos(outputId)
 
         const output = start_node.outputs[outputId]
