@@ -109,6 +109,75 @@ jobs:
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
       workflow-url: ${{ steps.workflow-url.outputs.url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Cache tool outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            storybook-static
+            tsconfig.tsbuildinfo
+          key: storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*.{ts,vue,js}', '*.config.*', '.storybook/**/*') }}
+          restore-keys: |
+            storybook-cache-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            storybook-cache-${{ runner.os }}-
+            storybook-tools-cache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Storybook
+        run: pnpm build-storybook
+
+      - name: Set job status
+        id: job-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "conclusion=success" >> $GITHUB_OUTPUT
+          elif [ "${{ job.status }}" = "cancelled" ]; then
+            echo "conclusion=cancelled" >> $GITHUB_OUTPUT
+          elif [ "${{ job.status }}" = "skipped" ]; then
+            echo "conclusion=skipped" >> $GITHUB_OUTPUT
+          else
+            echo "conclusion=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get workflow URL
+        id: workflow-url
+        if: always()
+        run: |
+          echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      - name: Upload Storybook build
+        if: success() && github.event.pull_request.head.repo.fork == false
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: storybook-static/
+          retention-days: 7
+
+  # Chromatic deployment only for version-bump-* branches or manual triggers
+  chromatic-deployment:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'version-bump-'))
+    outputs:
+      conclusion: ${{ steps.job-status.outputs.conclusion }}
+      workflow-url: ${{ steps.workflow-url.outputs.url }}
       chromatic-build-url: ${{ steps.chromatic.outputs.buildUrl }}
       chromatic-storybook-url: ${{ steps.chromatic.outputs.storybookUrl }}
     steps:
