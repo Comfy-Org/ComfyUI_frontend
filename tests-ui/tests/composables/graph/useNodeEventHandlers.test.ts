@@ -2,17 +2,78 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useNodeEventHandlers } from '@/composables/graph/useNodeEventHandlers'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { useCanvasStore } from '@/stores/graphStore'
 
-vi.mock('@/stores/graphStore')
-vi.mock('@/renderer/core/layout/operations/layoutMutations')
+vi.mock('@/stores/graphStore', () => ({
+  useCanvasStore: vi.fn()
+}))
+
+vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
+  useLayoutMutations: vi.fn()
+}))
+
+function createMockCanvas(): Pick<
+  LGraphCanvas,
+  'select' | 'deselect' | 'deselectAll'
+> {
+  return {
+    select: vi.fn(),
+    deselect: vi.fn(),
+    deselectAll: vi.fn()
+  }
+}
+
+function createMockNode(): Pick<LGraphNode, 'id' | 'selected' | 'flags'> {
+  return {
+    id: 'node-1',
+    selected: false,
+    flags: { pinned: false }
+  }
+}
+
+function createMockNodeManager(
+  node: Pick<LGraphNode, 'id' | 'selected' | 'flags'>
+) {
+  return {
+    getNode: vi.fn().mockReturnValue(node) as ReturnType<
+      typeof useGraphNodeManager
+    >['getNode']
+  }
+}
+
+function createMockCanvasStore(
+  canvas: Pick<LGraphCanvas, 'select' | 'deselect' | 'deselectAll'>
+): Pick<
+  ReturnType<typeof useCanvasStore>,
+  'canvas' | 'selectedItems' | 'updateSelectedItems'
+> {
+  return {
+    canvas: canvas as LGraphCanvas,
+    selectedItems: [],
+    updateSelectedItems: vi.fn()
+  }
+}
+
+function createMockLayoutMutations(): Pick<
+  ReturnType<typeof useLayoutMutations>,
+  'setSource' | 'bringNodeToFront'
+> {
+  return {
+    setSource: vi.fn(),
+    bringNodeToFront: vi.fn()
+  }
+}
 
 describe('useNodeEventHandlers', () => {
-  let mockCanvas: any
-  let mockNode: any
-  let mockNodeManager: any
-  let mockCanvasStore: any
-  let mockLayoutMutations: any
+  let mockCanvas: ReturnType<typeof createMockCanvas>
+  let mockNode: ReturnType<typeof createMockNode>
+  let mockNodeManager: ReturnType<typeof createMockNodeManager>
+  let mockCanvasStore: ReturnType<typeof createMockCanvasStore>
+  let mockLayoutMutations: ReturnType<typeof createMockLayoutMutations>
 
   const testNodeData: VueNodeData = {
     id: 'node-1',
@@ -24,44 +85,18 @@ describe('useNodeEventHandlers', () => {
   }
 
   beforeEach(async () => {
-    // Create mocked objects using vi.mockObject
-    mockNode = {
-      id: 'node-1',
-      selected: false,
-      flags: { pinned: false }
-    }
+    mockNode = createMockNode()
+    mockCanvas = createMockCanvas()
+    mockNodeManager = createMockNodeManager(mockNode)
+    mockCanvasStore = createMockCanvasStore(mockCanvas)
+    mockLayoutMutations = createMockLayoutMutations()
 
-    mockCanvas = vi.mockObject({
-      select: () => {},
-      deselect: () => {},
-      deselectAll: () => {},
-      updateSelectedItems: () => {}
-    })
-
-    mockNodeManager = vi.mockObject({
-      getNode: () => mockNode
-    })
-    mockNodeManager.getNode.mockReturnValue(mockNode)
-
-    mockCanvasStore = vi.mockObject({
-      canvas: mockCanvas,
-      selectedItems: [],
-      updateSelectedItems: () => {}
-    })
-
-    mockLayoutMutations = vi.mockObject({
-      setSource: () => {},
-      bringNodeToFront: () => {}
-    })
-
-    // Setup module mocks
-    const { useCanvasStore } = await import('@/stores/graphStore')
-    const { useLayoutMutations } = await import(
-      '@/renderer/core/layout/operations/layoutMutations'
+    vi.mocked(useCanvasStore).mockReturnValue(
+      mockCanvasStore as ReturnType<typeof useCanvasStore>
     )
-
-    vi.mocked(useCanvasStore).mockImplementation(() => mockCanvasStore)
-    vi.mocked(useLayoutMutations).mockImplementation(() => mockLayoutMutations)
+    vi.mocked(useLayoutMutations).mockReturnValue(
+      mockLayoutMutations as ReturnType<typeof useLayoutMutations>
+    )
   })
 
   describe('handleNodeSelect', () => {
@@ -182,7 +217,7 @@ describe('useNodeEventHandlers', () => {
       const nodeManager = ref(mockNodeManager)
       const { handleNodeSelect } = useNodeEventHandlers(nodeManager)
 
-      mockNodeManager.getNode.mockReturnValue(null)
+      vi.mocked(mockNodeManager.getNode).mockReturnValue(undefined)
 
       const event = new PointerEvent('pointerdown')
       const nodeData = {
