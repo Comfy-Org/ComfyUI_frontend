@@ -123,197 +123,205 @@
           }}
         </p>
       </div>
+      <div v-else>
+        <!-- Title -->
+        <div class="px-6 pt-4 pb-2 text-lg font-medium text-neutral">
+          <!-- show selected nav -->
+          <span>
+            {{ pageTitle }}
+          </span>
+        </div>
 
-      <!-- Template Cards Grid -->
-      <div
-        v-else
-        class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4 py-4"
-      >
-        <CardContainer
-          v-for="template in displayTemplates"
-          :key="template.name"
-          ref="cardRefs"
-          ratio="none"
-          :max-width="300"
-          :min-width="200"
-          class="cursor-pointer transition-transform hover:scale-[1.02]"
-          @mouseenter="hoveredTemplates[template.name] = true"
-          @mouseleave="hoveredTemplates[template.name] = false"
-          @click="onLoadWorkflow(template)"
+        <!-- Template Cards Grid -->
+        <div
+          class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4 py-4"
         >
-          <template #top>
-            <CardTop ratio="landscape">
-              <template #default>
-                <!-- Template Thumbnail -->
-                <div class="w-full h-full relative">
-                  <template v-if="template.mediaType === 'audio'">
-                    <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
-                  </template>
-                  <template
-                    v-else-if="template.thumbnailVariant === 'compareSlider'"
-                  >
-                    <CompareSliderThumbnail
-                      :base-image-src="getBaseThumbnailSrc(template)"
-                      :overlay-image-src="getOverlayThumbnailSrc(template)"
-                      :alt="
-                        getTemplateTitle(
-                          template,
-                          getEffectiveSourceModule(template)
-                        )
-                      "
-                      :is-hovered="hoveredTemplates[template.name]"
-                      :is-video="
-                        template.mediaType === 'video' ||
-                        template.mediaSubtype === 'webp'
-                      "
+          <CardContainer
+            v-for="template in displayTemplates"
+            :key="template.name"
+            ref="cardRefs"
+            ratio="none"
+            :max-width="300"
+            :min-width="200"
+            class="cursor-pointer transition-transform hover:scale-[1.02]"
+            @mouseenter="hoveredTemplates[template.name] = true"
+            @mouseleave="hoveredTemplates[template.name] = false"
+            @click="onLoadWorkflow(template)"
+          >
+            <template #top>
+              <CardTop ratio="landscape">
+                <template #default>
+                  <!-- Template Thumbnail -->
+                  <div class="w-full h-full relative">
+                    <template v-if="template.mediaType === 'audio'">
+                      <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
+                    </template>
+                    <template
+                      v-else-if="template.thumbnailVariant === 'compareSlider'"
+                    >
+                      <CompareSliderThumbnail
+                        :base-image-src="getBaseThumbnailSrc(template)"
+                        :overlay-image-src="getOverlayThumbnailSrc(template)"
+                        :alt="
+                          getTemplateTitle(
+                            template,
+                            getEffectiveSourceModule(template)
+                          )
+                        "
+                        :is-hovered="hoveredTemplates[template.name]"
+                        :is-video="
+                          template.mediaType === 'video' ||
+                          template.mediaSubtype === 'webp'
+                        "
+                      />
+                    </template>
+                    <template
+                      v-else-if="template.thumbnailVariant === 'hoverDissolve'"
+                    >
+                      <HoverDissolveThumbnail
+                        :base-image-src="getBaseThumbnailSrc(template)"
+                        :overlay-image-src="getOverlayThumbnailSrc(template)"
+                        :alt="
+                          getTemplateTitle(
+                            template,
+                            getEffectiveSourceModule(template)
+                          )
+                        "
+                        :is-hovered="hoveredTemplates[template.name]"
+                        :is-video="
+                          template.mediaType === 'video' ||
+                          template.mediaSubtype === 'webp'
+                        "
+                      />
+                    </template>
+                    <template v-else>
+                      <DefaultThumbnail
+                        :src="getBaseThumbnailSrc(template)"
+                        :alt="
+                          getTemplateTitle(
+                            template,
+                            getEffectiveSourceModule(template)
+                          )
+                        "
+                        :is-hovered="hoveredTemplates[template.name]"
+                        :is-video="
+                          template.mediaType === 'video' ||
+                          template.mediaSubtype === 'webp'
+                        "
+                        :hover-zoom="
+                          template.thumbnailVariant === 'zoomHover' ? 16 : 5
+                        "
+                      />
+                    </template>
+                    <ProgressSpinner
+                      v-if="loadingTemplate === template.name"
+                      class="absolute inset-0 z-10 w-12 h-12 m-auto"
                     />
-                  </template>
-                  <template
-                    v-else-if="template.thumbnailVariant === 'hoverDissolve'"
-                  >
-                    <HoverDissolveThumbnail
-                      :base-image-src="getBaseThumbnailSrc(template)"
-                      :overlay-image-src="getOverlayThumbnailSrc(template)"
-                      :alt="
-                        getTemplateTitle(
-                          template,
-                          getEffectiveSourceModule(template)
-                        )
-                      "
-                      :is-hovered="hoveredTemplates[template.name]"
-                      :is-video="
-                        template.mediaType === 'video' ||
-                        template.mediaSubtype === 'webp'
-                      "
+                  </div>
+                </template>
+                <template #bottom-right>
+                  <template v-if="template.tags && template.tags.length > 0">
+                    <SquareChip
+                      v-for="tag in template.tags"
+                      :key="tag"
+                      :label="tag"
                     />
                   </template>
                   <template v-else>
-                    <DefaultThumbnail
-                      :src="getBaseThumbnailSrc(template)"
-                      :alt="
+                    <SquareChip
+                      v-if="template.mediaType"
+                      :label="template.mediaType"
+                    />
+                    <SquareChip
+                      v-if="template.models && template.models.length > 0"
+                      :label="template.models[0]"
+                    />
+                  </template>
+                </template>
+              </CardTop>
+            </template>
+            <template #bottom>
+              <CardBottom :full-height="false">
+                <div class="flex flex-col px-4 flex-1">
+                  <div class="flex-1">
+                    <h3
+                      class="line-clamp-2 text-lg font-normal mb-1"
+                      :title="
                         getTemplateTitle(
                           template,
                           getEffectiveSourceModule(template)
                         )
                       "
-                      :is-hovered="hoveredTemplates[template.name]"
-                      :is-video="
-                        template.mediaType === 'video' ||
-                        template.mediaSubtype === 'webp'
-                      "
-                      :hover-zoom="
-                        template.thumbnailVariant === 'zoomHover' ? 16 : 5
-                      "
-                    />
-                  </template>
-                  <ProgressSpinner
-                    v-if="loadingTemplate === template.name"
-                    class="absolute inset-0 z-10 w-12 h-12 m-auto"
-                  />
-                </div>
-              </template>
-              <template #bottom-right>
-                <template v-if="template.tags && template.tags.length > 0">
-                  <SquareChip
-                    v-for="tag in template.tags"
-                    :key="tag"
-                    :label="tag"
-                  />
-                </template>
-                <template v-else>
-                  <SquareChip
-                    v-if="template.mediaType"
-                    :label="template.mediaType"
-                  />
-                  <SquareChip
-                    v-if="template.models && template.models.length > 0"
-                    :label="template.models[0]"
-                  />
-                </template>
-              </template>
-            </CardTop>
-          </template>
-          <template #bottom>
-            <CardBottom :full-height="false">
-              <div class="flex flex-col px-4 flex-1">
-                <div class="flex-1">
-                  <h3
-                    class="line-clamp-2 text-lg font-normal mb-1"
-                    :title="
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    "
-                  >
-                    {{
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    }}
-                  </h3>
-                  <div class="flex justify-between gap-2">
-                    <p
-                      class="line-clamp-2 text-sm text-muted mb-3"
-                      :title="getTemplateDescription(template)"
                     >
-                      {{ getTemplateDescription(template) }}
-                    </p>
-                    <div
-                      v-if="template.tutorialUrl"
-                      class="flex flex-col-reverse justify-center"
-                    >
-                      <button
-                        v-tooltip.bottom="$t('g.seeTutorial')"
-                        :class="[
-                          'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
-                          hoveredTemplates[template.name]
-                            ? 'opacity-100'
-                            : 'opacity-0 pointer-events-none'
-                        ]"
-                        @click.stop="openTutorial(template)"
+                      {{
+                        getTemplateTitle(
+                          template,
+                          getEffectiveSourceModule(template)
+                        )
+                      }}
+                    </h3>
+                    <div class="flex justify-between gap-2">
+                      <p
+                        class="line-clamp-2 text-sm text-muted mb-3"
+                        :title="getTemplateDescription(template)"
                       >
-                        <i class="icon-[comfy--dark-info] w-4 h-4" />
-                      </button>
+                        {{ getTemplateDescription(template) }}
+                      </p>
+                      <div
+                        v-if="template.tutorialUrl"
+                        class="flex flex-col-reverse justify-center"
+                      >
+                        <button
+                          v-tooltip.bottom="$t('g.seeTutorial')"
+                          :class="[
+                            'inline-flex items-center justify-center rounded-lg bg-[#FDFBFA] w-8 h-8 cursor-pointer transition-opacity duration-200',
+                            hoveredTemplates[template.name]
+                              ? 'opacity-100'
+                              : 'opacity-0 pointer-events-none'
+                          ]"
+                          @click.stop="openTutorial(template)"
+                        >
+                          <i class="icon-[comfy--dark-info] w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardBottom>
-          </template>
-        </CardContainer>
+              </CardBottom>
+            </template>
+          </CardContainer>
 
-        <!-- Loading More Skeletons -->
-        <CardContainer
-          v-for="n in isLoadingMore ? 6 : 0"
-          :key="`skeleton-${n}`"
-          ratio="square"
-          :max-width="300"
-          :min-width="200"
-        >
-          <template #top>
-            <CardTop ratio="landscape">
-              <template #default>
-                <div
-                  class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
-                ></div>
-              </template>
-            </CardTop>
-          </template>
-          <template #bottom>
-            <CardBottom>
-              <div class="px-4 py-3">
-                <div
-                  class="h-6 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse mb-2"
-                ></div>
-                <div
-                  class="h-4 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
-                ></div>
-              </div>
-            </CardBottom>
-          </template>
-        </CardContainer>
+          <!-- Loading More Skeletons -->
+          <CardContainer
+            v-for="n in isLoadingMore ? 6 : 0"
+            :key="`skeleton-${n}`"
+            ratio="square"
+            :max-width="300"
+            :min-width="200"
+          >
+            <template #top>
+              <CardTop ratio="landscape">
+                <template #default>
+                  <div
+                    class="w-full h-full bg-neutral-200 dark-theme:bg-neutral-700 animate-pulse"
+                  ></div>
+                </template>
+              </CardTop>
+            </template>
+            <template #bottom>
+              <CardBottom>
+                <div class="px-4 py-3">
+                  <div
+                    class="h-6 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse mb-2"
+                  ></div>
+                  <div
+                    class="h-4 bg-neutral-200 dark-theme:bg-neutral-700 rounded animate-pulse"
+                  ></div>
+                </div>
+              </CardBottom>
+            </template>
+          </CardContainer>
+        </div>
       </div>
 
       <!-- Load More Trigger -->
@@ -633,6 +641,23 @@ const onLoadWorkflow = async (template: any) => {
     loadingTemplate.value = null
   }
 }
+
+const pageTitle = computed(() => {
+  const navItem = navItems.value.find((item) =>
+    'id' in item
+      ? item.id === selectedNavItem.value
+      : item.items?.some((sub) => sub.id === selectedNavItem.value)
+  )
+
+  if (!navItem) {
+    return t('templateWorkflows.allTemplates', 'All Templates')
+  }
+
+  return 'id' in navItem
+    ? navItem.label
+    : navItem.items?.find((i) => i.id === selectedNavItem.value)?.label ||
+        t('templateWorkflows.allTemplates', 'All Templates')
+})
 
 // Initialize
 onMounted(async () => {
