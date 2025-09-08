@@ -96,6 +96,7 @@
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
+          :image-urls="nodeImageUrls"
         />
       </div>
     </template>
@@ -110,15 +111,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  onErrorCaptured,
+  provide,
+  ref,
+  toRef,
+  watch
+} from 'vue'
 
-// Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import NodeContent from './NodeContent.vue'
@@ -216,11 +228,10 @@ watch(
   }
 )
 
-// Check if node has custom content
+// Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
-  // Currently all content is handled through widgets
-  // This remains false but provides extensibility point
-  return false
+  // Show custom content if node has image outputs
+  return nodeImageUrls.value.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -284,4 +295,27 @@ const handleSlotClick = (
 const handleTitleUpdate = (newTitle: string) => {
   emit('update:title', props.nodeData.id, newTitle)
 }
+
+const nodeOutputs = useNodeOutputStore()
+
+const nodeImageUrls = ref<string[]>([])
+const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
+  const node = getNodeByLocatorId(app.graph, props.nodeData.id)
+  if (node && newOutputs.images?.length) {
+    const urls = nodeOutputs.getNodeImageUrls(node)
+    if (urls) {
+      nodeImageUrls.value = urls
+    }
+  }
+}
+
+watch(
+  () => nodeOutputs.nodeOutputs[props.nodeData.id],
+  (newOutputs) => {
+    onNodeOutputsUpdate(newOutputs)
+  }
+)
+
+// Provide nodeImageUrls to child components
+provide('nodeImageUrls', nodeImageUrls)
 </script>
