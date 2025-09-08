@@ -11,7 +11,7 @@ import type { ConflictDetail } from '@/types/conflictDetectionTypes'
  * @param systemOS Raw OS string from system stats ('darwin', 'win32', 'linux', etc)
  * @returns Registry OS or undefined if unknown
  */
-export function getRegistryOS(systemOS?: string): RegistryOS | undefined {
+function getRegistryOS(systemOS?: string): RegistryOS | undefined {
   if (!systemOS) return undefined
 
   const lower = systemOS.toLowerCase()
@@ -27,9 +27,7 @@ export function getRegistryOS(systemOS?: string): RegistryOS | undefined {
  * @param deviceType Raw device type from system stats ('cuda', 'mps', 'rocm', 'cpu', etc)
  * @returns Registry accelerator
  */
-export function getRegistryAccelerator(
-  deviceType?: string
-): RegistryAccelerator {
+function getRegistryAccelerator(deviceType?: string): RegistryAccelerator {
   if (!deviceType) return 'CPU'
 
   const lower = deviceType.toLowerCase()

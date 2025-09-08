@@ -12,7 +12,7 @@ import type {
  * @param version Raw version string (e.g., "v1.2.3", "1.2.3-alpha")
  * @returns Cleaned version string or original if cleaning fails
  */
-export function cleanVersion(version: string): string {
+function cleanVersion(version: string): string {
   return semver.clean(version) || version
 }
 
@@ -22,7 +22,7 @@ export function cleanVersion(version: string): string {
  * @param range Version range (e.g., ">=1.0.0", "^1.2.0", "1.0.0 - 2.0.0")
  * @returns true if version satisfies the range
  */
-export function satisfiesVersion(version: string, range: string): boolean {
+function satisfiesVersion(version: string, range: string): boolean {
   try {
     const cleanedVersion = cleanVersion(version)
     return semver.satisfies(cleanedVersion, range)
