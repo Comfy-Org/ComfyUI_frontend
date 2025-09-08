@@ -82,12 +82,12 @@
         </MultiSelect>
 
         <!-- Sort Options -->
-        <div class="absolute right-40">
+        <div class="absolute right-5">
           <SingleSelect
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
-            class="w-[160px] -translate-x-full overlay-x-hidden"
+            class="min-w-[270px]"
           >
             <template #icon>
               <i-lucide:arrow-up-down />
