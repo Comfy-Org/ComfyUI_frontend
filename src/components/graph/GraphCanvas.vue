@@ -191,19 +191,15 @@ const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
 const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
 
 // Provide selection state to all Vue nodes
-const selectedNodeIds = ref(new Set<string>())
-provide(SelectedNodeIdsKey, selectedNodeIds)
-watch(
-  () => canvasStore.selectedItems,
-  (newSelectedItems) => {
-    selectedNodeIds.value = new Set(
-      newSelectedItems
+const selectedNodeIds = computed(
+  () =>
+    new Set(
+      canvasStore.selectedItems
         .filter((item) => item.id !== undefined)
         .map((item) => String(item.id))
     )
-  },
-  { immediate: true }
 )
+provide(SelectedNodeIdsKey, selectedNodeIds)
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
