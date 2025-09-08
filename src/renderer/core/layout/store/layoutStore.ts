@@ -35,6 +35,7 @@ import {
   type Point,
   type RerouteId,
   type RerouteLayout,
+  type Size,
   type SlotLayout
 } from '@/renderer/core/layout/types'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
@@ -49,7 +50,62 @@ const logger = log.getLogger('LayoutStore')
 // Constants
 const REROUTE_RADIUS = 8
 
+// Utility functions
+function asRerouteId(id: string | number): RerouteId {
+  return Number(id)
+}
+
+function asLinkId(id: string | number): LinkId {
+  return Number(id)
+}
+
+interface NodeLayoutData {
+  id: NodeId
+  position: Point
+  size: Size
+  zIndex: number
+  visible: boolean
+  bounds: Bounds
+}
+
+interface LinkData {
+  id: LinkId
+  sourceNodeId: NodeId
+  targetNodeId: NodeId
+  sourceSlot: number
+  targetSlot: number
+}
+
+interface RerouteData {
+  id: RerouteId
+  position: Point
+  parentId: LinkId
+  linkIds: LinkId[]
+}
+
+// Generic typed Y.Map interface
+interface TypedYMap<T> {
+  get<K extends keyof T>(key: K): T[K] | undefined
+  get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
+}
+
 class LayoutStoreImpl implements LayoutStore {
+  private static readonly NODE_DEFAULTS: NodeLayoutData = {
+    id: 'unknown-node',
+    position: { x: 0, y: 0 },
+    size: { width: 100, height: 50 },
+    zIndex: 0,
+    visible: true,
+    bounds: { x: 0, y: 0, width: 100, height: 50 }
+  }
+
+  private static readonly REROUTE_DEFAULTS: RerouteData = {
+    id: 0,
+    position: { x: 0, y: 0 },
+    parentId: 0,
+    linkIds: []
+  }
+
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<Y.Map<unknown>> // Maps nodeId -> Y.Map containing NodeLayout data
@@ -125,6 +181,34 @@ class LayoutStoreImpl implements LayoutStore {
         this.handleRerouteChange(change, rerouteIdStr)
       })
     })
+  }
+
+  private getNodeField<K extends keyof NodeLayoutData>(
+    ynode: Y.Map<unknown>,
+    field: K,
+    defaultValue: NodeLayoutData[K] = LayoutStoreImpl.NODE_DEFAULTS[field]
+  ): NodeLayoutData[K] {
+    const typedNode = ynode as TypedYMap<NodeLayoutData>
+    const value = typedNode.get(field)
+    return value ?? defaultValue
+  }
+
+  private getLinkField<K extends keyof LinkData>(
+    ylink: Y.Map<unknown>,
+    field: K
+  ): LinkData[K] | undefined {
+    const typedLink = ylink as TypedYMap<LinkData>
+    return typedLink.get(field)
+  }
+
+  private getRerouteField<K extends keyof RerouteData>(
+    yreroute: Y.Map<unknown>,
+    field: K,
+    defaultValue: RerouteData[K] = LayoutStoreImpl.REROUTE_DEFAULTS[field]
+  ): RerouteData[K] {
+    const typedReroute = yreroute as TypedYMap<RerouteData>
+    const value = typedReroute.get(field)
+    return value ?? defaultValue
   }
 
   /**
@@ -678,7 +762,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Check precise distance for candidates
     for (const rerouteKey of candidateRerouteKeys) {
-      const rerouteId = Number(rerouteKey) as RerouteId // Convert string key back to numeric
+      const rerouteId = asRerouteId(rerouteKey)
       const rerouteLayout = this.rerouteLayouts.get(rerouteId)
       if (rerouteLayout) {
         const dx = point.x - rerouteLayout.position.x
@@ -723,7 +807,7 @@ class LayoutStoreImpl implements LayoutStore {
       slots: this.slotSpatialIndex.query(bounds),
       reroutes: this.rerouteSpatialIndex
         .query(bounds)
-        .map((key) => Number(key) as RerouteId) // Convert string keys to numeric
+        .map((key) => asRerouteId(key))
     }
   }
 
@@ -902,7 +986,7 @@ class LayoutStoreImpl implements LayoutStore {
       return
     }
 
-    const size = ynode.get('size') as { width: number; height: number }
+    const size = this.getNodeField(ynode, 'size')
     const newBounds = {
       x: operation.position.x,
       y: operation.position.y,
@@ -931,7 +1015,7 @@ class LayoutStoreImpl implements LayoutStore {
     const ynode = this.ynodes.get(operation.nodeId)
     if (!ynode) return
 
-    const position = ynode.get('position') as Point
+    const position = this.getNodeField(ynode, 'position')
     const newBounds = {
       x: position.x,
       y: position.y,
@@ -1120,9 +1204,9 @@ class LayoutStoreImpl implements LayoutStore {
   private findLinksConnectedToNode(nodeId: NodeId): LinkId[] {
     const connectedLinks: LinkId[] = []
     this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
-      const linkId = Number(linkIdStr) as LinkId
-      const sourceNodeId = linkData.get('sourceNodeId') as NodeId
-      const targetNodeId = linkData.get('targetNodeId') as NodeId
+      const linkId = asLinkId(linkIdStr)
+      const sourceNodeId = this.getLinkField(linkData, 'sourceNodeId')
+      const targetNodeId = this.getLinkField(linkData, 'targetNodeId')
 
       if (sourceNodeId === nodeId || targetNodeId === nodeId) {
         connectedLinks.push(linkId)
@@ -1136,7 +1220,7 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private handleLinkChange(change: YEventChange, linkIdStr: string): void {
     if (change.action === 'delete') {
-      const linkId = Number(linkIdStr) as LinkId
+      const linkId = asLinkId(linkIdStr)
       this.cleanupLinkData(linkId)
     }
     // Link was added or updated - geometry will be computed separately
@@ -1175,7 +1259,7 @@ class LayoutStoreImpl implements LayoutStore {
     change: YEventChange,
     rerouteIdStr: string
   ): void {
-    const rerouteId = Number(rerouteIdStr) as RerouteId
+    const rerouteId = asRerouteId(rerouteIdStr)
 
     if (change.action === 'delete') {
       this.handleRerouteDelete(rerouteId)
@@ -1199,7 +1283,7 @@ class LayoutStoreImpl implements LayoutStore {
     const rerouteData = this.yreroutes.get(String(rerouteId))
     if (!rerouteData) return
 
-    const position = rerouteData.get('position') as Point
+    const position = this.getRerouteField(rerouteData, 'position')
     if (!position) return
 
     const layout = this.createRerouteLayout(rerouteId, position)
@@ -1263,12 +1347,12 @@ class LayoutStoreImpl implements LayoutStore {
 
   private yNodeToLayout(ynode: Y.Map<unknown>): NodeLayout {
     return {
-      id: ynode.get('id') as string,
-      position: ynode.get('position') as Point,
-      size: ynode.get('size') as { width: number; height: number },
-      zIndex: ynode.get('zIndex') as number,
-      visible: ynode.get('visible') as boolean,
-      bounds: ynode.get('bounds') as Bounds
+      id: this.getNodeField(ynode, 'id'),
+      position: this.getNodeField(ynode, 'position'),
+      size: this.getNodeField(ynode, 'size'),
+      zIndex: this.getNodeField(ynode, 'zIndex'),
+      visible: this.getNodeField(ynode, 'visible'),
+      bounds: this.getNodeField(ynode, 'bounds')
     }
   }
 
