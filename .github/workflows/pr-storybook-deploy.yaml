@@ -2,7 +2,7 @@ name: PR Storybook Deploy (Forks)
 
 on:
   workflow_run:
-    workflows: ['Chromatic']
+    workflows: ['Storybook and Chromatic CI']
     types: [requested, completed]
 
 env:
