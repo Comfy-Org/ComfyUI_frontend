@@ -82,16 +82,18 @@
         </MultiSelect>
 
         <!-- Sort Options -->
-        <SingleSelect
-          v-model="sortBy"
-          :label="$t('templateWorkflows.sorting', 'Sort by')"
-          :options="sortOptions"
-          class="w-[160px]"
-        >
-          <template #icon>
-            <i-lucide:arrow-up-down />
-          </template>
-        </SingleSelect>
+        <div class="absolute right-40">
+          <SingleSelect
+            v-model="sortBy"
+            :label="$t('templateWorkflows.sorting', 'Sort by')"
+            :options="sortOptions"
+            class="w-[160px] -translate-x-full overlay-x-hidden"
+          >
+            <template #icon>
+              <i-lucide:arrow-up-down />
+            </template>
+          </SingleSelect>
+        </div>
       </div>
     </template>
 
@@ -548,11 +550,11 @@ const licenseFilterLabel = computed(() => {
 
 // Sort options
 const sortOptions = computed(() => [
+  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
     name: t('templateWorkflows.sort.default', 'Default'),
     value: 'default'
   },
-  { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
     name: t(
       'templateWorkflows.sort.vramLowToHigh',

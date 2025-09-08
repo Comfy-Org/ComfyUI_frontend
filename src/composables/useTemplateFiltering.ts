@@ -30,7 +30,7 @@ export function useTemplateFiltering(
     | 'newest'
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
-  >('default')
+  >('newest')
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
