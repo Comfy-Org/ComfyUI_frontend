@@ -3,81 +3,47 @@ import { ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodeEventHandlers } from '@/composables/graph/useNodeEventHandlers'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
 
 vi.mock('@/stores/graphStore')
 vi.mock('@/renderer/core/layout/operations/layoutMutations')
 
-interface MockCanvas {
-  select: ReturnType<typeof vi.fn>
-  deselect: ReturnType<typeof vi.fn>
-  deselectAll: ReturnType<typeof vi.fn>
-  updateSelectedItems: ReturnType<typeof vi.fn>
-}
-
-interface MockLGraphNode {
-  id: string
-  selected: boolean
-  flags: {
-    pinned: boolean
-  }
-}
-
-interface MockNodeManager {
-  getNode: ReturnType<typeof vi.fn>
-}
-
-interface MockCanvasStore {
-  canvas: MockCanvas | null
-  selectedItems: Positionable[]
-  updateSelectedItems: ReturnType<typeof vi.fn>
-}
-
-interface MockLayoutMutations {
-  setSource: ReturnType<typeof vi.fn>
-  bringNodeToFront: ReturnType<typeof vi.fn>
-}
-
 describe('useNodeEventHandlers', () => {
-  let mockCanvas: MockCanvas
-  let mockNode: MockLGraphNode
-  let mockNodeManager: MockNodeManager
-  let mockCanvasStore: MockCanvasStore
-  let mockLayoutMutations: MockLayoutMutations
+  let mockCanvas: any
+  let mockNode: any
+  let mockNodeManager: any
+  let mockCanvasStore: any
+  let mockLayoutMutations: any
 
   beforeEach(async () => {
-    // Mock LiteGraph node
+    // Create mocked objects using vi.mockObject
     mockNode = {
       id: 'node-1',
       selected: false,
       flags: { pinned: false }
     }
 
-    // Mock canvas with select/deselect methods
-    mockCanvas = {
-      select: vi.fn(),
-      deselect: vi.fn(),
-      deselectAll: vi.fn(),
-      updateSelectedItems: vi.fn()
-    }
+    mockCanvas = vi.mockObject({
+      select: () => {},
+      deselect: () => {},
+      deselectAll: () => {},
+      updateSelectedItems: () => {}
+    })
 
-    // Mock node manager
-    mockNodeManager = {
-      getNode: vi.fn().mockReturnValue(mockNode)
-    }
+    mockNodeManager = vi.mockObject({
+      getNode: () => mockNode
+    })
+    mockNodeManager.getNode.mockReturnValue(mockNode)
 
-    // Mock canvas store
-    mockCanvasStore = {
+    mockCanvasStore = vi.mockObject({
       canvas: mockCanvas,
       selectedItems: [],
-      updateSelectedItems: vi.fn()
-    }
+      updateSelectedItems: () => {}
+    })
 
-    // Mock layout mutations
-    mockLayoutMutations = {
-      setSource: vi.fn(),
-      bringNodeToFront: vi.fn()
-    }
+    mockLayoutMutations = vi.mockObject({
+      setSource: () => {},
+      bringNodeToFront: () => {}
+    })
 
     // Setup module mocks
     const { useCanvasStore } = await import('@/stores/graphStore')
@@ -85,10 +51,7 @@ describe('useNodeEventHandlers', () => {
       '@/renderer/core/layout/operations/layoutMutations'
     )
 
-    // @ts-expect-error - Test mocks only need minimal interface, full Pinia store type too complex
     vi.mocked(useCanvasStore).mockImplementation(() => mockCanvasStore)
-
-    // @ts-expect-error - Test mocks only need minimal interface, full LayoutMutations type too complex
     vi.mocked(useLayoutMutations).mockImplementation(() => mockLayoutMutations)
   })
 
