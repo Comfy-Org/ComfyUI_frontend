@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource, type NodeLayout } from '@/renderer/core/layout/types'
+import {
+  type LayoutChange,
+  LayoutSource,
+  type NodeLayout
+} from '@/renderer/core/layout/types'
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -145,7 +149,7 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.setActor('user-123')
 
     // Track change notifications AFTER setting source/actor
-    const changes: any[] = []
+    const changes: LayoutChange[] = []
     const unsubscribe = layoutStore.onChange((change) => {
       changes.push(change)
     })
