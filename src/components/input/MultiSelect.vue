@@ -165,13 +165,16 @@ const pt = computed(() => ({
   dropdown: {
     class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
   },
+  listContainer: {
+    style: 'max-height: 460px;'
+  },
   header: () => ({
     class:
       showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
   }),
   // Overlay & list visuals unchanged
   overlay:
-    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 max-h-64 overflow-y-scroll',
+    'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-zinc-100 dark-theme:border-zinc-700 max-h-[460px] overflow-y-scroll',
   list: {
     class:
       'flex flex-col gap-1 p-0 list-none border-none text-xs overflow-y-scroll'
