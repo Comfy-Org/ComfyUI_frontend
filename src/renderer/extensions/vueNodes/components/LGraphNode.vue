@@ -121,6 +121,7 @@ import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayo
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -152,6 +153,8 @@ const emit = defineEmits<{
   'update:collapsed': [nodeId: string, collapsed: boolean]
   'update:title': [nodeId: string, newTitle: string]
 }>()
+
+useVueElementTracking(props.nodeData.id, 'node')
 
 // Inject selection state from parent
 const selectedNodeIds = inject(SelectedNodeIdsKey)

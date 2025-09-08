@@ -1425,6 +1425,33 @@ class LayoutStoreImpl implements LayoutStore {
   getStateAsUpdate(): Uint8Array {
     return Y.encodeStateAsUpdate(this.ydoc)
   }
+
+  /**
+   * Batch update node bounds using Yjs transaction for atomicity.
+   */
+  batchUpdateNodeBounds(
+    updates: Array<{ nodeId: NodeId; bounds: Bounds }>
+  ): void {
+    if (updates.length === 0) return
+
+    // Set source to Vue for these DOM-driven updates
+    const originalSource = this.currentSource
+    this.currentSource = LayoutSource.Vue
+
+    this.ydoc.transact(() => {
+      for (const { nodeId, bounds } of updates) {
+        const ynode = this.ynodes.get(nodeId)
+        if (!ynode) continue
+
+        this.spatialIndex.update(nodeId, bounds)
+        ynode.set('bounds', bounds)
+        ynode.set('size', { width: bounds.width, height: bounds.height })
+      }
+    }, this.currentActor)
+
+    // Restore original source
+    this.currentSource = originalSource
+  }
 }
 
 // Create singleton instance

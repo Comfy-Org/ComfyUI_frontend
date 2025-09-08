@@ -3,8 +3,10 @@ import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { createBounds } from '@/lib/litegraph/src/litegraph'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { computeUnionBounds } from '@/utils/mathUtil'
 
 /**
  * Manages the position of the selection toolbox independently.
@@ -34,17 +36,30 @@ export function useSelectionToolboxPosition(
     }
 
     visible.value = true
-    const bounds = createBounds(selectableItems)
 
-    if (!bounds) {
-      return
+    // Get bounds from layout store for all selected items
+    const allBounds: ReadOnlyRect[] = []
+    for (const item of selectableItems) {
+      if (typeof item.id === 'string') {
+        const layout = layoutStore.getNodeLayoutRef(item.id).value
+        if (layout) {
+          allBounds.push([
+            layout.bounds.x,
+            layout.bounds.y,
+            layout.bounds.width,
+            layout.bounds.height
+          ])
+        }
+      }
     }
 
-    const [xBase, y, width] = bounds
+    // Compute union bounds
+    const unionBounds = computeUnionBounds(allBounds)
+    if (!unionBounds) return
 
     worldPosition.value = {
-      x: xBase + width / 2,
-      y: y
+      x: unionBounds.x + unionBounds.width / 2,
+      y: unionBounds.y
     }
 
     updateTransform()
