@@ -15,17 +15,18 @@ const {
 } = defineProps<{
   maxWidth?: number
   minWidth?: number
-  ratio?: 'square' | 'portrait' | 'tallPortrait'
+  ratio?: 'square' | 'portrait' | 'tallPortrait' | 'none'
 }>()
 
 const containerClasses = computed(() => {
   const baseClasses =
-    'flex flex-col bg-white dark-theme:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark-theme:border-zinc-700 overflow-hidden'
+    'flex flex-col hover:bg-white dark-theme:hover:bg-zinc-800 rounded-lg hover:shadow-sm hover:border hover:border-zinc-200 dark-theme:hover:border-zinc-700 overflow-hidden hover:p-2'
 
   const ratioClasses = {
     square: 'aspect-256/308',
     portrait: 'aspect-256/325',
-    tallPortrait: 'aspect-256/353'
+    tallPortrait: 'aspect-256/353',
+    none: ''
   }
 
   return `${baseClasses} ${ratioClasses[ratio]}`
