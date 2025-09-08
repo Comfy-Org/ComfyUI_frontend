@@ -9,7 +9,7 @@
     role="button"
     @click="onClick"
   >
-    <component :is="iconComponent" class="text-xs text-neutral" />
+    <component :is="iconComponent" class="text-sm text-neutral" />
     <span class="flex items-center">
       <slot></slot>
     </span>

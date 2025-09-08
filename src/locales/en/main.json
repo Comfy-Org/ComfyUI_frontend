@@ -916,7 +916,7 @@
       }
     },
     "categories": "Categories",
-    "resetFilters": "Reset Filters",
+    "resetFilters": "Clear Filters",
     "sorting": "Sort by",
     "activeFilters": "Filters:",
     "loading": "Loading templates...",
