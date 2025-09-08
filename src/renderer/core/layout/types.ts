@@ -320,4 +320,9 @@ export interface LayoutStore {
   setActor(actor: string): void
   getCurrentSource(): LayoutSource
   getCurrentActor(): string
+
+  // Batch updates
+  batchUpdateNodeBounds(
+    updates: Array<{ nodeId: NodeId; bounds: Bounds }>
+  ): void
 }
