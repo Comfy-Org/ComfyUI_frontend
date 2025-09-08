@@ -8,7 +8,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 
-export interface NodeZIndexOptions {
+interface NodeZIndexOptions {
   /**
    * Default source for z-index mutations
    * @default LayoutSource.Vue
