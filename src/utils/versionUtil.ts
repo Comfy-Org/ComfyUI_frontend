@@ -22,7 +22,7 @@ export function cleanVersion(version: string): string {
  * @param range Version range (e.g., ">=1.0.0", "^1.2.0", "1.0.0 - 2.0.0")
  * @returns true if version satisfies the range
  */
-export function satisfiesVersion(version: string, range: string): boolean {
+function satisfiesVersion(version: string, range: string): boolean {
   try {
     const cleanedVersion = cleanVersion(version)
     return satisfies(cleanedVersion, range)
