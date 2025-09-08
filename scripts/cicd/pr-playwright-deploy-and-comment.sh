@@ -21,7 +21,8 @@ fi
 
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
-BROWSERS=("chromium" "chromium-2x" "chromium-0-5x" "mobile-chrome")
+# Use dot notation for artifact names (as Playwright creates them)
+BROWSERS=("chromium" "chromium-2x" "chromium-0.5x" "mobile-chrome")
 
 # Deploy a single browser report
 deploy_report() {
@@ -37,8 +38,9 @@ deploy_report() {
         npm install -g wrangler
     fi
     
-    # Project name with dots converted to dashes
-    local project="comfyui-playwright-${browser//\./-}"
+    # Project name with dots converted to dashes for Cloudflare
+    local sanitized_browser="${browser//\./-}"
+    local project="comfyui-playwright-${sanitized_browser}"
     
     echo "Deploying $browser to project $project on branch $branch..."
     
@@ -148,10 +150,12 @@ EOF
 )
     
     for i in "${!BROWSERS[@]}"; do
+        # Display browser name (convert dots back for display)
+        local display_name="${BROWSERS[$i]}"
         if [ "${urls[$i]}" != "failed" ] && [ -n "${urls[$i]}" ]; then
-            comment+=$'\n'"- ✅ **${BROWSERS[$i]}**: [View Report](${urls[$i]})"
+            comment+=$'\n'"- ✅ **${display_name}**: [View Report](${urls[$i]})"
         else
-            comment+=$'\n'"- ❌ **${BROWSERS[$i]}**: Deployment failed"
+            comment+=$'\n'"- ❌ **${display_name}**: Deployment failed"
         fi
     done
     
