@@ -154,7 +154,12 @@ const emit = defineEmits<{
 }>()
 
 // Inject selection state from parent
-const selectedNodeIds = inject(SelectedNodeIdsKey, ref(new Set<string>()))
+const selectedNodeIds = inject(SelectedNodeIdsKey)
+if (!selectedNodeIds) {
+  throw new Error(
+    'SelectedNodeIds not provided - LGraphNode must be used within a component that provides selection state'
+  )
+}
 
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
