@@ -57,7 +57,9 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  disabled: false
+  disabled: false,
+  optionLabel: 'label',
+  optionValue: 'value'
 })
 
 const emit = defineEmits<Emits>()
@@ -65,8 +67,7 @@ const emit = defineEmits<Emits>()
 // handle both string/number arrays and object arrays with PrimeVue compatibility
 const getOptionValue = (option: T, index: number): string => {
   if (typeof option === 'object' && option !== null) {
-    // Use PrimeVue optionValue prop if provided, otherwise fallback to common fields
-    const valueField = props.optionValue ?? 'value'
+    const valueField = props.optionValue
     const value =
       (option as any)[valueField] ??
       (option as any).value ??
@@ -81,8 +82,7 @@ const getOptionValue = (option: T, index: number): string => {
 // for display with PrimeVue compatibility
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
-    // Use PrimeVue optionLabel prop if provided, otherwise fallback to common fields
-    const labelField = props.optionLabel ?? 'label'
+    const labelField = props.optionLabel
     return (
       (option as any)[labelField] ??
       (option as any).label ??
