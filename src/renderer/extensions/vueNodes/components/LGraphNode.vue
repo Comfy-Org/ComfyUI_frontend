@@ -417,7 +417,6 @@ const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
   }
 
   const node = getNodeByLocatorId(rootGraph, locatorId)
-
   if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
     if (urls) {
