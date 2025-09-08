@@ -163,10 +163,21 @@ $status_icon **$status_text**
 ### 🔗 Links
 - [📊 View Workflow Run]($WORKFLOW_URL)"
     
-    # Add deployment link if available and successful
-    if [ "$WORKFLOW_CONCLUSION" = "success" ] && [ "$deployment_url" != "Not deployed" ] && [ "$deployment_url" != "Deployment failed" ]; then
-        comment="$comment
+    # Add deployment status
+    if [ "$deployment_url" != "Not deployed" ]; then
+        if [ "$deployment_url" = "Deployment failed" ]; then
+            comment="$comment
+- ❌ Storybook deployment failed"
+        elif [ "$WORKFLOW_CONCLUSION" = "success" ]; then
+            comment="$comment
 - 🎨 $deployment_url"
+        else
+            comment="$comment
+- ⚠️ Build failed - $deployment_url"
+        fi
+    elif [ "$WORKFLOW_CONCLUSION" != "success" ]; then
+        comment="$comment
+- ⏭️ Storybook deployment skipped (build did not succeed)"
     fi
     
     comment="$comment
