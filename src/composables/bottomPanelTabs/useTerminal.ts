@@ -9,7 +9,6 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
   const terminal = markRaw(
     new Terminal({
       convertEol: true,
-      scrollback: 1000,
       theme: {
         background: '#171717'
       }
