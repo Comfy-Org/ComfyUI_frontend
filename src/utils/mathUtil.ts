@@ -13,7 +13,7 @@ export const gcd = (a: number, b: number): number => {
 }
 
 /**
- * Finds the export least common multiple (LCM) for two numbers.
+ * Finds the least common multiple (LCM) for two numbers.
  *
  * @param a - The first number.
  * @param b - The second number.
