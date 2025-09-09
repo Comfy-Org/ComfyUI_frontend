@@ -59,8 +59,6 @@ const stepValue = computed(() => {
       button-layout="horizontal"
       size="small"
       :disabled="readonly"
-      :min="widget.options?.min"
-      :max="widget.options?.max"
       :step="stepValue"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
       :pt="{
