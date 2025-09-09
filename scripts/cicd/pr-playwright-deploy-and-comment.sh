@@ -4,9 +4,33 @@ set -e
 # Deploy Playwright test reports to Cloudflare Pages and comment on PR
 # Usage: ./pr-playwright-deploy-and-comment.sh <pr_number> <branch_name> <status> [start_time]
 
+# Input validation
+# Validate PR number is numeric
+case "$1" in
+    ''|*[!0-9]*) 
+        echo "Error: PR_NUMBER must be numeric" >&2
+        exit 1
+        ;;
+esac
 PR_NUMBER="$1"
-BRANCH_NAME="$2"
+
+# Sanitize and validate branch name (allow alphanumeric, dots, dashes, underscores, slashes)
+BRANCH_NAME=$(echo "$2" | sed 's/[^a-zA-Z0-9._/-]//g')
+if [ -z "$BRANCH_NAME" ]; then
+    echo "Error: Invalid or empty branch name" >&2
+    exit 1
+fi
+
+# Validate status parameter
 STATUS="${3:-completed}"
+case "$STATUS" in
+    starting|completed) ;;
+    *) 
+        echo "Error: STATUS must be 'starting' or 'completed'" >&2
+        exit 1
+        ;;
+esac
+
 START_TIME="${4:-$(date -u '+%m/%d/%Y, %I:%M:%S %p')}"
 
 # Required environment variables
@@ -117,7 +141,8 @@ EOF
     
 else
     # Deploy and post completion comment
-    sanitized_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
+    # Convert branch name to Cloudflare-compatible format (lowercase, only alphanumeric and dashes)
+    cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
         sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
     
     echo "Looking for reports in: $(pwd)/reports"
@@ -129,7 +154,7 @@ else
     for browser in $BROWSERS; do
         if [ -d "reports/playwright-report-$browser" ]; then
             echo "Found report for $browser, deploying..."
-            url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$sanitized_branch")
+            url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
             echo "Deployment result for $browser: $url"
         else
             echo "Report not found for $browser at reports/playwright-report-$browser"
