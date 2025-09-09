@@ -48,6 +48,16 @@ COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
 # Use dot notation for artifact names (as Playwright creates them)
 BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome"
 
+# Install wrangler if not available (output to stderr for debugging)
+if ! command -v wrangler > /dev/null 2>&1; then
+    echo "Installing wrangler v4..." >&2
+    npm install -g wrangler@^4.0.0 >&2 || {
+        echo "Failed to install wrangler" >&2
+        echo "failed"
+        return
+    }
+fi
+
 # Deploy a single browser report, WARN: ensure inputs are sanitized before calling this function
 deploy_report() {
     dir="$1"
@@ -56,15 +66,6 @@ deploy_report() {
     
     [ ! -d "$dir" ] && echo "failed" && return
     
-    # Install wrangler if not available (output to stderr for debugging)
-    if ! command -v wrangler > /dev/null 2>&1; then
-        echo "Installing wrangler v4..." >&2
-        npm install -g wrangler@^4.0.0 >&2 || {
-            echo "Failed to install wrangler" >&2
-            echo "failed"
-            return
-        }
-    fi
     
     # Project name with dots converted to dashes for Cloudflare
     sanitized_browser=$(echo "$browser" | sed 's/\./-/g')
