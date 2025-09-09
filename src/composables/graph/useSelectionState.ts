@@ -1,11 +1,7 @@
 import { computed } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import {
-  LGraphEventMode,
-  LGraphNode,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
@@ -17,6 +13,9 @@ interface NodeSelectionState {
   collapsed: boolean
   pinned: boolean
   bypassed: boolean
+}
+interface RemovableItem {
+  removable?: boolean
 }
 
 /**
@@ -59,7 +58,7 @@ export function useSelectionState() {
   )
 
   const hasSubgraphs = computed(() =>
-    selectedItems.value.some((i) => i instanceof SubgraphNode)
+    selectedItems.value.some((i) => (i as LGraphNode)?.isSubgraphNode?.())
   )
 
   const hasImageNode = computed(() => isSingleImageNode.value)
@@ -112,6 +111,15 @@ export function useSelectionState() {
     nodeHelpStore.openHelp(def)
   }
 
+  const isRemovableItem = (item: unknown): item is RemovableItem =>
+    item != null && typeof item === 'object' && ('removable' in item || true)
+
+  const isDeletable = computed(() =>
+    selectedItems.value
+      .filter(isRemovableItem)
+      .some((x) => x.removable !== false)
+  )
+
   return {
     selectedItems,
     selectedNodes,
@@ -127,6 +135,7 @@ export function useSelectionState() {
     hasImageNode,
     hasOutputNodesSelected,
     selectedNodesStates,
-    computeSelectionFlags
+    computeSelectionFlags,
+    isDeletable
   }
 }
