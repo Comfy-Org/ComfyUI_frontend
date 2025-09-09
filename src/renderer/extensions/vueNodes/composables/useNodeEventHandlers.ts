@@ -11,8 +11,7 @@
 import type { Ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useCanvasStore } from '@/stores/graphStore'
 
 interface NodeManager {
@@ -21,7 +20,7 @@ interface NodeManager {
 
 export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
   const canvasStore = useCanvasStore()
-  const layoutMutations = useLayoutMutations()
+  const { bringNodeToFront } = useNodeZIndex()
 
   /**
    * Handle node selection events
@@ -51,8 +50,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
     if (!node.flags?.pinned) {
-      layoutMutations.setSource(LayoutSource.Vue)
-      layoutMutations.bringNodeToFront(nodeData.id)
+      bringNodeToFront(nodeData.id)
     }
 
     // Update canvas selection tracking
@@ -171,14 +169,13 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
     if (!canvasStore.canvas || !nodeManager.value) return
 
     if (!addToSelection) {
-      canvasStore.canvas.deselectAllNodes()
+      canvasStore.canvas.deselectAll()
     }
 
     nodeIds.forEach((nodeId) => {
       const node = nodeManager.value?.getNode(nodeId)
       if (node && canvasStore.canvas) {
-        canvasStore.canvas.selectNode(node)
-        node.selected = true
+        canvasStore.canvas.select(node)
       }
     })
 
