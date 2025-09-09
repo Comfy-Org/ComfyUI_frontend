@@ -272,7 +272,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       const matchingIndex = this.#getBypassSlotIndex(slot, type)
 
       // No input types match
-      if (matchingIndex === undefined) {
+      if (matchingIndex === -1) {
         console.debug(
           `[ExecutableNodeDTO.resolveOutput] No input types match type [${type}] for id [${this.id}] slot [${slot}]`,
           this
@@ -331,7 +331,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    * Used when bypassing nodes.
    * @param slot The output slot index on this node
    * @param type The type of the final target input (so type list matches are accurate)
-   * @returns The index of the input slot on this node, otherwise `undefined`.
+   * @returns The index of the input slot on this node, otherwise `-1`.
    */
   #getBypassSlotIndex(slot: number, type: ISlotType) {
     const { inputs } = this
@@ -352,15 +352,15 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       return slot
     }
 
+    // Preserve legacy behaviour; use exact match first.
+    const exactMatch = inputs.findIndex((input) => input.type === type)
+    if (exactMatch !== -1) return exactMatch
+
     // Find first matching slot - prefer exact type
-    return (
-      // Preserve legacy behaviour; use exact match first.
-      inputs.findIndex((input) => input.type === type) ??
-      inputs.findIndex(
-        (input) =>
-          LiteGraph.isValidConnection(input.type, outputType) &&
-          LiteGraph.isValidConnection(input.type, type)
-      )
+    return inputs.findIndex(
+      (input) =>
+        LiteGraph.isValidConnection(input.type, outputType) &&
+        LiteGraph.isValidConnection(input.type, type)
     )
   }
 
