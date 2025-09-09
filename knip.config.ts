@@ -51,8 +51,7 @@ const config: KnipConfig = {
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
     '-knipIgnoreUnusedButUsedByVueNodesBranch'
-  ],
-  ignoreUnresolved: ['^~icons/']
+  ]
 }
 
 export default config
