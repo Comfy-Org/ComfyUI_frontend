@@ -87,8 +87,6 @@
 
     <template #content>
       <!-- Card Examples -->
-      <!-- <div class="min-h-0 px-6 py-4 overflow-y-auto scrollbar-hide"> -->
-      <!-- <h2 class="text-xxl py-4 pt-0 m-0">{{ $t('Checkpoints') }}</h2> -->
       <div class="flex flex-wrap gap-2">
         <CardContainer
           v-for="i in 100"
@@ -138,6 +136,10 @@
 <script setup lang="ts">
 import { provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DownloadIcon from '~icons/lucide/download'
+import Grid3x3Icon from '~icons/lucide/grid-3-x-3'
+import LayersIcon from '~icons/lucide/layers'
+import TagIcon from '~icons/lucide/tag'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -175,20 +177,20 @@ const sortOptions = ref([
 ])
 
 const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-  { id: 'installed', label: 'Installed' },
+  { id: 'installed', label: 'Installed', icon: DownloadIcon },
   {
     title: 'TAGS',
     items: [
-      { id: 'tag-sd15', label: 'SD 1.5' },
-      { id: 'tag-sdxl', label: 'SDXL' },
-      { id: 'tag-utility', label: 'Utility' }
+      { id: 'tag-sd15', label: 'SD 1.5', icon: TagIcon },
+      { id: 'tag-sdxl', label: 'SDXL', icon: TagIcon },
+      { id: 'tag-utility', label: 'Utility', icon: TagIcon }
     ]
   },
   {
     title: 'CATEGORIES',
     items: [
-      { id: 'cat-models', label: 'Models' },
-      { id: 'cat-nodes', label: 'Nodes' }
+      { id: 'cat-models', label: 'Models', icon: LayersIcon },
+      { id: 'cat-nodes', label: 'Nodes', icon: Grid3x3Icon }
     ]
   }
 ])
