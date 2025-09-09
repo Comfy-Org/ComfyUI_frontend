@@ -36,6 +36,7 @@
     v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
+    @wheel.capture="forwardWheelEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <VueGraphNode
@@ -453,4 +454,20 @@ onMounted(async () => {
 onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
+
+function forwardWheelEvent(e: WheelEvent) {
+  // I don't love this, but it works.
+  const { clientX, clientY, deltaX, deltaY, ctrlKey, metaKey, shiftKey } = e
+  comfyApp.canvasEl.dispatchEvent(
+    new WheelEvent('wheel', {
+      clientX,
+      clientY,
+      deltaX,
+      deltaY,
+      ctrlKey,
+      metaKey,
+      shiftKey
+    })
+  )
+}
 </script>
