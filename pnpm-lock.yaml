@@ -171,6 +171,9 @@ importers:
       '@eslint/js':
         specifier: ^9.8.0
         version: 9.12.0
+      '@iconify-json/lucide':
+        specifier: ^1.2.66
+        version: 1.2.66
       '@iconify/tailwind':
         specifier: ^1.2.0
         version: 1.2.0
@@ -1594,6 +1597,9 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@iconify-json/lucide@1.2.66':
+    resolution: {integrity: sha512-TrhmfThWY2FHJIckjz7g34gUx3+cmja61DcHNdmu0rVDBQHIjPMYO1O8mMjoDSqIXEllz9wDZxCqT3lFuI+f/A==}
 
   '@iconify/json@2.2.380':
     resolution: {integrity: sha512-+Al/Q+mMB/nLz/tawmJEOkCs6+RKKVUS/Yg9I80h2yRpu0kIzxVLQRfF0NifXz/fH92vDVXbS399wio4lMVF4Q==}
@@ -8023,6 +8029,10 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@iconify-json/lucide@1.2.66':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify/json@2.2.380':
     dependencies:

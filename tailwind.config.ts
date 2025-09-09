@@ -1,3 +1,4 @@
+import lucide from '@iconify-json/lucide/icons.json'
 import { addDynamicIconSelectors } from '@iconify/tailwind'
 
 import { iconCollection } from './build/customIconCollection'
@@ -235,8 +236,10 @@ export default {
   plugins: [
     addDynamicIconSelectors({
       iconSets: {
-        comfy: iconCollection
-      }
+        comfy: iconCollection,
+        lucide
+      },
+      prefix: 'icon'
     }),
     function ({ addVariant }) {
       addVariant('dark-theme', '.dark-theme &')
