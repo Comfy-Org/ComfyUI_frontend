@@ -13,25 +13,72 @@ test.describe('Graph Canvas Menu', () => {
 
   test('Can toggle link visibility', async ({ comfyPage }) => {
     const button = comfyPage.page.getByTestId('toggle-link-visibility-button')
+
+    // Get the initial link render mode and HIDDEN_LINK constant
+    const { initialMode, hiddenLinkMode } = await comfyPage.page.evaluate(
+      () => {
+        return {
+          initialMode: window['app']?.canvas?.links_render_mode,
+          hiddenLinkMode: window['LiteGraph'].HIDDEN_LINK
+        }
+      }
+    )
+
+    // First click - hide links
     await button.click()
+
+    // Wait for the setting to actually change to hidden
+    await comfyPage.page.waitForFunction(
+      (expectedMode) => {
+        const canvas = window['app']?.canvas
+        return canvas && canvas.links_render_mode === expectedMode
+      },
+      hiddenLinkMode,
+      { timeout: 5000 }
+    )
+
+    // Wait for canvas to complete rendering with hidden links
+    // Use multiple frames and a small delay to ensure canvas is fully updated
     await comfyPage.nextFrame()
+    await comfyPage.nextFrame()
+    await comfyPage.page.waitForTimeout(100) // Small delay for canvas rendering
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'canvas-with-hidden-links.png'
     )
-    const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
-      return window['LiteGraph'].HIDDEN_LINK
-    })
     expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).toBe(
-      hiddenLinkRenderMode
+      hiddenLinkMode
     )
 
+    // Second click - show links again
     await button.click()
+
+    // Wait for the setting to change back to the initial mode
+    await comfyPage.page.waitForFunction(
+      ({ hiddenMode, initial }) => {
+        const canvas = window['app']?.canvas
+        // Check that it's not hidden and matches the expected visible mode
+        return (
+          canvas &&
+          canvas.links_render_mode !== hiddenMode &&
+          (initial === undefined || canvas.links_render_mode === initial)
+        )
+      },
+      { hiddenMode: hiddenLinkMode, initial: initialMode },
+      { timeout: 5000 }
+    )
+
+    // Wait for canvas to complete rendering with visible links
+    // Use multiple frames and a small delay to ensure canvas is fully updated
     await comfyPage.nextFrame()
+    await comfyPage.nextFrame()
+    await comfyPage.page.waitForTimeout(100) // Small delay for canvas rendering
+
     await expect(comfyPage.canvas).toHaveScreenshot(
       'canvas-with-visible-links.png'
     )
     expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).not.toBe(
-      hiddenLinkRenderMode
+      hiddenLinkMode
     )
   })
 
