@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Deploy Playwright test reports to Cloudflare Pages and comment on PR
