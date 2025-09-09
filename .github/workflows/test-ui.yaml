@@ -318,7 +318,7 @@ jobs:
   deploy-and-comment:
     needs: [playwright-tests, merge-reports]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     permissions:
       pull-requests: write
       contents: read
