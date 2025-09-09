@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import { createGridStyle } from '@/utils/gridUtil'
+
 import CardBottom from './CardBottom.vue'
 import CardContainer from './CardContainer.vue'
-import CardGridList from './CardGridList.vue'
 import CardTop from './CardTop.vue'
 
-const meta: Meta<typeof CardGridList> = {
+const meta: Meta = {
   title: 'Components/Card/CardGridList',
-  component: CardGridList,
   tags: ['autodocs'],
   argTypes: {
     minWidth: {
@@ -44,12 +44,13 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   render: (args) => ({
-    components: { CardGridList, CardContainer, CardTop, CardBottom },
+    components: { CardContainer, CardTop, CardBottom },
     setup() {
-      return { args }
+      const gridStyle = createGridStyle(args)
+      return { gridStyle }
     },
     template: `
-      <CardGridList v-bind="args">
+      <div :style="gridStyle">
         <CardContainer v-for="i in 12" :key="i" ratio="square">
           <template #top>
             <CardTop ratio="landscape">
@@ -62,7 +63,7 @@ export const Default: Story = {
             <CardBottom class="bg-neutral-200"></CardBottom>
           </template>
         </CardContainer>
-      </CardGridList>
+      </div>
     `
   })
 }

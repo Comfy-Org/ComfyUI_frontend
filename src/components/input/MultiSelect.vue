@@ -47,7 +47,7 @@
             :label="$t('g.clearAll')"
             type="transparent"
             size="fit-content"
-            class="text-sm text-blue-500! dark-theme:text-blue-600!"
+            class="text-sm text-blue-500 dark-theme:text-blue-600"
             @click.stop="selectedItems = []"
           />
         </div>
@@ -75,20 +75,13 @@
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
     <template #option="slotProps">
-      <div
-        class="flex items-center gap-2"
-        :style="
-          popoverMinWidth || popoverMaxWidth
-            ? `${popoverMinWidth ? `min-width: ${popoverMinWidth} !important;` : ''} ${popoverMaxWidth ? `max-width: ${popoverMaxWidth} !important;` : ''}`
-            : undefined
-        "
-      >
+      <div class="flex items-center gap-2" :style="popoverStyle">
         <div
           class="flex h-4 w-4 p-0.5 shrink-0 items-center justify-center rounded transition-all duration-200"
           :class="
             slotProps.selected
-              ? 'border-[3px] border-blue-400 bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
-              : 'border-[1px] border-neutral-300 dark-theme:border-zinc-600 bg-neutral-100 dark-theme:bg-zinc-700'
+              ? 'bg-blue-400 dark-theme:border-blue-500 dark-theme:bg-blue-500'
+              : 'bg-neutral-100 dark-theme:bg-zinc-700'
           "
         >
           <i-lucide:check
@@ -114,6 +107,7 @@ import MultiSelect, {
 import { computed } from 'vue'
 
 import SearchBox from '@/components/input/SearchBox.vue'
+import { usePopoverSizing } from '@/composables/usePopoverSizing'
 
 import TextButton from '../button/TextButton.vue'
 
@@ -160,6 +154,11 @@ const selectedItems = defineModel<Option[]>({
 const searchQuery = defineModel<string>('searchQuery')
 const selectedCount = computed(() => selectedItems.value.length)
 
+const popoverStyle = usePopoverSizing({
+  minWidth: popoverMinWidth,
+  maxWidth: popoverMaxWidth
+})
+
 const pt = computed(() => ({
   root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
     class: [
@@ -189,11 +188,15 @@ const pt = computed(() => ({
   }),
   // Overlay & list visuals unchanged
   overlay: {
-    class:
-      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-neutral-200 dark-theme:border-zinc-700 py-2 px-2'
+    class: [
+      'mt-2 rounded-lg py-2 px-2',
+      'bg-white dark-theme:bg-zinc-800',
+      'text-neutral dark-theme:text-white',
+      'border border-solid border-neutral-200 dark-theme:border-zinc-700'
+    ]
   },
   listContainer: () => ({
-    style: `max-height: ${listMaxHeight} !important;`,
+    style: { maxHeight: listMaxHeight },
     class: 'overflow-y-auto scrollbar-hide'
   }),
   list: {
@@ -213,11 +216,11 @@ const pt = computed(() => ({
   // Hide built-in checkboxes entirely via PT (no :deep)
   pcHeaderCheckbox: {
     root: { class: 'hidden' },
-    style: 'display: none !important'
+    style: { display: 'none' }
   },
   pcOptionCheckbox: {
     root: { class: 'hidden' },
-    style: 'display: none !important'
+    style: { display: 'none' }
   }
 }))
 </script>

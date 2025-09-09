@@ -1,5 +1,5 @@
 <template>
-  <BaseWidgetLayout :content-title="$t('Checkpoints')">
+  <BaseModalLayout :content-title="$t('Checkpoints')">
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
@@ -87,7 +87,7 @@
 
     <template #content>
       <!-- Card Examples -->
-      <CardGridList>
+      <div :style="gridStyle">
         <CardContainer v-for="i in 100" :key="i" ratio="square">
           <template #top>
             <CardTop ratio="landscape">
@@ -117,17 +117,17 @@
             <CardBottom></CardBottom>
           </template>
         </CardContainer>
-      </CardGridList>
+      </div>
     </template>
 
     <template #rightPanel>
       <RightSidePanel></RightSidePanel>
     </template>
-  </BaseWidgetLayout>
+  </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
-import { provide, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -135,17 +135,17 @@ import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
-import CardGridList from '@/components/card/CardGridList.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
-import BaseWidgetLayout from '@/components/widget/layout/BaseWidgetLayout.vue'
+import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
 import { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
 
 const frameworkOptions = ref([
   { name: 'Vue', value: 'vue' },
@@ -200,6 +200,8 @@ const selectedProjects = ref([])
 const selectedSort = ref<string>('popular')
 
 const selectedNavItem = ref<string | null>('installed')
+
+const gridStyle = computed(() => createGridStyle())
 
 watch(searchText, (newQuery) => {
   console.log('searchText:', searchText.value, newQuery)

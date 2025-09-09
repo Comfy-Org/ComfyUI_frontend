@@ -296,7 +296,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
             </CardContainer>
           </CardGridList>
         </template>
-      </BaseWidgetLayout>
+      </BaseModalLayout>
 
       <BaseWidgetLayout v-else :content-title="args.contentTitle || 'Content Title'">
         <!-- Same content but WITH right panel -->
@@ -423,7 +423,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template #rightPanel>
           <RightSidePanel />
         </template>
-      </BaseWidgetLayout>
+      </BaseModalLayout>
     </div>
   `
 })

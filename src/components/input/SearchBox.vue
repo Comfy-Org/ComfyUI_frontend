@@ -6,7 +6,7 @@
       :placeholder="placeHolder || 'Search...'"
       type="text"
       unstyled
-      class="w-full p-0 border-none outline-none bg-transparent text-sm text-neutral dark-theme:text-white"
+      :class="inputStyle"
     />
   </div>
 </template>
@@ -14,6 +14,8 @@
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 const {
   placeHolder,
@@ -28,23 +30,41 @@ const {
 const searchQuery = defineModel<string>()
 
 const wrapperStyle = computed(() => {
-  const baseClasses =
-    'flex w-full items-center gap-2 bg-white dark-theme:bg-zinc-800'
+  const baseClasses = [
+    'relative flex w-full items-center gap-2',
+    'bg-white dark-theme:bg-zinc-800',
+    'cursor-text'
+  ]
 
   if (showBorder) {
-    return `${baseClasses} rounded p-2 border border-solid border-zinc-200 dark-theme:border-zinc-700`
+    return cn(
+      ...baseClasses,
+      'rounded p-2',
+      'border border-solid',
+      'border-zinc-200 dark-theme:border-zinc-700'
+    )
   }
 
-  // Size-specific classes for non-bordered variant
-  const sizeClasses =
-    size === 'lg'
-      ? 'h-10 px-4 py-2' // Larger height and padding for lg
-      : 'h-8 px-2 py-1.5' // Default md size
+  // Size-specific classes matching button sizes for consistency
+  const sizeClasses = {
+    md: 'h-8 px-2 py-1.5', // Matches button sm size
+    lg: 'h-10 px-4 py-2' // Matches button md size
+  }[size]
 
-  return `${baseClasses} rounded-lg ${sizeClasses}`
+  return cn(...baseClasses, 'rounded-lg', sizeClasses)
+})
+
+const inputStyle = computed(() => {
+  return cn(
+    'absolute inset-0 w-full h-full pl-11',
+    'border-none outline-none bg-transparent',
+    'text-sm text-neutral dark-theme:text-white'
+  )
 })
 
 const iconColorStyle = computed(() => {
-  return !showBorder ? 'text-neutral' : 'text-zinc-300 dark-theme:text-zinc-700'
+  return cn(
+    !showBorder ? 'text-neutral' : ['text-zinc-300', 'dark-theme:text-zinc-700']
+  )
 })
 </script>
