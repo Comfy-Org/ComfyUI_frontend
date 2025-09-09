@@ -73,7 +73,7 @@ const resizeObserver = new ResizeObserver((entries) => {
       x: rect.left,
       y: rect.top,
       width,
-      height
+      height: height-LiteGraph.NODE_TITLE_HEIGHT
     }
 
     if (!updatesByType.has(elementType)) {
