@@ -31,7 +31,7 @@ describe('BypassButton', () => {
       en: {
         selectionToolbox: {
           bypassButton: {
-            tooltip: 'Toggle bypass mode'
+            tooltip: 'Bypass/Unbypass Selected Nodes'
           }
         }
       }
