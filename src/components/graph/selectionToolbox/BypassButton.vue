@@ -13,7 +13,7 @@
       'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]':
         isBypassed
     }"
-    @click="byPass"
+    @click="toggleBypass"
   >
     <template #icon>
       <i-lucide:ban class="w-4 h-4" />
@@ -34,7 +34,7 @@ const commandStore = useCommandStore()
 const { hasAnySelection } = useSelectionState()
 const isBypassed = ref(false)
 
-const byPass = async () => {
+const toggleBypass = async () => {
   await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
 }
 </script>
