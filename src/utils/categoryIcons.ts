@@ -50,23 +50,3 @@ export const getCategoryIcon = (categoryId: string): string => {
   // Return mapped icon or fallback to folder
   return iconMap[categoryId.toLowerCase()] || 'folder'
 }
-
-/**
- * Maps category titles to their corresponding Lucide icon names
- */
-export const getCategoryIconByTitle = (title: string): string => {
-  const titleMap: Record<string, string> = {
-    'Getting Started': 'graduation-cap',
-    'Generation Type': 'sparkles',
-    'Closed Source Models': 'hand-coins',
-    'API Nodes': 'hand-coins',
-    'Small Models': 'zap',
-    Performance: 'zap',
-    'Mac Compatible': 'command',
-    'LoRA Training': 'dumbbell',
-    Extensions: 'puzzle',
-    'Tools & Building': 'wrench'
-  }
-
-  return titleMap[title] || 'folder'
-}

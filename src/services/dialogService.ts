@@ -512,7 +512,6 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
-    // showWorkflowTemplateSelectorDialog,
     showManagerDialog,
     showManagerProgressDialog,
     showApiNodesSignInDialog,
