@@ -164,6 +164,10 @@ else
     pids=""
     i=0
     
+    # Store current working directory for absolute paths
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    BASE_DIR="$(pwd)"
+    
     # Start parallel deployments and count extractions
     for browser in $BROWSERS; do
         if [ -d "reports/playwright-report-$browser" ]; then
@@ -174,10 +178,16 @@ else
                 echo "Deployment result for $browser: $url"
                 
                 # Extract test counts if Node.js is available
-                if command -v node > /dev/null 2>&1 && [ -f "scripts/cicd/extract-playwright-counts.mjs" ]; then
-                    counts=$(node scripts/cicd/extract-playwright-counts.mjs "reports/playwright-report-$browser" 2>/dev/null || echo '{}')
+                EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.mjs"
+                REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
+                
+                if command -v node > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
+                    echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
+                    counts=$(node "$EXTRACT_SCRIPT" "$REPORT_DIR" 2>&1 || echo '{}')
+                    echo "Extracted counts for $browser: $counts" >&2
                     echo "$counts" > "$temp_dir/$i.counts"
                 else
+                    echo "Script not found or Node.js not available: $EXTRACT_SCRIPT" >&2
                     echo '{}' > "$temp_dir/$i.counts"
                 fi
             ) &
@@ -213,8 +223,10 @@ else
         
         if [ -f "$temp_dir/$i.counts" ]; then
             counts=$(cat "$temp_dir/$i.counts")
+            echo "Read counts for $browser from $temp_dir/$i.counts: $counts" >&2
         else
             counts="{}"
+            echo "No counts file found for $browser at $temp_dir/$i.counts" >&2
         fi
         if [ -z "$all_counts" ]; then
             all_counts="$counts"
@@ -332,7 +344,7 @@ $status_icon **$status_text**
                 fi
                 
                 if [ -n "$b_total" ] && [ "$b_total" != "0" ]; then
-                    counts_str=" (✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped)"
+                    counts_str=" • ✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped"
                 else
                     counts_str=""
                 fi
@@ -341,7 +353,7 @@ $status_icon **$status_text**
             fi
             
             comment="$comment
-- ✅ **${browser}**${counts_str}: [View Report](${url})"
+- ✅ **${browser}**: [View Report](${url})${counts_str}"
         else
             comment="$comment
 - ❌ **${browser}**: Deployment failed"
