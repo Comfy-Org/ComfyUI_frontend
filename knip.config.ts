@@ -17,7 +17,6 @@ const config: KnipConfig = {
     '@primeuix/styled',
     '@primeuix/utils',
     '@primevue/icons',
-    '^~icons/.*',
     // Dev
     '@trivago/prettier-plugin-sort-imports'
   ],
@@ -52,7 +51,8 @@ const config: KnipConfig = {
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
     '-knipIgnoreUnusedButUsedByVueNodesBranch'
-  ]
+  ],
+  ignoreUnresolved: ['^~icons/']
 }
 
 export default config
