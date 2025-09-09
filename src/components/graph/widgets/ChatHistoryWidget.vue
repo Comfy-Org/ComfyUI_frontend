@@ -75,7 +75,7 @@ let promptInput = findPromptInput()
 const previousPromptInput = ref<string | null>(null)
 
 const getPreviousResponseId = (index: number) =>
-  index > 0 ? parsedHistory.value[index - 1]?.response_id ?? '' : ''
+  index > 0 ? (parsedHistory.value[index - 1]?.response_id ?? '') : ''
 
 const storePromptInput = () => {
   promptInput ??= widget?.node.widgets?.find((w) => w.name === 'prompt')

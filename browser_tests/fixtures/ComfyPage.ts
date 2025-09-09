@@ -11,6 +11,7 @@ import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
+import { CanvasStabilityChecker } from '../utils/CanvasStabilityStateMachine'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
@@ -121,6 +122,7 @@ class ConfirmDialog {
 
 export class ComfyPage {
   private _history: TaskHistory | null = null
+  private _canvasStabilityChecker: CanvasStabilityChecker | null = null
 
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -1624,6 +1626,39 @@ export class ComfyPage {
       window['app'].extensionManager.focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
+  }
+
+  /**
+   * Get the canvas stability checker, creating it if needed
+   */
+  private get canvasStabilityChecker(): CanvasStabilityChecker {
+    this._canvasStabilityChecker ??= new CanvasStabilityChecker({
+      page: this.page,
+      requiredStableChecks: 2,
+      debug: false
+    })
+    return this._canvasStabilityChecker
+  }
+
+  /**
+   * Wait for canvas to reach stable state using condition-based checking
+   * Replaces timing-based approaches with state machine validation
+   *
+   * @param timeoutMs Maximum time to wait in milliseconds (default: 10000)
+   */
+  async waitForCanvasStable(timeoutMs: number = 10000): Promise<void> {
+    await this.canvasStabilityChecker.waitForStable(timeoutMs)
+  }
+
+  /**
+   * Wait for toast notifications to stabilize
+   * For now, this is a simple implementation that waits for visible toasts to disappear
+   *
+   * @param timeoutMs Maximum time to wait in milliseconds (default: 5000)
+   */
+  async waitForToastStable(timeoutMs: number = 5000): Promise<void> {
+    // Wait for any visible toasts to disappear
+    await expect(this.visibleToasts).toHaveCount(0, { timeout: timeoutMs })
   }
 }
 

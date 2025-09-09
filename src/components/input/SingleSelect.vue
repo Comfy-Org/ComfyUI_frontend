@@ -105,7 +105,7 @@ const getLabel = (val: string | null | undefined) => {
   if (val == null) return label ?? ''
   if (!options) return label ?? ''
   const found = options.find((o) => o.value === val)
-  return found ? found.name : label ?? ''
+  return found ? found.name : (label ?? '')
 }
 
 // Extract complex style logic from template
