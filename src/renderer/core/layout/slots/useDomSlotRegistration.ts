@@ -21,6 +21,10 @@ import {
 } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  getCanvasClientOrigin,
+  onCanvasRectChange
+} from '@/renderer/core/layout/dom/canvasRectCache'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
@@ -52,7 +56,7 @@ const cleanupFunctions = new WeakMap<
   Ref<HTMLElement | null>,
   {
     stopWatcher?: WatchStopHandle
-    handleResize?: () => void
+    unsubscribeRectChange?: () => void
   }
 >()
 
@@ -90,6 +94,8 @@ export function useDomSlotRegistration(options: SlotRegistrationOptions) {
     if (!el || !transform?.screenToCanvas) return
 
     const rect = el.getBoundingClientRect()
+    // Normalize to canvas-relative screen coordinates (CSS pixels)
+    const { left: canvasLeft, top: canvasTop } = getCanvasClientOrigin()
 
     // Skip if bounds haven't changed significantly (within 0.5px)
     if (lastMeasuredBounds.value) {
@@ -106,10 +112,10 @@ export function useDomSlotRegistration(options: SlotRegistrationOptions) {
 
     lastMeasuredBounds.value = rect
 
-    // Center of the visual connector (dot) in screen coords
+    // Center of the visual connector (dot) in canvas-relative screen coords
     const centerScreen = {
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2
+      x: rect.left + rect.width / 2 - canvasLeft,
+      y: rect.top + rect.height / 2 - canvasTop
     }
     const centerCanvas = transform.screenToCanvas(centerScreen)
 
@@ -192,12 +198,11 @@ export function useDomSlotRegistration(options: SlotRegistrationOptions) {
     const cleanup = cleanupFunctions.get(elRef) || {}
     cleanup.stopWatcher = stopWatcher
 
-    // Window resize - remeasure as viewport changed
-    const handleResize = () => {
+    // Subscribe to canvas rect changes (covers window resize and layout changes)
+    const unsubscribe = onCanvasRectChange(() =>
       scheduleMeasurement(measureAndCacheOffset)
-    }
-    window.addEventListener('resize', handleResize, { passive: true })
-    cleanup.handleResize = handleResize
+    )
+    cleanup.unsubscribeRectChange = unsubscribe
     cleanupFunctions.set(elRef, cleanup)
   })
 
@@ -209,9 +214,7 @@ export function useDomSlotRegistration(options: SlotRegistrationOptions) {
     const cleanup = cleanupFunctions.get(elRef)
     if (cleanup) {
       if (cleanup.stopWatcher) cleanup.stopWatcher()
-      if (cleanup.handleResize) {
-        window.removeEventListener('resize', cleanup.handleResize)
-      }
+      if (cleanup.unsubscribeRectChange) cleanup.unsubscribeRectChange()
       cleanupFunctions.delete(elRef)
     }
 
