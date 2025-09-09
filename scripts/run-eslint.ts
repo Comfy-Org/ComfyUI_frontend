@@ -1,6 +1,6 @@
 // Small wrapper to run ESLint with concurrency from .env.
 // Usage:
-//   pnpm run lint                 -> uses ESLINT_CONCURRENCY or default 'auto'
+//   pnpm run lint                 -> uses ESLINT_CONCURRENCY or default '4'
 //   pnpm run lint:fix             -> same as above; only one env var is used
 //   pnpm run lint -- --concurrency=6  -> explicit override wins
 import 'dotenv/config'
@@ -12,7 +12,7 @@ const hasCliConcurrency =
   userArgs.some((a) => a.startsWith('--concurrency='))
 
 const envValue =
-  (process.env.ESLINT_CONCURRENCY ?? 'auto').toString().trim() || 'auto'
+  (process.env.ESLINT_CONCURRENCY ?? '4').toString().trim() || '4'
 
 const args = ['src', ...userArgs]
 if (!hasCliConcurrency) args.push('--concurrency', envValue)
