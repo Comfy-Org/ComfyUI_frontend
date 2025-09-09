@@ -17,7 +17,7 @@ import { OnCloseKey } from '@/types/widgetTypes'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'
 import RightSidePanel from '../panel/RightSidePanel.vue'
-import BaseWidgetLayout from './BaseWidgetLayout.vue'
+import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
   contentTitle: string
@@ -30,7 +30,7 @@ interface StoryArgs {
 }
 
 const meta: Meta<StoryArgs> = {
-  title: 'Components/Widget/Layout/BaseWidgetLayout',
+  title: 'Components/Widget/Layout/BaseModalLayout',
   argTypes: {
     contentTitle: {
       control: 'text',
@@ -68,7 +68,7 @@ type Story = StoryObj<typeof meta>
 
 const createStoryTemplate = (args: StoryArgs) => ({
   components: {
-    BaseWidgetLayout,
+    BaseModalLayout,
     LeftSidePanel,
     RightSidePanel,
     SearchBox,
@@ -174,7 +174,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
   },
   template: `
     <div>
-      <BaseWidgetLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
           <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
@@ -298,7 +298,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         </template>
       </BaseModalLayout>
 
-      <BaseWidgetLayout v-else :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
         <!-- Same content but WITH right panel -->
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
