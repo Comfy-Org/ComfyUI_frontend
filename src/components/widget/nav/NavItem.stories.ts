@@ -36,7 +36,7 @@ type Story = StoryObj<typeof meta>
 
 export const Interactive: Story = {
   args: {
-    icon: Folder as any,
+    icon: Folder,
     active: false,
     default: 'Navigation Item'
   },
@@ -81,42 +81,36 @@ export const InteractiveList: Story = {
       }
     },
     setup() {
-      const createIconWrapper = (IconComponent: any) => ({
-        render() {
-          return h(IconComponent, { size: 14 })
-        }
-      })
-
       const items = [
         {
           id: 'downloads',
           label: 'Downloads',
-          wrappedIcon: createIconWrapper(Download)
+          wrappedIcon: () => h(Download, { size: 14 })
         },
         {
           id: 'models',
           label: 'Models',
-          wrappedIcon: createIconWrapper(Layers)
+          wrappedIcon: () => h(Layers, { size: 14 })
         },
         {
           id: 'nodes',
           label: 'Nodes',
-          wrappedIcon: createIconWrapper(Grid3x3)
+          wrappedIcon: () => h(Grid3x3, { size: 14 })
         },
         {
           id: 'tags',
           label: 'Tags',
-          wrappedIcon: createIconWrapper(Tag)
+          wrappedIcon: () => h(Tag, { size: 14 })
         },
         {
           id: 'settings',
           label: 'Settings',
-          wrappedIcon: createIconWrapper(Wrench)
+          wrappedIcon: () => h(Wrench, { size: 14 })
         },
         {
           id: 'default',
           label: 'Default Icon',
-          wrappedIcon: createIconWrapper(Folder)
+          wrappedIcon: () => h(Folder, { size: 14 })
         }
       ]
 

@@ -5,9 +5,9 @@
 </template>
 
 <script setup lang="ts">
-import { DefineComponent } from 'vue'
+import { NavItemData } from '@/types/navTypes'
 
 defineProps<{
-  icon: DefineComponent
+  icon: NavItemData['icon']
 }>()
 </script>

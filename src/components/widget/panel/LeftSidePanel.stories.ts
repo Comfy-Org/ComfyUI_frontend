@@ -3,7 +3,6 @@ import {
   Download,
   Folder,
   Grid3x3,
-  Image,
   Layers,
   Puzzle,
   Settings,
@@ -49,17 +48,17 @@ export const Default: Story = {
       {
         id: 'installed',
         label: 'Installed',
-        icon: { render: () => h(Download, { size: 14 }) } as any
+        icon: () => h(Download, { size: 14 })
       },
       {
         id: 'models',
         label: 'Models',
-        icon: { render: () => h(Layers, { size: 14 }) } as any
+        icon: () => h(Layers, { size: 14 })
       },
       {
         id: 'nodes',
         label: 'Nodes',
-        icon: { render: () => h(Grid3x3, { size: 14 }) } as any
+        icon: () => h(Grid3x3, { size: 14 })
       }
     ]
   },
@@ -91,7 +90,7 @@ export const WithGroups: Story = {
       {
         id: 'installed',
         label: 'Installed',
-        icon: { render: () => h(Download, { size: 14 }) } as any
+        icon: () => h(Download, { size: 14 })
       },
       {
         title: 'TAGS',
@@ -99,17 +98,17 @@ export const WithGroups: Story = {
           {
             id: 'tag-sd15',
             label: 'SD 1.5',
-            icon: { render: () => h(Tag, { size: 14 }) } as any
+            icon: () => h(Tag, { size: 14 })
           },
           {
             id: 'tag-sdxl',
             label: 'SDXL',
-            icon: { render: () => h(Tag, { size: 14 }) } as any
+            icon: () => h(Tag, { size: 14 })
           },
           {
             id: 'tag-utility',
             label: 'Utility',
-            icon: { render: () => h(Tag, { size: 14 }) } as any
+            icon: () => h(Tag, { size: 14 })
           }
         ]
       },
@@ -119,12 +118,12 @@ export const WithGroups: Story = {
           {
             id: 'cat-models',
             label: 'Models',
-            icon: { render: () => h(Layers, { size: 14 }) } as any
+            icon: () => h(Layers, { size: 14 })
           },
           {
             id: 'cat-nodes',
             label: 'Nodes',
-            icon: { render: () => h(Grid3x3, { size: 14 }) } as any
+            icon: () => h(Grid3x3, { size: 14 })
           }
         ]
       }
@@ -161,22 +160,22 @@ export const DefaultIcons: Story = {
       {
         id: 'home',
         label: 'Home',
-        icon: { render: () => h(Folder, { size: 14 }) } as any
+        icon: () => h(Folder, { size: 14 })
       },
       {
         id: 'documents',
         label: 'Documents',
-        icon: { render: () => h(Folder, { size: 14 }) } as any
+        icon: () => h(Folder, { size: 14 })
       },
       {
         id: 'downloads',
         label: 'Downloads',
-        icon: { render: () => h(Folder, { size: 14 }) } as any
+        icon: () => h(Folder, { size: 14 })
       },
       {
         id: 'desktop',
         label: 'Desktop',
-        icon: { render: () => h(Folder, { size: 14 }) } as any
+        icon: () => h(Folder, { size: 14 })
       }
     ]
   },
@@ -208,12 +207,12 @@ export const LongLabels: Story = {
       {
         id: 'general',
         label: 'General Settings',
-        icon: { render: () => h(Wrench, { size: 14 }) } as any
+        icon: () => h(() => Wrench, { size: 14 })
       },
       {
         id: 'appearance',
         label: 'Appearance & Themes Configuration',
-        icon: { render: () => h(Image, { size: 14 }) } as any
+        icon: () => h(() => Wrench, { size: 14 })
       },
       {
         title: 'ADVANCED OPTIONS',
@@ -221,12 +220,12 @@ export const LongLabels: Story = {
           {
             id: 'performance',
             label: 'Performance & Optimization Settings',
-            icon: { render: () => h(Zap, { size: 14 }) } as any
+            icon: () => h(() => Zap, { size: 14 })
           },
           {
             id: 'experimental',
             label: 'Experimental Features (Beta)',
-            icon: { render: () => h(Puzzle, { size: 14 }) } as any
+            icon: () => h(() => Puzzle, { size: 14 })
           }
         ]
       }

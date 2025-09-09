@@ -18,12 +18,12 @@
 </template>
 
 <script setup lang="ts">
-import { DefineComponent } from 'vue'
+import { NavItemData } from '@/types/navTypes'
 
 import NavIcon from './NavIcon.vue'
 
 const { icon, active, onClick } = defineProps<{
-  icon: DefineComponent
+  icon: NavItemData['icon']
   active?: boolean
   onClick: () => void
 }>()
