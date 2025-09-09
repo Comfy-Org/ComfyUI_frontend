@@ -321,16 +321,18 @@ $status_icon **$status_text**
                     b_passed=$(echo "$counts_json" | jq -r '.passed // 0')
                     b_failed=$(echo "$counts_json" | jq -r '.failed // 0')
                     b_flaky=$(echo "$counts_json" | jq -r '.flaky // 0')
+                    b_skipped=$(echo "$counts_json" | jq -r '.skipped // 0')
                     b_total=$(echo "$counts_json" | jq -r '.total // 0')
                 else
                     b_passed=$(echo "$counts_json" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')
                     b_failed=$(echo "$counts_json" | sed -n 's/.*"failed":\([0-9]*\).*/\1/p')
                     b_flaky=$(echo "$counts_json" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')
+                    b_skipped=$(echo "$counts_json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
                     b_total=$(echo "$counts_json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
                 fi
                 
                 if [ -n "$b_total" ] && [ "$b_total" != "0" ]; then
-                    counts_str=" (✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky)"
+                    counts_str=" (✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped)"
                 else
                     counts_str=""
                 fi
