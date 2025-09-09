@@ -58,8 +58,12 @@ deploy_report() {
     
     # Install wrangler if not available (output to stderr for debugging)
     if ! command -v wrangler > /dev/null 2>&1; then
-        echo "Installing wrangler..." >&2
-        npm install -g wrangler >&2
+        echo "Installing wrangler v4..." >&2
+        npm install -g wrangler@^4.0.0 >&2 || {
+            echo "Failed to install wrangler" >&2
+            echo "failed"
+            return
+        }
     fi
     
     # Project name with dots converted to dashes for Cloudflare
