@@ -6,14 +6,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
+import { Positionable } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
-const mockLGraphNode = {
-  type: 'TestNode',
-  title: 'Test Node',
-  mode: LGraphEventMode.ALWAYS
+class MockLGraphNode implements Positionable {
+  type = 'TestNode'
+  title = 'Test Node'
+  mode = LGraphEventMode.ALWAYS
+  id = 'node-1'
+  pos = new Float64Array([26, 186])
+  move = vi.fn()
+  snapToGrid = vi.fn()
+  boundingRect: [number, number, number, number] = [0, 0, 100, 100]
 }
 
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -23,6 +29,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
 describe('BypassButton', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
   let commandStore: ReturnType<typeof useCommandStore>
+  let mockLGraphNode: MockLGraphNode
 
   const i18n = createI18n({
     legacy: false,
@@ -42,6 +49,7 @@ describe('BypassButton', () => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
     commandStore = useCommandStore()
+    mockLGraphNode = new MockLGraphNode()
 
     vi.clearAllMocks()
   })
@@ -59,21 +67,21 @@ describe('BypassButton', () => {
   }
 
   it('should render bypass button', () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
+    canvasStore.selectedItems = [mockLGraphNode]
     const wrapper = mountComponent()
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
   })
 
   it('should have correct test id', () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
+    canvasStore.selectedItems = [mockLGraphNode]
     const wrapper = mountComponent()
     const button = wrapper.find('[data-testid="bypass-button"]')
     expect(button.exists()).toBe(true)
   })
 
   it('should execute bypass command when clicked', async () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
+    canvasStore.selectedItems = [mockLGraphNode]
     const executeSpy = vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
     const wrapper = mountComponent()
@@ -86,7 +94,7 @@ describe('BypassButton', () => {
 
   it('should show normal styling when node is not bypassed', () => {
     const normalNode = { ...mockLGraphNode, mode: LGraphEventMode.ALWAYS }
-    canvasStore.selectedItems = [normalNode] as any
+    canvasStore.selectedItems = [normalNode]
 
     const wrapper = mountComponent()
     const button = wrapper.find('button')
@@ -98,7 +106,7 @@ describe('BypassButton', () => {
 
   it('should show bypassed styling when node is bypassed', async () => {
     const bypassedNode = { ...mockLGraphNode, mode: LGraphEventMode.BYPASS }
-    canvasStore.selectedItems = [bypassedNode] as any
+    canvasStore.selectedItems = [bypassedNode]
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
     const wrapper = mountComponent()
 
@@ -112,7 +120,7 @@ describe('BypassButton', () => {
 
   it('should handle multiple selected items', () => {
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
-    canvasStore.selectedItems = [mockLGraphNode, mockLGraphNode] as any
+    canvasStore.selectedItems = [mockLGraphNode, mockLGraphNode]
     const wrapper = mountComponent()
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
