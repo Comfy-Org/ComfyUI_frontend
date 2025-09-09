@@ -13,7 +13,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
-export interface NodeSelectionState {
+interface NodeSelectionState {
   collapsed: boolean
   pinned: boolean
   bypassed: boolean
