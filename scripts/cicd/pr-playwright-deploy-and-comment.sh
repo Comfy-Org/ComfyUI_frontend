@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Deploy Playwright test reports to Cloudflare Pages and comment on PR
@@ -48,7 +48,7 @@ COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
 # Use dot notation for artifact names (as Playwright creates them)
 BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome"
 
-# Deploy a single browser report
+# Deploy a single browser report, WARN: ensure inputs are sanitized before calling this function
 deploy_report() {
     dir="$1"
     browser="$2"
