@@ -188,6 +188,9 @@ test.describe('Image widget', () => {
     // Click the combo widget used to select the image filename
     const fileComboWidget = await loadImageNode.getWidget(0)
     await fileComboWidget.click()
+    
+    // Wait a moment for the menu to render
+    await comfyPage.nextFrame()
 
     // Wait for menu to be visible and select a new image filename value
     const comboEntry = comfyPage.page.getByRole('menuitem', {
