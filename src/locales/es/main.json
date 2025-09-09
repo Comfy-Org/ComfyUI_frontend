@@ -825,7 +825,11 @@
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
     "Unload Models": "Descargar modelos",
     "Unload Models and Execution Cache": "Descargar modelos y caché de ejecución",
+    "Unlock Canvas": "Desbloquear lienzo",
+    "Unpack the selected Subgraph": "Desempaquetar el Subgrafo seleccionado",
+    "View": "Ver",
     "Workflow": "Flujo de trabajo",
+    "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
     "Zoom to fit": "Ajustar al tamaño"
@@ -1218,6 +1222,10 @@
       }
     },
     "workflows": "Flujos de trabajo"
+  },
+  "subgraphStore": {
+    "blueprintName": "Nombre del subgrafo",
+    "saveBlueprint": "Guardar subgrafo en la biblioteca"
   },
   "tabMenu": {
     "addToBookmarks": "Agregar a marcadores",

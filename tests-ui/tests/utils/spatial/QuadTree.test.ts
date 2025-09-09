@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { type Bounds, QuadTree } from '@/utils/spatial/QuadTree'
+import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
 
 describe('QuadTree', () => {
   let quadTree: QuadTree<string>

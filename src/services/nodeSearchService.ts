@@ -34,7 +34,7 @@ export class NodeSearchService {
       name: 'Input Type',
       invokeSequence: 'i',
       getItemOptions: (node) =>
-        Object.values(node.inputs).map((input) => input.type),
+        Object.values(node.inputs ?? []).map((input) => input.type),
       fuseOptions
     })
 

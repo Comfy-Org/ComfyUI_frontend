@@ -6,17 +6,25 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    clean: vi.fn(),
-    canvas: {
-      subgraph: null
-    },
-    graph: {
-      clear: vi.fn()
+vi.mock('@/scripts/app', () => {
+  const mockGraphClear = vi.fn()
+  const mockCanvas = { subgraph: undefined }
+
+  return {
+    app: {
+      clean: vi.fn(() => {
+        // Simulate app.clean() calling graph.clear() only when not in subgraph
+        if (!mockCanvas.subgraph) {
+          mockGraphClear()
+        }
+      }),
+      canvas: mockCanvas,
+      graph: {
+        clear: mockGraphClear
+      }
     }
   }
-}))
+})
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -63,6 +71,10 @@ vi.mock('@/stores/toastStore', () => ({
 
 vi.mock('@/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({}))
+}))
+
+vi.mock('@/stores/subgraphStore', () => ({
+  useSubgraphStore: vi.fn(() => ({}))
 }))
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({

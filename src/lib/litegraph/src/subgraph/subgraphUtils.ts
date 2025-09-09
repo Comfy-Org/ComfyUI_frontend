@@ -27,7 +27,7 @@ import { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
-export interface FilteredItems {
+interface FilteredItems {
   nodes: Set<LGraphNode>
   reroutes: Set<Reroute>
   groups: Set<LGraphGroup>

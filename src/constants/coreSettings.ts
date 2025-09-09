@@ -187,6 +187,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true
   },
   {
+    id: 'Comfy.Workflow.WarnBlueprintOverwrite',
+    name: 'Require confirmation to overwrite an existing subgraph blueprint',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',

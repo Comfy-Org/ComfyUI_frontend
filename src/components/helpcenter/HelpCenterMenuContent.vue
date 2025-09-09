@@ -142,11 +142,12 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useDialogService } from '@/services/dialogService'
+import { useManagerState } from '@/composables/useManagerState'
 import { type ReleaseNote } from '@/services/releaseService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useReleaseStore } from '@/stores/releaseStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
@@ -191,7 +192,6 @@ const { t, locale } = useI18n()
 const releaseStore = useReleaseStore()
 const commandStore = useCommandStore()
 const settingStore = useSettingStore()
-const dialogService = useDialogService()
 
 // Emits
 const emit = defineEmits<{
@@ -313,8 +313,11 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: PuzzleIcon,
       label: t('helpCenter.managerExtension'),
       showRedDot: shouldShowManagerRedDot.value,
-      action: () => {
-        dialogService.showManagerDialog()
+      action: async () => {
+        await useManagerState().openManager({
+          initialTab: ManagerTab.All,
+          showToastOnLegacyError: false
+        })
         emit('close')
       }
     },

@@ -13,10 +13,11 @@ vi.mock('@/config', () => ({
 
 vi.mock('@/stores/systemStatsStore')
 
-// Mock useStorage from VueUse
+// Mock useStorage and until from VueUse
 const mockDismissalStorage = ref({} as Record<string, number>)
 vi.mock('@vueuse/core', () => ({
-  useStorage: vi.fn(() => mockDismissalStorage)
+  useStorage: vi.fn(() => mockDismissalStorage),
+  until: vi.fn(() => Promise.resolve())
 }))
 
 describe('useVersionCompatibilityStore', () => {
@@ -31,7 +32,8 @@ describe('useVersionCompatibilityStore', () => {
 
     mockSystemStatsStore = {
       systemStats: null,
-      fetchSystemStats: vi.fn()
+      isInitialized: false,
+      refetchSystemStats: vi.fn()
     }
 
     vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
@@ -51,6 +53,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.25.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -68,6 +71,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.23.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -83,6 +87,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.24.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -98,6 +103,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: ''
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -113,6 +119,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: 'not-a-version' // invalid semver format
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -129,6 +136,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.23.0' // Required is 1.23.0, frontend 1.24.0 meets this
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -148,6 +156,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.25.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -167,6 +176,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.25.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -180,6 +190,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.24.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -195,6 +206,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.25.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -212,6 +224,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.24.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
@@ -230,6 +243,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.25.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
       store.dismissWarning()
@@ -252,6 +266,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.25.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
 
@@ -270,6 +285,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.25.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
 
@@ -289,6 +305,7 @@ describe('useVersionCompatibilityStore', () => {
           required_frontend_version: '1.26.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
 
@@ -298,24 +315,28 @@ describe('useVersionCompatibilityStore', () => {
 
   describe('initialization', () => {
     it('should fetch system stats if not available', async () => {
+      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = null
+      mockSystemStatsStore.isInitialized = false
 
       await store.initialize()
 
-      expect(mockSystemStatsStore.fetchSystemStats).toHaveBeenCalled()
+      expect(until).toHaveBeenCalled()
     })
 
     it('should not fetch system stats if already available', async () => {
+      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0'
         }
       }
+      mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
 
-      expect(mockSystemStatsStore.fetchSystemStats).not.toHaveBeenCalled()
+      expect(until).not.toHaveBeenCalled()
     })
   })
 })
