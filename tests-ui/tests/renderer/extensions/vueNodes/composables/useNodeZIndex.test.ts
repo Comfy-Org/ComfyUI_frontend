@@ -1,71 +1,98 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 
 // Mock the layout mutations module
-const mockLayoutMutations = {
-  setSource: vi.fn(),
-  bringNodeToFront: vi.fn()
-}
+vi.mock('@/renderer/core/layout/operations/layoutMutations')
 
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
-  useLayoutMutations: () => mockLayoutMutations
-}))
+const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
 
 describe('useNodeZIndex', () => {
   beforeEach(() => {
-    // Reset all mocks before each test
     vi.clearAllMocks()
   })
 
   describe('bringNodeToFront', () => {
     it('should bring node to front with default source', () => {
+      const mockSetSource = vi.fn()
+      const mockBringNodeToFront = vi.fn()
+
+      mockedUseLayoutMutations.mockReturnValue({
+        setSource: mockSetSource,
+        bringNodeToFront: mockBringNodeToFront
+      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
+        typeof useLayoutMutations
+      >)
+
       const { bringNodeToFront } = useNodeZIndex()
 
       bringNodeToFront('node1')
 
-      expect(mockLayoutMutations.setSource).toHaveBeenCalledWith(
-        LayoutSource.Vue
-      )
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith('node1')
+      expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Vue)
+      expect(mockBringNodeToFront).toHaveBeenCalledWith('node1')
     })
 
     it('should bring node to front with custom source', () => {
+      const mockSetSource = vi.fn()
+      const mockBringNodeToFront = vi.fn()
+
+      mockedUseLayoutMutations.mockReturnValue({
+        setSource: mockSetSource,
+        bringNodeToFront: mockBringNodeToFront
+      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
+        typeof useLayoutMutations
+      >)
+
       const { bringNodeToFront } = useNodeZIndex()
 
       bringNodeToFront('node2', LayoutSource.Canvas)
 
-      expect(mockLayoutMutations.setSource).toHaveBeenCalledWith(
-        LayoutSource.Canvas
-      )
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith('node2')
+      expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Canvas)
+      expect(mockBringNodeToFront).toHaveBeenCalledWith('node2')
     })
 
-    it('should use custom default source from options', () => {
+    it('should use custom layout source from options', () => {
+      const mockSetSource = vi.fn()
+      const mockBringNodeToFront = vi.fn()
+
+      mockedUseLayoutMutations.mockReturnValue({
+        setSource: mockSetSource,
+        bringNodeToFront: mockBringNodeToFront
+      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
+        typeof useLayoutMutations
+      >)
+
       const { bringNodeToFront } = useNodeZIndex({
-        defaultSource: LayoutSource.External
+        layoutSource: LayoutSource.External
       })
 
       bringNodeToFront('node3')
 
-      expect(mockLayoutMutations.setSource).toHaveBeenCalledWith(
-        LayoutSource.External
-      )
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith('node3')
+      expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.External)
+      expect(mockBringNodeToFront).toHaveBeenCalledWith('node3')
     })
 
-    it('should override default source with explicit source parameter', () => {
+    it('should override layout source with explicit source parameter', () => {
+      const mockSetSource = vi.fn()
+      const mockBringNodeToFront = vi.fn()
+
+      mockedUseLayoutMutations.mockReturnValue({
+        setSource: mockSetSource,
+        bringNodeToFront: mockBringNodeToFront
+      } as Partial<ReturnType<typeof useLayoutMutations>> as ReturnType<
+        typeof useLayoutMutations
+      >)
+
       const { bringNodeToFront } = useNodeZIndex({
-        defaultSource: LayoutSource.External
+        layoutSource: LayoutSource.External
       })
 
       bringNodeToFront('node4', LayoutSource.Canvas)
 
-      expect(mockLayoutMutations.setSource).toHaveBeenCalledWith(
-        LayoutSource.Canvas
-      )
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith('node4')
+      expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Canvas)
+      expect(mockBringNodeToFront).toHaveBeenCalledWith('node4')
     })
   })
 })
