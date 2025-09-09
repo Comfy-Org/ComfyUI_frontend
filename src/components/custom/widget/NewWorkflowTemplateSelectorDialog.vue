@@ -125,7 +125,7 @@
       </div>
       <div v-else>
         <!-- Title -->
-        <div class="px-6 pt-4 pb-2 text-lg font-medium text-neutral">
+        <div class="px-6 pt-4 pb-2 text-2xl font-semibold text-neutral">
           <!-- show selected nav -->
           <span>
             {{ pageTitle }}
@@ -143,7 +143,7 @@
             ratio="none"
             :max-width="300"
             :min-width="200"
-            class="cursor-pointer transition-transform hover:scale-[1.02]"
+            class="cursor-pointer transition-all duration-300 hover:scale-[1.02]"
             @mouseenter="hoveredTemplates[template.name] = true"
             @mouseleave="hoveredTemplates[template.name] = false"
             @click="onLoadWorkflow(template)"
