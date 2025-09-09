@@ -21,8 +21,6 @@ import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFoo
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import ManagerProgressHeader from '@/components/dialog/header/ManagerProgressHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
-import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
-import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import {
@@ -106,24 +104,6 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ErrorDialogContent,
-      props
-    })
-  }
-
-  function showTemplateWorkflowsDialog(
-    props: InstanceType<typeof TemplateWorkflowsContent>['$props'] = {}
-  ) {
-    dialogStore.showDialog({
-      key: 'global-template-workflows',
-      title: t('templateWorkflows.title'),
-      component: TemplateWorkflowsContent,
-      headerComponent: TemplateWorkflowsDialogHeader,
-      dialogComponentProps: {
-        pt: {
-          root: { style: 'width: 90vw; height: 85vh; max-width: 1600px;' },
-          content: { class: '!px-0 overflow-x-hidden overflow-y-hidden' }
-        }
-      },
       props
     })
   }
@@ -511,7 +491,6 @@ export const useDialogService = () => {
     showSettingsDialog,
     showAboutDialog,
     showExecutionErrorDialog,
-    showTemplateWorkflowsDialog,
     showManagerDialog,
     showManagerProgressDialog,
     showApiNodesSignInDialog,

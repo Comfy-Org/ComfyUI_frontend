@@ -86,7 +86,11 @@ export function useTemplateWorkflows() {
    * Gets formatted template description
    */
   const getTemplateDescription = (template: TemplateInfo) => {
-    return template.description?.replace(/[-_]/g, ' ').trim() ?? ''
+    return (
+      (template.localizedDescription || template.description)
+        ?.replace(/[-_]/g, ' ')
+        .trim() ?? ''
+    )
   }
 
   /**
