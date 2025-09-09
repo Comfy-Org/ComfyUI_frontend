@@ -14,11 +14,21 @@ jobs:
     if: |
       github.repository == 'Comfy-Org/ComfyUI_frontend' && 
       github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository != null &&
+      github.event.workflow_run.repository != null &&
       github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name
     permissions:
       pull-requests: write
       actions: read
     steps:
+      - name: Log workflow trigger info
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Event: ${{ github.event.workflow_run.event }}"
+          echo "Head repo: ${{ github.event.workflow_run.head_repository.full_name || 'null' }}"
+          echo "Base repo: ${{ github.event.workflow_run.repository.full_name || 'null' }}"
+          echo "Is forked: ${{ github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name }}"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
