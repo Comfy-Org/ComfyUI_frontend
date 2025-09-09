@@ -22,13 +22,14 @@
           'border-red-500 bg-red-50': error,
           'will-change-transform': isDragging
         },
-        lodCssClass
+        lodCssClass,
+        'pointer-events-auto'
       )
     "
     :style="[
       {
         transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        pointerEvents: 'auto'
+        zIndex: zIndex
       },
       dragStyle
     ]"
@@ -192,6 +193,7 @@ onErrorCaptured((error) => {
 // Use layout system for node position and dragging
 const {
   position: layoutPosition,
+  zIndex,
   startDrag,
   handleDrag: handleLayoutDrag,
   endDrag
