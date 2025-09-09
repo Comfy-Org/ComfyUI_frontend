@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'vue'
 
-export interface GridOptions {
+interface GridOptions {
   /** Minimum width for each grid item (default: 15rem) */
   minWidth?: string
   /** Maximum width for each grid item (default: 1fr) */
