@@ -7,9 +7,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetSlider from './WidgetSlider.vue'
+import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 
-describe('WidgetSlider Value Binding', () => {
+describe('WidgetInputNumberSlider Value Binding', () => {
   const createMockWidget = (
     value: number = 5,
     options: Partial<SliderProps & { precision?: number }> = {},
@@ -27,7 +27,7 @@ describe('WidgetSlider Value Binding', () => {
     modelValue: number,
     readonly = false
   ) => {
-    return mount(WidgetSlider, {
+    return mount(WidgetInputNumberSlider, {
       global: {
         plugins: [PrimeVue],
         components: { InputText, Slider }
