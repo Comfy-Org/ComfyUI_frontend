@@ -96,13 +96,13 @@ vi.mock('@/composables/useTemplateWorkflows', () => ({
       const fallback =
         template.title ?? template.name ?? `${sourceModule} Template`
       return sourceModule === 'default'
-        ? template.localizedTitle ?? fallback
+        ? (template.localizedTitle ?? fallback)
         : fallback
     },
     getTemplateDescription: (template: TemplateInfo, sourceModule: string) => {
       return sourceModule === 'default'
-        ? template.localizedDescription ?? ''
-        : template.description?.replace(/[-_]/g, ' ').trim() ?? ''
+        ? (template.localizedDescription ?? '')
+        : (template.description?.replace(/[-_]/g, ' ').trim() ?? '')
     },
     loadWorkflowTemplate: vi.fn()
   })

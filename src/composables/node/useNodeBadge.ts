@@ -88,10 +88,10 @@ export const useNodeBadge = () => {
                   ? `#${node.id}`
                   : '',
                 badgeTextVisible(nodeDef, nodeLifeCycleBadgeMode.value)
-                  ? nodeDef?.nodeLifeCycleBadgeText ?? ''
+                  ? (nodeDef?.nodeLifeCycleBadgeText ?? '')
                   : '',
                 badgeTextVisible(nodeDef, nodeSourceBadgeMode.value)
-                  ? nodeDef?.nodeSource?.badgeText ?? ''
+                  ? (nodeDef?.nodeSource?.badgeText ?? '')
                   : ''
               ]
                 .filter((s) => s.length > 0)

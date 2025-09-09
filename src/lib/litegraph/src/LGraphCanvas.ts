@@ -4837,9 +4837,9 @@ export class LGraphCanvas
   /** Get the target snap / highlight point in graph space */
   #getHighlightPosition(): ReadOnlyPoint {
     return LiteGraph.snaps_for_comfy
-      ? this.linkConnector.state.snapLinksPos ??
+      ? (this.linkConnector.state.snapLinksPos ??
           this._highlight_pos ??
-          this.graph_mouse
+          this.graph_mouse)
       : this.graph_mouse
   }
 
