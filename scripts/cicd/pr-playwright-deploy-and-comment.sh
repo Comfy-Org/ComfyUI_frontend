@@ -103,13 +103,16 @@ post_comment() {
     echo "$body" > "$temp_file"
     
     if command -v gh > /dev/null 2>&1; then
-        # Find existing comment
-        existing=$(gh pr view "$PR_NUMBER" --comments --json comments \
-            --jq ".comments[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
+        # Find existing comment ID
+        existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
         
         if [ -n "$existing" ]; then
-            gh pr comment "$PR_NUMBER" --edit-last --body-file "$temp_file"
+            # Update specific comment by ID
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" \
+                --field body="$(cat "$temp_file")"
         else
+            # Create new comment
             gh pr comment "$PR_NUMBER" --body-file "$temp_file"
         fi
     else
