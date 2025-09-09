@@ -18,6 +18,15 @@ export const useWorkflowTemplateSelectorDialog = () => {
       component: NewWorkflowTemplateSelectorDialog,
       props: {
         onClose: hide
+      },
+      dialogComponentProps: {
+        pt: {
+          content: { class: '!px-0 overflow-hidden h-full !py-0' },
+          root: {
+            style:
+              'width: 90vw; height: 85vh; max-width: 1400px; display: flex;'
+          }
+        }
       }
     })
   }
