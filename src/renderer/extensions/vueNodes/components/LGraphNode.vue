@@ -112,7 +112,6 @@
 <script setup lang="ts">
 import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
 
-// Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
