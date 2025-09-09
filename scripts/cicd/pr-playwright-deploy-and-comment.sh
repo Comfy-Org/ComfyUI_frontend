@@ -153,24 +153,52 @@ else
     echo "Available reports:"
     ls -la reports/ 2>/dev/null || echo "Reports directory not found"
     
-    # Deploy all reports and collect URLs
-    urls=""
+    # Deploy all reports in parallel and collect URLs
+    temp_dir=$(mktemp -d)
+    pids=""
+    i=0
+    
+    # Start parallel deployments
     for browser in $BROWSERS; do
         if [ -d "reports/playwright-report-$browser" ]; then
-            echo "Found report for $browser, deploying..."
-            url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
-            echo "Deployment result for $browser: $url"
+            echo "Found report for $browser, deploying in parallel..."
+            (
+                url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
+                echo "$url" > "$temp_dir/$i.url"
+                echo "Deployment result for $browser: $url"
+            ) &
+            pids="$pids $!"
         else
             echo "Report not found for $browser at reports/playwright-report-$browser"
+            echo "failed" > "$temp_dir/$i.url"
+        fi
+        i=$((i + 1))
+    done
+    
+    # Wait for all deployments to complete
+    for pid in $pids; do
+        wait $pid
+    done
+    
+    # Collect URLs in order
+    urls=""
+    i=0
+    for browser in $BROWSERS; do
+        if [ -f "$temp_dir/$i.url" ]; then
+            url=$(cat "$temp_dir/$i.url")
+        else
             url="failed"
         fi
-        # Append URL to list (space-separated)
         if [ -z "$urls" ]; then
             urls="$url"
         else
             urls="$urls $url"
         fi
+        i=$((i + 1))
     done
+    
+    # Clean up temp directory
+    rm -rf "$temp_dir"
     
     # Generate completion comment
     comment="$COMMENT_MARKER
