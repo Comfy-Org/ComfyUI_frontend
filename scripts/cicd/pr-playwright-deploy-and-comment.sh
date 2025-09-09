@@ -83,7 +83,7 @@ deploy_report() {
             --branch="$branch" 2>&1); then
             
             # Extract URL from output (improved regex for valid URL characters)
-            url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9._-]+\.pages\.dev(/[a-zA-Z0-9._-]*)*' | head -1)
+            url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
             result="${url:-https://${branch}.${project}.pages.dev}"
             echo "Success! URL: $result" >&2
             echo "$result"  # Only this goes to stdout for capture
