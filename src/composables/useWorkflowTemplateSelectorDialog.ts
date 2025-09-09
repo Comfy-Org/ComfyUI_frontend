@@ -1,4 +1,4 @@
-import NewWorkflowTemplateSelectorDialog from '@/components/custom/widget/NewWorkflowTemplateSelectorDialog.vue'
+import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -15,7 +15,7 @@ export const useWorkflowTemplateSelectorDialog = () => {
   function show() {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component: NewWorkflowTemplateSelectorDialog,
+      component: WorkflowTemplateSelectorDialog,
       props: {
         onClose: hide
       },
