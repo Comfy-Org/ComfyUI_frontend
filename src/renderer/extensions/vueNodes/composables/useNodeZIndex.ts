@@ -10,14 +10,14 @@ import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 
 interface NodeZIndexOptions {
   /**
-   * Default source for z-index mutations
+   * Layout source for z-index mutations
    * @default LayoutSource.Vue
    */
-  defaultSource?: LayoutSource
+  layoutSource?: LayoutSource
 }
 
 export function useNodeZIndex(options: NodeZIndexOptions = {}) {
-  const { defaultSource = LayoutSource.Vue } = options
+  const { layoutSource = LayoutSource.Vue } = options
   const layoutMutations = useLayoutMutations()
 
   /**
@@ -26,7 +26,7 @@ export function useNodeZIndex(options: NodeZIndexOptions = {}) {
    * @param source - Optional source override
    */
   function bringNodeToFront(nodeId: NodeId, source?: LayoutSource) {
-    layoutMutations.setSource(source ?? defaultSource)
+    layoutMutations.setSource(source ?? layoutSource)
     layoutMutations.bringNodeToFront(nodeId)
   }
 
