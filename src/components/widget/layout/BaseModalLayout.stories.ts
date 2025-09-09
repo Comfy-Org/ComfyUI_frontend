@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
-import CardGridList from '@/components/card/CardGridList.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
@@ -14,6 +13,7 @@ import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'
 import RightSidePanel from '../panel/RightSidePanel.vue'
@@ -77,7 +77,6 @@ const createStoryTemplate = (args: StoryArgs) => ({
     IconButton,
     IconTextButton,
     MoreButton,
-    CardGridList,
     CardContainer,
     CardTop,
     CardBottom,
@@ -158,6 +157,8 @@ const createStoryTemplate = (args: StoryArgs) => ({
     const selectedProjects = ref<string[]>([])
     const selectedSort = ref<string>('popular')
 
+    const gridStyle = computed(() => createGridStyle())
+
     return {
       args,
       t,
@@ -169,7 +170,8 @@ const createStoryTemplate = (args: StoryArgs) => ({
       sortOptions,
       selectedFrameworks,
       selectedProjects,
-      selectedSort
+      selectedSort,
+      gridStyle
     }
   },
   template: `
@@ -263,7 +265,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <CardGridList>
+          <div :style="gridStyle">
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -294,7 +296,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <CardBottom />
               </template>
             </CardContainer>
-          </CardGridList>
+          </div>
         </template>
       </BaseModalLayout>
 
@@ -385,7 +387,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <CardGridList>
+          <div :style="gridStyle">
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -416,7 +418,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <CardBottom />
               </template>
             </CardContainer>
-          </CardGridList>
+          </div>
         </template>
 
         <!-- Right Panel - Only when hasRightPanel is true -->
