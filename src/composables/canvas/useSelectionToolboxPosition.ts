@@ -38,20 +38,16 @@ export function useSelectionToolboxPosition(
     visible.value = true
 
     // Get bounds from layout store for all selected items
-    const allBounds: ReadOnlyRect[] = []
-    for (const item of selectableItems) {
-      if (typeof item.id === 'string') {
-        const layout = layoutStore.getNodeLayoutRef(item.id).value
-        if (layout) {
-          allBounds.push([
-            layout.bounds.x,
-            layout.bounds.y,
-            layout.bounds.width,
-            layout.bounds.height
-          ])
-        }
-      }
-    }
+    const allBounds: ReadOnlyRect[] = Array.from(selectableItems)
+      .filter((item) => typeof item.id === 'string')
+      .map((item) => layoutStore.getNodeLayoutRef(item.id as string).value)
+      .filter((layout) => layout !== null)
+      .map((layout) => [
+        layout.bounds.x,
+        layout.bounds.y,
+        layout.bounds.width,
+        layout.bounds.height
+      ])
 
     // Compute union bounds
     const unionBounds = computeUnionBounds(allBounds)
