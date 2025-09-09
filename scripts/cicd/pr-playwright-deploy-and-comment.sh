@@ -79,7 +79,7 @@ deploy_report() {
         # Use printf %q for safe parameter passing to prevent command injection
         branch_safe=$(printf '%q' "$branch")
         project_safe=$(printf '%q' "$project")
-        if output=$(npx wrangler pages deploy "$dir" \
+        if output=$(wrangler pages deploy "$dir" \
             --project-name="$project_safe" \
             --branch="$branch_safe" 2>&1); then
             
