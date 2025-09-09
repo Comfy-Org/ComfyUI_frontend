@@ -189,11 +189,12 @@ test.describe('Image widget', () => {
     const fileComboWidget = await loadImageNode.getWidget(0)
     await fileComboWidget.click()
 
-    // Select a new image filename value from the combo context menu
+    // Wait for menu to be visible and select a new image filename value
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
-    await comboEntry.click({ noWaitAfter: true })
+    await comboEntry.waitFor({ state: 'visible' })
+    await comboEntry.click()
 
     // Expect the image preview to change automatically
     await expect(comfyPage.canvas).toHaveScreenshot(
