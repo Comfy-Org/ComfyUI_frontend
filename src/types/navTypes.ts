@@ -1,9 +1,7 @@
-import { DefineComponent, FunctionalComponent } from 'vue'
-
 export interface NavItemData {
   id: string
   label: string
-  icon: DefineComponent | FunctionalComponent
+  icon: string
 }
 
 export interface NavGroupData {
