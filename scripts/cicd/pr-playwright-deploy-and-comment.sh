@@ -76,12 +76,15 @@ deploy_report() {
     i=1
     while [ $i -le 3 ]; do
         echo "Deployment attempt $i of 3..." >&2
+        # Use printf %q for safe parameter passing to prevent command injection
+        branch_safe=$(printf '%q' "$branch")
+        project_safe=$(printf '%q' "$project")
         if output=$(npx wrangler pages deploy "$dir" \
-            --project-name="$project" \
-            --branch="$branch" 2>&1); then
+            --project-name="$project_safe" \
+            --branch="$branch_safe" 2>&1); then
             
-            # Extract URL from output
-            url=$(echo "$output" | grep -oE 'https://[a-z0-9.-]+\.pages\.dev' | head -1)
+            # Extract URL from output (improved regex for valid URL characters)
+            url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9._-]+\.pages\.dev(/[a-zA-Z0-9._-]*)*' | head -1)
             result="${url:-https://${branch}.${project}.pages.dev}"
             echo "Success! URL: $result" >&2
             echo "$result"  # Only this goes to stdout for capture
