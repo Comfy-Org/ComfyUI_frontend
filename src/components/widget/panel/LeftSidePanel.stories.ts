@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { Folder, Puzzle, Settings } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import LeftSidePanel from './LeftSidePanel.vue'
@@ -53,7 +52,7 @@ export const Default: Story = {
     ]
   },
   render: (args) => ({
-    components: { LeftSidePanel, Puzzle },
+    components: { LeftSidePanel },
     setup() {
       const selectedItem = ref(args.modelValue)
       return { args, selectedItem }
@@ -62,7 +61,7 @@ export const Default: Story = {
       <div style="height: 500px; width: 256px;">
         <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
           <template #header-icon>
-            <Puzzle :size="16" class="text-neutral" />
+            <i class="icon-[lucide--puzzle] size-4 text-neutral" />
           </template>
           <template #header-title>
             <span class="text-neutral text-base">Navigation</span>
@@ -120,7 +119,7 @@ export const WithGroups: Story = {
     ]
   },
   render: (args) => ({
-    components: { LeftSidePanel, Puzzle },
+    components: { LeftSidePanel },
     setup() {
       const selectedItem = ref(args.modelValue)
       return { args, selectedItem }
@@ -129,7 +128,7 @@ export const WithGroups: Story = {
       <div style="height: 500px; width: 256px;">
         <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
           <template #header-icon>
-            <Puzzle :size="16" class="text-neutral" />
+            <i class="icon-[lucide--puzzle] size-4 text-neutral" />
           </template>
           <template #header-title>
             <span class="text-neutral text-base">Model Selector</span>
@@ -170,7 +169,7 @@ export const DefaultIcons: Story = {
     ]
   },
   render: (args) => ({
-    components: { LeftSidePanel, Folder },
+    components: { LeftSidePanel },
     setup() {
       const selectedItem = ref(args.modelValue)
       return { args, selectedItem }
@@ -179,7 +178,7 @@ export const DefaultIcons: Story = {
       <div style="height: 400px; width: 256px;">
         <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
           <template #header-icon>
-            <Folder :size="16" class="text-neutral" />
+            <i class="icon-[lucide--folder] size-4 text-neutral" />
           </template>
           <template #header-title>
             <span class="text-neutral text-base">Files</span>
@@ -222,7 +221,7 @@ export const LongLabels: Story = {
     ]
   },
   render: (args) => ({
-    components: { LeftSidePanel, Settings },
+    components: { LeftSidePanel },
     setup() {
       const selectedItem = ref(args.modelValue)
       return { args, selectedItem }
@@ -231,7 +230,7 @@ export const LongLabels: Story = {
       <div style="height: 500px; width: 256px;">
         <LeftSidePanel v-model="selectedItem" :nav-items="args.navItems">
           <template #header-icon>
-            <Settings :size="16" class="text-neutral" />
+            <i class="icon-[lucide--settings] size-4 text-neutral" />
           </template>
           <template #header-title>
             <span class="text-neutral text-base">Settings</span>
