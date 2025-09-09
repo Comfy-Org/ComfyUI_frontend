@@ -215,6 +215,9 @@
   "Comfy_OpenWorkflow": {
     "label": "開啟工作流程"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "發布子圖"
+  },
   "Comfy_QueuePrompt": {
     "label": "將提示詞加入佇列"
   },

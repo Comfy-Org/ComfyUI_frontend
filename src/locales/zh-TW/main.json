@@ -310,6 +310,8 @@
     "disabling": "停用中",
     "dismiss": "關閉",
     "download": "下載",
+    "dropYourFileOr": "拖放您的檔案或",
+    "duplicate": "複製",
     "edit": "編輯",
     "empty": "空",
     "enableAll": "全部啟用",
@@ -811,13 +813,23 @@
     "Toggle Terminal Bottom Panel": "切換終端機底部面板",
     "Toggle Theme (Dark/Light)": "切換主題（深色/淺色）",
     "Toggle View Controls Bottom Panel": "切換檢視控制底部面板",
+    "Toggle Bottom Panel": "切換下方面板",
+    "Toggle Focus Mode": "切換專注模式",
+    "Toggle Model Library Sidebar": "切換模型庫側邊欄",
+    "Toggle Node Library Sidebar": "切換節點庫側邊欄",
+    "Toggle Queue Sidebar": "切換佇列側邊欄",
+    "Toggle Workflows Sidebar": "切換工作流程側邊欄",
     "Toggle the Custom Nodes Manager": "切換自訂節點管理器",
     "Toggle the Custom Nodes Manager Progress Bar": "切換自訂節點管理器進度條",
     "Undo": "復原",
     "Ungroup selected group nodes": "取消群組選取的群組節點",
     "Unload Models": "卸載模型",
     "Unload Models and Execution Cache": "卸載模型與執行快取",
+    "Unlock Canvas": "解除鎖定畫布",
+    "Unpack the selected Subgraph": "解包所選子圖",
+    "View": "檢視",
     "Workflow": "工作流程",
+    "Workflows": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小"
   },
@@ -1135,6 +1147,7 @@
     "UV": "UV",
     "User": "使用者",
     "Validation": "驗證",
+    "Vue Nodes": "Vue 節點",
     "Window": "視窗",
     "Workflow": "工作流程"
   },
@@ -1197,6 +1210,10 @@
       }
     },
     "workflows": "工作流程"
+  },
+  "subgraphStore": {
+    "blueprintName": "子圖名稱",
+    "saveBlueprint": "將子圖儲存到資料庫"
   },
   "tabMenu": {
     "addToBookmarks": "加入書籤",

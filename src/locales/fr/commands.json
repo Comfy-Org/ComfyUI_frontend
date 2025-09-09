@@ -215,6 +215,9 @@
   "Comfy_OpenWorkflow": {
     "label": "Ouvrir le flux de travail"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "Publier le sous-graphe"
+  },
   "Comfy_QueuePrompt": {
     "label": "Invite de file d'attente"
   },

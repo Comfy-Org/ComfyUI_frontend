@@ -5,7 +5,7 @@
 /**
  * All supported image formats that can contain workflow data
  */
-export const IMAGE_WORKFLOW_FORMATS = {
+const IMAGE_WORKFLOW_FORMATS = {
   extensions: ['.png', '.webp', '.svg', '.avif'],
   mimeTypes: ['image/png', 'image/webp', 'image/svg+xml', 'image/avif']
 }
@@ -13,7 +13,7 @@ export const IMAGE_WORKFLOW_FORMATS = {
 /**
  * All supported audio formats that can contain workflow data
  */
-export const AUDIO_WORKFLOW_FORMATS = {
+const AUDIO_WORKFLOW_FORMATS = {
   extensions: ['.mp3', '.ogg', '.flac'],
   mimeTypes: ['audio/mpeg', 'audio/ogg', 'audio/flac', 'audio/x-flac']
 }
@@ -21,7 +21,7 @@ export const AUDIO_WORKFLOW_FORMATS = {
 /**
  * All supported video formats that can contain workflow data
  */
-export const VIDEO_WORKFLOW_FORMATS = {
+const VIDEO_WORKFLOW_FORMATS = {
   extensions: ['.mp4', '.mov', '.m4v', '.webm'],
   mimeTypes: ['video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm']
 }
@@ -29,7 +29,7 @@ export const VIDEO_WORKFLOW_FORMATS = {
 /**
  * All supported 3D model formats that can contain workflow data
  */
-export const MODEL_WORKFLOW_FORMATS = {
+const MODEL_WORKFLOW_FORMATS = {
   extensions: ['.glb'],
   mimeTypes: ['model/gltf-binary']
 }
@@ -37,7 +37,7 @@ export const MODEL_WORKFLOW_FORMATS = {
 /**
  * All supported data formats that directly contain workflow data
  */
-export const DATA_WORKFLOW_FORMATS = {
+const DATA_WORKFLOW_FORMATS = {
   extensions: ['.json', '.latent', '.safetensors'],
   mimeTypes: ['application/json']
 }
@@ -45,7 +45,7 @@ export const DATA_WORKFLOW_FORMATS = {
 /**
  * Combines all supported formats into a single object
  */
-export const ALL_WORKFLOW_FORMATS = {
+const ALL_WORKFLOW_FORMATS = {
   extensions: [
     ...IMAGE_WORKFLOW_FORMATS.extensions,
     ...AUDIO_WORKFLOW_FORMATS.extensions,

@@ -187,6 +187,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true
   },
   {
+    id: 'Comfy.Workflow.WarnBlueprintOverwrite',
+    name: 'Require confirmation to overwrite an existing subgraph blueprint',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
@@ -952,5 +958,28 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Release seen timestamp',
     type: 'hidden',
     defaultValue: 0
+  },
+
+  /**
+   * Vue Node System Settings
+   */
+  {
+    id: 'Comfy.VueNodes.Enabled',
+    name: 'Enable Vue node rendering (hidden)',
+    type: 'hidden',
+    tooltip:
+      'Render nodes as Vue components instead of canvas. Hidden; toggle via Experimental keybinding.',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.27.1'
+  },
+  {
+    id: 'Comfy.Assets.UseAssetAPI',
+    name: 'Use Asset API for model library',
+    type: 'boolean',
+    tooltip:
+      'Use new asset API instead of experiment endpoints for model browsing',
+    defaultValue: false,
+    experimental: true
   }
 ]

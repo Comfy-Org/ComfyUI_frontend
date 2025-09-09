@@ -2,7 +2,8 @@ import { type Ref, computed, ref } from 'vue'
 
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
-export interface TemplateFilterOptions {
+// @ts-expect-error unused (To be used later?)
+interface TemplateFilterOptions {
   searchQuery?: string
 }
 

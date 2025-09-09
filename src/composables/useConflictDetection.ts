@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { uniqBy } from 'es-toolkit/compat'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
@@ -21,6 +22,7 @@ import type {
   NodePackRequirements,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
+import { normalizePackId } from '@/utils/packUtils'
 import {
   cleanVersion,
   satisfiesVersion,
@@ -78,9 +80,8 @@ export function useConflictDetection() {
     try {
       // Get system stats from store (primary source of system information)
       const systemStatsStore = useSystemStatsStore()
-      if (!systemStatsStore.systemStats) {
-        await systemStatsStore.fetchSystemStats()
-      }
+      // Wait for systemStats to be initialized if not already
+      await until(systemStatsStore.isInitialized)
 
       // Fetch version information from backend (with error resilience)
       const [frontendVersion] = await Promise.allSettled([
@@ -127,7 +128,7 @@ export function useConflictDetection() {
       }
 
       systemEnvironment.value = environment
-      console.log(
+      console.debug(
         '[ConflictDetection] System environment detection completed:',
         environment
       )
@@ -427,7 +428,7 @@ export function useConflictDetection() {
         Object.entries(bulkResult).forEach(([packageId, failInfo]) => {
           if (failInfo !== null) {
             importFailures[packageId] = failInfo
-            console.log(
+            console.debug(
               `[ConflictDetection] Import failure found for ${packageId}:`,
               failInfo
             )
@@ -500,7 +501,7 @@ export function useConflictDetection() {
    */
   async function performConflictDetection(): Promise<ConflictDetectionResponse> {
     if (isDetecting.value) {
-      console.log('[ConflictDetection] Already detecting, skipping')
+      console.debug('[ConflictDetection] Already detecting, skipping')
       return {
         success: false,
         error_message: 'Already detecting conflicts',
@@ -556,7 +557,10 @@ export function useConflictDetection() {
       detectionSummary.value = summary
       lastDetectionTime.value = new Date().toISOString()
 
-      console.log('[ConflictDetection] Conflict detection completed:', summary)
+      console.debug(
+        '[ConflictDetection] Conflict detection completed:',
+        summary
+      )
 
       // Store conflict results for later UI display
       // Dialog will be shown based on specific events, not on app mount
@@ -568,7 +572,7 @@ export function useConflictDetection() {
         // Merge conflicts for packages with the same name
         const mergedConflicts = mergeConflictsByPackageName(conflictedResults)
 
-        console.log(
+        console.debug(
           '[ConflictDetection] Conflicts detected (stored for UI):',
           mergedConflicts
         )
@@ -632,11 +636,22 @@ export function useConflictDetection() {
   /**
    * Error-resilient initialization (called on app mount).
    * Async function that doesn't block UI setup.
-   * Ensures proper order: installed -> system_stats -> versions bulk -> import_fail_info_bulk
+   * Ensures proper order: system_stats -> manager state -> installed -> versions bulk -> import_fail_info_bulk
    */
   async function initializeConflictDetection(): Promise<void> {
     try {
-      // Simply perform conflict detection
+      // Check if manager is new Manager before proceeding
+      const { useManagerState } = await import('@/composables/useManagerState')
+      const managerState = useManagerState()
+
+      if (!managerState.isNewManagerUI.value) {
+        console.debug(
+          '[ConflictDetection] Manager is not new Manager, skipping conflict detection'
+        )
+        return
+      }
+
+      // Manager is new Manager, perform conflict detection
       // The useInstalledPacks will handle fetching installed list if needed
       await performConflictDetection()
     } catch (error) {
@@ -671,13 +686,13 @@ export function useConflictDetection() {
    * Check if conflicts should trigger modal display after "What's New" dismissal
    */
   async function shouldShowConflictModalAfterUpdate(): Promise<boolean> {
-    console.log(
+    console.debug(
       '[ConflictDetection] Checking if conflict modal should show after update...'
     )
 
     // Ensure conflict detection has run
     if (detectionResults.value.length === 0) {
-      console.log(
+      console.debug(
         '[ConflictDetection] No detection results, running conflict detection...'
       )
       await performConflictDetection()
@@ -689,7 +704,7 @@ export function useConflictDetection() {
     const hasActualConflicts = hasConflicts.value
     const canShowModal = acknowledgment.shouldShowConflictModal.value
 
-    console.log('[ConflictDetection] Modal check:', {
+    console.debug('[ConflictDetection] Modal check:', {
       hasConflicts: hasActualConflicts,
       canShowModal: canShowModal,
       conflictedPackagesCount: conflictedPackages.value.length
@@ -860,9 +875,7 @@ function mergeConflictsByPackageName(
 
   conflicts.forEach((conflict) => {
     // Normalize package name by removing version suffix (@1_0_3) for consistent merging
-    const normalizedPackageName = conflict.package_name.includes('@')
-      ? conflict.package_name.substring(0, conflict.package_name.indexOf('@'))
-      : conflict.package_name
+    const normalizedPackageName = normalizePackId(conflict.package_name)
 
     if (mergedMap.has(normalizedPackageName)) {
       // Package already exists, merge conflicts

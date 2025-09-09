@@ -96,7 +96,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
   }
 
   const mockSystemStatsStore = {
-    fetchSystemStats: vi.fn(),
+    refetchSystemStats: vi.fn(),
     systemStats: {
       system: {
         comfyui_version: '0.3.41',
@@ -133,7 +133,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
     } as any
 
     // Reset mock functions
-    mockSystemStatsStore.fetchSystemStats.mockResolvedValue(undefined)
+    mockSystemStatsStore.refetchSystemStats.mockResolvedValue(undefined)
     mockComfyManagerService.listInstalledPacks.mockReset()
     mockComfyManagerService.getImportFailInfo.mockReset()
     mockRegistryService.getPackByVersion.mockReset()
@@ -185,7 +185,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should return fallback environment information when systemStatsStore fails', async () => {
       // Mock systemStatsStore failure
-      mockSystemStatsStore.fetchSystemStats.mockRejectedValue(
+      mockSystemStatsStore.refetchSystemStats.mockRejectedValue(
         new Error('Store failure')
       )
       mockSystemStatsStore.systemStats = null
@@ -754,7 +754,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
   describe('error resilience with Registry Store', () => {
     it('should continue execution even when system environment detection fails', async () => {
       // Mock system stats store failure
-      mockSystemStatsStore.fetchSystemStats.mockRejectedValue(
+      mockSystemStatsStore.refetchSystemStats.mockRejectedValue(
         new Error('Store error')
       )
       mockSystemStatsStore.systemStats = null
@@ -851,7 +851,7 @@ describe.skip('useConflictDetection with Registry Store', () => {
 
     it('should handle complete system failure gracefully', async () => {
       // Mock all stores/services failing
-      mockSystemStatsStore.fetchSystemStats.mockRejectedValue(
+      mockSystemStatsStore.refetchSystemStats.mockRejectedValue(
         new Error('Critical error')
       )
       mockSystemStatsStore.systemStats = null

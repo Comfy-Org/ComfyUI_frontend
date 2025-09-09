@@ -215,6 +215,9 @@
   "Comfy_OpenWorkflow": {
     "label": "Открыть рабочий процесс"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "Опубликовать подграф"
+  },
   "Comfy_QueuePrompt": {
     "label": "Очередь запросов"
   },
@@ -282,7 +285,7 @@
     "label": "Показать/скрыть основную нижнюю панель"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "Показать или скрыть нижнюю панель управления просмотром"
+    "label": "Показать/скрыть нижнюю панель управления просмотром"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
     "label": "Показать диалог клавиш"

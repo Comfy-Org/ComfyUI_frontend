@@ -56,6 +56,7 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "dropYourFileOr": "Drop your file or",
     "back": "Back",
     "next": "Next",
     "install": "Install",
@@ -151,7 +152,12 @@
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
-    "moreWorkflows": "More workflows"
+    "moreWorkflows": "More workflows",
+    "nodeRenderError": "Node Render Error",
+    "nodeContentError": "Node Content Error",
+    "nodeHeaderError": "Node Header Error",
+    "nodeSlotsError": "Node Slots Error",
+    "nodeWidgetsError": "Node Widgets Error"
   },
   "manager": {
     "title": "Custom Nodes Manager",
@@ -943,6 +949,18 @@
     "enterFilename": "Enter the filename",
     "saveWorkflow": "Save workflow"
   },
+  "subgraphStore": {
+    "confirmDeleteTitle": "Delete blueprint?",
+    "confirmDelete": "This action will permanently remove the blueprint from your library",
+    "saveBlueprint": "Save Subgraph to Library",
+    "overwriteBlueprintTitle": "Overwrite existing blueprint?",
+    "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
+    "blueprintName": "Subgraph name",
+    "publish": "Publish Subgraph",
+    "publishSuccess": "Saved to Nodes Library",
+    "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
+    "loadFailure": "Failed to load subgraph blueprints"
+  },
   "electronFileDownload": {
     "inProgress": "In Progress",
     "pause": "Pause Download",
@@ -998,6 +1016,7 @@
   "menuLabels": {
     "Workflow": "Workflow",
     "Edit": "Edit",
+    "View": "View",
     "Manager": "Manager",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
@@ -1071,6 +1090,7 @@
     "Clipspace": "Clipspace",
     "Manager": "Manager",
     "Open": "Open",
+    "Publish": "Publish",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
@@ -1089,14 +1109,27 @@
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
     "Toggle Search Box": "Toggle Search Box",
+    "Bottom Panel": "Bottom Panel",
     "Toggle Bottom Panel": "Toggle Bottom Panel",
+    "Show Keybindings Dialog": "Show Keybindings Dialog",
     "Toggle Terminal Bottom Panel": "Toggle Terminal Bottom Panel",
     "Toggle Logs Bottom Panel": "Toggle Logs Bottom Panel",
+    "Toggle Essential Bottom Panel": "Toggle Essential Bottom Panel",
+    "Toggle View Controls Bottom Panel": "Toggle View Controls Bottom Panel",
     "Toggle Focus Mode": "Toggle Focus Mode",
+    "Focus Mode": "Focus Mode",
+    "Model Library": "Model Library",
+    "Node Library": "Node Library",
+    "Queue Panel": "Queue Panel",
+    "Workflows": "Workflows",
     "Toggle Model Library Sidebar": "Toggle Model Library Sidebar",
     "Toggle Node Library Sidebar": "Toggle Node Library Sidebar",
     "Toggle Queue Sidebar": "Toggle Queue Sidebar",
-    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar"
+    "Toggle Workflows Sidebar": "Toggle Workflows Sidebar",
+    "sideToolbar_modelLibrary": "sideToolbar.modelLibrary",
+    "sideToolbar_nodeLibrary": "sideToolbar.nodeLibrary",
+    "sideToolbar_queue": "sideToolbar.queue",
+    "sideToolbar_workflows": "sideToolbar.workflows"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
@@ -1156,7 +1189,8 @@
     "Credits": "Credits",
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
-    "3DViewer": "3DViewer"
+    "3DViewer": "3DViewer",
+    "Vue Nodes": "Vue Nodes"
   },
   "serverConfigItems": {
     "listen": {
@@ -1739,6 +1773,7 @@
     "duplicate": "Duplicate",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
+    "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name"
   },
   "shortcuts": {

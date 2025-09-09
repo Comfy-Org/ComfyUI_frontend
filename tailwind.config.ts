@@ -67,6 +67,7 @@ export default {
       60: '15rem',
       64: '16rem',
       72: '18rem',
+      75: '18.75rem',
       80: '20rem',
       84: '22rem',
       90: '24rem',

@@ -2,12 +2,12 @@
   <div
     ref="toolboxRef"
     style="transform: translate(var(--tb-x), var(--tb-y))"
-    class="fixed left-0 top-0 z-40"
+    class="fixed left-0 top-0 z-40 pointer-events-none"
   >
     <Transition name="slide-up">
       <Panel
         v-if="visible"
-        class="rounded-lg selection-toolbox"
+        class="rounded-lg selection-toolbox pointer-events-auto"
         :pt="{
           header: 'hidden',
           content: 'p-0 flex flex-row'
@@ -21,6 +21,7 @@
         <Load3DViewerButton />
         <MaskEditorButton />
         <ConvertToSubgraphButton />
+        <PublishSubgraphButton />
         <DeleteButton />
         <RefreshSelectionButton />
         <ExtensionCommandButton
@@ -49,6 +50,7 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
+import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
@@ -83,7 +85,6 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 <style scoped>
 .selection-toolbox {
   transform: translateX(-50%) translateY(-120%);
-  will-change: transform, opacity;
 }
 
 @keyframes slideUp {

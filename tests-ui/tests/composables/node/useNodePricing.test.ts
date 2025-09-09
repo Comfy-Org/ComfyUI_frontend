@@ -505,7 +505,7 @@ describe('useNodePricing', () => {
   })
 
   describe('dynamic pricing - Veo3VideoGenerationNode', () => {
-    it('should return $2.00 for veo-3.0-fast-generate-001 without audio', () => {
+    it('should return $0.80 for veo-3.0-fast-generate-001 without audio', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('Veo3VideoGenerationNode', [
         { name: 'model', value: 'veo-3.0-fast-generate-001' },
@@ -513,40 +513,40 @@ describe('useNodePricing', () => {
       ])
 
       const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$2.00/Run')
+      expect(price).toBe('$0.80/Run')
     })
 
-    it('should return $3.20 for veo-3.0-fast-generate-001 with audio', () => {
+    it('should return $1.20 for veo-3.0-fast-generate-001 with audio', () => {
       const { getNodeDisplayPrice } = useNodePricing()
       const node = createMockNode('Veo3VideoGenerationNode', [
         { name: 'model', value: 'veo-3.0-fast-generate-001' },
+        { name: 'generate_audio', value: true }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.20/Run')
+    })
+
+    it('should return $1.60 for veo-3.0-generate-001 without audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-generate-001' },
+        { name: 'generate_audio', value: false }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.60/Run')
+    })
+
+    it('should return $3.20 for veo-3.0-generate-001 with audio', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('Veo3VideoGenerationNode', [
+        { name: 'model', value: 'veo-3.0-generate-001' },
         { name: 'generate_audio', value: true }
       ])
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe('$3.20/Run')
-    })
-
-    it('should return $4.00 for veo-3.0-generate-001 without audio', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('Veo3VideoGenerationNode', [
-        { name: 'model', value: 'veo-3.0-generate-001' },
-        { name: 'generate_audio', value: false }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$4.00/Run')
-    })
-
-    it('should return $6.00 for veo-3.0-generate-001 with audio', () => {
-      const { getNodeDisplayPrice } = useNodePricing()
-      const node = createMockNode('Veo3VideoGenerationNode', [
-        { name: 'model', value: 'veo-3.0-generate-001' },
-        { name: 'generate_audio', value: true }
-      ])
-
-      const price = getNodeDisplayPrice(node)
-      expect(price).toBe('$6.00/Run')
     })
 
     it('should return range when widgets are missing', () => {
@@ -555,7 +555,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$2.00-6.00/Run (varies with model & audio generation)'
+        '$0.80-3.20/Run (varies with model & audio generation)'
       )
     })
 
@@ -567,7 +567,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$2.00-6.00/Run (varies with model & audio generation)'
+        '$0.80-3.20/Run (varies with model & audio generation)'
       )
     })
 
@@ -579,7 +579,7 @@ describe('useNodePricing', () => {
 
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(
-        '$2.00-6.00/Run (varies with model & audio generation)'
+        '$0.80-3.20/Run (varies with model & audio generation)'
       )
     })
   })
@@ -1778,6 +1778,88 @@ describe('useNodePricing', () => {
           expect(getNodeDisplayPrice(node)).toBe(expected)
         })
       })
+    })
+  })
+
+  describe('dynamic pricing - ByteDance Seedance video nodes', () => {
+    it('should return base 10s range for PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$1.18-$1.22/Run')
+    })
+
+    it('should scale to half for 5s PRO 1080p on ByteDanceTextToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '5' },
+        { name: 'resolution', value: '1080p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.59-$0.61/Run')
+    })
+
+    it('should scale for 8s PRO 480p on ByteDanceImageToVideoNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '8' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.18-$0.19/Run')
+    })
+
+    it('should scale correctly for 12s PRO 720p on ByteDanceFirstLastFrameNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '12' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.61-$0.67/Run')
+    })
+
+    it('should collapse to a single value when min and max round equal for LITE 480p 3s on ByteDanceImageReferenceNode', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceImageReferenceNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'duration', value: '3' },
+        { name: 'resolution', value: '480p' }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.05/Run') // 0.17..0.18 scaled by 0.3 both round to 0.05
+    })
+
+    it('should return Token-based when required widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const missingModel = createMockNode('ByteDanceFirstLastFrameNode', [
+        { name: 'duration', value: '10' },
+        { name: 'resolution', value: '1080p' }
+      ])
+      const missingResolution = createMockNode('ByteDanceImageToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-pro' },
+        { name: 'duration', value: '10' }
+      ])
+      const missingDuration = createMockNode('ByteDanceTextToVideoNode', [
+        { name: 'model', value: 'seedance-1-0-lite' },
+        { name: 'resolution', value: '720p' }
+      ])
+
+      expect(getNodeDisplayPrice(missingModel)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingResolution)).toBe('Token-based')
+      expect(getNodeDisplayPrice(missingDuration)).toBe('Token-based')
     })
   })
 })

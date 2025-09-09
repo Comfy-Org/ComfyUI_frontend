@@ -55,7 +55,7 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
  * - widget: Reference to the widget instance
  * - onUpdate:modelValue: The update handler for v-model
  */
-export type ComponentWidgetCustomProps = Record<string, unknown>
+type ComponentWidgetCustomProps = Record<string, unknown>
 
 /**
  * Standard props that are handled separately by DomWidget.vue and should be
@@ -374,18 +374,4 @@ LGraphNode.prototype.addDOMWidget = function <
   })
 
   return widget
-}
-
-/**
- * Prunes widgets that are no longer in the graph.
- * @param nodes The nodes to prune widgets for.
- */
-export const pruneWidgets = (nodes: LGraphNode[]) => {
-  const nodeSet = new Set(nodes)
-  const domWidgetStore = useDomWidgetStore()
-  for (const { widget } of domWidgetStore.widgetStates.values()) {
-    if (!nodeSet.has(widget.node)) {
-      domWidgetStore.unregisterWidget(widget.id)
-    }
-  }
 }

@@ -2,7 +2,7 @@ name: Auto Backport
 
 on:
   pull_request_target:
-    types: [closed]
+    types: [closed, labeled]
     branches: [main]
 
 jobs:
@@ -25,7 +25,27 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Check if backports already exist
+        id: check-existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Check for existing backport PRs for this PR number
+          EXISTING_BACKPORTS=$(gh pr list --state all --search "backport-${PR_NUMBER}-to" --json title,headRefName,baseRefName | jq -r '.[].headRefName')
+          
+          if [ -z "$EXISTING_BACKPORTS" ]; then
+            echo "skip=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Found existing backport PRs:"
+          echo "$EXISTING_BACKPORTS"
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "::warning::Backport PRs already exist for PR #${PR_NUMBER}, skipping to avoid duplicates"
+
       - name: Extract version labels
+        if: steps.check-existing.outputs.skip != 'true'
         id: versions
         run: |
           # Extract version labels (e.g., "1.24", "1.22")
@@ -52,6 +72,7 @@ jobs:
           echo "Found version labels: ${VERSIONS}"
 
       - name: Backport commits
+        if: steps.check-existing.outputs.skip != 'true'
         id: backport
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -109,7 +130,7 @@ jobs:
           fi
 
       - name: Create PR for each successful backport
-        if: steps.backport.outputs.success
+        if: steps.check-existing.outputs.skip != 'true' && steps.backport.outputs.success
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
         run: |
@@ -141,7 +162,7 @@ jobs:
           done
 
       - name: Comment on failures
-        if: failure() && steps.backport.outputs.failed
+        if: steps.check-existing.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

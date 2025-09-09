@@ -2,7 +2,7 @@
  * Spatial bounds calculations for node layouts
  */
 
-export interface SpatialBounds {
+interface SpatialBounds {
   minX: number
   minY: number
   maxX: number
@@ -11,7 +11,7 @@ export interface SpatialBounds {
   height: number
 }
 
-export interface PositionedNode {
+interface PositionedNode {
   pos: ArrayLike<number>
   size: ArrayLike<number>
 }
