@@ -16,8 +16,6 @@
         v-model="inputDisplayValue"
         :disabled="readonly"
         type="number"
-        :min="widget.options?.min"
-        :max="widget.options?.max"
         :step="stepValue"
         class="w-[4em] text-center text-xs px-0 !border-none !shadow-none !bg-transparent"
         size="small"

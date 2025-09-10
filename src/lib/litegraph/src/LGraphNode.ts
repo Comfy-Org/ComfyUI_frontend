@@ -3833,33 +3833,12 @@ export class LGraphNode
       ? this.getInputPos(slotIndex)
       : this.getOutputPos(slotIndex)
 
-    if (LiteGraph.vueNodesMode) {
-      // Vue-based slot dimensions
-      const dimensions = LiteGraph.COMFY_VUE_NODE_DIMENSIONS.components
-
-      if (slot.isWidgetInputSlot) {
-        // Widget slots have a 20x20 clickable area centered at the position
-        slot.boundingRect[0] = pos[0] - 10
-        slot.boundingRect[1] = pos[1] - 10
-        slot.boundingRect[2] = 20
-        slot.boundingRect[3] = 20
-      } else {
-        // Regular slots have a 20x20 clickable area for the connector
-        // but the full slot height for vertical spacing
-        slot.boundingRect[0] = pos[0] - 10
-        slot.boundingRect[1] = pos[1] - dimensions.SLOT_HEIGHT / 2
-        slot.boundingRect[2] = 20
-        slot.boundingRect[3] = dimensions.SLOT_HEIGHT
-      }
-    } else {
-      // Traditional LiteGraph dimensions
-      slot.boundingRect[0] = pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.boundingRect[1] = pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.boundingRect[2] = slot.isWidgetInputSlot
-        ? BaseWidget.margin
-        : LiteGraph.NODE_SLOT_HEIGHT
-      slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
-    }
+    slot.boundingRect[0] = pos[0] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[1] = pos[1] - LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    slot.boundingRect[2] = slot.isWidgetInputSlot
+      ? BaseWidget.margin
+      : LiteGraph.NODE_SLOT_HEIGHT
+    slot.boundingRect[3] = LiteGraph.NODE_SLOT_HEIGHT
   }
 
   #measureSlots(): ReadOnlyRect | null {

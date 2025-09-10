@@ -9,12 +9,12 @@ import WidgetColorPicker from '../components/WidgetColorPicker.vue'
 import WidgetFileUpload from '../components/WidgetFileUpload.vue'
 import WidgetGalleria from '../components/WidgetGalleria.vue'
 import WidgetImageCompare from '../components/WidgetImageCompare.vue'
+import WidgetInputNumber from '../components/WidgetInputNumber.vue'
 import WidgetInputText from '../components/WidgetInputText.vue'
 import WidgetMarkdown from '../components/WidgetMarkdown.vue'
 import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
 import WidgetSelect from '../components/WidgetSelect.vue'
 import WidgetSelectButton from '../components/WidgetSelectButton.vue'
-import WidgetSlider from '../components/WidgetSlider.vue'
 import WidgetTextarea from '../components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
 import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
@@ -38,11 +38,11 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
-  ['int', { component: WidgetSlider, aliases: ['INT'], essential: true }],
+  ['int', { component: WidgetInputNumber, aliases: ['INT'], essential: true }],
   [
     'float',
     {
-      component: WidgetSlider,
+      component: WidgetInputNumber,
       aliases: ['FLOAT', 'number', 'slider'],
       essential: true
     }

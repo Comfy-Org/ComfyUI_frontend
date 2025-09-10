@@ -121,24 +121,24 @@ describe('useTransformState', () => {
         const canvasPoint = { x: 10, y: 20 }
         const screenPoint = canvasToScreen(canvasPoint)
 
-        // screen = canvas * scale + offset
-        // x: 10 * 2 + 100 = 120
-        // y: 20 * 2 + 50 = 90
-        expect(screenPoint).toEqual({ x: 120, y: 90 })
+        // screen = (canvas + offset) * scale
+        // x: (10 + 100) * 2 = 220
+        // y: (20 + 50) * 2 = 140
+        expect(screenPoint).toEqual({ x: 220, y: 140 })
       })
 
       it('should handle zero coordinates', () => {
         const { canvasToScreen } = transformState
 
         const screenPoint = canvasToScreen({ x: 0, y: 0 })
-        expect(screenPoint).toEqual({ x: 100, y: 50 })
+        expect(screenPoint).toEqual({ x: 200, y: 100 })
       })
 
       it('should handle negative coordinates', () => {
         const { canvasToScreen } = transformState
 
         const screenPoint = canvasToScreen({ x: -10, y: -20 })
-        expect(screenPoint).toEqual({ x: 80, y: 10 })
+        expect(screenPoint).toEqual({ x: 180, y: 60 })
       })
     })
 
@@ -146,12 +146,12 @@ describe('useTransformState', () => {
       it('should convert screen coordinates to canvas coordinates', () => {
         const { screenToCanvas } = transformState
 
-        const screenPoint = { x: 120, y: 90 }
+        const screenPoint = { x: 220, y: 140 }
         const canvasPoint = screenToCanvas(screenPoint)
 
-        // canvas = (screen - offset) / scale
-        // x: (120 - 100) / 2 = 10
-        // y: (90 - 50) / 2 = 20
+        // canvas = screen / scale - offset
+        // x: 220 / 2 - 100 = 10
+        // y: 140 / 2 - 50 = 20
         expect(canvasPoint).toEqual({ x: 10, y: 20 })
       })
 
@@ -183,11 +183,11 @@ describe('useTransformState', () => {
       const nodeSize = [200, 100]
       const bounds = getNodeScreenBounds(nodePos, nodeSize)
 
-      // Top-left: canvasToScreen(10, 20) = (120, 90)
+      // Top-left: canvasToScreen(10, 20) = (220, 140)
       // Width: 200 * 2 = 400
       // Height: 100 * 2 = 200
-      expect(bounds.x).toBe(120)
-      expect(bounds.y).toBe(90)
+      expect(bounds.x).toBe(220)
+      expect(bounds.y).toBe(140)
       expect(bounds.width).toBe(400)
       expect(bounds.height).toBe(200)
     })
@@ -288,14 +288,14 @@ describe('useTransformState', () => {
       // topLeft in screen: (-200, -120)
       // bottomRight in screen: (1200, 720)
 
-      // Convert to canvas coordinates:
-      // topLeft: ((-200 - 100) / 2, (-120 - 50) / 2) = (-150, -85)
-      // bottomRight: ((1200 - 100) / 2, (720 - 50) / 2) = (550, 335)
+      // Convert to canvas coordinates (canvas = screen / scale - offset):
+      // topLeft: (-200 / 2 - 100, -120 / 2 - 50) = (-200, -110)
+      // bottomRight: (1200 / 2 - 100, 720 / 2 - 50) = (500, 310)
 
-      expect(bounds.x).toBe(-150)
-      expect(bounds.y).toBe(-85)
-      expect(bounds.width).toBe(700) // 550 - (-150)
-      expect(bounds.height).toBe(420) // 335 - (-85)
+      expect(bounds.x).toBe(-200)
+      expect(bounds.y).toBe(-110)
+      expect(bounds.width).toBe(700) // 500 - (-200)
+      expect(bounds.height).toBe(420) // 310 - (-110)
     })
 
     it('should handle zero margin', () => {
@@ -305,8 +305,8 @@ describe('useTransformState', () => {
       const bounds = getViewportBounds(viewport, 0)
 
       // No margin, so viewport bounds are exact
-      expect(bounds.x).toBe(-50) // (0 - 100) / 2
-      expect(bounds.y).toBe(-25) // (0 - 50) / 2
+      expect(bounds.x).toBe(-100) // 0 / 2 - 100
+      expect(bounds.y).toBe(-50) // 0 / 2 - 50
       expect(bounds.width).toBe(500) // 1000 / 2
       expect(bounds.height).toBe(300) // 600 / 2
     })

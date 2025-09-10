@@ -25,26 +25,6 @@ import {
 import { createUuidv4 } from './utils/uuid'
 
 /**
- * Vue node dimensions configuration for the contract between LiteGraph and Vue components.
- * These values ensure both systems can independently calculate node, slot, and widget positions
- * to place them in identical locations.
- *
- * IMPORTANT: These values must match the actual rendered dimensions of Vue components
- * for the positioning contract to work correctly.
- */
-export const COMFY_VUE_NODE_DIMENSIONS = {
-  spacing: {
-    BETWEEN_SLOTS_AND_BODY: 8,
-    BETWEEN_WIDGETS: 8
-  },
-  components: {
-    HEADER_HEIGHT: 34, // 18 header + 16 padding
-    SLOT_HEIGHT: 24,
-    STANDARD_WIDGET_HEIGHT: 30
-  }
-} as const
-
-/**
  * The Global Scope. It contains all the registered node classes.
  */
 export class LiteGraphGlobal {
@@ -94,14 +74,6 @@ export class LiteGraphGlobal {
   WIDGET_TEXT_COLOR = '#DDD'
   WIDGET_SECONDARY_TEXT_COLOR = '#999'
   WIDGET_DISABLED_TEXT_COLOR = '#666'
-
-  /**
-   * Vue node dimensions configuration for the contract between LiteGraph and Vue components.
-   * These values ensure both systems can independently calculate node, slot, and widget positions
-   * to place them in identical locations.
-   */
-  // WARNING THIS WILL BE REMOVED IN FAVOR OF THE SLOTS LAYOUT TREE useDomSlotRegistration
-  COMFY_VUE_NODE_DIMENSIONS = COMFY_VUE_NODE_DIMENSIONS
 
   LINK_COLOR = '#9A9'
   EVENT_LINK_COLOR = '#A86'

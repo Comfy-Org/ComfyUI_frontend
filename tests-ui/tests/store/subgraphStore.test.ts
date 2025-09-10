@@ -113,7 +113,7 @@ describe('useSubgraphStore', () => {
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    store.editBlueprint(store.typePrefix + 'test')
+    await store.editBlueprint(store.typePrefix + 'test')
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
