@@ -19,7 +19,7 @@ vi.mock('@/scripts/app', () => ({
 
 describe('useCanvasInteractions', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     vi.mocked(useCanvasStore, { partial: true }).mockReturnValue({
       getCanvas: vi.fn()
     })
@@ -134,7 +134,8 @@ describe('useCanvasInteractions', () => {
       const mockEvent = {
         ctrlKey: true,
         metaKey: false,
-        preventDefault: vi.fn()
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn()
       } satisfies Partial<WheelEvent>
 
       // Test
@@ -155,7 +156,8 @@ describe('useCanvasInteractions', () => {
       const mockEvent = {
         ctrlKey: false,
         metaKey: false,
-        preventDefault: vi.fn()
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn()
       } satisfies Partial<WheelEvent>
 
       // Test
@@ -176,7 +178,8 @@ describe('useCanvasInteractions', () => {
       const mockEvent = {
         ctrlKey: false,
         metaKey: false,
-        preventDefault: vi.fn()
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn()
       } satisfies Partial<WheelEvent>
 
       // Test
