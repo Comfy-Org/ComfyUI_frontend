@@ -3,19 +3,23 @@ import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ref } from 'vue'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
-import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { useCommandStore } from '@/stores/commandStore'
 
-// Mock all dependencies
+const commandStore = {
+  execute: vi.fn()
+}
+const selectionState = {
+  hasAnySelection: ref(true)
+}
 vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: vi.fn()
+  useCommandStore: vi.fn(() => commandStore)
 }))
 
 vi.mock('@/composables/graph/useSelectionState', () => ({
-  useSelectionState: vi.fn()
+  useSelectionState: vi.fn(() => selectionState)
 }))
 
 describe('BypassButton', () => {
@@ -26,46 +30,17 @@ describe('BypassButton', () => {
       en: {
         selectionToolbox: {
           bypassButton: {
-            tooltip: 'Bypass/Unbypass Selected Nodes'
+            tooltip: 'Fake Bypass text'
           }
         },
         'commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label':
-          'Toggle Bypass Selected Nodes'
+          'Fake Toggle Bypass'
       }
     }
   })
 
-  // Mock interfaces
-  interface MockCommandStore {
-    execute: ReturnType<typeof vi.fn>
-  }
-
-  interface MockSelectionState {
-    hasAnySelection: { value: boolean }
-  }
-
-  // Mock instances
-  let mockCommandStore: MockCommandStore
-  let mockSelectionState: MockSelectionState
-
   beforeEach(() => {
-    vi.clearAllMocks()
-
-    // Setup mock command store
-    mockCommandStore = {
-      execute: vi.fn().mockResolvedValue(undefined)
-    }
-    vi.mocked(useCommandStore).mockReturnValue(
-      mockCommandStore as unknown as ReturnType<typeof useCommandStore>
-    )
-
-    // Setup mock selection state
-    mockSelectionState = {
-      hasAnySelection: ref(true)
-    }
-    vi.mocked(useSelectionState).mockReturnValue(
-      mockSelectionState as unknown as ReturnType<typeof useSelectionState>
-    )
+    vi.resetAllMocks()
   })
 
   const mountComponent = () => {
@@ -95,8 +70,7 @@ describe('BypassButton', () => {
   test('should execute bypass command when clicked', async () => {
     const wrapper = mountComponent()
     await wrapper.find('button').trigger('click')
-
-    expect(mockCommandStore.execute).toHaveBeenCalledWith(
+    expect(commandStore.execute).toHaveBeenCalledWith(
       'Comfy.Canvas.ToggleSelectedNodes.Bypass'
     )
   })
@@ -104,11 +78,14 @@ describe('BypassButton', () => {
   test('should show button when hasAnySelection is true', () => {
     const wrapper = mountComponent()
     const button = wrapper.find('button')
-    expect(button.isVisible()).toBe(true)
+    expect(button.element.style.display).toBe('')
   })
 
-  test('should call useSelectionState composable', () => {
-    mountComponent()
-    expect(useSelectionState).toHaveBeenCalled()
+  test('Button should not show when hasAnySelection is false', async () => {
+    selectionState.hasAnySelection = computed(() => false)
+    const wrapper = mountComponent()
+    await wrapper.vm.$nextTick()
+    const button = wrapper.find('button')
+    expect(button.element.style.display).toBe('none')
   })
 })

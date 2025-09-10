@@ -8,11 +8,7 @@
     severity="secondary"
     text
     data-testid="bypass-button"
-    :class="{
-      'hover:dark-theme:!bg-[#262729] hover:!bg-[#E7E6E6]': true,
-      'dark-theme:[&:not(:active)]:!bg-[#262729] [&:not(:active)]:!bg-[#E7E6E6]':
-        isBypassed
-    }"
+    class="hover:dark-theme:bg-[#262729] hover:bg-[#E7E6E6]"
     @click="toggleBypass"
   >
     <template #icon>
@@ -23,7 +19,6 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
@@ -32,7 +27,7 @@ import { useCommandStore } from '@/stores/commandStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const { hasAnySelection } = useSelectionState()
-const isBypassed = ref(false)
+console.log('hasAnySelection', hasAnySelection)
 
 const toggleBypass = async () => {
   await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
