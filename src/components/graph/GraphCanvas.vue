@@ -45,7 +45,6 @@
       :position="nodePositions.get(nodeData.id)"
       :size="nodeSizes.get(nodeData.id)"
       :readonly="false"
-      :executing="executionStore.executingNodeId === nodeData.id"
       :error="
         executionStore.lastExecutionError?.node_id === nodeData.id
           ? 'Execution error'
@@ -116,6 +115,7 @@ import TransformPane from '@/renderer/core/layout/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useExecutionStateProvider } from '@/renderer/extensions/vueNodes/execution/useExecutionStateProvider'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -200,6 +200,9 @@ const selectedNodeIds = computed(
     )
 )
 provide(SelectedNodeIdsKey, selectedNodeIds)
+
+// Provide execution state to all Vue nodes
+useExecutionStateProvider()
 
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
