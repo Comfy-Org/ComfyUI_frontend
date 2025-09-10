@@ -288,7 +288,7 @@ else
         status_icon="✅"
         status_text="All tests passed!"
     else
-        status_icon="⚠️"
+        status_icon="🕵🏻"
         status_text="No test results found"
     fi
     
