@@ -1,35 +1,14 @@
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import {
-  LGraphEventMode,
-  LGraphNode,
-  Positionable
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
-
-interface NodeSelectionState {
-  collapsed: boolean
-  pinned: boolean
-  bypassed: boolean
-}
-
-// Helper function to compute selection flags (reused by both computed and function)
-const computeSelectionStatesFromNodes = (
-  nodes: LGraphNode[]
-): NodeSelectionState => {
-  if (!nodes.length) return { collapsed: false, pinned: false, bypassed: false }
-  return {
-    collapsed: nodes.some((n) => n.flags?.collapsed),
-    pinned: nodes.some((n) => n.pinned),
-    bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
-  }
-}
 
 /**
  * Centralized computed selection state + shared helper actions to avoid duplication
@@ -42,7 +21,7 @@ export function useSelectionState() {
   const nodeHelpStore = useNodeHelpStore()
   const { id: nodeLibraryTabId } = useNodeLibrarySidebarTab()
 
-  const selectedItems = computed(() => canvasStore.selectedItems)
+  const { selectedItems } = storeToRefs(canvasStore)
 
   const selectedNodes = computed(() => {
     return selectedItems.value.filter((i) => isLGraphNode(i))
@@ -73,20 +52,10 @@ export function useSelectionState() {
   const hasSubgraphs = computed(() =>
     selectedItems.value.some((i) => (i as LGraphNode)?.isSubgraphNode?.())
   )
-
   const hasImageNode = computed(() => isSingleImageNode.value)
   const hasOutputNodesSelected = computed(
     () => filterOutputNodes(selectedNodes.value).length > 0
   )
-
-  const selectedNodesStates = computed<NodeSelectionState>(() =>
-    computeSelectionStatesFromNodes(selectedNodes.value)
-  )
-
-  // On-demand computation (non-reactive) so callers can fetch fresh flags
-  const computeSelectionFlags = (): NodeSelectionState =>
-    computeSelectionStatesFromNodes(selectedNodes.value)
-
   /** Toggle node help sidebar/panel for the single selected node (if any). */
   const showNodeHelp = () => {
     const def = nodeDef.value
@@ -134,8 +103,6 @@ export function useSelectionState() {
     hasSubgraphs,
     hasImageNode,
     hasOutputNodesSelected,
-    selectedNodesStates,
-    computeSelectionFlags,
     isDeletable
   }
 }

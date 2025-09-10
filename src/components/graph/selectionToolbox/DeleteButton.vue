@@ -7,7 +7,7 @@
     }"
     severity="secondary"
     text
-    icon-class="w-4 h-4"
+    icon-class="size-4"
     icon="pi pi-trash"
     data-testid="delete-button"
     @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
