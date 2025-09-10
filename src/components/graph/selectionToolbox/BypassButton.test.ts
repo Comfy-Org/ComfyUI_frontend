@@ -1,17 +1,21 @@
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
-vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphNode: vi.fn(() => true)
+// Mock all dependencies
+vi.mock('@/stores/commandStore', () => ({
+  useCommandStore: vi.fn()
+}))
+
+vi.mock('@/composables/graph/useSelectionState', () => ({
+  useSelectionState: vi.fn()
 }))
 
 describe('BypassButton', () => {
@@ -31,17 +35,25 @@ describe('BypassButton', () => {
     }
   })
 
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
-  })
+  // Mock instances
+  let mockCommandStore: any
+  let mockSelectionState: any
 
-  const createTestNode = (id: number = 1): LGraphNode => {
-    const node = new LGraphNode('test')
-    node.id = id
-    node.mode = LGraphEventMode.ALWAYS
-    return node
-  }
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    // Setup mock command store
+    mockCommandStore = {
+      execute: vi.fn().mockResolvedValue(undefined)
+    }
+    vi.mocked(useCommandStore).mockReturnValue(mockCommandStore)
+
+    // Setup mock selection state
+    mockSelectionState = {
+      hasAnySelection: ref(true)
+    }
+    vi.mocked(useSelectionState).mockReturnValue(mockSelectionState)
+  })
 
   const mountComponent = () => {
     return mount(BypassButton, {
@@ -55,50 +67,35 @@ describe('BypassButton', () => {
     })
   }
 
-  test('should render bypass button', () => {
-    const canvasStore = useCanvasStore()
-    const testNode = createTestNode()
-
-    canvasStore.selectedItems = [testNode]
+  test('should render bypass button when items are selected', () => {
     const wrapper = mountComponent()
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
   })
 
   test('should have correct test id', () => {
-    const canvasStore = useCanvasStore()
-    const testNode = createTestNode()
-
-    canvasStore.selectedItems = [testNode]
     const wrapper = mountComponent()
     const button = wrapper.find('[data-testid="bypass-button"]')
     expect(button.exists()).toBe(true)
   })
 
   test('should execute bypass command when clicked', async () => {
-    const canvasStore = useCanvasStore()
-    const commandStore = useCommandStore()
-    const testNode = createTestNode()
-
-    canvasStore.selectedItems = [testNode]
-    const executeSpy = vi.spyOn(commandStore, 'execute').mockResolvedValue()
-
     const wrapper = mountComponent()
     await wrapper.find('button').trigger('click')
 
-    expect(executeSpy).toHaveBeenCalledWith(
+    expect(mockCommandStore.execute).toHaveBeenCalledWith(
       'Comfy.Canvas.ToggleSelectedNodes.Bypass'
     )
   })
 
-  test('should handle multiple selected items', () => {
-    const canvasStore = useCanvasStore()
-    const commandStore = useCommandStore()
-
-    vi.spyOn(commandStore, 'execute').mockResolvedValue()
-    canvasStore.selectedItems = [createTestNode(1), createTestNode(2)]
+  test('should show button when hasAnySelection is true', () => {
     const wrapper = mountComponent()
     const button = wrapper.find('button')
-    expect(button.exists()).toBe(true)
+    expect(button.isVisible()).toBe(true)
+  })
+
+  test('should call useSelectionState composable', () => {
+    mountComponent()
+    expect(useSelectionState).toHaveBeenCalled()
   })
 })
