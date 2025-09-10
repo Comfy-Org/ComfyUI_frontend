@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 vi.mock(
   '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
@@ -68,13 +69,7 @@ describe('LGraphNode', () => {
     vi.clearAllMocks()
   })
 
-  it('should call resize tracking composable with node ID', async () => {
-    const { useVueElementTracking } = vi.mocked(
-      await import(
-        '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
-      )
-    )
-
+  it('should call resize tracking composable with node ID', () => {
     mountLGraphNode({ nodeData: mockNodeData })
 
     expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
