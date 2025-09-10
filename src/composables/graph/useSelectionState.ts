@@ -1,7 +1,11 @@
 import { computed } from 'vue'
 
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
+  Positionable
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
@@ -14,8 +18,17 @@ interface NodeSelectionState {
   pinned: boolean
   bypassed: boolean
 }
-interface RemovableItem {
-  removable?: boolean
+
+// Helper function to compute selection flags (reused by both computed and function)
+const computeSelectionStatesFromNodes = (
+  nodes: LGraphNode[]
+): NodeSelectionState => {
+  if (!nodes.length) return { collapsed: false, pinned: false, bypassed: false }
+  return {
+    collapsed: nodes.some((n) => n.flags?.collapsed),
+    pinned: nodes.some((n) => n.pinned),
+    bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
+  }
 }
 
 /**
@@ -66,19 +79,6 @@ export function useSelectionState() {
     () => filterOutputNodes(selectedNodes.value).length > 0
   )
 
-  // Helper function to compute selection flags (reused by both computed and function)
-  const computeSelectionStatesFromNodes = (
-    nodes: LGraphNode[]
-  ): NodeSelectionState => {
-    if (!nodes.length)
-      return { collapsed: false, pinned: false, bypassed: false }
-    return {
-      collapsed: nodes.some((n) => n.flags?.collapsed),
-      pinned: nodes.some((n) => n.pinned),
-      bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
-    }
-  }
-
   const selectedNodesStates = computed<NodeSelectionState>(() =>
     computeSelectionStatesFromNodes(selectedNodes.value)
   )
@@ -111,8 +111,8 @@ export function useSelectionState() {
     nodeHelpStore.openHelp(def)
   }
 
-  const isRemovableItem = (item: unknown): item is RemovableItem =>
-    item != null && typeof item === 'object' && ('removable' in item || true)
+  const isRemovableItem = (item: unknown): item is Positionable =>
+    item != null && typeof item === 'object' && 'removable' in item
 
   const isDeletable = computed(() =>
     selectedItems.value
