@@ -6,8 +6,14 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 // Mock stores
-vi.mock('@/stores/graphStore')
-vi.mock('@/stores/settingStore')
+vi.mock('@/stores/graphStore', () => {
+  const getCanvas = vi.fn()
+  return { useCanvasStore: vi.fn(() => ({ getCanvas })) }
+})
+vi.mock('@/stores/settingStore', () => {
+  const getFn = vi.fn()
+  return { useSettingStore: vi.fn(() => ({ get: getFn })) }
+})
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
@@ -21,12 +27,6 @@ vi.mock('@/scripts/app', () => ({
 describe('useCanvasInteractions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    vi.mocked(useCanvasStore, { partial: true }).mockReturnValue({
-      getCanvas: vi.fn()
-    })
-    vi.mocked(useSettingStore, { partial: true }).mockReturnValue({
-      get: vi.fn()
-    })
   })
 
   describe('handlePointer', () => {
