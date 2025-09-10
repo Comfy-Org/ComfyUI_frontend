@@ -318,7 +318,7 @@ const zDeviceStats = z.object({
   torch_vram_free: z.number()
 })
 
-export const zSystemStats = z.object({
+const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
     python_version: z.string(),
@@ -367,6 +367,7 @@ const zSettings = z.object({
   'Comfy.DevMode': z.boolean(),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
+  'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),
   'Comfy.DisableSliders': z.boolean(),
   'Comfy.DOMClippingEnabled': z.boolean(),
@@ -466,6 +467,7 @@ const zSettings = z.object({
   'Comfy.Minimap.RenderErrorState': z.boolean(),
   'Comfy.Canvas.NavigationMode': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),

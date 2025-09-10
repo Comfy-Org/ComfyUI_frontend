@@ -18,7 +18,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 // Task type used in the API.
-export type APITaskType = 'queue' | 'history'
+type APITaskType = 'queue' | 'history'
 
 export enum TaskItemDisplayStatus {
   Running = 'Running',

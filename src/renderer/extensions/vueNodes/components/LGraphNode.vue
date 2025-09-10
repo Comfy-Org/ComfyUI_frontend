@@ -7,25 +7,30 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-white dark-theme:bg-[#15161A]',
+        'bg-white dark-theme:bg-charcoal-primary',
         'min-w-[445px]',
         'lg-node absolute border border-solid rounded-2xl',
-        'outline outline-transparent outline-2 hover:outline-black dark-theme:hover:outline-white',
+        'outline outline-transparent outline-2',
         {
-          'border-blue-500 ring-2 ring-blue-300': selected,
-          'border-[#e1ded5] dark-theme:border-[#292A30]': !selected,
+          'outline-black dark-theme:outline-white': isSelected
+        },
+        {
+          'border-blue-500 ring-2 ring-blue-300': isSelected,
+          'border-sand-primary dark-theme:border-charcoal-tertiary':
+            !isSelected,
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
           'border-red-500 bg-red-50': error,
           'will-change-transform': isDragging
         },
-        lodCssClass
+        lodCssClass,
+        'pointer-events-auto'
       )
     "
     :style="[
       {
         transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        pointerEvents: 'auto'
+        zIndex: zIndex
       },
       dragStyle
     ]"
@@ -107,12 +112,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, toRef, watch } from 'vue'
+import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
 
 // Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { cn } from '@/utils/tailwindUtil'
@@ -129,7 +135,6 @@ interface LGraphNodeProps {
   position?: { x: number; y: number }
   size?: { width: number; height: number }
   readonly?: boolean
-  selected?: boolean
   executing?: boolean
   progress?: number
   error?: string | null
@@ -149,6 +154,19 @@ const emit = defineEmits<{
   'update:collapsed': [nodeId: string, collapsed: boolean]
   'update:title': [nodeId: string, newTitle: string]
 }>()
+
+// Inject selection state from parent
+const selectedNodeIds = inject(SelectedNodeIdsKey)
+if (!selectedNodeIds) {
+  throw new Error(
+    'SelectedNodeIds not provided - LGraphNode must be used within a component that provides selection state'
+  )
+}
+
+// Computed selection state - only this node re-evaluates when its selection changes
+const isSelected = computed(() => {
+  return selectedNodeIds.value.has(props.nodeData.id)
+})
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => props.zoomLevel ?? 1)
@@ -176,6 +194,7 @@ onErrorCaptured((error) => {
 // Use layout system for node position and dragging
 const {
   position: layoutPosition,
+  zIndex,
   startDrag,
   handleDrag: handleLayoutDrag,
   endDrag
@@ -193,7 +212,7 @@ const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
 // Watch for external changes to the collapsed state
 watch(
   () => props.nodeData.flags?.collapsed,
-  (newCollapsed) => {
+  (newCollapsed: boolean | undefined) => {
     if (newCollapsed !== undefined && newCollapsed !== isCollapsed.value) {
       isCollapsed.value = newCollapsed
     }
@@ -208,7 +227,8 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-0'
+const separatorClasses =
+  'bg-sand-primary dark-theme:bg-charcoal-tertiary h-[1px] mx-0'
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(

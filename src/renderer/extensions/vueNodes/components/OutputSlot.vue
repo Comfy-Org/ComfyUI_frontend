@@ -2,7 +2,7 @@
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
   <div
     v-else
-    class="lg-slot lg-slot--output flex items-center cursor-crosshair justify-end group rounded-l-lg"
+    class="lg-slot lg-slot--output flex items-center cursor-crosshair justify-end group rounded-l-lg h-6"
     :class="{
       'opacity-70': readonly,
       'lg-slot--connected': connected,
@@ -10,9 +10,6 @@
       'lg-slot--dot-only': dotOnly,
       'pl-6 hover:bg-black/5 hover:dark:bg-white/5': !dotOnly,
       'justify-center': dotOnly
-    }"
-    :style="{
-      height: slotHeight + 'px'
     }"
   >
     <!-- Slot Name -->
@@ -45,7 +42,6 @@ import {
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { COMFY_VUE_NODE_DIMENSIONS } from '@/lib/litegraph/src/litegraph'
 // DOM-based slot registration for arbitrary positioning
 import {
   type TransformState,
@@ -80,9 +76,6 @@ onErrorCaptured((error) => {
 
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
-
-// Get slot height from litegraph constants
-const slotHeight = COMFY_VUE_NODE_DIMENSIONS.components.SLOT_HEIGHT
 
 const transformState = inject<TransformState | undefined>(
   'transformState',

@@ -19,6 +19,7 @@
 </template>
 
 <script setup lang="ts" generic="T">
+// eslint-disable-next-line no-restricted-imports -- TODO: Migrate to Select component
 import Dropdown from 'primevue/dropdown'
 
 import type { SearchOption } from '@/types/comfyManagerTypes'

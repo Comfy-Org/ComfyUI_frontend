@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { COMFY_VUE_NODE_DIMENSIONS } from '@/lib/litegraph/src/litegraph'
+import { noop } from 'es-toolkit'
+
 import { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 defineProps<{
   widget: Pick<SimplifiedWidget<string | number | undefined>, 'name'>
 }>()
-
-// Get widget height from litegraph constants
-const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
 </script>
 
 <template>
   <div
-    class="flex items-center justify-between gap-2"
-    :style="{ height: widgetHeight + 'px' }"
+    class="flex items-center justify-between gap-2 h-[30px] overscroll-contain"
   >
     <p
       v-if="widget.name"
@@ -21,7 +18,12 @@ const widgetHeight = COMFY_VUE_NODE_DIMENSIONS.components.STANDARD_WIDGET_HEIGHT
     >
       {{ widget.name }}
     </p>
-    <div class="w-75">
+    <div
+      class="w-75"
+      @pointerdown.stop="noop"
+      @pointermove.stop="noop"
+      @pointerup.stop="noop"
+    >
       <slot />
     </div>
   </div>

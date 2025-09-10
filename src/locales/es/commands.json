@@ -215,6 +215,9 @@
   "Comfy_OpenWorkflow": {
     "label": "Abrir Flujo de Trabajo"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "Publicar subgrafo"
+  },
   "Comfy_QueuePrompt": {
     "label": "Prompt de Cola"
   },

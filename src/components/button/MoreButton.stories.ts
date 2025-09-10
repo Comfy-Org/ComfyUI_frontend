@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { Download, ScrollText } from 'lucide-vue-next'
 
 import IconTextButton from './IconTextButton.vue'
 import MoreButton from './MoreButton.vue'
@@ -18,7 +17,7 @@ type Story = StoryObj<typeof MoreButton>
 
 export const Basic: Story = {
   render: () => ({
-    components: { MoreButton, IconTextButton, Download, ScrollText },
+    components: { MoreButton, IconTextButton },
     template: `
       <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
         <MoreButton>
@@ -29,7 +28,7 @@ export const Basic: Story = {
               @click="() => { close() }"
             >
               <template #icon>
-                <Download :size="16" />
+                <i class="icon-[lucide--download] size-4" />
               </template>
             </IconTextButton>
 
@@ -39,7 +38,7 @@ export const Basic: Story = {
               @click="() => { close() }"
             >
               <template #icon>
-                <ScrollText :size="16" />
+                <i class="icon-[lucide--scroll-text] size-4" />
               </template>
             </IconTextButton>
           </template>

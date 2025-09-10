@@ -58,7 +58,7 @@ export interface LinkRenderContext {
   disabledPattern?: CanvasPattern | null
 }
 
-export interface LinkRenderOptions {
+interface LinkRenderOptions {
   color?: CanvasColour
   flow?: boolean
   skipBorder?: boolean

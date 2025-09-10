@@ -13,7 +13,7 @@ const DEFAULT_ICON = 'pi pi-sort'
 export const DEFAULT_GROUPING_ID = 'category' as const
 export const DEFAULT_SORTING_ID = 'original' as const
 
-export class NodeOrganizationService {
+class NodeOrganizationService {
   private readonly groupingStrategies: NodeGroupingStrategy[] = [
     {
       id: 'category',

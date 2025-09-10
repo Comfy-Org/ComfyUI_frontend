@@ -134,7 +134,7 @@ export class SubgraphSlotReference {
   }
 }
 
-export class NodeSlotReference {
+class NodeSlotReference {
   constructor(
     readonly type: 'input' | 'output',
     readonly index: number,
@@ -201,7 +201,7 @@ export class NodeSlotReference {
   }
 }
 
-export class NodeWidgetReference {
+class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference

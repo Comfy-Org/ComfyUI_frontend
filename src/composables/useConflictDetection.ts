@@ -22,6 +22,7 @@ import type {
   NodePackRequirements,
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
+import { normalizePackId } from '@/utils/packUtils'
 import {
   cleanVersion,
   satisfiesVersion,
@@ -874,9 +875,7 @@ function mergeConflictsByPackageName(
 
   conflicts.forEach((conflict) => {
     // Normalize package name by removing version suffix (@1_0_3) for consistent merging
-    const normalizedPackageName = conflict.package_name.includes('@')
-      ? conflict.package_name.substring(0, conflict.package_name.indexOf('@'))
-      : conflict.package_name
+    const normalizedPackageName = normalizePackId(conflict.package_name)
 
     if (mergedMap.has(normalizedPackageName)) {
       // Package already exists, merge conflicts

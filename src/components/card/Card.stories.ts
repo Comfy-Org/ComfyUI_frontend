@@ -1,13 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import {
-  Download,
-  Folder,
-  Heart,
-  Info,
-  MoreVertical,
-  Star,
-  Upload
-} from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import IconButton from '../button/IconButton.vue'
@@ -149,14 +140,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     CardTitle,
     CardDescription,
     IconButton,
-    SquareChip,
-    Info,
-    Folder,
-    Heart,
-    Download,
-    Star,
-    Upload,
-    MoreVertical
+    SquareChip
   },
   setup() {
     const favorited = ref(false)
@@ -202,14 +186,14 @@ const createCardTemplate = (args: CardStoryArgs) => ({
                 class="!bg-white/90 !text-neutral-900"
                 @click="() => console.log('Info clicked')"
               >
-                <Info :size="16" />
+                <i class="icon-[lucide--info] size-4" />
               </IconButton>
               <IconButton
                 class="!bg-white/90"
                 :class="favorited ? '!text-red-500' : '!text-neutral-900'"
                 @click="toggleFavorite"
               >
-                <Heart :size="16" :fill="favorited ? 'currentColor' : 'none'" />
+                <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />
               </IconButton>
             </template>
             
@@ -222,7 +206,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
               <SquareChip v-if="args.showFileSize" :label="args.fileSize" />
               <SquareChip v-for="tag in args.tags" :key="tag" :label="tag">
                 <template v-if="tag === 'LoRA'" #icon>
-                  <Folder :size="12" />
+                  <i class="icon-[lucide--folder] size-3" />
                 </template>
               </SquareChip>
             </template>
@@ -409,11 +393,7 @@ export const GridOfCards: Story = {
       CardTitle,
       CardDescription,
       IconButton,
-      SquareChip,
-      Info,
-      Folder,
-      Heart,
-      Download
+      SquareChip
     },
     setup() {
       const cards = ref([
@@ -500,7 +480,7 @@ export const GridOfCards: Story = {
                     class="!bg-white/90 !text-neutral-900"
                     @click="() => console.log('Info:', card.title)"
                   >
-                    <Info :size="16" />
+                    <i class="icon-[lucide--info] size-4" />
                   </IconButton>
                 </template>
                 
@@ -511,7 +491,7 @@ export const GridOfCards: Story = {
                     :label="tag"
                   >
                     <template v-if="tag === 'LoRA'" #icon>
-                      <Folder :size="12" />
+                      <i class="icon-[lucide--folder] size-3" />
                     </template>
                   </SquareChip>
                   <SquareChip :label="card.size" />
