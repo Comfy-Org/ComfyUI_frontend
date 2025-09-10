@@ -456,20 +456,6 @@ class LayoutStoreImpl implements LayoutStore {
     const existing = this.slotLayouts.get(key)
 
     if (existing) {
-      // Short-circuit if nothing changed to avoid spatial index churn
-      if (
-        existing.nodeId === layout.nodeId &&
-        existing.index === layout.index &&
-        existing.type === layout.type &&
-        existing.position.x === layout.position.x &&
-        existing.position.y === layout.position.y &&
-        existing.bounds.x === layout.bounds.x &&
-        existing.bounds.y === layout.bounds.y &&
-        existing.bounds.width === layout.bounds.width &&
-        existing.bounds.height === layout.bounds.height
-      ) {
-        return
-      }
       // Update spatial index
       this.slotSpatialIndex.update(key, layout.bounds)
     } else {
@@ -1457,26 +1443,9 @@ class LayoutStoreImpl implements LayoutStore {
         const ynode = this.ynodes.get(nodeId)
         if (!ynode) continue
 
-        // Short-circuit when bounds are unchanged to avoid churn
-        const currentBounds = this.getNodeField(ynode, 'bounds')
-        const sameBounds =
-          currentBounds.x === bounds.x &&
-          currentBounds.y === bounds.y &&
-          currentBounds.width === bounds.width &&
-          currentBounds.height === bounds.height
-        if (sameBounds) continue
-
         this.spatialIndex.update(nodeId, bounds)
         ynode.set('bounds', bounds)
-
-        // Keep size in sync with bounds
-        const currentSize = this.getNodeField(ynode, 'size')
-        if (
-          currentSize.width !== bounds.width ||
-          currentSize.height !== bounds.height
-        ) {
-          ynode.set('size', { width: bounds.width, height: bounds.height })
-        }
+        ynode.set('size', { width: bounds.width, height: bounds.height })
       }
     }, this.currentActor)
 

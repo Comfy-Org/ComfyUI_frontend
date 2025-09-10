@@ -8,19 +8,10 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, inject, onMounted, onUnmounted } from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted } from 'vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point } from '@/renderer/core/layout/types'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
-
-// Per-element conversion context
-const elementConversion = new WeakMap<
-  HTMLElement,
-  { screenToCanvas?: (p: Point) => Point }
->()
 
 /**
  * Configuration for different types of tracked elements
@@ -53,20 +44,14 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
-  // Group updates by type, then flush via each config's handler
+  // Group updates by element type
   const updatesByType = new Map<string, Array<{ id: string; bounds: Bounds }>>()
-
-  // Read container origin once per batch to avoid repeated layout reads
-  const container = document.getElementById('graph-canvas-container')
-  const originRect = container?.getBoundingClientRect()
-  const originLeft = originRect?.left ?? 0
-  const originTop = originRect?.top ?? 0
 
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
-    // Identify type + id via config dataAttribute
+    // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
 
@@ -81,54 +66,31 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
 
-    // Use contentBoxSize when available; fall back to contentRect for older engines/tests
-    const contentBox = Array.isArray(entry.contentBoxSize)
-      ? entry.contentBoxSize[0]
-      : {
-          inlineSize: entry.contentRect.width,
-          blockSize: entry.contentRect.height
-        }
-    const width = contentBox.inlineSize
-    const height = contentBox.blockSize
-
-    // Screen-space rect
+    const { inlineSize: width, blockSize: height } = entry.contentBoxSize[0]
     const rect = element.getBoundingClientRect()
-    let bounds: Bounds = { x: rect.left, y: rect.top, width, height }
 
-    // Convert to canvas space and adjust for title band when possible
-    const ctx = elementConversion.get(element)
-    if (ctx?.screenToCanvas) {
-      const topLeftCanvas = ctx.screenToCanvas({
-        x: bounds.x - originLeft,
-        y: bounds.y - originTop
-      })
-      const dimCanvas = ctx.screenToCanvas({
-        x: bounds.width,
-        y: bounds.height
-      })
-      const originCanvas = ctx.screenToCanvas({ x: 0, y: 0 })
-      const canvasWidth = Math.max(0, dimCanvas.x - originCanvas.x)
-      const canvasHeight = Math.max(0, dimCanvas.y - originCanvas.y)
-      bounds = {
-        x: topLeftCanvas.x,
-        y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
-        width: canvasWidth,
-        height: Math.max(0, canvasHeight - LiteGraph.NODE_TITLE_HEIGHT)
-      }
+    const bounds: Bounds = {
+      x: rect.left,
+      y: rect.top,
+      width,
+      height: height-LiteGraph.NODE_TITLE_HEIGHT
     }
 
-    let updates = updatesByType.get(elementType)
-    if (!updates) {
-      updates = []
-      updatesByType.set(elementType, updates)
+    if (!updatesByType.has(elementType)) {
+      updatesByType.set(elementType, [])
     }
-    updates.push({ id: elementId, bounds })
+    const updates = updatesByType.get(elementType)
+    if (updates) {
+      updates.push({ id: elementId, bounds })
+    }
   }
 
-  // Flush per-type
+  // Process updates by type
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
-    if (config && updates.length) config.updateHandler(updates)
+    if (config && updates.length > 0) {
+      config.updateHandler(updates)
+    }
   }
 })
 
@@ -157,23 +119,16 @@ export function useVueElementTracking(
   appIdentifier: string,
   trackingType: string
 ) {
-  // For canvas-space conversion: provided by TransformPane
-  const transformState = inject(TransformStateKey)
-
   onMounted(() => {
     const element = getCurrentInstance()?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
 
     const config = trackingConfigs.get(trackingType)
-    if (!config) return // Set the data attribute expected by the RO pipeline for this type
-    element.dataset[config.dataAttribute] = appIdentifier
-    // Remember transformer for this element
-    if (transformState?.screenToCanvas) {
-      elementConversion.set(element, {
-        screenToCanvas: transformState.screenToCanvas
-      })
+    if (config) {
+      // Set the appropriate data attribute
+      element.dataset[config.dataAttribute] = appIdentifier
+      resizeObserver.observe(element)
     }
-    resizeObserver.observe(element)
   })
 
   onUnmounted(() => {
@@ -181,11 +136,10 @@ export function useVueElementTracking(
     if (!(element instanceof HTMLElement)) return
 
     const config = trackingConfigs.get(trackingType)
-    if (!config) return
-
-    // Remove the data attribute and observer
-    delete element.dataset[config.dataAttribute]
-    resizeObserver.unobserve(element)
-    elementConversion.delete(element)
+    if (config) {
+      // Remove the data attribute
+      delete element.dataset[config.dataAttribute]
+      resizeObserver.unobserve(element)
+    }
   })
 }

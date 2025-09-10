@@ -33,6 +33,7 @@
 import {
   type ComponentPublicInstance,
   computed,
+  inject,
   onErrorCaptured,
   ref,
   watchEffect
@@ -42,7 +43,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // DOM-based slot registration for arbitrary positioning
-import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import {
+  type TransformState,
+  useDomSlotRegistration
+} from '@/renderer/core/layout/slots/useDomSlotRegistration'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -73,6 +77,11 @@ onErrorCaptured((error) => {
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
 
+const transformState = inject<TransformState | undefined>(
+  'transformState',
+  undefined
+)
+
 const connectionDotRef = ref<ComponentPublicInstance<{
   slotElRef: HTMLElement | undefined
 }> | null>(null)
@@ -85,10 +94,11 @@ watchEffect(() => {
   slotElRef.value = el || null
 })
 
-useSlotElementTracking({
+useDomSlotRegistration({
   nodeId: props.nodeId ?? '',
-  index: props.index,
+  slotIndex: props.index,
   isInput: false,
-  element: slotElRef
+  element: slotElRef,
+  transform: transformState
 })
 </script>

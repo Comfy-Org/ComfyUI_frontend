@@ -16,7 +16,6 @@ import { computed, provide } from 'vue'
 import { useCanvasTransformSync } from '@/composables/graph/useCanvasTransformSync'
 import { useTransformSettling } from '@/composables/graph/useTransformSettling'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useTransformState } from '@/renderer/core/layout/useTransformState'
 
 interface TransformPaneProps {
@@ -40,7 +39,7 @@ const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
   trackPan: true
 })
 
-provide(TransformStateKey, {
+provide('transformState', {
   camera,
   canvasToScreen,
   screenToCanvas,
