@@ -237,7 +237,7 @@ export class QueueSidebarTab extends SidebarTab {
     if (width < 0 || width > 100) {
       throw new Error('Width must be between 0 and 100')
     }
-    return this.page.evaluate((width) => {
+    return await this.page.evaluate((width) => {
       localStorage.setItem('queue', JSON.stringify([width, 100 - width]))
     }, width)
   }

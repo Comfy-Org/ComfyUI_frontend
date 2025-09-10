@@ -37,8 +37,8 @@ test.describe('Remote COMBO Widget', () => {
     }, nodeName)
   }
 
-  const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
-    return comfyPage.page.evaluate((name) => {
+  const clickRefreshButton = async (comfyPage: ComfyPage, nodeName: string) => {
+    return await comfyPage.page.evaluate((name) => {
       const node = window['app'].graph.nodes.find((node) => node.title === name)
       const buttonWidget = node.widgets.find((w) => w.name === 'refresh')
       return buttonWidget?.callback()

@@ -1540,7 +1540,7 @@ export class ComfyPage {
   }
 
   async convertOffsetToCanvas(pos: [number, number]) {
-    return this.page.evaluate((pos) => {
+    return await this.page.evaluate((pos) => {
       return window['app'].canvas.ds.convertOffsetToCanvas(pos)
     }, pos)
   }
@@ -1592,21 +1592,21 @@ export class ComfyPage {
     await this.page.mouse.move(10, 10)
   }
   async getUndoQueueSize() {
-    return this.page.evaluate(() => {
+    return await this.page.evaluate(() => {
       const workflow = (window['app'].extensionManager as WorkspaceStore)
         .workflow.activeWorkflow
       return workflow?.changeTracker.undoQueue.length
     })
   }
   async getRedoQueueSize() {
-    return this.page.evaluate(() => {
+    return await this.page.evaluate(() => {
       const workflow = (window['app'].extensionManager as WorkspaceStore)
         .workflow.activeWorkflow
       return workflow?.changeTracker.redoQueue.length
     })
   }
   async isCurrentWorkflowModified() {
-    return this.page.evaluate(() => {
+    return await this.page.evaluate(() => {
       return (window['app'].extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.isModified
     })
