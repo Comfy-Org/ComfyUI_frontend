@@ -31,7 +31,7 @@ export interface Serialisable<SerialisableObject> {
   asSerialisable(): SerialisableObject
 }
 
-export interface BaseExportedGraph {
+interface BaseExportedGraph {
   /** Unique graph ID.  Automatically generated if not provided. */
   id: UUID
   /** The revision number of this graph. Not automatically incremented; intended for use by a downstream save function. */

@@ -1,6 +1,6 @@
 import type { ComputedRef, InjectionKey } from 'vue'
 
-export interface ImportFailedContext {
+interface ImportFailedContext {
   importFailed: ComputedRef<boolean>
   showImportFailedDialog: () => void
 }

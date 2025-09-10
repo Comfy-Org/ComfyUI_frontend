@@ -187,6 +187,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true
   },
   {
+    id: 'Comfy.Workflow.WarnBlueprintOverwrite',
+    name: 'Require confirmation to overwrite an existing subgraph blueprint',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
@@ -966,5 +972,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false,
     experimental: true,
     versionAdded: '1.27.1'
+  },
+  {
+    id: 'Comfy.Assets.UseAssetAPI',
+    name: 'Use Asset API for model library',
+    type: 'boolean',
+    tooltip: 'Use new Asset API for model browsing',
+    defaultValue: false,
+    experimental: true
   }
 ]

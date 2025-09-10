@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import WidgetColorPicker from '@/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue'
 import WidgetFileUpload from '@/renderer/extensions/vueNodes/widgets/components/WidgetFileUpload.vue'
+import WidgetInputNumber from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
 import WidgetMarkdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
-import WidgetSlider from '@/renderer/extensions/vueNodes/widgets/components/WidgetSlider.vue'
 import WidgetTextarea from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
 import {
@@ -20,15 +20,15 @@ describe('widgetRegistry', () => {
     // Test number type mappings
     describe('number types', () => {
       it('should map int types to slider widget', () => {
-        expect(getComponent('int')).toBe(WidgetSlider)
-        expect(getComponent('INT')).toBe(WidgetSlider)
+        expect(getComponent('int')).toBe(WidgetInputNumber)
+        expect(getComponent('INT')).toBe(WidgetInputNumber)
       })
 
       it('should map float types to slider widget', () => {
-        expect(getComponent('float')).toBe(WidgetSlider)
-        expect(getComponent('FLOAT')).toBe(WidgetSlider)
-        expect(getComponent('number')).toBe(WidgetSlider)
-        expect(getComponent('slider')).toBe(WidgetSlider)
+        expect(getComponent('float')).toBe(WidgetInputNumber)
+        expect(getComponent('FLOAT')).toBe(WidgetInputNumber)
+        expect(getComponent('number')).toBe(WidgetInputNumber)
+        expect(getComponent('slider')).toBe(WidgetInputNumber)
       })
     })
 

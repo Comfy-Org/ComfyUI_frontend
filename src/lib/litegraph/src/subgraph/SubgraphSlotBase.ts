@@ -28,7 +28,7 @@ import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
 
-export interface SubgraphSlotDrawOptions {
+interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D
   colorContext: DefaultConnectionColors
   lowQuality?: boolean

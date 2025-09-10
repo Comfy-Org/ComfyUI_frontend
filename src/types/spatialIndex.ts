@@ -1,7 +1,7 @@
 /**
  * Type definitions for spatial indexing system
  */
-import type { Bounds } from '@/utils/spatial/QuadTree'
+import type { Bounds } from '@/renderer/core/spatial/QuadTree'
 
 /**
  * Debug information for a single QuadTree node

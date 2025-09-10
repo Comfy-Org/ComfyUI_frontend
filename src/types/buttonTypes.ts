@@ -1,8 +1,8 @@
 import type { HTMLAttributes } from 'vue'
 
 export type ButtonSize = 'fit-content' | 'sm' | 'md'
-export type ButtonType = 'primary' | 'secondary' | 'transparent'
-export type ButtonBorder = boolean
+type ButtonType = 'primary' | 'secondary' | 'transparent'
+type ButtonBorder = boolean
 
 export interface BaseButtonProps {
   size?: ButtonSize

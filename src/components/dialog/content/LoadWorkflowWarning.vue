@@ -54,19 +54,12 @@
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import { useDialogService } from '@/services/dialogService'
+import { useManagerState } from '@/composables/useManagerState'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useCommandStore } from '@/stores/commandStore'
-import {
-  ManagerUIState,
-  useManagerStateStore
-} from '@/stores/managerStateStore'
-import { useToastStore } from '@/stores/toastStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
@@ -81,6 +74,7 @@ const { missingNodePacks, isLoading, error, missingCoreNodes } =
   useMissingNodes()
 
 const comfyManagerStore = useComfyManagerStore()
+const managerState = useManagerState()
 
 // Check if any of the missing packs are currently being installed
 const isInstalling = computed(() => {
@@ -111,47 +105,21 @@ const uniqueNodes = computed(() => {
     })
 })
 
-const managerStateStore = useManagerStateStore()
-
 // Show manager buttons unless manager is disabled
 const showManagerButtons = computed(() => {
-  return managerStateStore.managerUIState !== ManagerUIState.DISABLED
+  return managerState.shouldShowManagerButtons.value
 })
 
 // Only show Install All button for NEW_UI (new manager with v4 support)
 const showInstallAllButton = computed(() => {
-  return managerStateStore.managerUIState === ManagerUIState.NEW_UI
+  return managerState.shouldShowInstallButton.value
 })
 
 const openManager = async () => {
-  const state = managerStateStore.managerUIState
-
-  switch (state) {
-    case ManagerUIState.DISABLED:
-      useDialogService().showSettingsDialog('extension')
-      break
-
-    case ManagerUIState.LEGACY_UI:
-      try {
-        await useCommandStore().execute('Comfy.Manager.Menu.ToggleVisibility')
-      } catch {
-        // If legacy command doesn't exist, show toast
-        const { t } = useI18n()
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('manager.legacyMenuNotAvailable'),
-          life: 3000
-        })
-      }
-      break
-
-    case ManagerUIState.NEW_UI:
-      useDialogService().showManagerDialog({
-        initialTab: ManagerTab.Missing
-      })
-      break
-  }
+  await managerState.openManager({
+    initialTab: ManagerTab.Missing,
+    showToastOnLegacyError: true
+  })
 }
 </script>
 

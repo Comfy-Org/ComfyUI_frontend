@@ -53,6 +53,7 @@ import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
@@ -797,6 +798,7 @@ export class ComfyApp {
     this.resizeCanvas()
 
     await useWorkspaceStore().workflow.syncWorkflows()
+    await useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
 
     this.#addProcessKeyHandler()
@@ -905,7 +907,7 @@ export class ComfyApp {
       LiteGraph.registered_node_types
     )) {
       // Skip if we already have a backend definition or system definition
-      if (name in defs || name in SYSTEM_NODE_DEFS) {
+      if (name in defs || name in SYSTEM_NODE_DEFS || node.skip_list) {
         continue
       }
 
@@ -1058,6 +1060,8 @@ export class ComfyApp {
       checkForRerouteMigration = false
     } = {}
   ) {
+    useWorkflowService().beforeLoadNewGraph()
+
     if (clean !== false) {
       this.clean()
     }
@@ -1093,7 +1097,6 @@ export class ComfyApp {
         severity: 'warn'
       })
     }
-    useWorkflowService().beforeLoadNewGraph()
     useSubgraphService().loadSubgraphs(graphData)
 
     const missingNodeTypes: MissingNodeType[] = []
@@ -1765,6 +1768,12 @@ export class ComfyApp {
     executionStore.lastExecutionError = null
 
     useDomWidgetStore().clear()
+
+    // Subgraph does not properly implement `clear` and the parent class's
+    // (`LGraph`) `clear` breaks the subgraph structure.
+    if (this.graph && !this.canvas.subgraph) {
+      this.graph.clear()
+    }
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
