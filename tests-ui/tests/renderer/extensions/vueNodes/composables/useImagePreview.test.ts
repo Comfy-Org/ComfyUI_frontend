@@ -1,8 +1,29 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImagePreview } from '@/renderer/extensions/vueNodes/composables/useImagePreview'
 
+vi.mock('@/stores/commandStore', () => ({
+  useCommandStore: vi.fn(() => ({
+    execute: vi.fn().mockResolvedValue(undefined)
+  }))
+}))
+
+vi.mock('@/stores/imagePreviewStore', () => ({
+  useNodeOutputStore: vi.fn(() => ({
+    removeNodeOutputs: vi.fn().mockReturnValue(true)
+  }))
+}))
+
 describe('useImagePreview', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
   const mockImageUrls = [
     '/api/view?filename=test1.png&type=output',
     '/api/view?filename=test2.png&type=output',
@@ -14,13 +35,26 @@ describe('useImagePreview', () => {
     naturalWidth: number,
     naturalHeight: number
   ): Event => {
-    const mockImg = {
-      naturalWidth,
-      naturalHeight,
+    // Create a mock that satisfies HTMLImageElement type checking
+    const mockImg = Object.create(HTMLImageElement.prototype)
+
+    // Define naturalWidth and naturalHeight as properties since they're readonly on HTMLImageElement
+    Object.defineProperty(mockImg, 'naturalWidth', {
+      value: naturalWidth,
+      writable: false,
+      configurable: true
+    })
+    Object.defineProperty(mockImg, 'naturalHeight', {
+      value: naturalHeight,
+      writable: false,
+      configurable: true
+    })
+
+    Object.assign(mockImg, {
       addEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
       removeEventListener: vi.fn()
-    } satisfies EventTarget & { naturalWidth: number; naturalHeight: number }
+    })
 
     return {
       target: mockImg,
@@ -100,19 +134,6 @@ describe('useImagePreview', () => {
     expect(currentIndex.value).toBe(2) // Should remain unchanged
   })
 
-  it('handles edit mask action', () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    const { handleEditMask } = useImagePreview(mockImageUrls)
-
-    handleEditMask()
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Edit/Mask clicked for:',
-      mockImageUrls[0]
-    )
-
-    consoleSpy.mockRestore()
-  })
-
   it('handles download action', () => {
     // Mock DOM methods
     const mockLink = {
@@ -122,13 +143,13 @@ describe('useImagePreview', () => {
     }
     const mockCreateElement = vi
       .spyOn(document, 'createElement')
-      .mockReturnValue(mockLink as any)
+      .mockReturnValue(mockLink as unknown as HTMLAnchorElement)
     const mockAppendChild = vi
       .spyOn(document.body, 'appendChild')
-      .mockImplementation(() => mockLink as any)
+      .mockImplementation(() => mockLink as unknown as HTMLAnchorElement)
     const mockRemoveChild = vi
       .spyOn(document.body, 'removeChild')
-      .mockImplementation(() => mockLink as any)
+      .mockImplementation(() => mockLink as unknown as HTMLAnchorElement)
 
     const { handleDownload } = useImagePreview(mockImageUrls)
     handleDownload()
@@ -142,19 +163,6 @@ describe('useImagePreview', () => {
     mockCreateElement.mockRestore()
     mockAppendChild.mockRestore()
     mockRemoveChild.mockRestore()
-  })
-
-  it('handles remove action', () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    const { handleRemove } = useImagePreview(mockImageUrls)
-
-    handleRemove()
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Remove clicked for:',
-      mockImageUrls[0]
-    )
-
-    consoleSpy.mockRestore()
   })
 
   it('handles image load event correctly', () => {
@@ -187,17 +195,5 @@ describe('useImagePreview', () => {
     // Change to second image
     setCurrentIndex(1)
     expect(actualDimensions.value).toBeNull()
-  })
-
-  it('composable functions are properly defined', () => {
-    const { handleEditMask, handleDownload, handleRemove } =
-      useImagePreview(mockImageUrls)
-
-    expect(handleEditMask).toBeDefined()
-    expect(typeof handleEditMask).toBe('function')
-    expect(handleDownload).toBeDefined()
-    expect(typeof handleDownload).toBe('function')
-    expect(handleRemove).toBeDefined()
-    expect(typeof handleRemove).toBe('function')
   })
 })
