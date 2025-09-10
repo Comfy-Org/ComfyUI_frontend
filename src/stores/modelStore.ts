@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { ModelFile } from '@/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { assetService } from '@/services/assetService'
 import { useSettingStore } from '@/stores/settingStore'
@@ -157,9 +158,7 @@ export class ModelFolder {
 
   constructor(
     public directory: string,
-    private getModelsFunc: (
-      folder: string
-    ) => Promise<{ name: string; pathIndex: number }[]>
+    private getModelsFunc: (folder: string) => Promise<ModelFile[]>
   ) {}
 
   get key(): string {
