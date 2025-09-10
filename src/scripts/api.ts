@@ -384,14 +384,16 @@ export class ComfyApi extends EventTarget {
    * Poll status  for colab and other things that don't support websockets.
    */
   #pollQueue() {
-    setInterval(async () => {
-      try {
-        const resp = await this.fetchApi('/prompt')
-        const status = (await resp.json()) as StatusWsMessageStatus
-        this.dispatchCustomEvent('status', status)
-      } catch (error) {
-        this.dispatchCustomEvent('status', null)
-      }
+    setInterval(() => {
+      void (async () => {
+        try {
+          const resp = await this.fetchApi('/prompt')
+          const status = (await resp.json()) as StatusWsMessageStatus
+          this.dispatchCustomEvent('status', status)
+        } catch (error) {
+          this.dispatchCustomEvent('status', null)
+        }
+      })()
     }, 1000)
   }
 

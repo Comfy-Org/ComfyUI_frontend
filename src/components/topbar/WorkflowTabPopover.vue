@@ -94,40 +94,42 @@ const showPopover = (event: Event) => {
   }
 
   // Show popover after a short delay
-  showTimeout = setTimeout(async () => {
-    if (popoverRef.value && positionRef.value) {
-      popoverRef.value.show(event, positionRef.value)
-      await nextTick()
-      // PrimeVue has a bug where when the tabs are scrolled, it positions the element incorrectly
-      // Manually set the position to the middle of the tab and prevent it from going off the left/right edge
-      const el = document.querySelector(
-        `.workflow-popover-fade[data-popover-id="${id}"]`
-      ) as HTMLElement
-      if (el) {
-        const middle = positionRef.value!.getBoundingClientRect().left
-        const popoverWidth = el.getBoundingClientRect().width
-        const halfWidth = popoverWidth / 2
-        let pos = middle - halfWidth
-        let shift = 0
+  showTimeout = setTimeout(() => {
+    void (async () => {
+      if (popoverRef.value && positionRef.value) {
+        popoverRef.value.show(event, positionRef.value)
+        await nextTick()
+        // PrimeVue has a bug where when the tabs are scrolled, it positions the element incorrectly
+        // Manually set the position to the middle of the tab and prevent it from going off the left/right edge
+        const el = document.querySelector(
+          `.workflow-popover-fade[data-popover-id="${id}"]`
+        ) as HTMLElement
+        if (el) {
+          const middle = positionRef.value!.getBoundingClientRect().left
+          const popoverWidth = el.getBoundingClientRect().width
+          const halfWidth = popoverWidth / 2
+          let pos = middle - halfWidth
+          let shift = 0
 
-        // Calculate shift when clamping is needed
-        if (pos < 0) {
-          shift = pos - 8 // Negative shift to move arrow left
-          pos = 8
-        } else if (pos + popoverWidth > window.innerWidth) {
-          const newPos = window.innerWidth - popoverWidth - 16
-          shift = pos - newPos // Positive shift to move arrow right
-          pos = newPos
+          // Calculate shift when clamping is needed
+          if (pos < 0) {
+            shift = pos - 8 // Negative shift to move arrow left
+            pos = 8
+          } else if (pos + popoverWidth > window.innerWidth) {
+            const newPos = window.innerWidth - popoverWidth - 16
+            shift = pos - newPos // Positive shift to move arrow right
+            pos = newPos
+          }
+
+          if (shift + halfWidth < 0) {
+            shift = -halfWidth + 24
+          }
+
+          el.style.left = `${pos}px`
+          el.style.setProperty('--shift', `${shift}px`)
         }
-
-        if (shift + halfWidth < 0) {
-          shift = -halfWidth + 24
-        }
-
-        el.style.left = `${pos}px`
-        el.style.setProperty('--shift', `${shift}px`)
       }
-    }
+    })()
   }, 200) // 200ms delay before showing
 }
 

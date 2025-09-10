@@ -144,7 +144,7 @@ app.registerExtension({
     }
 
     // @ts-expect-error fixme ts strict error
-    node[WEBCAM_READY].then((v) => {
+    void node[WEBCAM_READY].then((v) => {
       video = v
       // If width isnt specified then use video output resolution
       // @ts-expect-error fixme ts strict error

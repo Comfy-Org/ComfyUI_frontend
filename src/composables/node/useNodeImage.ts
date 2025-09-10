@@ -72,7 +72,7 @@ const useNodePreview = <T extends MediaElement>(
 
     if (options?.block) node.isLoading = true
 
-    loadElements(outputUrls)
+    void loadElements(outputUrls)
       .then((elements) => {
         const validElements = elements.filter(
           (el): el is NonNullable<Awaited<T>> => el !== null

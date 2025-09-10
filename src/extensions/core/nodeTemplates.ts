@@ -39,7 +39,7 @@ class ManageTemplates extends ComfyDialog {
 
   constructor() {
     super()
-    this.load().then((v) => {
+    void this.load().then((v) => {
       this.templates = v
     })
 
