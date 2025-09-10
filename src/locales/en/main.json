@@ -1757,6 +1757,9 @@
     "copiedTooltip": "Copied",
     "copyTooltip": "Copy message to clipboard"
   },
+  "widgets": {
+    "selectModel": "Select model"
+  },
   "nodeHelpPage": {
     "inputs": "Inputs",
     "outputs": "Outputs",
