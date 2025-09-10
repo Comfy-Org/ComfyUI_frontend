@@ -161,7 +161,6 @@ import { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
@@ -404,19 +403,9 @@ const nodeOutputs = useNodeOutputStore()
 
 const nodeImageUrls = ref<string[]>([])
 const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
-  // Construct proper locator ID using subgraph ID from VueNodeData
-  const locatorId = nodeData.subgraphId
-    ? `${nodeData.subgraphId}:${nodeData.id}`
-    : nodeData.id
-
-  // Use root graph for getNodeByLocatorId since it needs to traverse from root
-  const rootGraph = app.graph?.rootGraph || app.graph
-  if (!rootGraph) {
-    nodeImageUrls.value = []
-    return
-  }
-
-  const node = getNodeByLocatorId(rootGraph, locatorId)
+  // Get the current graph context (subgraph if viewing one, otherwise root graph)
+  const currentGraph = app.canvas.graph || app.graph
+  const node = currentGraph?.getNodeById(Number(nodeData.id))
   if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
     if (urls) {
@@ -442,4 +431,8 @@ watch(
 
 // Provide nodeImageUrls to child components
 provide('nodeImageUrls', nodeImageUrls)
+provide(
+  'nodeId',
+  computed(() => String(nodeData.id))
+)
 </script>
