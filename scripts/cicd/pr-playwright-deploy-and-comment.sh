@@ -177,17 +177,23 @@ else
                 echo "$url" > "$temp_dir/$i.url"
                 echo "Deployment result for $browser: $url"
                 
-                # Extract test counts if Node.js is available
-                EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.mjs"
+                # Extract test counts using tsx (TypeScript executor)
+                EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
                 REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
                 
-                if command -v node > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
+                # Check if tsx is available, install if not
+                if ! command -v tsx > /dev/null 2>&1; then
+                    echo "Installing tsx..." >&2
+                    npm install -g tsx >&2 || echo "Failed to install tsx" >&2
+                fi
+                
+                if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
                     echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                    counts=$(node "$EXTRACT_SCRIPT" "$REPORT_DIR" 2>&1 || echo '{}')
+                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" 2>&1 || echo '{}')
                     echo "Extracted counts for $browser: $counts" >&2
                     echo "$counts" > "$temp_dir/$i.counts"
                 else
-                    echo "Script not found or Node.js not available: $EXTRACT_SCRIPT" >&2
+                    echo "Script not found or tsx not available: $EXTRACT_SCRIPT" >&2
                     echo '{}' > "$temp_dir/$i.counts"
                 fi
             ) &

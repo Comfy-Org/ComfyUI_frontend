@@ -1,15 +1,35 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 import fs from 'fs';
 import path from 'path';
 
+interface TestStats {
+  expected?: number;
+  unexpected?: number;
+  flaky?: number;
+  skipped?: number;
+  finished?: number;
+}
+
+interface ReportData {
+  stats?: TestStats;
+}
+
+interface TestCounts {
+  passed: number;
+  failed: number;
+  flaky: number;
+  skipped: number;
+  total: number;
+}
+
 /**
  * Extract test counts from Playwright HTML report
- * @param {string} reportDir - Path to the playwright-report directory
- * @returns {Object} Test counts { passed, failed, flaky, skipped, total }
+ * @param reportDir - Path to the playwright-report directory
+ * @returns Test counts { passed, failed, flaky, skipped, total }
  */
-function extractTestCounts(reportDir) {
-  const counts = {
+function extractTestCounts(reportDir: string): TestCounts {
+  const counts: TestCounts = {
     passed: 0,
     failed: 0,
     flaky: 0,
@@ -21,13 +41,14 @@ function extractTestCounts(reportDir) {
     // First, try to find report.json which Playwright generates with JSON reporter
     const jsonReportFile = path.join(reportDir, 'report.json');
     if (fs.existsSync(jsonReportFile)) {
-      const reportJson = JSON.parse(fs.readFileSync(jsonReportFile, 'utf-8'));
+      const reportJson: ReportData = JSON.parse(fs.readFileSync(jsonReportFile, 'utf-8'));
       if (reportJson.stats) {
-        counts.total = reportJson.stats.expected || 0;
-        counts.passed = reportJson.stats.expected - (reportJson.stats.unexpected || 0) - (reportJson.stats.flaky || 0) - (reportJson.stats.skipped || 0);
-        counts.failed = reportJson.stats.unexpected || 0;
-        counts.flaky = reportJson.stats.flaky || 0;
-        counts.skipped = reportJson.stats.skipped || 0;
+        const stats = reportJson.stats;
+        counts.total = stats.expected || 0;
+        counts.passed = (stats.expected || 0) - (stats.unexpected || 0) - (stats.flaky || 0) - (stats.skipped || 0);
+        counts.failed = stats.unexpected || 0;
+        counts.flaky = stats.flaky || 0;
+        counts.skipped = stats.skipped || 0;
         return counts;
       }
     }
@@ -43,14 +64,15 @@ function extractTestCounts(reportDir) {
       if (dataMatch) {
         try {
           const decodedData = Buffer.from(dataMatch[1], 'base64').toString('utf-8');
-          const reportData = JSON.parse(decodedData);
+          const reportData: ReportData = JSON.parse(decodedData);
           
           if (reportData.stats) {
-            counts.total = reportData.stats.expected || 0;
-            counts.passed = reportData.stats.expected - (reportData.stats.unexpected || 0) - (reportData.stats.flaky || 0) - (reportData.stats.skipped || 0);
-            counts.failed = reportData.stats.unexpected || 0;
-            counts.flaky = reportData.stats.flaky || 0;
-            counts.skipped = reportData.stats.skipped || 0;
+            const stats = reportData.stats;
+            counts.total = stats.expected || 0;
+            counts.passed = (stats.expected || 0) - (stats.unexpected || 0) - (stats.flaky || 0) - (stats.skipped || 0);
+            counts.failed = stats.unexpected || 0;
+            counts.flaky = stats.flaky || 0;
+            counts.skipped = stats.skipped || 0;
             return counts;
           }
         } catch (e) {
@@ -63,14 +85,15 @@ function extractTestCounts(reportDir) {
       if (dataMatch) {
         try {
           // Use Function constructor instead of eval for safety
-          const reportData = (new Function('return ' + dataMatch[1]))();
+          const reportData = (new Function('return ' + dataMatch[1]))() as ReportData;
           
           if (reportData.stats) {
-            counts.total = reportData.stats.expected || 0;
-            counts.passed = reportData.stats.expected - (reportData.stats.unexpected || 0) - (reportData.stats.flaky || 0) - (reportData.stats.skipped || 0);
-            counts.failed = reportData.stats.unexpected || 0;
-            counts.flaky = reportData.stats.flaky || 0;
-            counts.skipped = reportData.stats.skipped || 0;
+            const stats = reportData.stats;
+            counts.total = stats.expected || 0;
+            counts.passed = (stats.expected || 0) - (stats.unexpected || 0) - (stats.flaky || 0) - (stats.skipped || 0);
+            counts.failed = stats.unexpected || 0;
+            counts.flaky = stats.flaky || 0;
+            counts.skipped = stats.skipped || 0;
             return counts;
           }
         } catch (e) {
@@ -118,7 +141,7 @@ function extractTestCounts(reportDir) {
 const reportDir = process.argv[2];
 
 if (!reportDir) {
-  console.error('Usage: extract-playwright-counts.mjs <report-directory>');
+  console.error('Usage: extract-playwright-counts.ts <report-directory>');
   process.exit(1);
 }
 
