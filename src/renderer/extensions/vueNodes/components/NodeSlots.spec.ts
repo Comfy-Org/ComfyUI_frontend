@@ -184,6 +184,7 @@ describe('NodeSlots.vue', () => {
         .map((w) => w.element as HTMLElement),
       ...wrapper
         .findAll('.stub-output-slot')
+        .filter((w) => w.element instanceof HTMLElement)
         .map((w) => w.element as HTMLElement)
     ]
     expect(all.length).toBe(2)
