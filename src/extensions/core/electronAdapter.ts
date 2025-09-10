@@ -1,13 +1,26 @@
 import log from 'loglevel'
 
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
-import { t } from '@/i18n'
+import { i18n, t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useToastStore } from '@/stores/toastStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 import { checkMirrorReachable } from '@/utils/networkUtil'
+
+// Generate platform and language-aware desktop guide URL
+const getDesktopGuideUrl = (): string => {
+  const isChineseLocale = i18n.global.locale.value === 'zh'
+  const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+
+  const platform = isMacOS ? 'macos' : 'windows'
+  const baseUrl = isChineseLocale
+    ? 'https://docs.comfy.org/zh-CN/installation/desktop'
+    : 'https://docs.comfy.org/installation/desktop'
+
+  return `${baseUrl}/${platform}`
+}
 
 ;(async () => {
   if (!isElectron()) return
@@ -159,7 +172,7 @@ import { checkMirrorReachable } from '@/utils/networkUtil'
         label: 'Desktop User Guide',
         icon: 'pi pi-book',
         function() {
-          window.open('https://comfyorg.notion.site/', '_blank')
+          window.open(getDesktopGuideUrl(), '_blank')
         }
       },
       {
