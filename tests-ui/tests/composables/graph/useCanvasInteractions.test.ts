@@ -24,6 +24,11 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+function createMockLGraphCanvas(read_only = true): LGraphCanvas {
+  const mockCanvas: Partial<LGraphCanvas> = { read_only }
+  return mockCanvas as LGraphCanvas
+}
+
 function createMockPointerEvent(
   buttons: PointerEvent['buttons'] = 1
 ): PointerEvent {
@@ -52,9 +57,9 @@ describe('useCanvasInteractions', () => {
 
   describe('handlePointer', () => {
     it('should forward space+drag events to canvas when read_only is true', () => {
-      const mockCanvas: Partial<LGraphCanvas> = { read_only: true }
       const { getCanvas } = useCanvasStore()
-      vi.mocked(getCanvas).mockReturnValue(mockCanvas as LGraphCanvas)
+      const mockCanvas = createMockLGraphCanvas(true)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
 
       const { handlePointer } = useCanvasInteractions()
 
@@ -66,9 +71,9 @@ describe('useCanvasInteractions', () => {
     })
 
     it('should forward middle mouse button events to canvas', () => {
-      const mockCanvas: Partial<LGraphCanvas> = { read_only: false }
       const { getCanvas } = useCanvasStore()
-      vi.mocked(getCanvas).mockReturnValue(mockCanvas as LGraphCanvas)
+      const mockCanvas = createMockLGraphCanvas(false)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointer } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent(4) // Middle mouse button
@@ -79,9 +84,9 @@ describe('useCanvasInteractions', () => {
     })
 
     it('should not prevent default when canvas is not in read_only mode and not middle button', () => {
-      const mockCanvas: Partial<LGraphCanvas> = { read_only: false }
       const { getCanvas } = useCanvasStore()
-      vi.mocked(getCanvas).mockReturnValue(mockCanvas as LGraphCanvas)
+      const mockCanvas = createMockLGraphCanvas(false)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointer } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent(1) // Left Mouse Button
