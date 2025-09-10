@@ -189,7 +189,72 @@ export default {
           800: '#b38400',
           900: '#997200',
           950: '#664d00'
-        }
+        },
+
+        // Base colors
+        'pure-black': '#000000',
+        'pure-white': '#FFFFFF',
+
+        // Charcoal palette
+        'charcoal-100': '#171718',
+        'charcoal-200': '#202121',
+        'charcoal-300': '#262729',
+        'charcoal-400': '#2D2E32',
+        'charcoal-500': '#313235',
+        'charcoal-600': '#3C3D42',
+        'charcoal-700': '#494A50',
+        'charcoal-800': '#55565E',
+
+        // Stone palette
+        'stone-100': '#444444',
+        'stone-200': '#828282',
+        'stone-300': '#BBBBBB',
+
+        // Ivory palette
+        'ivory-100': '#FDFBFA',
+        'ivory-200': '#FAF9F5',
+        'ivory-300': '#F0EEE6',
+
+        // Gray palette
+        'gray-100': '#F3F3F3',
+        'gray-200': '#E9E9E9',
+        'gray-300': '#E1E1E1',
+        'gray-400': '#D9D9D9',
+        'gray-500': '#C5C5C5',
+        'gray-600': '#B4B4B4',
+        'gray-700': '#A0A0A0',
+        'gray-800': '#8A8A8A',
+
+        // Sand palette
+        'sand-100': '#E1DED5',
+        'sand-200': '#D6CFC2',
+        'sand-300': '#888682',
+
+        // Slate palette
+        'slate-100': '#9C9EAB',
+        'slate-200': '#9FA2BD',
+        'slate-300': '#5B5E7D',
+
+        // Brand colors
+        'brand-yellow': '#F0FF41',
+        'brand-blue': '#172DD7',
+
+        // Functional colors
+        'blue-100': '#0B8CE9',
+        'blue-200': '#31B9F4',
+        'success-100': '#00CD72',
+        'success-200': '#47E469',
+        'warning-100': '#FD9903',
+        'warning-200': '#FCBF64',
+        'danger-100': '#C02323',
+        'danger-200': '#D62952',
+        error: '#962A2A',
+
+        // Alpha variants
+        'blue-selection': 'rgba(11, 140, 233, 0.3)',
+        'node-hover-100': 'rgba(85, 86, 94, 0.15)',
+        'node-hover-200': 'rgba(85, 86, 94, 0.1)',
+        'modal-tag': 'rgba(217, 217, 217, 0.4)'
       },
 
       textColor: {
