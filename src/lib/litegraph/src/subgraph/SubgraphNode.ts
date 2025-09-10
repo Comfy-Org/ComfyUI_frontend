@@ -148,7 +148,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     this.type = subgraph.id
-    this.configure(instanceData)
+    ////FIXME: This breaks subgraph conversion
+    //this.configure(instanceData)
 
     this.addTitleButton({
       name: 'enter_subgraph',
@@ -305,6 +306,23 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         break
       }
     }
+    //ensure proxyWidgets is enumerated during serialization
+    this.properties.proxyWidgets ??= []
+    const proxyWidgets = this.properties.proxyWidgets
+    Object.defineProperty(this.properties, 'proxyWidgets', {
+      get: () => {
+        return this.widgets.filter((w) => !!w._overlay)
+          .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
+      },
+      set: (property) => {
+        //NOTE: This does not apply to pushed entries, only initial load
+        this.widgets = this.widgets.filter((w) => !w._overlay)
+        for (const [nodeId, widgetName] of property)
+          this.addProxyWidget(`${nodeId}`, widgetName)
+        //TODO: set dirty canvas
+      }
+    })
+    this.properties.proxyWidgets = proxyWidgets
   }
 
   #setWidget(
@@ -576,21 +594,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // Call parent serialize method
     return super.serialize()
   }
-  onPropertyChanged(k, property) {
-    if (k !== "proxyWidgets") return
-      this.widgets = this.widgets.filter((w) => !w.isProxyWidget)
-    setTimeout(() => {
-      for (const [nodeId, widgetName] of property)
-        this.addProxyFromOverlay({
-          __proto__:{nodeId, widgetName}})
-    }, 0)
-
-  }
   addProxyWidget(nodeId: string, widgetName: string) {
     const overlay = {nodeId, widgetName}
-    this.properties.proxyWidgets ??= []
-    //NOTE: This doesn't trigger onPropertyChanged
-    this.properties.proxyWidgets.push([overlay.nodeId, overlay.widgetName])
     return this.addProxyFromOverlay({__proto__:overlay})
   }
   addProxyFromOverlay(overlay: Object) {
@@ -611,11 +616,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!n) return
         return n.widgets.find((w) => w.name === widgetName)
     }
+    let lw = undefined
     const handler = Object.fromEntries(['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function(t,p,...rest) {
         if (s == 'get' && p == '_overlay')
           return overlay
-        const lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
+        if (!lw) {
+          lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
+        }
         if (s == 'get' && p == 'node') {
           return subgraphNode
         }
