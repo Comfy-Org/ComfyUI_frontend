@@ -186,6 +186,8 @@ describe('NodeSlots.vue', () => {
         .map((w) => w.element as HTMLElement)
     ]
     expect(all.length).toBe(2)
-    all.forEach((el) => expect(el.dataset.readonly).toBe('true'))
+    for (const el of all) {
+      expect.soft(el.dataset.readonly).toBe('true')
+    }
   })
 })
