@@ -61,12 +61,12 @@ import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNode
 import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useManagerState } from '@/composables/useManagerState'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { ManagerTab } from '@/types/comfyManagerTypes'
 
 import PackInstallButton from './manager/button/PackInstallButton.vue'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useToastStore } from '@/stores/toastStore'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
