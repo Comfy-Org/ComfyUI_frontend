@@ -1,7 +1,5 @@
 <template>
-  <span v-if="icon" class="text-xs text-neutral">
-    <component :is="icon" />
-  </span>
+  <i :class="icon" class="text-xs text-neutral" />
 </template>
 
 <script setup lang="ts">
