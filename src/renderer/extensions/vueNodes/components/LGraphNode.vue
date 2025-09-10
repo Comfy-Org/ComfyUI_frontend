@@ -8,6 +8,7 @@
     :class="
       cn(
         'bg-white dark-theme:bg-charcoal-primary',
+        { 'dark-theme:bg-[#171718]': executing },
         'min-w-[445px]',
         'lg-node absolute border border-solid rounded-2xl',
         'outline outline-transparent outline-2',
@@ -15,12 +16,12 @@
           'outline-black dark-theme:outline-white': isSelected
         },
         {
-          'border-blue-500 ring-2 ring-blue-300': isSelected,
+          'border-blue-500 ring-2 ring-blue-300': isSelected && !executing,
           'border-sand-primary dark-theme:border-charcoal-tertiary':
-            !isSelected,
-          'animate-pulse': executing,
+            !isSelected && !executing,
+          'border-[#0B8CE9]': executing,
           'opacity-50': nodeData.mode === 4,
-          'border-red-500 bg-red-50': error,
+          'border-red-500 bg-red-50': error && !executing,
           'will-change-transform': isDragging
         },
         lodCssClass,
@@ -102,11 +103,10 @@
       </div>
     </template>
 
-    <!-- Progress bar for executing state -->
     <div
       v-if="executing && progress !== undefined"
-      class="absolute bottom-0 left-0 h-1 bg-primary-500 transition-all duration-300"
-      :style="{ width: `${progress * 100}%` }"
+      class="absolute left-0 h-1.5 bg-[#0B8CE9] transition-all duration-300"
+      :style="{ width: `${progress * 100}%`, top: '56px' }"
     />
   </div>
 </template>
@@ -119,6 +119,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { cn } from '@/utils/tailwindUtil'
@@ -135,8 +136,6 @@ interface LGraphNodeProps {
   position?: { x: number; y: number }
   size?: { width: number; height: number }
   readonly?: boolean
-  executing?: boolean
-  progress?: number
   error?: string | null
   zoomLevel?: number
 }
@@ -167,6 +166,9 @@ if (!selectedNodeIds) {
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(props.nodeData.id)
 })
+
+// Use execution state composable
+const { executing, progress } = useNodeExecutionState(props.nodeData.id)
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => props.zoomLevel ?? 1)
