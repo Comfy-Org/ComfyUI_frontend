@@ -58,8 +58,8 @@ function onClick(e) {
 </script>
 <template>
   <div class="widget-item">
-    <div v-if="draggable">
-      <i-lucide:grip-vertical/>
+    <div class="icon">
+      <i-lucide:grip-vertical v-if="draggable"/>
     </div>
     <div class="widget-title">
       <div class="widget-node">{{item[0].title}}</div>
@@ -78,21 +78,24 @@ function onClick(e) {
 </template>
 
 <style scoped>
+.icon {
+  width: 16px;
+  height: 16px;
+}
 .widget-item {
   display: flex;
   padding: 4px 16px 4px 0;
   align-items: center;
   gap: 4px;
-  align-self: stretch;
+  width: 100%;
   border-radius: 4px;
   background: var(--bg-color, #202020);
 }
 .widget-title {
-display: flex;
-width: 269px;
-flex-direction: column;
-align-items: flex-start;
-gap: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 0 0;
 }
 .widget-node {
   display: flex;
@@ -111,7 +114,7 @@ gap: 4px;
 }
 .widget-name {
   color: var(--color-text-primary, #FFF);
-  
+
   /* body-text-small */
   font-family: Inter;
   font-size: 12px;

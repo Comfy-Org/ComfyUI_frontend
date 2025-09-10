@@ -46,6 +46,8 @@ const activeWidgets = computed({
 
 const candidateWidgets = computed(() =>{
   const node = canvasStore.selectedItems[0] ?? {}
+  triggerUpdate.value//mark dependent
+  const pw = node.properties.proxyWidgets ?? []
   const interiorNodes = node?.subgraph?.nodes ?? []
   node.widgets ??= []
   const intn = interiorNodes.flatMap((n) =>
@@ -53,7 +55,8 @@ const candidateWidgets = computed(() =>{
       return [n,w] ?? []
     }))
     //widget has connected link. Should not be displayed
-    .filter((i) => !i[1].computedDisabled)
+    .filter(([_, w]) => !w.computedDisabled)
+    .filter(([n,w]) => !pw.some(([pn,pw]) => n.id == pn && w.name == pw))
   //TODO: filter enabled/disabled items while keeping order
   return intn
 })
@@ -68,7 +71,8 @@ const candidateWidgets = computed(() =>{
         <div class="widgets-section">
         <draggable
             v-model="activeWidgets"
-            group="people"
+            group="enabledWidgets"
+            class="widget-container"
             :animation="100"
             @start="drag=true"
             @end="drag=false"
@@ -79,21 +83,23 @@ const candidateWidgets = computed(() =>{
         </draggable>
         </div>
         <div class="widgets-section">
-        <div v-for="element in candidateWidgets">
-          <SubgraphNodeWidget :item="element" :node="activeNode"/>
-        </div>
+          <div v-for="element in candidateWidgets" class="widget-container">
+            <SubgraphNodeWidget :item="element" :node="activeNode"/>
+          </div>
         </div>
       </template>
   </SidebarTabTemplate>
 </template>
 <style scoped>
+.widget-container {
+  width: 100%
+}
 .widgets-section {
   display: flex;
 
   padding: 4px 0 16px 0;
   flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
   align-self: stretch;
   border-bottom: 1px solid var(--color-node-divider, #2E3037);
 }
