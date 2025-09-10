@@ -124,13 +124,11 @@ const toggleRightPanel = () => {
 }
 
 // Computed classes for better readability
-const layoutClasses = computed(() => {
-  return cn(
-    'base-widget-layout',
-    'rounded-2xl overflow-hidden relative',
-    'bg-zinc-50 dark-theme:bg-zinc-800'
-  )
-})
+const layoutClasses = cn(
+  'base-widget-layout',
+  'rounded-2xl overflow-hidden relative',
+  'bg-zinc-50 dark-theme:bg-zinc-800'
+)
 
 const rightPanelButtonClasses = computed(() => {
   return cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
@@ -139,17 +137,20 @@ const rightPanelButtonClasses = computed(() => {
   })
 })
 
-const closeButtonClasses = computed(() => {
-  return cn('absolute top-4 right-6 z-10', 'transition-opacity duration-200')
-})
+const closeButtonClasses = cn(
+  'absolute top-4 right-6 z-10',
+  'transition-opacity duration-200'
+)
 
-const mainContainerClasses = computed(() => {
-  return cn('flex-1 flex', 'bg-zinc-100 dark-theme:bg-neutral-900')
-})
+const mainContainerClasses = cn(
+  'flex-1 flex',
+  'bg-zinc-100 dark-theme:bg-neutral-900'
+)
 
-const headerClasses = computed(() => {
-  return cn('w-full h-18 px-6', 'flex items-center justify-between gap-2')
-})
+const headerClasses = cn(
+  'w-full h-18 px-6',
+  'flex items-center justify-between gap-2'
+)
 
 const rightAreaClasses = computed(() => {
   return cn(

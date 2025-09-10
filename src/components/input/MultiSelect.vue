@@ -108,6 +108,7 @@ import { computed } from 'vue'
 
 import SearchBox from '@/components/input/SearchBox.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
+import { cn } from '@/utils/tailwindUtil'
 
 import TextButton from '../button/TextButton.vue'
 
@@ -188,12 +189,12 @@ const pt = computed(() => ({
   }),
   // Overlay & list visuals unchanged
   overlay: {
-    class: [
+    class: cn(
       'mt-2 rounded-lg py-2 px-2',
       'bg-white dark-theme:bg-zinc-800',
       'text-neutral dark-theme:text-white',
       'border border-solid border-neutral-200 dark-theme:border-zinc-700'
-    ]
+    )
   },
   listContainer: () => ({
     style: { maxHeight: listMaxHeight },

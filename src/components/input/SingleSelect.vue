@@ -1,10 +1,9 @@
 <template>
-  <!-- 
+  <!--
     Note: We explicitly pass options here (not just via $attrs) because:
     1. Our custom value template needs options to look up labels from values
     2. PrimeVue's value slot only provides 'value' and 'placeholder', not the selected item's label
     3. We need to maintain the icon slot functionality in the value template
-    
     option-label="name" is required because our option template directly accesses option.name
   -->
   <Select
@@ -19,7 +18,7 @@
     <!-- Trigger value -->
     <template #value="slotProps">
       <div class="flex items-center gap-2 text-sm text-neutral-500">
-        <slot name="icon" class=""></slot>
+        <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
           class="text-zinc-700 dark-theme:text-gray-200"
@@ -41,11 +40,7 @@
     <template #option="{ option, selected }">
       <div
         class="flex items-center justify-between gap-3 w-full"
-        :style="
-          popoverMinWidth || popoverMaxWidth
-            ? `${popoverMinWidth ? `min-width: ${popoverMinWidth} !important;` : ''} ${popoverMaxWidth ? `max-width: ${popoverMaxWidth} !important;` : ''}`
-            : undefined
-        "
+        :style="optionStyle"
       >
         <span class="truncate">{{ option.name }}</span>
         <i-lucide:check
@@ -60,6 +55,8 @@
 <script setup lang="ts">
 import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
 import { computed } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 defineOptions({
   inheritAttrs: false
@@ -104,6 +101,17 @@ const getLabel = (val: string | null | undefined) => {
   return found ? found.name : label ?? ''
 }
 
+// Extract complex style logic from template
+const optionStyle = computed(() => {
+  if (!popoverMinWidth && !popoverMaxWidth) return undefined
+
+  const styles: string[] = []
+  if (popoverMinWidth) styles.push(`min-width: ${popoverMinWidth}`)
+  if (popoverMaxWidth) styles.push(`max-width: ${popoverMaxWidth}`)
+
+  return styles.join('; ')
+})
+
 /**
  * Unstyled + PT API only
  * - No background/border (same as page background)
@@ -135,13 +143,14 @@ const pt = computed(() => ({
       'flex shrink-0 items-center justify-center px-3 py-2'
   },
   overlay: {
-    class: [
-      // dropdown panel
-      'mt-2 bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white rounded-lg border border-solid border-neutral-200 dark-theme:border-zinc-700 py-2 px-2'
-    ]
+    class: cn(
+      'mt-2 p-2 rounded-lg',
+      'bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
+      'border border-solid border-neutral-200 dark-theme:border-zinc-700'
+    )
   },
   listContainer: () => ({
-    style: `max-height: ${listMaxHeight} !important;`,
+    style: `max-height: ${listMaxHeight}`,
     class: 'overflow-y-auto scrollbar-hide'
   }),
   list: {

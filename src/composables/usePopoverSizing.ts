@@ -15,14 +15,16 @@ export function usePopoverSizing(
 ): ComputedRef<CSSProperties> {
   return computed(() => {
     const { minWidth, maxWidth } = options
+    const style: CSSProperties = {}
 
-    if (!minWidth && !maxWidth) {
-      return {}
+    if (minWidth) {
+      style.minWidth = minWidth
     }
 
-    return {
-      minWidth: minWidth || 'auto',
-      maxWidth: maxWidth || 'auto'
+    if (maxWidth) {
+      style.maxWidth = maxWidth
     }
+
+    return style
   })
 }
