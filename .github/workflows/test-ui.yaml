@@ -229,11 +229,10 @@ jobs:
 
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: |
-          npx playwright test --project=${{ matrix.browser }} \
-            --reporter=html \
-            --reporter='json:{"outputFile":"playwright-report/report.json"}'
+        run: npx playwright test --project=${{ matrix.browser }} --reporter=html --reporter=json
         working-directory: ComfyUI_frontend
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-report/report.json
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -279,10 +278,12 @@ jobs:
 
       - name: Merge into HTML Report
         run: |
-          # Generate both HTML and JSON reports
-          npx playwright merge-reports --reporter html ./all-blob-reports
-          npx playwright merge-reports --reporter 'json:{"outputFile":"playwright-report/report.json"}' ./all-blob-reports
+          npx playwright merge-reports --reporter html --reporter json ./all-blob-reports
+          # Move JSON report to the HTML report directory for easier access
+          [ -f "report.json" ] && mv report.json playwright-report/report.json
         working-directory: ComfyUI_frontend
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: report.json
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
