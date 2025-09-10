@@ -72,16 +72,15 @@ jobs:
         uses: anthropics/claude-code-action@main
         with:
           label_trigger: "claude-review"
-          direct_prompt: |
+          prompt: |
             Read the file .claude/commands/comprehensive-pr-review.md and follow ALL the instructions exactly. 
             
             CRITICAL: You must post individual inline comments using the gh api commands shown in the file. 
             DO NOT create a summary comment. 
             Each issue must be posted as a separate inline comment on the specific line of code.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          max_turns: 256
-          timeout_minutes: 30
-          allowed_tools: "Bash(git:*),Bash(gh api:*),Bash(gh pr:*),Bash(gh repo:*),Bash(jq:*),Bash(echo:*),Read,Write,Edit,Glob,Grep,WebFetch"
+          claude_args: "--max-turns 256 --timeout 30"
+          additional_permissions: "git:*,gh api:*,gh pr:*,gh repo:*,jq:*,echo:*,Read,Write,Edit,Glob,Grep,WebFetch"
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
