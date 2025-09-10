@@ -180,6 +180,7 @@ describe('NodeSlots.vue', () => {
     const all = [
       ...wrapper
         .findAll('.stub-input-slot')
+        .filter((w) => w.element instanceof HTMLElement)
         .map((w) => w.element as HTMLElement),
       ...wrapper
         .findAll('.stub-output-slot')
