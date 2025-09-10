@@ -171,6 +171,9 @@ importers:
       '@eslint/js':
         specifier: ^9.8.0
         version: 9.12.0
+      '@iconify-json/lucide':
+        specifier: ^1.2.66
+        version: 1.2.66
       '@iconify/tailwind':
         specifier: ^1.2.0
         version: 1.2.0
@@ -282,9 +285,6 @@ importers:
       lint-staged:
         specifier: ^15.2.7
         version: 15.2.7
-      lucide-vue-next:
-        specifier: ^0.540.0
-        version: 0.540.0(vue@3.5.13(typescript@5.9.2))
       nx:
         specifier: 21.4.1
         version: 21.4.1
@@ -1594,6 +1594,9 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@iconify-json/lucide@1.2.66':
+    resolution: {integrity: sha512-TrhmfThWY2FHJIckjz7g34gUx3+cmja61DcHNdmu0rVDBQHIjPMYO1O8mMjoDSqIXEllz9wDZxCqT3lFuI+f/A==}
 
   '@iconify/json@2.2.380':
     resolution: {integrity: sha512-+Al/Q+mMB/nLz/tawmJEOkCs6+RKKVUS/Yg9I80h2yRpu0kIzxVLQRfF0NifXz/fH92vDVXbS399wio4lMVF4Q==}
@@ -4735,11 +4738,6 @@ packages:
   lru-cache@8.0.5:
     resolution: {integrity: sha512-MhWWlVnuab1RG5/zMRRcVGXZLCXrZTgfwMikgzCegsPnG62yDQo5JnqKkrK4jO5iKqDAZGItAqN5CtKBCBWRUA==}
     engines: {node: '>=16.14'}
-
-  lucide-vue-next@0.540.0:
-    resolution: {integrity: sha512-H7qhKVNKLyoFMo05pWcGSWBiLPiI3zJmWV65SuXWHlrIGIcvDer10xAyWcRJ0KLzIH5k5+yi7AGw/Xi1VF8Pbw==}
-    peerDependencies:
-      vue: '>=3.0.1'
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -8023,6 +8021,10 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@iconify-json/lucide@1.2.66':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify/json@2.2.380':
     dependencies:
@@ -11562,10 +11564,6 @@ snapshots:
       yallist: 4.0.0
 
   lru-cache@8.0.5: {}
-
-  lucide-vue-next@0.540.0(vue@3.5.13(typescript@5.9.2)):
-    dependencies:
-      vue: 3.5.13(typescript@5.9.2)
 
   lz-string@1.5.0: {}
 
