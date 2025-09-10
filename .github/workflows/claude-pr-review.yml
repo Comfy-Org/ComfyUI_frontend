@@ -69,7 +69,7 @@ jobs:
           pnpm install -g typescript @vue/compiler-sfc
 
       - name: Run Claude PR Review
-        uses: anthropics/claude-code-action@main
+        uses: anthropics/claude-code-action@v1.0.6
         with:
           label_trigger: "claude-review"
           prompt: |
