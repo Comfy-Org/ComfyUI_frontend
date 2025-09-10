@@ -468,6 +468,25 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   /**
+   * Batch update slot layouts and spatial index in one pass
+   */
+  batchUpdateSlotLayouts(
+    updates: Array<{ key: string; layout: SlotLayout }>
+  ): void {
+    if (!updates.length) return
+
+    // Update spatial index and map entries
+    for (const { key, layout } of updates) {
+      if (this.slotLayouts.has(key)) {
+        this.slotSpatialIndex.update(key, layout.bounds)
+      } else {
+        this.slotSpatialIndex.insert(key, layout.bounds)
+      }
+      this.slotLayouts.set(key, layout)
+    }
+  }
+
+  /**
    * Delete slot layout data
    */
   deleteSlotLayout(key: string): void {

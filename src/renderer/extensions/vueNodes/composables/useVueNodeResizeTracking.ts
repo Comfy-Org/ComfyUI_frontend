@@ -16,6 +16,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 
+import { remeasureNodeSlotsNow } from './useSlotElementTracking'
+
 // Per-element conversion context
 const elementConversion = new WeakMap<
   HTMLElement,
@@ -65,6 +67,8 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 const resizeObserver = new ResizeObserver((entries) => {
   // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
+  // Track nodes whose slots should be remeasured after node size changes
+  const nodesNeedingSlotRemeasure = new Set<string>()
 
   // Read container origin once per batch to avoid repeated layout reads
   const container = document.getElementById('graph-canvas-container')
@@ -127,12 +131,24 @@ const resizeObserver = new ResizeObserver((entries) => {
       updatesByType.set(elementType, updates)
     }
     updates.push({ id: elementId, bounds })
+
+    // If this entry is a node, mark it for slot remeasure
+    if (elementType === 'node' && elementId) {
+      nodesNeedingSlotRemeasure.add(elementId)
+    }
   }
 
   // Flush per-type
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
     if (config && updates.length) config.updateHandler(updates)
+  }
+
+  // After node bounds are updated, refresh slot cached offsets and layouts
+  if (nodesNeedingSlotRemeasure.size > 0) {
+    for (const nodeId of nodesNeedingSlotRemeasure) {
+      remeasureNodeSlotsNow(nodeId, { left: originLeft, top: originTop })
+    }
   }
 })
 

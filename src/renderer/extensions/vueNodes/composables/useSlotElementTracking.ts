@@ -11,7 +11,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point } from '@/renderer/core/layout/types'
+import type { Point, SlotLayout } from '@/renderer/core/layout/types'
 
 type SlotEntry = {
   el: HTMLElement
@@ -55,30 +55,53 @@ function runBatchedMeasure() {
 
   for (const nodeId of Array.from(pendingNodes)) {
     pendingNodes.delete(nodeId)
-    const node = nodeRegistry.get(nodeId)
-    if (!node) continue
-    if (!node.screenToCanvas) continue
-    const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
-    if (!nodeLayout) continue
+    measureNodeSlotsNow(nodeId, originLeft, originTop)
+  }
+}
 
-    for (const [slotKey, entry] of node.slots) {
-      const rect = entry.el.getBoundingClientRect()
-      const centerScreen = {
-        x: rect.left + rect.width / 2 - originLeft,
-        y: rect.top + rect.height / 2 - originTop
-      }
-      const centerCanvas = node.screenToCanvas(centerScreen)
+function measureNodeSlotsNow(
+  nodeId: string,
+  originLeft?: number,
+  originTop?: number
+) {
+  const node = nodeRegistry.get(nodeId)
+  if (!node) return
+  if (!node.screenToCanvas) return
+  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  if (!nodeLayout) return
 
-      // Cache offset relative to node position for fast updates later
-      entry.cachedOffset = {
-        x: centerCanvas.x - nodeLayout.position.x,
-        y: centerCanvas.y - nodeLayout.position.y
-      }
+  // Compute origin lazily if not provided
+  let originL = originLeft
+  let originT = originTop
+  if (originL == null || originT == null) {
+    const container = document.getElementById('graph-canvas-container')
+    const originRect = container?.getBoundingClientRect()
+    originL = originRect?.left ?? 0
+    originT = originRect?.top ?? 0
+  }
 
-      // Persist layout in canvas coordinates
-      const size = LiteGraph.NODE_SLOT_HEIGHT
-      const half = size / 2
-      layoutStore.updateSlotLayout(slotKey, {
+  const batch: Array<{ key: string; layout: SlotLayout }> = []
+
+  for (const [slotKey, entry] of node.slots) {
+    const rect = entry.el.getBoundingClientRect()
+    const centerScreen = {
+      x: rect.left + rect.width / 2 - (originL ?? 0),
+      y: rect.top + rect.height / 2 - (originT ?? 0)
+    }
+    const centerCanvas = node.screenToCanvas(centerScreen)
+
+    // Cache offset relative to node position for fast updates later
+    entry.cachedOffset = {
+      x: centerCanvas.x - nodeLayout.position.x,
+      y: centerCanvas.y - nodeLayout.position.y
+    }
+
+    // Persist layout in canvas coordinates
+    const size = LiteGraph.NODE_SLOT_HEIGHT
+    const half = size / 2
+    batch.push({
+      key: slotKey,
+      layout: {
         nodeId,
         index: entry.index,
         type: entry.isInput ? 'input' : 'output',
@@ -89,9 +112,10 @@ function runBatchedMeasure() {
           width: size,
           height: size
         }
-      })
-    }
+      }
+    })
   }
+  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
 }
 
 function updateNodeSlotsFromCache(nodeId: string) {
@@ -100,31 +124,39 @@ function updateNodeSlotsFromCache(nodeId: string) {
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
+  const batch: Array<{ key: string; layout: SlotLayout }> = []
+
   for (const [slotKey, entry] of node.slots) {
     if (!entry.cachedOffset) {
       // schedule a remeasure to seed offset
       scheduleNodeMeasure(nodeId)
       continue
     }
+
     const centerCanvas = {
       x: nodeLayout.position.x + entry.cachedOffset.x,
       y: nodeLayout.position.y + entry.cachedOffset.y
     }
     const size = LiteGraph.NODE_SLOT_HEIGHT
     const half = size / 2
-    layoutStore.updateSlotLayout(slotKey, {
-      nodeId,
-      index: entry.index,
-      type: entry.isInput ? 'input' : 'output',
-      position: { x: centerCanvas.x, y: centerCanvas.y },
-      bounds: {
-        x: centerCanvas.x - half,
-        y: centerCanvas.y - half,
-        width: size,
-        height: size
+    batch.push({
+      key: slotKey,
+      layout: {
+        nodeId,
+        index: entry.index,
+        type: entry.isInput ? 'input' : 'output',
+        position: { x: centerCanvas.x, y: centerCanvas.y },
+        bounds: {
+          x: centerCanvas.x - half,
+          y: centerCanvas.y - half,
+          width: size,
+          height: size
+        }
       }
     })
   }
+
+  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
 }
 
 export function useSlotElementTracking(options: {
@@ -159,8 +191,18 @@ export function useSlotElementTracking(options: {
         nodeRef,
         (newLayout, oldLayout) => {
           if (newLayout && oldLayout) {
-            // Update from cache on any position/size change
-            updateNodeSlotsFromCache(nodeId)
+            const moved =
+              newLayout.position.x !== oldLayout.position.x ||
+              newLayout.position.y !== oldLayout.position.y
+            const resized =
+              newLayout.size.width !== oldLayout.size.width ||
+              newLayout.size.height !== oldLayout.size.height
+
+            // Only update from cache on move-only changes.
+            // On resizes (or move+resize), let ResizeObserver remeasure slots accurately.
+            if (moved && !resized) {
+              updateNodeSlotsFromCache(nodeId)
+            }
           }
         },
         { flush: 'post' }
@@ -196,4 +238,11 @@ export function useSlotElementTracking(options: {
   return {
     remeasure: () => scheduleNodeMeasure(nodeId)
   }
+}
+
+export function remeasureNodeSlotsNow(
+  nodeId: string,
+  origin?: { left: number; top: number }
+) {
+  measureNodeSlotsNow(nodeId, origin?.left, origin?.top)
 }
