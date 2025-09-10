@@ -105,25 +105,19 @@ const resizeObserver = new ResizeObserver((entries) => {
     const rect = element.getBoundingClientRect()
     let bounds: Bounds = { x: rect.left, y: rect.top, width, height }
 
-    // Convert to canvas space and adjust for title band when possible
+    // Convert position to canvas space (top-left), leave size as-is
+    // Note: ResizeObserver sizes are pre-transform; they already represent canvas units.
     const ctx = elementConversion.get(element)
     if (ctx?.screenToCanvas) {
       const topLeftCanvas = ctx.screenToCanvas({
         x: bounds.x - originLeft,
         y: bounds.y - originTop
       })
-      const dimCanvas = ctx.screenToCanvas({
-        x: bounds.width,
-        y: bounds.height
-      })
-      const originCanvas = ctx.screenToCanvas({ x: 0, y: 0 })
-      const canvasWidth = Math.max(0, dimCanvas.x - originCanvas.x)
-      const canvasHeight = Math.max(0, dimCanvas.y - originCanvas.y)
       bounds = {
         x: topLeftCanvas.x,
         y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
-        width: canvasWidth,
-        height: Math.max(0, canvasHeight - LiteGraph.NODE_TITLE_HEIGHT)
+        width: Math.max(0, width),
+        height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
       }
     }
 
