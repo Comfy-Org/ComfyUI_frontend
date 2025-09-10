@@ -19,6 +19,7 @@ import type {
   LayoutOperation,
   MoveNodeOperation,
   MoveRerouteOperation,
+  NodeBoundsUpdate,
   ResizeNodeOperation,
   SetNodeZIndexOperation
 } from '@/renderer/core/layout/types'
@@ -1429,9 +1430,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Batch update node bounds using Yjs transaction for atomicity.
    */
-  batchUpdateNodeBounds(
-    updates: Array<{ nodeId: NodeId; bounds: Bounds }>
-  ): void {
+  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void {
     if (updates.length === 0) return
 
     // Set source to Vue for these DOM-driven updates

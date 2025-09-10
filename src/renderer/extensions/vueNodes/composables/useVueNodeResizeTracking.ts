@@ -10,8 +10,19 @@
  */
 import { getCurrentInstance, onMounted, onUnmounted } from 'vue'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+
+/**
+ * Generic update item for element bounds tracking
+ */
+interface ElementBoundsUpdate {
+  /** Element identifier (could be nodeId, widgetId, slotId, etc.) */
+  id: string
+  /** Updated bounds */
+  bounds: Bounds
+}
 
 /**
  * Configuration for different types of tracked elements
@@ -20,7 +31,7 @@ interface ElementTrackingConfig {
   /** Data attribute name (e.g., 'nodeId') */
   dataAttribute: string
   /** Handler for processing bounds updates */
-  updateHandler: (updates: Array<{ id: string; bounds: Bounds }>) => void
+  updateHandler: (updates: ElementBoundsUpdate[]) => void
 }
 
 /**
@@ -45,7 +56,7 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
   // Group updates by element type
-  const updatesByType = new Map<string, Array<{ id: string; bounds: Bounds }>>()
+  const updatesByType = new Map<string, ElementBoundsUpdate[]>()
 
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
@@ -73,7 +84,7 @@ const resizeObserver = new ResizeObserver((entries) => {
       x: rect.left,
       y: rect.top,
       width,
-      height: height-LiteGraph.NODE_TITLE_HEIGHT
+      height: height - LiteGraph.NODE_TITLE_HEIGHT
     }
 
     if (!updatesByType.has(elementType)) {

@@ -31,6 +31,11 @@ export interface Bounds {
   height: number
 }
 
+export interface NodeBoundsUpdate {
+  nodeId: NodeId
+  bounds: Bounds
+}
+
 export type NodeId = string
 export type LinkId = number
 export type RerouteId = number
