@@ -82,9 +82,9 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     const bounds: Bounds = {
       x: rect.left,
-      y: rect.top,
+      y: rect.top - LiteGraph.NODE_TITLE_HEIGHT,
       width,
-      height: height - LiteGraph.NODE_TITLE_HEIGHT
+      height: height
     }
 
     if (!updatesByType.has(elementType)) {
