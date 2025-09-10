@@ -147,4 +147,19 @@ describe('assetService', () => {
       )
     })
   })
+
+  describe('isAssetBrowserEligible', () => {
+    it('should return true for eligible widget names', () => {
+      expect(assetService.isAssetBrowserEligible('ckpt_name')).toBe(true)
+      expect(assetService.isAssetBrowserEligible('lora_name')).toBe(true)
+      expect(assetService.isAssetBrowserEligible('vae_name')).toBe(true)
+    })
+
+    it('should return false for non-eligible widget names', () => {
+      expect(assetService.isAssetBrowserEligible('seed')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('steps')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('sampler_name')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('')).toBe(false)
+    })
+  })
 })

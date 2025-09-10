@@ -102,9 +102,31 @@ function createAssetService() {
     )
   }
 
+  /**
+   * Widget spec names that are eligible for asset browser
+   */
+  type AssetBrowserEligibleSpec = 'ckpt_name' | 'lora_name' | 'vae_name'
+
+  /**
+   * Checks if a widget input spec should use the asset browser
+   *
+   * @param specName - The input spec name (e.g., 'ckpt_name', 'lora_name')
+   * @returns true if this spec should use asset browser
+   */
+  function isAssetBrowserEligible(
+    specName: string
+  ): specName is AssetBrowserEligibleSpec {
+    return (
+      specName === 'ckpt_name' ||
+      specName === 'lora_name' ||
+      specName === 'vae_name'
+    )
+  }
+
   return {
     getAssetModelFolders,
-    getAssetModels
+    getAssetModels,
+    isAssetBrowserEligible
   }
 }
 
