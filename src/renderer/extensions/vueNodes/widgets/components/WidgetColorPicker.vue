@@ -16,7 +16,9 @@
         }"
         @update:model-value="onChange"
       />
-      <span class="text-xs">#{{ localValue }}</span>
+      <span class="text-xs">{{
+        localValue.startsWith('#') ? localValue : '#' + localValue
+      }}</span>
     </label>
   </WidgetLayoutField>
 </template>
