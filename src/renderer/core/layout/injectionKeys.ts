@@ -2,7 +2,7 @@ import type { InjectionKey } from 'vue'
 
 import type { Point } from '@/renderer/core/layout/types'
 
-interface TransformState {
+export interface TransformState {
   screenToCanvas: (p: Point) => Point
   canvasToScreen: (p: Point) => Point
   camera?: { x: number; y: number; z: number }
