@@ -35,9 +35,18 @@ describe('BypassButton', () => {
     }
   })
 
+  // Mock interfaces
+  interface MockCommandStore {
+    execute: ReturnType<typeof vi.fn>
+  }
+
+  interface MockSelectionState {
+    hasAnySelection: { value: boolean }
+  }
+
   // Mock instances
-  let mockCommandStore: any
-  let mockSelectionState: any
+  let mockCommandStore: MockCommandStore
+  let mockSelectionState: MockSelectionState
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -46,13 +55,17 @@ describe('BypassButton', () => {
     mockCommandStore = {
       execute: vi.fn().mockResolvedValue(undefined)
     }
-    vi.mocked(useCommandStore).mockReturnValue(mockCommandStore)
+    vi.mocked(useCommandStore).mockReturnValue(
+      mockCommandStore as unknown as ReturnType<typeof useCommandStore>
+    )
 
     // Setup mock selection state
     mockSelectionState = {
       hasAnySelection: ref(true)
     }
-    vi.mocked(useSelectionState).mockReturnValue(mockSelectionState)
+    vi.mocked(useSelectionState).mockReturnValue(
+      mockSelectionState as unknown as ReturnType<typeof useSelectionState>
+    )
   })
 
   const mountComponent = () => {
