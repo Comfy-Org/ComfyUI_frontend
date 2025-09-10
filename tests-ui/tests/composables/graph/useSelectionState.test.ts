@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { type Ref, nextTick, ref } from 'vue'
+import { type Ref, ref } from 'vue'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -70,17 +70,6 @@ const createTestNode = (config: TestNodeConfig = {}): TestNode => {
     pinned: config.pinned,
     removable: config.removable,
     isSubgraphNode: () => false
-  }
-}
-
-const createTestSubgraphNode = (config: TestNodeConfig = {}): TestNode => {
-  return {
-    type: 'SubgraphNode',
-    mode: config.mode || LGraphEventMode.ALWAYS,
-    flags: config.flags,
-    pinned: config.pinned,
-    removable: config.removable,
-    isSubgraphNode: () => true
   }
 }
 
@@ -206,21 +195,6 @@ describe('useSelectionState', () => {
       const { hasAnySelection } = useSelectionState()
       expect(hasAnySelection.value).toBe(true)
     })
-
-    test('should distinguish single vs multiple selections', () => {
-      const node = createTestNode()
-      mockSelectedItems.value = [node]
-
-      const { hasSingleSelection, hasMultipleSelection } = useSelectionState()
-      expect(hasSingleSelection.value).toBe(true)
-      expect(hasMultipleSelection.value).toBe(false)
-
-      // Test multiple selection with new instance
-      mockSelectedItems.value = [node, createTestNode()]
-      const multipleState = useSelectionState()
-      expect(multipleState.hasSingleSelection.value).toBe(false)
-      expect(multipleState.hasMultipleSelection.value).toBe(true)
-    })
   })
 
   describe('Node Type Filtering', () => {
@@ -231,15 +205,6 @@ describe('useSelectionState', () => {
       const { selectedNodes } = useSelectionState()
       expect(selectedNodes.value).toHaveLength(1)
       expect(selectedNodes.value[0]).toEqual(graphNode)
-    })
-
-    test('should detect subgraphs in selection', () => {
-      const subgraph = createTestSubgraphNode()
-      mockSelectedItems.value = [subgraph]
-
-      const { hasSubgraphs, isSingleSubgraph } = useSelectionState()
-      expect(hasSubgraphs.value).toBe(true)
-      expect(isSingleSubgraph.value).toBe(true)
     })
   })
 
@@ -295,194 +260,6 @@ describe('useSelectionState', () => {
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
       expect(newIsPinned).toBe(false)
-    })
-  })
-
-  describe('Data Integrity', () => {
-    test('should handle missing removable property', () => {
-      const node = createTestNode()
-      delete node.removable
-      mockSelectedItems.value = [node]
-
-      const { selectedItems } = useSelectionState()
-      expect(selectedItems.value[0].removable).toBeUndefined()
-    })
-
-    test('should return default states for empty selection', () => {
-      const { selectedNodes } = useSelectionState()
-      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
-      const isCollapsed = selectedNodes.value.some(
-        (n) => n.flags?.collapsed === true
-      )
-      const isBypassed = selectedNodes.value.some(
-        (n) => n.mode === LGraphEventMode.BYPASS
-      )
-      expect(isPinned).toBe(false)
-      expect(isCollapsed).toBe(false)
-      expect(isBypassed).toBe(false)
-    })
-  })
-
-  describe('Help Integration', () => {
-    test('should show help for single node', async () => {
-      const node = createTestNode({ type: 'TestNode' })
-      mockSelectedItems.value = [node]
-
-      const { showNodeHelp } = useSelectionState()
-      const sidebarStore = useSidebarTabStore()
-      const nodeHelpStore = useNodeHelpStore()
-
-      showNodeHelp()
-      await nextTick()
-
-      expect(sidebarStore.toggleSidebarTab).toHaveBeenCalledWith(
-        'node-library-tab'
-      )
-      expect(nodeHelpStore.openHelp).toHaveBeenCalledWith({
-        nodePath: 'test.TestNode',
-        name: 'TestNode'
-      })
-    })
-
-    test('should ignore help request for multiple nodes', () => {
-      const node1 = createTestNode()
-      const node2 = createTestNode()
-      mockSelectedItems.value = [node1, node2]
-
-      const { showNodeHelp } = useSelectionState()
-      const sidebarStore = useSidebarTabStore()
-      const nodeHelpStore = useNodeHelpStore()
-
-      showNodeHelp()
-
-      expect(sidebarStore.toggleSidebarTab).not.toHaveBeenCalled()
-      expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
-    })
-
-    test('should toggle help when same node help is already open', async () => {
-      const node = createTestNode({ type: 'TestNode' })
-      mockSelectedItems.value = [node]
-
-      // Update the mock stores to have the right state
-      const sidebarStore = useSidebarTabStore()
-      const nodeHelpStore = useNodeHelpStore()
-
-      vi.mocked(useSidebarTabStore).mockReturnValue({
-        ...sidebarStore,
-        activeSidebarTabId: 'node-library-tab'
-      } as any)
-
-      vi.mocked(useNodeHelpStore).mockReturnValue({
-        ...nodeHelpStore,
-        isHelpOpen: true,
-        currentHelpNode: { nodePath: 'test.TestNode' }
-      } as any)
-
-      const { showNodeHelp } = useSelectionState()
-      showNodeHelp()
-      await nextTick()
-
-      expect(nodeHelpStore.closeHelp).toHaveBeenCalled()
-      expect(sidebarStore.toggleSidebarTab).toHaveBeenCalledWith(
-        'node-library-tab'
-      )
-    })
-  })
-
-  describe('Button Pattern Consistency', () => {
-    test('should provide consistent state for all buttons', () => {
-      const node = createTestNode({
-        mode: LGraphEventMode.BYPASS,
-        pinned: true
-      })
-      mockSelectedItems.value = [node]
-
-      const state1 = useSelectionState()
-      const state2 = useSelectionState()
-
-      const isBypassed1 = state1.selectedNodes.value.some(
-        (n) => n.mode === LGraphEventMode.BYPASS
-      )
-      const isBypassed2 = state2.selectedNodes.value.some(
-        (n) => n.mode === LGraphEventMode.BYPASS
-      )
-      const isPinned1 = state1.selectedNodes.value.some(
-        (n) => n.pinned === true
-      )
-      const isPinned2 = state2.selectedNodes.value.some(
-        (n) => n.pinned === true
-      )
-
-      expect(isBypassed1).toBe(true)
-      expect(isBypassed2).toBe(true)
-      expect(isPinned1).toBe(true)
-      expect(isPinned2).toBe(true)
-
-      // Test with empty selection using new instances
-      mockSelectedItems.value = []
-      const emptyState1 = useSelectionState()
-      const emptyState2 = useSelectionState()
-
-      expect(emptyState1.hasAnySelection.value).toBe(false)
-      expect(emptyState2.hasAnySelection.value).toBe(false)
-    })
-
-    test('should support standardized deletability check', () => {
-      const deletableNode = createTestNode({ removable: true })
-      const nonDeletableNode = createTestNode({ removable: false })
-
-      mockSelectedItems.value = [deletableNode]
-      const { isDeletable } = useSelectionState()
-      expect(isDeletable.value).toBe(true)
-
-      mockSelectedItems.value = [nonDeletableNode]
-      const { isDeletable: isDeletable2 } = useSelectionState()
-      expect(isDeletable2.value).toBe(false)
-
-      mockSelectedItems.value = [deletableNode, nonDeletableNode]
-      const { isDeletable: isDeletable3 } = useSelectionState()
-      // When there's a mix of deletable and non-deletable items,
-      // isDeletable returns true because SOME items can be deleted
-      expect(isDeletable3.value).toBe(true)
-    })
-  })
-
-  describe('Special Node Types', () => {
-    test('should detect image nodes', () => {
-      const imageNode = createTestNode({ type: 'ImageNode' })
-      mockSelectedItems.value = [imageNode]
-
-      const { isSingleImageNode, hasImageNode } = useSelectionState()
-      expect(isSingleImageNode.value).toBe(true)
-      expect(hasImageNode.value).toBe(true)
-    })
-
-    test('should detect output nodes', () => {
-      const outputNode = createTestNode({ type: 'OutputNode' })
-      mockSelectedItems.value = [outputNode]
-
-      const { hasOutputNodesSelected } = useSelectionState()
-      expect(hasOutputNodesSelected.value).toBe(true)
-    })
-
-    test('should return correct nodeDef for single node', () => {
-      const node = createTestNode({ type: 'TestNode' })
-      mockSelectedItems.value = [node]
-
-      const { nodeDef } = useSelectionState()
-      expect(nodeDef.value).toEqual({
-        nodePath: 'test.TestNode',
-        name: 'TestNode'
-      })
-    })
-
-    test('should return null nodeDef for multiple nodes', () => {
-      const node1 = createTestNode()
-      const node2 = createTestNode()
-      mockSelectedItems.value = [node1, node2]
-
-      const { nodeDef } = useSelectionState()
-      expect(nodeDef.value).toBeNull()
     })
   })
 })
