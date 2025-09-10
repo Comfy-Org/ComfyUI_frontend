@@ -1,21 +1,28 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import ImagePreview from './ImagePreview.vue'
+import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 
 describe('ImagePreview', () => {
   const defaultProps = {
     imageUrls: [
       '/api/view?filename=test1.png&type=output',
       '/api/view?filename=test2.png&type=output'
-    ],
-    dimensions: '512 x 512'
+    ]
   }
 
   const mountImagePreview = (props = {}) => {
     return mount(ImagePreview, {
-      props: { ...defaultProps, ...props }
+      props: { ...defaultProps, ...props },
+      global: {
+        plugins: [
+          createTestingPinia({
+            createSpy: vi.fn
+          })
+        ]
+      }
     })
   }
 
