@@ -58,6 +58,12 @@ if ! command -v wrangler > /dev/null 2>&1; then
     }
 fi
 
+# Check if tsx is available, install if not
+if ! command -v tsx > /dev/null 2>&1; then
+    echo "Installing tsx..." >&2
+    npm install -g tsx >&2 || echo "Failed to install tsx" >&2
+fi
+
 # Deploy a single browser report, WARN: ensure inputs are sanitized before calling this function
 deploy_report() {
     dir="$1"
@@ -180,12 +186,6 @@ else
                 # Extract test counts using tsx (TypeScript executor)
                 EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
                 REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
-                
-                # Check if tsx is available, install if not
-                if ! command -v tsx > /dev/null 2>&1; then
-                    echo "Installing tsx..." >&2
-                    npm install -g tsx >&2 || echo "Failed to install tsx" >&2
-                fi
                 
                 if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
                     echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
