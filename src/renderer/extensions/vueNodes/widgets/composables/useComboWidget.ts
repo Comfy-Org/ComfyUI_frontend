@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
@@ -71,19 +70,11 @@ const addComboWidget = (
     // Get the default value for the button text (currently selected model)
     const currentValue = getDefaultValue(inputSpec)
 
-    const widget = node.addWidget(
-      'combo',
-      inputSpec.name,
-      currentValue,
-      () => {
-        console.log(
-          `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
-        )
-      },
-      {
-        values: [t('widgets.selectModel')]
-      }
-    )
+    const widget = node.addWidget('asset', inputSpec.name, currentValue, () => {
+      console.log(
+        `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
+      )
+    })
 
     return widget as IComboWidget
   }
