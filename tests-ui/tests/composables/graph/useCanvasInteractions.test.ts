@@ -35,6 +35,16 @@ function createMockPointerEvent(
   return mockEvent as PointerEvent
 }
 
+function createMockWheelEvent(ctrlKey = false, metaKey = false): WheelEvent {
+  const mockEvent: Partial<WheelEvent> = {
+    ctrlKey,
+    metaKey,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn()
+  }
+  return mockEvent as WheelEvent
+}
+
 describe('useCanvasInteractions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -106,59 +116,33 @@ describe('useCanvasInteractions', () => {
       const { handleWheel } = useCanvasInteractions()
 
       // Create mock wheel event with ctrl key
-      const mockEvent: Partial<WheelEvent> = {
-        ctrlKey: true,
-        metaKey: false,
-        preventDefault: vi.fn(),
-        stopPropagation: vi.fn()
-      }
+      const mockEvent = createMockWheelEvent(true, false)
 
-      // Test
-      handleWheel(mockEvent as WheelEvent)
+      handleWheel(mockEvent)
 
-      // Verify
       expect(mockEvent.preventDefault).toHaveBeenCalled()
     })
 
     it('should forward all wheel events to canvas in legacy nav mode', () => {
-      // Setup
       const { get } = useSettingStore()
       vi.mocked(get).mockReturnValue('legacy')
-
       const { handleWheel } = useCanvasInteractions()
 
       // Create mock wheel event without modifiers
-      const mockEvent: Partial<WheelEvent> = {
-        ctrlKey: false,
-        metaKey: false,
-        preventDefault: vi.fn(),
-        stopPropagation: vi.fn()
-      }
+      const mockEvent = createMockWheelEvent(false, false)
+      handleWheel(mockEvent)
 
-      // Test
-      handleWheel(mockEvent as WheelEvent)
-
-      // Verify
       expect(mockEvent.preventDefault).toHaveBeenCalled()
     })
 
     it('should not prevent default for regular wheel events in standard nav mode', () => {
-      // Setup
       const { get } = useSettingStore()
       vi.mocked(get).mockReturnValue('standard')
-
       const { handleWheel } = useCanvasInteractions()
 
       // Create mock wheel event without modifiers
-      const mockEvent: Partial<WheelEvent> = {
-        ctrlKey: false,
-        metaKey: false,
-        preventDefault: vi.fn(),
-        stopPropagation: vi.fn()
-      }
-
-      // Test
-      handleWheel(mockEvent as WheelEvent)
+      const mockEvent = createMockWheelEvent(false, false)
+      handleWheel(mockEvent)
 
       // Verify - should not prevent default (let component handle normally)
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
