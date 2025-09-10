@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ListBox from 'primevue/listbox'
-import { computed, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -132,26 +132,25 @@ const dialogStore = useDialogStore()
 const allMissingNodesInstalled = computed(() => {
   return (
     !isLoading.value &&
-    missingNodePacks.value?.length === 0 &&
-    !isInstalling.value
+    !isInstalling.value &&
+    missingNodePacks.value?.length === 0
   )
 })
-
 // Watch for completion and close dialog
-watch(allMissingNodesInstalled, (allInstalled) => {
-  if (allInstalled && missingNodePacks.value !== null) {
-    // Small delay to let the user see the completion
-    setTimeout(() => {
-      dialogStore.closeDialog({ key: 'global-load-workflow-warning' })
+watch(allMissingNodesInstalled, async (allInstalled) => {
+  if (allInstalled) {
+    // Use nextTick to ensure state updates are complete
+    await nextTick()
 
-      // Show success toast
-      useToastStore().add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('manager.allMissingNodesInstalled'),
-        life: 3000
-      })
-    }, 500)
+    dialogStore.closeDialog({ key: 'global-load-workflow-warning' })
+
+    // Show success toast
+    useToastStore().add({
+      severity: 'success',
+      summary: t('g.success'),
+      detail: t('manager.allMissingNodesInstalled'),
+      life: 3000
+    })
   }
 })
 </script>
