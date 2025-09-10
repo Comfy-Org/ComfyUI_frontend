@@ -10,7 +10,6 @@
  */
 import { getCurrentInstance, onMounted, onUnmounted } from 'vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 
@@ -82,7 +81,7 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     const bounds: Bounds = {
       x: rect.left,
-      y: rect.top - LiteGraph.NODE_TITLE_HEIGHT,
+      y: rect.top,
       width,
       height: height
     }

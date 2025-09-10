@@ -72,7 +72,7 @@ export function useSelectionToolboxPosition(
 
     worldPosition.value = {
       x: unionBounds.x + unionBounds.width / 2,
-      y: unionBounds.y
+      y: unionBounds.y - 10
     }
 
     updateTransform()
