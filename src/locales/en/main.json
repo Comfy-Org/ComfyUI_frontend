@@ -193,6 +193,8 @@
     "updateSelected": "Update Selected",
     "updateAll": "Update All",
     "updatingAllPacks": "Updating all packages",
+    "disabledNodesWontUpdate": "Disabled nodes will not be updated",
+    "enablePackToChangeVersion": "Enable this pack to change versions",
     "license": "License",
     "nightlyVersion": "Nightly",
     "latestVersion": "Latest",

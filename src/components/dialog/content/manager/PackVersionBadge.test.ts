@@ -35,7 +35,8 @@ vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
     installedPacks: mockInstalledPacks,
     isPackInstalled: (id: string) =>
-      !!mockInstalledPacks[id as keyof typeof mockInstalledPacks]
+      !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
+    isPackEnabled: vi.fn(() => true) // Default: all packs are enabled
   }))
 }))
 
@@ -227,6 +228,76 @@ describe('PackVersionBadge', () => {
 
       // Verify that the hide method was NOT called
       expect(mockHide).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('disabled state', () => {
+    const mockIsPackEnabledFalse = vi.fn(() => false)
+
+    beforeEach(() => {
+      vi.clearAllMocks()
+      vi.doMock('@/stores/comfyManagerStore', () => ({
+        useComfyManagerStore: vi.fn(() => ({
+          installedPacks: mockInstalledPacks,
+          isPackInstalled: (id: string) =>
+            !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
+          isPackEnabled: mockIsPackEnabledFalse
+        }))
+      }))
+    })
+
+    it('adds disabled styles when pack is disabled', () => {
+      const wrapper = mountComponent()
+
+      const badge = wrapper.find('[role="text"]') // role changes to "text" when disabled
+      expect(badge.exists()).toBe(true)
+      expect(badge.classes()).toContain('cursor-not-allowed')
+      expect(badge.classes()).toContain('opacity-60')
+    })
+
+    it('does not show chevron icon when disabled', () => {
+      const wrapper = mountComponent()
+
+      const chevronIcon = wrapper.find('.pi-chevron-right')
+      expect(chevronIcon.exists()).toBe(false)
+    })
+
+    it('does not show update arrow when disabled', () => {
+      vi.doMock('@/composables/nodePack/usePackUpdateStatus', () => ({
+        usePackUpdateStatus: vi.fn(() => ({
+          isUpdateAvailable: true // Even with update available
+        }))
+      }))
+
+      const wrapper = mountComponent()
+
+      const updateIcon = wrapper.find('.pi-arrow-circle-up')
+      expect(updateIcon.exists()).toBe(false)
+    })
+
+    it('does not toggle popover when clicked while disabled', async () => {
+      const wrapper = mountComponent()
+
+      await wrapper.find('[role="text"]').trigger('click')
+
+      expect(mockToggle).not.toHaveBeenCalled()
+    })
+
+    it('has correct tabindex when disabled', () => {
+      const wrapper = mountComponent()
+
+      const badge = wrapper.find('[role="text"]')
+      expect(badge.attributes('tabindex')).toBe('-1')
+    })
+
+    it('does not respond to keyboard events when disabled', async () => {
+      const wrapper = mountComponent()
+
+      const badge = wrapper.find('[role="text"]')
+      await badge.trigger('keydown.enter')
+      await badge.trigger('keydown.space')
+
+      expect(mockToggle).not.toHaveBeenCalled()
     })
   })
 })
