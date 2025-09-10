@@ -126,6 +126,7 @@ describe('useCanvasInteractions', () => {
       handleWheel(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
     })
 
     it('should forward all wheel events to canvas in legacy nav mode', () => {
@@ -138,6 +139,7 @@ describe('useCanvasInteractions', () => {
       handleWheel(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
     })
 
     it('should not prevent default for regular wheel events in standard nav mode', () => {
@@ -151,6 +153,7 @@ describe('useCanvasInteractions', () => {
 
       // Verify - should not prevent default (let component handle normally)
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
   })
 })
