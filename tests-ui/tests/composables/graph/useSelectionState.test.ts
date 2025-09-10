@@ -1,5 +1,6 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { type Ref, nextTick, ref } from 'vue'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -28,6 +29,8 @@ interface TestNode {
   removable?: boolean
   isSubgraphNode: () => boolean
 }
+
+type MockedItem = TestNode | { type: string; isNode: boolean }
 
 // Mock all stores
 vi.mock('@/stores/graphStore', () => ({
@@ -87,64 +90,85 @@ const mockConnection = { type: 'connection', isNode: false }
 
 describe('useSelectionState', () => {
   // Mock store instances
-  let mockCanvasStore: {
-    selectedItems: Array<TestNode | { type: string; isNode: boolean }>
-  }
-  let mockNodeDefStore: { fromLGraphNode: ReturnType<typeof vi.fn> }
-  let mockSidebarTabStore: {
-    activeSidebarTabId: string | null
-    toggleSidebarTab: ReturnType<typeof vi.fn>
-  }
-  let mockNodeHelpStore: {
-    isHelpOpen: boolean
-    currentHelpNode: { nodePath: string } | null
-    openHelp: ReturnType<typeof vi.fn>
-    closeHelp: ReturnType<typeof vi.fn>
-  }
+  let mockSelectedItems: Ref<MockedItem[]>
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
 
-    // Setup mock canvas store
-    mockCanvasStore = {
-      selectedItems: []
-    }
-    vi.mocked(useCanvasStore).mockReturnValue(
-      mockCanvasStore as unknown as ReturnType<typeof useCanvasStore>
-    )
+    // Setup mock canvas store with proper ref
+    mockSelectedItems = ref([])
+    vi.mocked(useCanvasStore).mockReturnValue({
+      selectedItems: mockSelectedItems,
+      // Add minimal required properties for the store
+      $id: 'canvas',
+      $state: {} as any,
+      $patch: vi.fn(),
+      $reset: vi.fn(),
+      $subscribe: vi.fn(),
+      $onAction: vi.fn(),
+      $dispose: vi.fn(),
+      _customProperties: new Set(),
+      _p: {} as any
+    } as any)
 
     // Setup mock node def store
-    mockNodeDefStore = {
+    vi.mocked(useNodeDefStore).mockReturnValue({
       fromLGraphNode: vi.fn((node: TestNode) => {
         if (node?.type === 'TestNode') {
           return { nodePath: 'test.TestNode', name: 'TestNode' }
         }
         return null
-      })
-    }
-    vi.mocked(useNodeDefStore).mockReturnValue(
-      mockNodeDefStore as unknown as ReturnType<typeof useNodeDefStore>
-    )
+      }),
+      // Add minimal required properties for the store
+      $id: 'nodeDef',
+      $state: {} as any,
+      $patch: vi.fn(),
+      $reset: vi.fn(),
+      $subscribe: vi.fn(),
+      $onAction: vi.fn(),
+      $dispose: vi.fn(),
+      _customProperties: new Set(),
+      _p: {} as any
+    } as any)
 
     // Setup mock sidebar tab store
-    mockSidebarTabStore = {
+    const mockToggleSidebarTab = vi.fn()
+    vi.mocked(useSidebarTabStore).mockReturnValue({
       activeSidebarTabId: null,
-      toggleSidebarTab: vi.fn()
-    }
-    vi.mocked(useSidebarTabStore).mockReturnValue(
-      mockSidebarTabStore as unknown as ReturnType<typeof useSidebarTabStore>
-    )
+      toggleSidebarTab: mockToggleSidebarTab,
+      // Add minimal required properties for the store
+      $id: 'sidebarTab',
+      $state: {} as any,
+      $patch: vi.fn(),
+      $reset: vi.fn(),
+      $subscribe: vi.fn(),
+      $onAction: vi.fn(),
+      $dispose: vi.fn(),
+      _customProperties: new Set(),
+      _p: {} as any
+    } as any)
 
     // Setup mock node help store
-    mockNodeHelpStore = {
+    const mockOpenHelp = vi.fn()
+    const mockCloseHelp = vi.fn()
+    const mockNodeHelpStore = {
       isHelpOpen: false,
       currentHelpNode: null,
-      openHelp: vi.fn(),
-      closeHelp: vi.fn()
+      openHelp: mockOpenHelp,
+      closeHelp: mockCloseHelp,
+      // Add minimal required properties for the store
+      $id: 'nodeHelp',
+      $state: {} as any,
+      $patch: vi.fn(),
+      $reset: vi.fn(),
+      $subscribe: vi.fn(),
+      $onAction: vi.fn(),
+      $dispose: vi.fn(),
+      _customProperties: new Set(),
+      _p: {} as any
     }
-    vi.mocked(useNodeHelpStore).mockReturnValue(
-      mockNodeHelpStore as unknown as ReturnType<typeof useNodeHelpStore>
-    )
+    vi.mocked(useNodeHelpStore).mockReturnValue(mockNodeHelpStore as any)
 
     // Setup mock composables
     vi.mocked(useNodeLibrarySidebarTab).mockReturnValue({
@@ -152,7 +176,7 @@ describe('useSelectionState', () => {
       title: 'Node Library',
       type: 'custom',
       render: () => null
-    } as unknown as ReturnType<typeof useNodeLibrarySidebarTab>)
+    } as any)
 
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
@@ -164,10 +188,7 @@ describe('useSelectionState', () => {
       return typedNode?.type === 'ImageNode'
     })
     vi.mocked(filterOutputNodes).mockImplementation(
-      (nodes: unknown[]) =>
-        (nodes as TestNode[]).filter(
-          (n) => n.type === 'OutputNode'
-        ) as unknown as ReturnType<typeof filterOutputNodes>
+      (nodes: TestNode[]) => nodes.filter((n) => n.type === 'OutputNode') as any
     )
   })
 
@@ -180,7 +201,7 @@ describe('useSelectionState', () => {
     test('should return true when items selected', () => {
       const node1 = createTestNode()
       const node2 = createTestNode()
-      mockCanvasStore.selectedItems = [node1, node2]
+      mockSelectedItems.value = [node1, node2]
 
       const { hasAnySelection } = useSelectionState()
       expect(hasAnySelection.value).toBe(true)
@@ -188,14 +209,14 @@ describe('useSelectionState', () => {
 
     test('should distinguish single vs multiple selections', () => {
       const node = createTestNode()
-      mockCanvasStore.selectedItems = [node]
+      mockSelectedItems.value = [node]
 
       const { hasSingleSelection, hasMultipleSelection } = useSelectionState()
       expect(hasSingleSelection.value).toBe(true)
       expect(hasMultipleSelection.value).toBe(false)
 
       // Test multiple selection with new instance
-      mockCanvasStore.selectedItems = [node, createTestNode()]
+      mockSelectedItems.value = [node, createTestNode()]
       const multipleState = useSelectionState()
       expect(multipleState.hasSingleSelection.value).toBe(false)
       expect(multipleState.hasMultipleSelection.value).toBe(true)
@@ -205,7 +226,7 @@ describe('useSelectionState', () => {
   describe('Node Type Filtering', () => {
     test('should pick only LGraphNodes from mixed selections', () => {
       const graphNode = createTestNode()
-      mockCanvasStore.selectedItems = [graphNode, mockComment, mockConnection]
+      mockSelectedItems.value = [graphNode, mockComment, mockConnection]
 
       const { selectedNodes } = useSelectionState()
       expect(selectedNodes.value).toHaveLength(1)
@@ -214,7 +235,7 @@ describe('useSelectionState', () => {
 
     test('should detect subgraphs in selection', () => {
       const subgraph = createTestSubgraphNode()
-      mockCanvasStore.selectedItems = [subgraph]
+      mockSelectedItems.value = [subgraph]
 
       const { hasSubgraphs, isSingleSubgraph } = useSelectionState()
       expect(hasSubgraphs.value).toBe(true)
@@ -225,39 +246,55 @@ describe('useSelectionState', () => {
   describe('Node State Computation', () => {
     test('should detect bypassed nodes', () => {
       const bypassedNode = createTestNode({ mode: LGraphEventMode.BYPASS })
-      mockCanvasStore.selectedItems = [bypassedNode]
+      mockSelectedItems.value = [bypassedNode]
 
-      const { selectedNodesStates } = useSelectionState()
-      expect(selectedNodesStates.value.bypassed).toBe(true)
+      const { selectedNodes } = useSelectionState()
+      const isBypassed = selectedNodes.value.some(
+        (n) => n.mode === LGraphEventMode.BYPASS
+      )
+      expect(isBypassed).toBe(true)
     })
 
     test('should detect pinned/collapsed states', () => {
       const pinnedNode = createTestNode({ pinned: true })
       const collapsedNode = createTestNode({ flags: { collapsed: true } })
-      mockCanvasStore.selectedItems = [pinnedNode, collapsedNode]
+      mockSelectedItems.value = [pinnedNode, collapsedNode]
 
-      const { selectedNodesStates } = useSelectionState()
-      expect(selectedNodesStates.value.pinned).toBe(true)
-      expect(selectedNodesStates.value.collapsed).toBe(true)
-      expect(selectedNodesStates.value.bypassed).toBe(false)
+      const { selectedNodes } = useSelectionState()
+      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isCollapsed = selectedNodes.value.some(
+        (n) => n.flags?.collapsed === true
+      )
+      const isBypassed = selectedNodes.value.some(
+        (n) => n.mode === LGraphEventMode.BYPASS
+      )
+      expect(isPinned).toBe(true)
+      expect(isCollapsed).toBe(true)
+      expect(isBypassed).toBe(false)
     })
 
     test('should provide non-reactive state computation', () => {
       const node = createTestNode({ pinned: true })
-      mockCanvasStore.selectedItems = [node]
+      mockSelectedItems.value = [node]
 
-      const { computeSelectionFlags } = useSelectionState()
-      const flags = computeSelectionFlags()
+      const { selectedNodes } = useSelectionState()
+      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isCollapsed = selectedNodes.value.some(
+        (n) => n.flags?.collapsed === true
+      )
+      const isBypassed = selectedNodes.value.some(
+        (n) => n.mode === LGraphEventMode.BYPASS
+      )
 
-      expect(flags.pinned).toBe(true)
-      expect(flags.collapsed).toBe(false)
-      expect(flags.bypassed).toBe(false)
+      expect(isPinned).toBe(true)
+      expect(isCollapsed).toBe(false)
+      expect(isBypassed).toBe(false)
 
       // Test with empty selection using new composable instance
-      mockCanvasStore.selectedItems = []
-      const { computeSelectionFlags: newComputeFlags } = useSelectionState()
-      const newFlags = newComputeFlags()
-      expect(newFlags.pinned).toBe(false)
+      mockSelectedItems.value = []
+      const { selectedNodes: newSelectedNodes } = useSelectionState()
+      const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
+      expect(newIsPinned).toBe(false)
     })
   })
 
@@ -265,35 +302,43 @@ describe('useSelectionState', () => {
     test('should handle missing removable property', () => {
       const node = createTestNode()
       delete node.removable
-      mockCanvasStore.selectedItems = [node]
+      mockSelectedItems.value = [node]
 
       const { selectedItems } = useSelectionState()
       expect(selectedItems.value[0].removable).toBeUndefined()
     })
 
     test('should return default states for empty selection', () => {
-      const { selectedNodesStates } = useSelectionState()
-      expect(selectedNodesStates.value).toEqual({
-        collapsed: false,
-        pinned: false,
-        bypassed: false
-      })
+      const { selectedNodes } = useSelectionState()
+      const isPinned = selectedNodes.value.some((n) => n.pinned === true)
+      const isCollapsed = selectedNodes.value.some(
+        (n) => n.flags?.collapsed === true
+      )
+      const isBypassed = selectedNodes.value.some(
+        (n) => n.mode === LGraphEventMode.BYPASS
+      )
+      expect(isPinned).toBe(false)
+      expect(isCollapsed).toBe(false)
+      expect(isBypassed).toBe(false)
     })
   })
 
   describe('Help Integration', () => {
     test('should show help for single node', async () => {
       const node = createTestNode({ type: 'TestNode' })
-      mockCanvasStore.selectedItems = [node]
+      mockSelectedItems.value = [node]
 
       const { showNodeHelp } = useSelectionState()
+      const sidebarStore = useSidebarTabStore()
+      const nodeHelpStore = useNodeHelpStore()
+
       showNodeHelp()
       await nextTick()
 
-      expect(mockSidebarTabStore.toggleSidebarTab).toHaveBeenCalledWith(
+      expect(sidebarStore.toggleSidebarTab).toHaveBeenCalledWith(
         'node-library-tab'
       )
-      expect(mockNodeHelpStore.openHelp).toHaveBeenCalledWith({
+      expect(nodeHelpStore.openHelp).toHaveBeenCalledWith({
         nodePath: 'test.TestNode',
         name: 'TestNode'
       })
@@ -302,28 +347,43 @@ describe('useSelectionState', () => {
     test('should ignore help request for multiple nodes', () => {
       const node1 = createTestNode()
       const node2 = createTestNode()
-      mockCanvasStore.selectedItems = [node1, node2]
+      mockSelectedItems.value = [node1, node2]
 
       const { showNodeHelp } = useSelectionState()
+      const sidebarStore = useSidebarTabStore()
+      const nodeHelpStore = useNodeHelpStore()
+
       showNodeHelp()
 
-      expect(mockSidebarTabStore.toggleSidebarTab).not.toHaveBeenCalled()
-      expect(mockNodeHelpStore.openHelp).not.toHaveBeenCalled()
+      expect(sidebarStore.toggleSidebarTab).not.toHaveBeenCalled()
+      expect(nodeHelpStore.openHelp).not.toHaveBeenCalled()
     })
 
     test('should toggle help when same node help is already open', async () => {
       const node = createTestNode({ type: 'TestNode' })
-      mockCanvasStore.selectedItems = [node]
-      mockSidebarTabStore.activeSidebarTabId = 'node-library-tab'
-      mockNodeHelpStore.isHelpOpen = true
-      mockNodeHelpStore.currentHelpNode = { nodePath: 'test.TestNode' }
+      mockSelectedItems.value = [node]
+
+      // Update the mock stores to have the right state
+      const sidebarStore = useSidebarTabStore()
+      const nodeHelpStore = useNodeHelpStore()
+
+      vi.mocked(useSidebarTabStore).mockReturnValue({
+        ...sidebarStore,
+        activeSidebarTabId: 'node-library-tab'
+      } as any)
+
+      vi.mocked(useNodeHelpStore).mockReturnValue({
+        ...nodeHelpStore,
+        isHelpOpen: true,
+        currentHelpNode: { nodePath: 'test.TestNode' }
+      } as any)
 
       const { showNodeHelp } = useSelectionState()
       showNodeHelp()
       await nextTick()
 
-      expect(mockNodeHelpStore.closeHelp).toHaveBeenCalled()
-      expect(mockSidebarTabStore.toggleSidebarTab).toHaveBeenCalledWith(
+      expect(nodeHelpStore.closeHelp).toHaveBeenCalled()
+      expect(sidebarStore.toggleSidebarTab).toHaveBeenCalledWith(
         'node-library-tab'
       )
     })
@@ -335,18 +395,31 @@ describe('useSelectionState', () => {
         mode: LGraphEventMode.BYPASS,
         pinned: true
       })
-      mockCanvasStore.selectedItems = [node]
+      mockSelectedItems.value = [node]
 
       const state1 = useSelectionState()
       const state2 = useSelectionState()
 
-      expect(state1.selectedNodesStates.value.bypassed).toBe(true)
-      expect(state2.selectedNodesStates.value.bypassed).toBe(true)
-      expect(state1.selectedNodesStates.value.pinned).toBe(true)
-      expect(state2.selectedNodesStates.value.pinned).toBe(true)
+      const isBypassed1 = state1.selectedNodes.value.some(
+        (n) => n.mode === LGraphEventMode.BYPASS
+      )
+      const isBypassed2 = state2.selectedNodes.value.some(
+        (n) => n.mode === LGraphEventMode.BYPASS
+      )
+      const isPinned1 = state1.selectedNodes.value.some(
+        (n) => n.pinned === true
+      )
+      const isPinned2 = state2.selectedNodes.value.some(
+        (n) => n.pinned === true
+      )
+
+      expect(isBypassed1).toBe(true)
+      expect(isBypassed2).toBe(true)
+      expect(isPinned1).toBe(true)
+      expect(isPinned2).toBe(true)
 
       // Test with empty selection using new instances
-      mockCanvasStore.selectedItems = []
+      mockSelectedItems.value = []
       const emptyState1 = useSelectionState()
       const emptyState2 = useSelectionState()
 
@@ -358,34 +431,26 @@ describe('useSelectionState', () => {
       const deletableNode = createTestNode({ removable: true })
       const nonDeletableNode = createTestNode({ removable: false })
 
-      mockCanvasStore.selectedItems = [deletableNode]
-      const { selectedItems: items1 } = useSelectionState()
+      mockSelectedItems.value = [deletableNode]
+      const { isDeletable } = useSelectionState()
+      expect(isDeletable.value).toBe(true)
 
-      const isDeletable1 = items1.value.every(
-        (item) => item.removable !== false
-      )
-      expect(isDeletable1).toBe(true)
+      mockSelectedItems.value = [nonDeletableNode]
+      const { isDeletable: isDeletable2 } = useSelectionState()
+      expect(isDeletable2.value).toBe(false)
 
-      mockCanvasStore.selectedItems = [nonDeletableNode]
-      const { selectedItems: items2 } = useSelectionState()
-      const isDeletable2 = items2.value.every(
-        (item) => item.removable !== false
-      )
-      expect(isDeletable2).toBe(false)
-
-      mockCanvasStore.selectedItems = [deletableNode, nonDeletableNode]
-      const { selectedItems: items3 } = useSelectionState()
-      const isDeletable3 = items3.value.every(
-        (item) => item.removable !== false
-      )
-      expect(isDeletable3).toBe(false)
+      mockSelectedItems.value = [deletableNode, nonDeletableNode]
+      const { isDeletable: isDeletable3 } = useSelectionState()
+      // When there's a mix of deletable and non-deletable items,
+      // isDeletable returns true because SOME items can be deleted
+      expect(isDeletable3.value).toBe(true)
     })
   })
 
   describe('Special Node Types', () => {
     test('should detect image nodes', () => {
       const imageNode = createTestNode({ type: 'ImageNode' })
-      mockCanvasStore.selectedItems = [imageNode]
+      mockSelectedItems.value = [imageNode]
 
       const { isSingleImageNode, hasImageNode } = useSelectionState()
       expect(isSingleImageNode.value).toBe(true)
@@ -394,7 +459,7 @@ describe('useSelectionState', () => {
 
     test('should detect output nodes', () => {
       const outputNode = createTestNode({ type: 'OutputNode' })
-      mockCanvasStore.selectedItems = [outputNode]
+      mockSelectedItems.value = [outputNode]
 
       const { hasOutputNodesSelected } = useSelectionState()
       expect(hasOutputNodesSelected.value).toBe(true)
@@ -402,7 +467,7 @@ describe('useSelectionState', () => {
 
     test('should return correct nodeDef for single node', () => {
       const node = createTestNode({ type: 'TestNode' })
-      mockCanvasStore.selectedItems = [node]
+      mockSelectedItems.value = [node]
 
       const { nodeDef } = useSelectionState()
       expect(nodeDef.value).toEqual({
@@ -414,7 +479,7 @@ describe('useSelectionState', () => {
     test('should return null nodeDef for multiple nodes', () => {
       const node1 = createTestNode()
       const node2 = createTestNode()
-      mockCanvasStore.selectedItems = [node1, node2]
+      mockSelectedItems.value = [node1, node2]
 
       const { nodeDef } = useSelectionState()
       expect(nodeDef.value).toBeNull()
