@@ -12,7 +12,7 @@
         'lg-node absolute rounded-2xl',
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
-        !!executing && 'border-blue-500 dark-theme:border-blue-500',
+        !!executing && 'border-blue-100 dark-theme:border-blue-100',
         !!(error || nodeData.hasErrors) && 'border-error',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
@@ -20,7 +20,7 @@
         'outline-transparent -outline-offset-2 outline-2',
         !!isSelected && 'outline-black dark-theme:outline-white',
         !!(isSelected && executing) &&
-          'outline-blue-500 dark-theme:outline-blue-500',
+          'outline-blue-100 dark-theme:outline-blue-100',
         !!(isSelected && (error || nodeData.hasErrors)) && 'outline-error',
         {
           'animate-pulse': executing,
@@ -141,6 +141,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { ExecutedWsMessage } from '@/schemas/apiSchema'
@@ -162,8 +163,6 @@ interface LGraphNodeProps {
   position?: { x: number; y: number }
   size?: { width: number; height: number }
   readonly?: boolean
-  executing?: boolean
-  progress?: number
   error?: string | null
   zoomLevel?: number
 }
@@ -201,6 +200,9 @@ if (!selectedNodeIds) {
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(props.nodeData.id)
 })
+
+// Use execution state composable
+const { executing, progress } = useNodeExecutionState(props.nodeData.id)
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => props.zoomLevel ?? 1)
