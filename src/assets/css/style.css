@@ -115,6 +115,22 @@
   --color-dark-elevation-2: rgba(255, 255, 255, 0.03);
 }
 
+@custom-variant dark-theme {
+  .dark-theme & {
+    @slot;
+  }
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { 
+    width: 1px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
+}
+
 /* Everthing below here to be cleaned up over time. */
 
 body {
