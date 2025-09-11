@@ -24,14 +24,12 @@ export function useCanvasInteractions() {
   const handleWheel = (event: WheelEvent) => {
     // In standard mode, Ctrl+wheel should go to canvas for zoom
     if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault() // Prevent browser zoom
       forwardEventToCanvas(event)
       return
     }
 
     // In legacy mode, all wheel events go to canvas for zoom
     if (!isStandardNavMode.value) {
-      event.preventDefault()
       forwardEventToCanvas(event)
       return
     }
@@ -68,9 +66,30 @@ export function useCanvasInteractions() {
   ) => {
     const canvasEl = app.canvas?.canvas
     if (!canvasEl) return
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (event instanceof WheelEvent) {
+      const { clientX, clientY, deltaX, deltaY, ctrlKey, metaKey, shiftKey } =
+        event
+      canvasEl.dispatchEvent(
+        new WheelEvent('wheel', {
+          clientX,
+          clientY,
+          deltaX,
+          deltaY,
+          ctrlKey,
+          metaKey,
+          shiftKey
+        })
+      )
+      return
+    }
 
     // Create new event with same properties
-    const EventConstructor = event.constructor as typeof WheelEvent
+    const EventConstructor = event.constructor as
+      | typeof MouseEvent
+      | typeof PointerEvent
     const newEvent = new EventConstructor(event.type, event)
     canvasEl.dispatchEvent(newEvent)
   }

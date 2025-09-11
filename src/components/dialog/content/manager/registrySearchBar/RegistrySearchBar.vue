@@ -34,7 +34,8 @@
       />
       <PackUpdateButton
         v-if="isUpdateAvailableTab && hasUpdateAvailable"
-        :node-packs="updateAvailableNodePacks"
+        :node-packs="enabledUpdateAvailableNodePacks"
+        :has-disabled-update-packs="hasDisabledUpdatePacks"
       />
     </div>
     <div class="flex mt-3 text-sm">
@@ -103,8 +104,11 @@ const { t } = useI18n()
 const { missingNodePacks, isLoading, error } = useMissingNodes()
 
 // Use the composable to get update available nodes
-const { hasUpdateAvailable, updateAvailableNodePacks } =
-  useUpdateAvailableNodes()
+const {
+  hasUpdateAvailable,
+  enabledUpdateAvailableNodePacks,
+  hasDisabledUpdatePacks
+} = useUpdateAvailableNodes()
 
 const hasResults = computed(
   () => searchQuery.value?.trim() && searchResults?.length

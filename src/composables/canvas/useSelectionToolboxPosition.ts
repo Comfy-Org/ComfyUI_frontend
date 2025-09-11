@@ -3,8 +3,12 @@ import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { createBounds } from '@/lib/litegraph/src/litegraph'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { computeUnionBounds } from '@/utils/mathUtil'
 
 /**
  * Manages the position of the selection toolbox independently.
@@ -16,6 +20,7 @@ export function useSelectionToolboxPosition(
   const canvasStore = useCanvasStore()
   const lgCanvas = canvasStore.getCanvas()
   const { getSelectableItems } = useSelectedLiteGraphItems()
+  const { shouldRenderVueNodes } = useVueFeatureFlags()
 
   // World position of selection center
   const worldPosition = ref({ x: 0, y: 0 })
@@ -34,17 +39,40 @@ export function useSelectionToolboxPosition(
     }
 
     visible.value = true
-    const bounds = createBounds(selectableItems)
 
-    if (!bounds) {
-      return
+    // Get bounds for all selected items
+    const allBounds: ReadOnlyRect[] = []
+    for (const item of selectableItems) {
+      // Skip items without valid IDs
+      if (item.id == null) continue
+
+      if (shouldRenderVueNodes.value && typeof item.id === 'string') {
+        // Use layout store for Vue nodes (only works with string IDs)
+        const layout = layoutStore.getNodeLayoutRef(item.id).value
+        if (layout) {
+          allBounds.push([
+            layout.bounds.x,
+            layout.bounds.y,
+            layout.bounds.width,
+            layout.bounds.height
+          ])
+        }
+      } else {
+        // Fallback to LiteGraph bounds for regular nodes or non-string IDs
+        if (item instanceof LGraphNode) {
+          const bounds = item.getBounding()
+          allBounds.push([bounds[0], bounds[1], bounds[2], bounds[3]] as const)
+        }
+      }
     }
 
-    const [xBase, y, width] = bounds
+    // Compute union bounds
+    const unionBounds = computeUnionBounds(allBounds)
+    if (!unionBounds) return
 
     worldPosition.value = {
-      x: xBase + width / 2,
-      y: y
+      x: unionBounds.x + unionBounds.width / 2,
+      y: unionBounds.y - 10
     }
 
     updateTransform()

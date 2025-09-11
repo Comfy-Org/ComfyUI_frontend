@@ -484,7 +484,18 @@ export const useLitegraphService = () => {
         ) ?? {}
 
         if (widget) {
-          widget.label = st(nameKey, widget.label ?? inputName)
+          // Check if this is an Asset Browser button widget
+          const isAssetBrowserButton =
+            widget.type === 'button' && widget.value === 'Select model'
+
+          if (isAssetBrowserButton) {
+            // Preserve Asset Browser button label (don't translate)
+            widget.label = String(widget.value)
+          } else {
+            // Apply normal translation for other widgets
+            widget.label = st(nameKey, widget.label ?? inputName)
+          }
+
           widget.options ??= {}
           Object.assign(widget.options, {
             advanced: inputSpec.advanced,

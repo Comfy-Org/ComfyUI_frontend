@@ -1,5 +1,11 @@
 <template>
-  <Button unstyled :class="buttonStyle" :disabled="disabled" @click="onClick">
+  <Button
+    v-bind="$attrs"
+    unstyled
+    :class="buttonStyle"
+    :disabled="disabled"
+    @click="onClick"
+  >
     <span>{{ label }}</span>
   </Button>
 </template>
@@ -20,6 +26,10 @@ interface TextButtonProps extends BaseButtonProps {
   label: string
   onClick: () => void
 }
+
+defineOptions({
+  inheritAttrs: false
+})
 
 const {
   size = 'md',
