@@ -26,6 +26,9 @@ importers:
       '@primeuix/styled':
         specifier: 0.3.2
         version: 0.3.2
+      '@primeuix/styles':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@primeuix/utils':
         specifier: ^0.3.2
         version: 0.3.2

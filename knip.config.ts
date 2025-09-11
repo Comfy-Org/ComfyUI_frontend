@@ -15,6 +15,7 @@ const config: KnipConfig = {
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
+    '@primeuix/styles',
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
