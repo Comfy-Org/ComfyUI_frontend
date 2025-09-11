@@ -27,7 +27,7 @@ function buildSelectionSignature(
   if (!c) return null
   const items = Array.from(c.selectedItems)
   if (items.length !== 1) return null
-  const item: any = items[0]
+  const item = items[0]
   if (isLGraphNode(item)) return `N:${item.id}`
   if (isLGraphGroup(item)) return `G:${item.id}`
   return null
