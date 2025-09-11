@@ -1,6 +1,7 @@
 export interface NavItemData {
   id: string
   label: string
+  icon: string
 }
 
 export interface NavGroupData {

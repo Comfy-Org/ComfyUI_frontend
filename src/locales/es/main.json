@@ -310,6 +310,8 @@
     "disabling": "Deshabilitando",
     "dismiss": "Descartar",
     "download": "Descargar",
+    "dropYourFileOr": "Suelta tu archivo o",
+    "duplicate": "Duplicar",
     "edit": "Editar",
     "empty": "Vacío",
     "enableAll": "Habilitar todo",
@@ -805,6 +807,7 @@
     "Show Model Selector (Dev)": "Mostrar selector de modelo (Desarrollo)",
     "Show Settings Dialog": "Mostrar diálogo de configuración",
     "Sign Out": "Cerrar sesión",
+    "Toggle Essential Bottom Panel": "Alternar panel inferior esencial",
     "Toggle Bottom Panel": "Alternar panel inferior",
     "Toggle Focus Mode": "Alternar modo de enfoque",
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
@@ -814,15 +817,33 @@
     "Toggle Search Box": "Alternar caja de búsqueda",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
+    "Toggle View Controls Bottom Panel": "Alternar panel inferior de controles de vista",
     "Toggle Workflows Sidebar": "Alternar barra lateral de los flujos de trabajo",
+    "Toggle the Custom Nodes Manager": "Alternar el Administrador de Nodos Personalizados",
     "Toggle the Custom Nodes Manager Progress Bar": "Alternar la Barra de Progreso del Administrador de Nodos Personalizados",
     "Undo": "Deshacer",
     "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
     "Unload Models": "Descargar modelos",
     "Unload Models and Execution Cache": "Descargar modelos y caché de ejecución",
+    "Unlock Canvas": "Desbloquear lienzo",
+    "Unpack the selected Subgraph": "Desempaquetar el Subgrafo seleccionado",
+    "View": "Ver",
     "Workflow": "Flujo de trabajo",
+    "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
-    "Zoom Out": "Alejar"
+    "Zoom Out": "Alejar",
+    "Zoom to fit": "Ajustar al tamaño"
+  },
+  "minimap": {
+    "nodeColors": "Colores de nodos",
+    "renderBypassState": "Mostrar estado de omisión",
+    "renderErrorState": "Mostrar estado de error",
+    "showGroups": "Mostrar marcos/grupos",
+    "showLinks": "Mostrar enlaces",
+    "sideToolbar_modelLibrary": "sideToolbar.bibliotecaDeModelos",
+    "sideToolbar_nodeLibrary": "sideToolbar.bibliotecaDeNodos",
+    "sideToolbar_queue": "sideToolbar.cola",
+    "sideToolbar_workflows": "sideToolbar.flujosDeTrabajo"
   },
   "missingModelsDialog": {
     "doNotAskAgain": "No mostrar esto de nuevo",
@@ -1138,6 +1159,7 @@
     "UV": "UV",
     "User": "Usuario",
     "Validation": "Validación",
+    "Vue Nodes": "Nodos Vue",
     "Window": "Ventana",
     "Workflow": "Flujo de Trabajo"
   },
@@ -1200,6 +1222,10 @@
       }
     },
     "workflows": "Flujos de trabajo"
+  },
+  "subgraphStore": {
+    "blueprintName": "Nombre del subgrafo",
+    "saveBlueprint": "Guardar subgrafo en la biblioteca"
   },
   "tabMenu": {
     "addToBookmarks": "Agregar a marcadores",

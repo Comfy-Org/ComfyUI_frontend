@@ -2,30 +2,22 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   entry: [
-    'build/**/*.ts',
-    'scripts/**/*.{js,ts}',
+    '{build,scripts}/**/*.{js,ts}',
+    'src/assets/css/style.css',
     'src/main.ts',
-    'vite.electron.config.mts',
-    'vite.types.config.mts'
+    'src/scripts/ui/menu/index.ts',
+    'src/types/index.ts'
   ],
-  project: [
-    'browser_tests/**/*.{js,ts}',
-    'build/**/*.{js,ts,vue}',
-    'scripts/**/*.{js,ts}',
-    'src/**/*.{js,ts,vue}',
-    'tests-ui/**/*.{js,ts,vue}',
-    '*.{js,ts,mts}'
-  ],
+  project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
+  ignoreBinaries: ['only-allow', 'openapi-typescript'],
   ignoreDependencies: [
+    // Weird importmap things
+    '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
     '@primevue/icons',
-    '@iconify/json',
-    'tailwindcss',
-    'tailwindcss-primeui', // Need to figure out why tailwind plugin isn't applying
     // Dev
-    '@executeautomation/playwright-mcp-server',
     '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
@@ -56,32 +48,35 @@ const config: KnipConfig = {
     'vite.types.config.mts',
     // Auto generated manager types
     'src/types/generatedManagerTypes.ts',
-    // Design system components (may not be used immediately)
-    'src/components/button/IconGroup.vue',
-    'src/components/button/MoreButton.vue',
-    'src/components/button/TextButton.vue',
-    'src/components/card/CardTitle.vue',
-    'src/components/card/CardDescription.vue',
-    'src/components/input/SingleSelect.vue'
+    'src/types/comfyRegistryTypes.ts',
+    // Used by a custom node (that should move off of this)
+    'src/scripts/ui/components/splitButton.ts'
   ],
-  ignoreExportsUsedInFile: true,
-  // Vue-specific configuration
-  vue: true,
-  tailwind: true,
-  // Only check for unused files, disable all other rules
-  // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
-  rules: {
-    binaries: 'off',
-    classMembers: 'off',
-    duplicates: 'off',
-    enumMembers: 'off',
-    exports: 'off',
-    nsExports: 'off',
-    nsTypes: 'off',
-    types: 'off'
+  compilers: {
+    // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
+    css: (text: string) =>
+      [
+        ...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)
+      ].join('\n')
   },
-  // Include dependencies analysis
-  includeEntryExports: true
+  vite: {
+    config: ['vite?(.*).config.mts']
+  },
+  vitest: {
+    config: ['vitest?(.*).config.ts'],
+    entry: [
+      '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
+      '**/__mocks__/**/*.[jt]s?(x)'
+    ]
+  },
+  playwright: {
+    config: ['playwright?(.*).config.ts'],
+    entry: ['**/*.@(spec|test).?(c|m)[jt]s?(x)', 'browser_tests/**/*.ts']
+  },
+  tags: [
+    '-knipIgnoreUnusedButUsedByCustomNodes',
+    '-knipIgnoreUnusedButUsedByVueNodesBranch'
+  ]
 }
 
 export default config

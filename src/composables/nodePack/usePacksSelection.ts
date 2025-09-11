@@ -5,7 +5,7 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
-export type SelectionState = 'all-installed' | 'none-installed' | 'mixed'
+type SelectionState = 'all-installed' | 'none-installed' | 'mixed'
 
 /**
  * Composable for managing multi-package selection states

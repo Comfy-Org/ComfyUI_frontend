@@ -1,7 +1,4 @@
-import type {
-  BaseSearchParamsWithoutQuery,
-  Hit
-} from 'algoliasearch/dist/lite/browser'
+import type { BaseSearchParamsWithoutQuery } from 'algoliasearch/dist/lite/browser'
 
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -12,15 +9,6 @@ type SafeNestedProperty<
 > = T[K1] extends undefined | null ? undefined : NonNullable<T[K1]>[K2]
 
 type RegistryNodePack = components['schemas']['Node']
-
-/**
- * Result of searching the Algolia index.
- * Represents the entire result of a search query.
- */
-export type SearchPacksResult = {
-  nodePacks: Hit<AlgoliaNodePack>[]
-  querySuggestions: Hit<NodesIndexSuggestion>[]
-}
 
 /**
  * Node pack record after it has been mapped to Algolia index format.

@@ -3,7 +3,7 @@
     "label": "업데이트 확인"
   },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "사용자 정의 노드 폴더 열기"
+    "label": "커스텀 노드 폴더 열기"
   },
   "Comfy-Desktop_Folders_OpenInputsFolder": {
     "label": "입력 폴더 열기"
@@ -129,7 +129,7 @@
     "label": "선택 영역을 서브그래프로 변환"
   },
   "Comfy_Graph_ExitSubgraph": {
-    "label": "서브그래프 종료"
+    "label": "서브그래프 나가기"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"
@@ -138,7 +138,7 @@
     "label": "선택한 노드 그룹화"
   },
   "Comfy_Graph_UnpackSubgraph": {
-    "label": "선택한 서브그래프 풀기"
+    "label": "선택한 서브그래프 묶음 풀기"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "선택한 노드를 그룹 노드로 변환"
@@ -171,13 +171,13 @@
     "label": "기본 워크플로 로드"
   },
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "사용자 정의 노드 (베타)"
+    "label": "커스텀 노드 (베타)"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
-    "label": "커스텀 노드 (레거시)"
+    "label": "커스텀 노드 (구버전)"
   },
   "Comfy_Manager_ShowLegacyManagerMenu": {
-    "label": "매니저 메뉴 (레거시)"
+    "label": "매니저 메뉴 (구버전)"
   },
   "Comfy_Manager_ShowMissingPacks": {
     "label": "누락된 팩 설치"
@@ -214,6 +214,9 @@
   },
   "Comfy_OpenWorkflow": {
     "label": "워크플로 열기"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "서브그래프 게시"
   },
   "Comfy_QueuePrompt": {
     "label": "실행 큐에 프롬프트 추가"
@@ -282,7 +285,7 @@
     "label": "필수 하단 패널 전환"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "보기 컨트롤 하단 패널 전환"
+    "label": "뷰 컨트롤 하단 패널 전환"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
     "label": "키 바인딩 대화상자 표시"

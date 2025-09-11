@@ -1,5 +1,8 @@
 <template>
   <IconTextButton
+    v-tooltip.top="
+      hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
+    "
     v-bind="$attrs"
     type="transparent"
     :label="$t('manager.updateAll')"
@@ -24,8 +27,9 @@ import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 
-const { nodePacks } = defineProps<{
+const { nodePacks, hasDisabledUpdatePacks } = defineProps<{
   nodePacks: NodePack[]
+  hasDisabledUpdatePacks?: boolean
 }>()
 
 const isUpdating = ref<boolean>(false)
