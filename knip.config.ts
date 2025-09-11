@@ -21,8 +21,6 @@ const config: KnipConfig = {
     '@trivago/prettier-plugin-sort-imports'
   ],
   ignore: [
-    // i18n config
-    'playwright.i18n.config.ts',
     // Auto generated manager types
     'src/types/generatedManagerTypes.ts',
     'src/types/comfyRegistryTypes.ts',
