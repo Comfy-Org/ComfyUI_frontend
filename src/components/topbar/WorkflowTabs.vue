@@ -8,7 +8,7 @@
       icon="pi pi-chevron-left"
       text
       severity="secondary"
-      class="overflow-arrow overflow-arrow-left"
+      class="overflow-arrow-left px-2 rounded-none disabled:opacity-25"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
     />
@@ -22,12 +22,18 @@
       pt:bar-x="h-1"
     >
       <SelectButton
-        class="workflow-tabs bg-transparent"
+        class="workflow-tabs bg-transparent min-w-"
         :class="props.class"
         :model-value="selectedWorkflow"
         :options="options"
         option-label="label"
         data-key="value"
+        :pt:pc-toggle-button="{
+          root: `p-0 bg-transparent rounded-none shrink relative border-0 border-r border-solid
+            border-r-(--border-color) min-w-[90px]
+            before:hidden`,
+          content: `max-w-full`
+        }"
         @update:model-value="onWorkflowChange"
       >
         <template #option="{ option }">
@@ -44,7 +50,7 @@
       icon="pi pi-chevron-right"
       text
       severity="secondary"
-      class="overflow-arrow overflow-arrow-right"
+      class="overflow-arrow-right px-2 rounded-none disabled:opacity-25"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
     />
@@ -302,71 +308,50 @@ onUpdated(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .workflow-tabs-container {
   background-color: var(--comfy-menu-secondary-bg);
 }
 
-:deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none shrink relative border-0 border-r border-solid;
-  border-right-color: var(--border-color);
-  min-width: 90px;
-}
-
-.overflow-arrow {
-  @apply px-2 rounded-none;
-}
-
-.overflow-arrow[disabled] {
-  @apply opacity-25;
-}
-
-:deep(.p-togglebutton > .p-togglebutton-content) {
-  @apply max-w-full;
-}
-
 :deep(.workflow-tab) {
-  @apply max-w-full;
-}
-
-:deep(.p-togglebutton::before) {
-  @apply hidden;
+  max-width: 100%;
 }
 
 :deep(.p-togglebutton:first-child) {
-  @apply border-l border-solid;
   border-left-color: var(--border-color);
+  border-left-style: solid;
+  border-left-width: 1px;
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
-  @apply border-l-0;
+  border-left: 0;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  @apply border-b border-solid h-full;
   border-bottom-color: var(--p-button-text-primary-color);
+  border-bottom-style: solid;
+  border-bottom: 1px;
+  height: 100%;
 }
 
 :deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  @apply opacity-75;
+  opacity: 75%;
 }
 
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
-  @apply visible;
+  visibility: visible;
 }
 
 :deep(.p-togglebutton:hover) .status-indicator {
-  @apply hidden;
+  display: none;
 }
 
 :deep(.p-togglebutton) .close-button {
-  @apply invisible;
+  visibility: hidden;
 }
 
 :deep(.p-scrollpanel-content) {
-  @apply h-full;
+  height: 100%;
 }
 
 :deep(.workflow-tabs) {
@@ -376,11 +361,12 @@ onUpdated(() => {
 /* Scrollbar half opacity to avoid blocking the active tab bottom border */
 :deep(.p-scrollpanel:hover .p-scrollpanel-bar),
 :deep(.p-scrollpanel:active .p-scrollpanel-bar) {
-  @apply opacity-50;
+  opacity: 50%;
 }
 
 :deep(.p-selectbutton) {
-  @apply rounded-none h-full;
+  border-radius: 0;
+  height: 100%;
 }
 
 .workflow-tabs-container-desktop {
@@ -388,7 +374,7 @@ onUpdated(() => {
 }
 
 .window-actions-spacer {
-  @apply flex-auto;
+  flex: auto;
   /* If we are using custom titlebar, then we need to add a gap for the user to drag the window */
   --window-actions-spacer-width: min(75px, env(titlebar-area-width, 0) * 9999);
   min-width: var(--window-actions-spacer-width);
