@@ -313,9 +313,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     widget: Readonly<IBaseWidget>
   ) {
     // Use the first matching widget
-    const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(
-      this
-    )
+    const targetWidget = toConcreteWidget(widget, this)
+    const promotedWidget = targetWidget.createCopyForNode(this)
 
     Object.assign(promotedWidget, {
       get name() {
@@ -369,11 +368,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       widget: promotedWidget,
       subgraphNode: this
     })
-    const hasNode = (w: any): w is { node: LGraphNode } =>
-      w && typeof w.node === 'object' && w.node.findInputSlot
-    const backingInput = hasNode(widget)
-      ? widget.node.findInputSlot(widget.name, true)?.widget ?? {}
-      : {}
+
+    const backingInput =
+      targetWidget.node.findInputSlot(widget.name, true)?.widget ?? {}
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
     Object.setPrototypeOf(input.widget, backingInput)
