@@ -3,6 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 import { assetService } from '@/services/assetService'
 
+vi.mock('@/stores/modelToNodeStore', () => ({
+  useModelToNodeStore: vi.fn(() => ({
+    getRegisteredNodeTypes: vi.fn(
+      () =>
+        new Set([
+          'CheckpointLoaderSimple',
+          'LoraLoader',
+          'VAELoader',
+          'TestNode'
+        ])
+    )
+  }))
+}))
+
 // Test data constants
 const MOCK_ASSETS = {
   checkpoints: {
@@ -149,17 +163,41 @@ describe('assetService', () => {
   })
 
   describe('isAssetBrowserEligible', () => {
-    it('should return true for eligible widget names', () => {
-      expect(assetService.isAssetBrowserEligible('ckpt_name')).toBe(true)
-      expect(assetService.isAssetBrowserEligible('lora_name')).toBe(true)
-      expect(assetService.isAssetBrowserEligible('vae_name')).toBe(true)
+    it('should return true for eligible widget names with registered node types', () => {
+      expect(
+        assetService.isAssetBrowserEligible(
+          'ckpt_name',
+          'CheckpointLoaderSimple'
+        )
+      ).toBe(true)
+      expect(
+        assetService.isAssetBrowserEligible('lora_name', 'LoraLoader')
+      ).toBe(true)
+      expect(assetService.isAssetBrowserEligible('vae_name', 'VAELoader')).toBe(
+        true
+      )
     })
 
     it('should return false for non-eligible widget names', () => {
-      expect(assetService.isAssetBrowserEligible('seed')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('steps')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('sampler_name')).toBe(false)
-      expect(assetService.isAssetBrowserEligible('')).toBe(false)
+      expect(assetService.isAssetBrowserEligible('seed', 'TestNode')).toBe(
+        false
+      )
+      expect(assetService.isAssetBrowserEligible('steps', 'TestNode')).toBe(
+        false
+      )
+      expect(
+        assetService.isAssetBrowserEligible('sampler_name', 'TestNode')
+      ).toBe(false)
+      expect(assetService.isAssetBrowserEligible('', 'TestNode')).toBe(false)
+    })
+
+    it('should return false for eligible widget names with unregistered node types', () => {
+      expect(
+        assetService.isAssetBrowserEligible('ckpt_name', 'UnknownNode')
+      ).toBe(false)
+      expect(
+        assetService.isAssetBrowserEligible('lora_name', 'UnknownNode')
+      ).toBe(false)
     })
   })
 })

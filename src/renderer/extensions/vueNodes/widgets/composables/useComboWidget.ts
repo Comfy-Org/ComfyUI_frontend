@@ -60,34 +60,33 @@ const addMultiSelectWidget = (
 const addComboWidget = (
   node: LGraphNode,
   inputSpec: ComboInputSpec
-): IComboWidget => {
+): IBaseWidget => {
   const settingStore = useSettingStore()
   const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
-  const isAssetBrowserEligible = assetService.isAssetBrowserEligible(
-    inputSpec.name
+  const isEligible = assetService.isAssetBrowserEligible(
+    inputSpec.name,
+    node.comfyClass || ''
   )
 
-  if (isUsingAssetAPI && isAssetBrowserEligible) {
-    // Get the default value for the button text (currently selected model)
+  if (isUsingAssetAPI && isEligible) {
+    // Create button widget for Asset Browser
     const currentValue = getDefaultValue(inputSpec)
 
     const widget = node.addWidget(
-      'combo',
+      'button',
       inputSpec.name,
-      currentValue,
+      t('widgets.selectModel'),
       () => {
         console.log(
           `Asset Browser would open here for:\nNode: ${node.type}\nWidget: ${inputSpec.name}\nCurrent Value:${currentValue}`
         )
-      },
-      {
-        values: [t('widgets.selectModel')]
       }
     )
 
-    return widget as IComboWidget
+    return widget
   }
 
+  // Create normal combo widget
   const defaultValue = getDefaultValue(inputSpec)
   const comboOptions = inputSpec.options ?? []
   const widget = node.addWidget(
@@ -123,14 +122,14 @@ const addComboWidget = (
   if (inputSpec.control_after_generate) {
     widget.linkedWidgets = addValueControlWidgets(
       node,
-      widget,
+      widget as IComboWidget,
       undefined,
       undefined,
       transformInputSpecV2ToV1(inputSpec)
     )
   }
 
-  return widget as IComboWidget
+  return widget
 }
 
 export const useComboWidget = () => {
