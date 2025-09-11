@@ -78,6 +78,24 @@ const router = createRouter({
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
           beforeEnter: async (_to, _from, next) => {
+            // Check onboarding status first
+            const me = await getMe()
+            if (me) {
+              const emailVerified =
+                localStorage.getItem('emailVerified') === 'true'
+
+              if (!emailVerified) {
+                return next('/verify-email')
+              }
+              if (!me.surveyTaken) {
+                return next('/survey')
+              }
+              if (!me.whitelisted) {
+                return next('/waitlist')
+              }
+            }
+
+            // Then check user store
             const userStore = useUserStore()
             await userStore.initialize()
             if (userStore.needsLogin) {
@@ -200,10 +218,10 @@ router.beforeEach(async (to, _from, next) => {
     ) {
       try {
         const me = await getMe()
-        if (!me.surveyTaken) {
+        if (me && !me.surveyTaken) {
           return next({ name: 'cloud-survey' })
         }
-        if (!me.whitelisted) {
+        if (me && !me.whitelisted) {
           return next({ name: 'cloud-waitlist' })
         }
         return next({ path: '/' })
@@ -226,11 +244,7 @@ router.beforeEach(async (to, _from, next) => {
     }
 
     // For web, redirect to login
-    const redirectTarget = to.fullPath === '/' ? undefined : to.fullPath
-    return next({
-      name: 'cloud-login',
-      query: redirectTarget ? { redirect: redirectTarget } : undefined
-    })
+    return next({ name: 'cloud-login' })
   }
 
   // User is logged in and accessing protected route

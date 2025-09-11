@@ -1,7 +1,6 @@
 // Mock API for survey submission
 // TODO: Replace with actual API calls when backend is ready
-
-import { setMockUserData } from './me'
+import { completeSurvey } from './simpleAuth'
 
 export interface SurveyPayload {
   useCase?: string
@@ -11,28 +10,21 @@ export interface SurveyPayload {
 }
 
 export interface SurveyResponse {
-  whitelisted: boolean
+  success: boolean
   message?: string
 }
 
-export async function submitSurvey(_payload: SurveyPayload): Promise<SurveyResponse> {
+export async function submitSurvey(
+  _payload: SurveyPayload
+): Promise<SurveyResponse> {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-  
-  // Mock logic: whitelist some users based on payload
-  // In production, this would be determined by backend
-  const isWhitelisted = Math.random() > 0.5 // 50% chance for demo
-  
-  // Update mock user data
-  setMockUserData({
-    surveyTaken: true,
-    whitelisted: isWhitelisted
-  })
-  
+  await new Promise((resolve) => setTimeout(resolve, 500))
+
+  // Complete survey
+  completeSurvey()
+
   return {
-    whitelisted: isWhitelisted,
-    message: isWhitelisted 
-      ? 'Welcome! You have been granted access.' 
-      : 'Thank you! You have been added to the waitlist.'
+    success: true,
+    message: 'Thank you! Your survey has been submitted.'
   }
 }

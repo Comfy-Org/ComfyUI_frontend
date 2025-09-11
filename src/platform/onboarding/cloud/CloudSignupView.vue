@@ -119,11 +119,11 @@ const onSuccess = async () => {
   try {
     // Get user onboarding status (new users won't have survey/whitelist yet)
     const me = await getMe()
-    
+
     // Navigate based on user status
-    if (!me.surveyTaken) {
+    if (me && !me.surveyTaken) {
       void router.push({ name: 'cloud-survey' })
-    } else if (!me.whitelisted) {
+    } else if (me && !me.whitelisted) {
       void router.push({ name: 'cloud-waitlist' })
     } else {
       // User is fully onboarded (rare for signup, but possible)

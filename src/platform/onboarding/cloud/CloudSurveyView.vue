@@ -1,3 +1,4 @@
+<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <BaseViewTemplate dark>
     <div class="flex flex-col items-center justify-center min-h-screen p-8">
@@ -5,7 +6,7 @@
         <h1 class="text-3xl font-bold mb-8">
           {{ t('cloudOnboarding.survey.title') }}
         </h1>
-        
+
         <!-- Survey Form -->
         <div class="space-y-6">
           <div class="flex flex-col gap-2">
@@ -37,9 +38,7 @@
           </div>
 
           <div class="flex flex-col gap-2">
-            <label for="teamSize" class="font-medium">
-              Team size
-            </label>
+            <label for="teamSize" class="font-medium"> Team size </label>
             <Select
               v-model="surveyData.teamSize"
               :options="teamSizeOptions"
@@ -50,16 +49,11 @@
             />
           </div>
 
-          <Message v-if="error" severity="error">
-            {{ error }}
-          </Message>
-
           <Button
             label="Submit Survey"
-            @click="submitSurvey"
-            :loading="loading"
             :disabled="!isFormValid"
             class="w-full"
+            @click="submitSurvey"
           />
         </div>
       </div>
@@ -69,20 +63,17 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Message from 'primevue/message'
 import Select from 'primevue/select'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { submitSurvey as submitSurveyAPI } from '@/api/survey'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()
-
-const loading = ref(false)
-const error = ref('')
+const route = useRoute()
 
 const surveyData = ref({
   useCase: '',
@@ -121,26 +112,21 @@ const isFormValid = computed(() => {
 })
 
 const submitSurvey = async () => {
-  if (!isFormValid.value) return
+  await submitSurveyAPI(surveyData.value)
 
-  loading.value = true
-  error.value = ''
+  // After survey completion, check whitelist status
+  const inviteCode = route.query.inviteCode as string
+  const whitelisted = localStorage.getItem('whitelisted') === 'true'
 
-  try {
-    const response = await submitSurveyAPI(surveyData.value)
-    
-    if (response.whitelisted) {
-      // User is whitelisted, go to main app
-      void router.push({ path: '/' })
-    } else {
-      // User needs to wait
-      void router.push({ name: 'cloud-waitlist' })
-    }
-  } catch (err) {
-    console.error('Survey submission error:', err)
-    error.value = 'Failed to submit survey. Please try again.'
-  } finally {
-    loading.value = false
+  if (inviteCode) {
+    console.log('Has invite code, going to main app')
+    window.location.href = '/'
+  } else if (whitelisted) {
+    console.log('User is whitelisted, going to main app')
+    window.location.href = '/'
+  } else {
+    console.log('User needs to wait, going to waitlist')
+    await router.push({ name: 'cloud-waitlist' })
   }
 }
 </script>

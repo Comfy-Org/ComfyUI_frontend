@@ -8,21 +8,32 @@ export interface UserOnboardingStatus {
   userId?: string
 }
 
-// Mock data storage (in production, this would come from backend)
-let mockUserData: UserOnboardingStatus = {
-  surveyTaken: false,
-  whitelisted: false
-}
-
-export async function getMe(): Promise<UserOnboardingStatus> {
+export async function getMe(): Promise<UserOnboardingStatus | null> {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 300))
 
-  // Return mock data
-  return { ...mockUserData }
+  // Check localStorage for mock onboarding status
+  // These values are null if not set (user hasn't completed the step)
+  const surveyCompleted = localStorage.getItem('surveyCompleted')
+  const whitelisted = localStorage.getItem('whitelisted')
+  const userEmail = localStorage.getItem('userEmail')
+
+  // Return user status
+  // If key doesn't exist (null), treat as false
+  return {
+    surveyTaken: surveyCompleted === 'true',
+    whitelisted: whitelisted === 'true',
+    email: userEmail || undefined,
+    userId: userEmail || undefined
+  }
 }
 
 // Helper function to update mock data (for testing)
 export function setMockUserData(data: Partial<UserOnboardingStatus>) {
-  mockUserData = { ...mockUserData, ...data }
+  if (data.surveyTaken !== undefined) {
+    localStorage.setItem('surveyCompleted', data.surveyTaken ? 'true' : 'false')
+  }
+  if (data.whitelisted !== undefined) {
+    localStorage.setItem('whitelisted', data.whitelisted ? 'true' : 'false')
+  }
 }
