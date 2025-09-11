@@ -148,7 +148,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     this.type = subgraph.id
-    ////FIXME: This breaks subgraph conversion
+    //FIXME: This breaks subgraph conversion
     //this.configure(instanceData)
 
     this.addTitleButton({

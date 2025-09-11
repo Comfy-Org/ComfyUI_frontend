@@ -10,6 +10,7 @@ const props = defineProps<{
   item: [unknown, unknown],
   node: unknown,
   isShown?: boolean,
+  isDraggable?: boolean,
   toggleVisibility
 }>()
 
@@ -20,7 +21,7 @@ function onClick(e) {
 <template>
   <div class="widget-item">
     <div class="icon">
-      <i-lucide:grip-vertical v-if="draggable"/>
+      <i-lucide:grip-vertical v-if="isDraggable"/>
     </div>
     <div class="widget-title">
       <div class="widget-node">{{item[0].title}}</div>

@@ -75,6 +75,7 @@
     "searchModels": "Search Models",
     "searchKeybindings": "Search Keybindings",
     "searchExtensions": "Search Extensions",
+    "search": "Search",
     "noResultsFound": "No Results Found",
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",

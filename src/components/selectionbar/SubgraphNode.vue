@@ -5,6 +5,7 @@ import { watchDebounced } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
+import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import SubgraphNodeWidget from '@/components/selectionbar/SubgraphNodeWidget.vue'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -14,6 +15,7 @@ const { t } = useI18n()
 const canvasStore = useCanvasStore()
 
 const expandedKeys = ref<Record<string, boolean>>({})
+const searchQuery = ref<string>('')
 
 const triggerUpdate = ref(0)
 
@@ -72,8 +74,9 @@ function toggleVisibility(nodeId, widgetName, isShown) {
   useCanvasStore().canvas.setDirty(true)
 }
 
-const candidateWidgets = computed(() =>{
+const candidateWidgets = computed(() => {
   const node = canvasStore.selectedItems[0] ?? {}
+  if(!node) return []
   triggerUpdate.value//mark dependent
   const pw = node.properties.proxyWidgets ?? []
   const interiorNodes = node?.subgraph?.nodes ?? []
@@ -88,36 +91,69 @@ const candidateWidgets = computed(() =>{
   //TODO: filter enabled/disabled items while keeping order
   return intn
 })
+const filteredCandidates = computed(() => {
+  const query = searchQuery.value.toLowerCase()
+  if (!query) return candidateWidgets.value
+  return candidateWidgets.value.filter(([n,w]) =>
+    n.title.toLowerCase().includes(query)
+    || w.name.toLowerCase().includes(query)
+  )
+})
+const filteredActive = computed(() => {
+  const query = searchQuery.value.toLowerCase()
+  if (!query) {
+    console.error("displaying filtered widgets with no search query")
+    return activeWidgets.value
+  }
+  return activeWidgets.value.filter(([n,w]) =>
+    n.title.toLowerCase().includes(query)
+    || w.name.toLowerCase().includes(query)
+  )
+})
 
 </script>
 <template>
   <SidebarTabTemplate
-      :title="'Subgraph Node'"
-      class="workflows-sidebar-tab bg-[var(--p-tree-background)]"
-      >
-      <template #body>
-        <div class="widgets-section">
-        <draggable
-            v-model="activeWidgets"
-            group="enabledWidgets"
-            class="widget-container"
-            :animation="100"
-            @start="drag=true"
-            @end="drag=false"
-            item-key="id">
-        <template #item="{element}">
-          <SubgraphNodeWidget :item="element" :node="activeNode" :isShown="true"
-            :toggleVisibility="toggleVisibility"/>
-        </template>
-        </draggable>
+    :title="'Parameters'"
+    class="workflows-sidebar-tab bg-[var(--p-tree-background)]"
+    >
+    <template #header>
+      <SearchBox
+          v-model:modelValue="searchQuery"
+          class="model-lib-search-box p-2 2xl:p-4"
+          :placeholder="$t('g.search') + '...'"
+          @search="handleSearch"
+          />
+    </template>
+    <template #body>
+      <div class="widgets-section">
+        <div v-if="searchQuery"
+          v-for="element in filteredActive" class="widget-container">
+          <SubgraphNodeWidget :item="element" :node="activeNode"
+          :toggleVisibility="toggleVisibility" :isShown="true"/>
         </div>
-        <div class="widgets-section">
-          <div v-for="element in candidateWidgets" class="widget-container">
-            <SubgraphNodeWidget :item="element" :node="activeNode"
-            :toggleVisibility="toggleVisibility"/>
-          </div>
-        </div>
+      <draggable
+          v-model="activeWidgets"
+          group="enabledWidgets"
+          class="widget-container"
+          :animation="100"
+          @start="drag=true"
+          @end="drag=false"
+          item-key="id"
+          v-else>
+      <template #item="{element}">
+        <SubgraphNodeWidget :item="element" :node="activeNode" :isShown="true"
+          :toggleVisibility="toggleVisibility" :isDraggable="true"/>
       </template>
+      </draggable>
+      </div>
+      <div class="widgets-section">
+        <div v-for="element in filteredCandidates" class="widget-container">
+          <SubgraphNodeWidget :item="element" :node="activeNode"
+          :toggleVisibility="toggleVisibility"/>
+        </div>
+      </div>
+    </template>
   </SidebarTabTemplate>
 </template>
 <style scoped>
