@@ -2,7 +2,12 @@
   <Panel
     class="actionbar w-fit"
     :style="style"
-    :class="cn({ 'is-dragging': isDragging, 'is-docked': isDocked })"
+    :class="
+      cn({
+        'is-dragging': isDragging,
+        'is-docked bg-transparent border-none p-0': isDocked
+      })
+    "
   >
     <div ref="panelRef" class="actionbar-content flex items-center select-none">
       <span
