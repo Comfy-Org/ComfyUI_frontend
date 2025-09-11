@@ -18,10 +18,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Get start time
-        id: start-time
-        run: echo "time=$(date -u '+%m/%d/%Y, %I:%M:%S %p')" >> $GITHUB_OUTPUT
-        
       - name: Post starting comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -31,7 +27,7 @@ jobs:
             "${{ github.event.pull_request.number }}" \
             "${{ github.head_ref }}" \
             "starting" \
-            "${{ steps.start-time.outputs.time }}"
+            "$(date -u '+%m/%d/%Y, %I:%M:%S %p')"
 
   # Build Storybook for all PRs (free Cloudflare deployment)
   storybook-build:
@@ -78,15 +74,7 @@ jobs:
         id: job-status
         if: always()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "conclusion=success" >> $GITHUB_OUTPUT
-          elif [ "${{ job.status }}" = "cancelled" ]; then
-            echo "conclusion=cancelled" >> $GITHUB_OUTPUT
-          elif [ "${{ job.status }}" = "skipped" ]; then
-            echo "conclusion=skipped" >> $GITHUB_OUTPUT
-          else
-            echo "conclusion=failure" >> $GITHUB_OUTPUT
-          fi
+          echo "conclusion=${{ job.status }}" >> $GITHUB_OUTPUT
 
       - name: Get workflow URL
         id: workflow-url
@@ -158,15 +146,7 @@ jobs:
         id: job-status
         if: always()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "conclusion=success" >> $GITHUB_OUTPUT
-          elif [ "${{ job.status }}" = "cancelled" ]; then
-            echo "conclusion=cancelled" >> $GITHUB_OUTPUT
-          elif [ "${{ job.status }}" = "skipped" ]; then
-            echo "conclusion=skipped" >> $GITHUB_OUTPUT
-          else
-            echo "conclusion=failure" >> $GITHUB_OUTPUT
-          fi
+          echo "conclusion=${{ job.status }}" >> $GITHUB_OUTPUT
 
       - name: Get workflow URL
         id: workflow-url
