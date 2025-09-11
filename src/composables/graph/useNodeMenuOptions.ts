@@ -1,17 +1,4 @@
-import {
-  Ban,
-  Box,
-  Info,
-  Maximize2,
-  Minimize2,
-  MoveDiagonal2,
-  Palette,
-  Pin,
-  PinOff,
-  Play,
-  ZapOff
-} from 'lucide-vue-next'
-import { computed, markRaw } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MenuOption, NodeSelectionState } from './useMoreOptionsMenu'
@@ -53,7 +40,7 @@ export function useNodeMenuOptions() {
 
   const getAdjustSizeOption = (): MenuOption => ({
     label: t('contextMenu.Adjust Size'),
-    icon: markRaw(MoveDiagonal2),
+    icon: 'icon-[lucide--move-diagonal-2]',
     action: adjustNodeSize
   })
 
@@ -65,7 +52,9 @@ export function useNodeMenuOptions() {
       label: states.collapsed
         ? t('contextMenu.Expand Node')
         : t('contextMenu.Minimize Node'),
-      icon: markRaw(states.collapsed ? Maximize2 : Minimize2),
+      icon: states.collapsed
+        ? 'icon-[lucide--maximize-2]'
+        : 'icon-[lucide--minimize-2]',
       action: () => {
         toggleNodeCollapse()
         bump()
@@ -73,14 +62,14 @@ export function useNodeMenuOptions() {
     },
     {
       label: t('contextMenu.Shape'),
-      icon: markRaw(Box),
+      icon: 'icon-[lucide--box]',
       hasSubmenu: true,
       submenu: shapeSubmenu.value,
       action: () => {}
     },
     {
       label: t('contextMenu.Color'),
-      icon: markRaw(Palette),
+      icon: 'icon-[lucide--palette]',
       hasSubmenu: true,
       submenu: colorSubmenu.value,
       action: () => {}
@@ -92,7 +81,7 @@ export function useNodeMenuOptions() {
     bump: () => void
   ): MenuOption => ({
     label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
-    icon: markRaw(states.pinned ? PinOff : Pin),
+    icon: states.pinned ? 'icon-[lucide--pin-off]' : 'icon-[lucide--pin]',
     action: () => {
       toggleNodePin()
       bump()
@@ -106,7 +95,7 @@ export function useNodeMenuOptions() {
     label: states.bypassed
       ? t('contextMenu.Remove Bypass')
       : t('contextMenu.Bypass'),
-    icon: markRaw(states.bypassed ? ZapOff : Ban),
+    icon: states.bypassed ? 'icon-[lucide--zap-off]' : 'icon-[lucide--ban]',
     shortcut: 'Ctrl+B',
     action: () => {
       toggleNodeBypass()
@@ -116,7 +105,7 @@ export function useNodeMenuOptions() {
 
   const getRunBranchOption = (): MenuOption => ({
     label: t('contextMenu.Run Branch'),
-    icon: markRaw(Play),
+    icon: 'icon-[lucide--play]',
     action: runBranch
   })
 
@@ -139,7 +128,7 @@ export function useNodeMenuOptions() {
 
   const getNodeInfoOption = (showNodeHelp: () => void): MenuOption => ({
     label: t('contextMenu.Node Info'),
-    icon: markRaw(Info),
+    icon: 'icon-[lucide--info]',
     action: showNodeHelp
   })
 

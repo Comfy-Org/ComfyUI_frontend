@@ -1,5 +1,3 @@
-import { Copy, Download, ExternalLink } from 'lucide-vue-next'
-import { markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
@@ -102,17 +100,17 @@ export function useImageMenuOptions() {
       },
       {
         label: t('contextMenu.Open Image'),
-        icon: markRaw(ExternalLink),
+        icon: 'icon-[lucide--external-link]',
         action: () => openImage(node)
       },
       {
         label: t('contextMenu.Copy Image'),
-        icon: markRaw(Copy),
+        icon: 'icon-[lucide--copy]',
         action: () => copyImage(node)
       },
       {
         label: t('contextMenu.Save Image'),
-        icon: markRaw(Download),
+        icon: 'icon-[lucide--download]',
         action: () => saveImage(node)
       }
     ]

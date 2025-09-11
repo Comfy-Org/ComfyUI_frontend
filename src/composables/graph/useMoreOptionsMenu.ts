@@ -1,4 +1,4 @@
-import { type Component, computed, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { type LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -11,7 +11,7 @@ import { useSelectionState } from './useSelectionState'
 
 export interface MenuOption {
   label?: string
-  icon?: Component
+  icon?: string
   shortcut?: string
   hasSubmenu?: boolean
   type?: 'divider'
@@ -22,7 +22,7 @@ export interface MenuOption {
 
 export interface SubMenuOption {
   label: string
-  icon?: Component
+  icon?: string
   action: () => void
   color?: string
 }

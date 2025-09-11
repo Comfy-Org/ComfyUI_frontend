@@ -9,6 +9,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+import { computeUnionBounds } from '@/utils/mathUtil'
 
 /**
  * Manages the position of the selection toolbox independently.

@@ -1,14 +1,4 @@
-// import {
-//   AlignCenterHorizontal,
-//   AlignStartHorizontal,
-//   Expand,
-//   FolderPlus,
-//   Frame,
-//   Group,
-//   Shrink,
-//   Trash2
-// } from 'lucide-vue-next'
-import { computed, markRaw } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
@@ -77,12 +67,12 @@ export function useSelectionMenuOptions() {
       return [
         {
           label: t('contextMenu.Add Subgraph to Library'),
-          icon: markRaw(FolderPlus),
+          icon: 'icon-[lucide--folder-plus]',
           action: addSubgraphToLibrary
         },
         {
           label: t('contextMenu.Unpack Subgraph'),
-          icon: markRaw(Expand),
+          icon: 'icon-[lucide--expand]',
           action: unpackSubgraph
         }
       ]
@@ -90,7 +80,7 @@ export function useSelectionMenuOptions() {
       return [
         {
           label: t('contextMenu.Convert to Subgraph'),
-          icon: markRaw(Shrink),
+          icon: 'icon-[lucide--shrink]',
           action: convertToSubgraph,
           badge: BadgeVariant.NEW
         }
@@ -109,13 +99,13 @@ export function useSelectionMenuOptions() {
     return [
       {
         label: t('contextMenu.Convert to Group Node'),
-        icon: markRaw(Group),
+        icon: 'icon-[lucide--group]',
         action: convertToGroupNodes,
         badge: BadgeVariant.DEPRECATED
       },
       {
         label: t('g.frameNodes'),
-        icon: markRaw(Frame),
+        icon: 'icon-[lucide--frame]',
         action: frameNodes
       }
     ]
@@ -124,14 +114,14 @@ export function useSelectionMenuOptions() {
   const getAlignmentOptions = (): MenuOption[] => [
     {
       label: t('contextMenu.Align Selected To'),
-      icon: markRaw(AlignStartHorizontal),
+      icon: 'icon-[lucide--align-start-horizontal]',
       hasSubmenu: true,
       submenu: alignSubmenu.value,
       action: () => {}
     },
     {
       label: t('contextMenu.Distribute Nodes'),
-      icon: markRaw(AlignCenterHorizontal),
+      icon: 'icon-[lucide--align-center-horizontal]',
       hasSubmenu: true,
       submenu: distributeSubmenu.value,
       action: () => {}
@@ -140,7 +130,7 @@ export function useSelectionMenuOptions() {
 
   const getDeleteOption = (): MenuOption => ({
     label: t('contextMenu.Delete'),
-    icon: markRaw(Trash2),
+    icon: 'icon-[lucide--trash-2]',
     shortcut: 'Delete',
     action: deleteSelection
   })

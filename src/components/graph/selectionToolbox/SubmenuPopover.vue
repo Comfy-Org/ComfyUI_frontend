@@ -33,10 +33,9 @@
           :style="{ backgroundColor: subOption.color }"
         />
         <template v-else-if="!subOption.color">
-          <Check
+          <i-lucide:check
             v-if="isShapeSelected(subOption)"
-            :size="16"
-            class="flex-shrink-0"
+            class="w-4 h-4 flex-shrink-0"
           />
           <div v-else class="w-4 flex-shrink-0" />
           <span>{{ subOption.label }}</span>
@@ -47,7 +46,6 @@
 </template>
 
 <script setup lang="ts">
-import { Check } from 'lucide-vue-next'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 

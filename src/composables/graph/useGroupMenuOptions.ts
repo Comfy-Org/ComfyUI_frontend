@@ -1,5 +1,3 @@
-import { Ban, Box, MoveDiagonal2, Palette, Play, ZapOff } from 'lucide-vue-next'
-import { markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -26,7 +24,7 @@ export function useGroupMenuOptions() {
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
     label: 'Fit Group To Nodes',
-    icon: markRaw(MoveDiagonal2),
+    icon: 'icon-[lucide--move-diagonal-2]',
     action: () => {
       try {
         groupContext.recomputeInsideNodes()
@@ -48,7 +46,7 @@ export function useGroupMenuOptions() {
     bump: () => void
   ): MenuOption => ({
     label: t('contextMenu.Shape'),
-    icon: markRaw(Box),
+    icon: 'icon-[lucide--box]',
     hasSubmenu: true,
     submenu: shapeOptions.map((shape) => ({
       label: shape.localizedName,
@@ -70,7 +68,7 @@ export function useGroupMenuOptions() {
     bump: () => void
   ): MenuOption => ({
     label: t('contextMenu.Color'),
-    icon: markRaw(Palette),
+    icon: 'icon-[lucide--palette]',
     hasSubmenu: true,
     submenu: colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
@@ -118,13 +116,12 @@ export function useGroupMenuOptions() {
 
     const createModeAction = (label: string, mode: LGraphEventMode) => ({
       label: t(`selectionToolbox.${label}`),
-      icon: markRaw(
+      icon:
         mode === LGraphEventMode.BYPASS
-          ? Ban
+          ? 'icon-[lucide--ban]'
           : mode === LGraphEventMode.NEVER
-            ? ZapOff
-            : Play
-      ),
+            ? 'icon-[lucide--zap-off]'
+            : 'icon-[lucide--play]',
       action: () => {
         groupNodes.forEach((n) => {
           n.mode = mode

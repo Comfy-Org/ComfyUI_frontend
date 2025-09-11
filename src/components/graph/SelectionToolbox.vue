@@ -22,7 +22,7 @@
         <ColorPickerButton v-if="showColorPicker" />
         <FrameNodes v-if="showFrameNodes" />
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-        <PublishSubgraphButton />
+        <PublishSubgraphButton v-if="showPublishSubgraph" />
         <MaskEditorButton v-if="showMaskEditor" />
         <VerticalDivider
           v-if="showAnyPrimaryActions && showAnyControlActions"
@@ -58,11 +58,11 @@ import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
+import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import {
   resetMoreOptionsState,
   useSelectionToolboxPosition
 } from '@/composables/canvas/useSelectionToolboxPosition'
-import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -115,7 +115,7 @@ const showInfoButton = computed(
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
-const showBookmark = computed(() => isSingleSubgraph.value)
+const showPublishSubgraph = computed(() => isSingleSubgraph.value)
 
 const showBypass = computed(
   () =>
@@ -134,7 +134,7 @@ const showAnyPrimaryActions = computed(
     showColorPicker.value ||
     showConvertToSubgraph.value ||
     showFrameNodes.value ||
-    showBookmark.value
+    showPublishSubgraph.value
 )
 
 const showAnyControlActions = computed(() => showBypass.value)

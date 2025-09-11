@@ -1,12 +1,3 @@
-import {
-  AlignCenterHorizontal,
-  AlignCenterVertical,
-  AlignEndHorizontal,
-  AlignEndVertical,
-  AlignStartHorizontal,
-  AlignStartVertical
-} from 'lucide-vue-next'
-import { type Component, markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { Direction } from '@/lib/litegraph/src/interfaces'
@@ -19,14 +10,14 @@ export interface AlignOption {
   name: string
   localizedName: string
   value: Direction
-  icon: Component
+  icon: string
 }
 
 export interface DistributeOption {
   name: string
   localizedName: string
   value: boolean // true for horizontal, false for vertical
-  icon: Component
+  icon: string
 }
 
 /**
@@ -42,25 +33,25 @@ export function useNodeArrangement() {
       name: 'top',
       localizedName: t('contextMenu.Top'),
       value: 'top',
-      icon: markRaw(AlignStartVertical)
+      icon: 'icon-[lucide--align-start-vertical]'
     },
     {
       name: 'bottom',
       localizedName: t('contextMenu.Bottom'),
       value: 'bottom',
-      icon: markRaw(AlignEndVertical)
+      icon: 'icon-[lucide--align-end-vertical]'
     },
     {
       name: 'left',
       localizedName: t('contextMenu.Left'),
       value: 'left',
-      icon: markRaw(AlignStartHorizontal)
+      icon: 'icon-[lucide--align-start-horizontal]'
     },
     {
       name: 'right',
       localizedName: t('contextMenu.Right'),
       value: 'right',
-      icon: markRaw(AlignEndHorizontal)
+      icon: 'icon-[lucide--align-end-horizontal]'
     }
   ]
 
@@ -69,13 +60,13 @@ export function useNodeArrangement() {
       name: 'horizontal',
       localizedName: t('contextMenu.Horizontal'),
       value: true,
-      icon: markRaw(AlignCenterHorizontal)
+      icon: 'icon-[lucide--align-center-horizontal]'
     },
     {
       name: 'vertical',
       localizedName: t('contextMenu.Vertical'),
       value: false,
-      icon: markRaw(AlignCenterVertical)
+      icon: 'icon-[lucide--align-center-vertical]'
     }
   ]
 

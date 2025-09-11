@@ -10,7 +10,7 @@
     class="flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer"
     @click="handleClick"
   >
-    <component :is="option.icon" v-if="option.icon" :size="16" />
+    <i v-if="option.icon" :class="[option.icon, 'w-4 h-4']" />
     <span class="flex-1">{{ option.label }}</span>
     <span v-if="option.shortcut" class="text-xs opacity-60">
       {{ option.shortcut }}
