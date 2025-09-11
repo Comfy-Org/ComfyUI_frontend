@@ -12,6 +12,22 @@ on:
         required: true
         default: latest
         type: string
+      ref:
+        description: 'Git ref to checkout (commit SHA, tag, or branch)'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      dist_tag:
+        required: false
+        type: string
+        default: latest
+      ref:
+        required: false
+        type: string
 
 concurrency: publish-types-${{ inputs.version }}
 
@@ -22,10 +38,20 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout repository at tag
+      - name: Determine ref to checkout
+        id: resolve_ref
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.ref }}" ]; then
+            echo "ref=${{ inputs.ref }}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=refs/tags/v${{ inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          ref: refs/tags/v${{ inputs.version }}
+          ref: ${{ steps.resolve_ref.outputs.ref }}
           fetch-depth: 0
 
       - name: Install pnpm
