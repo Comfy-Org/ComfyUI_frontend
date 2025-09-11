@@ -215,6 +215,9 @@
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "发布子图"
+  },
   "Comfy_QueuePrompt": {
     "label": "执行提示词"
   },

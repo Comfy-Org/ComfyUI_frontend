@@ -34,7 +34,6 @@
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 import Tag from 'primevue/tag'
-import { onMounted } from 'vue'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
@@ -44,10 +43,4 @@ import PanelTemplate from './PanelTemplate.vue'
 
 const systemStatsStore = useSystemStatsStore()
 const aboutPanelStore = useAboutPanelStore()
-
-onMounted(async () => {
-  if (!systemStatsStore.systemStats) {
-    await systemStatsStore.fetchSystemStats()
-  }
-})
 </script>

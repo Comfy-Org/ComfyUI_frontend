@@ -453,6 +453,32 @@ export class ComfyPage {
     await workflowsTab.close()
   }
 
+  /**
+   * Attach a screenshot to the test report.
+   * By default, screenshots are only taken in non-CI environments.
+   * @param name - Name for the screenshot attachment
+   * @param options - Optional configuration
+   * @param options.runInCI - Whether to take screenshot in CI (default: false)
+   * @param options.fullPage - Whether to capture full page (default: false)
+   */
+  async attachScreenshot(
+    name: string,
+    options: { runInCI?: boolean; fullPage?: boolean } = {}
+  ) {
+    const { runInCI = false, fullPage = false } = options
+
+    // Skip in CI unless explicitly requested
+    if (process.env.CI && !runInCI) {
+      return
+    }
+
+    const testInfo = comfyPageFixture.info()
+    await testInfo.attach(name, {
+      body: await this.page.screenshot({ fullPage }),
+      contentType: 'image/png'
+    })
+  }
+
   async resetView() {
     if (await this.resetViewButton.isVisible()) {
       await this.resetViewButton.click()

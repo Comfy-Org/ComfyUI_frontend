@@ -129,7 +129,7 @@ export const findNodeByKey = <T extends TreeNode>(
  * @param node - The node to clone.
  * @returns A deep clone of the node.
  */
-export function cloneTree<T extends TreeNode>(node: T): T {
+function cloneTree<T extends TreeNode>(node: T): T {
   const clone = { ...node }
 
   // Clone children recursively

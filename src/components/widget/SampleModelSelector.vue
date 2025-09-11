@@ -87,8 +87,6 @@
 
     <template #content>
       <!-- Card Examples -->
-      <!-- <div class="min-h-0 px-6 py-4 overflow-y-auto scrollbar-hide"> -->
-      <!-- <h2 class="text-xxl py-4 pt-0 m-0">{{ $t('Checkpoints') }}</h2> -->
       <div class="flex flex-wrap gap-2">
         <CardContainer
           v-for="i in 100"
@@ -175,20 +173,20 @@ const sortOptions = ref([
 ])
 
 const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-  { id: 'installed', label: 'Installed' },
+  { id: 'installed', label: 'Installed', icon: 'icon-[lucide--download]' },
   {
     title: 'TAGS',
     items: [
-      { id: 'tag-sd15', label: 'SD 1.5' },
-      { id: 'tag-sdxl', label: 'SDXL' },
-      { id: 'tag-utility', label: 'Utility' }
+      { id: 'tag-sd15', label: 'SD 1.5', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-sdxl', label: 'SDXL', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-utility', label: 'Utility', icon: 'icon-[lucide--tag]' }
     ]
   },
   {
     title: 'CATEGORIES',
     items: [
-      { id: 'cat-models', label: 'Models' },
-      { id: 'cat-nodes', label: 'Nodes' }
+      { id: 'cat-models', label: 'Models', icon: 'icon-[lucide--layers]' },
+      { id: 'cat-nodes', label: 'Nodes', icon: 'icon-[lucide--grid-3x3]' }
     ]
   }
 ])

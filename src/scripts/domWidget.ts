@@ -55,7 +55,7 @@ export interface DOMWidget<T extends HTMLElement, V extends object | string>
  * - widget: Reference to the widget instance
  * - onUpdate:modelValue: The update handler for v-model
  */
-export type ComponentWidgetCustomProps = Record<string, unknown>
+type ComponentWidgetCustomProps = Record<string, unknown>
 
 /**
  * Standard props that are handled separately by DomWidget.vue and should be

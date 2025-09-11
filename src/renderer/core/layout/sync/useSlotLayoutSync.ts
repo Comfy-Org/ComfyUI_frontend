@@ -57,17 +57,18 @@ export function useSlotLayoutSync() {
   let restoreHandlers: (() => void) | null = null
 
   /**
-   * Start slot layout sync with full event-driven functionality
+   * Attempt to start slot layout sync with full event-driven functionality
    * @param canvas LiteGraph canvas instance
+   * @returns true if sync was actually started, false if early-returned
    */
-  function start(canvas: LGraphCanvas): void {
+  function attemptStart(canvas: LGraphCanvas): boolean {
     // When Vue nodes are enabled, slot DOM registers exact positions.
     // Skip calculated registration to avoid conflicts.
     if (LiteGraph.vueNodesMode) {
-      return
+      return false
     }
     const graph = canvas?.graph
-    if (!graph) return
+    if (!graph) return false
 
     // Initial registration for all nodes in the current graph
     for (const node of graph.nodes) {
@@ -135,6 +136,8 @@ export function useSlotLayoutSync() {
       graph.onTrigger = origTrigger || undefined
       graph.onAfterChange = origAfterChange || undefined
     }
+
+    return true
   }
 
   /**
@@ -157,7 +160,7 @@ export function useSlotLayoutSync() {
   })
 
   return {
-    start,
+    attemptStart,
     stop
   }
 }

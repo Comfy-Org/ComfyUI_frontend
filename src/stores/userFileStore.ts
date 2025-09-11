@@ -182,7 +182,7 @@ export class UserFile {
   }
 }
 
-export interface LoadedUserFile extends UserFile {
+interface LoadedUserFile extends UserFile {
   isLoaded: true
   originalContent: string
   content: string

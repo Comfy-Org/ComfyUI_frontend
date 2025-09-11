@@ -16,8 +16,6 @@
         v-model="inputDisplayValue"
         :disabled="readonly"
         type="number"
-        :min="widget.options?.min"
-        :max="widget.options?.max"
         :step="stepValue"
         class="w-[4em] text-center text-xs px-0 !border-none !shadow-none !bg-transparent"
         size="small"
@@ -74,9 +72,9 @@ const precision = computed(() => {
 
 // Calculate the step value based on precision or widget options
 const stepValue = computed(() => {
-  // If step is explicitly defined in options, use it
-  if (props.widget.options?.step !== undefined) {
-    return String(props.widget.options.step)
+  // Use step2 (correct input spec value) instead of step (legacy 10x value)
+  if (props.widget.options?.step2 !== undefined) {
+    return String(props.widget.options.step2)
   }
   // Otherwise, derive from precision
   if (precision.value !== undefined) {

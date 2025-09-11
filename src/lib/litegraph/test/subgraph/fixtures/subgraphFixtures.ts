@@ -16,7 +16,7 @@ import {
   createTestSubgraphNode
 } from './subgraphHelpers'
 
-export interface SubgraphFixtures {
+interface SubgraphFixtures {
   /** A minimal subgraph with no inputs, outputs, or nodes */
   emptySubgraph: Subgraph
 

@@ -1,6 +1,6 @@
 import type { Settings } from '@/schemas/apiSchema'
 
-export type SettingInputType =
+type SettingInputType =
   | 'boolean'
   | 'number'
   | 'slider'
@@ -13,7 +13,7 @@ export type SettingInputType =
   | 'hidden'
   | 'backgroundImage'
 
-export type SettingCustomRenderer = (
+type SettingCustomRenderer = (
   name: string,
   setter: (v: any) => void,
   value: any,

@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  Subgraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import {
   ExecutedWsMessage,
   ResultItem,
@@ -136,17 +140,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!filenames || !node) return
 
+    const locatorId =
+      node.graph instanceof Subgraph
+        ? nodeIdToNodeLocatorId(node.id, node.graph ?? undefined)
+        : `${node.id}`
+    if (!locatorId) return
     if (typeof filenames === 'string') {
-      setNodeOutputsByNodeId(
-        node.id,
+      setOutputsByLocatorId(
+        locatorId,
         createOutputs([filenames], folder, isAnimated)
       )
     } else if (!Array.isArray(filenames)) {
-      setNodeOutputsByNodeId(node.id, filenames)
+      setOutputsByLocatorId(locatorId, filenames)
     } else {
       const resultItems = createOutputs(filenames, folder, isAnimated)
       if (!resultItems?.images?.length) return
-      setNodeOutputsByNodeId(node.id, resultItems)
+      setOutputsByLocatorId(locatorId, resultItems)
     }
   }
 
@@ -165,26 +174,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     options: SetOutputOptions = {}
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(executionId)
-    if (!nodeLocatorId) return
-
-    setOutputsByLocatorId(nodeLocatorId, outputs, options)
-  }
-
-  /**
-   * Set node outputs by node ID.
-   * Uses the current graph context to create the appropriate NodeLocatorId.
-   *
-   * @param nodeId - The node ID
-   * @param outputs - The outputs to store
-   * @param options - Options for setting outputs
-   * @param options.merge - If true, merge with existing outputs (arrays are concatenated)
-   */
-  function setNodeOutputsByNodeId(
-    nodeId: string | number,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
-    options: SetOutputOptions = {}
-  ) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
     if (!nodeLocatorId) return
 
     setOutputsByLocatorId(nodeLocatorId, outputs, options)
@@ -288,7 +277,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodePreviews,
     setNodeOutputs,
     setNodeOutputsByExecutionId,
-    setNodeOutputsByNodeId,
     setNodePreviewsByExecutionId,
     setNodePreviewsByNodeId,
     revokePreviewsByExecutionId,
