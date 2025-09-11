@@ -28,7 +28,7 @@
     id="graph-canvas"
     ref="canvasRef"
     tabindex="1"
-    class="block w-full h-full touch-none"
+    class="align-top w-full h-full touch-none"
   />
 
   <!-- TransformPane for Vue node rendering -->
