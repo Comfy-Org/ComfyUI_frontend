@@ -1,63 +1,32 @@
+import { fromZodError } from 'zod-validation-error'
+
+import {
+  type AssetResponse,
+  type ModelFile,
+  type ModelFolder,
+  assetResponseSchema
+} from '@/schemas/assetSchema'
 import { api } from '@/scripts/api'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'
 const MISSING_TAG = 'missing'
 
-// Types for asset API responses
-interface AssetResponse {
-  assets?: Asset[]
-  total?: number
-  has_more?: boolean
-}
-
-interface Asset {
-  id: string
-  name: string
-  tags: string[]
-  size: number
-  created_at?: string
-}
+/**
+ * Input names that are eligible for asset browser
+ */
+const WHITELISTED_INPUTS = new Set(['ckpt_name', 'lora_name', 'vae_name'])
 
 /**
- * Type guard for validating asset structure
+ * Validates asset response data using Zod schema
  */
-function isValidAsset(asset: unknown): asset is Asset {
-  return (
-    asset !== null &&
-    typeof asset === 'object' &&
-    'id' in asset &&
-    'name' in asset &&
-    'tags' in asset &&
-    Array.isArray((asset as Asset).tags)
-  )
-}
+function validateAssetResponse(data: unknown): AssetResponse {
+  const result = assetResponseSchema.safeParse(data)
+  if (result.success) return result.data
 
-/**
- * Creates predicate for filtering assets by folder and excluding missing ones
- */
-function createAssetFolderFilter(folder?: string) {
-  return (asset: unknown): asset is Asset => {
-    if (!isValidAsset(asset) || asset.tags.includes(MISSING_TAG)) {
-      return false
-    }
-    if (folder && !asset.tags.includes(folder)) {
-      return false
-    }
-    return true
-  }
-}
-
-/**
- * Creates predicate for filtering folder assets (requires name)
- */
-function createFolderAssetFilter(folder: string) {
-  return (asset: unknown): asset is Asset => {
-    if (!isValidAsset(asset) || !asset.name) {
-      return false
-    }
-    return asset.tags.includes(folder) && !asset.tags.includes(MISSING_TAG)
-  }
+  const error = fromZodError(result.error)
+  throw new Error(`Invalid asset response against zod schema:\n${error}`)
 }
 
 /**
@@ -66,7 +35,7 @@ function createFolderAssetFilter(folder: string) {
  */
 function createAssetService() {
   /**
-   * Handles API response with consistent error handling
+   * Handles API response with consistent error handling and Zod validation
    */
   async function handleAssetRequest(
     url: string,
@@ -78,7 +47,8 @@ function createAssetService() {
         `Unable to load ${context}: Server returned ${res.status}. Please try again.`
       )
     }
-    return await res.json()
+    const data = await res.json()
+    return validateAssetResponse(data)
   }
   /**
    * Gets a list of model folder keys from the asset API
@@ -90,9 +60,7 @@ function createAssetService() {
    *
    * @returns The list of model folder keys
    */
-  async function getAssetModelFolders(): Promise<
-    { name: string; folders: string[] }[]
-  > {
+  async function getAssetModelFolders(): Promise<ModelFolder[]> {
     const data = await handleAssetRequest(
       `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG}`,
       'model folders'
@@ -102,22 +70,17 @@ function createAssetService() {
     const blacklistedDirectories = ['configs']
 
     // Extract directory names from assets that actually exist, exclude missing assets
-    const discoveredFolders = new Set<string>()
-    if (data?.assets) {
-      const directoryTags = data.assets
-        .filter(createAssetFolderFilter())
-        .flatMap((asset) => asset.tags)
-        .filter(
+    const discoveredFolders = new Set<string>(
+      data?.assets
+        ?.filter((asset) => !asset.tags.includes(MISSING_TAG))
+        ?.flatMap((asset) => asset.tags)
+        ?.filter(
           (tag) => tag !== MODELS_TAG && !blacklistedDirectories.includes(tag)
-        )
-
-      for (const tag of directoryTags) {
-        discoveredFolders.add(tag)
-      }
-    }
+        ) ?? []
+    )
 
     // Return only discovered folders in alphabetical order
-    const sortedFolders = Array.from(discoveredFolders).sort()
+    const sortedFolders = Array.from(discoveredFolders).toSorted()
     return sortedFolders.map((name) => ({ name, folders: [] }))
   }
 
@@ -126,25 +89,48 @@ function createAssetService() {
    * @param folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async function getAssetModels(
-    folder: string
-  ): Promise<{ name: string; pathIndex: number }[]> {
+  async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const data = await handleAssetRequest(
       `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${folder}`,
       `models for ${folder}`
     )
 
-    return data?.assets
-      ? data.assets.filter(createFolderAssetFilter(folder)).map((asset) => ({
+    return (
+      data?.assets
+        ?.filter(
+          (asset) =>
+            !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
+        )
+        ?.map((asset) => ({
           name: asset.name,
           pathIndex: 0
-        }))
-      : []
+        })) ?? []
+    )
+  }
+
+  /**
+   * Checks if a widget input should use the asset browser based on both input name and node comfyClass
+   *
+   * @param inputName - The input name (e.g., 'ckpt_name', 'lora_name')
+   * @param nodeType - The ComfyUI node comfyClass (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
+   * @returns true if this input should use asset browser
+   */
+  function isAssetBrowserEligible(
+    inputName: string,
+    nodeType: string
+  ): boolean {
+    return (
+      // Must be an approved input name
+      WHITELISTED_INPUTS.has(inputName) &&
+      // Must be a registered node type
+      useModelToNodeStore().getRegisteredNodeTypes().has(nodeType)
+    )
   }
 
   return {
     getAssetModelFolders,
-    getAssetModels
+    getAssetModels,
+    isAssetBrowserEligible
   }
 }
 

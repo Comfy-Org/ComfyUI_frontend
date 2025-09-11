@@ -3,6 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 import { assetService } from '@/services/assetService'
 
+vi.mock('@/stores/modelToNodeStore', () => ({
+  useModelToNodeStore: vi.fn(() => ({
+    getRegisteredNodeTypes: vi.fn(
+      () =>
+        new Set([
+          'CheckpointLoaderSimple',
+          'LoraLoader',
+          'VAELoader',
+          'TestNode'
+        ])
+    )
+  }))
+}))
+
 // Test data constants
 const MOCK_ASSETS = {
   checkpoints: {
@@ -83,19 +97,20 @@ describe('assetService', () => {
       expect(folderNames).not.toContain('configs')
     })
 
-    it('should handle errors and empty responses', async () => {
-      // Empty response
+    it('should handle empty responses', async () => {
       mockApiResponse([])
       const emptyResult = await assetService.getAssetModelFolders()
       expect(emptyResult).toHaveLength(0)
+    })
 
-      // Network error
+    it('should handle network errors', async () => {
       vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
       await expect(assetService.getAssetModelFolders()).rejects.toThrow(
         'Network error'
       )
+    })
 
-      // HTTP error
+    it('should handle HTTP errors', async () => {
       mockApiError(500)
       await expect(assetService.getAssetModelFolders()).rejects.toThrow(
         'Unable to load model folders: Server returned 500. Please try again.'
@@ -107,7 +122,6 @@ describe('assetService', () => {
     it('should return filtered models for folder', async () => {
       const assets = [
         { ...MOCK_ASSETS.checkpoints, name: 'valid.safetensors' },
-        { ...MOCK_ASSETS.checkpoints, name: undefined }, // Invalid name
         { ...MOCK_ASSETS.loras, name: 'lora.safetensors' }, // Wrong tag
         {
           id: 'uuid-4',
@@ -145,6 +159,45 @@ describe('assetService', () => {
       await expect(assetService.getAssetModels('checkpoints')).rejects.toThrow(
         'Unable to load models for checkpoints: Server returned 404. Please try again.'
       )
+    })
+  })
+
+  describe('isAssetBrowserEligible', () => {
+    it('should return true for eligible widget names with registered node types', () => {
+      expect(
+        assetService.isAssetBrowserEligible(
+          'ckpt_name',
+          'CheckpointLoaderSimple'
+        )
+      ).toBe(true)
+      expect(
+        assetService.isAssetBrowserEligible('lora_name', 'LoraLoader')
+      ).toBe(true)
+      expect(assetService.isAssetBrowserEligible('vae_name', 'VAELoader')).toBe(
+        true
+      )
+    })
+
+    it('should return false for non-eligible widget names', () => {
+      expect(assetService.isAssetBrowserEligible('seed', 'TestNode')).toBe(
+        false
+      )
+      expect(assetService.isAssetBrowserEligible('steps', 'TestNode')).toBe(
+        false
+      )
+      expect(
+        assetService.isAssetBrowserEligible('sampler_name', 'TestNode')
+      ).toBe(false)
+      expect(assetService.isAssetBrowserEligible('', 'TestNode')).toBe(false)
+    })
+
+    it('should return false for eligible widget names with unregistered node types', () => {
+      expect(
+        assetService.isAssetBrowserEligible('ckpt_name', 'UnknownNode')
+      ).toBe(false)
+      expect(
+        assetService.isAssetBrowserEligible('lora_name', 'UnknownNode')
+      ).toBe(false)
     })
   })
 })

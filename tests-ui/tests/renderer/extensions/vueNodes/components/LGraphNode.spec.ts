@@ -92,10 +92,9 @@ describe('LGraphNode', () => {
       { nodeData: mockNodeData, selected: true },
       new Set(['test-node-123'])
     )
-
-    expect(wrapper.classes()).toContain('border-blue-500')
-    expect(wrapper.classes()).toContain('ring-2')
-    expect(wrapper.classes()).toContain('ring-blue-300')
+    expect(wrapper.classes()).toContain('outline-2')
+    expect(wrapper.classes()).toContain('outline-black')
+    expect(wrapper.classes()).toContain('dark-theme:outline-white')
   })
 
   it('should apply executing animation when executing prop is true', () => {

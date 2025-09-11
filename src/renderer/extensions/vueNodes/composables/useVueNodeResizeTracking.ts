@@ -78,7 +78,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
-    // Identify type + id via config dataAttribute
+    // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
 

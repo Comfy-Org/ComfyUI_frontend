@@ -7,28 +7,34 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-white dark-theme:bg-[#15161A]',
+        'bg-white dark-theme:bg-charcoal-100',
         'min-w-[445px]',
-        'lg-node absolute border border-solid rounded-2xl',
-        'outline outline-transparent outline-2',
+        'lg-node absolute rounded-2xl',
+        // border
+        'border border-solid border-sand-100 dark-theme:border-charcoal-300',
+        !!executing && 'border-blue-500 dark-theme:border-blue-500',
+        !!error && 'border-red-700 dark-theme:border-red-300',
+        // hover
+        'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
+        // Selected
+        'outline-transparent -outline-offset-2 outline-2',
+        !!isSelected && 'outline-black dark-theme:outline-white',
+        !!(isSelected && executing) &&
+          'outline-blue-500 dark-theme:outline-blue-500',
+        !!(isSelected && error) && 'outline-red-500 dark-theme:outline-red-500',
         {
-          'outline-black dark-theme:outline-white': isSelected
-        },
-        {
-          'border-blue-500 ring-2 ring-blue-300': isSelected,
-          'border-[#e1ded5] dark-theme:border-[#292A30]': !isSelected,
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
-          'border-red-500 bg-red-50': error,
           'will-change-transform': isDragging
         },
-        lodCssClass
+        lodCssClass,
+        'pointer-events-auto'
       )
     "
     :style="[
       {
         transform: `translate(${layoutPosition.x ?? position?.x ?? 0}px, ${(layoutPosition.y ?? position?.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        pointerEvents: 'auto'
+        zIndex: zIndex
       },
       dragStyle
     ]"
@@ -53,8 +59,35 @@
       />
     </div>
 
+    <div
+      v-if="
+        (isMinimalLOD || isCollapsed) && executing && progress !== undefined
+      "
+      :class="
+        cn(
+          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
+          progressClasses
+        )
+      "
+      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+    />
+
     <template v-if="!isMinimalLOD && !isCollapsed">
-      <div :class="cn(separatorClasses, 'mb-4')" />
+      <div class="mb-4 relative">
+        <div :class="separatorClasses" />
+        <!-- Progress bar for executing state -->
+        <div
+          v-if="executing && progress !== undefined"
+          :class="
+            cn(
+              'absolute inset-x-0 top-1/2 -translate-y-1/2',
+              !!(progress < 1) && 'rounded-r-full',
+              progressClasses
+            )
+          "
+          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+        />
+      </div>
 
       <!-- Node Body - rendered based on LOD level and collapsed state -->
       <div
@@ -99,13 +132,6 @@
         />
       </div>
     </template>
-
-    <!-- Progress bar for executing state -->
-    <div
-      v-if="executing && progress !== undefined"
-      class="absolute bottom-0 left-0 h-1 bg-primary-500 transition-all duration-300"
-      :style="{ width: `${progress * 100}%` }"
-    />
   </div>
 </template>
 
@@ -194,6 +220,7 @@ onErrorCaptured((error) => {
 // Use layout system for node position and dragging
 const {
   position: layoutPosition,
+  zIndex,
   startDrag,
   handleDrag: handleLayoutDrag,
   endDrag
@@ -226,7 +253,9 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-0'
+const separatorClasses =
+  'bg-sand-100 dark-theme:bg-charcoal-300 h-[1px] mx-0 w-full'
+const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
