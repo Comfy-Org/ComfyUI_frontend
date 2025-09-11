@@ -1,0 +1,81 @@
+name: Publish Frontend Types
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.26.7)'
+        required: true
+        type: string
+      dist_tag:
+        description: 'npm dist-tag to use'
+        required: true
+        default: latest
+        type: string
+
+jobs:
+  publish_types_manual:
+    name: Publish @comfyorg/comfyui-frontend-types
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository at tag
+        uses: actions/checkout@v5
+        with:
+          ref: refs/tags/v${{ inputs.version }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build types
+        run: pnpm build:types
+
+      - name: Verify version matches input
+        id: verify
+        shell: bash
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TYPES_PKG_VERSION=$(node -p "require('./dist/package.json').version")
+          if [ "$PKG_VERSION" != "${{ inputs.version }}" ]; then
+            echo "Error: package.json version $PKG_VERSION does not match input ${{ inputs.version }}" >&2
+            exit 1
+          fi
+          if [ "$TYPES_PKG_VERSION" != "${{ inputs.version }}" ]; then
+            echo "Error: dist/package.json version $TYPES_PKG_VERSION does not match input ${{ inputs.version }}" >&2
+            exit 1
+          fi
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Check if version already on npm
+        id: check_npm
+        shell: bash
+        run: |
+          set -e
+          NAME=$(node -p "require('./dist/package.json').name")
+          if npm view ${NAME}@${{ steps.verify.outputs.version }} --json >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Package ${NAME}@${{ steps.verify.outputs.version }} already exists on npm. Skipping publish."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish package
+        if: steps.check_npm.outputs.exists == 'false'
+        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}"
+        working-directory: dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
