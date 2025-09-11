@@ -37,11 +37,21 @@ test.describe('Graph Canvas Menu', () => {
       { timeout: 5000 }
     )
 
-    // Wait for canvas to complete rendering with hidden links
-    // Use multiple frames and a small delay to ensure canvas is fully updated
-    await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(100) // Small delay for canvas rendering
+    // Wait for canvas to complete rendering by monitoring the frame counter
+    // The canvas increments its frame counter after each draw cycle
+    const frameBeforeRender = await comfyPage.page.evaluate(() => {
+      return window['app']?.canvas?.frame || 0
+    })
+
+    await comfyPage.page.waitForFunction(
+      (initialFrame) => {
+        const canvas = window['app']?.canvas
+        // Wait for at least one frame to be rendered after the change
+        return canvas && canvas.frame > initialFrame
+      },
+      frameBeforeRender,
+      { timeout: 5000 }
+    )
 
     await expect(comfyPage.canvas).toHaveScreenshot(
       'canvas-with-hidden-links.png'
@@ -68,11 +78,20 @@ test.describe('Graph Canvas Menu', () => {
       { timeout: 5000 }
     )
 
-    // Wait for canvas to complete rendering with visible links
-    // Use multiple frames and a small delay to ensure canvas is fully updated
-    await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(100) // Small delay for canvas rendering
+    // Wait for canvas to complete rendering by monitoring the frame counter
+    const frameBeforeSecondRender = await comfyPage.page.evaluate(() => {
+      return window['app']?.canvas?.frame || 0
+    })
+
+    await comfyPage.page.waitForFunction(
+      (initialFrame) => {
+        const canvas = window['app']?.canvas
+        // Wait for at least one frame to be rendered after the change
+        return canvas && canvas.frame > initialFrame
+      },
+      frameBeforeSecondRender,
+      { timeout: 5000 }
+    )
 
     await expect(comfyPage.canvas).toHaveScreenshot(
       'canvas-with-visible-links.png'
