@@ -7,7 +7,6 @@
 
 @config '../../../tailwind.config.ts';
 
-
 :root {
   --fg-color: #000;
   --bg-color: #fff;
@@ -47,6 +46,91 @@
     --content-hover-fg: #fff;
   }
 }
+
+@theme {
+  --text-xxs: 0.625rem;
+  --text-xxs--line-height: calc(1 / 0.625);
+
+  /* Palette Colors */
+  --color-charcoal-100: #171718;
+  --color-charcoal-200: #202121;
+  --color-charcoal-300: #262729;
+  --color-charcoal-400: #2d2e32;
+  --color-charcoal-500: #313235;
+  --color-charcoal-600: #3c3d42;
+  --color-charcoal-700: #494a50;
+  --color-charcoal-800: #55565e;
+
+  --color-stone-100: #444444;
+  --color-stone-200: #828282;
+  --color-stone-300: #bbbbbb;
+
+  --color-ivory-100: #fdfbfa;
+  --color-ivory-200: #faf9f5;
+  --color-ivory-300: #f0eee6;
+
+  --color-gray-100: #f3f3f3;
+  --color-gray-200: #e9e9e9;
+  --color-gray-300: #e1e1e1;
+  --color-gray-400: #d9d9d9;
+  --color-gray-500: #c5c5c5;
+  --color-gray-600: #b4b4b4;
+  --color-gray-700: #a0a0a0;
+  --color-gray-800: #8a8a8a;
+
+  --color-sand-100: #e1ded5;
+  --color-sand-200: #d6cfc2;
+  --color-sand-300: #888682;
+
+  --color-slate-100: #9c9eab;
+  --color-slate-200: #9fa2bd;
+  --color-slate-300: #5b5e7d;
+
+  --color-brand-yellow: #f0ff41;
+  --color-brand-blue: #172dd7;
+
+  --color-blue-100: #0b8ce9;
+  --color-blue-200: #31b9f4;
+  --color-success-100: #00cd72;
+  --color-success-200: #47e469;
+  --color-warning-100: #fd9903;
+  --color-warning-200: #fcbf64;
+  --color-danger-100: #c02323;
+  --color-danger-200: #d62952;
+
+  --color-error: #962a2a;
+
+  --color-blue-selection: rgb( from var(--color-blue-100) r g b / 0.3); 
+  --color-node-hover-100: rgb( from var(--color-charcoal-800) r g b/ 0.15);
+  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
+  --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
+
+  /* PrimeVue pulled colors */
+  --color-muted: var(--p-text-muted-color);
+  --color-highlight: var(--p-primary-color);
+
+  /* Special Colors (temporary) */
+  --color-dark-elevation-1.5: rgba(from white r g b/ 0.015);
+  --color-dark-elevation-2: rgba(from white r g b / 0.03);
+}
+
+@custom-variant dark-theme {
+  .dark-theme & {
+    @slot;
+  }
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { 
+    width: 1px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
+}
+
+/* Everthing below here to be cleaned up over time. */
 
 body {
   width: 100vw;
@@ -790,7 +874,7 @@ audio.comfy-audio.empty-audio-widget {
 .comfy-load-3d,
 .comfy-load-3d-animation,
 .comfy-preview-3d,
-.comfy-preview-3d-animation{
+.comfy-preview-3d-animation {
   display: flex;
   flex-direction: column;
   background: transparent;
@@ -803,7 +887,7 @@ audio.comfy-audio.empty-audio-widget {
 .comfy-load-3d-animation canvas,
 .comfy-preview-3d canvas,
 .comfy-preview-3d-animation canvas,
-.comfy-load-3d-viewer canvas{
+.comfy-load-3d-viewer canvas {
   display: flex;
   width: 100% !important;
   height: 100% !important;
@@ -880,7 +964,9 @@ audio.comfy-audio.empty-audio-widget {
 
 .lg-node .lg-slot,
 .lg-node .lg-widget {
-  transition: opacity 0.1s ease, font-size 0.1s ease;
+  transition:
+    opacity 0.1s ease,
+    font-size 0.1s ease;
 }
 
 /* Performance optimization during canvas interaction */
@@ -912,4 +998,3 @@ audio.comfy-audio.empty-audio-widget {
   /* Use solid colors only */
   background-image: none !important;
 }
-
