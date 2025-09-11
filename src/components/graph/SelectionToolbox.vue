@@ -11,7 +11,7 @@
         :style="`backgroundColor: ${containerStyles.backgroundColor};`"
         :pt="{
           header: 'hidden',
-          content: 'px-1 py-1 h-10 px-1 flex flex-row gap-[4px]'
+          content: 'px-1 py-1 h-10 px-1 flex flex-row gap-1'
         }"
         @wheel="canvasInteractions.handleWheel"
       >
