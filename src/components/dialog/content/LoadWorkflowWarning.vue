@@ -2,8 +2,8 @@
   <NoResultsPlaceholder
     class="pb-0"
     icon="pi pi-exclamation-circle"
-    title="Some Nodes Are Missing"
-    message="When loading the graph, the following node types were not found"
+    :title="$t('loadWorkflowWarning.missingNodesTitle')"
+    :message="$t('loadWorkflowWarning.missingNodesDescription')"
   />
   <MissingCoreNodesMessage :missing-core-nodes="missingCoreNodes" />
   <ListBox
