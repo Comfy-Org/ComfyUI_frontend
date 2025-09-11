@@ -1,8 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture } from '../fixtures/ComfyPage'
-
-const test = comfyPageFixture
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Selection Toolbox - More Options Submenus', () => {
   test.beforeEach(async ({ comfyPage }) => {
