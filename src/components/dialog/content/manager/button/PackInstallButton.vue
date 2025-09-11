@@ -74,8 +74,8 @@ const createPayload = (installItem: NodePack) => {
   const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
   const versionToInstall = isUnclaimedPack
     ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
-    : (installItem.latest_version?.version ??
-      ('latest' as ManagerComponents['schemas']['SelectedVersion']))
+    : installItem.latest_version?.version ??
+      ('latest' as ManagerComponents['schemas']['SelectedVersion'])
 
   return {
     id: installItem.id,
@@ -140,7 +140,7 @@ const performInstallation = async (packs: NodePack[]) => {
 const computedLabel = computed(() =>
   isInstalling.value
     ? t('g.installing')
-    : (label ??
-      (nodePacks.length > 1 ? t('manager.installSelected') : t('g.install')))
+    : label ??
+      (nodePacks.length > 1 ? t('manager.installSelected') : t('g.install'))
 )
 </script>

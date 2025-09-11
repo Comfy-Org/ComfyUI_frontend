@@ -236,7 +236,7 @@ const handleSubmit = async () => {
   // Convert 'latest' to actual version number for installation
   const actualVersion =
     selectedVersion.value === 'latest'
-      ? (nodePack.latest_version?.version ?? 'latest')
+      ? nodePack.latest_version?.version ?? 'latest'
       : selectedVersion.value
 
   await managerStore.installPack.call({
