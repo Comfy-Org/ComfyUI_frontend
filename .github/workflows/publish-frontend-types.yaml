@@ -13,6 +13,8 @@ on:
         default: latest
         type: string
 
+concurrency: publish-types-${{ inputs.version }}
+
 jobs:
   publish_types_manual:
     name: Publish @comfyorg/comfyui-frontend-types
