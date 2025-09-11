@@ -7,17 +7,16 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-white dark-theme:bg-charcoal-primary',
+        'bg-white dark-theme:bg-charcoal-100',
         'min-w-[445px]',
         'lg-node absolute border border-solid rounded-2xl',
-        'outline outline-transparent outline-2',
+        'outline-transparent outline-2',
         {
           'outline-black dark-theme:outline-white': isSelected
         },
         {
           'border-blue-500 ring-2 ring-blue-300': isSelected,
-          'border-sand-primary dark-theme:border-charcoal-tertiary':
-            !isSelected,
+          'border-sand-100 dark-theme:border-charcoal-300': !isSelected,
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
           'border-red-500 bg-red-50': error,
