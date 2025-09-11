@@ -100,19 +100,18 @@
 
   --color-error: #962a2a;
 
-  /* I think these might be better handled as true variants */
-  --color-blue-selection: rgba(11, 140, 233, 0.3);
-  --color-node-hover-100: rgba(85, 86, 94, 0.15);
-  --color-node-hover-200: rgba(85, 86, 94, 0.1);
-  --color-modal-tag: rgba(217, 217, 217, 0.4);
+  --color-blue-selection: rgb( from var(--color-blue-100) r g b / 0.3); 
+  --color-node-hover-100: rgb( from var(--color-charcoal-800) r g b/ 0.15);
+  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
+  --color-modal-tag: rgb(from var(--color-gray-400) r g b/ 0.4);
 
   /* PrimeVue pulled colors */
   --color-muted: var(--p-text-muted-color);
   --color-highlight: var(--p-primary-color);
 
   /* Special Colors (temporary) */
-  --color-dark-elevation-1.5: rgba(255, 255, 255, 0.015);
-  --color-dark-elevation-2: rgba(255, 255, 255, 0.03);
+  --color-dark-elevation-1.5: rgba(from white r g b/ 0.015);
+  --color-dark-elevation-2: rgba(from white r g b / 0.03);
 }
 
 @custom-variant dark-theme {
