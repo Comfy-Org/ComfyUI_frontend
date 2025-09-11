@@ -1781,6 +1781,38 @@ describe('useNodePricing', () => {
     })
   })
 
+  describe('dynamic pricing - ByteDanceSeedreamNode', () => {
+    it('should return fallback when widgets are missing', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceSeedreamNode', [])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.03/Run ($0.03 for one output image)')
+    })
+
+    it('should return $0.03/Run when sequential generation is disabled', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceSeedreamNode', [
+        { name: 'sequential_image_generation', value: 'disabled' },
+        { name: 'max_images', value: 5 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.03/Run')
+    })
+
+    it('should multiply by max_images when sequential generation is enabled', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNode('ByteDanceSeedreamNode', [
+        { name: 'sequential_image_generation', value: 'enabled' },
+        { name: 'max_images', value: 4 }
+      ])
+
+      const price = getNodeDisplayPrice(node)
+      expect(price).toBe('$0.12/Run ($0.03 for one output image)')
+    })
+  })
+
   describe('dynamic pricing - ByteDance Seedance video nodes', () => {
     it('should return base 10s range for PRO 1080p on ByteDanceTextToVideoNode', () => {
       const { getNodeDisplayPrice } = useNodePricing()
