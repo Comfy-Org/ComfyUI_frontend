@@ -9,7 +9,12 @@
     append-to="body"
     :pt="{
       root: {
-        class: 'workflow-popover-fade fit-content ' + positions.root,
+        class: cn(
+          'workflow-popover-fade fit-content',
+          'bg-transparent rounded-xl ',
+          'shadow-lg dark-theme:shadow-2xl ',
+          positions.root
+        ),
         'data-popover-id': id,
         style: {
           transform: positions.active
@@ -19,19 +24,25 @@
     @mouseenter="cancelHidePopover"
     @mouseleave="hidePopover"
   >
-    <div class="workflow-preview-content">
+    <div
+      class="text-(--fg-color) max-w-(--popover-width) bg-(--comfy-menu-secondary-bg) flex flex-col rounded-xl overflow-hidden"
+    >
       <div
         v-if="thumbnailUrl && !isActiveTab"
-        class="workflow-preview-thumbnail relative"
+        class="workflow-preview-thumbnail relative p-2"
       >
         <img
           :src="thumbnailUrl"
-          class="block h-[200px] object-cover rounded-lg p-2"
+          class="block h-[200px] object-cover rounded-lg p-2 shadow-md dark-theme:shadow-lg"
           :style="{ width: `${POPOVER_WIDTH}px` }"
+          :alt="`Preview Thumbnail for ${workflowFilename}`"
         />
       </div>
-      <div class="workflow-preview-footer">
-        <span class="workflow-preview-name">{{ workflowFilename }}</span>
+      <div class="pt-1 pb-2 px-3">
+        <span
+          class="block text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap text-(--fg-color)"
+          >{{ workflowFilename }}</span
+        >
       </div>
     </div>
   </Popover>
@@ -42,6 +53,7 @@ import Popover from 'primevue/popover'
 import { computed, nextTick, ref, toRefs, useId } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
+import { cn } from '@/utils/tailwindUtil'
 
 const POPOVER_WIDTH = 250
 
@@ -169,58 +181,25 @@ defineExpose({
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
-.workflow-preview-content {
-  @apply flex flex-col rounded-xl overflow-hidden;
-  max-width: var(--popover-width);
-  background-color: var(--comfy-menu-secondary-bg);
-  color: var(--fg-color);
-}
-
-.workflow-preview-thumbnail {
-  @apply relative p-2;
-}
-
 .workflow-preview-thumbnail img {
-  @apply shadow-md;
   background-color: color-mix(
     in srgb,
     var(--comfy-menu-secondary-bg) 70%,
     black
   );
 }
-
-.dark-theme .workflow-preview-thumbnail img {
-  @apply shadow-lg;
-}
-
-.workflow-preview-footer {
-  @apply pt-1 pb-2 px-3;
-}
-
-.workflow-preview-name {
-  @apply block text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap;
-  color: var(--fg-color);
-}
 </style>
 
 <style>
-@reference '../../assets/css/style.css';
-
 .workflow-popover-fade {
   --p-popover-background: transparent;
   --p-popover-content-padding: 0;
-  @apply bg-transparent rounded-xl shadow-lg;
   transition: opacity 0.15s ease-out !important;
 }
 
 .workflow-popover-fade.p-popover-flipped {
-  @apply -translate-y-full;
-}
-
-.dark-theme .workflow-popover-fade {
-  @apply shadow-2xl;
+  --tw-translate-y: -100%;
+  translate: var(--tw-translate-x) var(--tw-translate-y);
 }
 
 .workflow-popover-fade.p-popover:after,

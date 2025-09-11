@@ -2,10 +2,13 @@
   <Panel
     class="actionbar w-fit"
     :style="style"
-    :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
+    :class="cn({ 'is-dragging': isDragging, 'is-docked': isDocked })"
   >
     <div ref="panelRef" class="actionbar-content flex items-center select-none">
-      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
+      <span
+        ref="dragHandleRef"
+        class="drag-handle w-3 h-max cursor-move mr-2"
+      />
       <ComfyQueueButton />
     </div>
   </Panel>
@@ -25,6 +28,7 @@ import Panel from 'primevue/panel'
 import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
@@ -228,8 +232,6 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .actionbar {
   pointer-events: all;
   position: fixed;
@@ -238,7 +240,6 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 
 .actionbar.is-docked {
   position: static;
-  @apply bg-transparent border-none p-0;
 }
 
 .actionbar.is-dragging {
@@ -246,18 +247,14 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 }
 
 :deep(.p-panel-content) {
-  @apply p-1;
+  padding: calc(var(--spacing) * 1);
 }
 
 .is-docked :deep(.p-panel-content) {
-  @apply p-0;
+  padding: calc(var(--spacing) * 0);
 }
 
 :deep(.p-panel-header) {
   display: none;
-}
-
-.drag-handle {
-  @apply w-3 h-max;
 }
 </style>
