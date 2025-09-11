@@ -1,6 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { Download, Folder, Grid3x3, Layers, Tag, Wrench } from 'lucide-vue-next'
-import { h } from 'vue'
 
 import NavItem from './NavItem.vue'
 
@@ -34,31 +32,6 @@ const meta: Meta<typeof NavItem> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Interactive: Story = {
-  args: {
-    icon: Folder,
-    active: false,
-    default: 'Navigation Item'
-  },
-  render: (args) => ({
-    components: { NavItem },
-    setup() {
-      const IconComponent = args.icon
-      const WrappedIcon = {
-        render() {
-          return h(IconComponent, { size: 14 })
-        }
-      }
-      return { args, WrappedIcon }
-    },
-    template: `
-      <NavItem :icon="WrappedIcon" :active="args.active" :on-click="() => {}">
-        {{ args.default }}
-      </NavItem>
-    `
-  })
-}
-
 export const InteractiveList: Story = {
   render: () => ({
     components: { NavItem },
@@ -67,7 +40,7 @@ export const InteractiveList: Story = {
         <NavItem
           v-for="item in items"
           :key="item.id"
-          :icon="item.wrappedIcon"
+          :icon="item.icon"
           :active="selectedId === item.id"
           :on-click="() => selectedId = item.id"
         >
@@ -85,32 +58,32 @@ export const InteractiveList: Story = {
         {
           id: 'downloads',
           label: 'Downloads',
-          wrappedIcon: () => h(Download, { size: 14 })
+          icon: 'icon-[lucide--download]'
         },
         {
           id: 'models',
           label: 'Models',
-          wrappedIcon: () => h(Layers, { size: 14 })
+          icon: 'icon-[lucide--layers]'
         },
         {
           id: 'nodes',
           label: 'Nodes',
-          wrappedIcon: () => h(Grid3x3, { size: 14 })
+          icon: 'icon-[lucide--grid-3x3]'
         },
         {
           id: 'tags',
           label: 'Tags',
-          wrappedIcon: () => h(Tag, { size: 14 })
+          icon: 'icon-[lucide--tag]'
         },
         {
           id: 'settings',
           label: 'Settings',
-          wrappedIcon: () => h(Wrench, { size: 14 })
+          icon: 'icon-[lucide--wrench]'
         },
         {
           id: 'default',
           label: 'Default Icon',
-          wrappedIcon: () => h(Folder, { size: 14 })
+          icon: 'icon-[lucide--folder]'
         }
       ]
 

@@ -1,21 +1,28 @@
 <template>
   <div>
     <div
-      class="inline-flex items-center gap-1 rounded-2xl text-xs cursor-pointer py-1"
-      :class="{ 'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill }"
-      aria-haspopup="true"
-      role="button"
-      tabindex="0"
-      @click="toggleVersionSelector"
-      @keydown.enter="toggleVersionSelector"
-      @keydown.space="toggleVersionSelector"
+      v-tooltip.top="
+        isDisabled ? $t('manager.enablePackToChangeVersion') : null
+      "
+      class="inline-flex items-center gap-1 rounded-2xl text-xs py-1"
+      :class="{
+        'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill,
+        'cursor-pointer': !isDisabled,
+        'cursor-not-allowed opacity-60': isDisabled
+      }"
+      :aria-haspopup="!isDisabled"
+      :role="isDisabled ? 'text' : 'button'"
+      :tabindex="isDisabled ? -1 : 0"
+      @click="!isDisabled && toggleVersionSelector($event)"
+      @keydown.enter="!isDisabled && toggleVersionSelector($event)"
+      @keydown.space="!isDisabled && toggleVersionSelector($event)"
     >
       <i
         v-if="isUpdateAvailable"
         class="pi pi-arrow-circle-up text-blue-600 text-xs"
       />
       <span>{{ installedVersion }}</span>
-      <i class="pi pi-chevron-right text-xxs" />
+      <i v-if="!isDisabled" class="pi pi-chevron-right text-xxs" />
     </div>
 
     <Popover
@@ -60,6 +67,11 @@ const { isUpdateAvailable } = usePackUpdateStatus(nodePack)
 const popoverRef = ref()
 
 const managerStore = useComfyManagerStore()
+
+const isInstalled = computed(() => managerStore.isPackInstalled(nodePack?.id))
+const isDisabled = computed(
+  () => isInstalled.value && !managerStore.isPackEnabled(nodePack?.id)
+)
 
 const installedVersion = computed(() => {
   if (!nodePack.id) return 'nightly'

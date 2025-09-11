@@ -7,16 +7,16 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-white dark-theme:bg-[#15161A]',
+        'bg-white dark-theme:bg-charcoal-100',
         'min-w-[445px]',
         'lg-node absolute border border-solid rounded-2xl',
-        'outline outline-transparent outline-2',
+        'outline-transparent outline-2',
         {
           'outline-black dark-theme:outline-white': isSelected
         },
         {
           'border-blue-500 ring-2 ring-blue-300': isSelected,
-          'border-[#e1ded5] dark-theme:border-[#292A30]': !isSelected,
+          'border-sand-100 dark-theme:border-charcoal-300': !isSelected,
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
           'border-red-500 bg-red-50': error,
@@ -113,7 +113,6 @@
 <script setup lang="ts">
 import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
 
-// Import the VueNodeData type
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -122,6 +121,7 @@ import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayo
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { cn } from '@/utils/tailwindUtil'
 
+import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -153,6 +153,8 @@ const emit = defineEmits<{
   'update:collapsed': [nodeId: string, collapsed: boolean]
   'update:title': [nodeId: string, newTitle: string]
 }>()
+
+useVueElementTracking(props.nodeData.id, 'node')
 
 // Inject selection state from parent
 const selectedNodeIds = inject(SelectedNodeIdsKey)
@@ -226,7 +228,8 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const separatorClasses = 'bg-[#e1ded5] dark-theme:bg-[#292A30] h-[1px] mx-0'
+const separatorClasses =
+  'bg-sand-primary dark-theme:bg-charcoal-tertiary h-[1px] mx-0'
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
