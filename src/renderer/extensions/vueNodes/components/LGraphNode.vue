@@ -9,17 +9,19 @@
       cn(
         'bg-white dark-theme:bg-charcoal-100',
         'min-w-[445px]',
-        'lg-node absolute border border-solid rounded-2xl',
-        'outline-transparent outline-2',
+        'lg-node absolute rounded-2xl',
+        // border
+        'border border-solid border-sand-100 dark-theme:border-charcoal-300',
+        !!error && 'border-red-700 dark-theme:border-red-300',
+        // hover
+        'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
+        // Selected
+        'outline-transparent -outline-offset-2 outline-2',
+        !!isSelected && 'outline-black dark-theme:outline-white',
+        !!(isSelected && error) && 'outline-red-500 dark-theme:outline-red-500',
         {
-          'outline-black dark-theme:outline-white': isSelected
-        },
-        {
-          'border-blue-500 ring-2 ring-blue-300': isSelected,
-          'border-sand-100 dark-theme:border-charcoal-300': !isSelected,
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
-          'border-red-500 bg-red-50': error,
           'will-change-transform': isDragging
         },
         lodCssClass,
@@ -229,7 +231,7 @@ const hasCustomContent = computed(() => {
 
 // Computed classes and conditions for better reusability
 const separatorClasses =
-  'bg-sand-primary dark-theme:bg-charcoal-tertiary h-[1px] mx-0'
+  'bg-sand-100 dark-theme:bg-charcoal-300 h-[1px] mx-0 w-full'
 
 // Common condition computations to avoid repetition
 const shouldShowWidgets = computed(
