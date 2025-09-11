@@ -22,7 +22,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     // Drag the KSampler to the center of the screen
     const nodePos = await ksamplerNodes[0].getPosition()
     const viewportSize = comfyPage.page.viewportSize()
-    const centerX = viewportSize.width / 2
+    const centerX = viewportSize.width / 3
     const centerY = viewportSize.height / 2
     await comfyPage.dragAndDrop(
       { x: nodePos.x, y: nodePos.y },
@@ -43,21 +43,9 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     )
     await expect(moreOptionsBtn).toBeVisible({ timeout: 3000 })
 
-    await comfyPage.page.evaluate(() => {
-      const btn = document.querySelector('[data-testid="more-options-button"]')
-      if (btn) {
-        const event = new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          detail: 1
-        })
-        btn.dispatchEvent(event)
-      }
-    })
+    await comfyPage.page.click('[data-testid="more-options-button"]')
 
     await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(1000)
 
     const menuOptionsVisible = await comfyPage.page
       .getByText('Rename')
@@ -154,7 +142,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
 
     await comfyPage.page
       .locator('#graph-canvas')
-      .click({ position: { x: 50, y: 50 }, force: true })
+      .click({ position: { x: 0, y: 50 }, force: true })
     await comfyPage.nextFrame()
     await expect(
       comfyPage.page.getByText('Rename', { exact: true })
