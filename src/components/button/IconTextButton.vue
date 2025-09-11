@@ -1,5 +1,11 @@
 <template>
-  <Button unstyled :class="buttonStyle" :disabled="disabled" @click="onClick">
+  <Button
+    v-bind="$attrs"
+    unstyled
+    :class="buttonStyle"
+    :disabled="disabled"
+    @click="onClick"
+  >
     <slot v-if="iconPosition !== 'right'" name="icon"></slot>
     <span>{{ label }}</span>
     <slot v-if="iconPosition === 'right'" name="icon"></slot>
@@ -17,6 +23,10 @@ import {
   getButtonSizeClasses,
   getButtonTypeClasses
 } from '@/types/buttonTypes'
+
+defineOptions({
+  inheritAttrs: false
+})
 
 interface IconTextButtonProps extends BaseButtonProps {
   iconPosition?: 'left' | 'right'
