@@ -7,10 +7,16 @@ import {
   assetResponseSchema
 } from '@/schemas/assetSchema'
 import { api } from '@/scripts/api'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'
 const MISSING_TAG = 'missing'
+
+/**
+ * Input names that are eligible for asset browser
+ */
+const WHITELISTED_INPUTS = new Set(['ckpt_name', 'lora_name', 'vae_name'])
 
 /**
  * Validates asset response data using Zod schema
@@ -102,9 +108,29 @@ function createAssetService() {
     )
   }
 
+  /**
+   * Checks if a widget input should use the asset browser based on both input name and node comfyClass
+   *
+   * @param inputName - The input name (e.g., 'ckpt_name', 'lora_name')
+   * @param nodeType - The ComfyUI node comfyClass (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
+   * @returns true if this input should use asset browser
+   */
+  function isAssetBrowserEligible(
+    inputName: string,
+    nodeType: string
+  ): boolean {
+    return (
+      // Must be an approved input name
+      WHITELISTED_INPUTS.has(inputName) &&
+      // Must be a registered node type
+      useModelToNodeStore().getRegisteredNodeTypes().has(nodeType)
+    )
+  }
+
   return {
     getAssetModelFolders,
-    getAssetModels
+    getAssetModels,
+    isAssetBrowserEligible
   }
 }
 
