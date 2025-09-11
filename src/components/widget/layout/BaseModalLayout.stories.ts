@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -13,10 +13,11 @@ import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'
 import RightSidePanel from '../panel/RightSidePanel.vue'
-import BaseWidgetLayout from './BaseWidgetLayout.vue'
+import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
   contentTitle: string
@@ -29,7 +30,7 @@ interface StoryArgs {
 }
 
 const meta: Meta<StoryArgs> = {
-  title: 'Components/Widget/Layout/BaseWidgetLayout',
+  title: 'Components/Widget/Layout/BaseModalLayout',
   argTypes: {
     contentTitle: {
       control: 'text',
@@ -67,7 +68,7 @@ type Story = StoryObj<typeof meta>
 
 const createStoryTemplate = (args: StoryArgs) => ({
   components: {
-    BaseWidgetLayout,
+    BaseModalLayout,
     LeftSidePanel,
     RightSidePanel,
     SearchBox,
@@ -156,6 +157,8 @@ const createStoryTemplate = (args: StoryArgs) => ({
     const selectedProjects = ref<string[]>([])
     const selectedSort = ref<string>('popular')
 
+    const gridStyle = computed(() => createGridStyle())
+
     return {
       args,
       t,
@@ -167,12 +170,13 @@ const createStoryTemplate = (args: StoryArgs) => ({
       sortOptions,
       selectedFrameworks,
       selectedProjects,
-      selectedSort
+      selectedSort,
+      gridStyle
     }
   },
   template: `
     <div>
-      <BaseWidgetLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
           <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
@@ -189,6 +193,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasHeader" #header>
           <SearchBox
             class="max-w-[384px]"
+            size="lg"
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -231,7 +236,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+          <div class="relative px-6 py-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
@@ -260,7 +265,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+          <div :style="gridStyle">
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -293,9 +298,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
             </CardContainer>
           </div>
         </template>
-      </BaseWidgetLayout>
+      </BaseModalLayout>
 
-      <BaseWidgetLayout v-else :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
         <!-- Same content but WITH right panel -->
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
@@ -313,6 +318,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasHeader" #header>
           <SearchBox
             class="max-w-[384px]"
+            size="lg"
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -355,7 +361,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+          <div class="relative px-6 py-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
@@ -381,7 +387,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+          <div :style="gridStyle">
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -419,7 +425,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template #rightPanel>
           <RightSidePanel />
         </template>
-      </BaseWidgetLayout>
+      </BaseModalLayout>
     </div>
   `
 })

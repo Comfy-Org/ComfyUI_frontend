@@ -23,6 +23,7 @@ import {
   getButtonSizeClasses,
   getButtonTypeClasses
 } from '@/types/buttonTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 defineOptions({
   inheritAttrs: false
@@ -52,8 +53,6 @@ const buttonStyle = computed(() => {
     ? getBorderButtonTypeClasses(type)
     : getButtonTypeClasses(type)
 
-  return [baseClasses, sizeClasses, typeClasses, className]
-    .filter(Boolean)
-    .join(' ')
+  return cn(baseClasses, sizeClasses, typeClasses, className)
 })
 </script>
