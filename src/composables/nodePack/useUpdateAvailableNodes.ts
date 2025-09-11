@@ -44,9 +44,24 @@ export const useUpdateAvailableNodes = () => {
     return filterOutdatedPacks(installedPacks.value)
   })
 
-  // Check if there are any outdated packs
+  // Filter only enabled outdated packs
+  const enabledUpdateAvailableNodePacks = computed(() => {
+    return updateAvailableNodePacks.value.filter((pack) =>
+      comfyManagerStore.isPackEnabled(pack.id)
+    )
+  })
+
+  // Check if there are any enabled outdated packs
   const hasUpdateAvailable = computed(() => {
-    return updateAvailableNodePacks.value.length > 0
+    return enabledUpdateAvailableNodePacks.value.length > 0
+  })
+
+  // Check if there are disabled packs with updates
+  const hasDisabledUpdatePacks = computed(() => {
+    return (
+      updateAvailableNodePacks.value.length >
+      enabledUpdateAvailableNodePacks.value.length
+    )
   })
 
   // Automatically fetch installed pack data when composable is used
@@ -58,7 +73,9 @@ export const useUpdateAvailableNodes = () => {
 
   return {
     updateAvailableNodePacks,
+    enabledUpdateAvailableNodePacks,
     hasUpdateAvailable,
+    hasDisabledUpdatePacks,
     isLoading,
     error
   }
