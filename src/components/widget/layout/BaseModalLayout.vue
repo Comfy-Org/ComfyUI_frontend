@@ -1,21 +1,13 @@
 <template>
-  <div
-    class="base-widget-layout rounded-2xl overflow-hidden relative bg-zinc-50 dark-theme:bg-zinc-800"
-  >
+  <div :class="layoutClasses">
     <IconButton
       v-show="!isRightPanelOpen && hasRightPanel"
-      class="absolute top-4 right-16 z-10 transition-opacity duration-200"
-      :class="{
-        'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
-      }"
+      :class="rightPanelButtonClasses"
       @click="toggleRightPanel"
     >
       <i-lucide:panel-right class="text-sm" />
     </IconButton>
-    <IconButton
-      class="absolute top-4 right-6 z-10 transition-opacity duration-200"
-      @click="closeDialog"
-    >
+    <IconButton :class="closeButtonClasses" @click="closeDialog">
       <i class="pi pi-times text-sm"></i>
     </IconButton>
     <div class="flex w-full h-full">
@@ -32,12 +24,9 @@
         </nav>
       </Transition>
 
-      <div class="flex-1 flex bg-zinc-100 dark-theme:bg-neutral-900">
+      <div :class="mainContainerClasses">
         <div class="w-full h-full flex flex-col">
-          <header
-            v-if="$slots.header"
-            class="w-full h-16 px-6 py-4 flex justify-between gap-2"
-          >
+          <header v-if="$slots.header" :class="headerClasses">
             <div class="flex-1 flex gap-2 shrink-0">
               <IconButton v-if="!notMobile" @click="toggleLeftPanel">
                 <i-lucide:panel-left v-if="!showLeftPanel" class="text-sm" />
@@ -46,12 +35,7 @@
               <slot name="header"></slot>
             </div>
             <slot name="header-right-area"></slot>
-            <div
-              class="flex justify-end gap-2 w-0"
-              :class="
-                hasRightPanel && !isRightPanelOpen ? 'min-w-18' : 'min-w-8'
-              "
-            >
+            <div :class="rightAreaClasses">
               <IconButton
                 v-if="isRightPanelOpen && hasRightPanel"
                 @click="toggleRightPanel"
@@ -67,14 +51,14 @@
             <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
               {{ contentTitle }}
             </h2>
-            <div class="min-h-0 px-6 pt-0 pb-10 overflow-y-auto scrollbar-hide">
+            <div :class="contentContainerClasses">
               <slot name="content"></slot>
             </div>
           </main>
         </div>
         <aside
           v-if="hasRightPanel && isRightPanelOpen"
-          class="w-1/4 min-w-40 max-w-80"
+          :class="rightPanelClasses"
         >
           <slot name="rightPanel"></slot>
         </aside>
@@ -89,6 +73,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const { contentTitle } = defineProps<{
   contentTitle: string
@@ -137,6 +122,50 @@ const toggleLeftPanel = () => {
 const toggleRightPanel = () => {
   isRightPanelOpen.value = !isRightPanelOpen.value
 }
+
+// Computed classes for better readability
+const layoutClasses = cn(
+  'base-widget-layout',
+  'rounded-2xl overflow-hidden relative',
+  'bg-zinc-50 dark-theme:bg-zinc-800'
+)
+
+const rightPanelButtonClasses = computed(() => {
+  return cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
+    'opacity-0 pointer-events-none':
+      isRightPanelOpen.value || !hasRightPanel.value
+  })
+})
+
+const closeButtonClasses = cn(
+  'absolute top-4 right-6 z-10',
+  'transition-opacity duration-200'
+)
+
+const mainContainerClasses = cn(
+  'flex-1 flex',
+  'bg-zinc-100 dark-theme:bg-neutral-900'
+)
+
+const headerClasses = cn(
+  'w-full h-18 px-6',
+  'flex items-center justify-between gap-2'
+)
+
+const rightAreaClasses = computed(() => {
+  return cn(
+    'flex justify-end gap-2 w-0',
+    hasRightPanel.value && !isRightPanelOpen.value ? 'min-w-22' : 'min-w-10'
+  )
+})
+
+const contentContainerClasses = computed(() => {
+  return cn('min-h-0 px-6 pt-0 pb-10', 'overflow-y-auto scrollbar-hide')
+})
+
+const rightPanelClasses = computed(() => {
+  return cn('w-1/4 min-w-40 max-w-80')
+})
 </script>
 <style scoped>
 .base-widget-layout {

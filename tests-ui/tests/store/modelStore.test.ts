@@ -38,7 +38,9 @@ function enableMocks(useAssetAPI = false) {
       return false
     })
   }
-  vi.mocked(useSettingStore).mockReturnValue(mockSettingStore as any)
+  vi.mocked(useSettingStore, { partial: true }).mockReturnValue(
+    mockSettingStore
+  )
 
   // Mock experimental API - returns objects with name and folders properties
   vi.mocked(api.getModels).mockResolvedValue([

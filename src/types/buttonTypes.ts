@@ -56,8 +56,8 @@ export const getBorderButtonTypeClasses = (type: ButtonType = 'primary') => {
 export const getIconButtonSizeClasses = (size: ButtonSize = 'md') => {
   const sizeClasses = {
     'fit-content': 'w-auto h-auto',
-    sm: 'w-6 h-6 text-xs !rounded-md',
-    md: 'w-8 h-8 text-sm'
+    sm: 'size-8 text-xs !rounded-md',
+    md: 'size-10 text-sm'
   }
   return sizeClasses[size]
 }

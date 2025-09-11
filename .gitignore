@@ -51,6 +51,7 @@ tests-ui/workflows/examples
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
+browser-tests/local/
 
 .env
 

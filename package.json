@@ -25,10 +25,10 @@
     "preinstall": "npx only-allow pnpm",
     "prepare": "husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "nx preview",
-    "lint": "eslint src --cache --concurrency=auto",
-    "lint:fix": "eslint src --cache --fix --concurrency=auto",
-    "lint:no-cache": "eslint src",
-    "lint:fix:no-cache": "eslint src --fix",
+    "lint": "eslint src --cache --concurrency=$npm_package_config_eslint_concurrency",
+    "lint:fix": "eslint src --fix --cache --concurrency=$npm_package_config_eslint_concurrency",
+    "lint:no-cache": "eslint src --concurrency=$npm_package_config_eslint_concurrency",
+    "lint:fix:no-cache": "eslint src --fix --concurrency=$npm_package_config_eslint_concurrency",
     "knip": "knip --cache",
     "knip:no-cache": "knip",
     "locale": "lobe-i18n locale",
@@ -37,8 +37,12 @@
     "storybook": "nx storybook -p 6006",
     "build-storybook": "storybook build"
   },
+  "config": {
+    "eslint_concurrency": "4"
+  },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
+    "@iconify-json/lucide": "^1.2.66",
     "@iconify/tailwind": "^1.2.0",
     "@intlify/eslint-plugin-vue-i18n": "^3.2.0",
     "@lobehub/i18n-cli": "^1.25.1",
@@ -76,7 +80,6 @@
     "jsdom": "^26.1.0",
     "knip": "^5.62.0",
     "lint-staged": "^15.2.7",
-    "lucide-vue-next": "^0.540.0",
     "nx": "21.4.1",
     "prettier": "^3.3.2",
     "storybook": "^9.1.1",
