@@ -197,6 +197,9 @@
   "Comfy_OpenWorkflow": {
     "label": "فتح سير عمل"
   },
+  "Comfy_PublishSubgraph": {
+    "label": "نشر الرسم البياني الفرعي"
+  },
   "Comfy_QueuePrompt": {
     "label": "إضافة الأمر إلى قائمة الانتظار"
   },

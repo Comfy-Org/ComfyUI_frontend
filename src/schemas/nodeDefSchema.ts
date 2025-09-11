@@ -34,7 +34,7 @@ export const zBaseInputOptions = z
   })
   .passthrough()
 
-export const zNumericInputOptions = zBaseInputOptions.extend({
+const zNumericInputOptions = zBaseInputOptions.extend({
   min: z.number().optional(),
   max: z.number().optional(),
   step: z.number().optional(),
@@ -128,28 +128,10 @@ export function isFloatInputSpec(
   return inputSpec[0] === 'FLOAT'
 }
 
-export function isBooleanInputSpec(
-  inputSpec: InputSpec
-): inputSpec is BooleanInputSpec {
-  return inputSpec[0] === 'BOOLEAN'
-}
-
-export function isStringInputSpec(
-  inputSpec: InputSpec
-): inputSpec is StringInputSpec {
-  return inputSpec[0] === 'STRING'
-}
-
 export function isComboInputSpecV2(
   inputSpec: InputSpec
 ): inputSpec is ComboInputSpecV2 {
   return inputSpec[0] === 'COMBO'
-}
-
-export function isCustomInputSpec(
-  inputSpec: InputSpec
-): inputSpec is CustomInputSpec {
-  return typeof inputSpec[0] === 'string' && !excludedLiterals.has(inputSpec[0])
 }
 
 export function isComboInputSpec(
@@ -247,22 +229,13 @@ export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
 
-// Input specs
-export type IntInputOptions = z.infer<typeof zIntInputOptions>
-export type FloatInputOptions = z.infer<typeof zFloatInputOptions>
-export type BooleanInputOptions = z.infer<typeof zBooleanInputOptions>
-export type StringInputOptions = z.infer<typeof zStringInputOptions>
 export type ComboInputOptions = z.infer<typeof zComboInputOptions>
-export type BaseInputOptions = z.infer<typeof zBaseInputOptions>
 export type NumericInputOptions = z.infer<typeof zNumericInputOptions>
 
 export type IntInputSpec = z.infer<typeof zIntInputSpec>
 export type FloatInputSpec = z.infer<typeof zFloatInputSpec>
-export type BooleanInputSpec = z.infer<typeof zBooleanInputSpec>
-export type StringInputSpec = z.infer<typeof zStringInputSpec>
 export type ComboInputSpec = z.infer<typeof zComboInputSpec>
 export type ComboInputSpecV2 = z.infer<typeof zComboInputSpecV2>
-export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 export type InputSpec = z.infer<typeof zInputSpec>
 
 export function validateComfyNodeDef(

@@ -178,6 +178,72 @@ test.describe('Menu', () => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
       expect(await comfyPage.getVisibleToastCount()).toBe(1)
     })
+
+    test('Can navigate Theme menu and switch between Dark and Light themes', async ({
+      comfyPage
+    }) => {
+      const { topbar } = comfyPage.menu
+
+      // Take initial screenshot with default theme
+      await comfyPage.attachScreenshot('theme-initial')
+
+      // Open the topbar menu
+      const menu = await topbar.openTopbarMenu()
+      await expect(menu).toBeVisible()
+
+      // Get theme menu items
+      const {
+        submenu: themeSubmenu,
+        darkTheme: darkThemeItem,
+        lightTheme: lightThemeItem
+      } = await topbar.getThemeMenuItems()
+
+      await expect(darkThemeItem).toBeVisible()
+      await expect(lightThemeItem).toBeVisible()
+
+      // Switch to Light theme
+      await topbar.switchTheme('light')
+
+      // Verify menu stays open and Light theme shows as active
+      await expect(menu).toBeVisible()
+      await expect(themeSubmenu).toBeVisible()
+
+      // Check that Light theme is active
+      expect(await topbar.isMenuItemActive(lightThemeItem)).toBe(true)
+
+      // Screenshot with light theme active
+      await comfyPage.attachScreenshot('theme-menu-light-active')
+
+      // Verify ColorPalette setting is set to "light"
+      expect(await comfyPage.getSetting('Comfy.ColorPalette')).toBe('light')
+
+      // Close menu to see theme change
+      await topbar.closeTopbarMenu()
+
+      // Re-open menu and get theme items again
+      await topbar.openTopbarMenu()
+      const themeItems2 = await topbar.getThemeMenuItems()
+
+      // Switch back to Dark theme
+      await topbar.switchTheme('dark')
+
+      // Verify menu stays open and Dark theme shows as active
+      await expect(menu).toBeVisible()
+      await expect(themeItems2.submenu).toBeVisible()
+
+      // Check that Dark theme is active and Light theme is not
+      expect(await topbar.isMenuItemActive(themeItems2.darkTheme)).toBe(true)
+      expect(await topbar.isMenuItemActive(themeItems2.lightTheme)).toBe(false)
+
+      // Screenshot with dark theme active
+      await comfyPage.attachScreenshot('theme-menu-dark-active')
+
+      // Verify ColorPalette setting is set to "dark"
+      expect(await comfyPage.getSetting('Comfy.ColorPalette')).toBe('dark')
+
+      // Close menu
+      await topbar.closeTopbarMenu()
+    })
   })
 
   // Only test 'Top' to reduce test time.

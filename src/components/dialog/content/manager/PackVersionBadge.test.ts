@@ -1,15 +1,23 @@
 import { VueWrapper, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
 
 import PackVersionBadge from './PackVersionBadge.vue'
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
+
+// Mock config to prevent __COMFYUI_FRONTEND_VERSION__ error
+vi.mock('@/config', () => ({
+  default: {
+    app_title: 'ComfyUI',
+    app_version: '1.0.0'
+  }
+}))
 
 const mockNodePack = {
   id: 'test-pack',
@@ -24,11 +32,14 @@ const mockInstalledPacks = {
   'installed-pack': { ver: '2.0.0' }
 }
 
+const mockIsPackEnabled = vi.fn(() => true)
+
 vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
     installedPacks: mockInstalledPacks,
     isPackInstalled: (id: string) =>
-      !!mockInstalledPacks[id as keyof typeof mockInstalledPacks]
+      !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
+    isPackEnabled: mockIsPackEnabled
   }))
 }))
 
@@ -53,6 +64,7 @@ describe('PackVersionBadge', () => {
   beforeEach(() => {
     mockToggle.mockReset()
     mockHide.mockReset()
+    mockIsPackEnabled.mockReturnValue(true) // Reset to default enabled state
   })
 
   const mountComponent = ({
@@ -72,6 +84,9 @@ describe('PackVersionBadge', () => {
       },
       global: {
         plugins: [PrimeVue, createPinia(), i18n],
+        directives: {
+          tooltip: Tooltip
+        },
         stubs: {
           Popover: PopoverStub,
           PackVersionSelectorPopover: true
@@ -120,7 +135,7 @@ describe('PackVersionBadge', () => {
 
     const badge = wrapper.find('[role="button"]')
     expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
+    expect(badge.find('span').text()).toBe('nightly')
   })
 
   it('falls back to NIGHTLY when nodePack.id is missing', () => {
@@ -134,7 +149,7 @@ describe('PackVersionBadge', () => {
 
     const badge = wrapper.find('[role="button"]')
     expect(badge.exists()).toBe(true)
-    expect(badge.find('span').text()).toBe(SelectedVersion.NIGHTLY)
+    expect(badge.find('span').text()).toBe('nightly')
   })
 
   it('toggles the popover when button is clicked', async () => {
@@ -220,6 +235,65 @@ describe('PackVersionBadge', () => {
 
       // Verify that the hide method was NOT called
       expect(mockHide).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('disabled state', () => {
+    beforeEach(() => {
+      mockIsPackEnabled.mockReturnValue(false) // Set all packs as disabled for these tests
+    })
+
+    it('adds disabled styles when pack is disabled', () => {
+      const wrapper = mountComponent()
+
+      const badge = wrapper.find('[role="text"]') // role changes to "text" when disabled
+      expect(badge.exists()).toBe(true)
+      expect(badge.classes()).toContain('cursor-not-allowed')
+      expect(badge.classes()).toContain('opacity-60')
+    })
+
+    it('does not show chevron icon when disabled', () => {
+      const wrapper = mountComponent()
+
+      const chevronIcon = wrapper.find('.pi-chevron-right')
+      expect(chevronIcon.exists()).toBe(false)
+    })
+
+    it('does not show update arrow when disabled', () => {
+      const wrapper = mountComponent()
+
+      const updateIcon = wrapper.find('.pi-arrow-circle-up')
+      expect(updateIcon.exists()).toBe(false)
+    })
+
+    it('does not toggle popover when clicked while disabled', async () => {
+      const wrapper = mountComponent()
+
+      const badge = wrapper.find('[role="text"]') // role changes to "text" when disabled
+      expect(badge.exists()).toBe(true)
+      await badge.trigger('click')
+
+      // Since it's disabled, the popover should not be toggled
+      expect(mockToggle).not.toHaveBeenCalled()
+    })
+
+    it('has correct tabindex when disabled', () => {
+      const wrapper = mountComponent()
+
+      const badge = wrapper.find('[role="text"]') // role changes to "text" when disabled
+      expect(badge.exists()).toBe(true)
+      expect(badge.attributes('tabindex')).toBe('-1')
+    })
+
+    it('does not respond to keyboard events when disabled', async () => {
+      const wrapper = mountComponent()
+
+      const badge = wrapper.find('[role="text"]') // role changes to "text" when disabled
+      expect(badge.exists()).toBe(true)
+      await badge.trigger('keydown.enter')
+      await badge.trigger('keydown.space')
+
+      expect(mockToggle).not.toHaveBeenCalled()
     })
   })
 })

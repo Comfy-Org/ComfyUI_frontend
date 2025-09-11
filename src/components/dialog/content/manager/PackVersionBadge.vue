@@ -1,28 +1,34 @@
 <template>
   <div>
     <div
-      class="inline-flex items-center gap-1 rounded-2xl text-xs cursor-pointer px-2 py-1"
-      :class="{ 'bg-gray-100 dark-theme:bg-neutral-700': fill }"
-      aria-haspopup="true"
-      role="button"
-      tabindex="0"
-      @click="toggleVersionSelector"
-      @keydown.enter="toggleVersionSelector"
-      @keydown.space="toggleVersionSelector"
+      v-tooltip.top="
+        isDisabled ? $t('manager.enablePackToChangeVersion') : null
+      "
+      class="inline-flex items-center gap-1 rounded-2xl text-xs py-1"
+      :class="{
+        'bg-gray-100 dark-theme:bg-neutral-700 px-1.5': fill,
+        'cursor-pointer': !isDisabled,
+        'cursor-not-allowed opacity-60': isDisabled
+      }"
+      :aria-haspopup="!isDisabled"
+      :role="isDisabled ? 'text' : 'button'"
+      :tabindex="isDisabled ? -1 : 0"
+      @click="!isDisabled && toggleVersionSelector($event)"
+      @keydown.enter="!isDisabled && toggleVersionSelector($event)"
+      @keydown.space="!isDisabled && toggleVersionSelector($event)"
     >
       <i
         v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-blue-600"
-        style="font-size: 8px"
+        class="pi pi-arrow-circle-up text-blue-600 text-xs"
       />
       <span>{{ installedVersion }}</span>
-      <i class="pi pi-chevron-right" style="font-size: 8px" />
+      <i v-if="!isDisabled" class="pi pi-chevron-right text-xxs" />
     </div>
 
     <Popover
       ref="popoverRef"
       :pt="{
-        content: { class: 'px-0' }
+        content: { class: 'p-0 shadow-lg' }
       }"
     >
       <PackVersionSelectorPopover
@@ -42,8 +48,7 @@ import { computed, ref, watch } from 'vue'
 import PackVersionSelectorPopover from '@/components/dialog/content/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { SelectedVersion } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import { isSemVer } from '@/utils/formatUtil'
 
 const TRUNCATED_HASH_LENGTH = 7
@@ -63,12 +68,17 @@ const popoverRef = ref()
 
 const managerStore = useComfyManagerStore()
 
+const isInstalled = computed(() => managerStore.isPackInstalled(nodePack?.id))
+const isDisabled = computed(
+  () => isInstalled.value && !managerStore.isPackEnabled(nodePack?.id)
+)
+
 const installedVersion = computed(() => {
-  if (!nodePack.id) return SelectedVersion.NIGHTLY
+  if (!nodePack.id) return 'nightly'
   const version =
     managerStore.installedPacks[nodePack.id]?.ver ??
     nodePack.latest_version?.version ??
-    SelectedVersion.NIGHTLY
+    'nightly'
 
   // If Git hash, truncate to 7 characters
   return isSemVer(version) ? version : version.slice(0, TRUNCATED_HASH_LENGTH)

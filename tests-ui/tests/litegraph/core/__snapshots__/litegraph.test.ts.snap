@@ -102,16 +102,7 @@ LiteGraphGlobal {
   "Reroute": [Function],
   "SPLINE_LINK": 2,
   "STRAIGHT_LINK": 0,
-  "SlotDirection": {
-    "1": "Up",
-    "2": "Down",
-    "3": "Left",
-    "4": "Right",
-    "Down": 2,
-    "Left": 3,
-    "Right": 4,
-    "Up": 1,
-  },
+  "SlotDirection": {},
   "SlotShape": {
     "1": "Box",
     "3": "Circle",
@@ -199,5 +190,6 @@ LiteGraphGlobal {
   "truncateWidgetValuesFirst": false,
   "use_uuids": false,
   "uuidv4": [Function],
+  "vueNodesMode": false,
 }
 `;

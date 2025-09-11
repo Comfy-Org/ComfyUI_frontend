@@ -1,7 +1,7 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
   <div class="flex flex-row items-center gap-2">
-    <div class="form-label flex flex-grow items-center">
+    <div class="form-label flex grow items-center">
       <span
         :id="`${props.id}-label`"
         class="text-muted"
@@ -112,6 +112,8 @@ function getFormComponent(item: FormItem): Component {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .form-input :deep(.input-slider) .p-inputnumber input,
 .form-input :deep(.input-slider) .slider-part {
   @apply w-20;

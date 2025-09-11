@@ -17,9 +17,10 @@ export default [
       'src/scripts/*',
       'src/extensions/core/*',
       'src/types/vue-shim.d.ts',
-      // Generated files that don't need linting
       'src/types/comfyRegistryTypes.ts',
-      'src/types/generatedManagerTypes.ts'
+      'src/types/generatedManagerTypes.ts',
+      '**/vite.config.*.timestamp*',
+      '**/vitest.config.*.timestamp*'
     ]
   },
   {
@@ -61,6 +62,41 @@ export default [
       '@typescript-eslint/prefer-as-const': 'off',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
+      // Enforce dark-theme: instead of dark: prefix
+      'vue/no-restricted-class': ['error', '/^dark:/'],
+      // Restrict deprecated PrimeVue components
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'primevue/calendar',
+              message:
+                'Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from "primevue/datepicker"'
+            },
+            {
+              name: 'primevue/dropdown',
+              message:
+                'Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from "primevue/select"'
+            },
+            {
+              name: 'primevue/inputswitch',
+              message:
+                'InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from "primevue/toggleswitch"'
+            },
+            {
+              name: 'primevue/overlaypanel',
+              message:
+                'OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from "primevue/popover"'
+            },
+            {
+              name: 'primevue/sidebar',
+              message:
+                'Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from "primevue/drawer"'
+            }
+          ]
+        }
+      ],
       // i18n rules
       '@intlify/vue-i18n/no-raw-text': [
         'error',
