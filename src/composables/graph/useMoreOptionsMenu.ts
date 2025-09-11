@@ -27,11 +27,6 @@ export interface SubMenuOption {
   color?: string
 }
 
-export interface NodeSelectionState {
-  collapsed: boolean
-  pinned: boolean
-  bypassed: boolean
-}
 export enum BadgeVariant {
   NEW = 'new',
   DEPRECATED = 'deprecated'

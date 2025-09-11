@@ -6,14 +6,14 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-export interface AlignOption {
+interface AlignOption {
   name: string
   localizedName: string
   value: Direction
   icon: string
 }
 
-export interface DistributeOption {
+interface DistributeOption {
   name: string
   localizedName: string
   value: boolean // true for horizontal, false for vertical

@@ -1,9 +1,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuOption, NodeSelectionState } from './useMoreOptionsMenu'
+import type { MenuOption } from './useMoreOptionsMenu'
 import { useNodeCustomization } from './useNodeCustomization'
 import { useNodeInfo } from './useNodeInfo'
+import type { NodeSelectionState } from './useSelectionState'
 
 /**
  * Composable for node-related menu operations

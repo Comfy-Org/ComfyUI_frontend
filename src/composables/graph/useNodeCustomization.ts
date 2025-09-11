@@ -13,7 +13,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
-export interface ColorOption {
+interface ColorOption {
   name: string
   localizedName: string
   value: {
@@ -22,7 +22,7 @@ export interface ColorOption {
   }
 }
 
-export interface ShapeOption {
+interface ShapeOption {
   name: string
   localizedName: string
   value: RenderShape
