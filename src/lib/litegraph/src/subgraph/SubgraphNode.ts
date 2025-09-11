@@ -369,11 +369,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       subgraphNode: this
     })
 
+    // NOTE: This code creates linked chains of prototypes for passing across
+    // multiple levels of subgraphs. As part of this, it intentionally avoids
+    // creating new objects. Have care when making changes.
     const backingInput =
       targetWidget.node.findInputSlot(widget.name, true)?.widget ?? {}
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
     Object.setPrototypeOf(input.widget, backingInput)
+
     input._widget = promotedWidget
   }
 
