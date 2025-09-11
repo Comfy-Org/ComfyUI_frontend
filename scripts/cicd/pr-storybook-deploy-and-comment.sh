@@ -52,7 +52,7 @@ if ! command -v wrangler > /dev/null 2>&1; then
     npm install -g wrangler@^4.0.0 >&2 || {
         echo "Failed to install wrangler" >&2
         echo "failed"
-        exit 1
+        return
     }
 fi
 
@@ -63,7 +63,7 @@ deploy_storybook() {
     
     [ ! -d "$dir" ] && echo "failed" && return
     
-    project="comfyui-storybook"
+    project="comfy-storybook"
     
     echo "Deploying Storybook to project $project on branch $branch..." >&2
     
@@ -190,7 +190,7 @@ elif [ "$STATUS" = "completed" ]; then
     
     # Get workflow conclusion from environment or default to success
     WORKFLOW_CONCLUSION="${WORKFLOW_CONCLUSION:-success}"
-    WORKFLOW_URL="${WORKFLOW_URL:-#}"
+    WORKFLOW_URL="${WORKFLOW_URL:-}"
     
     # Generate completion comment based on conclusion
     if [ "$WORKFLOW_CONCLUSION" = "success" ]; then
