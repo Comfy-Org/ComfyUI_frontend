@@ -143,7 +143,11 @@ interface LGraphNodeProps {
 const props = defineProps<LGraphNodeProps>()
 
 const emit = defineEmits<{
-  'node-click': [event: PointerEvent, nodeData: VueNodeData]
+  'node-click': [
+    event: PointerEvent,
+    nodeData: VueNodeData,
+    wasDragging: boolean
+  ]
   'slot-click': [
     event: PointerEvent,
     nodeData: VueNodeData,
@@ -204,6 +208,8 @@ const isDragging = ref(false)
 const dragStyle = computed(() => ({
   cursor: isDragging.value ? 'grabbing' : 'grab'
 }))
+const lastY = ref(0)
+const lastX = ref(0)
 
 // Track collapsed state
 const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
@@ -247,9 +253,8 @@ const handlePointerDown = (event: PointerEvent) => {
   // Start drag using layout system
   isDragging.value = true
   startDrag(event)
-
-  // Emit node-click for selection handling in GraphCanvas
-  emit('node-click', event, props.nodeData)
+  lastY.value = event.clientY
+  lastX.value = event.clientX
 }
 
 const handlePointerMove = (event: PointerEvent) => {
@@ -263,6 +268,13 @@ const handlePointerUp = (event: PointerEvent) => {
     isDragging.value = false
     void endDrag(event)
   }
+  // Emit node-click for selection handling in GraphCanvas
+  emit(
+    'node-click',
+    event,
+    props.nodeData,
+    lastX.value !== event.clientX || lastY.value !== event.clientY
+  )
 }
 
 const handleCollapse = () => {
