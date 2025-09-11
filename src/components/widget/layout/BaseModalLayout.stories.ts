@@ -1,20 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import {
-  Download,
-  Filter,
-  Folder,
-  Info,
-  PanelLeft,
-  PanelLeftClose,
-  PanelRight,
-  PanelRightClose,
-  Puzzle,
-  Scroll,
-  Settings,
-  Upload,
-  X
-} from 'lucide-vue-next'
-import { h, provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -28,10 +13,11 @@ import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'
 import RightSidePanel from '../panel/RightSidePanel.vue'
-import BaseWidgetLayout from './BaseWidgetLayout.vue'
+import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
   contentTitle: string
@@ -44,7 +30,7 @@ interface StoryArgs {
 }
 
 const meta: Meta<StoryArgs> = {
-  title: 'Components/Widget/Layout/BaseWidgetLayout',
+  title: 'Components/Widget/Layout/BaseModalLayout',
   argTypes: {
     contentTitle: {
       control: 'text',
@@ -82,7 +68,7 @@ type Story = StoryObj<typeof meta>
 
 const createStoryTemplate = (args: StoryArgs) => ({
   components: {
-    BaseWidgetLayout,
+    BaseModalLayout,
     LeftSidePanel,
     RightSidePanel,
     SearchBox,
@@ -94,20 +80,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     CardContainer,
     CardTop,
     CardBottom,
-    SquareChip,
-    Settings,
-    Upload,
-    Download,
-    Scroll,
-    Info,
-    Filter,
-    Folder,
-    Puzzle,
-    PanelLeft,
-    PanelLeftClose,
-    PanelRight,
-    PanelRightClose,
-    X
+    SquareChip
   },
   setup() {
     const t = (k: string) => k
@@ -121,7 +94,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
       {
         id: 'installed',
         label: 'Installed',
-        icon: { render: () => h(Folder, { size: 14 }) } as any
+        icon: 'icon-[lucide--folder]'
       },
       {
         title: 'TAGS',
@@ -129,17 +102,17 @@ const createStoryTemplate = (args: StoryArgs) => ({
           {
             id: 'tag-sd15',
             label: 'SD 1.5',
-            icon: { render: () => h(Folder, { size: 14 }) } as any
+            icon: 'icon-[lucide--tag]'
           },
           {
             id: 'tag-sdxl',
             label: 'SDXL',
-            icon: { render: () => h(Folder, { size: 14 }) } as any
+            icon: 'icon-[lucide--tag]'
           },
           {
             id: 'tag-utility',
             label: 'Utility',
-            icon: { render: () => h(Folder, { size: 14 }) } as any
+            icon: 'icon-[lucide--tag]'
           }
         ]
       },
@@ -149,12 +122,12 @@ const createStoryTemplate = (args: StoryArgs) => ({
           {
             id: 'cat-models',
             label: 'Models',
-            icon: { render: () => h(Folder, { size: 14 }) } as any
+            icon: 'icon-[lucide--layers]'
           },
           {
             id: 'cat-nodes',
             label: 'Nodes',
-            icon: { render: () => h(Folder, { size: 14 }) } as any
+            icon: 'icon-[lucide--grid-3x3]'
           }
         ]
       }
@@ -184,6 +157,8 @@ const createStoryTemplate = (args: StoryArgs) => ({
     const selectedProjects = ref<string[]>([])
     const selectedSort = ref<string>('popular')
 
+    const gridStyle = computed(() => createGridStyle())
+
     return {
       args,
       t,
@@ -195,17 +170,18 @@ const createStoryTemplate = (args: StoryArgs) => ({
       sortOptions,
       selectedFrameworks,
       selectedProjects,
-      selectedSort
+      selectedSort,
+      gridStyle
     }
   },
   template: `
     <div>
-      <BaseWidgetLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
           <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
             <template #header-icon>
-              <Puzzle :size="16" class="text-neutral" />
+              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
             </template>
             <template #header-title>
               <span class="text-neutral text-base">Title</span>
@@ -217,6 +193,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasHeader" #header>
           <SearchBox
             class="max-w-[384px]"
+            size="lg"
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -227,7 +204,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
           <div class="flex gap-2">
             <IconTextButton type="primary" label="Upload Model" @click="() => {}">
               <template #icon>
-                <Upload :size="12" />
+                <i class="icon-[lucide--upload] size-3" />
               </template>
             </IconTextButton>
 
@@ -239,7 +216,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   @click="() => { close() }"
                 >
                   <template #icon>
-                    <Download :size="12" />
+                    <i class="icon-[lucide--download] size-3" />
                   </template>
                 </IconTextButton>
 
@@ -249,7 +226,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   @click="() => { close() }"
                 >
                   <template #icon>
-                    <Scroll :size="12" />
+                    <i class="icon-[lucide--scroll] size-3" />
                   </template>
                 </IconTextButton>
               </template>
@@ -259,7 +236,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+          <div class="relative px-6 py-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
@@ -280,7 +257,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
               class="w-[135px]"
             >
               <template #icon>
-                <Filter :size="12" />
+                <i class="icon-[lucide--filter] size-3" />
               </template>
             </SingleSelect>
           </div>
@@ -288,7 +265,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+          <div :style="gridStyle">
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -301,7 +278,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   </template>
                   <template #top-right>
                     <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
-                      <Info :size="16" />
+                      <i class="icon-[lucide--info] size-4" />
                     </IconButton>
                   </template>
                   <template #bottom-right>
@@ -309,7 +286,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <SquareChip label="1.2 MB" />
                     <SquareChip label="LoRA">
                       <template #icon>
-                        <Folder :size="12" />
+                        <i class="icon-[lucide--folder] size-3" />
                       </template>
                     </SquareChip>
                   </template>
@@ -321,15 +298,15 @@ const createStoryTemplate = (args: StoryArgs) => ({
             </CardContainer>
           </div>
         </template>
-      </BaseWidgetLayout>
+      </BaseModalLayout>
 
-      <BaseWidgetLayout v-else :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
         <!-- Same content but WITH right panel -->
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
           <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
             <template #header-icon>
-              <Puzzle :size="16" class="text-neutral" />
+              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
             </template>
             <template #header-title>
               <span class="text-neutral text-base">Title</span>
@@ -341,6 +318,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasHeader" #header>
           <SearchBox
             class="max-w-[384px]"
+            size="lg"
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -351,7 +329,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
           <div class="flex gap-2">
             <IconTextButton type="primary" label="Upload Model" @click="() => {}">
               <template #icon>
-                <Upload :size="12" />
+                <i class="icon-[lucide--upload] size-3" />
               </template>
             </IconTextButton>
 
@@ -363,7 +341,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   @click="() => { close() }"
                 >
                   <template #icon>
-                    <Download :size="12" />
+                    <i class="icon-[lucide--download] size-3" />
                   </template>
                 </IconTextButton>
 
@@ -373,7 +351,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   @click="() => { close() }"
                 >
                   <template #icon>
-                    <Scroll :size="12" />
+                    <i class="icon-[lucide--scroll] size-3" />
                   </template>
                 </IconTextButton>
               </template>
@@ -383,7 +361,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content Filter -->
         <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 pt-2 pb-4 flex gap-2">
+          <div class="relative px-6 py-4 flex gap-2">
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
@@ -401,7 +379,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
               class="w-[135px]"
             >
               <template #icon>
-                <Filter :size="12" />
+                <i class="icon-[lucide--filter] size-3" />
               </template>
             </SingleSelect>
           </div>
@@ -409,7 +387,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Content -->
         <template #content>
-          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr))">
+          <div :style="gridStyle">
             <CardContainer
               v-for="i in args.cardCount"
               :key="i"
@@ -422,7 +400,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                   </template>
                   <template #top-right>
                     <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
-                      <Info :size="16" />
+                      <i class="icon-[lucide--info] size-4" />
                     </IconButton>
                   </template>
                   <template #bottom-right>
@@ -430,7 +408,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <SquareChip label="1.2 MB" />
                     <SquareChip label="LoRA">
                       <template #icon>
-                        <Folder :size="12" />
+                        <i class="icon-[lucide--folder] size-3" />
                       </template>
                     </SquareChip>
                   </template>
@@ -447,7 +425,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template #rightPanel>
           <RightSidePanel />
         </template>
-      </BaseWidgetLayout>
+      </BaseModalLayout>
     </div>
   `
 })
