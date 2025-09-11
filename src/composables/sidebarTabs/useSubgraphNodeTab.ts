@@ -1,4 +1,3 @@
-
 import { markRaw } from 'vue'
 
 import SubgraphNode from '@/components/selectionbar/SubgraphNode.vue'

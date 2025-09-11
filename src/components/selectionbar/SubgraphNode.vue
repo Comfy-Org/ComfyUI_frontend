@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { watchDebounced } from '@vueuse/core'
-
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import SubgraphNodeWidget from '@/components/selectionbar/SubgraphNodeWidget.vue'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
+
 const { t } = useI18n()
 
 const canvasStore = useCanvasStore()
@@ -24,7 +23,7 @@ const activeNode = computed(() => {
 })
 
 function keyfn(item) {
-      return `${item[0].title}(${item[0].id}): ${item[1].name}`
+  return `${item[0].title}(${item[0].id}): ${item[1].name}`
 }
 const activeWidgets = computed({
   get() {
@@ -60,9 +59,12 @@ function toggleVisibility(nodeId, widgetName, isShown) {
   } else {
     const { properties } = node
     properties.proxyWidgets = properties.proxyWidgets.filter((p) => {
-    return p[1] !== widgetName
-      //NOTE: intentional loose as nodeId is often string/int
-      || p[0] != nodeId})
+      return (
+        p[1] !== widgetName ||
+        //NOTE: intentional loose as nodeId is often string/int
+        p[0] != nodeId
+      )
+    })
   }
   triggerUpdate.value++
   useCanvasStore().canvas.setDirty(true, true)
@@ -70,34 +72,36 @@ function toggleVisibility(nodeId, widgetName, isShown) {
 
 const candidateWidgets = computed(() => {
   const node = canvasStore.selectedItems[0]
-  if(!node) return []
-  triggerUpdate.value//mark dependent
+  if (!node) return []
+  triggerUpdate.value //mark dependent
   const pw = node.properties.proxyWidgets ?? []
   const interiorNodes = node?.subgraph?.nodes ?? []
   //node.widgets ??= []
-  const intn = interiorNodes.flatMap((n) =>
-    n.widgets?.map((w) => {
-      return [n,w] ?? []
-    }))
+  const intn = interiorNodes
+    .flatMap((n) =>
+      n.widgets?.map((w) => {
+        return [n, w] ?? []
+      })
+    )
     //widget has connected link. Should not be displayed
     .filter(([_, w]) => !w.computedDisabled)
-    .filter(([n,w]) => !pw.some(([pn,pw]) => n.id == pn && w.name == pw))
+    .filter(([n, w]) => !pw.some(([pn, pw]) => n.id == pn && w.name == pw))
   //TODO: filter enabled/disabled items while keeping order
   return intn
 })
 const filteredCandidates = computed(() => {
   const query = searchQuery.value.toLowerCase()
   if (!query) return candidateWidgets.value
-  return candidateWidgets.value.filter(([n,w]) =>
-    n.title.toLowerCase().includes(query)
-    || w.name.toLowerCase().includes(query)
+  return candidateWidgets.value.filter(
+    ([n, w]) =>
+      n.title.toLowerCase().includes(query) ||
+      w.name.toLowerCase().includes(query)
   )
 })
 function showAll() {
   const node = activeNode.value
   const pw = node.properties.proxyWidgets ?? []
-  const toAdd = candidateWidgets.value
-    .map(([n,w]) => [n.id, w.name])
+  const toAdd = candidateWidgets.value.map(([n, w]) => [n.id, w.name])
   pw.push(...toAdd)
   node.properties.proxyWidgets = pw
   useCanvasStore().canvas.setDirty(true, true)
@@ -113,65 +117,81 @@ function hideAll() {
 const filteredActive = computed(() => {
   const query = searchQuery.value.toLowerCase()
   if (!query) {
-    console.error("displaying filtered widgets with no search query")
+    console.error('displaying filtered widgets with no search query')
     return activeWidgets.value
   }
-  return activeWidgets.value.filter(([n,w]) =>
-    n.title.toLowerCase().includes(query)
-    || w.name.toLowerCase().includes(query)
+  return activeWidgets.value.filter(
+    ([n, w]) =>
+      n.title.toLowerCase().includes(query) ||
+      w.name.toLowerCase().includes(query)
   )
 })
-
 </script>
 <template>
   <SidebarTabTemplate
     :title="'Parameters'"
     class="workflows-sidebar-tab bg-[var(--p-tree-background)]"
-    >
+  >
     <template #header>
       <SearchBox
-          v-model:modelValue="searchQuery"
-          class="model-lib-search-box p-2 2xl:p-4"
-          :placeholder="$t('g.search') + '...'"
-          @search="handleSearch"
-          />
+        v-model:modelValue="searchQuery"
+        class="model-lib-search-box p-2 2xl:p-4"
+        :placeholder="$t('g.search') + '...'"
+        @search="handleSearch"
+      />
     </template>
     <template #body>
       <div class="widgets-section">
         <div class="widgets-section-header">
-          <div> {{t('subgraphStore.shown')}}</div>
-          <a @click.stop="hideAll" > {{t('subgraphStore.hideAll')}}</a>
+          <div>{{ t('subgraphStore.shown') }}</div>
+          <a @click.stop="hideAll"> {{ t('subgraphStore.hideAll') }}</a>
         </div>
-        <div v-if="searchQuery"
-          v-for="element in filteredActive" class="widget-container">
-          <SubgraphNodeWidget :item="element" :node="activeNode"
-          :toggleVisibility="toggleVisibility" :isShown="true"/>
+        <div
+          v-for="element in filteredActive"
+          v-if="searchQuery"
+          class="widget-container"
+        >
+          <SubgraphNodeWidget
+            :item="element"
+            :node="activeNode"
+            :toggle-visibility="toggleVisibility"
+            :is-shown="true"
+          />
         </div>
-      <draggable
+        <draggable
+          v-else
           v-model="activeWidgets"
           group="enabledWidgets"
           class="widget-container draggable-item"
-          chosenClass="dragged-item"
-          dragClass="dragged-item"
+          chosen-class="dragged-item"
+          drag-class="dragged-item"
           :animation="100"
-          @start="drag=true"
-          @end="drag=false"
           item-key="id"
-          v-else>
-      <template #item="{element}">
-        <SubgraphNodeWidget :item="element" :node="activeNode" :isShown="true"
-          :toggleVisibility="toggleVisibility" :isDraggable="true"/>
-      </template>
-      </draggable>
+          @start="drag = true"
+          @end="drag = false"
+        >
+          <template #item="{ element }">
+            <SubgraphNodeWidget
+              :item="element"
+              :node="activeNode"
+              :is-shown="true"
+              :toggle-visibility="toggleVisibility"
+              :is-draggable="true"
+            />
+          </template>
+        </draggable>
       </div>
       <div class="widgets-section">
         <div class="widgets-section-header">
-          <div> {{t('subgraphStore.hidden')}}</div>
-          <a @click.stop="showAll"> {{t('subgraphStore.showAll')}}</a>
+          <div>{{ t('subgraphStore.hidden') }}</div>
+          <a @click.stop="showAll"> {{ t('subgraphStore.showAll') }}</a>
         </div>
         <div v-for="element in filteredCandidates" class="widget-container">
-          <SubgraphNodeWidget :item="element" :node="activeNode"
-          :toggleVisibility="toggleVisibility"/>
+          <SubgraphNodeWidget
+            :item="element"
+            :node="activeNode"
+            :toggle-visibility="toggleVisibility"
+          />
         </div>
       </div>
     </template>
@@ -179,7 +199,7 @@ const filteredActive = computed(() => {
 </template>
 <style scoped>
 .widget-container {
-  width: 100%
+  width: 100%;
 }
 .widgets-section-header {
   display: flex;
@@ -189,7 +209,7 @@ const filteredActive = computed(() => {
   align-self: stretch;
 }
 .widgets-section-header div {
-  color: var(--color-text-secondary, #9C9EAB);
+  color: var(--color-text-secondary, #9c9eab);
   /* body-text-badge */
   font-family: Inter;
   font-size: 9px;
@@ -200,7 +220,7 @@ const filteredActive = computed(() => {
 }
 .widgets-section-header a {
   cursor: pointer;
-  color: var(--color-base-blue-primary, #0B8CE9);
+  color: var(--color-base-blue-primary, #0b8ce9);
   text-align: right;
 
   /* body-text-caption */
@@ -218,7 +238,7 @@ const filteredActive = computed(() => {
   flex-direction: column;
   align-items: flex-start;
   align-self: stretch;
-  border-bottom: 1px solid var(--color-node-divider, #2E3037);
+  border-bottom: 1px solid var(--color-node-divider, #2e3037);
 }
 .dragged-item {
   cursor: grabbing;
@@ -226,5 +246,4 @@ const filteredActive = computed(() => {
 .draggable-item {
   cursor: grab;
 }
-
 </style>
