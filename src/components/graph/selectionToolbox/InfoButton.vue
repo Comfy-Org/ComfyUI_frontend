@@ -5,7 +5,7 @@
       value: $t('g.info'),
       showDelay: 1000
     }"
-    class="help-button"
+    data-testid="info-button"
     text
     severity="secondary"
     @click="toggleHelp"
