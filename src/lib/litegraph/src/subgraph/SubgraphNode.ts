@@ -31,6 +31,8 @@ import {
 } from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
 
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
  */
@@ -315,10 +317,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
       },
       set: (property) => {
+        const { widgetStates } = useDomWidgetStore()
+        this.widgets.forEach((w) => {
+          if (w.id && widgetStates.has(w.id))
+            widgetStates.get(w.id).active = false
+        })
         //NOTE: This does not apply to pushed entries, only initial load
         this.widgets = this.widgets.filter((w) => !w._overlay)
-        for (const [nodeId, widgetName] of property)
-          this.addProxyWidget(`${nodeId}`, widgetName)
+        for (const [nodeId, widgetName] of property) {
+          const w  = this.addProxyWidget(`${nodeId}`, widgetName)
+          if (w.id && widgetStates.has(w.id)) {
+            const widgetState = widgetStates.get(w.id)
+            widgetState.active = true
+            widgetState.widget = w
+          }
+        }
         //TODO: set dirty canvas
       }
     })

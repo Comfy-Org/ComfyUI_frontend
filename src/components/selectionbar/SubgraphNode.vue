@@ -58,12 +58,6 @@ function toggleVisibility(nodeId, widgetName, isShown) {
       widgetState.widget = w
     }
   } else {
-    const index = node.widgets.findIndex((w) => w.name === widgetName)
-    if (index < 0) throw new Error("Can't disable missing widget")
-    const [w] = node.widgets.splice(index, 1)
-    if (widgetStates.has(w.id)) {
-      widgetStates.get(w.id).active = false
-    }
     const { properties } = node
     properties.proxyWidgets = properties.proxyWidgets.filter((p) => {
     return p[1] !== widgetName
@@ -80,7 +74,7 @@ const candidateWidgets = computed(() => {
   triggerUpdate.value//mark dependent
   const pw = node.properties.proxyWidgets ?? []
   const interiorNodes = node?.subgraph?.nodes ?? []
-  node.widgets ??= []
+  //node.widgets ??= []
   const intn = interiorNodes.flatMap((n) =>
     n.widgets?.map((w) => {
       return [n,w] ?? []
@@ -100,10 +94,20 @@ const filteredCandidates = computed(() => {
   )
 })
 function showAll() {
-  console.log('showall')
+  const node = activeNode.value
+  const pw = node.properties.proxyWidgets ?? []
+  const toAdd = candidateWidgets.value
+    .map(([n,w]) => [n.id, w.name])
+  pw.push(...toAdd)
+  node.properties.proxyWidgets = pw
+  useCanvasStore().canvas.setDirty(true)
+  triggerUpdate.value++
 }
 function hideAll() {
-  console.log('hideall')
+  const node = activeNode.value
+  node.properties.proxyWidgets = []
+  useCanvasStore().canvas.setDirty(true)
+  triggerUpdate.value++
 }
 
 const filteredActive = computed(() => {
@@ -136,7 +140,7 @@ const filteredActive = computed(() => {
       <div class="widgets-section">
         <div class="widgets-section-header">
           <div> {{t('subgraphStore.shown')}}</div>
-          <a @click.stop="showAll" > {{t('subgraphStore.showAll')}}</a>
+          <a @click.stop="hideAll" > {{t('subgraphStore.hideAll')}}</a>
         </div>
         <div v-if="searchQuery"
           v-for="element in filteredActive" class="widget-container">
@@ -163,7 +167,7 @@ const filteredActive = computed(() => {
       <div class="widgets-section">
         <div class="widgets-section-header">
           <div> {{t('subgraphStore.hidden')}}</div>
-          <a @click.stop="hideAll"> {{t('subgraphStore.hideAll')}}</a>
+          <a @click.stop="showAll"> {{t('subgraphStore.showAll')}}</a>
         </div>
         <div v-for="element in filteredCandidates" class="widget-container">
           <SubgraphNodeWidget :item="element" :node="activeNode"
