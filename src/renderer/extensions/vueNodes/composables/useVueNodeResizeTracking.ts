@@ -11,6 +11,7 @@
 import { getCurrentInstance, inject, onMounted, onUnmounted } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { getCanvasClientOrigin } from '@/renderer/core/layout/dom/canvasRectCache'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
@@ -70,11 +71,8 @@ const resizeObserver = new ResizeObserver((entries) => {
   // Track nodes whose slots should be remeasured after node size changes
   const nodesNeedingSlotRemeasure = new Set<string>()
 
-  // Read container origin once per batch to avoid repeated layout reads
-  const container = document.getElementById('graph-canvas-container')
-  const originRect = container?.getBoundingClientRect()
-  const originLeft = originRect?.left ?? 0
-  const originTop = originRect?.top ?? 0
+  // Read container origin once per batch via cache
+  const { left: originLeft, top: originTop } = getCanvasClientOrigin()
 
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue

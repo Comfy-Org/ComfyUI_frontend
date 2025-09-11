@@ -8,6 +8,7 @@
 import { type Ref, inject, nextTick, onMounted, onUnmounted, watch } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { getCanvasClientOrigin } from '@/renderer/core/layout/dom/canvasRectCache'
 import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -47,11 +48,8 @@ function scheduleNodeMeasure(nodeId: string) {
 function runBatchedMeasure() {
   if (pendingNodes.size === 0) return
 
-  // Read container origin once
-  const container = document.getElementById('graph-canvas-container')
-  const originRect = container?.getBoundingClientRect()
-  const originLeft = originRect?.left ?? 0
-  const originTop = originRect?.top ?? 0
+  // Read container origin once from cache
+  const { left: originLeft, top: originTop } = getCanvasClientOrigin()
 
   for (const nodeId of Array.from(pendingNodes)) {
     pendingNodes.delete(nodeId)
@@ -74,10 +72,9 @@ function measureNodeSlotsNow(
   let originL = originLeft
   let originT = originTop
   if (originL == null || originT == null) {
-    const container = document.getElementById('graph-canvas-container')
-    const originRect = container?.getBoundingClientRect()
-    originL = originRect?.left ?? 0
-    originT = originRect?.top ?? 0
+    const { left, top } = getCanvasClientOrigin()
+    originL = left
+    originT = top
   }
 
   const batch: Array<{ key: string; layout: SlotLayout }> = []
