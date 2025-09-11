@@ -220,9 +220,9 @@ export function useConflictDetection() {
             abortController.value?.signal
           )
 
-          if (bulkResponse && bulkResponse.node_versions) {
+          if (bulkResponse?.node_versions) {
             // Process bulk response
-            bulkResponse.node_versions.forEach((result) => {
+            bulkResponse?.node_versions?.forEach((result) => {
               if (result.status === 'success' && result.node_version) {
                 versionDataMap.set(
                   result.identifier.node_id,
@@ -265,7 +265,7 @@ export function useConflictDetection() {
           const requirement: NodePackRequirements = {
             // Basic package info
             id: packageId,
-            name: packInfo?.name || packageId,
+            name: packInfo?.name ?? packageId,
             installed_version: installedVersion,
             is_enabled: isEnabled,
 
@@ -291,7 +291,7 @@ export function useConflictDetection() {
           // Create fallback requirement without Registry data
           const fallbackRequirement: NodePackRequirements = {
             id: packageId,
-            name: packInfo?.name || packageId,
+            name: packInfo?.name ?? packageId,
             installed_version: installedVersion,
             is_enabled: isEnabled,
             is_banned: false,
@@ -326,7 +326,9 @@ export function useConflictDetection() {
     const conflicts: ConflictDetail[] = []
 
     // Helper function to check if a value indicates "compatible with all"
-    const isCompatibleWithAll = (value: any): boolean => {
+    const isCompatibleWithAll = (
+      value: string | string[] | null | undefined
+    ): boolean => {
       if (value === null || value === undefined) return true
       if (typeof value === 'string' && value.trim() === '') return true
       if (Array.isArray(value) && value.length === 0) return true

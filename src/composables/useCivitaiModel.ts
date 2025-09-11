@@ -36,7 +36,14 @@ interface CivitaiModelVersionResponse {
   model: CivitaiModel
   modelId: number
   files: CivitaiModelFile[]
-  [key: string]: any
+  // Common optional Civitai API fields
+  createdAt?: string
+  publishedAt?: string
+  trainedWords?: string[]
+  stats?: Record<string, number>
+  description?: string
+  // Allow additional API evolution
+  [key: string]: string | number | boolean | object | undefined
 }
 
 /**

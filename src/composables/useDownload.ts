@@ -41,7 +41,7 @@ export function useDownload(url: string, fileName?: string) {
       link.href = downloadUrlToHfRepoUrl(url)
     } else {
       link.href = url
-      link.download = fileName || url.split('/').pop() || 'download'
+      link.download = fileName ?? url.split('/').pop() ?? 'download'
     }
     link.target = '_blank' // Opens in new tab if download attribute is not supported
     link.rel = 'noopener noreferrer' // Security best practice for _blank links

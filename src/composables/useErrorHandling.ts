@@ -13,7 +13,7 @@ export function useErrorHandling() {
   }
 
   const wrapWithErrorHandling =
-    <TArgs extends any[], TReturn>(
+    <TArgs extends readonly unknown[], TReturn>(
       action: (...args: TArgs) => TReturn,
       errorHandler?: (error: any) => void,
       finallyHandler?: () => void
@@ -29,7 +29,7 @@ export function useErrorHandling() {
     }
 
   const wrapWithErrorHandlingAsync =
-    <TArgs extends any[], TReturn>(
+    <TArgs extends readonly unknown[], TReturn>(
       action: (...args: TArgs) => Promise<TReturn> | TReturn,
       errorHandler?: (error: any) => void,
       finallyHandler?: () => void

@@ -8,6 +8,11 @@ import type {
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+interface ContextMenuExtraInfo {
+  inputs?: INodeInputSlot[]
+  widgets?: IWidget[]
+}
+
 /**
  * Add translation for litegraph context menu.
  */
@@ -50,18 +55,20 @@ export const useContextMenuTranslation = () => {
       }
 
       // for capture translation text of input and widget
-      const extraInfo: any = options.extra || options.parentMenu?.options?.extra
+      const extraInfo: ContextMenuExtraInfo | undefined =
+        (options.extra as ContextMenuExtraInfo) ||
+        (options.parentMenu?.options?.extra as ContextMenuExtraInfo)
       // widgets and inputs
       const matchInput = value.content?.match(reInput)
       if (matchInput) {
         let match = matchInput[1]
         extraInfo?.inputs?.find((i: INodeInputSlot) => {
           if (i.name != match) return false
-          match = i.label ? i.label : i.name
+          match = i.label ?? i.name
         })
         extraInfo?.widgets?.find((i: IWidget) => {
           if (i.name != match) return false
-          match = i.label ? i.label : i.name
+          match = i.label ?? i.name
         })
         value.content = cvt + match + tinp
         continue
@@ -71,11 +78,11 @@ export const useContextMenuTranslation = () => {
         let match = matchWidget[1]
         extraInfo?.inputs?.find((i: INodeInputSlot) => {
           if (i.name != match) return false
-          match = i.label ? i.label : i.name
+          match = i.label ?? i.name
         })
         extraInfo?.widgets?.find((i: IWidget) => {
           if (i.name != match) return false
-          match = i.label ? i.label : i.name
+          match = i.label ?? i.name
         })
         value.content = cvt + match + twgt
         continue

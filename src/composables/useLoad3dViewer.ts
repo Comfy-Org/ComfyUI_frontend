@@ -3,6 +3,7 @@ import { ref, toRaw, watch } from 'vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
+  CameraState,
   CameraType,
   MaterialMode,
   UpDirection
@@ -18,7 +19,7 @@ interface Load3dViewerState {
   cameraType: CameraType
   fov: number
   lightIntensity: number
-  cameraState: any
+  cameraState: CameraState | null
   backgroundImage: string
   upDirection: UpDirection
   materialMode: MaterialMode
@@ -274,7 +275,9 @@ export const useLoad3dViewer = (node: LGraphNode) => {
       nodeValue.properties['FOV'] = initialState.value.fov
       nodeValue.properties['Light Intensity'] =
         initialState.value.lightIntensity
-      nodeValue.properties['Camera Info'] = initialState.value.cameraState
+      if (initialState.value.cameraState) {
+        nodeValue.properties['Camera Info'] = initialState.value.cameraState
+      }
       nodeValue.properties['Background Image'] =
         initialState.value.backgroundImage
     }
