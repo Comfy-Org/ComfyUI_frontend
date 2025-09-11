@@ -19,6 +19,17 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
       throw new Error('No KSampler nodes found')
     }
 
+    // Drag the KSampler to the center of the screen
+    const nodePos = await ksamplerNodes[0].getPosition()
+    const viewportSize = comfyPage.page.viewportSize()
+    const centerX = viewportSize.width / 2
+    const centerY = viewportSize.height / 2
+    await comfyPage.dragAndDrop(
+      { x: nodePos.x, y: nodePos.y },
+      { x: centerX, y: centerY }
+    )
+    await comfyPage.nextFrame()
+
     await ksamplerNodes[0].click('title')
     await comfyPage.nextFrame()
     await comfyPage.page.waitForTimeout(500)
