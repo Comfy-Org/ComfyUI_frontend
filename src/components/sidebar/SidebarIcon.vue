@@ -19,7 +19,7 @@
     @click="emit('click', $event)"
   >
     <template #icon>
-      <div class="side-bar-button-content">
+      <div class="flex flex-col items-center gap-2">
         <slot name="icon">
           <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
             <i
@@ -38,9 +38,11 @@
             class="side-bar-button-icon"
           />
         </slot>
-        <span v-if="label && !isSmall" class="side-bar-button-label">{{
-          t(label)
-        }}</span>
+        <span
+          v-if="label && !isSmall"
+          class="leading-[1] text-xxs text-center"
+          >{{ t(label) }}</span
+        >
       </div>
     </template>
   </Button>
@@ -94,8 +96,6 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 </style>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .side-bar-button {
   width: var(--sidebar-width);
   height: calc(var(--sidebar-width) + 0.5rem);
@@ -104,15 +104,6 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 
 .side-tool-bar-end .side-bar-button {
   height: var(--sidebar-width);
-}
-
-.side-bar-button-content {
-  @apply flex flex-col items-center gap-2;
-}
-
-.side-bar-button-label {
-  @apply text-[10px] text-center;
-  line-height: 1;
 }
 
 .comfyui-body-left .side-bar-button.side-bar-button-selected,
