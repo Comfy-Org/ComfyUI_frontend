@@ -43,9 +43,16 @@ export function useViewportCulling(
    * Computed property that returns nodes visible in the current viewport
    * Implements sophisticated culling algorithm with adaptive margins
    */
+
+  const DISABLE_CULLING = true
+
   const nodesToRender = computed(() => {
     if (!isVueNodesEnabled.value) {
       return []
+    }
+
+    if (DISABLE_CULLING) {
+      return Array.from(vueNodeData.value.values())
     }
 
     // Access trigger to force re-evaluation after nodeManager initialization
