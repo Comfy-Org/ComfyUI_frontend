@@ -23,14 +23,15 @@ import { useI18n } from 'vue-i18n'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/stores/graphStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
+const canvasStore = useCanvasStore()
 const { hasOutputNodesSelected, selectedNodes } = useSelectionState()
 
-const canvas = app.canvas
+const canvas = canvasStore.getCanvas()
 const buttonHovered = ref(false)
 const selectedOutputNodes = computed(
   () =>
