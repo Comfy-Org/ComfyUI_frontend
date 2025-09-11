@@ -1,38 +1,34 @@
 <template>
   <div
-    v-if="props.option.type === 'divider'"
+    v-if="option.type === 'divider'"
     class="h-px bg-gray-200 dark-theme:bg-zinc-700 my-1"
   />
   <div
     v-else
-    :ref="
-      props.option.hasSubmenu
-        ? `submenu-trigger-${props.option.label}`
-        : undefined
-    "
+    :ref="option.hasSubmenu ? `submenu-trigger-${option.label}` : undefined"
     role="button"
     class="flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer"
     @click="handleClick"
   >
-    <component :is="props.option.icon" v-if="props.option.icon" :size="16" />
-    <span class="flex-1">{{ props.option.label }}</span>
-    <span v-if="props.option.shortcut" class="text-xs opacity-60">
-      {{ props.option.shortcut }}
+    <component :is="option.icon" v-if="option.icon" :size="16" />
+    <span class="flex-1">{{ option.label }}</span>
+    <span v-if="option.shortcut" class="text-xs opacity-60">
+      {{ option.shortcut }}
     </span>
     <i-lucide:chevron-right
-      v-if="props.option.hasSubmenu"
+      v-if="option.hasSubmenu"
       :size="14"
       class="opacity-60"
     />
     <Badge
-      v-if="props.option.badge"
-      :severity="props.option.badge === 'new' ? 'info' : 'secondary'"
-      :value="t(props.option.badge)"
+      v-if="option.badge"
+      :severity="option.badge === 'new' ? 'info' : 'secondary'"
+      :value="t(option.badge)"
       :class="{
         'bg-[#31B9F4] dark-theme:bg-[#0B8CE9] rounded-4xl':
-          props.option.badge === 'new',
+          option.badge === 'new',
         'bg-[#9C9EAB] dark-theme:bg-[#000] rounded-4xl':
-          props.option.badge === 'deprecated',
+          option.badge === 'deprecated',
         'text-white uppercase text-[9px] h-4 px-1 gap-2.5': true
       }"
     />
