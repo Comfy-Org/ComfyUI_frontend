@@ -68,11 +68,12 @@ jobs:
         run: |
           set -e
           NAME=$(node -p "require('./dist/package.json').name")
-          if npm view ${NAME}@${{ steps.verify.outputs.version }} --json >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Package ${NAME}@${{ steps.verify.outputs.version }} already exists on npm. Skipping publish."
+          VER="${{ steps.verify.outputs.version }}"
+          if npm view "${NAME}@${VER}" --json >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Already published::${NAME}@${VER} already exists on npm. Skipping publish."
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Publish package
