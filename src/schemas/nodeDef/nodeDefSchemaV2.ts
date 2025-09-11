@@ -39,6 +39,119 @@ const zComboInputSpec = zComboInputOptions.extend({
   isOptional: z.boolean().optional()
 })
 
+const zColorInputSpec = zBaseInputOptions.extend({
+  type: z.literal('COLOR'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      default: z.string().optional()
+    })
+    .optional()
+})
+
+const zFileUploadInputSpec = zBaseInputOptions.extend({
+  type: z.literal('FILEUPLOAD'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z.record(z.unknown()).optional()
+})
+
+const zImageInputSpec = zBaseInputOptions.extend({
+  type: z.literal('IMAGE'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z.record(z.unknown()).optional()
+})
+
+const zImageCompareInputSpec = zBaseInputOptions.extend({
+  type: z.literal('IMAGECOMPARE'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z.record(z.unknown()).optional()
+})
+
+const zMarkdownInputSpec = zBaseInputOptions.extend({
+  type: z.literal('MARKDOWN'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      content: z.string().optional()
+    })
+    .optional()
+})
+
+const zTreeSelectInputSpec = zBaseInputOptions.extend({
+  type: z.literal('TREESELECT'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      multiple: z.boolean().optional(),
+      values: z.array(z.unknown()).optional()
+    })
+    .optional()
+})
+
+const zMultiSelectInputSpec = zBaseInputOptions.extend({
+  type: z.literal('MULTISELECT'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      values: z.array(z.string()).optional()
+    })
+    .optional()
+})
+
+const zChartInputSpec = zBaseInputOptions.extend({
+  type: z.literal('CHART'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      type: z.enum(['bar', 'line']).optional(),
+      data: z.object({}).optional()
+    })
+    .optional()
+})
+
+const zGalleriaInputSpec = zBaseInputOptions.extend({
+  type: z.literal('GALLERIA'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      images: z.array(z.string()).optional()
+    })
+    .optional()
+})
+
+const zSelectButtonInputSpec = zBaseInputOptions.extend({
+  type: z.literal('SELECTBUTTON'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      values: z.array(z.string()).optional()
+    })
+    .optional()
+})
+
+const zTextareaInputSpec = zBaseInputOptions.extend({
+  type: z.literal('TEXTAREA'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  options: z
+    .object({
+      rows: z.number().optional(),
+      cols: z.number().optional(),
+      default: z.string().optional()
+    })
+    .optional()
+})
+
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -51,6 +164,17 @@ const zInputSpec = z.union([
   zBooleanInputSpec,
   zStringInputSpec,
   zComboInputSpec,
+  zColorInputSpec,
+  zFileUploadInputSpec,
+  zImageInputSpec,
+  zImageCompareInputSpec,
+  zMarkdownInputSpec,
+  zTreeSelectInputSpec,
+  zMultiSelectInputSpec,
+  zChartInputSpec,
+  zGalleriaInputSpec,
+  zSelectButtonInputSpec,
+  zTextareaInputSpec,
   zCustomInputSpec
 ])
 
@@ -83,11 +207,20 @@ export const zComfyNodeDef = z.object({
 })
 
 // Export types
-export type IntInputSpec = z.infer<typeof zIntInputSpec>
-export type FloatInputSpec = z.infer<typeof zFloatInputSpec>
-export type BooleanInputSpec = z.infer<typeof zBooleanInputSpec>
-export type StringInputSpec = z.infer<typeof zStringInputSpec>
+type IntInputSpec = z.infer<typeof zIntInputSpec>
+type FloatInputSpec = z.infer<typeof zFloatInputSpec>
+type BooleanInputSpec = z.infer<typeof zBooleanInputSpec>
+type StringInputSpec = z.infer<typeof zStringInputSpec>
 export type ComboInputSpec = z.infer<typeof zComboInputSpec>
+export type ColorInputSpec = z.infer<typeof zColorInputSpec>
+export type FileUploadInputSpec = z.infer<typeof zFileUploadInputSpec>
+export type ImageCompareInputSpec = z.infer<typeof zImageCompareInputSpec>
+export type TreeSelectInputSpec = z.infer<typeof zTreeSelectInputSpec>
+export type MultiSelectInputSpec = z.infer<typeof zMultiSelectInputSpec>
+export type ChartInputSpec = z.infer<typeof zChartInputSpec>
+export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
+export type SelectButtonInputSpec = z.infer<typeof zSelectButtonInputSpec>
+export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>
@@ -124,18 +257,8 @@ export const isComboInputSpec = (
   return inputSpec.type === 'COMBO'
 }
 
-/**
- * Check if a node definition is a valid ComfyUI node definition.
- *
- * Note: This is just a simple check against the V1 schema.
- *
- * @param nodeDef - The node definition to check.
- * @returns True if the node definition is valid, false otherwise.
- */
-export const isComfyNodeDef = (nodeDef: unknown): nodeDef is ComfyNodeDef => {
-  return (
-    !!nodeDef &&
-    typeof nodeDef === 'object' &&
-    ['inputs', 'outputs'].every((key) => key in nodeDef)
-  )
+export const isChartInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ChartInputSpec => {
+  return inputSpec.type === 'CHART'
 }

@@ -1,6 +1,6 @@
 import { describe } from 'vitest'
 
-import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './fixtures/testExtensions'
 
@@ -125,6 +125,54 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.links.size).toBe(0)
     expect(graph.floatingLinks.size).toBe(0)
     expect(graph.reroutes.size).toBe(0)
+  })
+})
+
+describe('Graph Clearing and Callbacks', () => {
+  test('clear() calls both node.onRemoved() and graph.onNodeRemoved()', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+
+    // Create test nodes with onRemoved callbacks
+    const node1 = new LGraphNode('TestNode1')
+    const node2 = new LGraphNode('TestNode2')
+
+    // Add nodes to graph
+    graph.add(node1)
+    graph.add(node2)
+
+    // Track callback invocations
+    const nodeRemovedCallbacks = new Set<string>()
+    const graphRemovedCallbacks = new Set<string>()
+
+    // Set up node.onRemoved() callbacks
+    node1.onRemoved = () => {
+      nodeRemovedCallbacks.add(String(node1.id))
+    }
+    node2.onRemoved = () => {
+      nodeRemovedCallbacks.add(String(node2.id))
+    }
+
+    // Set up graph.onNodeRemoved() callback
+    graph.onNodeRemoved = (node) => {
+      graphRemovedCallbacks.add(String(node.id))
+    }
+
+    // Verify nodes are in graph before clearing
+    expect(graph.nodes.length).toBe(2)
+
+    // Clear the graph
+    graph.clear()
+
+    // Verify both types of callbacks were called
+    expect(nodeRemovedCallbacks).toContain(String(node1.id))
+    expect(nodeRemovedCallbacks).toContain(String(node2.id))
+    expect(graphRemovedCallbacks).toContain(String(node1.id))
+    expect(graphRemovedCallbacks).toContain(String(node2.id))
+
+    // Verify nodes were actually removed
+    expect(graph.nodes.length).toBe(0)
   })
 })
 

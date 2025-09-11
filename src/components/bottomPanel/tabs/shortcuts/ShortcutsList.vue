@@ -18,13 +18,13 @@
             :key="command.id"
             class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors duration-200"
           >
-            <div class="shortcut-info flex-grow pr-4">
+            <div class="shortcut-info grow pr-4">
               <div class="shortcut-name text-sm font-medium">
                 {{ t(`commands.${normalizeI18nKey(command.id)}.label`) }}
               </div>
             </div>
 
-            <div class="keybinding-display flex-shrink-0">
+            <div class="keybinding-display shrink-0">
               <div
                 class="keybinding-combo flex gap-1"
                 :aria-label="`Keyboard shortcut: ${command.keybinding!.combo.getKeySequences().join(' + ')}`"

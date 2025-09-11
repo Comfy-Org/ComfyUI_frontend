@@ -9,7 +9,7 @@ import type { ComfyCommand } from '@/stores/commandStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
-export type Widgets = Record<string, ComfyWidgetConstructor>
+type Widgets = Record<string, ComfyWidgetConstructor>
 
 export interface AboutPageBadge {
   label: string
@@ -17,7 +17,7 @@ export interface AboutPageBadge {
   icon: string
 }
 
-export type MenuCommandGroup = {
+type MenuCommandGroup = {
   /**
    * The path to the menu group.
    */

@@ -48,7 +48,7 @@
     "label": "适应视图到选中节点"
   },
   "Comfy_Canvas_Lock": {
-    "label": "鎖定畫布"
+    "label": "锁定画布"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "下移选中的节点"
@@ -93,7 +93,7 @@
     "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_Unlock": {
-    "label": "解鎖畫布"
+    "label": "解锁画布"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "放大"
@@ -111,7 +111,7 @@
     "label": "联系支持"
   },
   "Comfy_Dev_ShowModelSelector": {
-    "label": "顯示模型選擇器（開發）"
+    "label": "显示模型选择器（开发）"
   },
   "Comfy_DuplicateWorkflow": {
     "label": "复制当前工作流"
@@ -170,8 +170,20 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "加载默认工作流"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "自定义节点管理器"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "自定义节点（测试版）"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "自訂節點（舊版）"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "管理員選單（舊版）"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "安装缺失的包"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "检查更新"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "切换进度对话框"
@@ -185,6 +197,12 @@
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
   },
+  "Comfy_Memory_UnloadModels": {
+    "label": "卸载模型"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "卸载模型和执行缓存"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
   },
@@ -196,6 +214,9 @@
   },
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "发布子图"
   },
   "Comfy_QueuePrompt": {
     "label": "执行提示词"
@@ -261,13 +282,13 @@
     "label": "切换日志底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
-    "label": "切换基础底部面板"
+    "label": "切換基本下方面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "切换视图控制底部面板"
+    "label": "切換檢視控制底部面板"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "显示快捷键对话框"
+    "label": "顯示快捷鍵對話框"
   },
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"

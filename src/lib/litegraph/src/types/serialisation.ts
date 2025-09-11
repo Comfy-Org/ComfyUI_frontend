@@ -31,7 +31,7 @@ export interface Serialisable<SerialisableObject> {
   asSerialisable(): SerialisableObject
 }
 
-export interface BaseExportedGraph {
+interface BaseExportedGraph {
   /** Unique graph ID.  Automatically generated if not provided. */
   id: UUID
   /** The revision number of this graph. Not automatically incremented; intended for use by a downstream save function. */
@@ -179,14 +179,6 @@ export interface ISerialisedGroup {
   flags?: IGraphGroupFlags
 }
 
-export type TClipboardLink = [
-  targetRelativeIndex: number,
-  originSlot: number,
-  nodeRelativeIndex: number,
-  targetSlot: number,
-  targetNodeId: NodeId
-]
-
 /** Items copied from the canvas */
 export interface ClipboardItems {
   nodes?: ISerialisedNode[]
@@ -194,12 +186,6 @@ export interface ClipboardItems {
   reroutes?: SerialisableReroute[]
   links?: SerialisableLLink[]
   subgraphs?: ExportedSubgraph[]
-}
-
-/** @deprecated */
-export interface IClipboardContents {
-  nodes?: ISerialisedNode[]
-  links?: TClipboardLink[]
 }
 
 export interface SerialisableReroute {

@@ -18,7 +18,7 @@
       </Button>
       <div
         v-show="showFOV"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 p-4 rounded-lg shadow-lg"
+        class="absolute left-12 top-0 bg-black/50 p-4 rounded-lg shadow-lg"
         style="width: 150px"
       >
         <Slider

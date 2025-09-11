@@ -295,6 +295,8 @@ async function resetAllKeybindings() {
 </script>
 
 <style scoped>
+@reference '../../../../assets/css/style.css';
+
 :deep(.p-datatable-tbody) > tr > td {
   @apply p-1;
   min-height: 2rem;

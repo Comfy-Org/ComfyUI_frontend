@@ -1,15 +1,26 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { ArrowUpDown } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import SingleSelect from './SingleSelect.vue'
 
+// SingleSelect already includes options prop, so no need to extend
 const meta: Meta<typeof SingleSelect> = {
   title: 'Components/Input/SingleSelect',
   component: SingleSelect,
   tags: ['autodocs'],
   argTypes: {
-    label: { control: 'text' }
+    label: { control: 'text' },
+    options: { control: 'object' }
+  },
+  args: {
+    label: 'Sorting Type',
+    options: [
+      { name: 'Popular', value: 'popular' },
+      { name: 'Newest', value: 'newest' },
+      { name: 'Oldest', value: 'oldest' },
+      { name: 'A → Z', value: 'az' },
+      { name: 'Z → A', value: 'za' }
+    ]
   }
 }
 
@@ -29,24 +40,23 @@ export const Default: Story = {
     components: { SingleSelect },
     setup() {
       const selected = ref<string | null>(null)
-      const options = sampleOptions
+      const options = args.options || sampleOptions
       return { selected, options, args }
     },
     template: `
       <div>
-        <SingleSelect v-model="selected" :options="options" :label="args.label || 'Sorting Type'" />
+        <SingleSelect v-model="selected" :options="options" :label="args.label" />
         <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
           <p class="text-sm">Selected: {{ selected ?? 'None' }}</p>
         </div>
       </div>
     `
-  }),
-  args: { label: 'Sorting Type' }
+  })
 }
 
 export const WithIcon: Story = {
   render: () => ({
-    components: { SingleSelect, ArrowUpDown },
+    components: { SingleSelect },
     setup() {
       const selected = ref<string | null>('popular')
       const options = sampleOptions
@@ -56,7 +66,7 @@ export const WithIcon: Story = {
       <div>
         <SingleSelect v-model="selected" :options="options" label="Sorting Type">
           <template #icon>
-            <ArrowUpDown :size="14" />
+            <i class="icon-[lucide--arrow-up-down] w-3.5 h-3.5" />
           </template>
         </SingleSelect>
         <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
@@ -83,7 +93,7 @@ export const Preselected: Story = {
 
 export const AllVariants: Story = {
   render: () => ({
-    components: { SingleSelect, ArrowUpDown },
+    components: { SingleSelect },
     setup() {
       const options = sampleOptions
       const a = ref<string | null>(null)
@@ -99,7 +109,7 @@ export const AllVariants: Story = {
         <div class="flex items-center gap-3">
           <SingleSelect v-model="b" :options="options" label="With Icon">
             <template #icon>
-              <ArrowUpDown :size="14" />
+              <i class="icon-[lucide--arrow-up-down] w-3.5 h-3.5" />
             </template>
           </SingleSelect>
         </div>

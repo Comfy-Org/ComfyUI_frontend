@@ -1,9 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { MultiSelectProps } from 'primevue/multiselect'
 import { ref } from 'vue'
 
 import MultiSelect from './MultiSelect.vue'
 
-const meta: Meta<typeof MultiSelect> = {
+// Combine our component props with PrimeVue MultiSelect props
+// Since we use v-bind="$attrs", all PrimeVue props are available
+interface ExtendedProps extends Partial<MultiSelectProps> {
+  // Our custom props
+  label?: string
+  showSearchBox?: boolean
+  showSelectedCount?: boolean
+  showClearButton?: boolean
+  searchPlaceholder?: string
+  // Override modelValue type to match our Option type
+  modelValue?: Array<{ name: string; value: string }>
+}
+
+const meta: Meta<ExtendedProps> = {
   title: 'Components/Input/MultiSelect',
   component: MultiSelect,
   tags: ['autodocs'],
@@ -13,7 +27,35 @@ const meta: Meta<typeof MultiSelect> = {
     },
     options: {
       control: 'object'
+    },
+    showSearchBox: {
+      control: 'boolean',
+      description: 'Toggle searchBar visibility'
+    },
+    showSelectedCount: {
+      control: 'boolean',
+      description: 'Toggle selected count visibility'
+    },
+    showClearButton: {
+      control: 'boolean',
+      description: 'Toggle clear button visibility'
+    },
+    searchPlaceholder: {
+      control: 'text'
     }
+  },
+  args: {
+    label: 'Select',
+    options: [
+      { name: 'Vue', value: 'vue' },
+      { name: 'React', value: 'react' },
+      { name: 'Angular', value: 'angular' },
+      { name: 'Svelte', value: 'svelte' }
+    ],
+    showSearchBox: false,
+    showSelectedCount: false,
+    showClearButton: false,
+    searchPlaceholder: 'Search...'
   }
 }
 
@@ -25,7 +67,7 @@ export const Default: Story = {
     components: { MultiSelect },
     setup() {
       const selected = ref([])
-      const options = [
+      const options = args.options || [
         { name: 'Vue', value: 'vue' },
         { name: 'React', value: 'react' },
         { name: 'Angular', value: 'angular' },
@@ -38,8 +80,11 @@ export const Default: Story = {
         <MultiSelect 
           v-model="selected" 
           :options="options"
-          label="Select Frameworks"
-          v-bind="args"
+          :label="args.label"
+          :showSearchBox="args.showSearchBox"
+          :showSelectedCount="args.showSelectedCount"
+          :showClearButton="args.showClearButton"
+          :searchPlaceholder="args.searchPlaceholder"
         />
         <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
           <p class="text-sm">Selected: {{ selected.length > 0 ? selected.map(s => s.name).join(', ') : 'None' }}</p>
@@ -50,10 +95,10 @@ export const Default: Story = {
 }
 
 export const WithPreselectedValues: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { MultiSelect },
     setup() {
-      const options = [
+      const options = args.options || [
         { name: 'JavaScript', value: 'js' },
         { name: 'TypeScript', value: 'ts' },
         { name: 'Python', value: 'python' },
@@ -61,25 +106,43 @@ export const WithPreselectedValues: Story = {
         { name: 'Rust', value: 'rust' }
       ]
       const selected = ref([options[0], options[1]])
-      return { selected, options }
+      return { selected, options, args }
     },
     template: `
       <div>
         <MultiSelect 
           v-model="selected" 
           :options="options"
-          label="Select Languages"
+          :label="args.label"
+          :showSearchBox="args.showSearchBox"
+          :showSelectedCount="args.showSelectedCount"
+          :showClearButton="args.showClearButton"
+          :searchPlaceholder="args.searchPlaceholder"
         />
         <div class="mt-4 p-3 bg-gray-50 dark-theme:bg-zinc-800 rounded">
           <p class="text-sm">Selected: {{ selected.map(s => s.name).join(', ') }}</p>
         </div>
       </div>
     `
-  })
+  }),
+  args: {
+    label: 'Select Languages',
+    options: [
+      { name: 'JavaScript', value: 'js' },
+      { name: 'TypeScript', value: 'ts' },
+      { name: 'Python', value: 'python' },
+      { name: 'Go', value: 'go' },
+      { name: 'Rust', value: 'rust' }
+    ],
+    showSearchBox: false,
+    showSelectedCount: false,
+    showClearButton: false,
+    searchPlaceholder: 'Search...'
+  }
 }
 
 export const MultipleSelectors: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { MultiSelect },
     setup() {
       const frameworkOptions = ref([
@@ -114,7 +177,8 @@ export const MultipleSelectors: Story = {
         tagOptions,
         selectedFrameworks,
         selectedProjects,
-        selectedTags
+        selectedTags,
+        args
       }
     },
     template: `
@@ -124,22 +188,34 @@ export const MultipleSelectors: Story = {
             v-model="selectedFrameworks" 
             :options="frameworkOptions"
             label="Select Frameworks"
+            :showSearchBox="args.showSearchBox"
+            :showSelectedCount="args.showSelectedCount"
+            :showClearButton="args.showClearButton"
+            :searchPlaceholder="args.searchPlaceholder"
           />
           <MultiSelect 
             v-model="selectedProjects" 
             :options="projectOptions"
             label="Select Projects"
+            :showSearchBox="args.showSearchBox"
+            :showSelectedCount="args.showSelectedCount"
+            :showClearButton="args.showClearButton"
+            :searchPlaceholder="args.searchPlaceholder"
           />
           <MultiSelect 
             v-model="selectedTags" 
             :options="tagOptions"
             label="Select Tags"
+            :showSearchBox="args.showSearchBox"
+            :showSelectedCount="args.showSelectedCount"
+            :showClearButton="args.showClearButton"
+            :searchPlaceholder="args.searchPlaceholder"
           />
         </div>
         
         <div class="p-4 bg-gray-50 dark-theme:bg-zinc-800 rounded">
-          <h4 class="font-medium mb-2">Current Selection:</h4>
-          <div class="space-y-1 text-sm">
+          <h4 class="font-medium mt-0">Current Selection:</h4>
+          <div class="flex flex-col text-sm">
             <p>Frameworks: {{ selectedFrameworks.length > 0 ? selectedFrameworks.map(s => s.name).join(', ') : 'None' }}</p>
             <p>Projects: {{ selectedProjects.length > 0 ? selectedProjects.map(s => s.name).join(', ') : 'None' }}</p>
             <p>Tags: {{ selectedTags.length > 0 ? selectedTags.map(s => s.name).join(', ') : 'None' }}</p>
@@ -147,5 +223,54 @@ export const MultipleSelectors: Story = {
         </div>
       </div>
     `
-  })
+  }),
+  args: {
+    showSearchBox: false,
+    showSelectedCount: false,
+    showClearButton: false,
+    searchPlaceholder: 'Search...'
+  }
+}
+
+export const WithSearchBox: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showSearchBox: true
+  }
+}
+
+export const WithSelectedCount: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showSelectedCount: true
+  }
+}
+
+export const WithClearButton: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showClearButton: true
+  }
+}
+
+export const AllHeaderFeatures: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showSearchBox: true,
+    showSelectedCount: true,
+    showClearButton: true
+  }
+}
+
+export const CustomSearchPlaceholder: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showSearchBox: true,
+    searchPlaceholder: 'Filter packages...'
+  }
 }

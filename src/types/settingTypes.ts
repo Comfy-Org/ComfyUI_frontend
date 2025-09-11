@@ -1,6 +1,6 @@
 import type { Settings } from '@/schemas/apiSchema'
 
-export type SettingInputType =
+type SettingInputType =
   | 'boolean'
   | 'number'
   | 'slider'
@@ -13,7 +13,7 @@ export type SettingInputType =
   | 'hidden'
   | 'backgroundImage'
 
-export type SettingCustomRenderer = (
+type SettingCustomRenderer = (
   name: string,
   setter: (v: any) => void,
   value: any,
@@ -23,13 +23,6 @@ export type SettingCustomRenderer = (
 export interface SettingOption {
   text: string
   value?: any
-}
-
-export interface Setting {
-  id: keyof Settings
-  onChange?: (value: any, oldValue?: any) => void
-  name: string
-  render: () => HTMLElement
 }
 
 export interface SettingParams<TValue = unknown> extends FormItem {

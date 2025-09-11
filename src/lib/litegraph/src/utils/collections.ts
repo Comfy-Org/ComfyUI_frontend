@@ -1,8 +1,7 @@
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { parseSlotTypes } from '@/lib/litegraph/src/strings'
 
-import type { ConnectingLink, ISlotType, Positionable } from '../interfaces'
+import type { ISlotType, Positionable } from '../interfaces'
 
 /**
  * Creates a flat set of all positionable items by recursively iterating through all child items.
@@ -42,19 +41,6 @@ export function findFirstNode(
 ): LGraphNode | undefined {
   for (const item of items) {
     if (item instanceof LGraphNode) return item
-  }
-}
-
-/** @returns `true` if the provided link ID is currently being dragged. */
-export function isDraggingLink(
-  linkId: LinkId,
-  connectingLinks: ConnectingLink[] | null | undefined
-): ConnectingLink | undefined {
-  if (connectingLinks == null) return
-
-  for (const connectingLink of connectingLinks) {
-    if (connectingLink.link == null) continue
-    if (linkId === connectingLink.link.id) return connectingLink
   }
 }
 

@@ -169,6 +169,8 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .workflow-preview-content {
   @apply flex flex-col rounded-xl overflow-hidden;
   max-width: var(--popover-width);
@@ -204,6 +206,8 @@ defineExpose({
 </style>
 
 <style>
+@reference '../../assets/css/style.css';
+
 .workflow-popover-fade {
   --p-popover-background: transparent;
   --p-popover-content-padding: 0;

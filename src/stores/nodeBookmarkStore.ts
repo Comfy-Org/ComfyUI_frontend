@@ -10,7 +10,7 @@ import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'
 import { buildNodeDefTree } from './nodeDefStore'
 import { useSettingStore } from './settingStore'
 
-export const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
+const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 
 export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const settingStore = useSettingStore()

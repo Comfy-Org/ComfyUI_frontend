@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 
-export interface CachedMedia {
+interface CachedMedia {
   src: string
   blob?: Blob
   objectUrl?: string
@@ -9,7 +9,7 @@ export interface CachedMedia {
   lastAccessed: number
 }
 
-export interface MediaCacheOptions {
+interface MediaCacheOptions {
   maxSize?: number
   maxAge?: number // in milliseconds
   preloadDistance?: number // pixels from viewport
@@ -194,7 +194,7 @@ class MediaCacheService {
 }
 
 // Global instance
-export let mediaCacheInstance: MediaCacheService | null = null
+let mediaCacheInstance: MediaCacheService | null = null
 
 export function useMediaCache(options?: MediaCacheOptions) {
   if (!mediaCacheInstance) {

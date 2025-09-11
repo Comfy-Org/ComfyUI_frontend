@@ -1,7 +1,6 @@
 import { type Ref, onBeforeUnmount, ref, watch } from 'vue'
 
-export interface UseIntersectionObserverOptions
-  extends IntersectionObserverInit {
+interface UseIntersectionObserverOptions extends IntersectionObserverInit {
   immediate?: boolean
 }
 

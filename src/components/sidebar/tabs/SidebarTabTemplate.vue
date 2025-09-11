@@ -20,8 +20,8 @@
       </Toolbar>
       <slot name="header" />
     </div>
-    <!-- h-0 to force scrollpanel to flex-grow -->
-    <ScrollPanel class="comfy-vue-side-bar-body flex-grow h-0">
+    <!-- h-0 to force scrollpanel to grow -->
+    <ScrollPanel class="comfy-vue-side-bar-body grow h-0">
       <slot name="body" />
     </ScrollPanel>
   </div>
@@ -38,6 +38,8 @@ const props = defineProps<{
 </script>
 
 <style scoped>
+@reference '../../../assets/css/style.css';
+
 :deep(.p-toolbar-end) .p-button {
   @apply py-1 2xl:py-2;
 }

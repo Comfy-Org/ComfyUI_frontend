@@ -29,7 +29,7 @@ export interface MinimapRenderContext {
   height: number
 }
 
-export interface MinimapRenderSettings {
+interface MinimapRenderSettings {
   nodeColors: boolean
   showLinks: boolean
   showGroups: boolean

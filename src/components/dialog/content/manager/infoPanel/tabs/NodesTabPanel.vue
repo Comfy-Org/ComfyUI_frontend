@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-col gap-4 mt-4 text-sm">
+  <div class="flex flex-col gap-4 text-sm">
     <template v-if="mappedNodeDefs?.length">
       <div
         v-for="nodeDef in mappedNodeDefs"
         :key="createNodeDefKey(nodeDef)"
         class="border rounded-lg p-4"
       >
-        <NodePreview :node-def="nodeDef" class="!text-[.625rem] !min-w-full" />
+        <NodePreview :node-def="nodeDef" class="text-[.625rem]! min-w-full!" />
       </div>
     </template>
     <template v-else-if="isLoading">

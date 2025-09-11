@@ -170,8 +170,20 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Charger le flux de travail par défaut"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "Gestionnaire de Nœuds Personnalisés"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Nœuds personnalisés (Beta)"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Nœuds personnalisés (hérités)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Menu du gestionnaire (héritage)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Installer manquants"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Vérifier les mises à jour"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Basculer la boîte de dialogue de progression"
@@ -185,6 +197,12 @@
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
   },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Décharger les modèles"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Décharger les modèles et le cache d'exécution"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
   },
@@ -196,6 +214,9 @@
   },
   "Comfy_OpenWorkflow": {
     "label": "Ouvrir le flux de travail"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "Publier le sous-graphe"
   },
   "Comfy_QueuePrompt": {
     "label": "Invite de file d'attente"

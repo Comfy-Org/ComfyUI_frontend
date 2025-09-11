@@ -5,9 +5,9 @@ import { fromZodError } from 'zod-validation-error'
 // innerNode.id = `${this.node.id}:${i}`
 // Remove it after GroupNode is redesigned.
 export const zNodeId = z.union([z.number().int(), z.string()])
-export const zNodeInputName = z.string()
+const zNodeInputName = z.string()
 export type NodeId = z.infer<typeof zNodeId>
-export const zSlotIndex = z.union([
+const zSlotIndex = z.union([
   z.number().int(),
   z
     .string()
@@ -20,7 +20,7 @@ export const zSlotIndex = z.union([
 // TODO: Investigate usage of array and number as data type usage in custom nodes.
 // Known usage:
 // - https://github.com/rgthree/rgthree-comfy Context Big node is using array as type.
-export const zDataType = z.union([z.string(), z.array(z.string()), z.number()])
+const zDataType = z.union([z.string(), z.array(z.string()), z.number()])
 
 const zVector2 = z.union([
   z
@@ -214,7 +214,7 @@ const zComfyNode = z
   })
   .passthrough()
 
-export const zSubgraphIO = zNodeInput.extend({
+const zSubgraphIO = zNodeInput.extend({
   /** Slot ID (internal; never changes once instantiated). */
   id: z.string().uuid(),
   /** The data type this slot uses. Unlike nodes, this does not support legacy numeric types. */
@@ -274,11 +274,11 @@ const zExtra = z
   })
   .passthrough()
 
-export const zGraphDefinitions = z.object({
+const zGraphDefinitions = z.object({
   subgraphs: z.lazy(() => z.array(zSubgraphDefinition))
 })
 
-export const zBaseExportableGraph = z.object({
+const zBaseExportableGraph = z.object({
   /** Unique graph ID.  Automatically generated if not provided. */
   id: z.string().uuid().optional(),
   revision: z.number().optional(),
@@ -371,13 +371,13 @@ export const zComfyWorkflow1 = zBaseExportableGraph
   })
   .passthrough()
 
-export const zExportedSubgraphIONode = z.object({
+const zExportedSubgraphIONode = z.object({
   id: zNodeId,
   bounding: z.tuple([z.number(), z.number(), z.number(), z.number()]),
   pinned: z.boolean().optional()
 })
 
-export const zExposedWidget = z.object({
+const zExposedWidget = z.object({
   id: z.string(),
   name: z.string()
 })
@@ -414,7 +414,7 @@ interface SubgraphDefinitionBase<
 }
 
 /** A subgraph definition `worfklow.definitions.subgraphs` */
-export const zSubgraphDefinition = zComfyWorkflow1
+const zSubgraphDefinition = zComfyWorkflow1
   .extend({
     /** Unique graph ID.  Automatically generated if not provided. */
     id: z.string().uuid(),
@@ -447,18 +447,15 @@ export const zSubgraphDefinition = zComfyWorkflow1
   .passthrough()
 
 export type ModelFile = z.infer<typeof zModelFile>
-export type NodeInput = z.infer<typeof zNodeInput>
-export type NodeOutput = z.infer<typeof zNodeOutput>
 export type ComfyLink = z.infer<typeof zComfyLink>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>
 export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
-export type WorkflowJSON10 = z.infer<typeof zComfyWorkflow1>
 export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
-export type SubgraphDefinition = z.infer<typeof zSubgraphDefinition>
+type SubgraphDefinition = z.infer<typeof zSubgraphDefinition>
 
 /**
  * Type guard to check if an object is a SubgraphDefinition.
@@ -525,5 +522,5 @@ const zNodeData = z.object({
   })
 })
 
-export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>

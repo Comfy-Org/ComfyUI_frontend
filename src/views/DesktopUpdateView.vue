@@ -61,6 +61,8 @@ onUnmounted(() => electron.Validation.dispose())
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 .download-bg::before {
   @apply m-0 absolute text-muted;
   font-family: 'primeicons';
