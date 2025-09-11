@@ -35,7 +35,7 @@ export enum LODLevel {
   FULL = 'full' // zoom > 0.8
 }
 
-export interface LODConfig {
+interface LODConfig {
   renderWidgets: boolean
   renderSlots: boolean
   renderContent: boolean

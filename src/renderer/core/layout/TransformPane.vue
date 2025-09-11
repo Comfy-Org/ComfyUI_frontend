@@ -13,10 +13,10 @@
 <script setup lang="ts">
 import { computed, provide } from 'vue'
 
-import { useTransformState } from '@/composables/element/useTransformState'
 import { useCanvasTransformSync } from '@/composables/graph/useCanvasTransformSync'
 import { useTransformSettling } from '@/composables/graph/useTransformSettling'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useTransformState } from '@/renderer/core/layout/useTransformState'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas

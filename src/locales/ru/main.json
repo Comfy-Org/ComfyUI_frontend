@@ -825,7 +825,11 @@
     "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Unload Models": "Выгрузить модели",
     "Unload Models and Execution Cache": "Выгрузить модели и кэш выполнения",
+    "Unlock Canvas": "Разблокировать холст",
+    "Unpack the selected Subgraph": "Распаковать выбранный подграф",
+    "View": "Вид",
     "Workflow": "Рабочий процесс",
+    "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить",
     "Zoom to fit": "Масштабировать по размеру"
@@ -1218,6 +1222,10 @@
       }
     },
     "workflows": "Рабочие процессы"
+  },
+  "subgraphStore": {
+    "blueprintName": "Имя подграфа",
+    "saveBlueprint": "Сохранить подграф в библиотеку"
   },
   "tabMenu": {
     "addToBookmarks": "Добавить в закладки",

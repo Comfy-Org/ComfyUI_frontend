@@ -2,16 +2,13 @@
   <div v-if="renderError" class="node-error p-1 text-red-500 text-xs">⚠️</div>
   <div
     v-else
-    class="lg-slot lg-slot--input flex items-center cursor-crosshair group rounded-r-lg"
+    class="lg-slot lg-slot--input flex items-center cursor-crosshair group rounded-r-lg h-6"
     :class="{
       'opacity-70': readonly,
       'lg-slot--connected': connected,
       'lg-slot--compatible': compatible,
       'lg-slot--dot-only': dotOnly,
       'pr-6 hover:bg-black/5 hover:dark:bg-white/5': !dotOnly
-    }"
-    :style="{
-      height: slotHeight + 'px'
     }"
   >
     <!-- Connection Dot -->
@@ -32,15 +29,18 @@
 </template>
 
 <script setup lang="ts">
-import { type Ref, computed, inject, onErrorCaptured, ref, watch } from 'vue'
+import {
+  type ComponentPublicInstance,
+  computed,
+  inject,
+  onErrorCaptured,
+  ref,
+  watchEffect
+} from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
-import {
-  COMFY_VUE_NODE_DIMENSIONS,
-  INodeSlot,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // DOM-based slot registration for arbitrary positioning
 import {
   type TransformState,
@@ -75,27 +75,22 @@ onErrorCaptured((error) => {
 // Get slot color based on type
 const slotColor = computed(() => getSlotColor(props.slotData.type))
 
-// Get slot height from litegraph constants
-const slotHeight = COMFY_VUE_NODE_DIMENSIONS.components.SLOT_HEIGHT
-
 const transformState = inject<TransformState | undefined>(
   'transformState',
   undefined
 )
 
-const connectionDotRef = ref<{ slotElRef: Ref<HTMLElement> }>()
+const connectionDotRef = ref<ComponentPublicInstance<{
+  slotElRef: HTMLElement | undefined
+}> | null>(null)
 const slotElRef = ref<HTMLElement | null>(null)
 
-// Watch for connection dot ref changes and sync the element ref
-watch(
-  connectionDotRef,
-  (newValue) => {
-    if (newValue?.slotElRef) {
-      slotElRef.value = newValue.slotElRef.value
-    }
-  },
-  { immediate: true }
-)
+// Watch for when the child component's ref becomes available
+// Vue automatically unwraps the Ref when exposing it
+watchEffect(() => {
+  const el = connectionDotRef.value?.slotElRef
+  slotElRef.value = el || null
+})
 
 useDomSlotRegistration({
   nodeId: props.nodeId ?? '',

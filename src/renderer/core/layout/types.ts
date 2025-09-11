@@ -31,6 +31,11 @@ export interface Bounds {
   height: number
 }
 
+export interface NodeBoundsUpdate {
+  nodeId: NodeId
+  bounds: Bounds
+}
+
 export type NodeId = string
 export type LinkId = number
 export type RerouteId = number
@@ -84,7 +89,7 @@ export interface RerouteLayout {
 /**
  * Meta-only base for all operations - contains common fields
  */
-export interface OperationMeta {
+interface OperationMeta {
   /** Unique operation ID for deduplication */
   id?: string
   /** Timestamp for ordering operations */
@@ -100,9 +105,9 @@ export interface OperationMeta {
 /**
  * Entity-specific base types for proper type discrimination
  */
-export type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
-export type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
-export type RerouteOpBase = OperationMeta & {
+type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
+type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
+type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
   rerouteId: RerouteId
 }
@@ -110,7 +115,7 @@ export type RerouteOpBase = OperationMeta & {
 /**
  * Operation type discriminator for type narrowing
  */
-export type OperationType =
+type OperationType =
   | 'moveNode'
   | 'resizeNode'
   | 'setNodeZIndex'
@@ -170,7 +175,7 @@ export interface DeleteNodeOperation extends NodeOpBase {
 /**
  * Set node visibility operation
  */
-export interface SetNodeVisibilityOperation extends NodeOpBase {
+interface SetNodeVisibilityOperation extends NodeOpBase {
   type: 'setNodeVisibility'
   visible: boolean
   previousVisible: boolean
@@ -179,7 +184,7 @@ export interface SetNodeVisibilityOperation extends NodeOpBase {
 /**
  * Batch update operation for atomic multi-property changes
  */
-export interface BatchUpdateOperation extends NodeOpBase {
+interface BatchUpdateOperation extends NodeOpBase {
   type: 'batchUpdate'
   updates: Partial<NodeLayout>
   previousValues: Partial<NodeLayout>
@@ -297,6 +302,7 @@ export interface LayoutStore {
   deleteSlotLayout(key: string): void
   deleteNodeSlotLayouts(nodeId: NodeId): void
   deleteRerouteLayout(rerouteId: RerouteId): void
+  clearAllSlotLayouts(): void
 
   // Get layout data
   getLinkLayout(linkId: LinkId): LinkLayout | null
@@ -319,4 +325,9 @@ export interface LayoutStore {
   setActor(actor: string): void
   getCurrentSource(): LayoutSource
   getCurrentActor(): string
+
+  // Batch updates
+  batchUpdateNodeBounds(
+    updates: Array<{ nodeId: NodeId; bounds: Bounds }>
+  ): void
 }

@@ -6,10 +6,7 @@ import { type Ref, ref, watch } from 'vue'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
-export interface UseWidgetValueOptions<
-  T extends WidgetValue = WidgetValue,
-  U = T
-> {
+interface UseWidgetValueOptions<T extends WidgetValue = WidgetValue, U = T> {
   /** The widget configuration from LiteGraph */
   widget: SimplifiedWidget<T>
   /** The current value from parent component */
@@ -22,10 +19,7 @@ export interface UseWidgetValueOptions<
   transform?: (value: U) => T
 }
 
-export interface UseWidgetValueReturn<
-  T extends WidgetValue = WidgetValue,
-  U = T
-> {
+interface UseWidgetValueReturn<T extends WidgetValue = WidgetValue, U = T> {
   /** Local value for immediate UI updates */
   localValue: Ref<T>
   /** Handler for user interactions */

@@ -197,6 +197,8 @@
     "updateSelected": "Update Selected",
     "updateAll": "Update All",
     "updatingAllPacks": "Updating all packages",
+    "disabledNodesWontUpdate": "Disabled nodes will not be updated",
+    "enablePackToChangeVersion": "Enable this pack to change versions",
     "license": "License",
     "nightlyVersion": "Nightly",
     "latestVersion": "Latest",
@@ -215,6 +217,7 @@
     "noDescription": "No description available",
     "installSelected": "Install Selected",
     "installAllMissingNodes": "Install All Missing Nodes",
+    "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
     "notAvailable": "Not Available",
@@ -991,6 +994,18 @@
     "enterFilename": "Enter the filename",
     "saveWorkflow": "Save workflow"
   },
+  "subgraphStore": {
+    "confirmDeleteTitle": "Delete blueprint?",
+    "confirmDelete": "This action will permanently remove the blueprint from your library",
+    "saveBlueprint": "Save Subgraph to Library",
+    "overwriteBlueprintTitle": "Overwrite existing blueprint?",
+    "overwriteBlueprint": "Saving will overwrite the current blueprint with your changes",
+    "blueprintName": "Subgraph name",
+    "publish": "Publish Subgraph",
+    "publishSuccess": "Saved to Nodes Library",
+    "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
+    "loadFailure": "Failed to load subgraph blueprints"
+  },
   "electronFileDownload": {
     "inProgress": "In Progress",
     "pause": "Pause Download",
@@ -1046,6 +1061,7 @@
   "menuLabels": {
     "Workflow": "Workflow",
     "Edit": "Edit",
+    "View": "View",
     "Manager": "Manager",
     "Help": "Help",
     "Check for Updates": "Check for Updates",
@@ -1119,6 +1135,7 @@
     "Clipspace": "Clipspace",
     "Manager": "Manager",
     "Open": "Open",
+    "Publish": "Publish",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
@@ -1498,6 +1515,8 @@
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
   "loadWorkflowWarning": {
+    "missingNodesTitle": "Some Nodes Are Missing",
+    "missingNodesDescription": "When loading the graph, the following node types were not found.\nThis may also happen if your installed version is lower and that node type can’t be found.",
     "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
     "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Requires ComfyUI {version}:"
@@ -1788,6 +1807,9 @@
     "copiedTooltip": "Copied",
     "copyTooltip": "Copy message to clipboard"
   },
+  "widgets": {
+    "selectModel": "Select model"
+  },
   "nodeHelpPage": {
     "inputs": "Inputs",
     "outputs": "Outputs",
@@ -1804,6 +1826,7 @@
     "duplicate": "Duplicate",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
+    "deleteBlueprint": "Delete Blueprint",
     "enterNewName": "Enter new name"
   },
   "shortcuts": {

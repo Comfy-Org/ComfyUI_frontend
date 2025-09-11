@@ -22,7 +22,7 @@
         <ColorPickerButton v-if="showColorPicker" />
         <FrameNodes v-if="showFrameNodes" />
         <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-        <!-- <PublishButton v-if="showBookmark" /> -->
+        <PublishSubgraphButton />
         <MaskEditorButton v-if="showMaskEditor" />
         <VerticalDivider
           v-if="showAnyPrimaryActions && showAnyControlActions"
@@ -62,6 +62,7 @@ import {
   resetMoreOptionsState,
   useSelectionToolboxPosition
 } from '@/composables/canvas/useSelectionToolboxPosition'
+import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'

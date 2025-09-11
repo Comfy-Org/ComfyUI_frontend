@@ -343,7 +343,7 @@ const onGraphReady = () => {
   grid-column: 2;
   grid-row: 2;
   position: relative;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .comfyui-body-right {
