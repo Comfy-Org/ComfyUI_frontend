@@ -684,7 +684,18 @@ export class ComfyPage {
   }
 
   async dragNode2() {
-    await this.dragAndDrop({ x: 622, y: 400 }, { x: 622, y: 300 })
+    // Add more frames and smooth steps for reliable dragging
+    await this.nextFrame()
+    await this.page.mouse.move(622, 400)
+    await this.nextFrame()
+    await this.page.mouse.down()
+    await this.nextFrame()
+    // Use steps for smoother drag animation
+    await this.page.mouse.move(622, 300, { steps: 10 })
+    await this.nextFrame()
+    await this.page.mouse.up()
+    await this.nextFrame()
+    // Extra frame to ensure canvas has finished updating
     await this.nextFrame()
   }
 
