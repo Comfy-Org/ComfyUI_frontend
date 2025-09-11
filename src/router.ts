@@ -6,14 +6,65 @@ import {
   createWebHistory
 } from 'vue-router'
 
+import { getMe } from '@/api/me'
+import { cloudOnboardingRoutes } from '@/router/onboarding.cloud'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
 import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
+const PUBLIC_ROUTE_NAMES = new Set([
+  'cloud-login',
+  'cloud-signup',
+  'cloud-forgot-password',
+  'verify-email'
+])
+
+const isPublicRoute = (to: RouteLocationNormalized) => {
+  const name = String(to.name)
+  if (PUBLIC_ROUTE_NAMES.has(name)) return true
+  const path = to.path
+  // 로그인 전에도 접근 가능해야 자연스러운 경로들
+  if (path === '/login' || path === '/signup' || path === '/forgot-password')
+    return true
+  if (path.startsWith('/code')) return true // /code/:inviteCode
+  if (path.startsWith('/verify-email')) return true // 이메일 인증 콜백
+  return false
+}
+
 const isFileProtocol = window.location.protocol === 'file:'
-const basePath = isElectron() ? '/' : window.location.pathname
+
+// Determine base path for the router
+// - Electron always uses root
+// - Web uses root unless serving from a real subdirectory (e.g., /ComfyBackendDirect)
+function getBasePath(): string {
+  if (isElectron()) {
+    return '/'
+  }
+
+  const pathname = window.location.pathname
+
+  // These are app routes, not deployment subdirectories
+  const appRoutes = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/survey',
+    '/waitlist'
+  ]
+  const isAppRoute = appRoutes.some((route) => pathname.startsWith(route))
+
+  // Use root if we're on an app route or at root
+  if (pathname === '/' || isAppRoute) {
+    return '/'
+  }
+
+  // Otherwise, this might be a subdirectory deployment (e.g., /ComfyBackendDirect)
+  return pathname
+}
+
+const basePath = getBasePath()
 
 const guardElectronAccess = (
   _to: RouteLocationNormalized,
@@ -35,6 +86,8 @@ const router = createRouter({
       // we need this base path or assets will incorrectly resolve from 'http://localhost:7801/'
       createWebHistory(basePath),
   routes: [
+    // Cloud onboarding routes
+    ...cloudOnboardingRoutes,
     {
       path: '/',
       component: LayoutDefault,
@@ -132,7 +185,7 @@ const router = createRouter({
 })
 
 // Global authentication guard
-router.beforeEach(async (_to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useFirebaseAuthStore()
 
   // Wait for Firebase auth to initialize
@@ -147,25 +200,54 @@ router.beforeEach(async (_to, _from, next) => {
     })
   }
 
-  // Check if user is authenticated (Firebase or API key)
+  // Check if user is authenticated
   const authHeader = await authStore.getAuthHeader()
+  const isLoggedIn = !!authHeader
 
-  if (!authHeader) {
-    // User is not authenticated, show sign-in dialog
-    const dialogService = useDialogService()
-    const loginSuccess = await dialogService.showSignInDialog()
-
-    if (loginSuccess) {
-      // After successful login, proceed to the intended route
-      next()
-    } else {
-      // User cancelled login, stay on current page or redirect to home
-      next(false)
+  // Allow public routes without authentication
+  if (isPublicRoute(to)) {
+    // If logged in and trying to access login/signup, redirect based on status
+    if (
+      isLoggedIn &&
+      (to.name === 'cloud-login' || to.name === 'cloud-signup')
+    ) {
+      try {
+        const me = await getMe()
+        if (!me.surveyTaken) {
+          return next({ name: 'cloud-survey' })
+        }
+        if (!me.whitelisted) {
+          return next({ name: 'cloud-waitlist' })
+        }
+        return next({ path: '/' })
+      } catch (error) {
+        console.error('Error fetching user status:', error)
+        return next({ path: '/' })
+      }
     }
-  } else {
-    // User is authenticated, proceed
-    next()
+    // Allow access to public routes
+    return next()
   }
+
+  // Handle protected routes
+  if (!isLoggedIn) {
+    // For Electron, use dialog
+    if (isElectron()) {
+      const dialogService = useDialogService()
+      const loginSuccess = await dialogService.showSignInDialog()
+      return loginSuccess ? next() : next(false)
+    }
+
+    // For web, redirect to login
+    const redirectTarget = to.fullPath === '/' ? undefined : to.fullPath
+    return next({
+      name: 'cloud-login',
+      query: redirectTarget ? { redirect: redirectTarget } : undefined
+    })
+  }
+
+  // User is logged in and accessing protected route
+  return next()
 })
 
 export default router
