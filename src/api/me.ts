@@ -16,8 +16,8 @@ let mockUserData: UserOnboardingStatus = {
 
 export async function getMe(): Promise<UserOnboardingStatus> {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
+  await new Promise((resolve) => setTimeout(resolve, 300))
+
   // Return mock data
   return { ...mockUserData }
 }

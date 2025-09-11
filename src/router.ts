@@ -7,12 +7,13 @@ import {
 } from 'vue-router'
 
 import { getMe } from '@/api/me'
-import { cloudOnboardingRoutes } from '@/router/onboarding.cloud'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
 import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
+
+import { cloudOnboardingRoutes } from './onboardingCloudRoutes'
 
 const PUBLIC_ROUTE_NAMES = new Set([
   'cloud-login',
@@ -25,43 +26,23 @@ const isPublicRoute = (to: RouteLocationNormalized) => {
   const name = String(to.name)
   if (PUBLIC_ROUTE_NAMES.has(name)) return true
   const path = to.path
-  // 로그인 전에도 접근 가능해야 자연스러운 경로들
   if (path === '/login' || path === '/signup' || path === '/forgot-password')
     return true
-  if (path.startsWith('/code')) return true // /code/:inviteCode
-  if (path.startsWith('/verify-email')) return true // 이메일 인증 콜백
+  if (path.startsWith('/code')) return true
+  if (path.startsWith('/verify-email')) return true
   return false
 }
 
 const isFileProtocol = window.location.protocol === 'file:'
 
 // Determine base path for the router
-// - Electron always uses root
-// - Web uses root unless serving from a real subdirectory (e.g., /ComfyBackendDirect)
+// - Electron: always root
+// - Web: rely on Vite's BASE_URL (configured via vite.config `base`)
 function getBasePath(): string {
-  if (isElectron()) {
-    return '/'
-  }
-
-  const pathname = window.location.pathname
-
-  // These are app routes, not deployment subdirectories
-  const appRoutes = [
-    '/login',
-    '/signup',
-    '/forgot-password',
-    '/survey',
-    '/waitlist'
-  ]
-  const isAppRoute = appRoutes.some((route) => pathname.startsWith(route))
-
-  // Use root if we're on an app route or at root
-  if (pathname === '/' || isAppRoute) {
-    return '/'
-  }
-
-  // Otherwise, this might be a subdirectory deployment (e.g., /ComfyBackendDirect)
-  return pathname
+  if (isElectron()) return '/'
+  // Vite injects BASE_URL at build/dev time; default is '/'
+  const viteBase = (import.meta as any).env?.BASE_URL || '/'
+  return viteBase
 }
 
 const basePath = getBasePath()
@@ -172,6 +153,12 @@ const router = createRouter({
           beforeEnter: guardElectronAccess
         }
       ]
+    },
+    // Catch-all: redirect unknown routes
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found-redirect',
+      redirect: '/'
     }
   ],
 
