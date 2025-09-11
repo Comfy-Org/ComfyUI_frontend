@@ -242,4 +242,37 @@ describe('useComboWidget', () => {
     )
     expect(widget).toBe(mockWidget)
   })
+
+  it('should show Select model when asset widget has undefined current value', () => {
+    mockSettingStoreGet.mockReturnValue(true)
+    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+
+    const constructor = useComboWidget()
+    const mockWidget = createMockWidget({
+      type: 'asset',
+      name: 'ckpt_name',
+      value: 'Select model'
+    })
+    const mockNode = createMockNode('CheckpointLoaderSimple')
+    vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
+    const inputSpec = createMockInputSpec({
+      name: 'ckpt_name'
+      // Note: no default, no options, not remote - getDefaultValue returns undefined
+    })
+
+    const widget = constructor(mockNode, inputSpec)
+
+    expect(mockNode.addWidget).toHaveBeenCalledWith(
+      'asset',
+      'ckpt_name',
+      'Select model', // Should fallback to this instead of undefined
+      expect.any(Function)
+    )
+    expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
+    expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
+      'ckpt_name',
+      'CheckpointLoaderSimple'
+    )
+    expect(widget).toBe(mockWidget)
+  })
 })
