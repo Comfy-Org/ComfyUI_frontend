@@ -36,6 +36,7 @@
     v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
+    @wheel.capture="canvasInteractions.forwardEventToCanvas"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <VueGraphNode
@@ -96,6 +97,7 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -147,6 +149,8 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
+const canvasInteractions = useCanvasInteractions()
+
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
