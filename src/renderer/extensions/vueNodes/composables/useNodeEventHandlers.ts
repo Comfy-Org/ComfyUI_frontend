@@ -46,7 +46,7 @@ export function useNodeEventHandlers(nodeManager: Ref<NodeManager | null>) {
         canvasStore.canvas.select(node)
       }
     } else {
-      //  we want to know if the event came after a drag, if after a drag we don't want to deselect other nodes
+      // If it wasn't a drag: single-select the node
       if (!wasDragging) {
         canvasStore.canvas.deselectAll()
         canvasStore.canvas.select(node)

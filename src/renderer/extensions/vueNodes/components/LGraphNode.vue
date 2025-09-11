@@ -154,6 +154,7 @@ const emit = defineEmits<{
     slotIndex: number,
     isInput: boolean
   ]
+  dragStart: [event: DragEvent, nodeData: VueNodeData]
   'update:collapsed': [nodeId: string, collapsed: boolean]
   'update:title': [nodeId: string, newTitle: string]
 }>()
@@ -210,6 +211,8 @@ const dragStyle = computed(() => ({
 }))
 const lastY = ref(0)
 const lastX = ref(0)
+// Treat tiny pointer jitter as a click, not a drag
+const DRAG_THRESHOLD_PX = 4
 
 // Track collapsed state
 const isCollapsed = ref(props.nodeData.flags?.collapsed ?? false)
@@ -269,12 +272,10 @@ const handlePointerUp = (event: PointerEvent) => {
     void endDrag(event)
   }
   // Emit node-click for selection handling in GraphCanvas
-  emit(
-    'node-click',
-    event,
-    props.nodeData,
-    lastX.value !== event.clientX || lastY.value !== event.clientY
-  )
+  const dx = event.clientX - lastX.value
+  const dy = event.clientY - lastY.value
+  const wasDragging = Math.hypot(dx, dy) > DRAG_THRESHOLD_PX
+  emit('node-click', event, props.nodeData, wasDragging)
 }
 
 const handleCollapse = () => {
