@@ -11,7 +11,7 @@ import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
-import { CanvasStabilityChecker } from '../utils/CanvasStabilityStateMachine'
+import { SimplifiedCanvasStabilityChecker } from '../utils/SimplifiedCanvasStabilityChecker'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
@@ -122,7 +122,8 @@ class ConfirmDialog {
 
 export class ComfyPage {
   private _history: TaskHistory | null = null
-  private _canvasStabilityChecker: CanvasStabilityChecker | null = null
+  private _canvasStabilityChecker: SimplifiedCanvasStabilityChecker | null =
+    null
 
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -1631,12 +1632,14 @@ export class ComfyPage {
   /**
    * Get the canvas stability checker, creating it if needed
    */
-  private get canvasStabilityChecker(): CanvasStabilityChecker {
-    this._canvasStabilityChecker ??= new CanvasStabilityChecker({
-      page: this.page,
-      requiredStableChecks: 2,
-      debug: false
-    })
+  private get canvasStabilityChecker(): SimplifiedCanvasStabilityChecker {
+    this._canvasStabilityChecker ??= new SimplifiedCanvasStabilityChecker(
+      this.page,
+      {
+        requiredStableChecks: 2,
+        debug: false
+      }
+    )
     return this._canvasStabilityChecker
   }
 
