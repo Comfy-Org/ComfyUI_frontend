@@ -44,7 +44,7 @@ const activeWidgets = computed({
     activeNode.value.properties.proxyWidgets = pw
     //force trigger an update
     triggerUpdate.value++
-    canvasStore.canvas.setDirty(true)
+    canvasStore.canvas.setDirty(true, true)
   }
 })
 function toggleVisibility(nodeId, widgetName, isShown) {
@@ -65,7 +65,7 @@ function toggleVisibility(nodeId, widgetName, isShown) {
       || p[0] != nodeId})
   }
   triggerUpdate.value++
-  useCanvasStore().canvas.setDirty(true)
+  useCanvasStore().canvas.setDirty(true, true)
 }
 
 const candidateWidgets = computed(() => {
@@ -100,13 +100,13 @@ function showAll() {
     .map(([n,w]) => [n.id, w.name])
   pw.push(...toAdd)
   node.properties.proxyWidgets = pw
-  useCanvasStore().canvas.setDirty(true)
+  useCanvasStore().canvas.setDirty(true, true)
   triggerUpdate.value++
 }
 function hideAll() {
   const node = activeNode.value
   node.properties.proxyWidgets = []
-  useCanvasStore().canvas.setDirty(true)
+  useCanvasStore().canvas.setDirty(true, true)
   triggerUpdate.value++
 }
 
