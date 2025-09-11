@@ -1502,6 +1502,32 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
         return 'Token-based'
       }
     },
+    ByteDanceSeedreamNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const sequentialGenerationWidget = node.widgets?.find(
+          (w) => w.name === 'sequential_image_generation'
+        ) as IComboWidget
+        const maxImagesWidget = node.widgets?.find(
+          (w) => w.name === 'max_images'
+        ) as IComboWidget
+
+        if (!sequentialGenerationWidget || !maxImagesWidget)
+          return '$0.03/Run ($0.03 for one output image)'
+
+        if (
+          String(sequentialGenerationWidget.value).toLowerCase() === 'disabled'
+        ) {
+          return '$0.03/Run'
+        }
+
+        const maxImages = Number(maxImagesWidget.value)
+        if (maxImages === 1) {
+          return '$0.03/Run'
+        }
+        const cost = (0.03 * maxImages).toFixed(2)
+        return `$${cost}/Run ($0.03 for one output image)`
+      }
+    },
     ByteDanceTextToVideoNode: {
       displayPrice: byteDanceVideoPricingCalculator
     },
@@ -1604,6 +1630,11 @@ export const useNodePricing = () => {
       // ByteDance
       ByteDanceImageNode: ['model'],
       ByteDanceImageEditNode: ['model'],
+      ByteDanceSeedreamNode: [
+        'model',
+        'sequential_image_generation',
+        'max_images'
+      ],
       ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
       ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
       ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
