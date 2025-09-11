@@ -12,7 +12,12 @@
         </template>
         <template #end>
           <div
-            class="flex flex-row motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 transition-all duration-200"
+            :class="
+              cn(
+                'flex flex-row motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 transition-all duration-200',
+                '[&_.p-button]:py-1 [&_.p-button]:2xl:py-2'
+              )
+            "
           >
             <slot name="tool-buttons" />
           </div>
@@ -31,6 +36,8 @@
 import ScrollPanel from 'primevue/scrollpanel'
 import Toolbar from 'primevue/toolbar'
 
+import { cn } from '@/utils/tailwindUtil'
+
 const props = defineProps<{
   title: string
   class?: string
@@ -38,13 +45,9 @@ const props = defineProps<{
 </script>
 
 <style scoped>
-@reference '../../../assets/css/style.css';
-
-:deep(.p-toolbar-end) .p-button {
-  @apply py-1 2xl:py-2;
-}
-
 :deep(.p-toolbar-start) {
-  @apply min-w-0 flex-1 overflow-hidden;
+  min-width: 0;
+  flex: 1;
+  overflow: clip;
 }
 </style>

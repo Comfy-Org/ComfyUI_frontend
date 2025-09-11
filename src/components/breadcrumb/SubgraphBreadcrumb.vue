@@ -1,6 +1,6 @@
 <template>
   <div
-    class="subgraph-breadcrumb w-auto"
+    class="subgraph-breadcrumb overflow-hidden w-auto"
     :class="{
       'subgraph-breadcrumb-collapse': collapseTabs,
       'subgraph-breadcrumb-overflow': overflowingTabs
@@ -14,7 +14,7 @@
   >
     <Breadcrumb
       ref="breadcrumbRef"
-      class="bg-transparent p-0"
+      class="bg-transparent p-0 overflow-clip"
       :model="items"
       aria-label="Graph navigation"
     >
@@ -161,21 +161,17 @@ onUpdated(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .subgraph-breadcrumb:not(:empty) {
   flex: auto;
   flex-shrink: 10000;
   min-width: 120px;
 }
 
-.subgraph-breadcrumb,
-:deep(.p-breadcrumb) {
-  @apply overflow-hidden;
-}
-
 :deep(.p-breadcrumb-item) {
-  @apply flex items-center rounded-lg overflow-hidden;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-lg);
+  overflow: clip;
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
   /* Collapse middle items first */
   flex-shrink: 10000;
@@ -203,18 +199,16 @@ onUpdated(() => {
 </style>
 
 <style>
-@reference '../../assets/css/style.css';
-
 .subgraph-breadcrumb-collapse .p-breadcrumb-list {
   .p-breadcrumb-item,
   .p-breadcrumb-separator {
-    @apply hidden;
+    display: none;
   }
 
   .p-breadcrumb-item:nth-last-child(3),
   .p-breadcrumb-separator:nth-last-child(2),
   .p-breadcrumb-item:nth-last-child(1) {
-    @apply block;
+    display: block;
   }
 }
 </style>
