@@ -56,7 +56,7 @@ describe('useCanvasInteractions', () => {
   })
 
   describe('handlePointer', () => {
-    it('should forward space+drag events to canvas when read_only is true', () => {
+    it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {
       const { getCanvas } = useCanvasStore()
       const mockCanvas = createMockLGraphCanvas(true)
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
@@ -89,10 +89,9 @@ describe('useCanvasInteractions', () => {
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointer } = useCanvasInteractions()
 
-      const mockEvent = createMockPointerEvent(1) // Left Mouse Button
+      const mockEvent = createMockPointerEvent(1)
       handlePointer(mockEvent)
 
-      // Should not prevent default (let media handle normally)
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
@@ -102,11 +101,9 @@ describe('useCanvasInteractions', () => {
       vi.mocked(getCanvas).mockReturnValue(null as unknown as LGraphCanvas) // TODO: Fix misaligned types
       const { handlePointer } = useCanvasInteractions()
 
-      // Create mock pointer event that would normally trigger forwarding
-      const mockEvent = createMockPointerEvent(1) // Left mouse button - would trigger space+drag if canvas had read_only=true
+      const mockEvent = createMockPointerEvent(1)
       handlePointer(mockEvent)
 
-      // Verify early return - no event methods should be called at all
       expect(getCanvas).toHaveBeenCalled()
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
@@ -120,8 +117,8 @@ describe('useCanvasInteractions', () => {
 
       const { handleWheel } = useCanvasInteractions()
 
-      // Create mock wheel event with ctrl key
-      const mockEvent = createMockWheelEvent(true, false)
+      // Ctrl key pressed
+      const mockEvent = createMockWheelEvent(true)
 
       handleWheel(mockEvent)
 
@@ -134,8 +131,7 @@ describe('useCanvasInteractions', () => {
       vi.mocked(get).mockReturnValue('legacy')
       const { handleWheel } = useCanvasInteractions()
 
-      // Create mock wheel event without modifiers
-      const mockEvent = createMockWheelEvent(false, false)
+      const mockEvent = createMockWheelEvent()
       handleWheel(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
@@ -147,11 +143,9 @@ describe('useCanvasInteractions', () => {
       vi.mocked(get).mockReturnValue('standard')
       const { handleWheel } = useCanvasInteractions()
 
-      // Create mock wheel event without modifiers
-      const mockEvent = createMockWheelEvent(false, false)
+      const mockEvent = createMockWheelEvent()
       handleWheel(mockEvent)
 
-      // Verify - should not prevent default (let component handle normally)
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
