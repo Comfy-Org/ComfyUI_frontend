@@ -79,8 +79,6 @@ const sidebarStateKey = computed(() => {
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
 :deep(.p-splitter-gutter) {
   pointer-events: auto;
 }
@@ -102,11 +100,16 @@ const sidebarStateKey = computed(() => {
 }
 
 .splitter-overlay {
-  @apply bg-transparent pointer-events-none border-none;
+  background: transparent;
+  border-style: none;
+  pointer-events: none;
 }
 
 .splitter-overlay-root {
-  @apply w-full h-full absolute top-0 left-0;
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
 
   /* Set it the same as the ComfyUI menu */
   /* Note: Lite-graph DOM widgets have the same z-index as the node id, so
