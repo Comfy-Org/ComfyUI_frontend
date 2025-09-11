@@ -75,7 +75,7 @@ function toggleVisibility(nodeId, widgetName, isShown) {
 }
 
 const candidateWidgets = computed(() => {
-  const node = canvasStore.selectedItems[0] ?? {}
+  const node = canvasStore.selectedItems[0]
   if(!node) return []
   triggerUpdate.value//mark dependent
   const pw = node.properties.proxyWidgets ?? []
@@ -99,6 +99,13 @@ const filteredCandidates = computed(() => {
     || w.name.toLowerCase().includes(query)
   )
 })
+function showAll() {
+  console.log('showall')
+}
+function hideAll() {
+  console.log('hideall')
+}
+
 const filteredActive = computed(() => {
   const query = searchQuery.value.toLowerCase()
   if (!query) {
@@ -127,6 +134,10 @@ const filteredActive = computed(() => {
     </template>
     <template #body>
       <div class="widgets-section">
+        <div class="widgets-section-header">
+          <div> {{t('subgraphStore.shown')}}</div>
+          <a @click.stop="showAll" > {{t('subgraphStore.showAll')}}</a>
+        </div>
         <div v-if="searchQuery"
           v-for="element in filteredActive" class="widget-container">
           <SubgraphNodeWidget :item="element" :node="activeNode"
@@ -135,7 +146,9 @@ const filteredActive = computed(() => {
       <draggable
           v-model="activeWidgets"
           group="enabledWidgets"
-          class="widget-container"
+          class="widget-container draggable-item"
+          chosenClass="dragged-item"
+          dragClass="dragged-item"
           :animation="100"
           @start="drag=true"
           @end="drag=false"
@@ -148,6 +161,10 @@ const filteredActive = computed(() => {
       </draggable>
       </div>
       <div class="widgets-section">
+        <div class="widgets-section-header">
+          <div> {{t('subgraphStore.hidden')}}</div>
+          <a @click.stop="hideAll"> {{t('subgraphStore.hideAll')}}</a>
+        </div>
         <div v-for="element in filteredCandidates" class="widget-container">
           <SubgraphNodeWidget :item="element" :node="activeNode"
           :toggleVisibility="toggleVisibility"/>
@@ -160,6 +177,36 @@ const filteredActive = computed(() => {
 .widget-container {
   width: 100%
 }
+.widgets-section-header {
+  display: flex;
+  padding: 0 16px;
+  justify-content: space-between;
+  align-items: flex-end;
+  align-self: stretch;
+}
+.widgets-section-header div {
+  color: var(--color-text-secondary, #9C9EAB);
+  /* body-text-badge */
+  font-family: Inter;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  text-transform: uppercase;
+}
+.widgets-section-header a {
+  cursor: pointer;
+  color: var(--color-base-blue-primary, #0B8CE9);
+  text-align: right;
+
+  /* body-text-caption */
+  font-family: Inter;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
 .widgets-section {
   display: flex;
 
@@ -169,4 +216,11 @@ const filteredActive = computed(() => {
   align-self: stretch;
   border-bottom: 1px solid var(--color-node-divider, #2E3037);
 }
+.dragged-item {
+  cursor: grabbing;
+}
+.draggable-item {
+  cursor: grab;
+}
+
 </style>

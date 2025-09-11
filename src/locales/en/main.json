@@ -963,7 +963,11 @@
     "publish": "Publish Subgraph",
     "publishSuccess": "Saved to Nodes Library",
     "publishSuccessMessage": "You can find your subgraph blueprint in the nodes library under \"Subgraph Blueprints\"",
-    "loadFailure": "Failed to load subgraph blueprints"
+    "loadFailure": "Failed to load subgraph blueprints",
+    "shown": "Shown on node",
+    "showAll": "Show all",
+    "hidden": "Hidden / nested parameters",
+    "hideAll": "Hide all"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
