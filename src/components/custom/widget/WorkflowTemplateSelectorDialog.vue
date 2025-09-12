@@ -135,6 +135,7 @@
         <!-- Template Cards Grid -->
         <div
           class="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-x-4 gap-y-6 px-4 py-4"
+          data-testid="template-workflows-content"
         >
           <CardContainer
             v-for="template in displayTemplates"
@@ -144,6 +145,7 @@
             :max-width="300"
             :min-width="200"
             class="cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+            :data-testid="`template-workflow-${template.name}`"
             @mouseenter="hoveredTemplates[template.name] = true"
             @mouseleave="hoveredTemplates[template.name] = false"
             @click="onLoadWorkflow(template)"
