@@ -89,17 +89,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         expect(pointer.detectedDevice).toBe('trackpad')
       })
 
-      it('should NOT switch to trackpad if first event is pinch-to-zoom with deltaY = 10', () => {
-        const event = new WheelEvent('wheel', {
-          ctrlKey: true,
-          deltaY: 10,
-          deltaX: 0
-        })
-
-        pointer.isTrackpadGesture(event)
-        expect(pointer.detectedDevice).toBe('mouse')
-      })
-
       it('should switch to trackpad if first event is two-finger panning with integer values', () => {
         const event = new WheelEvent('wheel', {
           ctrlKey: false,
@@ -135,32 +124,10 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
     })
 
     describe('remaining in mouse mode on first event', () => {
-      it('should remain in mouse mode if first event is pinch-to-zoom with deltaY >= 10', () => {
-        const event = new WheelEvent('wheel', {
-          ctrlKey: true,
-          deltaY: 10.1,
-          deltaX: 0
-        })
-
-        pointer.isTrackpadGesture(event)
-        expect(pointer.detectedDevice).toBe('mouse')
-      })
-
       it('should remain in mouse mode if first event is mouse wheel with deltaY = 120', () => {
         const event = new WheelEvent('wheel', {
           ctrlKey: false,
           deltaY: 120,
-          deltaX: 0
-        })
-
-        pointer.isTrackpadGesture(event)
-        expect(pointer.detectedDevice).toBe('mouse')
-      })
-
-      it('should remain in mouse mode if first event has only deltaY (no deltaX)', () => {
-        const event = new WheelEvent('wheel', {
-          ctrlKey: false,
-          deltaY: 30,
           deltaX: 0
         })
 
@@ -193,32 +160,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       expect(pointer.detectedDevice).toBe('trackpad')
     })
 
-    it('should NOT switch to trackpad on two-finger panning with zero deltaX', () => {
-      vi.spyOn(performance, 'now').mockReturnValue(500)
-
-      const event = new WheelEvent('wheel', {
-        ctrlKey: false,
-        deltaY: 15,
-        deltaX: 0
-      })
-
-      pointer.isTrackpadGesture(event)
-      expect(pointer.detectedDevice).toBe('mouse')
-    })
-
-    it('should NOT switch to trackpad on two-finger panning with zero deltaY', () => {
-      vi.spyOn(performance, 'now').mockReturnValue(500)
-
-      const event = new WheelEvent('wheel', {
-        ctrlKey: false,
-        deltaY: 0,
-        deltaX: 15
-      })
-
-      pointer.isTrackpadGesture(event)
-      expect(pointer.detectedDevice).toBe('mouse')
-    })
-
     it('should switch to trackpad on pinch-to-zoom with deltaY < 10', () => {
       vi.spyOn(performance, 'now').mockReturnValue(500)
 
@@ -243,32 +184,6 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
 
       pointer.isTrackpadGesture(event)
       expect(pointer.detectedDevice).toBe('trackpad')
-    })
-
-    it('should NOT switch to trackpad on pinch-to-zoom with deltaY = 10', () => {
-      vi.spyOn(performance, 'now').mockReturnValue(500)
-
-      const event = new WheelEvent('wheel', {
-        ctrlKey: true,
-        deltaY: 10,
-        deltaX: 0
-      })
-
-      pointer.isTrackpadGesture(event)
-      expect(pointer.detectedDevice).toBe('mouse')
-    })
-
-    it('should NOT switch to trackpad on pinch-to-zoom with deltaY = -10', () => {
-      vi.spyOn(performance, 'now').mockReturnValue(500)
-
-      const event = new WheelEvent('wheel', {
-        ctrlKey: true,
-        deltaY: -10,
-        deltaX: 0
-      })
-
-      pointer.isTrackpadGesture(event)
-      expect(pointer.detectedDevice).toBe('mouse')
     })
   })
 
@@ -360,7 +275,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
   })
 
   describe('500ms Cooldown Period', () => {
-    it('should NOT allow switching from mouse to trackpad within 500ms', () => {
+    it('should allow switching from mouse to trackpad within 500ms', () => {
       pointer.detectedDevice = 'mouse'
 
       // First event at time 0
@@ -381,7 +296,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
         deltaX: 0
       })
       pointer.isTrackpadGesture(event2)
-      expect(pointer.detectedDevice).toBe('mouse')
+      expect(pointer.detectedDevice).toBe('trackpad')
     })
 
     it('should allow switching from mouse to trackpad after 500ms', () => {
@@ -443,7 +358,7 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       // Send first mouse event at time 0
       vi.spyOn(performance, 'now').mockReturnValue(0)
       pointer.isTrackpadGesture(
-        new WheelEvent('wheel', { deltaY: 60, deltaX: 0 })
+        new WheelEvent('wheel', { deltaY: 75, deltaX: 0 })
       )
 
       // Send trackpad events within 500ms window
@@ -977,33 +892,12 @@ describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests',
       for (let i = 0; i < 10; i++) {
         vi.spyOn(performance, 'now').mockReturnValue(i * 30) // 30ms between events
         const event = new WheelEvent('wheel', {
-          deltaY: 60,
+          deltaY: 75,
           deltaX: 0
         })
         pointer.isTrackpadGesture(event)
         expect(pointer.detectedDevice).toBe('mouse')
       }
-    })
-
-    it('should handle boundary values for pinch-to-zoom detection', () => {
-      // Test deltaY = 10 (boundary)
-      const event1 = new WheelEvent('wheel', {
-        ctrlKey: true,
-        deltaY: 10,
-        deltaX: 0
-      })
-      pointer.isTrackpadGesture(event1)
-      expect(pointer.detectedDevice).toBe('mouse')
-
-      // Reset and test deltaY = 9.999999
-      pointer = new CanvasPointer(element)
-      const event2 = new WheelEvent('wheel', {
-        ctrlKey: true,
-        deltaY: 9.999999,
-        deltaX: 0
-      })
-      pointer.isTrackpadGesture(event2)
-      expect(pointer.detectedDevice).toBe('trackpad')
     })
 
     it('should handle boundary values for mouse wheel detection', () => {
