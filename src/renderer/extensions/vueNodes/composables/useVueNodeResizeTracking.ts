@@ -17,7 +17,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 
-import { remeasureNodeSlotsNow } from './useSlotElementTracking'
+import { syncNodeSlotLayoutsNow } from './useSlotElementTracking'
 
 // Per-element conversion context
 const elementConversion = new WeakMap<
@@ -68,8 +68,8 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 const resizeObserver = new ResizeObserver((entries) => {
   // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
-  // Track nodes whose slots should be remeasured after node size changes
-  const nodesNeedingSlotRemeasure = new Set<string>()
+  // Track nodes whose slots should be resynced after node size changes
+  const nodesNeedingSlotResync = new Set<string>()
 
   // Read container origin once per batch via cache
   const { left: originLeft, top: originTop } = getCanvasClientOrigin()
@@ -130,9 +130,9 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
     updates.push({ id: elementId, bounds })
 
-    // If this entry is a node, mark it for slot remeasure
+    // If this entry is a node, mark it for slot layout resync
     if (elementType === 'node' && elementId) {
-      nodesNeedingSlotRemeasure.add(elementId)
+      nodesNeedingSlotResync.add(elementId)
     }
   }
 
@@ -143,9 +143,9 @@ const resizeObserver = new ResizeObserver((entries) => {
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts
-  if (nodesNeedingSlotRemeasure.size > 0) {
-    for (const nodeId of nodesNeedingSlotRemeasure) {
-      remeasureNodeSlotsNow(nodeId, { left: originLeft, top: originTop })
+  if (nodesNeedingSlotResync.size > 0) {
+    for (const nodeId of nodesNeedingSlotResync) {
+      syncNodeSlotLayoutsNow(nodeId, { left: originLeft, top: originTop })
     }
   }
 })

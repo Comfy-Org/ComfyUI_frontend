@@ -35,17 +35,17 @@ const nodeRegistry = new Map<string, NodeEntry>()
 const pendingNodes = new Set<string>()
 let rafId: number | null = null
 
-function scheduleNodeMeasure(nodeId: string) {
+function scheduleSlotLayoutSync(nodeId: string) {
   pendingNodes.add(nodeId)
   if (rafId == null) {
     rafId = requestAnimationFrame(() => {
       rafId = null
-      runBatchedMeasure()
+      flushScheduledSlotLayoutSync()
     })
   }
 }
 
-function runBatchedMeasure() {
+function flushScheduledSlotLayoutSync() {
   if (pendingNodes.size === 0) return
 
   // Read container origin once from cache
@@ -53,11 +53,11 @@ function runBatchedMeasure() {
 
   for (const nodeId of Array.from(pendingNodes)) {
     pendingNodes.delete(nodeId)
-    measureNodeSlotsNow(nodeId, originLeft, originTop)
+    syncNodeSlotLayoutsFromDOM(nodeId, originLeft, originTop)
   }
 }
 
-function measureNodeSlotsNow(
+function syncNodeSlotLayoutsFromDOM(
   nodeId: string,
   originLeft?: number,
   originTop?: number
@@ -125,8 +125,8 @@ function updateNodeSlotsFromCache(nodeId: string) {
 
   for (const [slotKey, entry] of node.slots) {
     if (!entry.cachedOffset) {
-      // schedule a remeasure to seed offset
-      scheduleNodeMeasure(nodeId)
+      // schedule a sync to seed offset
+      scheduleSlotLayoutSync(nodeId)
       continue
     }
 
@@ -196,7 +196,7 @@ export function useSlotElementTracking(options: {
               newLayout.size.height !== oldLayout.size.height
 
             // Only update from cache on move-only changes.
-            // On resizes (or move+resize), let ResizeObserver remeasure slots accurately.
+            // On resizes (or move+resize), let ResizeObserver resync slots from DOM accurately.
             if (moved && !resized) {
               updateNodeSlotsFromCache(nodeId)
             }
@@ -211,8 +211,8 @@ export function useSlotElementTracking(options: {
     const slotKey = getSlotKey(nodeId, index, isInput)
     node.slots.set(slotKey, { el, index, isInput })
 
-    // Seed measurement
-    scheduleNodeMeasure(nodeId)
+    // Seed initial sync from DOM
+    scheduleSlotLayoutSync(nodeId)
   })
 
   onUnmounted(() => {
@@ -233,13 +233,18 @@ export function useSlotElementTracking(options: {
   })
 
   return {
-    remeasure: () => scheduleNodeMeasure(nodeId)
+    requestSlotLayoutSync: () => scheduleSlotLayoutSync(nodeId)
   }
 }
 
-export function remeasureNodeSlotsNow(
+export function syncNodeSlotLayoutsNow(
   nodeId: string,
   origin?: { left: number; top: number }
 ) {
-  measureNodeSlotsNow(nodeId, origin?.left, origin?.top)
+  syncNodeSlotLayoutsFromDOM(nodeId, origin?.left, origin?.top)
+}
+
+// Optional helper for callers that are not using the composable
+export function requestSlotLayoutSync(nodeId: string) {
+  scheduleSlotLayoutSync(nodeId)
 }
