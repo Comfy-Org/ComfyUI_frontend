@@ -41,8 +41,9 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       :class="
         cn(
           'bg-node-stroke relative grow overflow-hidden rounded-full',
+          'cursor-pointer',
           'data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-full',
-          'data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5'
+          'data-[orientation=vertical]:h-full data-[orientation=vertical]:w-0.5'
         )
       "
     >
@@ -56,9 +57,11 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       v-for="(_, key) in modelValue"
       :key="key"
       data-slot="slider-thumb"
+      tabindex="0"
       :class="
         cn(
           'bg-node-component-surface-highlight ring-node-component-surface-selected block size-3.5 shrink-0 rounded-full shadow-sm transition-[color,box-shadow]',
+          'cursor-grab',
           'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50'
         )
       "

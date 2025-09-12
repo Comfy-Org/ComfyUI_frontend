@@ -19,7 +19,7 @@ defineProps<{
       {{ widget.name }}
     </p>
     <div
-      class="w-75"
+      class="w-75 cursor-default"
       @pointerdown.stop="noop"
       @pointermove.stop="noop"
       @pointerup.stop="noop"
