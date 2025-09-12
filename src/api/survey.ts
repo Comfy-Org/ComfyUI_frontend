@@ -1,6 +1,6 @@
 // Mock API for survey submission
 // TODO: Replace with actual API calls when backend is ready
-import { completeSurvey } from './simpleAuth'
+import { completeSurvey } from './auth'
 
 export interface SurveyPayload {
   useCase?: string

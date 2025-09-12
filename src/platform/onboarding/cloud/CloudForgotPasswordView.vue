@@ -1,3 +1,4 @@
+<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <BaseViewTemplate dark>
     <div class="flex items-center justify-center min-h-screen p-8">
@@ -65,8 +66,13 @@
         <!-- Help text -->
         <p class="text-xs text-muted mt-8 text-center">
           {{ t('cloudOnboarding.forgotPassword.didntReceiveEmail') }}
-          <a href="mailto:hello@comfy.org" class="text-blue-500 cursor-pointer">
-            hello@comfy.org
+          <a
+            href="https://support.comfy.org"
+            class="text-blue-500 cursor-pointer"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            support.comfy.org
           </a>
         </p>
       </div>

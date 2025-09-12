@@ -9,7 +9,7 @@
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { verifyEmail } from '@/api/simpleAuth'
+import { verifyEmail } from '@/api/auth'
 
 const route = useRoute()
 

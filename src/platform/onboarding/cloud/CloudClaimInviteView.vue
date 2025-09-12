@@ -1,8 +1,15 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
-  <div class="cloud-claim-invite">
-    <h1>Processing Invite Code...</h1>
-    <button @click="onClaim">Claim Invite</button>
+  <div
+    class="flex flex-col justify-center items-center h-screen font-mono text-black gap-4"
+  >
+    <h1 class="text-2xl">Processing Invite Code...</h1>
+    <button
+      class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
+      @click="onClaim"
+    >
+      Claim Invite
+    </button>
   </div>
 </template>
 
@@ -10,7 +17,7 @@
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { claimInvite } from '@/api/simpleAuth'
+import { claimInvite } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -63,14 +70,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.cloud-claim-invite {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-family: monospace;
-  color: #000;
-}
-</style>

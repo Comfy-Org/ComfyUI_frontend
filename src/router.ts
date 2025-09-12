@@ -6,7 +6,7 @@ import {
   createWebHistory
 } from 'vue-router'
 
-import { getMe } from '@/api/me'
+import { getMe } from '@/api/auth'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
@@ -81,13 +81,13 @@ const router = createRouter({
             // Check onboarding status first
             const me = await getMe()
             if (me) {
-              const emailVerified =
-                localStorage.getItem('emailVerified') === 'true'
+              // const emailVerified =
+              //   localStorage.getItem('emailVerified') === 'true'
 
-              if (!emailVerified) {
-                return next('/verify-email')
-              }
-              if (!me.surveyTaken) {
+              // if (!emailVerified) {
+              //   return next('/verify-email')
+              // }
+              if (!me.surveyCompleted) {
                 return next('/survey')
               }
               if (!me.whitelisted) {
@@ -218,7 +218,7 @@ router.beforeEach(async (to, _from, next) => {
     ) {
       try {
         const me = await getMe()
-        if (me && !me.surveyTaken) {
+        if (me && !me.surveyCompleted) {
           return next({ name: 'cloud-survey' })
         }
         if (me && !me.whitelisted) {

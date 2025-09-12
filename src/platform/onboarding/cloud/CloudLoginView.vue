@@ -1,3 +1,4 @@
+<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <BaseViewTemplate dark>
     <div class="flex items-center justify-center min-h-screen p-8">
@@ -73,9 +74,14 @@
             {{ t('auth.login.privacyLink') }} </a
           >.
           {{ t('auth.login.questionsContactPrefix') }}
-          <a href="mailto:hello@comfy.org" class="text-blue-500 cursor-pointer">
-            hello@comfy.org</a
-          >.
+          <a
+            href="https://support.comfy.org"
+            class="text-blue-500 cursor-pointer"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            support.comfy.org
+          </a>
         </p>
       </div>
     </div>
@@ -90,7 +96,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getMe } from '@/api/me'
+import { getMe } from '@/api/auth'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
 import { type SignInData } from '@/schemas/signInSchema'
@@ -129,7 +135,7 @@ const onSuccess = async () => {
       const me = await getMe()
       const redirectPath = route.query.redirect as string
 
-      if (me && !me.surveyTaken) {
+      if (me && !me.surveyCompleted) {
         await router.push({ name: 'cloud-survey' })
       } else if (me && !me.whitelisted) {
         await router.push({ name: 'cloud-waitlist' })

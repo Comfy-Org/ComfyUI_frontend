@@ -1,3 +1,4 @@
+<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
   <BaseViewTemplate dark>
     <div class="flex items-center justify-center min-h-screen p-8">
@@ -78,9 +79,14 @@
             {{ t('auth.login.privacyLink') }} </a
           >.
           {{ t('auth.login.questionsContactPrefix') }}
-          <a href="mailto:hello@comfy.org" class="text-blue-500 cursor-pointer">
-            hello@comfy.org</a
-          >.
+          <a
+            href="https://support.comfy.org"
+            class="text-blue-500 cursor-pointer"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            support.comfy.org
+          </a>
         </p>
       </div>
     </div>
@@ -95,7 +101,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getMe } from '@/api/me'
+import { getMe } from '@/api/auth'
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { SignUpData } from '@/schemas/signInSchema'
@@ -121,7 +127,7 @@ const onSuccess = async () => {
     const me = await getMe()
 
     // Navigate based on user status
-    if (me && !me.surveyTaken) {
+    if (me && !me.surveyCompleted) {
       void router.push({ name: 'cloud-survey' })
     } else if (me && !me.whitelisted) {
       void router.push({ name: 'cloud-waitlist' })

@@ -1,6 +1,8 @@
 <template>
-  <div class="cloud-invite-entry">
-    <h1>{{ inviteCode }}</h1>
+  <div
+    class="flex flex-col justify-center items-center h-screen font-mono gap-4"
+  >
+    <h1 class="text-2xl">{{ inviteCode }}</h1>
   </div>
 </template>
 
@@ -11,27 +13,9 @@ import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 const inviteCode = computed(
-  () => (route.params.inviteCode as string) || 'No code provided'
+  (): string => (route.params.inviteCode as string) || 'No code provided'
 )
 onMounted(() => {
   void router.push({ path: '/login', query: { inviteCode: inviteCode.value } })
 })
 </script>
-
-<style scoped>
-.cloud-invite-entry {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-family: monospace;
-  gap: 1rem;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  margin: 0.25rem;
-  cursor: pointer;
-}
-</style>

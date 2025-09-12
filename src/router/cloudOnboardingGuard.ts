@@ -1,6 +1,6 @@
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 
-import { getAuthStatus } from '@/api/simpleAuth'
+import { getAuthStatus } from '@/api/auth'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 export async function cloudOnboardingGuard(
