@@ -1,3 +1,4 @@
+import './setup-browser-globals.js'
 import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
