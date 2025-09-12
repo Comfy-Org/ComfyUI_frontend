@@ -1,17 +1,16 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import InputNumber from 'primevue/inputnumber'
-import Slider from 'primevue/slider'
-import type { SliderProps } from 'primevue/slider'
 import { describe, expect, it } from 'vitest'
 
+import Slider from '@/components/ui/slider/Slider.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 
 function createMockWidget(
   value: number = 5,
-  options: Partial<SliderProps & { precision?: number }> = {},
+  options: SimplifiedWidget['options'] = {},
   callback?: (value: number) => void
 ): SimplifiedWidget<number> {
   return {
@@ -129,6 +128,48 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       const slider = wrapper.findComponent({ name: 'Slider' })
       expect(slider.props('min')).toBe(-100)
       expect(slider.props('max')).toBe(100)
+    })
+
+    describe('Step Size', () => {
+      it('should default to 1', () => {
+        const widget = createMockWidget(5)
+        const wrapper = mountComponent(widget, 5)
+
+        const slider = wrapper.findComponent({ name: 'Slider' })
+        expect(slider.props('step')).toBe(1)
+      })
+
+      it('should get the step2 value if present', () => {
+        const widget = createMockWidget(5, { step2: 0.01 })
+        const wrapper = mountComponent(widget, 5)
+
+        const slider = wrapper.findComponent({ name: 'Slider' })
+        expect(slider.props('step')).toBe(0.01)
+      })
+
+      it('should be 1 for precision 0', () => {
+        const widget = createMockWidget(5, { precision: 0 })
+        const wrapper = mountComponent(widget, 5)
+
+        const slider = wrapper.findComponent({ name: 'Slider' })
+        expect(slider.props('step')).toBe(1)
+      })
+
+      it('should be .1 for precision 1', () => {
+        const widget = createMockWidget(5, { precision: 1 })
+        const wrapper = mountComponent(widget, 5)
+
+        const slider = wrapper.findComponent({ name: 'Slider' })
+        expect(slider.props('step')).toBe(0.1)
+      })
+
+      it('should be .00001 for precision 5', () => {
+        const widget = createMockWidget(5, { precision: 5 })
+        const wrapper = mountComponent(widget, 5)
+
+        const slider = wrapper.findComponent({ name: 'Slider' })
+        expect(slider.props('step')).toBe(0.00001)
+      })
     })
   })
 })
