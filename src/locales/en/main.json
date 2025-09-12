@@ -524,27 +524,6 @@
     "errorMessage": "Unable to start ComfyUI Desktop",
     "installation": {
       "title": "Installing ComfyUI"
-    },
-    "process": {
-      "initial-state": "Loading...",
-      "python-setup": "Setting up Python Environment...",
-      "starting-server": "Starting ComfyUI server...",
-      "ready": "Loading Human Interface",
-      "error": "Unable to start ComfyUI Desktop"
-    },
-    "status": {
-      "initializing": "Initializing",
-      "settingUpPython": "Python Setup",
-      "startingServer": "Starting Server",
-      "ready": "Ready",
-      "error": "Error"
-    },
-    "statusDescriptions": {
-      "initializing": "Preparing ComfyUI environment",
-      "settingUpPython": "Configuring Python environment and dependencies",
-      "startingServer": "Launching ComfyUI server process",
-      "ready": "ComfyUI is ready to use",
-      "error": "An error occurred during startup"
     }
   },
   "installationProgress": {
