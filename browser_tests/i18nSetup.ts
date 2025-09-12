@@ -13,63 +13,54 @@ const litegraphSrcDir = path.join(rootDir, 'src/lib/litegraph/src')
 
 const backupMap = new Map<string, string>()
 
-/**
- * Find all TypeScript files in litegraph that contain 'declare' keywords
- * perf: this fn reads about 90+ files and costs 70ms
- */
-async function findFilesWithDeclare(): Promise<string[]> {
+export async function preprocessLitegraph() {
+  console.log('Preprocessing litegraph files for i18n collection...')
+
   // Search for all .ts files in litegraph src directory
   const pattern = path.join(litegraphSrcDir, '**/*.ts')
   const files = await glob(pattern, {
     ignore: ['**/*.test.ts', '**/*.spec.ts', '**/node_modules/**']
   })
-  // Filter to only files that actually contain 'declare' keyword
-  const filesWithDeclare = await Promise.all(
+
+  let processedCount = 0
+
+  // Process files in parallel - read once and process if needed
+  await Promise.all(
     files.map(async (filePath) => {
       try {
-        const content = await fs.readFile(filePath, 'utf-8')
+        const originalContent = await fs.readFile(filePath, 'utf-8')
+
         // Check for class property declarations with 'declare' keyword
-        return /^\s*declare\s+/m.test(content) ? filePath : null
-      } catch (error) {
-        console.warn(`  ⚠ Could not read ${filePath}: ${error.message}`)
-        return null
+        if (!/^\s*declare\s+/m.test(originalContent)) {
+          return // Skip files without declare keywords
+        }
+
+        // Store original content in memory
+        backupMap.set(filePath, originalContent)
+
+        // Remove 'declare' keyword from class properties
+        const modifiedContent = originalContent.replace(
+          /^(\s*)declare\s+/gm,
+          '$1// @ts-ignore - removed declare for Playwright\n$1'
+        )
+
+        // Write modified content
+        await fs.writeFile(filePath, modifiedContent)
+        console.log(`  ✓ Processed ${path.relative(litegraphSrcDir, filePath)}`)
+        processedCount++
+      } catch (error: unknown) {
+        console.warn(
+          `  ⚠ Could not process ${filePath}: ${String((error as Error)?.message || error)}`
+        )
       }
     })
   )
 
-  return filesWithDeclare.filter((file): file is string => file !== null)
-}
-
-export async function preprocessLitegraph() {
-  console.log('Preprocessing litegraph files for i18n collection...')
-
-  const filesToProcess = await findFilesWithDeclare()
-
-  if (filesToProcess.length === 0) {
+  if (processedCount === 0) {
     console.log('  ℹ No files with declare keywords found')
-    return
+  } else {
+    console.log(`  Processed ${processedCount} files with declare keywords`)
   }
-
-  console.log(`  Found ${filesToProcess.length} files with declare keywords`)
-
-  await Promise.all(
-    filesToProcess.map(async (filePath) => {
-      const originalContent = await fs.readFile(filePath, 'utf-8')
-
-      // Store original content in memory
-      backupMap.set(filePath, originalContent)
-
-      // Remove 'declare' keyword from class properties
-      const modifiedContent = originalContent.replace(
-        /^(\s*)declare\s+/gm,
-        '$1// @ts-ignore - removed declare for Playwright\n$1'
-      )
-
-      // Write modified content
-      await fs.writeFile(filePath, modifiedContent)
-      console.log(`  ✓ Processed ${path.relative(litegraphSrcDir, filePath)}`)
-    })
-  )
 }
 
 export async function restoreLitegraph() {
