@@ -1,4 +1,8 @@
 import { defineConfig } from '@playwright/test'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const config: any = defineConfig({
   testDir: './scripts',
@@ -22,7 +26,7 @@ const config: any = defineConfig({
 config['@playwright/test'] = {
   babelPlugins: [
     // Stub Vue and CSS imports first to prevent parsing errors
-    ['babel-plugin-stub-vue-imports'],
+    [path.join(__dirname, 'babel-plugin-stub-vue-imports.cjs')],
     // Module resolver to handle @ alias
     [
       'babel-plugin-module-resolver',
