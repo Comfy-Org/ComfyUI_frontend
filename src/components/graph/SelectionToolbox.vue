@@ -103,12 +103,11 @@ const {
   isSingleNode,
   isSingleSubgraph,
   isSingleImageNode,
-  hasAny3DNodeSelected
+  hasAny3DNodeSelected,
+  nodeDef
 } = useSelectionState()
 
-const showInfoButton = computed(
-  () => isSingleNode.value || isSingleSubgraph.value
-)
+const showInfoButton = computed(() => !!nodeDef.value)
 
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
