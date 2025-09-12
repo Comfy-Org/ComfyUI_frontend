@@ -3623,14 +3623,17 @@ export class LGraphCanvas
 
     let { scale } = this.ds
 
-    // Detect if this is a trackpad gesture or mouse wheel
+    // Detect if this is a trackpad gesture or mouse wheel (but not accurate on some cases)
     const isTrackpad = this.pointer.isTrackpadGesture(e)
-    const isCtrlOrMacMeta =
-      e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
-    const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (isZoomModifier || LiteGraph.canvasNavigationMode === 'legacy') {
-      // Legacy mode or standard mode with ctrl - use wheel for zoom
+    // remove isCtrlOrMacMeta to allow zoom with wheel scroll directly without ctrl
+    const isZoomModifier = !e.altKey && !e.shiftKey
+
+    // unify the logic of mouse wheel and trackpad pan vertically, because we could not detect the trackpad or mouse wheel when user pan vertically with trackpad
+    if (
+      (e.deltaX === 0 && e.deltaY !== 0 && isZoomModifier) ||
+      LiteGraph.canvasNavigationMode === 'legacy'
+    ) {
       if (isTrackpad) {
         // Trackpad gesture - use smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
@@ -3645,7 +3648,7 @@ export class LGraphCanvas
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
-      // Standard mode without ctrl - use wheel / gestures to pan
+      // Standard mode - use wheel / gestures to pan
       // Trackpads and mice work on significantly different scales
       const factor = isTrackpad ? 0.18 : 0.008_333
 
