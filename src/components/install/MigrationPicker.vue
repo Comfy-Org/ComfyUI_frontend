@@ -9,7 +9,7 @@
       <div class="flex gap-2">
         <InputText
           v-model="sourcePath"
-          placeholder="Select existing ComfyUI installation (optional)"
+          :placeholder="$t('install.locationPicker.migrationPathPlaceholder')"
           class="flex-1"
           :class="{ 'p-invalid': pathError }"
           @update:model-value="validateSource"

@@ -420,6 +420,7 @@
       "title": "Choose where to install ComfyUI",
       "subtitle": "Pick a folder for ComfyUI's files. We'll also set up Python there automatically.",
       "pathPlaceholder": "/Users/username/Documents/ComfyUI",
+      "migrationPathPlaceholder": "Select existing ComfyUI installation (optional)",
       "migrateFromExisting": "Migrate from existing installation",
       "migrateDescription": "Copy or link your existing models, custom nodes, and configurations from a previous ComfyUI installation.",
       "chooseDownloadServers": "Choose download servers manually",
