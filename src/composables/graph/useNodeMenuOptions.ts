@@ -110,23 +110,6 @@ export function useNodeMenuOptions() {
     action: runBranch
   })
 
-  // Keep this for backward compatibility if needed
-  const getBasicNodeOptions = (
-    states: NodeSelectionState,
-    hasOutputNodes: boolean,
-    bump: () => void
-  ): MenuOption[] => {
-    const options: MenuOption[] = []
-    options.push(getAdjustSizeOption())
-    options.push(...getNodeVisualOptions(states, bump))
-    options.push(getPinOption(states, bump))
-    options.push(getBypassOption(states, bump))
-    if (hasOutputNodes) {
-      options.push(getRunBranchOption())
-    }
-    return options
-  }
-
   const getNodeInfoOption = (showNodeHelp: () => void): MenuOption => ({
     label: t('contextMenu.Node Info'),
     icon: 'icon-[lucide--info]',
@@ -134,14 +117,12 @@ export function useNodeMenuOptions() {
   })
 
   return {
-    getBasicNodeOptions,
     getNodeInfoOption,
     getAdjustSizeOption,
     getNodeVisualOptions,
     getPinOption,
     getBypassOption,
     getRunBranchOption,
-    shapeSubmenu,
     colorSubmenu
   }
 }
