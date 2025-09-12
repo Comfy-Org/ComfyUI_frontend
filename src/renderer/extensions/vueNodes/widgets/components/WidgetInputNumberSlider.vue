@@ -14,7 +14,8 @@
         @update:model-value="updateLocalValue"
       />
       <InputNumber
-        v-model="localValue"
+        :key="timesEmptied"
+        :model-value="localValue"
         v-bind="filteredProps"
         :disabled="readonly"
         :step="stepValue"
@@ -23,6 +24,7 @@
         size="small"
         pt:pc-input-text:root="min-w-full bg-transparent border-none text-center"
         class="w-16"
+        @update:model-value="handleNumberInputUpdate"
       />
     </div>
   </WidgetLayoutField>
@@ -30,7 +32,7 @@
 
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
@@ -57,8 +59,18 @@ const emit = defineEmits<{
 // Use the composable for consistent widget value handling
 const { localValue, onChange } = useNumberWidgetValue(widget, modelValue, emit)
 
+const timesEmptied = ref(0)
+
 const updateLocalValue = (newValue: number[] | undefined): void => {
-  onChange(newValue ?? [])
+  onChange(newValue ?? [localValue.value])
+}
+
+const handleNumberInputUpdate = (newValue: number | undefined) => {
+  if (newValue) {
+    updateLocalValue([newValue])
+    return
+  }
+  timesEmptied.value += 1
 }
 
 const filteredProps = computed(() =>
