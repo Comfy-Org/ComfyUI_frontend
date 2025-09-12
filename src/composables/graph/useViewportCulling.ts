@@ -1,10 +1,10 @@
 /**
- * Viewport Culling - Direct DOM manipulation with element caching
+ * Viewport Culling - Direct DOM manipulation without caching
  *
  * Principles:
- * 1. Cache DOM elements ONCE when mounted
- * 2. No timeouts - event driven
- * 3. No reactivity - pure DOM manipulation
+ * 1. Query DOM directly using data attributes (no cache to maintain)
+ * 2. Use most efficient CSS update method (display: none)
+ * 3. Only run when transform changes (event driven)
  */
 import { type Ref, computed } from 'vue'
 
@@ -30,29 +30,9 @@ export function useViewportCulling(
     return Array.from(vueNodeData.value.values())
   })
 
-  const elementCache = new Map<string, Element>()
-
-  const refreshElementCache = () => {
-    // Clear cache for removed nodes
-    for (const [id] of elementCache) {
-      if (!vueNodeData.value.has(id)) {
-        elementCache.delete(id)
-      }
-    }
-
-    // Add new nodes to cache
-    for (const [id] of vueNodeData.value) {
-      if (!elementCache.has(id)) {
-        const element = document.querySelector(`[data-node-id="${id}"]`)
-        if (element) {
-          elementCache.set(id, element)
-        }
-      }
-    }
-  }
-
   /**
-   * Update visibility - uses cached elements
+   * Update visibility of all nodes based on viewport
+   * Queries DOM directly - no cache maintenance needed
    */
   const updateVisibility = () => {
     if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
@@ -64,16 +44,18 @@ export function useViewportCulling(
     // Viewport bounds
     const viewport_width = canvas.canvas.width
     const viewport_height = canvas.canvas.height
-    const margin = 200 * ds.scale
+    const margin = 500 * ds.scale
 
-    // Update visibility using cached elements
-    elementCache.forEach((element, nodeId) => {
+    // Get all node elements at once
+    const nodeElements = document.querySelectorAll('[data-node-id]')
+
+    // Update each element's visibility
+    nodeElements.forEach((element) => {
+      const nodeId = element.getAttribute('data-node-id')
+      if (!nodeId) return
+
       const node = manager.getNode(nodeId)
-      if (!node) {
-        // Node deleted, remove from cache
-        elementCache.delete(nodeId)
-        return
-      }
+      if (!node) return
 
       // Calculate if in viewport
       const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
@@ -88,32 +70,31 @@ export function useViewportCulling(
         screen_y > viewport_height + margin
       )
 
-      // Toggle visibility class
-      if (isVisible) {
-        element.classList.remove('node-hidden')
-      } else {
-        element.classList.add('node-hidden')
-      }
+      // Setting diplay directly SHOULD avoid cascade resolution
+      ;(element as HTMLElement).style.display = isVisible ? '' : 'none'
     })
   }
 
+  // RAF throttling for smooth updates during continuous panning
+  let rafId: number | null = null
+
   /**
    * Handle transform update - called by TransformPane event
-   * @param detectChangesInRAF - Function to detect node position/size changes
+   * Uses RAF to batch updates for smooth performance
    */
-  const handleTransformUpdate = (detectChangesInRAF?: () => void) => {
+  const handleTransformUpdate = () => {
     if (!isVueNodesEnabled.value) return
 
-    // Detect node position/size changes if function provided
-    if (detectChangesInRAF) {
-      detectChangesInRAF()
+    // Cancel previous RAF if still pending
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
     }
 
-    // Refresh cache for any new/removed nodes
-    refreshElementCache()
-
-    // Update visibility culling
-    updateVisibility()
+    // Schedule update in next animation frame
+    rafId = requestAnimationFrame(() => {
+      updateVisibility()
+      rafId = null
+    })
   }
 
   return {

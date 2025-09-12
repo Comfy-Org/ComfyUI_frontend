@@ -186,9 +186,9 @@ const nodeSizes = vueNodeLifecycle.nodeSizes
 const allNodes = viewportCulling.allNodes
 
 const handleTransformUpdate = () => {
-  viewportCulling.handleTransformUpdate(
-    vueNodeLifecycle.detectChangesInRAF.value
-  )
+  viewportCulling.handleTransformUpdate()
+  // TODO: Fix paste position sync in separate PR
+  vueNodeLifecycle.detectChangesInRAF.value()
 }
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
 const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
@@ -458,10 +458,3 @@ onUnmounted(() => {
   vueNodeLifecycle.cleanup()
 })
 </script>
-
-<style>
-/* Simple CSS-based visibility control */
-.node-hidden {
-  display: none !important;
-}
-</style>
