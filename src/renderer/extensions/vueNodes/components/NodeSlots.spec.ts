@@ -5,7 +5,7 @@ import { type PropType, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import NodeSlots from './NodeSlots.vue'
 
