@@ -617,7 +617,7 @@ export class ComfyApi extends EventTarget {
         console.warn(
           `Localized templates for '${locale}' not found, falling back to English`
         )
-        return this.getCoreWorkflowTemplates('en')
+        return this.getCoreWorkflowTemplates()
       }
       console.error('Error loading core workflow templates:', error)
       return []
