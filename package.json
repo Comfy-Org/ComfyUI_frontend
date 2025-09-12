@@ -83,6 +83,7 @@
     "tailwindcss": "^4.1.12",
     "tailwindcss-primeui": "^0.6.1",
     "tsx": "^4.15.6",
+    "tw-animate-css": "^1.3.8",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.42.0",
     "unplugin-icons": "^0.22.0",
