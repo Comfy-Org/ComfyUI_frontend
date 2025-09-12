@@ -1862,5 +1862,14 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "assetBrowser": {
+    "assets": "Assets",
+    "browseAssets": "Browse Assets",
+    "noAssetsFound": "No assets found",
+    "tryAdjustingFilters": "Try adjusting your search or filters",
+    "loadingModels": "Loading {type}...",
+    "connectionError": "Please check your connection and try again",
+    "noModelsInFolder": "No {type} available in this folder"
   }
 }

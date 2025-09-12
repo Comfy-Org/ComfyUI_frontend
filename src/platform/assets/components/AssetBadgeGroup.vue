@@ -1,0 +1,42 @@
+<template>
+  <div class="absolute bottom-2 right-2 flex gap-1 flex-wrap justify-end">
+    <span
+      v-for="badge in badges"
+      :key="badge.label"
+      :class="
+        cn(
+          'px-2 py-1 rounded text-[10px] font-medium uppercase tracking-wider text-white',
+          getBadgeColor(badge.type)
+        )
+      "
+    >
+      {{ badge.label }}
+    </span>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { cn } from '@/utils/tailwindUtil'
+
+interface Badge {
+  label: string
+  type: 'type' | 'base' | 'size'
+}
+
+defineProps<{
+  badges: Badge[]
+}>()
+
+function getBadgeColor(type: Badge['type']): string {
+  switch (type) {
+    case 'type':
+      return 'bg-blue-100/90 dark-theme:bg-blue-100/80'
+    case 'base':
+      return 'bg-success-100/90 dark-theme:bg-success-100/80'
+    case 'size':
+      return 'bg-stone-100/90 dark-theme:bg-charcoal-700/80'
+    default:
+      return 'bg-stone-100/90 dark-theme:bg-charcoal-700/80'
+  }
+}
+</script>

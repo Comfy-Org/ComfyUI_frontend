@@ -1,7 +1,7 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import { setup } from '@storybook/vue3'
-import type { Preview } from '@storybook/vue3-vite'
+import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -10,10 +10,9 @@ import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
 import '../src/assets/css/style.css'
+import GlobalDialog from '../src/components/dialog/GlobalDialog.vue'
 import { i18n } from '../src/i18n'
 import '../src/lib/litegraph/public/css/litegraph.css'
-import { useWidgetStore } from '../src/stores/widgetStore'
-import { useColorPaletteStore } from '../src/stores/workspace/colorPaletteStore'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
@@ -25,12 +24,14 @@ const ComfyUIPreset = definePreset(Aura, {
 // Setup Vue app for Storybook
 setup((app) => {
   app.directive('tooltip', Tooltip)
+
+  // Create Pinia instance
   const pinia = createPinia()
+
   app.use(pinia)
 
-  // Initialize stores
-  useColorPaletteStore(pinia)
-  useWidgetStore(pinia)
+  // Register global components for dialogs
+  app.component('GlobalDialog', GlobalDialog)
 
   app.use(i18n)
   app.use(PrimeVue, {
@@ -50,8 +51,8 @@ setup((app) => {
   app.use(ToastService)
 })
 
-// Dark theme decorator
-export const withTheme = (Story: any, context: any) => {
+// Theme and dialog decorator
+export const withTheme = (Story: StoryFn, context: StoryContext) => {
   const theme = context.globals.theme || 'light'
 
   // Apply theme class to document root
@@ -63,7 +64,19 @@ export const withTheme = (Story: any, context: any) => {
     document.body.classList.remove('dark-theme')
   }
 
-  return Story()
+  // Return story with GlobalDialog included
+  return {
+    components: { GlobalDialog },
+    setup() {
+      return { storyResult: Story(context.args, context) }
+    },
+    template: `
+      <div>
+        <component :is="storyResult" />
+        <GlobalDialog />
+      </div>
+    `
+  }
 }
 
 const preview: Preview = {

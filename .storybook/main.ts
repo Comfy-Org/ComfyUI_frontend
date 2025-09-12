@@ -3,7 +3,7 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, Plugin } from 'vite'
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -18,8 +18,14 @@ const config: StorybookConfig = {
 
     // Filter out any plugins that might generate import maps
     if (config.plugins) {
-      config.plugins = config.plugins.filter((plugin: any) => {
-        if (plugin && plugin.name && plugin.name.includes('import-map')) {
+      config.plugins = (config.plugins as Plugin[]).filter((plugin: Plugin) => {
+        if (
+          plugin &&
+          typeof plugin === 'object' &&
+          'name' in plugin &&
+          typeof plugin.name === 'string' &&
+          plugin.name.includes('import-map')
+        ) {
           return false
         }
         return true
