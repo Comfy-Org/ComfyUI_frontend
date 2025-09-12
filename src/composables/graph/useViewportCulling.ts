@@ -50,7 +50,7 @@ export function useViewportCulling(
     const nodeElements = document.querySelectorAll('[data-node-id]')
 
     // Update each element's visibility
-    nodeElements.forEach((element) => {
+    for (const element of nodeElements) {
       const nodeId = element.getAttribute('data-node-id')
       if (!nodeId) return
 
@@ -72,7 +72,7 @@ export function useViewportCulling(
 
       // Setting diplay directly SHOULD avoid cascade resolution
       ;(element as HTMLElement).style.display = isVisible ? '' : 'none'
-    })
+    }
   }
 
   // RAF throttling for smooth updates during continuous panning
