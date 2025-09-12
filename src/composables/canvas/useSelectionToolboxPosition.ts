@@ -223,7 +223,7 @@ export function useSelectionToolboxPosition(
 }
 
 // External cleanup utility to be called when SelectionToolbox component unmounts
-export function resetMoreOptionsState() {
+function resetMoreOptionsState() {
   moreOptionsOpen.value = false
   moreOptionsRestorePending.value = false
   moreOptionsWasOpenBeforeDrag = false
