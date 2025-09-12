@@ -243,8 +243,3 @@ export function syncNodeSlotLayoutsNow(
 ) {
   syncNodeSlotLayoutsFromDOM(nodeId, origin?.left, origin?.top)
 }
-
-// Optional helper for callers that are not using the composable
-export function requestSlotLayoutSync(nodeId: string) {
-  scheduleSlotLayoutSync(nodeId)
-}
