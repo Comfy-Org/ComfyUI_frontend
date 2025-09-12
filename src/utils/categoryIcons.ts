@@ -1,52 +1,52 @@
 /**
- * Maps category IDs to their corresponding Lucide icon names
+ * Maps category IDs to their corresponding Lucide icon classes
  */
 export const getCategoryIcon = (categoryId: string): string => {
   const iconMap: Record<string, string> = {
     // Main categories
-    all: 'list',
-    'getting-started': 'graduation-cap',
+    all: 'icon-[lucide--list]',
+    'getting-started': 'icon-[lucide--graduation-cap]',
 
     // Generation types
-    'generation-image': 'image',
-    image: 'image',
-    'generation-video': 'film',
-    video: 'film',
-    'generation-3d': 'box',
-    '3d': 'box',
-    'generation-audio': 'volume-2',
-    audio: 'volume-2',
-    'generation-llm': 'message-square-text',
+    'generation-image': 'icon-[lucide--image]',
+    image: 'icon-[lucide--image]',
+    'generation-video': 'icon-[lucide--film]',
+    video: 'icon-[lucide--film]',
+    'generation-3d': 'icon-[lucide--box]',
+    '3d': 'icon-[lucide--box]',
+    'generation-audio': 'icon-[lucide--volume-2]',
+    audio: 'icon-[lucide--volume-2]',
+    'generation-llm': 'icon-[lucide--message-square-text]',
 
     // API and models
-    'api-nodes': 'hand-coins',
-    'closed-models': 'hand-coins',
+    'api-nodes': 'icon-[lucide--hand-coins]',
+    'closed-models': 'icon-[lucide--hand-coins]',
 
     // LLMs and AI
-    llm: 'message-square-text',
-    llms: 'message-square-text',
-    'llm-api': 'message-square-text',
+    llm: 'icon-[lucide--message-square-text]',
+    llms: 'icon-[lucide--message-square-text]',
+    'llm-api': 'icon-[lucide--message-square-text]',
 
     // Performance and hardware
-    'small-models': 'zap',
-    performance: 'zap',
-    'mac-compatible': 'command',
-    'runs-on-mac': 'command',
+    'small-models': 'icon-[lucide--zap]',
+    performance: 'icon-[lucide--zap]',
+    'mac-compatible': 'icon-[lucide--command]',
+    'runs-on-mac': 'icon-[lucide--command]',
 
     // Training
-    'lora-training': 'dumbbell',
-    training: 'dumbbell',
+    'lora-training': 'icon-[lucide--dumbbell]',
+    training: 'icon-[lucide--dumbbell]',
 
     // Extensions and tools
-    extensions: 'puzzle',
-    tools: 'wrench',
+    extensions: 'icon-[lucide--puzzle]',
+    tools: 'icon-[lucide--wrench]',
 
     // Fallbacks for common patterns
-    upscaling: 'maximize-2',
-    controlnet: 'sliders-horizontal',
-    'area-composition': 'layout-grid'
+    upscaling: 'icon-[lucide--maximize-2]',
+    controlnet: 'icon-[lucide--sliders-horizontal]',
+    'area-composition': 'icon-[lucide--layout-grid]'
   }
 
   // Return mapped icon or fallback to folder
-  return iconMap[categoryId.toLowerCase()] || 'folder'
+  return iconMap[categoryId.toLowerCase()] || 'icon-[lucide--folder]'
 }

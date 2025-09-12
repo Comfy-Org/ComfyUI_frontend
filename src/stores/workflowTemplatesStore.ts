@@ -358,8 +358,6 @@ export const useWorkflowTemplatesStore = defineStore(
       const extensionCounts = enhancedTemplates.value.filter(
         (t) => t.sourceModule !== 'default'
       ).length
-      // Performance-related counts removed (Small Models / Mac) per request
-      // Removed loraTrainingCounts (deprecated category)
 
       // All Templates - as a simple selector
       items.push({
