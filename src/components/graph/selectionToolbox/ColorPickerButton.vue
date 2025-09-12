@@ -3,7 +3,7 @@
     <Button
       v-tooltip.top="{
         value: localizedCurrentColorName ?? t('color.noColor'),
-        showDelay: 512
+        showDelay: 1000
       }"
       data-testid="color-picker-button"
       severity="secondary"
