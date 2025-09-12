@@ -164,7 +164,7 @@ test.describe('Node Help', () => {
 
       // Click help button
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -194,7 +194,7 @@ test.describe('Node Help', () => {
 
       // Click help button
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -228,7 +228,7 @@ test.describe('Node Help', () => {
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -276,7 +276,7 @@ test.describe('Node Help', () => {
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -348,7 +348,7 @@ This is documentation for a custom node.
       }
 
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       if (await helpButton.isVisible()) {
         await helpButton.click()
@@ -389,7 +389,7 @@ This is documentation for a custom node.
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -456,7 +456,7 @@ This is English documentation.
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -479,7 +479,7 @@ This is English documentation.
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -522,7 +522,7 @@ This is English documentation.
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton.click()
 
@@ -538,7 +538,7 @@ This is English documentation.
 
       // Click help button again
       const helpButton2 = comfyPage.page.locator(
-        '.selection-toolbox button[data-testid="info-button"]])'
+        '.selection-toolbox button[data-testid="info-button"]'
       )
       await helpButton2.click()
 
