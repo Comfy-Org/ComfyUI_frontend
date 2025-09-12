@@ -1,8 +1,7 @@
 #!/usr/bin/env tsx
-
+import glob from 'fast-glob'
 import fs from 'fs'
 import path from 'path'
-import glob from 'fast-glob'
 
 interface ImportInfo {
   source: string
@@ -27,21 +26,22 @@ interface DependencyGraph {
 function extractImports(filePath: string): ImportInfo {
   const content = fs.readFileSync(filePath, 'utf-8')
   const imports: string[] = []
-  
+
   // Match ES6 import statements
-  const importRegex = /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)\s+from\s+)?['"]([^'"]+)['"]/g
+  const importRegex =
+    /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)\s+from\s+)?['"]([^'"]+)['"]/g
   let match
-  
+
   while ((match = importRegex.exec(content)) !== null) {
     imports.push(match[1])
   }
-  
+
   // Also match dynamic imports
   const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g
   while ((match = dynamicImportRegex.exec(content)) !== null) {
     imports.push(match[1])
   }
-  
+
   return {
     source: filePath,
     imports: [...new Set(imports)] // Remove duplicates
@@ -51,7 +51,7 @@ function extractImports(filePath: string): ImportInfo {
 // Categorize file by its path
 function getFileGroup(filePath: string): string {
   const relativePath = path.relative(process.cwd(), filePath)
-  
+
   if (relativePath.includes('node_modules')) return 'external'
   if (relativePath.startsWith('src/components')) return 'components'
   if (relativePath.startsWith('src/stores')) return 'stores'
@@ -65,7 +65,7 @@ function getFileGroup(filePath: string): string {
   if (relativePath.startsWith('src/scripts')) return 'scripts'
   if (relativePath.startsWith('tests')) return 'tests'
   if (relativePath.startsWith('browser_tests')) return 'browser_tests'
-  
+
   return 'other'
 }
 
@@ -75,13 +75,13 @@ function resolveImportPath(importPath: string, sourceFile: string): string {
   if (importPath.startsWith('@/')) {
     return path.join(process.cwd(), 'src', importPath.slice(2))
   }
-  
+
   // Handle relative paths
   if (importPath.startsWith('.')) {
     const sourceDir = path.dirname(sourceFile)
     return path.resolve(sourceDir, importPath)
   }
-  
+
   // External module
   return importPath
 }
@@ -89,17 +89,29 @@ function resolveImportPath(importPath: string, sourceFile: string): string {
 // Generate dependency graph
 async function generateDependencyGraph(): Promise<DependencyGraph> {
   const sourceFiles = await glob('src/**/*.{ts,tsx,vue,mts}', {
-    ignore: ['**/node_modules/**', '**/*.d.ts', '**/*.spec.ts', '**/*.test.ts', '**/*.stories.ts']
+    ignore: [
+      '**/node_modules/**',
+      '**/*.d.ts',
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      '**/*.stories.ts'
+    ]
   })
-  
-  const nodes = new Map<string, { id: string; label: string; group: string; size: number }>()
-  const links = new Map<string, { source: string; target: string; value: number }>()
-  
+
+  const nodes = new Map<
+    string,
+    { id: string; label: string; group: string; size: number }
+  >()
+  const links = new Map<
+    string,
+    { source: string; target: string; value: number }
+  >()
+
   // Process each file
   for (const file of sourceFiles) {
     const importInfo = extractImports(file)
     const sourceId = path.relative(process.cwd(), file)
-    
+
     // Add source node
     if (!nodes.has(sourceId)) {
       nodes.set(sourceId, {
@@ -109,12 +121,12 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
         size: 1
       })
     }
-    
+
     // Process imports
     for (const importPath of importInfo.imports) {
       const resolvedPath = resolveImportPath(importPath, file)
       let targetId: string
-      
+
       // Check if it's an external module
       if (!resolvedPath.startsWith('/') && !resolvedPath.startsWith('.')) {
         targetId = `external:${importPath}`
@@ -128,16 +140,25 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
         }
       } else {
         // Try to find the actual file
-        const possibleExtensions = ['.ts', '.tsx', '.vue', '.mts', '.js', '.json', '/index.ts', '/index.js']
+        const possibleExtensions = [
+          '.ts',
+          '.tsx',
+          '.vue',
+          '.mts',
+          '.js',
+          '.json',
+          '/index.ts',
+          '/index.js'
+        ]
         let actualFile = resolvedPath
-        
+
         for (const ext of possibleExtensions) {
           if (fs.existsSync(resolvedPath + ext)) {
             actualFile = resolvedPath + ext
             break
           }
         }
-        
+
         if (fs.existsSync(actualFile)) {
           targetId = path.relative(process.cwd(), actualFile)
           if (!nodes.has(targetId)) {
@@ -152,7 +173,7 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
           continue // Skip unresolved imports
         }
       }
-      
+
       // Add link
       const linkKey = `${sourceId}->${targetId}`
       if (links.has(linkKey)) {
@@ -164,7 +185,7 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
           value: 1
         })
       }
-      
+
       // Increase target node size
       const targetNode = nodes.get(targetId)
       if (targetNode) {
@@ -172,7 +193,7 @@ async function generateDependencyGraph(): Promise<DependencyGraph> {
       }
     }
   }
-  
+
   return {
     nodes: Array.from(nodes.values()),
     links: Array.from(links.values())
@@ -562,25 +583,29 @@ function generateHTML(graph: DependencyGraph): string {
 // Main function
 async function main() {
   console.log('Generating import map...')
-  
+
   try {
     const graph = await generateDependencyGraph()
-    console.log(`Found ${graph.nodes.length} nodes and ${graph.links.length} dependencies`)
-    
+    console.log(
+      `Found ${graph.nodes.length} nodes and ${graph.links.length} dependencies`
+    )
+
     // Save JSON data
     const jsonPath = path.join(process.cwd(), 'docs', 'import-map.json')
     fs.mkdirSync(path.dirname(jsonPath), { recursive: true })
     fs.writeFileSync(jsonPath, JSON.stringify(graph, null, 2))
     console.log(`Saved JSON data to ${jsonPath}`)
-    
+
     // Generate and save HTML visualization
     const html = generateHTML(graph)
     const htmlPath = path.join(process.cwd(), 'docs', 'import-map.html')
     fs.writeFileSync(htmlPath, html)
     console.log(`Saved HTML visualization to ${htmlPath}`)
-    
+
     console.log('✅ Import map generation complete!')
-    console.log('Open docs/import-map.html in a browser to view the visualization')
+    console.log(
+      'Open docs/import-map.html in a browser to view the visualization'
+    )
   } catch (error) {
     console.error('Error generating import map:', error)
     process.exit(1)
