@@ -80,6 +80,7 @@ const stepValue = computed(() => {
   if (widget.options?.step2 !== undefined) {
     return widget.options.step2
   }
+
   // Otherwise, derive from precision
   if (precision.value === undefined) {
     return undefined
@@ -88,17 +89,9 @@ const stepValue = computed(() => {
   if (precision.value === 0) {
     return 1
   }
+
   // For precision > 0, step = 1 / (10^precision)
   // precision 1 → 0.1, precision 2 → 0.01, etc.
   return 1 / Math.pow(10, precision.value)
 })
 </script>
-
-<style scoped>
-/* Remove number input spinners */
-:deep(input[inputmode='numeric']::-webkit-inner-spin-button),
-:deep(input[inputmode='numeric']::-webkit-outer-spin-button) {
-  -webkit-appearance: none;
-  margin: 0;
-}
-</style>
