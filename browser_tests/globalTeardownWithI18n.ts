@@ -1,4 +1,4 @@
-import { FullConfig } from '@playwright/test'
+import type { FullConfig } from '@playwright/test'
 
 import { restoreLitegraph } from './i18nSetup'
 
