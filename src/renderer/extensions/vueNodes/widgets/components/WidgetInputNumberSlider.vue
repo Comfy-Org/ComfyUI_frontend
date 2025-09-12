@@ -10,25 +10,28 @@
         v-bind="filteredProps"
         :disabled="readonly"
         class="flex-grow text-xs"
-        :step="stepValue !== 'any' ? +stepValue : undefined"
+        :step="stepValue"
         @update:model-value="updateLocalValue"
       />
-      <InputText
-        v-model="inputDisplayValue"
+      <InputNumber
+        v-model="localValue"
+        v-bind="filteredProps"
         :disabled="readonly"
-        type="number"
         :step="stepValue"
-        class="w-[4em] text-center text-xs px-0 !border-none !shadow-none !bg-transparent"
+        :min-fraction-digits="precision"
+        :max-fraction-digits="precision"
         size="small"
-        @blur="handleInputBlur"
-        @keydown="handleInputKeydown"
+        :pt:pcInputText:root="
+          cn('min-w-full bg-transparent border-none text-center')
+        "
+        class="w-16"
       />
     </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
@@ -75,90 +78,27 @@ const precision = computed(() => {
 const stepValue = computed(() => {
   // Use step2 (correct input spec value) instead of step (legacy 10x value)
   if (widget.options?.step2 !== undefined) {
-    return String(widget.options.step2)
+    return widget.options.step2
   }
   // Otherwise, derive from precision
-  if (precision.value !== undefined) {
-    if (precision.value === 0) {
-      return '1'
-    }
-    // For precision > 0, step = 1 / (10^precision)
-    // precision 1 → 0.1, precision 2 → 0.01, etc.
-    return (1 / Math.pow(10, precision.value)).toFixed(precision.value)
-  }
-  // Default to 'any' for unrestricted stepping
-  return 'any'
-})
-
-// Format a number according to the widget's precision
-const formatNumber = (value: number): string => {
   if (precision.value === undefined) {
-    // No precision specified, return as-is
-    return String(value)
+    return undefined
   }
-  // Use toFixed to ensure correct decimal places
-  return value.toFixed(precision.value)
-}
 
-// Apply precision-based rounding to a number
-const applyPrecision = (value: number): number => {
-  if (precision.value === undefined) {
-    // No precision specified, return as-is
-    return value
-  }
   if (precision.value === 0) {
-    // Integer precision
-    return Math.round(value)
+    return 1
   }
-  // Round to the specified decimal places
-  const multiplier = Math.pow(10, precision.value)
-  return Math.round(value * multiplier) / multiplier
-}
-
-// Keep a separate display value for the input field
-const inputDisplayValue = computed(() => formatNumber(localValue.value))
-
-const handleInputBlur = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const value = target.value || '0'
-  const parsed = parseFloat(value)
-
-  if (!isNaN(parsed)) {
-    // Apply precision-based rounding
-    const roundedValue = applyPrecision(parsed)
-    onChange(roundedValue)
-    // Update display value with proper formatting
-    localValue.value = roundedValue
-  }
-}
-
-const handleInputKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter') {
-    const target = event.target as HTMLInputElement
-    const value = target.value || '0'
-    const parsed = parseFloat(value)
-
-    if (!isNaN(parsed)) {
-      // Apply precision-based rounding
-      const roundedValue = applyPrecision(parsed)
-      onChange(roundedValue)
-      // Update display value with proper formatting
-      localValue.value = roundedValue
-    }
-  }
-}
+  // For precision > 0, step = 1 / (10^precision)
+  // precision 1 → 0.1, precision 2 → 0.01, etc.
+  return 1 / Math.pow(10, precision.value)
+})
 </script>
 
 <style scoped>
 /* Remove number input spinners */
-:deep(input[type='number']::-webkit-inner-spin-button),
-:deep(input[type='number']::-webkit-outer-spin-button) {
+:deep(input[inputmode='numeric']::-webkit-inner-spin-button),
+:deep(input[inputmode='numeric']::-webkit-outer-spin-button) {
   -webkit-appearance: none;
   margin: 0;
-}
-
-:deep(input[type='number']) {
-  -moz-appearance: textfield;
-  appearance: textfield;
 }
 </style>

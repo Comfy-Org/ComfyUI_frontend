@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 import Slider from 'primevue/slider'
 import type { SliderProps } from 'primevue/slider'
 import { describe, expect, it } from 'vitest'
@@ -9,47 +9,49 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 
-describe('WidgetInputNumberSlider Value Binding', () => {
-  const createMockWidget = (
-    value: number = 5,
-    options: Partial<SliderProps & { precision?: number }> = {},
-    callback?: (value: number) => void
-  ): SimplifiedWidget<number> => ({
+function createMockWidget(
+  value: number = 5,
+  options: Partial<SliderProps & { precision?: number }> = {},
+  callback?: (value: number) => void
+): SimplifiedWidget<number> {
+  return {
     name: 'test_slider',
     type: 'float',
     value,
     options: { min: 0, max: 100, step: 1, precision: 0, ...options },
     callback
-  })
-
-  const mountComponent = (
-    widget: SimplifiedWidget<number>,
-    modelValue: number,
-    readonly = false
-  ) => {
-    return mount(WidgetInputNumberSlider, {
-      global: {
-        plugins: [PrimeVue],
-        components: { InputText, Slider }
-      },
-      props: {
-        widget,
-        modelValue,
-        readonly
-      }
-    })
   }
+}
 
-  const getNumberInput = (wrapper: ReturnType<typeof mount>) => {
-    const input = wrapper.find('input[type="number"]')
-    if (!(input.element instanceof HTMLInputElement)) {
-      throw new Error(
-        'Number input element not found or is not an HTMLInputElement'
-      )
+function mountComponent(
+  widget: SimplifiedWidget<number>,
+  modelValue: number,
+  readonly = false
+) {
+  return mount(WidgetInputNumberSlider, {
+    global: {
+      plugins: [PrimeVue],
+      components: { InputNumber, Slider }
+    },
+    props: {
+      widget,
+      modelValue,
+      readonly
     }
-    return { element: input.element }
-  }
+  })
+}
 
+function getNumberInput(wrapper: ReturnType<typeof mount>) {
+  const input = wrapper.find('input[inputmode="numeric"]')
+  if (!(input.element instanceof HTMLInputElement)) {
+    throw new Error(
+      'Number input element not found or is not an HTMLInputElement'
+    )
+  }
+  return input.element
+}
+
+describe('WidgetInputNumberSlider Value Binding', () => {
   describe('Props and Values', () => {
     it('passes modelValue to slider component', () => {
       const widget = createMockWidget(5)
@@ -85,8 +87,9 @@ describe('WidgetInputNumberSlider Value Binding', () => {
     it('renders input field', () => {
       const widget = createMockWidget(5)
       const wrapper = mountComponent(widget, 5)
+      console.log(wrapper.html())
 
-      expect(wrapper.find('input[type="number"]').exists()).toBe(true)
+      expect(wrapper.find('input[inputmode="numeric"]').exists()).toBe(true)
     })
 
     it('displays initial value in input field', () => {
@@ -94,7 +97,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       const wrapper = mountComponent(widget, 42)
 
       const input = getNumberInput(wrapper)
-      expect(input.element.value).toBe('42')
+      expect(input.value).toBe('42')
     })
 
     it('disables components in readonly mode', () => {
@@ -105,7 +108,7 @@ describe('WidgetInputNumberSlider Value Binding', () => {
       expect(slider.props('disabled')).toBe(true)
 
       const input = getNumberInput(wrapper)
-      expect(input.element.disabled).toBe(true)
+      expect(input.disabled).toBe(true)
     })
   })
 
