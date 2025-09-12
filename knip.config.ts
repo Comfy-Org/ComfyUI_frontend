@@ -51,7 +51,8 @@ const config: KnipConfig = {
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
     '-knipIgnoreUnusedButUsedByVueNodesBranch'
-  ]
+  ],
+  tailwind: {}
 }
 
 export default config
