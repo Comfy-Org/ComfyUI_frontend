@@ -118,8 +118,7 @@ import { cn } from '@/utils/tailwindUtil'
 
 import TextButton from '../button/TextButton.vue'
 
-export type MultiSelectOption = { name: string; value: string }
-type Option = MultiSelectOption
+type Option = { name: string; value: string }
 
 defineOptions({
   inheritAttrs: false
