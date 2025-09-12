@@ -6,11 +6,11 @@
       "
     >
       <Slider
-        v-model="localValue"
+        :model-value="[localValue]"
         v-bind="filteredProps"
         :disabled="readonly"
         class="flex-grow text-xs"
-        @update:model-value="onChange"
+        @update:model-value="updateLocalValue"
       />
       <InputText
         v-model="inputDisplayValue"
@@ -28,9 +28,9 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import Slider from 'primevue/slider'
 import { computed, ref, watch } from 'vue'
 
+import Slider from '@/components/ui/slider/Slider.vue'
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -58,6 +58,10 @@ const { localValue, onChange } = useNumberWidgetValue(
   props.modelValue,
   emit
 )
+
+const updateLocalValue = (newValue: number[] | undefined): void => {
+  onChange(newValue ?? [])
+}
 
 const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
