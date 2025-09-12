@@ -1,130 +1,154 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import SubgraphNodeWidget from '@/components/selectionbar/SubgraphNodeWidget.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/stores/graphStore'
+
+type ProxyWidgets = [string, string][]
+type WidgetItem = [LGraphNode, IBaseWidget]
 
 const { t } = useI18n()
 
 const canvasStore = useCanvasStore()
 
-const expandedKeys = ref<Record<string, boolean>>({})
 const searchQuery = ref<string>('')
 
 const triggerUpdate = ref(0)
 
+function toKey(item: WidgetItem) {
+  return `${item[0].id}: ${item[1].name}`
+}
+
 const activeNode = computed(() => {
-  return canvasStore.selectedItems[0]
+  const node = canvasStore.selectedItems[0]
+  if (node instanceof SubgraphNode) return node
+  return undefined
 })
 
-function keyfn(item) {
-  return `${item[0].title}(${item[0].id}): ${item[1].name}`
-}
-const activeWidgets = computed({
+const activeWidgets = computed<WidgetItem[]>({
   get() {
-    triggerUpdate.value
+    if (triggerUpdate.value < 0) console.log('unreachable')
     const node = activeNode.value
     if (!node) return []
-    const pw = node.properties.proxyWidgets ?? []
-    return pw.map(([id, name]) => {
+    const pw = node.properties.proxyWidgets as ProxyWidgets
+    return pw.flatMap(([id, name]: [string, string]) => {
       const wNode = node.subgraph._nodes_by_id[id]
+      if (!wNode?.widgets) return []
       const w = wNode.widgets.find((w) => w.name === name)
-      return [wNode, w]
+      if (!w) return []
+      return [[wNode, w]]
     })
   },
-  set(value) {
+  set(value: WidgetItem[]) {
+    const node = activeNode.value
+    if (!node)
+      throw new Error('Attempted to toggle widgets with no node selected')
     //map back to id/name
-    const pw = value.map(([node, widget]) => [node.id, widget.name])
-    activeNode.value.properties.proxyWidgets = pw
+    const pw: ProxyWidgets = value.map(([node, widget]) => [
+      `${node.id}`,
+      widget.name
+    ])
+    node.properties.proxyWidgets = pw as unknown as string
     //force trigger an update
     triggerUpdate.value++
-    canvasStore.canvas.setDirty(true, true)
+    canvasStore.getCanvas().setDirty(true, true)
   }
 })
-function toggleVisibility(nodeId, widgetName, isShown) {
+function toggleVisibility(
+  nodeId: string,
+  widgetName: string,
+  isShown: boolean
+) {
   const node = activeNode.value
-  const { widgetStates } = useDomWidgetStore()
+  if (!node)
+    throw new Error('Attempted to toggle widgets with no node selected')
   if (!isShown) {
-    const w = node.addProxyWidget(`${nodeId}`, widgetName)
-    if (widgetStates.has(w.id)) {
-      const widgetState = widgetStates.get(w.id)
-      widgetState.active = true
-      widgetState.widget = w
-    }
+    const proxyWidgets: ProxyWidgets = node.properties
+      .proxyWidgets as ProxyWidgets
+    proxyWidgets.push([nodeId, widgetName])
+    node.properties.proxyWidgets = proxyWidgets as unknown as string
   } else {
-    const { properties } = node
-    properties.proxyWidgets = properties.proxyWidgets.filter((p) => {
-      return (
-        p[1] !== widgetName ||
-        //NOTE: intentional loose as nodeId is often string/int
-        p[0] != nodeId
-      )
-    })
+    let pw = node.properties.proxyWidgets as ProxyWidgets
+    pw = pw.filter(
+      (p: [string, string]) => p[1] !== widgetName || p[0] !== nodeId
+    )
+    node.properties.proxyWidgets = pw as unknown as string
   }
   triggerUpdate.value++
-  useCanvasStore().canvas.setDirty(true, true)
+  useCanvasStore().getCanvas().setDirty(true, true)
 }
 
-const candidateWidgets = computed(() => {
-  const node = canvasStore.selectedItems[0]
+function nodeWidgets(n: LGraphNode): WidgetItem[] {
+  if (!n.widgets) return []
+  return n.widgets.map((w: IBaseWidget) => [n, w])
+}
+
+const candidateWidgets = computed<WidgetItem[]>(() => {
+  const node = activeNode.value
   if (!node) return []
-  triggerUpdate.value //mark dependent
-  const pw = node.properties.proxyWidgets ?? []
-  const interiorNodes = node?.subgraph?.nodes ?? []
+  if (triggerUpdate.value < 0) console.log('unreachable')
+  const pw = node.properties.proxyWidgets as ProxyWidgets
+  const interiorNodes = node.subgraph.nodes
   //node.widgets ??= []
-  const intn = interiorNodes
-    .flatMap((n) =>
-      n.widgets?.map((w) => {
-        return [n, w] ?? []
-      })
-    )
+  const allWidgets: WidgetItem[] = interiorNodes.flatMap(nodeWidgets)
+  const filteredWidgets = allWidgets
     //widget has connected link. Should not be displayed
-    .filter(([_, w]) => !w.computedDisabled)
-    .filter(([n, w]) => !pw.some(([pn, pw]) => n.id == pn && w.name == pw))
-  //TODO: filter enabled/disabled items while keeping order
-  return intn
+    .filter(([_, w]: WidgetItem) => !w.computedDisabled)
+    .filter(
+      ([n, w]: WidgetItem) =>
+        !pw.some(([pn, pw]: [string, string]) => n.id == pn && w.name == pw)
+    )
+  return filteredWidgets
 })
-const filteredCandidates = computed(() => {
+const filteredCandidates = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
   if (!query) return candidateWidgets.value
   return candidateWidgets.value.filter(
-    ([n, w]) =>
+    ([n, w]: WidgetItem) =>
       n.title.toLowerCase().includes(query) ||
       w.name.toLowerCase().includes(query)
   )
 })
 function showAll() {
   const node = activeNode.value
-  const pw = node.properties.proxyWidgets ?? []
-  const toAdd = filteredCandidates.value.map(([n, w]) => [n.id, w.name])
+  if (!node) return //Not reachable
+  const pw = node.properties.proxyWidgets as ProxyWidgets
+  const toAdd: ProxyWidgets = filteredCandidates.value.map(
+    ([n, w]: WidgetItem) => [`${n.id}`, w.name]
+  )
   pw.push(...toAdd)
   node.properties.proxyWidgets = pw
-  useCanvasStore().canvas.setDirty(true, true)
+  useCanvasStore().getCanvas().setDirty(true, true)
   triggerUpdate.value++
 }
 function hideAll() {
   const node = activeNode.value
+  if (!node) return //Not reachable
   //Not great from a nesting perspective, but path is cold
   //and it cleans up potential error states
-  const toKeep = node.properties.proxyWidgets
-    .filter(([nodeId, widgetName]) =>
-      !filteredActive.value.some(([n,w]) =>
-        n.id == nodeId && w.name === widgetName))
+  const toKeep = (node.properties.proxyWidgets as ProxyWidgets).filter(
+    ([nodeId, widgetName]) =>
+      !filteredActive.value.some(
+        ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
+      )
+  )
   node.properties.proxyWidgets = toKeep
-  useCanvasStore().canvas.setDirty(true, true)
+  useCanvasStore().getCanvas().setDirty(true, true)
   triggerUpdate.value++
 }
 
-const filteredActive = computed(() => {
+const filteredActive = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
   if (!query) return activeWidgets.value
   return activeWidgets.value.filter(
-    ([n, w]) =>
+    ([n, w]: WidgetItem) =>
       n.title.toLowerCase().includes(query) ||
       w.name.toLowerCase().includes(query)
   )
@@ -140,26 +164,28 @@ const filteredActive = computed(() => {
         v-model:modelValue="searchQuery"
         class="model-lib-search-box p-2 2xl:p-4"
         :placeholder="$t('g.search') + '...'"
-        @search="handleSearch"
       />
     </template>
     <template #body>
-      <div class="widgets-section" v-if="filteredActive.length">
+      <div v-if="filteredActive.length" class="widgets-section">
         <div class="widgets-section-header">
           <div>{{ t('subgraphStore.shown') }}</div>
           <a @click.stop="hideAll"> {{ t('subgraphStore.hideAll') }}</a>
         </div>
-        <div
-          v-for="element in filteredActive"
-          v-if="searchQuery"
-          class="widget-container"
-        >
-          <SubgraphNodeWidget
-            :item="element"
-            :node="activeNode"
-            :toggle-visibility="toggleVisibility"
-            :is-shown="true"
-          />
+        <div v-if="searchQuery">
+          <div
+            v-for="element in filteredActive"
+            :key="toKey(element)"
+            class="widget-container"
+          >
+            <SubgraphNodeWidget
+              :node-id="`${element[0].id}`"
+              :node-title="element[0].title"
+              :widget-name="element[1].name"
+              :toggle-visibility="toggleVisibility"
+              :is-shown="true"
+            />
+          </div>
         </div>
         <draggable
           v-else
@@ -170,13 +196,12 @@ const filteredActive = computed(() => {
           drag-class="dragged-item"
           :animation="100"
           item-key="id"
-          @start="drag = true"
-          @end="drag = false"
         >
           <template #item="{ element }">
             <SubgraphNodeWidget
-              :item="element"
-              :node="activeNode"
+              :node-id="`${element[0].id}`"
+              :node-title="element[0].title"
+              :widget-name="element[1].name"
               :is-shown="true"
               :toggle-visibility="toggleVisibility"
               :is-draggable="true"
@@ -184,15 +209,20 @@ const filteredActive = computed(() => {
           </template>
         </draggable>
       </div>
-      <div class="widgets-section" v-if="filteredCandidates.length">
+      <div v-if="filteredCandidates.length" class="widgets-section">
         <div class="widgets-section-header">
           <div>{{ t('subgraphStore.hidden') }}</div>
           <a @click.stop="showAll"> {{ t('subgraphStore.showAll') }}</a>
         </div>
-        <div v-for="element in filteredCandidates" class="widget-container">
+        <div
+          v-for="element in filteredCandidates"
+          :key="toKey(element)"
+          class="widget-container"
+        >
           <SubgraphNodeWidget
-            :item="element"
-            :node="activeNode"
+            :node-id="`${element[0].id}`"
+            :node-title="element[0].title"
+            :widget-name="element[1].name"
             :toggle-visibility="toggleVisibility"
           />
         </div>

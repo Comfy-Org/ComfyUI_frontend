@@ -846,13 +846,11 @@ export class ComfyApp {
 
         for (const node of newGraph.nodes)
           for (const w of node.widgets ?? [])
-            if (w instanceof DOMWidgetImpl && w.id)
-              widgetIds[w.id] = w
+            if (w instanceof DOMWidgetImpl && w.id) widgetIds[w.id] = w
 
         // Assertions: UnwrapRef
         for (const widgetId of widgetStore.widgetStates.keys()) {
-          const widgetState = widgetStore
-            .widgetStates.get(widgetId)
+          const widgetState = widgetStore.widgetStates.get(widgetId)
           //Unreachable, but required for type safety
           if (!widgetState) continue
           if (widgetId in widgetIds) {

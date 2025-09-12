@@ -2,19 +2,20 @@
 import Button from 'primevue/button'
 
 const props = defineProps<{
-  item: [unknown, unknown]
-  node: unknown
+  nodeId: string
+  nodeTitle: string
+  widgetName: string
   isShown?: boolean
   isDraggable?: boolean
-  toggleVisibility
+  toggleVisibility: (
+    nodeId: string,
+    widgetName: string,
+    isShown: boolean
+  ) => void
 }>()
 
-function onClick(e) {
-  props.toggleVisibility(
-    `${props.item[0].id}`,
-    props.item[1].name,
-    props.isShown
-  )
+function onClick() {
+  props.toggleVisibility(props.nodeId, props.widgetName, props.isShown ?? false)
 }
 </script>
 <template>
@@ -23,8 +24,8 @@ function onClick(e) {
       <i-lucide:grip-vertical v-if="isDraggable" />
     </div>
     <div class="widget-title">
-      <div class="widget-node">{{ item[0].title }}</div>
-      <div class="widget-name">{{ item[1].name }}</div>
+      <div class="widget-node">{{ nodeTitle }}</div>
+      <div class="widget-name">{{ widgetName }}</div>
     </div>
     <Button size="small" text severity="secondary" @click.stop="onClick">
       <i-lucide:eye v-if="isShown" />

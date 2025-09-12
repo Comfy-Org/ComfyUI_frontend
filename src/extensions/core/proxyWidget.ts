@@ -1,19 +1,15 @@
 // @ts-nocheck
 // FIXME: typechecking for proxy system
-
-
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 useExtensionService().registerExtension({
-  name: "Comfy.SubgraphProxyWidgets",
+  name: 'Comfy.SubgraphProxyWidgets',
   nodeCreated(node: LGraphNode) {
     if (node instanceof SubgraphNode) {
-      setTimeout(() => injectProperty(node),0)
-      node.addProxyWidget = (nodeId, widgetName) =>
-        addProxyWidget(node, nodeId, widgetName)
+      setTimeout(() => injectProperty(node), 0)
     }
   }
 })
@@ -48,7 +44,11 @@ function injectProperty(subgraphNode: SubgraphNode) {
   subgraphNode.properties.proxyWidgets = proxyWidgets
 }
 
-function addProxyWidget(subgraphNode: SubgraphNode, nodeId: string, widgetName: string) {
+function addProxyWidget(
+  subgraphNode: SubgraphNode,
+  nodeId: string,
+  widgetName: string
+) {
   const overlay = { nodeId, widgetName }
   return addProxyFromOverlay(subgraphNode, { __proto__: overlay })
 }
