@@ -106,7 +106,6 @@ const {
   hasAny3DNodeSelected,
   nodeDef
 } = useSelectionState()
-
 const showInfoButton = computed(() => !!nodeDef.value)
 
 const showColorPicker = computed(() => hasAnySelection.value)

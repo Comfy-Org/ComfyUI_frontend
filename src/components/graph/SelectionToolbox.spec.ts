@@ -67,6 +67,17 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
+let nodeDefMock = {
+  type: 'TestNode',
+  title: 'Test Node'
+} as unknown
+
+vi.mock('@/stores/nodeDefStore', () => ({
+  useNodeDefStore: () => ({
+    fromLGraphNode: vi.fn(() => nodeDefMock)
+  })
+}))
+
 describe('SelectionToolbox', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
 
@@ -103,7 +114,7 @@ describe('SelectionToolbox', () => {
       }
     } as any
 
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   const mountComponent = (props = {}) => {
@@ -189,6 +200,15 @@ describe('SelectionToolbox', () => {
       expect(wrapper2.find('.info-button').exists()).toBe(false)
     })
 
+    it('should not show info button when node definition is not found', () => {
+      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      // mock nodedef and return null
+      nodeDefMock = null
+      // remount component
+      const wrapper = mountComponent()
+      expect(wrapper.find('.info-button').exists()).toBe(false)
+    })
+
     it('should show color picker for all selections', () => {
       // Single node selection
       canvasStore.selectedItems = [{ type: 'TestNode' }] as any
@@ -224,28 +244,6 @@ describe('SelectionToolbox', () => {
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.frame-nodes').exists()).toBe(true)
     })
-
-    // it('should show bookmark button only for single subgraph selections', () => {
-    //   const mockSubgraph = {
-    //     type: 'SubgraphNode',
-    //     isSubgraphNode: vi.fn(() => true)
-    //   }
-
-    //   // Single subgraph selection
-    //   canvasStore.selectedItems = [mockSubgraph] as any
-    //   const wrapper = mountComponent()
-    //   expect(wrapper.find('[data-testid="add-to-library"]').exists()).toBe(true)
-
-    //   // Single regular node selection
-    //   canvasStore.selectedItems = [
-    //     { type: 'TestNode', isSubgraphNode: vi.fn(() => false) }
-    //   ] as any
-    //   wrapper.unmount()
-    //   const wrapper2 = mountComponent()
-    //   expect(wrapper2.find('[data-testid="add-to-library"]').exists()).toBe(
-    //     false
-    //   )
-    // })
 
     it('should show bypass button for appropriate selections', () => {
       // Single node selection

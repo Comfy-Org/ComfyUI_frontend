@@ -105,44 +105,6 @@ describe('InfoButton', () => {
     })
   }
 
-  it('should not show button when no items are selected', () => {
-    canvasStore.selectedItems = []
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.attributes('style')).toContain('display: none')
-  })
-
-  it('should not show button when multiple items are selected', () => {
-    canvasStore.selectedItems = [mockLGraphNode, mockLGraphNode] as any
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.attributes('style')).toContain('display: none')
-  })
-
-  it('should show button when single item is selected', () => {
-    const mockNodeDef = {
-      nodePath: 'test/node',
-      display_name: 'Test Node'
-    }
-    canvasStore.selectedItems = [mockLGraphNode] as any
-    vi.spyOn(nodeDefStore, 'fromLGraphNode').mockReturnValue(mockNodeDef as any)
-
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.exists()).toBe(true)
-    expect(button.isVisible()).toBe(true)
-  })
-
-  it('should not show button when node definition is not found', () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
-    vi.spyOn(nodeDefStore, 'fromLGraphNode').mockReturnValue(null)
-
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.attributes('style')).toContain('display: none')
-  })
-
-  // Toggle behavior covered indirectly; here we just ensure first click works without error.
   it('should handle click without errors', async () => {
     const mockNodeDef = {
       nodePath: 'test/node',
@@ -154,15 +116,6 @@ describe('InfoButton', () => {
     const button = wrapper.find('button')
     await button.trigger('click')
     expect(button.exists()).toBe(true)
-  })
-
-  it('should handle missing node definition gracefully', async () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
-    vi.spyOn(nodeDefStore, 'fromLGraphNode').mockReturnValue(null)
-
-    const wrapper = mountComponent()
-    const button = wrapper.find('button')
-    expect(button.attributes('style')).toContain('display: none')
   })
 
   it('should have correct CSS classes', () => {
