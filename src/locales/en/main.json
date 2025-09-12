@@ -410,6 +410,8 @@
     "gpuPicker": {
       "title": "Choose your hardware setup",
       "recommended": "RECOMMENDED",
+      "cpuSubtitle": "CPU Mode",
+      "manualSubtitle": "Manual Setup",
       "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",
       "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
       "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"

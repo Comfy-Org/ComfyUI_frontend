@@ -26,7 +26,7 @@
       <!-- CPU -->
       <HardwareOption
         placeholder-text="CPU"
-        subtitle="Subtitle"
+        :subtitle="$t('install.gpuPicker.cpuSubtitle')"
         value="cpu"
         :selected="selected === 'cpu'"
         @click="pickGpu('cpu')"
@@ -34,7 +34,7 @@
       <!-- Manual Install -->
       <HardwareOption
         placeholder-text="Manual Install"
-        subtitle="Subtitle"
+        :subtitle="$t('install.gpuPicker.manualSubtitle')"
         value="unsupported"
         :selected="selected === 'unsupported'"
         @click="pickGpu('unsupported')"
