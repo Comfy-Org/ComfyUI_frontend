@@ -75,6 +75,343 @@
       }
     }
   },
+<<<<<<< Updated upstream
+=======
+  "ByteDanceFirstLastFrameNode": {
+    "display_name": "ByteDance First-Last-Frame to Video",
+    "description": "Generate video using prompt and first and last frames.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the video."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame to be used for the video."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame to be used for the video."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "The resolution of the output video."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio of the output video."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "The duration of the output video in seconds."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "camera_fixed": {
+        "name": "camera_fixed",
+        "tooltip": "Specifies whether to fix the camera. The platform appends an instruction to fix the camera to your prompt, but does not guarantee the actual effect."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageEditNode": {
+    "display_name": "ByteDance Image Edit",
+    "description": "Edit images using ByteDance models via api based on prompt",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "The base image to edit"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instruction to edit image"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Higher value makes the image follow the prompt more closely"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageNode": {
+    "display_name": "ByteDance Image",
+    "description": "Generate images using ByteDance models via api based on prompt",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the image"
+      },
+      "size_preset": {
+        "name": "size_preset",
+        "tooltip": "Pick a recommended size. Select Custom to use the width and height below"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Custom width for image. Value is working only if `size_preset` is set to `Custom`"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Custom height for image. Value is working only if `size_preset` is set to `Custom`"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Higher value makes the image follow the prompt more closely"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageReferenceNode": {
+    "display_name": "ByteDance Reference Images to Video",
+    "description": "Generate video using prompt and reference images.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the video."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "One to four images."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "The resolution of the output video."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio of the output video."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "The duration of the output video in seconds."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceImageToVideoNode": {
+    "display_name": "ByteDance Image to Video",
+    "description": "Generate video using ByteDance models via api based on image and prompt",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the video."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "First frame to be used for the video."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "The resolution of the output video."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio of the output video."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "The duration of the output video in seconds."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "camera_fixed": {
+        "name": "camera_fixed",
+        "tooltip": "Specifies whether to fix the camera. The platform appends an instruction to fix the camera to your prompt, but does not guarantee the actual effect."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNode": {
+    "display_name": "ByteDance Seedream 4",
+    "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for creating or editing an image."
+      },
+      "size_preset": {
+        "name": "size_preset",
+        "tooltip": "Pick a recommended size. Select Custom to use the width and height below."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Input image(s) for image-to-image generation. List of 1-10 images for single or multi-reference generation."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Custom width for image. Value is working only if `size_preset` is set to `Custom`"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Custom height for image. Value is working only if `size_preset` is set to `Custom`"
+      },
+      "sequential_image_generation": {
+        "name": "sequential_image_generation",
+        "tooltip": "Group image generation mode. 'disabled' generates a single image. 'auto' lets the model decide whether to generate multiple related images (e.g., story scenes, character variations)."
+      },
+      "max_images": {
+        "name": "max_images",
+        "tooltip": "Maximum number of images to generate when sequential_image_generation='auto'. Total images (input + generated) cannot exceed 15."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceTextToVideoNode": {
+    "display_name": "ByteDance Text to Video",
+    "description": "Generate video using ByteDance models via api based on prompt",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the video."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "The resolution of the output video."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "The aspect ratio of the output video."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "The duration of the output video in seconds."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "camera_fixed": {
+        "name": "camera_fixed",
+        "tooltip": "Specifies whether to fix the camera. The platform appends an instruction to fix the camera to your prompt, but does not guarantee the actual effect."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+>>>>>>> Stashed changes
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -1205,7 +1542,7 @@
   },
   "DualCLIPLoader": {
     "display_name": "DualCLIPLoader",
-    "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5\nhidream: at least one of t5 or llama, recommended t5 and llama",
+    "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5\nhidream: at least one of t5 or llama, recommended t5 and llama\nhunyuan_image: qwen2.5vl 7b and byt5 small",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -1232,6 +1569,20 @@
       },
       "length": {
         "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    }
+  },
+  "EmptyHunyuanImageLatent": {
+    "display_name": "EmptyHunyuanImageLatent",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
       },
       "batch_size": {
         "name": "batch_size"
@@ -1869,6 +2220,31 @@
         "name": "positive"
       },
       "1": {
+        "name": "latent"
+      }
+    }
+  },
+  "HunyuanRefinerLatent": {
+    "display_name": "HunyuanRefinerLatent",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
         "name": "latent"
       }
     }
@@ -7519,6 +7895,88 @@
       }
     }
   },
+  "StabilityAudioInpaint": {
+    "display_name": "Stability AI Audio Inpaint",
+    "description": "Transforms part of existing audio sample using text instructions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio must be between 6 and 190 seconds long."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Controls the duration in seconds of the generated audio."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for generation."
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Controls the number of sampling steps."
+      },
+      "mask_start": {
+        "name": "mask_start"
+      },
+      "mask_end": {
+        "name": "mask_end"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "StabilityAudioToAudio": {
+    "display_name": "Stability AI Audio To Audio",
+    "description": "Transforms existing audio samples into new high-quality compositions using text instructions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio must be between 6 and 190 seconds long."
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Controls the duration in seconds of the generated audio."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for generation."
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Controls the number of sampling steps."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Parameter controls how much influence the audio parameter has on the generated audio."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "StabilityStableImageSD_3_5Node": {
     "display_name": "Stability AI Stable Diffusion 3.5 Image",
     "description": "Generates images synchronously based on prompt and resolution.",
@@ -7595,6 +8053,38 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    }
+  },
+  "StabilityTextToAudio": {
+    "display_name": "Stability AI Text To Audio",
+    "description": "Generates high-quality music and sound effects from text descriptions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Controls the duration in seconds of the generated audio."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for generation."
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Controls the number of sampling steps."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
