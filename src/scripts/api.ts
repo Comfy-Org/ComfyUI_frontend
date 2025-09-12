@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
-import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
+import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import type {
   DisplayComponentWsMessage,
   EmbeddingsResponse,
