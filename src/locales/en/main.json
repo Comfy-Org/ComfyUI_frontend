@@ -1565,6 +1565,11 @@
       "confirmPasswordLabel": "Confirm Password",
       "confirmPasswordPlaceholder": "Enter the same password again",
       "forgotPassword": "Forgot password?",
+      "passwordResetInstructions": "Enter your email address and we'll send you a link to reset your password.",
+      "sendResetLink": "Send reset link",
+      "backToLogin": "Back to login",
+      "didntReceiveEmail": "Didn't receive an email? Contact us at",
+      "passwordResetError": "Failed to send password reset email. Please try again.",
       "loginButton": "Log in",
       "orContinueWith": "Or continue with",
       "loginWithGoogle": "Log in with Google",
@@ -1721,5 +1726,27 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "cloudOnboarding": {
+    "survey": {
+      "title": "Cloud Survey",
+      "placeholder": "Survey questions placeholder"
+    },
+    "waitlist": {
+      "title": "Cloud Waitlist",
+      "message": "You have been added to the waitlist. We will notify you when access is available."
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "instructions": "Enter your email address and we'll send you a link to reset your password.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "sendResetLink": "Send reset link",
+      "backToLogin": "Back to login",
+      "didntReceiveEmail": "Didn't receive an email? Contact us at",
+      "passwordResetSent": "Password reset email sent",
+      "passwordResetError": "Failed to send password reset email. Please try again.",
+      "emailRequired": "Email is required"
+    }
   }
 }
