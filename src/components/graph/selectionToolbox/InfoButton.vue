@@ -1,6 +1,5 @@
 <template>
   <Button
-    v-show="nodeDef"
     v-tooltip.top="{
       value: $t('g.info'),
       showDelay: 1000
@@ -19,5 +18,5 @@ import Button from 'primevue/button'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 
-const { nodeDef, showNodeHelp: toggleHelp } = useSelectionState()
+const { showNodeHelp: toggleHelp } = useSelectionState()
 </script>

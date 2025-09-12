@@ -5,7 +5,6 @@
   />
   <div
     v-else
-    :ref="option.hasSubmenu ? `submenu-trigger-${option.label}` : undefined"
     role="button"
     class="flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-gray-100 dark-theme:hover:bg-zinc-700 rounded cursor-pointer"
     @click="handleClick"
