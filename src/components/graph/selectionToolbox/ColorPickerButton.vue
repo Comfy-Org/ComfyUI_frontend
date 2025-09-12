@@ -1,7 +1,6 @@
 <template>
   <div class="relative">
     <Button
-      v-show="hasAnySelection"
       v-tooltip.top="{
         value: localizedCurrentColorName ?? t('color.noColor'),
         showDelay: 512
@@ -51,10 +50,9 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
-import { Raw, computed, onMounted, ref, watch } from 'vue'
+import { Raw, computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type {
   ColorOption as CanvasColorOption,
   Positionable
@@ -72,7 +70,6 @@ import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const { hasAnySelection } = useSelectionState()
 const colorPaletteStore = useColorPaletteStore()
 const workflowStore = useWorkflowStore()
 const isLightTheme = computed(
@@ -164,9 +161,6 @@ watch(
   },
   { immediate: true }
 )
-onMounted(() => {
-  updateColorSelectionFromNode(canvasStore.selectedItems)
-})
 </script>
 
 <style scoped>

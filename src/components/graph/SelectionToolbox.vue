@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import Panel from 'primevue/panel'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -59,10 +59,7 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
-import {
-  resetMoreOptionsState,
-  useSelectionToolboxPosition
-} from '@/composables/canvas/useSelectionToolboxPosition'
+import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -105,7 +102,8 @@ const {
   hasMultipleSelection,
   isSingleNode,
   isSingleSubgraph,
-  isSingleImageNode
+  isSingleImageNode,
+  hasAny3DNodeSelected
 } = useSelectionState()
 
 const showInfoButton = computed(
@@ -121,8 +119,7 @@ const showBypass = computed(
   () =>
     isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
 )
-
-const showLoad3DViewer = computed(() => hasAnySelection.value)
+const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
 const showMaskEditor = computed(() => isSingleImageNode.value)
 
 const showDelete = computed(() => hasAnySelection.value)
@@ -138,10 +135,6 @@ const showAnyPrimaryActions = computed(
 )
 
 const showAnyControlActions = computed(() => showBypass.value)
-
-onUnmounted(() => {
-  resetMoreOptionsState()
-})
 </script>
 
 <style scoped>

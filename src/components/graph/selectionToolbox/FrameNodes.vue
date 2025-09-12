@@ -1,6 +1,5 @@
 <template>
   <Button
-    v-show="hasAnySelection"
     v-tooltip.top="{
       value: $t('g.frameNodes'),
       showDelay: 1000
@@ -18,8 +17,6 @@
 import Button from 'primevue/button'
 
 import { useFrameNodes } from '@/composables/graph/useFrameNodes'
-import { useSelectionState } from '@/composables/graph/useSelectionState'
 
-const { hasAnySelection } = useSelectionState()
 const { frameNodes } = useFrameNodes()
 </script>

@@ -25,6 +25,7 @@ import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { isOutputNode } from '@/utils/nodeFilterUtil'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -34,10 +35,7 @@ const { hasOutputNodesSelected, selectedNodes } = useSelectionState()
 const canvas = canvasStore.getCanvas()
 const buttonHovered = ref(false)
 const selectedOutputNodes = computed(
-  () =>
-    selectedNodes.value.filter(
-      (item) => item.constructor.nodeData?.output_node
-    ) as LGraphNode[]
+  () => selectedNodes.value.filter(isOutputNode) as LGraphNode[]
 )
 
 const isDisabled = computed(() => selectedOutputNodes.value.length === 0)

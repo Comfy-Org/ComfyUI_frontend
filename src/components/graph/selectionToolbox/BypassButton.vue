@@ -1,6 +1,5 @@
 <template>
   <Button
-    v-show="hasAnySelection"
     v-tooltip.top="{
       value: t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label'),
       showDelay: 1000
@@ -21,12 +20,10 @@
 import Button from 'primevue/button'
 import { useI18n } from 'vue-i18n'
 
-import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
-const { hasAnySelection } = useSelectionState()
 
 const toggleBypass = async () => {
   await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
