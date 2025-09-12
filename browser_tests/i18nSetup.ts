@@ -50,7 +50,7 @@ export async function preprocessLitegraph() {
         processedCount++
       } catch (error: unknown) {
         console.warn(
-          `  ⚠ Could not process ${filePath}: ${String((error as Error)?.message || error)}`
+          `  ⚠ Could not preprocess file for litegraph ${filePath}: ${String((error as Error)?.message || error)}`
         )
       }
     })
