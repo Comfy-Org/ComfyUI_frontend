@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors cursor-pointer"
+    class="flex items-center gap-2 px-4 py-3 text-sm rounded-md transition-colors cursor-pointer"
     :class="
       active
         ? 'bg-neutral-100 dark-theme:bg-zinc-700 text-neutral'
@@ -9,7 +9,8 @@
     role="button"
     @click="onClick"
   >
-    <component :is="iconComponent" class="text-sm text-neutral" />
+    <NavIcon v-if="icon" :icon="icon" />
+    <i-lucide:folder v-else class="text-xs text-neutral" />
     <span class="flex items-center">
       <slot></slot>
     </span>
@@ -17,28 +18,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import ILucideBox from '~icons/lucide/box'
-import ILucideCommand from '~icons/lucide/command'
-import ILucideDumbbell from '~icons/lucide/dumbbell'
-import ILucideFilm from '~icons/lucide/film'
-import ILucideFolder from '~icons/lucide/folder'
-import ILucideGraduationCap from '~icons/lucide/graduation-cap'
-import ILucideHandCoins from '~icons/lucide/hand-coins'
-import ILucideImage from '~icons/lucide/image'
-import ILucideLayoutGrid from '~icons/lucide/layout-grid'
-// Import only the icons used in getCategoryIcon
-import ILucideList from '~icons/lucide/list'
-import ILucideMaximize2 from '~icons/lucide/maximize-2'
-import ILucideMessageSquareText from '~icons/lucide/message-square-text'
-import ILucidePuzzle from '~icons/lucide/puzzle'
-import ILucideSlidersHorizontal from '~icons/lucide/sliders-horizontal'
-import ILucideVolume2 from '~icons/lucide/volume-2'
-import ILucideWrench from '~icons/lucide/wrench'
-import ILucideZap from '~icons/lucide/zap'
+import { NavItemData } from '@/types/navTypes'
+
+import NavIcon from './NavIcon.vue'
 
 const { icon, active, onClick } = defineProps<{
-  icon?: string
+  icon: NavItemData['icon']
   active?: boolean
   onClick: () => void
 }>()

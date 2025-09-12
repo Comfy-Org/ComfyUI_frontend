@@ -18,7 +18,7 @@
       :disabled="readonly"
       class="w-full text-xs"
       size="small"
-      rows="6"
+      :rows="6"
       :pt="{
         root: {
           onBlur: handleBlur

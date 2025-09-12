@@ -28,7 +28,7 @@
     id="graph-canvas"
     ref="canvasRef"
     tabindex="1"
-    class="w-full h-full touch-none"
+    class="align-top w-full h-full touch-none"
   />
 
   <!-- TransformPane for Vue node rendering -->
@@ -36,6 +36,7 @@
     v-if="isVueNodesEnabled && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @transform-update="handleTransformUpdate"
+    @wheel.capture="canvasInteractions.forwardEventToCanvas"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <VueGraphNode
@@ -96,7 +97,7 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { useNodeEventHandlers } from '@/composables/graph/useNodeEventHandlers'
+import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -116,6 +117,7 @@ import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import TransformPane from '@/renderer/core/layout/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -147,6 +149,8 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
+const canvasInteractions = useCanvasInteractions()
+
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )

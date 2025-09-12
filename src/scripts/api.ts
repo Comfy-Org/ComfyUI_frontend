@@ -30,6 +30,7 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
+import type { ModelFile, ModelFolderInfo } from '@/schemas/assetSchema'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
@@ -692,14 +693,14 @@ export class ComfyApi extends EventTarget {
    * Gets a list of model folder keys (eg ['checkpoints', 'loras', ...])
    * @returns The list of model folder keys
    */
-  async getModelFolders(): Promise<{ name: string; folders: string[] }[]> {
+  async getModelFolders(): Promise<ModelFolderInfo[]> {
     const res = await this.fetchApi(`/experiment/models`)
     if (res.status === 404) {
       return []
     }
     const folderBlacklist = ['configs', 'custom_nodes']
     return (await res.json()).filter(
-      (folder: string) => !folderBlacklist.includes(folder)
+      (folder: ModelFolderInfo) => !folderBlacklist.includes(folder.name)
     )
   }
 
@@ -708,9 +709,7 @@ export class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(
-    folder: string
-  ): Promise<{ name: string; pathIndex: number }[]> {
+  async getModels(folder: string): Promise<ModelFile[]> {
     const res = await this.fetchApi(`/experiment/models/${folder}`)
     if (res.status === 404) {
       return []
@@ -1036,7 +1035,13 @@ export class ComfyApi extends EventTarget {
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
-    return (await axios.get(this.internalURL('/folder_paths'))).data
+    const response = await axios
+      .get(this.internalURL('/folder_paths'))
+      .catch(() => null)
+    if (!response) {
+      return {} // Fallback: no filesystem paths known when API unavailable
+    }
+    return response.data
   }
 
   /* Frees memory by unloading models and optionally freeing execution cache

@@ -74,6 +74,10 @@ export const useTransformState = () => {
 
   // Computed transform string for CSS
   const transformStyle = computed(() => ({
+    // Match LiteGraph DragAndScale.toCanvasContext():
+    // ctx.scale(scale); ctx.translate(offset)
+    // CSS applies right-to-left, so "scale() translate()" -> translate first, then scale
+    // Effective mapping: screen = (canvas + offset) * scale
     transform: `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`,
     transformOrigin: '0 0'
   }))
@@ -103,15 +107,15 @@ export const useTransformState = () => {
    * Applies the same transform that LiteGraph uses for rendering.
    * Essential for positioning Vue components to align with canvas elements.
    *
-   * Formula: screen = canvas * scale + offset
+   * Formula: screen = (canvas + offset) * scale
    *
    * @param point - Point in canvas coordinate system
    * @returns Point in screen coordinate system
    */
   const canvasToScreen = (point: Point): Point => {
     return {
-      x: point.x * camera.z + camera.x,
-      y: point.y * camera.z + camera.y
+      x: (point.x + camera.x) * camera.z,
+      y: (point.y + camera.y) * camera.z
     }
   }
 
@@ -121,15 +125,15 @@ export const useTransformState = () => {
    * Inverse of canvasToScreen. Useful for hit testing and converting
    * mouse events back to canvas space.
    *
-   * Formula: canvas = (screen - offset) / scale
+   * Formula: canvas = screen / scale - offset
    *
    * @param point - Point in screen coordinate system
    * @returns Point in canvas coordinate system
    */
   const screenToCanvas = (point: Point): Point => {
     return {
-      x: (point.x - camera.x) / camera.z,
-      y: (point.y - camera.y) / camera.z
+      x: point.x / camera.z - camera.x,
+      y: point.y / camera.z - camera.y
     }
   }
 
