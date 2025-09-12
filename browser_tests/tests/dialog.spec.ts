@@ -36,6 +36,10 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.loadWorkflow('missing/missing_nodes')
   await comfyPage.closeDialog()
 
+  // Wait for any async operations to complete after dialog closes
+  await comfyPage.nextFrame()
+  await comfyPage.page.waitForTimeout(100)
+
   // Make a change to the graph
   await comfyPage.doubleClickCanvas()
   await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')

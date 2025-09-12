@@ -133,11 +133,10 @@ jobs:
         if: steps.check-existing.outputs.skip != 'true' && steps.backport.outputs.success
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r version branch <<< "${backport}"
 

@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.27.2",
+  "version": "1.27.3",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -25,10 +25,10 @@
     "preinstall": "npx only-allow pnpm",
     "prepare": "husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "nx preview",
-    "lint": "eslint src --cache --concurrency=$npm_package_config_eslint_concurrency",
-    "lint:fix": "eslint src --fix --cache --concurrency=$npm_package_config_eslint_concurrency",
-    "lint:no-cache": "eslint src --concurrency=$npm_package_config_eslint_concurrency",
-    "lint:fix:no-cache": "eslint src --fix --concurrency=$npm_package_config_eslint_concurrency",
+    "lint": "eslint src --cache",
+    "lint:fix": "eslint src --cache --fix",
+    "lint:no-cache": "eslint src",
+    "lint:fix:no-cache": "eslint src --fix",
     "knip": "knip --cache",
     "knip:no-cache": "knip",
     "locale": "lobe-i18n locale",
@@ -36,9 +36,6 @@
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "storybook": "nx storybook -p 6006",
     "build-storybook": "storybook build"
-  },
-  "config": {
-    "eslint_concurrency": "4"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",

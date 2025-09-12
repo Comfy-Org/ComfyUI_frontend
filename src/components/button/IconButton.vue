@@ -21,6 +21,7 @@ import {
   getButtonTypeClasses,
   getIconButtonSizeClasses
 } from '@/types/buttonTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 interface IconButtonProps extends BaseButtonProps {
   onClick: (event: Event) => void
@@ -46,8 +47,6 @@ const buttonStyle = computed(() => {
     ? getBorderButtonTypeClasses(type)
     : getButtonTypeClasses(type)
 
-  return [baseClasses, sizeClasses, typeClasses, className]
-    .filter(Boolean)
-    .join(' ')
+  return cn(baseClasses, sizeClasses, typeClasses, className)
 })
 </script>
