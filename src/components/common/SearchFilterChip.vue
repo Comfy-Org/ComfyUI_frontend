@@ -1,6 +1,6 @@
 <template>
   <Chip removable @remove="$emit('remove', $event)">
-    <Badge size="small" :class="badgeClass">
+    <Badge size="small" :class="cn(badgeClass, badgeClasses[badgeClass])">
       {{ badge }}
     </Badge>
     {{ text }}
@@ -11,6 +11,8 @@
 import Badge from 'primevue/badge'
 import Chip from 'primevue/chip'
 
+import { cn } from '@/utils/tailwindUtil'
+
 export interface SearchFilter {
   text: string
   badge: string
@@ -18,26 +20,13 @@ export interface SearchFilter {
   id: string | number
 }
 
+const badgeClasses: Record<string, string> = {
+  'i-badge': 'bg-green-500 text-white',
+  'o-badge': 'bg-red-500 text-white',
+  'c-badge': 'bg-blue-500 text-white',
+  's-badge': 'bg-yellow-500'
+}
+
 defineProps<Omit<SearchFilter, 'id'>>()
 defineEmits(['remove'])
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-:deep(.i-badge) {
-  @apply bg-green-500 text-white;
-}
-
-:deep(.o-badge) {
-  @apply bg-red-500 text-white;
-}
-
-:deep(.c-badge) {
-  @apply bg-blue-500 text-white;
-}
-
-:deep(.s-badge) {
-  @apply bg-yellow-500;
-}
-</style>
