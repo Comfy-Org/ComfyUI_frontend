@@ -48,7 +48,17 @@ vi.mock('@/services/extensionService', () => ({
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => true),
-  isImageNode: vi.fn(() => false)
+  isImageNode: vi.fn(() => false),
+  isLoad3dNode: vi.fn(() => false)
+}))
+
+vi.mock('@/stores/settingStore', () => ({
+  useSettingStore: () => ({
+    get: vi.fn((key: string) => {
+      if (key === 'Comfy.Load3D.3DViewerEnable') return true
+      return null
+    })
+  })
 }))
 
 vi.mock('@/stores/commandStore', () => ({
@@ -282,6 +292,24 @@ describe('SelectionToolbox', () => {
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.mask-editor-button').exists()).toBe(false)
+    })
+
+    it('should show Color picker button only for single Load3D nodes', async () => {
+      const mockUtils = await import('@/utils/litegraphUtil')
+      const isLoad3dNodeSpy = vi.spyOn(mockUtils, 'isLoad3dNode')
+
+      // Single Load3D node
+      isLoad3dNodeSpy.mockReturnValue(true)
+      canvasStore.selectedItems = [{ type: 'Load3DNode' }] as any
+      const wrapper = mountComponent()
+      expect(wrapper.find('.load-3d-viewer-button').exists()).toBe(true)
+
+      // Single non-Load3D node
+      isLoad3dNodeSpy.mockReturnValue(false)
+      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      wrapper.unmount()
+      const wrapper2 = mountComponent()
+      expect(wrapper2.find('.load-3d-viewer-button').exists()).toBe(false)
     })
   })
 
