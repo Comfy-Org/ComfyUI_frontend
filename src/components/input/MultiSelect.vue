@@ -9,7 +9,7 @@
   -->
   <MultiSelect
     v-model="selectedItems"
-    v-bind="{ ...$attrs, options: filteredOptions }"
+    v-bind="$attrs"
     option-label="name"
     unstyled
     :max-selected-labels="0"
@@ -100,12 +100,11 @@
 </template>
 
 <script setup lang="ts">
-import Fuse from 'fuse.js'
 import Button from 'primevue/button'
 import MultiSelect, {
   MultiSelectPassThroughMethodOptions
 } from 'primevue/multiselect'
-import { computed, toRefs, useAttrs } from 'vue'
+import { computed } from 'vue'
 
 import SearchBox from '@/components/input/SearchBox.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
@@ -139,7 +138,6 @@ interface Props {
   // Note: options prop is intentionally omitted.
   // It's passed via $attrs to maximize PrimeVue API compatibility
 }
-const props = defineProps<Props>()
 const {
   label,
   showSearchBox = false,
@@ -154,7 +152,7 @@ const {
 const selectedItems = defineModel<Option[]>({
   required: true
 })
-const searchQuery = defineModel<string>('searchQuery', { default: '' })
+const searchQuery = defineModel<string>('searchQuery')
 const selectedCount = computed(() => selectedItems.value.length)
 
 const popoverStyle = usePopoverSizing({
@@ -185,14 +183,9 @@ const pt = computed(() => ({
   dropdown: {
     class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
   },
-  listContainer: {
-    style: 'max-height: 460px;'
-  },
   header: () => ({
     class:
-      showSearchBox.value || showSelectedCount.value || showClearButton.value
-        ? 'block'
-        : 'hidden'
+      showSearchBox || showSelectedCount || showClearButton ? 'block' : 'hidden'
   }),
   // Overlay & list visuals unchanged
   overlay: {

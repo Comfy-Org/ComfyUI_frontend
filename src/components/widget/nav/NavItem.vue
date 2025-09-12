@@ -27,45 +27,4 @@ const { icon, active, onClick } = defineProps<{
   active?: boolean
   onClick: () => void
 }>()
-
-// Icon map matching getCategoryIcon function exactly
-const iconMap = {
-  // Main categories
-  list: ILucideList,
-  'graduation-cap': ILucideGraduationCap,
-
-  // Generation types
-  image: ILucideImage,
-  film: ILucideFilm,
-  box: ILucideBox,
-  'volume-2': ILucideVolume2,
-
-  // API and models
-  'hand-coins': ILucideHandCoins,
-
-  // LLMs and AI
-  'message-square-text': ILucideMessageSquareText,
-
-  // Performance and hardware
-  zap: ILucideZap,
-  command: ILucideCommand,
-
-  // Training
-  dumbbell: ILucideDumbbell,
-
-  // Extensions and tools
-  puzzle: ILucidePuzzle,
-  wrench: ILucideWrench,
-
-  // Fallbacks for common patterns
-  'maximize-2': ILucideMaximize2,
-  'sliders-horizontal': ILucideSlidersHorizontal,
-  'layout-grid': ILucideLayoutGrid,
-  folder: ILucideFolder
-}
-
-const iconComponent = computed(() => {
-  if (!icon) return ILucideFolder
-  return iconMap[icon as keyof typeof iconMap] || ILucideFolder
-})
 </script>
