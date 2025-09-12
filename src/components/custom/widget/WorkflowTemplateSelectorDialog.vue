@@ -1,5 +1,5 @@
 <template>
-  <BaseWidgetLayout
+  <BaseModalLayout
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     class="workflow-template-selector-dialog"
   >
@@ -140,7 +140,7 @@
             v-for="template in displayTemplates"
             :key="template.name"
             ref="cardRefs"
-            ratio="none"
+            :ratio="undefined"
             :max-width="300"
             :min-width="200"
             class="cursor-pointer transition-all duration-300 hover:scale-[1.02]"
@@ -168,7 +168,7 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplates[template.name]"
+                        :is-hovered="hoveredTemplates[template.name] || false"
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -187,7 +187,7 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplates[template.name]"
+                        :is-hovered="hoveredTemplates[template.name] || false"
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -203,7 +203,7 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplates[template.name]"
+                        :is-hovered="hoveredTemplates[template.name] || false"
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -348,7 +348,7 @@
         }}
       </div>
     </template>
-  </BaseWidgetLayout>
+  </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
@@ -368,7 +368,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import BaseWidgetLayout from '@/components/widget/layout/BaseWidgetLayout.vue'
+import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'

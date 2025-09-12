@@ -45,7 +45,7 @@
             </div>
           </header>
 
-          <main class="flex flex-col flex-1 min-h-0 min-w-0">
+          <main class="flex flex-col flex-1 min-h-0">
             <!-- Fallback title bar when no leftPanel is provided -->
             <slot name="contentFilter"></slot>
             <h2 v-if="!$slots.leftPanel" class="text-xxl px-6 pt-2 pb-6 m-0">
@@ -75,10 +75,8 @@ import IconButton from '@/components/button/IconButton.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const { contentTitle, fitParent } = defineProps<{
+const { contentTitle } = defineProps<{
   contentTitle: string
-  /** When true, the layout will size itself to its parent instead of using viewport-based widths. */
-  fitParent?: boolean
 }>()
 
 const BREAKPOINTS = { md: 880 }
@@ -177,29 +175,9 @@ const rightPanelClasses = computed(() => {
   aspect-ratio: 20/13;
 }
 
-/* Modifier class to force the widget to respect parent dialog/container sizing (prevents overflow) */
-.base-widget-layout.fit-parent {
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-  aspect-ratio: auto;
-}
-
 @media (min-width: 1450px) {
   .base-widget-layout {
     max-width: 1724px;
-  }
-}
-
-@media (min-width: 1920px) {
-  .base-widget-layout {
-    max-width: 1920px;
-  }
-}
-
-@media (min-width: 2400px) {
-  .base-widget-layout {
-    max-width: 2200px;
   }
 }
 
