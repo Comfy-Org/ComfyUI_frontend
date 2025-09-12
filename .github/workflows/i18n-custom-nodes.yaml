@@ -32,11 +32,10 @@ jobs:
       with:
         repository: Comfy-Org/ComfyUI_frontend
         path: ComfyUI_frontend
-    - name: Checkout ComfyUI_devtools
-      uses: actions/checkout@v4
-      with:
-        repository: Comfy-Org/ComfyUI_devtools
-        path: ComfyUI/custom_nodes/ComfyUI_devtools
+    - name: Copy ComfyUI_devtools from frontend repo
+      run: |
+        mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
+        cp -r ComfyUI_frontend/tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/
     - name: Checkout custom node repository
       uses: actions/checkout@v4
       with:
