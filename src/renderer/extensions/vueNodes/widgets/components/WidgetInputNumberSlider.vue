@@ -10,6 +10,7 @@
         v-bind="filteredProps"
         :disabled="readonly"
         class="flex-grow text-xs"
+        :step="stepValue !== 'any' ? +stepValue : undefined"
         @update:model-value="updateLocalValue"
       />
       <InputText
@@ -28,7 +29,7 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
@@ -42,7 +43,7 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
+const { widget, modelValue, readonly } = defineProps<{
   widget: SimplifiedWidget<number>
   modelValue: number
   readonly?: boolean
@@ -53,23 +54,19 @@ const emit = defineEmits<{
 }>()
 
 // Use the composable for consistent widget value handling
-const { localValue, onChange } = useNumberWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
+const { localValue, onChange } = useNumberWidgetValue(widget, modelValue, emit)
 
 const updateLocalValue = (newValue: number[] | undefined): void => {
   onChange(newValue ?? [])
 }
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, STANDARD_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
 
 // Get the precision value for proper number formatting
 const precision = computed(() => {
-  const p = props.widget.options?.precision
+  const p = widget.options?.precision
   // Treat negative or non-numeric precision as undefined
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
@@ -77,8 +74,8 @@ const precision = computed(() => {
 // Calculate the step value based on precision or widget options
 const stepValue = computed(() => {
   // Use step2 (correct input spec value) instead of step (legacy 10x value)
-  if (props.widget.options?.step2 !== undefined) {
-    return String(props.widget.options.step2)
+  if (widget.options?.step2 !== undefined) {
+    return String(widget.options.step2)
   }
   // Otherwise, derive from precision
   if (precision.value !== undefined) {
@@ -119,12 +116,7 @@ const applyPrecision = (value: number): number => {
 }
 
 // Keep a separate display value for the input field
-const inputDisplayValue = ref(formatNumber(localValue.value))
-
-// Update display value when localValue changes from external sources
-watch(localValue, (newValue) => {
-  inputDisplayValue.value = formatNumber(newValue)
-})
+const inputDisplayValue = computed(() => formatNumber(localValue.value))
 
 const handleInputBlur = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -136,7 +128,7 @@ const handleInputBlur = (event: Event) => {
     const roundedValue = applyPrecision(parsed)
     onChange(roundedValue)
     // Update display value with proper formatting
-    inputDisplayValue.value = formatNumber(roundedValue)
+    localValue.value = roundedValue
   }
 }
 
@@ -151,7 +143,7 @@ const handleInputKeydown = (event: KeyboardEvent) => {
       const roundedValue = applyPrecision(parsed)
       onChange(roundedValue)
       // Update display value with proper formatting
-      inputDisplayValue.value = formatNumber(roundedValue)
+      localValue.value = roundedValue
     }
   }
 }
