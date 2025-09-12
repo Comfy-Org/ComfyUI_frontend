@@ -2,37 +2,9 @@ import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
+import type { ComfyApi } from '../src/scripts/api'
+import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
-
-// Simple NodeDef wrapper for i18n collection
-// Avoids importing ComfyNodeDefImpl which has Vue dependencies
-class SimpleNodeDef {
-  constructor(public readonly def: ComfyNodeDef) {}
-  
-  get name() { return this.def.name }
-  get display_name() { return this.def.display_name }
-  get inputs() { 
-    // Simple transformation - just get the input specs
-    const inputs: Record<string, any> = {}
-    if (this.def.input?.required) {
-      Object.entries(this.def.input.required).forEach(([key, spec]) => {
-        inputs[key] = { name: key, type: spec[0] }
-      })
-    }
-    if (this.def.input?.optional) {
-      Object.entries(this.def.input.optional).forEach(([key, spec]) => {
-        inputs[key] = { name: key, type: spec[0] }
-      })
-    }
-    return inputs
-  }
-  get outputs() {
-    return (this.def.output || []).map((type, index) => ({
-      type,
-      name: this.def.output_name?.[index] || ''
-    }))
-  }
-}
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
@@ -45,17 +17,17 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     })
   })
 
-  const nodeDefs: SimpleNodeDef[] = (
+  const nodeDefs: ComfyNodeDefImpl[] = (
     Object.values(
       await comfyPage.page.evaluate(async () => {
-        const api = window['app'].api as any
+        const api = window['app'].api as ComfyApi
         return await api.getNodeDefs()
       })
     ) as ComfyNodeDef[]
   )
     // Ignore DevTools nodes (used for internal testing)
     .filter((def) => !def.name.startsWith('DevTools'))
-    .map((def) => new SimpleNodeDef(def))
+    .map((def) => new ComfyNodeDefImpl(def))
 
   console.log(`Collected ${nodeDefs.length} node definitions`)
 
