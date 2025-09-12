@@ -18,7 +18,9 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@trivago/prettier-plugin-sort-imports',
+    'tailwindcss',
+    'tailwindcss-primeui'
   ],
   ignore: [
     // Auto generated manager types
@@ -51,8 +53,7 @@ const config: KnipConfig = {
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
     '-knipIgnoreUnusedButUsedByVueNodesBranch'
-  ],
-  tailwind: {}
+  ]
 }
 
 export default config
