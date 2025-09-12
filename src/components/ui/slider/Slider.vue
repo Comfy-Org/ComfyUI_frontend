@@ -48,7 +48,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     >
       <SliderRange
         data-slot="slider-range"
-        class="bg-text-secondary absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
+        class="bg-node-component-surface-highlight absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
       />
     </SliderTrack>
 
@@ -58,7 +58,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-thumb"
       :class="
         cn(
-          'bg-text-secondary ring-component-hover-lighter block size-3.5 shrink-0 rounded-full shadow-sm transition-[color,box-shadow]',
+          'bg-node-component-surface-highlight ring-node-component-surface-selected block size-3.5 shrink-0 rounded-full shadow-sm transition-[color,box-shadow]',
           'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50'
         )
       "

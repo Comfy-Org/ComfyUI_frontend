@@ -116,10 +116,11 @@
 }
 
 @theme inline {
-  --color-component-hover-lighter: var(--color-charcoal-700);
-  --color-ring: var(--color-sand-200);
+  --color-node-component-surface: var(--color-charcoal-300);
+  --color-node-component-surface-highlight: var(--color-slate-100);
+  --color-node-component-surface-hovered: var(--color-charcoal-500);
+  --color-node-component-surface-selected: var(--color-charcoal-700);
   --color-node-stroke: var(--color-stone-100);
-  --color-text-secondary: var(--color-slate-100);
 }
 
 @custom-variant dark-theme {
