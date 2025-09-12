@@ -6,7 +6,6 @@ import {
   createWebHistory
 } from 'vue-router'
 
-import { getMe } from '@/api/auth'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
@@ -78,23 +77,6 @@ const router = createRouter({
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
           beforeEnter: async (_to, _from, next) => {
-            // Check onboarding status first
-            const me = await getMe()
-            if (me) {
-              // const emailVerified =
-              //   localStorage.getItem('emailVerified') === 'true'
-
-              // if (!emailVerified) {
-              //   return next('/verify-email')
-              // }
-              if (!me.surveyCompleted) {
-                return next('/survey')
-              }
-              if (!me.whitelisted) {
-                return next('/waitlist')
-              }
-            }
-
             // Then check user store
             const userStore = useUserStore()
             await userStore.initialize()
@@ -209,33 +191,32 @@ router.beforeEach(async (to, _from, next) => {
   const authHeader = await authStore.getAuthHeader()
   const isLoggedIn = !!authHeader
 
-  // Allow public routes without authentication
+  // Allow public routes
   if (isPublicRoute(to)) {
-    // If logged in and trying to access login/signup, redirect based on status
-    if (
-      isLoggedIn &&
-      (to.name === 'cloud-login' || to.name === 'cloud-signup')
-    ) {
-      try {
-        const me = await getMe()
-        if (me && !me.surveyCompleted) {
-          return next({ name: 'cloud-survey' })
-        }
-        if (me && !me.whitelisted) {
-          return next({ name: 'cloud-waitlist' })
-        }
-        return next({ path: '/' })
-      } catch (error) {
-        console.error('Error fetching user status:', error)
-        return next({ path: '/' })
-      }
-    }
-    // Allow access to public routes
     return next()
   }
 
-  // Handle protected routes
-  if (!isLoggedIn) {
+  // Special handling for user-check and invite-check routes
+  // These routes need auth but handle their own routing logic
+  if (to.name === 'cloud-user-check' || to.name === 'cloud-invite-check') {
+    if (to.meta.requiresAuth && !isLoggedIn) {
+      return next({ name: 'cloud-login' })
+    }
+    return next()
+  }
+
+  // Prevent redirect loop when coming from user-check
+  if (_from.name === 'cloud-user-check' && to.path === '/') {
+    return next()
+  }
+
+  // Check if route requires authentication
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    return next({ name: 'cloud-login' })
+  }
+
+  // Handle other protected routes
+  if (!isPublicRoute(to) && !isLoggedIn) {
     // For Electron, use dialog
     if (isElectron()) {
       const dialogService = useDialogService()

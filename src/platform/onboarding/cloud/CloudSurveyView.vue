@@ -66,14 +66,13 @@ import Button from 'primevue/button'
 import Select from 'primevue/select'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { submitSurvey as submitSurveyAPI } from '@/api/survey'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()
-const route = useRoute()
 
 const surveyData = ref({
   useCase: '',
@@ -114,19 +113,8 @@ const isFormValid = computed(() => {
 const submitSurvey = async () => {
   await submitSurveyAPI(surveyData.value)
 
-  // After survey completion, check whitelist status
-  const inviteCode = route.query.inviteCode as string
-  const whitelisted = localStorage.getItem('whitelisted') === 'true'
-
-  if (inviteCode) {
-    console.log('Has invite code, going to main app')
-    window.location.href = '/'
-  } else if (whitelisted) {
-    console.log('User is whitelisted, going to main app')
-    window.location.href = '/'
-  } else {
-    console.log('User needs to wait, going to waitlist')
-    await router.push({ name: 'cloud-waitlist' })
-  }
+  // After survey completion, go back to user check
+  // User check will handle routing based on updated status
+  await router.push({ name: 'cloud-user-check' })
 }
 </script>

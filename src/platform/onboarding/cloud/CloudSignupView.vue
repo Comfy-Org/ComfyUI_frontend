@@ -101,7 +101,6 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getMe } from '@/api/auth'
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { SignUpData } from '@/schemas/signInSchema'
@@ -122,24 +121,9 @@ const navigateToLogin = () => {
 }
 
 const onSuccess = async () => {
-  try {
-    // Get user onboarding status (new users won't have survey/whitelist yet)
-    const me = await getMe()
-
-    // Navigate based on user status
-    if (me && !me.surveyCompleted) {
-      void router.push({ name: 'cloud-survey' })
-    } else if (me && !me.whitelisted) {
-      void router.push({ name: 'cloud-waitlist' })
-    } else {
-      // User is fully onboarded (rare for signup, but possible)
-      void router.push({ path: '/' })
-    }
-  } catch (error) {
-    console.error('Error checking user status:', error)
-    // For new signups, default to survey
-    void router.push({ name: 'cloud-survey' })
-  }
+  // After successful signup, always go to user check
+  // The user check will handle routing based on their status
+  await router.push({ name: 'cloud-user-check' })
 }
 
 // Custom error handler for inline display

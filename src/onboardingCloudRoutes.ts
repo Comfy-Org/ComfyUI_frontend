@@ -32,27 +32,39 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/code/:inviteCode',
-    name: 'invite-entry',
+    name: 'cloud-invite-entry',
     component: () =>
       import('@/platform/onboarding/cloud/CloudInviteEntryView.vue')
   },
   {
     path: '/verify-email',
-    name: 'verify-email',
+    name: 'cloud-verify-email',
     component: () =>
       import('@/platform/onboarding/cloud/CloudVerifyEmailView.vue')
   },
   {
     path: '/claim-invite',
-    name: 'claim-invite',
+    name: 'cloud-claim-invite',
     component: () =>
       import('@/platform/onboarding/cloud/CloudClaimInviteView.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/sorry-contact-support',
-    name: 'sorry-contact-support',
+    name: 'cloud-sorry-contact-support',
     component: () =>
       import('@/platform/onboarding/cloud/CloudSorryContactSupportView.vue')
+  },
+  {
+    path: '/user-check',
+    name: 'cloud-user-check',
+    component: () => import('@/platform/onboarding/cloud/UserCheckView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/invite-check',
+    name: 'cloud-invite-check',
+    component: () => import('@/platform/onboarding/cloud/InviteCheckView.vue'),
+    meta: { requiresAuth: true }
   }
 ]

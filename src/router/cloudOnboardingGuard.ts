@@ -1,6 +1,5 @@
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 
-import { getAuthStatus } from '@/api/auth'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 export async function cloudOnboardingGuard(
@@ -9,62 +8,40 @@ export async function cloudOnboardingGuard(
   next: NavigationGuardNext
 ): Promise<void> {
   const requiresAuth = to.meta.requiresAuth
-  const status = getAuthStatus()
   const authStore = useFirebaseAuthStore()
   const authHeader = await authStore.getAuthHeader()
   const isLoggedIn = !!authHeader
 
+  // Check authentication for protected routes
   if (requiresAuth && !isLoggedIn) {
     next({ path: '/login', query: { redirect: to.fullPath } })
     return
   }
 
-  if (isLoggedIn) {
-    const path = to.path
+  // Allow special check routes to handle their own logic
+  const specialRoutes = ['/user-check', '/invite-check']
+  if (specialRoutes.includes(to.path)) {
+    next()
+    return
+  }
 
-    if (
-      !status.emailVerified &&
-      path !== '/verify-email' &&
-      path !== '/login' &&
-      path !== '/signup' &&
-      !path.startsWith('/code/')
-    ) {
-      next('/verify-email')
-      return
-    }
+  // If logged in and going to main app, do user check first
+  if (isLoggedIn && to.path === '/') {
+    next({ name: 'cloud-user-check' })
+    return
+  }
 
-    if (
-      status.emailVerified &&
-      !status.surveyCompleted &&
-      path !== '/survey' &&
-      path !== '/verify-email'
-    ) {
-      next('/survey')
-      return
-    }
+  // Allow auth pages when not logged in
+  const authPages = ['/login', '/signup', '/forgot-password']
+  if (!isLoggedIn && authPages.includes(to.path)) {
+    next()
+    return
+  }
 
-    if (
-      status.surveyCompleted &&
-      !status.whitelisted &&
-      path !== '/waitlist' &&
-      path !== '/survey' &&
-      path !== '/claim-invite'
-    ) {
-      next('/waitlist')
-      return
-    }
-
-    if (status.surveyCompleted && status.whitelisted) {
-      if (
-        path === '/login' ||
-        path === '/signup' ||
-        path === '/survey' ||
-        path === '/waitlist'
-      ) {
-        next('/')
-        return
-      }
-    }
+  // If logged in and trying to access auth pages, redirect to user check
+  if (isLoggedIn && authPages.includes(to.path)) {
+    next({ name: 'cloud-user-check' })
+    return
   }
 
   next()

@@ -96,7 +96,6 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getMe } from '@/api/auth'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
 import { type SignInData } from '@/schemas/signInSchema'
@@ -115,39 +114,18 @@ const navigateToSignup = () => {
 }
 
 const onSuccess = async () => {
-  try {
-    // Check if there's an invite code
-    const inviteCode = route.query.inviteCode as string
+  // Check if there's an invite code
+  const inviteCode = route.query.inviteCode as string
 
-    if (inviteCode) {
-      // Handle invite code flow
-      const emailVerified = localStorage.getItem('emailVerified') === 'true'
-
-      if (!emailVerified) {
-        console.log('/verify-email?token="test"')
-      }
-
-      // Email is verified, go to claim invite page
-      await router.push({ name: 'claim-invite', query: { inviteCode } })
-      return
-    } else {
-      // Normal login flow (no invite code)
-      const me = await getMe()
-      const redirectPath = route.query.redirect as string
-
-      if (me && !me.surveyCompleted) {
-        await router.push({ name: 'cloud-survey' })
-      } else if (me && !me.whitelisted) {
-        await router.push({ name: 'cloud-waitlist' })
-      } else if (redirectPath) {
-        await router.push(redirectPath)
-      } else {
-        await router.push({ path: '/' })
-      }
-    }
-  } catch (error) {
-    console.error('Error checking user status:', error)
-    void router.push({ path: '/' })
+  if (inviteCode) {
+    // Handle invite code flow - go to invite check
+    await router.push({
+      name: 'cloud-invite-check',
+      query: { inviteCode }
+    })
+  } else {
+    // Normal login flow - go to user check
+    await router.push({ name: 'cloud-user-check' })
   }
 }
 
