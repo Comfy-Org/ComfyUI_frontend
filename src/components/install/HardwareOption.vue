@@ -67,6 +67,6 @@ defineEmits<{
 
 /* Custom border for selected state to ensure uniform color */
 .hardware-option.selected-border {
-  @apply border-solid border-4 border-comfy-yellow;
+  @apply border-solid border-4 border-brand-yellow;
 }
 </style>
