@@ -25,7 +25,7 @@ vi.mock('@/services/comfyManagerService')
 vi.mock('@/composables/useConflictDetection', () => ({
   useConflictDetection: vi.fn(() => ({
     conflictedPackages: { value: [] },
-    performConflictDetection: vi.fn().mockResolvedValue(undefined)
+    runFullConflictAnalysis: vi.fn().mockResolvedValue(undefined)
   }))
 }))
 

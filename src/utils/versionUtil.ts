@@ -1,5 +1,7 @@
+import { isEmpty, isNil } from 'es-toolkit/compat'
 import * as semver from 'semver'
 
+import config from '@/config'
 import type {
   ConflictDetail,
   ConflictType
@@ -10,7 +12,7 @@ import type {
  * @param version Raw version string (e.g., "v1.2.3", "1.2.3-alpha")
  * @returns Cleaned version string or original if cleaning fails
  */
-export function cleanVersion(version: string): string {
+function cleanVersion(version: string): string {
   return semver.clean(version) || version
 }
 
@@ -20,7 +22,7 @@ export function cleanVersion(version: string): string {
  * @param range Version range (e.g., ">=1.0.0", "^1.2.0", "1.0.0 - 2.0.0")
  * @returns true if version satisfies the range
  */
-export function satisfiesVersion(version: string, range: string): boolean {
+function satisfiesVersion(version: string, range: string): boolean {
   try {
     const cleanedVersion = cleanVersion(version)
     return semver.satisfies(cleanedVersion, range)
@@ -37,47 +39,38 @@ export function satisfiesVersion(version: string, range: string): boolean {
  * @param supportedVersion Required version range string
  * @returns ConflictDetail object if incompatible, null if compatible
  */
-export function utilCheckVersionCompatibility(
+export function checkVersionCompatibility(
   type: ConflictType,
-  currentVersion: string,
-  supportedVersion: string
+  currentVersion?: string,
+  supportedVersion?: string
 ): ConflictDetail | null {
-  // If current version is unknown, assume compatible (no conflict)
-  if (!currentVersion || currentVersion === 'unknown') {
+  // Use es-toolkit for null/empty checks
+  if (isNil(currentVersion) || isEmpty(currentVersion)) {
     return null
   }
 
-  // If no version requirement specified, assume compatible (no conflict)
-  if (!supportedVersion || supportedVersion.trim() === '') {
+  // Use es-toolkit for supported version validation
+  if (isNil(supportedVersion) || isEmpty(supportedVersion?.trim())) {
     return null
   }
 
-  try {
-    // Clean the current version using semver utilities
-    const cleanCurrent = cleanVersion(currentVersion)
+  // Clean and check version compatibility
+  const cleanCurrent = cleanVersion(currentVersion)
+  const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
 
-    // Check version compatibility using semver library
-    const isCompatible = satisfiesVersion(cleanCurrent, supportedVersion)
+  if (isCompatible) return null
 
-    if (!isCompatible) {
-      return {
-        type,
-        current_value: currentVersion,
-        required_value: supportedVersion
-      }
-    }
-
-    return null
-  } catch (error) {
-    console.warn(
-      `[VersionUtil] Failed to parse version requirement: ${supportedVersion}`,
-      error
-    )
-    // On error, assume incompatible to be safe
-    return {
-      type,
-      current_value: currentVersion,
-      required_value: supportedVersion
-    }
+  return {
+    type,
+    current_value: currentVersion,
+    required_value: supportedVersion
   }
+}
+
+/**
+ * get frontend version from config.
+ * @returns frontend version string or undefined
+ */
+export function getFrontendVersion(): string | undefined {
+  return config.app_version || import.meta.env.VITE_APP_VERSION || undefined
 }
