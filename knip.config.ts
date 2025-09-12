@@ -2,23 +2,23 @@ import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
   entry: [
-    '{build,scripts}/**/*.{js,ts}',
-    'src/assets/css/style.css',
     'src/main.ts',
-    'src/scripts/ui/menu/index.ts',
-    'src/types/index.ts'
+    'vite.config.mts',
+    'vite.electron.config.mts',
+    'vite.types.config.mts',
+    'eslint.config.js',
+    'tailwind.config.js',
+    'postcss.config.js',
+    'playwright.config.ts',
+    'playwright.i18n.config.ts',
+    'vitest.config.ts',
+    'scripts/**/*.{js,ts}'
   ],
-  project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}'],
-  ignoreBinaries: ['only-allow', 'openapi-typescript'],
-  ignoreDependencies: [
-    // Weird importmap things
-    '@iconify/json',
-    '@primeuix/forms',
-    '@primeuix/styled',
-    '@primeuix/utils',
-    '@primevue/icons',
-    // Dev
-    '@trivago/prettier-plugin-sort-imports'
+  project: [
+    'src/**/*.{js,ts,vue}',
+    'tests-ui/**/*.{js,ts,vue}',
+    'browser_tests/**/*.{js,ts}',
+    'scripts/**/*.{js,ts}'
   ],
   ignore: [
     // Generated files
@@ -32,14 +32,9 @@ const config: KnipConfig = {
     'coverage/**',
     // i18n config
     '.i18nrc.cjs',
-    // Vitest litegraph config
-    'vitest.litegraph.config.ts',
     // Test setup files
     'browser_tests/globalSetup.ts',
     'browser_tests/globalTeardown.ts',
-    'browser_tests/globalSetupWithI18n.ts',
-    'browser_tests/globalTeardownWithI18n.ts',
-    'browser_tests/i18nSetup.ts',
     'browser_tests/utils/**',
     // Scripts
     'scripts/**',
@@ -48,35 +43,40 @@ const config: KnipConfig = {
     'vite.types.config.mts',
     // Auto generated manager types
     'src/types/generatedManagerTypes.ts',
-    'src/types/comfyRegistryTypes.ts',
-    // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts'
+    // Design system components (may not be used immediately)
+    'src/components/button/IconGroup.vue',
+    'src/components/button/MoreButton.vue',
+    'src/components/button/TextButton.vue',
+    'src/components/card/CardTitle.vue',
+    'src/components/card/CardDescription.vue',
+    'src/components/input/SingleSelect.vue'
   ],
-  compilers: {
-    // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
-    css: (text: string) =>
-      [
-        ...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)
-      ].join('\n')
+  ignoreExportsUsedInFile: true,
+  // Vue-specific configuration
+  vue: true,
+  // Only check for unused files, disable all other rules
+  // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
+  rules: {
+    binaries: 'off',
+    classMembers: 'off',
+    dependencies: 'off',
+    devDependencies: 'off',
+    duplicates: 'off',
+    enumMembers: 'off',
+    exports: 'off',
+    nsExports: 'off',
+    nsTypes: 'off',
+    types: 'off',
+    unlisted: 'off'
   },
-  vite: {
-    config: ['vite?(.*).config.mts']
-  },
-  vitest: {
-    config: ['vitest?(.*).config.ts'],
-    entry: [
-      '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
-      '**/__mocks__/**/*.[jt]s?(x)'
-    ]
-  },
-  playwright: {
-    config: ['playwright?(.*).config.ts'],
-    entry: ['**/*.@(spec|test).?(c|m)[jt]s?(x)', 'browser_tests/**/*.ts']
-  },
-  tags: [
-    '-knipIgnoreUnusedButUsedByCustomNodes',
-    '-knipIgnoreUnusedButUsedByVueNodesBranch'
-  ]
+  // Include dependencies analysis
+  includeEntryExports: true,
+  // Workspace configuration for monorepo-like structure
+  workspaces: {
+    '.': {
+      entry: ['src/main.ts', 'playwright.i18n.config.ts']
+    }
+  }
 }
 
 export default config
