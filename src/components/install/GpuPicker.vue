@@ -88,43 +88,4 @@ const pickGpu = (value: typeof selected.value) => {
 
 <style scoped>
 @reference '../../assets/css/style.css';
-
-.hover-brighten {
-  @apply transition-colors;
-  transition-property: filter, box-shadow;
-
-  &:hover {
-    filter: brightness(107%) contrast(105%);
-    box-shadow: 0 0 0.25rem #ffffff79;
-  }
-}
-.p-accordioncontent-content {
-  @apply bg-neutral-900 rounded-lg transition-colors;
-}
-
-div.selected {
-  .gpu-button:not(.selected) {
-    @apply opacity-50 hover:opacity-100;
-  }
-}
-
-.gpu-button {
-  @apply w-1/2 m-0 cursor-pointer rounded-lg flex flex-col items-center justify-around bg-neutral-800/50 hover:bg-neutral-800/75 transition-colors;
-
-  &.selected {
-    @apply opacity-100 bg-neutral-700/50 hover:bg-neutral-700/60;
-  }
-}
-
-.disabled {
-  @apply pointer-events-none opacity-40;
-}
-
-.p-card-header {
-  @apply text-center grow;
-}
-
-.p-card-body {
-  @apply text-center pt-0;
-}
 </style>
