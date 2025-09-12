@@ -10,16 +10,6 @@ import * as markdownRendererUtil from '@/utils/markdownRendererUtil'
 
 import NodePreview from './NodePreview.vue'
 
-// Mock the api module
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fileURL: (path: string) => `/fileURL${path}`,
-    apiURL: (path: string) => `/apiURL${path}`,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
-
 describe('NodePreview', () => {
   let i18n: ReturnType<typeof createI18n>
   let pinia: ReturnType<typeof createPinia>

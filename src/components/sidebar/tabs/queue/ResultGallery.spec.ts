@@ -9,16 +9,6 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultGallery from './ResultGallery.vue'
 
-// Mock the api module
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fileURL: (path: string) => `/fileURL${path}`,
-    apiURL: (path: string) => `/apiURL${path}`,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
-
 type MockResultItem = Partial<ResultItemImpl> & {
   filename: string
   subfolder: string

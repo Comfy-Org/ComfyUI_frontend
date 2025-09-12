@@ -17,16 +17,6 @@ vi.mock('@/utils/formatUtil', () => ({
   normalizeI18nKey: vi.fn()
 }))
 
-// Mock the api module
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fileURL: (path: string) => `/fileURL${path}`,
-    apiURL: (path: string) => `/apiURL${path}`,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
-
 describe('SettingItem', () => {
   const mountComponent = (props: any, options = {}): any => {
     return mount(SettingItem, {
