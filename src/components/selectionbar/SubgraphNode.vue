@@ -101,7 +101,7 @@ const filteredCandidates = computed(() => {
 function showAll() {
   const node = activeNode.value
   const pw = node.properties.proxyWidgets ?? []
-  const toAdd = candidateWidgets.value.map(([n, w]) => [n.id, w.name])
+  const toAdd = filteredCandidates.value.map(([n, w]) => [n.id, w.name])
   pw.push(...toAdd)
   node.properties.proxyWidgets = pw
   useCanvasStore().canvas.setDirty(true, true)
@@ -109,17 +109,20 @@ function showAll() {
 }
 function hideAll() {
   const node = activeNode.value
-  node.properties.proxyWidgets = []
+  //Not great from a nesting perspective, but path is cold
+  //and it cleans up potential error states
+  const toKeep = node.properties.proxyWidgets
+    .filter(([nodeId, widgetName]) =>
+      !filteredActive.value.some(([n,w]) =>
+        n.id == nodeId && w.name === widgetName))
+  node.properties.proxyWidgets = toKeep
   useCanvasStore().canvas.setDirty(true, true)
   triggerUpdate.value++
 }
 
 const filteredActive = computed(() => {
   const query = searchQuery.value.toLowerCase()
-  if (!query) {
-    console.error('displaying filtered widgets with no search query')
-    return activeWidgets.value
-  }
+  if (!query) return activeWidgets.value
   return activeWidgets.value.filter(
     ([n, w]) =>
       n.title.toLowerCase().includes(query) ||
@@ -141,7 +144,7 @@ const filteredActive = computed(() => {
       />
     </template>
     <template #body>
-      <div class="widgets-section">
+      <div class="widgets-section" v-if="filteredActive.length">
         <div class="widgets-section-header">
           <div>{{ t('subgraphStore.shown') }}</div>
           <a @click.stop="hideAll"> {{ t('subgraphStore.hideAll') }}</a>
@@ -181,7 +184,7 @@ const filteredActive = computed(() => {
           </template>
         </draggable>
       </div>
-      <div class="widgets-section">
+      <div class="widgets-section" v-if="filteredCandidates.length">
         <div class="widgets-section-header">
           <div>{{ t('subgraphStore.hidden') }}</div>
           <a @click.stop="showAll"> {{ t('subgraphStore.showAll') }}</a>
