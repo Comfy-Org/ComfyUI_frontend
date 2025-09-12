@@ -30,7 +30,7 @@
     <!-- Next/Install button -->
     <Button
       :label="currentStep !== '4' ? $t('g.next') : $t('g.install')"
-      class="px-8 py-2 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold transition-colors italic justify-self-end"
+      class="px-8 py-2 bg-brand-yellow hover:bg-brand-yellow/90 text-neutral-900 font-bold transition-colors italic justify-self-end"
       :disabled="!canProceed"
       @click="currentStep !== '4' ? $emit('next') : $emit('install')"
     />
@@ -98,7 +98,7 @@ defineEmits<{
 }
 
 :deep(.p-step.p-step-active .p-step-title) {
-  @apply bg-comfy-yellow;
+  @apply bg-brand-yellow;
   width: 2rem;
   border-radius: 0.625rem;
 }

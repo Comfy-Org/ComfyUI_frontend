@@ -25,7 +25,7 @@
           <!-- Get Started Button -->
           <Button
             :label="$t('welcome.getStarted')"
-            class="px-8 py-2 mt-4 bg-comfy-yellow hover:bg-comfy-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
+            class="px-8 py-2 mt-4 bg-brand-yellow hover:bg-brand-yellow/90 text-neutral-900 font-bold rounded-2xl transition-colors italic"
             style="font-family: 'ABC ROM Black Italic', sans-serif"
             @click="navigateTo('/install')"
           />
