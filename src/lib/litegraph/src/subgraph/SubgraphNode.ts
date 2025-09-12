@@ -23,7 +23,6 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 import {
   type ExecutableLGraphNode,
@@ -149,8 +148,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     this.type = subgraph.id
-    //FIXME: This breaks subgraph conversion
-    //this.configure(instanceData)
+    this.configure(instanceData)
 
     this.addTitleButton({
       name: 'enter_subgraph',
@@ -307,35 +305,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         break
       }
     }
-    //ensure proxyWidgets is enumerated during serialization
-    this.properties.proxyWidgets ??= []
-    const proxyWidgets = this.properties.proxyWidgets
-    Object.defineProperty(this.properties, 'proxyWidgets', {
-      get: () => {
-        return this.widgets
-          .filter((w) => !!w._overlay)
-          .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
-      },
-      set: (property) => {
-        const { widgetStates } = useDomWidgetStore()
-        this.widgets.forEach((w) => {
-          if (w.id && widgetStates.has(w.id))
-            widgetStates.get(w.id).active = false
-        })
-        //NOTE: This does not apply to pushed entries, only initial load
-        this.widgets = this.widgets.filter((w) => !w._overlay)
-        for (const [nodeId, widgetName] of property) {
-          const w = this.addProxyWidget(`${nodeId}`, widgetName)
-          if (w.id && widgetStates.has(w.id)) {
-            const widgetState = widgetStates.get(w.id)
-            widgetState.active = true
-            widgetState.widget = w
-          }
-        }
-        //TODO: set dirty canvas
-      }
-    })
-    this.properties.proxyWidgets = proxyWidgets
   }
 
   #setWidget(
@@ -606,74 +575,5 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Call parent serialize method
     return super.serialize()
-  }
-  addProxyWidget(nodeId: string, widgetName: string) {
-    const overlay = { nodeId, widgetName }
-    return this.addProxyFromOverlay({ __proto__: overlay })
-  }
-  addProxyFromOverlay(overlay: object) {
-    overlay.label = `${overlay.nodeId}: ${overlay.widgetName}`
-    overlay.graph = this.subgraph
-    overlay.isProxyWidget = true
-    //TODO: Add minimal caching for linkedWidget?
-    //use a weakref and only trigger recalc on calls when undefined?
-    //TODO: call toConcrete when resolved and hold reference?
-    const subgraphNode = this
-    function linkedWidget(graph, nodeId = '', widgetName) {
-      const g = graph
-      let n = undefined
-      for (const id of nodeId.split(':')) {
-        n = g?._nodes_by_id?.[id]
-        graph = n?.subgraph
-      }
-      if (!n) return
-      return n.widgets.find((w) => w.name === widgetName)
-    }
-    let lw = undefined
-    const handler = Object.fromEntries(
-      ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
-        const func = function (t, p, ...rest) {
-          if (s == 'get' && p == '_overlay') return overlay
-          if (!lw) {
-            lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
-          }
-          if (s == 'get' && p == 'node') {
-            return subgraphNode
-          }
-          if (s == 'set' && p == 'computedDisabled') {
-            //ignore setting, calc actual
-            lw.computedDisabled =
-              lw.disabled || lw.node.getSlotFromWidget(lw)?.link != null
-            return true
-          }
-          //NOTE: p may be undefined
-          let r = rest.at(-1)
-          if (
-            [
-              'y',
-              'last_y',
-              'width',
-              'computedHeight',
-              'afterQueued',
-              'beforeQueued',
-              'onRemove',
-              'isProxyWidget',
-              'label'
-            ].includes(p)
-          )
-            t = overlay
-          else {
-            t = lw
-            if (!t) t = { __proto__: overlay, draw: drawDisconnected }
-            if (p == 'value') r = t
-          }
-          return Reflect[s](t, p, ...rest.slice(0, -1), r)
-        }
-        return [s, func]
-      })
-    )
-    const w = new Proxy(overlay, handler)
-    this.widgets.push(w)
-    return w
   }
 }

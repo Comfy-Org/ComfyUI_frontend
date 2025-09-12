@@ -31,6 +31,7 @@ import {
   isComboInputSpecV1,
   isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
+import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
@@ -839,19 +840,21 @@ export class ComfyApp {
       (e) => {
         // Assertion: Not yet defined in litegraph.
         const { newGraph } = e.detail
-        
-        const widgetIds = {}
+
+        const widgetIds: Record<string, BaseDOMWidget<object | string>> = {}
         const widgetStore = useDomWidgetStore()
-        
+
         for (const node of newGraph.nodes)
           for (const w of node.widgets ?? [])
-            if (w.id)
+            if (w instanceof DOMWidgetImpl && w.id)
               widgetIds[w.id] = w
-        
+
         // Assertions: UnwrapRef
         for (const widgetId of widgetStore.widgetStates.keys()) {
           const widgetState = widgetStore
-          .widgetStates.get(widgetId)
+            .widgetStates.get(widgetId)
+          //Unreachable, but required for type safety
+          if (!widgetState) continue
           if (widgetId in widgetIds) {
             widgetState.active = true
             widgetState.widget = widgetIds[widgetId]
