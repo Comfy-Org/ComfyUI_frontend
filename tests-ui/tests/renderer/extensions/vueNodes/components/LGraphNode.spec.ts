@@ -103,13 +103,13 @@ describe('LGraphNode', () => {
     expect(wrapper.classes()).toContain('animate-pulse')
   })
 
-  it('should emit node-click event on pointer down', async () => {
+  it('should emit node-click event on pointer up', async () => {
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    await wrapper.trigger('pointerdown')
+    await wrapper.trigger('pointerup')
 
     expect(wrapper.emitted('node-click')).toHaveLength(1)
-    expect(wrapper.emitted('node-click')?.[0]).toHaveLength(2)
+    expect(wrapper.emitted('node-click')?.[0]).toHaveLength(3)
     expect(wrapper.emitted('node-click')?.[0][1]).toEqual(mockNodeData)
   })
 })
