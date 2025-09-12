@@ -8,7 +8,7 @@ import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 /**
  * Composable for handling node information and utility operations
  */
-export function useNodeInfo() {
+export function useSelectedNodeActions() {
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const commandStore = useCommandStore()

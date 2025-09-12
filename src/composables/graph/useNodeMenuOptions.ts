@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 import { useNodeCustomization } from './useNodeCustomization'
-import { useNodeInfo } from './useNodeInfo'
+import { useSelectedNodeActions } from './useSelectedNodeActions'
 import type { NodeSelectionState } from './useSelectionState'
 
 /**
@@ -19,7 +19,7 @@ export function useNodeMenuOptions() {
     toggleNodePin,
     toggleNodeBypass,
     runBranch
-  } = useNodeInfo()
+  } = useSelectedNodeActions()
 
   const shapeSubmenu = computed(() =>
     shapeOptions.map((shape) => ({
