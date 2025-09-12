@@ -21,9 +21,7 @@
         :min-fraction-digits="precision"
         :max-fraction-digits="precision"
         size="small"
-        :pt:pcInputText:root="
-          cn('min-w-full bg-transparent border-none text-center')
-        "
+        pt:pcInputText:root="min-w-full bg-transparent border-none text-center"
         class="w-16"
       />
     </div>
