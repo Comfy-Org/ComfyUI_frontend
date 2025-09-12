@@ -115,6 +115,13 @@
   --color-dark-elevation-2: rgba(from white r g b / 0.03);
 }
 
+@theme inline {
+  --color-component-hover-lighter: var(--color-charcoal-700);
+  --color-ring: var(--color-sand-200);
+  --color-node-stroke: var(--color-stone-100);
+  --color-text-secondary: var(--color-slate-100);
+}
+
 @custom-variant dark-theme {
   .dark-theme & {
     @slot;
