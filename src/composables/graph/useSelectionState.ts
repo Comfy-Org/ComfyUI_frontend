@@ -8,9 +8,10 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
+import { isImageNode, isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 export interface NodeSelectionState {
@@ -61,6 +62,15 @@ export function useSelectionState() {
   const hasSubgraphs = computed(() =>
     selectedItems.value.some((i) => i instanceof SubgraphNode)
   )
+
+  const hasAny3DNodeSelected = computed(() => {
+    const enable3DViewer = useSettingStore().get('Comfy.Load3D.3DViewerEnable')
+    return (
+      selectedNodes.value.length === 1 &&
+      selectedNodes.value.some(isLoad3dNode) &&
+      enable3DViewer
+    )
+  })
 
   const hasImageNode = computed(() => isSingleImageNode.value)
   const hasOutputNodesSelected = computed(
@@ -117,6 +127,7 @@ export function useSelectionState() {
     selectedNodes,
     nodeDef,
     showNodeHelp,
+    hasAny3DNodeSelected,
     hasAnySelection,
     hasSingleSelection,
     hasMultipleSelection,

@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
@@ -212,6 +212,10 @@ export function useSelectionToolboxPosition(
       }
     }
   )
+
+  onUnmounted(() => {
+    resetMoreOptionsState()
+  })
 
   return {
     visible
