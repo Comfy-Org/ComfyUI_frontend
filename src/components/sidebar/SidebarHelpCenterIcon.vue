@@ -88,8 +88,8 @@ const { shouldShowRedDot: shouldShowConflictRedDot, markConflictsAsSeen } =
   useConflictAcknowledgment()
 
 // Use either release red dot or conflict red dot
-const shouldShowRedDot = computed(() => {
-  const releaseRedDot = showReleaseRedDot
+const shouldShowRedDot = computed((): boolean => {
+  const releaseRedDot = showReleaseRedDot.value
   return releaseRedDot || shouldShowConflictRedDot.value
 })
 
