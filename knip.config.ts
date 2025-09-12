@@ -32,6 +32,10 @@ const config: KnipConfig = {
     'coverage/**',
     // i18n config
     '.i18nrc.cjs',
+    'browser_tests/globalSetupWithI18n.ts',
+    'browser_tests/globalTeardownWithI18n.ts',
+    'browser_tests/i18nSetup.ts',
+    'playwright.i18n.config.ts',
     // Test setup files
     'browser_tests/globalSetup.ts',
     'browser_tests/globalTeardown.ts',
