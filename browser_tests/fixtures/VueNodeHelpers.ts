@@ -21,28 +21,13 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Get total count of Vue nodes in the DOM
-   */
-  async getNodeCount(): Promise<number> {
-    return await this.nodes.count()
-  }
-
-  /**
-   * Get count of selected Vue nodes
-   */
-  async getSelectedNodeCount(): Promise<number> {
-    return await this.selectedNodes.count()
-  }
-
-  /**
    * Get all Vue node IDs currently in the DOM
    */
   async getNodeIds(): Promise<string[]> {
-    return await this.nodes.evaluateAll(
-      (nodes) =>
-        nodes
-          .map((n) => n.getAttribute('data-node-id'))
-          .filter(Boolean) as string[]
+    return await this.nodes.evaluateAll((nodes) =>
+      nodes
+        .map((n) => n.getAttribute('data-node-id'))
+        .filter((id): id is string => id !== null)
     )
   }
 
@@ -75,22 +60,6 @@ export class VueNodeHelpers {
    */
   async clearSelection(): Promise<void> {
     await this.page.mouse.click(50, 50)
-  }
-
-  /**
-   * Delete selected Vue nodes using Delete key
-   */
-  async deleteSelected(): Promise<void> {
-    await this.page.locator('#graph-canvas').focus()
-    await this.page.keyboard.press('Delete')
-  }
-
-  /**
-   * Delete selected Vue nodes using Backspace key
-   */
-  async deleteSelectedWithBackspace(): Promise<void> {
-    await this.page.locator('#graph-canvas').focus()
-    await this.page.keyboard.press('Backspace')
   }
 
   /**
