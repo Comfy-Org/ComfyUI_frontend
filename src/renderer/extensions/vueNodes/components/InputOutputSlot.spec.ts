@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useDomSlotRegistration } from '@/renderer/core/layout/slots/useDomSlotRegistration'
 
 import InputSlot from './InputSlot.vue'
@@ -14,8 +15,33 @@ vi.mock('@/renderer/core/layout/slots/useDomSlotRegistration', () => ({
   useDomSlotRegistration: vi.fn(() => ({ remeasure: vi.fn() }))
 }))
 
-const mountWithProviders = (component: any, props: Record<string, unknown>) =>
-  mount(component, {
+interface TestSlotProps {
+  nodeId: string
+  index: number  
+  slotData: INodeSlot
+  connected?: boolean
+  compatible?: boolean
+  readonly?: boolean
+  dotOnly?: boolean
+}
+
+const mountInputSlot = (props: TestSlotProps) =>
+  mount(InputSlot, {
+    global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: enMessages }
+        }),
+        createPinia()
+      ]
+    },
+    props
+  })
+
+const mountOutputSlot = (props: TestSlotProps) =>
+  mount(OutputSlot, {
     global: {
       plugins: [
         createI18n({
@@ -33,7 +59,7 @@ describe('InputSlot/OutputSlot', () => {
   it('InputSlot registers with correct options', () => {
     vi.mocked(useDomSlotRegistration).mockClear()
 
-    mountWithProviders(InputSlot, {
+    mountInputSlot({
       nodeId: 'node-1',
       index: 3,
       slotData: { name: 'A', type: 'any', boundingRect: [0, 0, 0, 0] }
@@ -50,7 +76,7 @@ describe('InputSlot/OutputSlot', () => {
   it('OutputSlot registers with correct options', () => {
     vi.mocked(useDomSlotRegistration).mockClear()
 
-    mountWithProviders(OutputSlot, {
+    mountOutputSlot({
       nodeId: 'node-2',
       index: 1,
       slotData: { name: 'B', type: 'any', boundingRect: [0, 0, 0, 0] }
