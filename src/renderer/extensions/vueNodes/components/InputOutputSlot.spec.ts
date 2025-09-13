@@ -3,8 +3,8 @@ import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import enMessages from '@/locales/en/main.json'
 import { useDomSlotRegistration } from '@/renderer/core/layout/slots/useDomSlotRegistration'
 
 import InputSlot from './InputSlot.vue'
@@ -17,7 +17,7 @@ vi.mock('@/renderer/core/layout/slots/useDomSlotRegistration', () => ({
 
 interface TestSlotProps {
   nodeId: string
-  index: number  
+  index: number
   slotData: INodeSlot
   connected?: boolean
   compatible?: boolean
