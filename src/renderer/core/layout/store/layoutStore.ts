@@ -100,7 +100,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
-  private ynodes: Y.Map<Y.Map<unknown>> // Maps nodeId -> Y.Map containing NodeLayout data
+  private ynodes: Y.Map<Y.Map<NodeLayout[keyof NodeLayout]>> // Maps nodeId -> Y.Map containing NodeLayout data
   private ylinks: Y.Map<Y.Map<unknown>> // Maps linkId -> Y.Map containing link data
   private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
   private yoperations: Y.Array<LayoutOperation> // Operation log
@@ -146,17 +146,19 @@ class LayoutStoreImpl implements LayoutStore {
     this.rerouteSpatialIndex = new SpatialIndexManager()
 
     // Listen for Yjs changes and trigger Vue reactivity
-    this.ynodes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
-      this.version++
+    this.ynodes.observe(
+      (event: Y.YMapEvent<Y.Map<NodeLayout[keyof NodeLayout]>>) => {
+        this.version++
 
-      // Trigger all affected node refs
-      event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        const trigger = this.nodeTriggers.get(key)
-        if (trigger) {
-          trigger()
-        }
-      })
-    })
+        // Trigger all affected node refs
+        event.changes.keys.forEach((_change: YEventChange, key: string) => {
+          const trigger = this.nodeTriggers.get(key)
+          if (trigger) {
+            trigger()
+          }
+        })
+      }
+    )
 
     // Listen for link changes and update spatial indexes
     this.ylinks.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
@@ -1163,7 +1165,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Update node bounds helper
    */
   private updateNodeBounds(
-    ynode: Y.Map<unknown>,
+    ynode: Y.Map<NodeLayout[keyof NodeLayout]>,
     position: Point,
     size: { width: number; height: number }
   ): void {

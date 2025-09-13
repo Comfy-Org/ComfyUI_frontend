@@ -11,8 +11,10 @@ export const NODE_LAYOUT_DEFAULTS: NodeLayout = {
   bounds: { x: 0, y: 0, width: 100, height: 50 }
 }
 
-export function layoutToYNode(layout: NodeLayout): Y.Map<unknown> {
-  const ynode = new Y.Map<unknown>()
+export function layoutToYNode(
+  layout: NodeLayout
+): Y.Map<NodeLayout[keyof NodeLayout]> {
+  const ynode = new Y.Map<NodeLayout[keyof NodeLayout]>()
   ynode.set('id', layout.id)
   ynode.set('position', layout.position)
   ynode.set('size', layout.size)
@@ -22,12 +24,18 @@ export function layoutToYNode(layout: NodeLayout): Y.Map<unknown> {
   return ynode
 }
 
-function getOr<T>(map: Y.Map<unknown>, key: string, fallback: T): T {
+function getOr<T>(
+  map: Y.Map<NodeLayout[keyof NodeLayout]>,
+  key: string,
+  fallback: T
+): T {
   const v = map.get(key)
   return (v ?? fallback) as T
 }
 
-export function yNodeToLayout(ynode: Y.Map<unknown>): NodeLayout {
+export function yNodeToLayout(
+  ynode: Y.Map<NodeLayout[keyof NodeLayout]>
+): NodeLayout {
   return {
     id: getOr<NodeLayout['id']>(ynode, 'id', NODE_LAYOUT_DEFAULTS.id),
     position: getOr<NodeLayout['position']>(
