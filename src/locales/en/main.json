@@ -9,6 +9,7 @@
     "import": "Import",
     "loadAllFolders": "Load All Folders",
     "refresh": "Refresh",
+    "refreshNode": "Refresh Node",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
