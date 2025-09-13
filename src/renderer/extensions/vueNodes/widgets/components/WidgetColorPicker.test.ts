@@ -94,6 +94,20 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(colorPicker.exists()).toBe(true)
     })
 
+    it('normalizes display to a single leading #', () => {
+      // Case 1: model value already includes '#'
+      let widget = createMockWidget('#ff0000')
+      let wrapper = mountComponent(widget, '#ff0000')
+      let colorText = wrapper.find('span')
+      expect.soft(colorText.text()).toBe('#ff0000')
+
+      // Case 2: model value missing '#'
+      widget = createMockWidget('ff0000')
+      wrapper = mountComponent(widget, 'ff0000')
+      colorText = wrapper.find('span')
+      expect.soft(colorText.text()).toBe('#ff0000')
+    })
+
     it('renders layout field wrapper', () => {
       const widget = createMockWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
