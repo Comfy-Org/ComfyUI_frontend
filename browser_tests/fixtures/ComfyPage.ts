@@ -10,8 +10,8 @@ import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
-import { ComfyTemplates } from '../helpers/templates'
 import { LocationMock } from '../helpers/locationMock'
+import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
@@ -284,7 +284,8 @@ export class ComfyPage {
   } = {}) {
     // Setup location mock if requested
     if (mockLocation) {
-      const config = typeof mockLocation === 'boolean' ? undefined : mockLocation
+      const config =
+        typeof mockLocation === 'boolean' ? undefined : mockLocation
       await this.locationMock.setupLocationMock(config)
     }
 
@@ -1649,32 +1650,33 @@ export const comfyPageFixture = base.extend<{
     // Skip user setup for i18n collection tests
     const isI18nTest = testInfo.file?.includes('collect-i18n')
 
+    let userId: string | undefined
     if (!isI18nTest) {
       // Use a combination of workerIndex and test title hash for unique usernames
       const testHash = title.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8)
       const username = `playwright-test-${workerIndex}-${testHash}`
-      const userId = await comfyPage.setupUser(username)
-      comfyPage.userIds[parallelIndex] = userId
+      userId = await comfyPage.setupUser(username)
+      comfyPage.userIds[parallelIndex] = userId!
     }
 
     try {
-      if (!isI18nTest) {
+      if (!isI18nTest && userId) {
         await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Disabled',
-        // Hide canvas menu/info/selection toolbox by default.
-        'Comfy.Graph.CanvasInfo': false,
-        'Comfy.Graph.CanvasMenu': false,
-        'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
-        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
-        'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
-      })
+          'Comfy.UseNewMenu': 'Disabled',
+          // Hide canvas menu/info/selection toolbox by default.
+          'Comfy.Graph.CanvasInfo': false,
+          'Comfy.Graph.CanvasMenu': false,
+          'Comfy.Canvas.SelectionToolbox': false,
+          // Hide all badges by default.
+          'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+          'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+          // Disable tooltips by default to avoid flakiness.
+          'Comfy.EnableTooltips': false,
+          'Comfy.userId': userId,
+          // Set tutorial completed to true to avoid loading the tutorial workflow.
+          'Comfy.TutorialCompleted': true,
+          'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
+        })
       }
     } catch (e) {
       console.error(e)
@@ -1694,6 +1696,7 @@ const makeMatcher = function <T>(
   type: string
 ) {
   return async function (
+    this: any,
     node: NodeReference,
     options?: { timeout?: number; intervals?: number[] }
   ) {
