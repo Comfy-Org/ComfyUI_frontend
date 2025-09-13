@@ -104,11 +104,6 @@
           @slot-click="handleSlotClick"
         />
 
-        <div
-          v-if="shouldRenderSlots && shouldShowWidgets"
-          :class="separatorClasses"
-        />
-
         <!-- Widgets rendered at reduced+ detail -->
         <NodeWidgets
           v-if="shouldShowWidgets"
@@ -116,11 +111,6 @@
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
-        />
-
-        <div
-          v-if="(shouldRenderSlots || shouldShowWidgets) && shouldShowContent"
-          :class="separatorClasses"
         />
 
         <!-- Custom content at reduced+ detail -->
