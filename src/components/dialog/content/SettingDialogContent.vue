@@ -113,7 +113,18 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
     .sort((a, b) => a.label.localeCompare(b.label))
     .map((group) => ({
       label: group.label,
-      settings: flattenTree<SettingParams>(group)
+      settings: flattenTree<SettingParams>(group).sort((a, b) => {
+        // Sort by priority first, higher priority comes first
+        const priorityA = a.priority ?? 0
+        const priorityB = b.priority ?? 0
+
+        if (priorityA !== priorityB) {
+          return priorityB - priorityA
+        }
+
+        // If priorities are equal, sort alphabetically by name
+        return a.name.localeCompare(b.name)
+      })
     }))
 }
 
