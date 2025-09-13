@@ -39,8 +39,8 @@ import {
 } from '@/renderer/core/layout/types'
 import {
   REROUTE_RADIUS,
-  boundsIntersect as boundsIntersectUtil,
-  pointInBounds as pointInBoundsUtil
+  boundsIntersect,
+  pointInBounds
 } from '@/renderer/core/layout/utils/layoutMath'
 import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
@@ -310,7 +310,7 @@ class LayoutStoreImpl implements LayoutStore {
         const ynode = this.ynodes.get(nodeId)
         if (ynode) {
           const layout = yNodeToLayout(ynode)
-          if (layout && boundsIntersectUtil(layout.bounds, bounds)) {
+          if (layout && boundsIntersect(layout.bounds, bounds)) {
             result.push(nodeId)
           }
         }
@@ -368,7 +368,7 @@ class LayoutStoreImpl implements LayoutStore {
     nodes.sort(([, a], [, b]) => b.zIndex - a.zIndex)
 
     for (const [nodeId, layout] of nodes) {
-      if (pointInBoundsUtil(point, layout.bounds)) {
+      if (pointInBounds(point, layout.bounds)) {
         return nodeId
       }
     }
@@ -662,7 +662,7 @@ class LayoutStoreImpl implements LayoutStore {
             rerouteId: segmentLayout.rerouteId
           }
         }
-      } else if (pointInBoundsUtil(point, segmentLayout.bounds)) {
+      } else if (pointInBounds(point, segmentLayout.bounds)) {
         // Fallback to bounding box test
         return {
           linkId: segmentLayout.linkId,
@@ -702,7 +702,7 @@ class LayoutStoreImpl implements LayoutStore {
     // Check precise bounds for candidates
     for (const key of candidateSlotKeys) {
       const slotLayout = this.slotLayouts.get(key)
-      if (slotLayout && pointInBoundsUtil(point, slotLayout.bounds)) {
+      if (slotLayout && pointInBounds(point, slotLayout.bounds)) {
         return slotLayout
       }
     }
