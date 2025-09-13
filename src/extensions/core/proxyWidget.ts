@@ -2,6 +2,7 @@
 // FIXME: typechecking for proxy system
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
@@ -52,38 +53,46 @@ function addProxyWidget(
   const overlay = { nodeId, widgetName }
   return addProxyFromOverlay(subgraphNode, { __proto__: overlay })
 }
+function resolveLinkedWidget(graph, nodeId = '', widgetName) {
+  const g = graph
+  let n = undefined
+  for (const id of nodeId.split(':')) {
+    n = g?._nodes_by_id?.[id]
+    graph = n?.subgraph
+  }
+  if (!n) return
+  return n.widgets.find((w) => w.name === widgetName)
+}
+function getWidgetRef(overlay) {
+  const lw = resolveLinkedWidget(
+    overlay.graph,
+    overlay.nodeId,
+    overlay.widgetName
+  )
+  if (lw) return new WeakRef(lw)
+  return { deref: () => undefined }
+}
 function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: object) {
   overlay.label = `${overlay.nodeId}: ${overlay.widgetName}`
   overlay.graph = subgraphNode.subgraph
   overlay.isProxyWidget = true
-  //TODO: Add minimal caching for linkedWidget?
-  //use a weakref and only trigger recalc on calls when undefined?
   //TODO: call toConcrete when resolved and hold reference?
-  function linkedWidget(graph, nodeId = '', widgetName) {
-    const g = graph
-    let n = undefined
-    for (const id of nodeId.split(':')) {
-      n = g?._nodes_by_id?.[id]
-      graph = n?.subgraph
-    }
-    if (!n) return
-    return n.widgets.find((w) => w.name === widgetName)
-  }
-  let lw = undefined
+  //NOTE: From testing, WeakRefs don't appear to actually drop
+  //Memory management doesn't matter here and this is worthless for notification
+  let linkedWidget = getWidgetRef(overlay)
   const handler = Object.fromEntries(
     ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
       const func = function (t, p, ...rest) {
         if (s == 'get' && p == '_overlay') return overlay
-        if (!lw) {
-          lw = linkedWidget(overlay.graph, overlay.nodeId, overlay.widgetName)
-        }
+        if (!linkedWidget.deref()) linkedWidget = getWidgetRef(overlay)
+        const bw = linkedWidget.deref() ?? disconnectedWidget
         if (s == 'get' && p == 'node') {
           return subgraphNode
         }
         if (s == 'set' && p == 'computedDisabled') {
           //ignore setting, calc actual
-          lw.computedDisabled =
-            lw.disabled || lw.node.getSlotFromWidget(lw)?.link != null
+          bw.computedDisabled =
+            bw.disabled || bw.node.getSlotFromWidget(bw)?.link != null
           return true
         }
         //NOTE: p may be undefined
@@ -103,8 +112,7 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: object) {
         )
           t = overlay
         else {
-          t = lw
-          if (!t) t = { __proto__: overlay, draw: drawDisconnected }
+          t = bw
           if (p == 'value') r = t
         }
         return Reflect[s](t, p, ...rest.slice(0, -1), r)
