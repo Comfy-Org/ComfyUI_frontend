@@ -130,6 +130,7 @@ import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import NodeContent from './NodeContent.vue'
@@ -299,9 +300,14 @@ const nodeOutputs = useNodeOutputStore()
 
 const nodeImageUrls = ref<string[]>([])
 const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
-  // Get the current graph context (subgraph if viewing one, otherwise root graph)
-  const currentGraph = app.canvas.graph || app.graph
-  const node = currentGraph.getNodeById(props.nodeData.id)
+  // Construct proper locator ID using subgraph ID from VueNodeData
+  const locatorId = props.nodeData.subgraphId
+    ? `${props.nodeData.subgraphId}:${props.nodeData.id}`
+    : props.nodeData.id
+
+  // Use root graph for getNodeByLocatorId since it needs to traverse from root
+  const rootGraph = app.graph.rootGraph
+  const node = getNodeByLocatorId(rootGraph, locatorId)
   if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
     if (urls) {
@@ -313,8 +319,14 @@ const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
   }
 }
 
+const nodeOutputLocatorId = computed(() =>
+  props.nodeData.subgraphId
+    ? `${props.nodeData.subgraphId}:${props.nodeData.id}`
+    : props.nodeData.id
+)
+
 watch(
-  () => nodeOutputs.nodeOutputs[props.nodeData.id],
+  () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
   (newOutputs) => {
     onNodeOutputsUpdate(newOutputs)
   }

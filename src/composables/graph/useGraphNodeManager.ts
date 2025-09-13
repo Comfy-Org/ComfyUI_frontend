@@ -53,6 +53,7 @@ export interface VueNodeData {
   mode: number
   selected: boolean
   executing: boolean
+  subgraphId?: string | null
   widgets?: SafeWidgetData[]
   inputs?: unknown[]
   outputs?: unknown[]
@@ -166,6 +167,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
 
   // Extract safe data from LiteGraph node for Vue consumption
   const extractVueNodeData = (node: LGraphNode): VueNodeData => {
+    // Determine subgraph ID - null for root graph, string for subgraphs
+    const subgraphId =
+      node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
+        ? String(node.graph.id)
+        : null
     // Extract safe widget data
     const safeWidgets = node.widgets?.map((widget) => {
       try {
@@ -208,6 +214,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       mode: node.mode || 0,
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
+      subgraphId,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
       outputs: node.outputs ? [...node.outputs] : undefined,
