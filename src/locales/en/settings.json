@@ -1,7 +1,29 @@
 {
-  "Comfy_Assets_UseAssetAPI": {
-    "name": "Use Asset API for model library",
-    "tooltip": "Use new Asset API for model browsing"
+  "Comfy-Desktop_AutoUpdate": {
+    "name": "Automatically check for updates"
+  },
+  "Comfy-Desktop_SendStatistics": {
+    "name": "Send anonymous usage metrics"
+  },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "Pypi Install Mirror",
+    "tooltip": "Default pip install mirror"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Python Install Mirror",
+    "tooltip": "Managed Python installations are downloaded from the Astral python-build-standalone project. This variable can be set to a mirror URL to use a different source for Python installations. The provided URL will replace https://github.com/astral-sh/python-build-standalone/releases/download in, e.g., https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Distributions can be read from a local directory by using the file:// URL scheme."
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "Torch Install Mirror",
+    "tooltip": "Pip install mirror for pytorch"
+  },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "Window Style",
+    "tooltip": "Custom: Replace the system title bar with ComfyUI's Top menu",
+    "options": {
+      "default": "default",
+      "custom": "custom"
+    }
   },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Canvas background image",
@@ -321,6 +343,14 @@
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
   },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Enable Vue node rendering",
+    "tooltip": "Render nodes as Vue components instead of canvas elements. Experimental feature."
+  },
+  "Comfy_VueNodes_Widgets": {
+    "name": "Enable Vue widgets",
+    "tooltip": "Render widgets as Vue components within Vue nodes."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget control mode",
     "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.",
@@ -358,9 +388,6 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Sort node IDs when saving workflow"
   },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "Require confirmation to overwrite an existing subgraph blueprint"
-  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "Opened workflows position",
     "options": {
@@ -369,13 +396,13 @@
       "Topbar (2nd-row)": "Topbar (2nd-row)"
     }
   },
-  "LiteGraph_Canvas_MaximumFps": {
-    "name": "Maximum FPS",
-    "tooltip": "The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0"
-  },
   "LiteGraph_Canvas_MinFontSizeForLOD": {
     "name": "Zoom Node Level of Detail - font size threshold",
     "tooltip": "Controls when the nodes switch to low quality LOD rendering. Uses font size in pixels to determine when to switch. Set to 0 to disable. Values 1-24 set the minimum font size threshold for LOD - higher values (24px) = switch nodes to simplified rendering sooner when zooming out, lower values (1px) = maintain full node quality longer."
+  },
+  "LiteGraph_Canvas_MaximumFps": {
+    "name": "Maximum FPS",
+    "tooltip": "The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0"
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Scale node combo widget menus (lists) when zoomed in"
