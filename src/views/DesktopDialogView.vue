@@ -49,7 +49,12 @@ const message = computed(() => (route.query.message as string) || '')
 }
 
 .dialog-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'ABC ROM',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   font-style: italic;
   font-size: 20px;
   font-weight: 500;
