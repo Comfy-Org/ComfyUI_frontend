@@ -18,12 +18,17 @@
 </template>
 
 <script setup lang="ts">
-import { DialogButton } from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { electronAPI } from '@/utils/envUtil'
+
+interface DialogButton {
+  label: string
+  returnValue: string | null
+  severity?: 'primary' | 'secondary' | 'danger' | 'warn'
+}
 
 const route = useRoute()
 
@@ -38,8 +43,21 @@ const message = computed(() => {
 })
 
 const buttons = computed(() => {
-  // Assertion: Not important enough to justify validation... yet.
-  return JSON.parse(route.query.buttons as string) as DialogButton[]
+  try {
+    const buttonsParam = route.query.buttons
+    if (!buttonsParam || typeof buttonsParam !== 'string') {
+      return []
+    }
+    const parsed = JSON.parse(buttonsParam)
+    if (!Array.isArray(parsed)) {
+      console.error('Invalid buttons parameter: expected array')
+      return []
+    }
+    return parsed as DialogButton[]
+  } catch (error) {
+    console.error('Failed to parse buttons parameter:', error)
+    return []
+  }
 })
 </script>
 
