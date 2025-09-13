@@ -25,11 +25,10 @@ const message = computed(() => (route.query.message as string) || '')
 @reference '../assets/css/style.css';
 
 .desktop-dialog {
-  @apply flex flex-col p-6 rounded-lg;
+  @apply flex flex-col p-6 rounded-lg gap-6;
   width: 100%;
   height: 100%;
   background: #2d2d2d;
-  gap: 1.5rem; /* 24px - equivalent to gap-6 */
 }
 
 .dialog-title {
