@@ -1,15 +1,14 @@
 /**
- * Viewport Culling - Direct DOM manipulation without caching
+ * Vue Nodes Viewport Culling
  *
  * Principles:
  * 1. Query DOM directly using data attributes (no cache to maintain)
- * 2. Use most efficient CSS update method (display: none)
+ * 2. Set display none on element to avoid cascade resolution overheead
  * 3. Only run when transform changes (event driven)
  */
 import { type Ref, computed } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { app as comfyApp } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 
 interface NodeManager {
@@ -35,7 +34,7 @@ export function useViewportCulling(
    * Queries DOM directly - no cache maintenance needed
    */
   const updateVisibility = () => {
-    if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
+    if (!nodeManager.value || !canvasStore.canvas) return
 
     const canvas = canvasStore.canvas
     const manager = nodeManager.value
@@ -63,15 +62,16 @@ export function useViewportCulling(
       const screen_width = node.size[0] * ds.scale
       const screen_height = node.size[1] * ds.scale
 
-      const isVisible = !(
+      const isVisible =
         screen_x + screen_width < -margin ||
         screen_x > viewport_width + margin ||
         screen_y + screen_height < -margin ||
         screen_y > viewport_height + margin
-      )
 
-      // Setting diplay directly SHOULD avoid cascade resolution
-      ;(element as HTMLElement).style.display = isVisible ? '' : 'none'
+      // Setting hidden directly avoid cascade resolution
+      if (element instanceof HTMLElement) {
+        element.style.display = !isVisible ? '' : 'none'
+      }
     }
   }
 
