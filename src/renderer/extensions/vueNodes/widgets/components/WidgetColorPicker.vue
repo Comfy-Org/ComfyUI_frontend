@@ -16,7 +16,7 @@
         }"
         @update:model-value="onChange"
       />
-      <span class="text-xs">{{
+      <span class="text-xs" data-testid="widget-color-text">{{
         localValue.startsWith('#') ? localValue : '#' + localValue
       }}</span>
     </label>
