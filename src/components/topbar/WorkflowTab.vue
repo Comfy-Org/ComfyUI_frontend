@@ -11,7 +11,9 @@
       {{ workflowOption.workflow.filename }}
     </span>
     <div class="relative">
-      <span v-if="shouldShowStatusIndicator" class="status-indicator">•</span>
+      <span v-if="shouldShowStatusIndicator" class="status-indicator font-bold"
+        >•</span
+      >
       <Button
         class="close-button p-0 w-auto"
         icon="pi pi-times"
@@ -175,10 +177,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@reference '../../assets/css/style.css';
-
 .status-indicator {
-  @apply absolute font-bold;
+  position: absolute;
   font-size: 1.5rem;
   top: 50%;
   left: 50%;

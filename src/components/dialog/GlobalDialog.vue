@@ -10,7 +10,10 @@
     :aria-labelledby="item.key"
   >
     <template #header>
-      <div v-if="!item.dialogComponentProps?.headless">
+      <div
+        v-if="!item.dialogComponentProps?.headless"
+        class="p-2 2xl:p-(--p-dialog-header-padding) pb-0"
+      >
         <component
           :is="item.headerComponent"
           v-if="item.headerComponent"
@@ -26,6 +29,7 @@
       :is="item.component"
       v-bind="item.contentProps"
       :maximized="item.dialogComponentProps.maximized"
+      class="p-2 2xl:p-(--p-dialog-content-padding) pt-0"
     />
 
     <template v-if="item.footerComponent" #footer>
@@ -42,19 +46,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 const dialogStore = useDialogStore()
 </script>
 
-<style>
-@reference '../../assets/css/style.css';
-
-.global-dialog .p-dialog-header {
-  @apply p-2 2xl:p-[var(--p-dialog-header-padding)];
-  @apply pb-0;
-}
-
-.global-dialog .p-dialog-content {
-  @apply p-2 2xl:p-[var(--p-dialog-content-padding)];
-  @apply pt-0;
-}
-
+<style scoped>
 .manager-dialog {
   height: 80vh;
   max-width: 1724px;
