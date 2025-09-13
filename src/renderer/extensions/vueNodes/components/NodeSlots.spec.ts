@@ -30,7 +30,6 @@ interface StubSlotData {
   boundingRect?: [number, number, number, number]
 }
 
-// eslint-disable-next-line vue/one-component-per-file
 const InputSlotStub = defineComponent({
   name: 'InputSlot',
   props: {
@@ -51,7 +50,6 @@ const InputSlotStub = defineComponent({
   `
 })
 
-// eslint-disable-next-line vue/one-component-per-file
 const OutputSlotStub = defineComponent({
   name: 'OutputSlot',
   props: {
