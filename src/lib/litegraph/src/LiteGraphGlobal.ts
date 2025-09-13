@@ -330,6 +330,18 @@ export class LiteGraphGlobal {
    */
   saveViewportWithGraph: boolean = true
 
+  /**
+   * Enable Vue nodes mode for rendering and positioning.
+   * When true:
+   * - Nodes will calculate slot positions using Vue component dimensions
+   * - LiteGraph will skip rendering node bodies entirely
+   * - Vue components will handle all node rendering
+   * - LiteGraph continues to render connections, links, and graph background
+   * This should be set by the frontend when the Vue nodes feature is enabled.
+   * @default false
+   */
+  vueNodesMode: boolean = false
+
   // TODO: Remove legacy accessors
   LGraph = LGraph
   LLink = LLink

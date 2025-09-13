@@ -170,8 +170,20 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Cargar flujo de trabajo predeterminado"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "Administrador de nodos personalizados"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Nodos personalizados (Beta)"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Nodos personalizados (heredados)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Menú del administrador (heredado)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Instalar faltantes"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Buscar actualizaciones"
   },
   "Comfy_Manager_ToggleManagerProgressDialog": {
     "label": "Alternar diálogo de progreso del administrador"
@@ -185,6 +197,12 @@
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir editor de máscara para el nodo seleccionado"
   },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Descargar modelos"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Descargar modelos y caché de ejecución"
+  },
   "Comfy_NewBlankWorkflow": {
     "label": "Nuevo flujo de trabajo en blanco"
   },
@@ -196,6 +214,9 @@
   },
   "Comfy_OpenWorkflow": {
     "label": "Abrir Flujo de Trabajo"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "Publicar subgrafo"
   },
   "Comfy_QueuePrompt": {
     "label": "Prompt de Cola"
@@ -267,7 +288,7 @@
     "label": "Alternar panel inferior de controles de vista"
   },
   "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "Mostrar diálogo de atajos de teclado"
+    "label": "Mostrar diálogo de combinaciones de teclas"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Alternar Modo de Enfoque"

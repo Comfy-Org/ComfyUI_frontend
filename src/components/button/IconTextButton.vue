@@ -1,5 +1,11 @@
 <template>
-  <Button unstyled :class="buttonStyle" @click="onClick">
+  <Button
+    v-bind="$attrs"
+    unstyled
+    :class="buttonStyle"
+    :disabled="disabled"
+    @click="onClick"
+  >
     <slot v-if="iconPosition !== 'right'" name="icon"></slot>
     <span>{{ label }}</span>
     <slot v-if="iconPosition === 'right'" name="icon"></slot>
@@ -13,9 +19,15 @@ import { computed } from 'vue'
 import type { BaseButtonProps } from '@/types/buttonTypes'
 import {
   getBaseButtonClasses,
+  getBorderButtonTypeClasses,
   getButtonSizeClasses,
   getButtonTypeClasses
 } from '@/types/buttonTypes'
+import { cn } from '@/utils/tailwindUtil'
+
+defineOptions({
+  inheritAttrs: false
+})
 
 interface IconTextButtonProps extends BaseButtonProps {
   iconPosition?: 'left' | 'right'
@@ -26,6 +38,8 @@ interface IconTextButtonProps extends BaseButtonProps {
 const {
   size = 'md',
   type = 'primary',
+  border = false,
+  disabled = false,
   class: className,
   iconPosition = 'left',
   label,
@@ -33,12 +47,12 @@ const {
 } = defineProps<IconTextButtonProps>()
 
 const buttonStyle = computed(() => {
-  const baseClasses = `${getBaseButtonClasses()} !justify-start gap-2`
+  const baseClasses = `${getBaseButtonClasses()} justify-start! gap-2`
   const sizeClasses = getButtonSizeClasses(size)
-  const typeClasses = getButtonTypeClasses(type)
+  const typeClasses = border
+    ? getBorderButtonTypeClasses(type)
+    : getButtonTypeClasses(type)
 
-  return [baseClasses, sizeClasses, typeClasses, className]
-    .filter(Boolean)
-    .join(' ')
+  return cn(baseClasses, sizeClasses, typeClasses, className)
 })
 </script>

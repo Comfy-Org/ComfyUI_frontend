@@ -22,6 +22,7 @@ dist-ssr
 *.local
 # Claude configuration
 .claude/*.local.json
+CLAUDE.local.md
 
 # Editor directories and files
 .vscode/*
@@ -50,6 +51,7 @@ tests-ui/workflows/examples
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
+browser-tests/local/
 
 .env
 
@@ -76,3 +78,12 @@ vite.config.mts.timestamp-*.mjs
 *storybook.log
 storybook-static
 
+
+
+
+.nx/cache
+.nx/workspace-data
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+vite.config.*.timestamp*
+vitest.config.*.timestamp*

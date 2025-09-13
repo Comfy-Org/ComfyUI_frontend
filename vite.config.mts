@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import dotenv from 'dotenv'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
@@ -26,6 +27,13 @@ export default defineConfig({
   base: '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    watch: {
+      ignored: [
+        '**/coverage/**',
+        '**/playwright-report/**',
+        '**/*.{test,spec}.ts'
+      ]
+    },
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL
@@ -83,6 +91,7 @@ export default defineConfig({
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
+    tailwindcss(),
     comfyAPIPlugin(IS_DEV),
     generateImportMapPlugin([
       {

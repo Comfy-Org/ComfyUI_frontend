@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import ManagerProgressDialogContent from './ManagerProgressDialogContent.vue'
 
@@ -30,11 +30,20 @@ const defaultMockTaskLogs = [
 
 vi.mock('@/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
-    taskLogs: [...defaultMockTaskLogs]
+    taskLogs: [...defaultMockTaskLogs],
+    succeededTasksLogs: [...defaultMockTaskLogs],
+    failedTasksLogs: [...defaultMockTaskLogs],
+    managerQueue: { historyCount: 2 },
+    isLoading: false
   })),
   useManagerProgressDialogStore: vi.fn(() => ({
     isExpanded: true,
-    collapse: mockCollapse
+    activeTabIndex: 0,
+    getActiveTabIndex: vi.fn(() => 0),
+    setActiveTabIndex: vi.fn(),
+    toggle: vi.fn(),
+    collapse: mockCollapse,
+    expand: vi.fn()
   }))
 }))
 

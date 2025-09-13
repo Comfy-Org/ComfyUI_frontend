@@ -18,9 +18,11 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
+import { useConflictDetection } from './composables/useConflictDetection'
 import { electronAPI, isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
+const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
 const handleKey = (e: KeyboardEvent) => {
   workspaceStore.shiftDown = e.shiftKey
@@ -47,5 +49,9 @@ onMounted(() => {
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
   }
+
+  // Initialize conflict detection in background
+  // This runs async and doesn't block UI setup
+  void conflictDetection.initializeConflictDetection()
 })
 </script>

@@ -48,7 +48,7 @@ export interface CaptureResult {
   lineart: string
 }
 
-export interface BaseManager {
+interface BaseManager {
   init(): void
   dispose(): void
   reset(): void
@@ -184,13 +184,4 @@ export interface LoaderManagerInterface {
   init(): void
   dispose(): void
   loadModel(url: string, originalFileName?: string): Promise<void>
-}
-
-export interface RecordingManagerInterface extends BaseManager {
-  startRecording(): Promise<void>
-  stopRecording(): void
-  hasRecording(): boolean
-  getRecordingDuration(): number
-  exportRecording(filename?: string): void
-  clearRecording(): void
 }

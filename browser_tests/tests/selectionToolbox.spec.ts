@@ -43,7 +43,7 @@ test.describe('Selection Toolbox', () => {
     const boundingBox = await toolboxContainer.boundingBox()
     expect(boundingBox).not.toBeNull()
     // Canvas-based positioning can vary, just verify toolbox appears in reasonable bounds
-    expect(boundingBox!.x).toBeGreaterThan(-100) // Not too far off-screen left
+    expect(boundingBox!.x).toBeGreaterThan(-200) // Not too far off-screen left
     expect(boundingBox!.x).toBeLessThan(1000) // Not too far off-screen right
     expect(boundingBox!.y).toBeGreaterThan(-100) // Not too far off-screen top
   })
@@ -149,7 +149,7 @@ test.describe('Selection Toolbox', () => {
       // Node should have the selected color class/style
       // Note: Exact verification method depends on how color is applied to nodes
       const selectedNode = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
-      expect(selectedNode.getProperty('color')).not.toBeNull()
+      expect(await selectedNode.getProperty('color')).not.toBeNull()
     })
 
     test('color picker shows current color of selected nodes', async ({

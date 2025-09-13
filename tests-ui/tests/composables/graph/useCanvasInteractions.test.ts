@@ -1,126 +1,153 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
-import { app } from '@/scripts/app'
-import * as settingStore from '@/stores/settingStore'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 
-// Mock the app and canvas
+// Mock stores
+vi.mock('@/stores/graphStore', () => {
+  const getCanvas = vi.fn()
+  return { useCanvasStore: vi.fn(() => ({ getCanvas })) }
+})
+vi.mock('@/stores/settingStore', () => {
+  const getFn = vi.fn()
+  return { useSettingStore: vi.fn(() => ({ get: getFn })) }
+})
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
-      canvas: null as HTMLCanvasElement | null
+      canvas: {
+        dispatchEvent: vi.fn()
+      }
     }
   }
 }))
 
-// Mock the setting store
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: vi.fn()
-}))
+function createMockLGraphCanvas(read_only = true): LGraphCanvas {
+  const mockCanvas: Partial<LGraphCanvas> = { read_only }
+  return mockCanvas as LGraphCanvas
+}
+
+function createMockPointerEvent(
+  buttons: PointerEvent['buttons'] = 1
+): PointerEvent {
+  const mockEvent: Partial<PointerEvent> = {
+    buttons,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn()
+  }
+  return mockEvent as PointerEvent
+}
+
+function createMockWheelEvent(ctrlKey = false, metaKey = false): WheelEvent {
+  const mockEvent: Partial<WheelEvent> = {
+    ctrlKey,
+    metaKey,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn()
+  }
+  return mockEvent as WheelEvent
+}
 
 describe('useCanvasInteractions', () => {
-  let mockCanvas: HTMLCanvasElement
-  let mockSettingStore: { get: ReturnType<typeof vi.fn> }
-  let canvasInteractions: ReturnType<typeof useCanvasInteractions>
-
   beforeEach(() => {
-    // Clear mocks
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+  })
 
-    // Create mock canvas element
-    mockCanvas = document.createElement('canvas')
-    mockCanvas.dispatchEvent = vi.fn()
-    app.canvas!.canvas = mockCanvas
+  describe('handlePointer', () => {
+    it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {
+      const { getCanvas } = useCanvasStore()
+      const mockCanvas = createMockLGraphCanvas(true)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
 
-    // Mock setting store
-    mockSettingStore = { get: vi.fn() }
-    vi.mocked(settingStore.useSettingStore).mockReturnValue(
-      mockSettingStore as any
-    )
+      const { handlePointer } = useCanvasInteractions()
 
-    canvasInteractions = useCanvasInteractions()
+      const mockEvent = createMockPointerEvent(1) // Left Mouse Button
+      handlePointer(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+    })
+
+    it('should forward middle mouse button events to canvas', () => {
+      const { getCanvas } = useCanvasStore()
+      const mockCanvas = createMockLGraphCanvas(false)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
+      const { handlePointer } = useCanvasInteractions()
+
+      const mockEvent = createMockPointerEvent(4) // Middle mouse button
+      handlePointer(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+    })
+
+    it('should not prevent default when canvas is not in read_only mode and not middle button', () => {
+      const { getCanvas } = useCanvasStore()
+      const mockCanvas = createMockLGraphCanvas(false)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
+      const { handlePointer } = useCanvasInteractions()
+
+      const mockEvent = createMockPointerEvent(1)
+      handlePointer(mockEvent)
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
+    })
+
+    it('should return early when canvas is null', () => {
+      const { getCanvas } = useCanvasStore()
+      vi.mocked(getCanvas).mockReturnValue(null as unknown as LGraphCanvas) // TODO: Fix misaligned types
+      const { handlePointer } = useCanvasInteractions()
+
+      const mockEvent = createMockPointerEvent(1)
+      handlePointer(mockEvent)
+
+      expect(getCanvas).toHaveBeenCalled()
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
+    })
   })
 
   describe('handleWheel', () => {
-    it('should check navigation mode from settings', () => {
-      mockSettingStore.get.mockReturnValue('standard')
+    it('should forward ctrl+wheel events to canvas in standard nav mode', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
 
-      const wheelEvent = new WheelEvent('wheel', {
-        ctrlKey: true,
-        deltaY: -100
-      })
+      const { handleWheel } = useCanvasInteractions()
 
-      canvasInteractions.handleWheel(wheelEvent)
+      // Ctrl key pressed
+      const mockEvent = createMockWheelEvent(true)
 
-      expect(mockSettingStore.get).toHaveBeenCalledWith(
-        'Comfy.Canvas.NavigationMode'
-      )
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
     })
 
-    it('should not forward regular wheel events in standard mode', () => {
-      mockSettingStore.get.mockReturnValue('standard')
+    it('should forward all wheel events to canvas in legacy nav mode', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('legacy')
+      const { handleWheel } = useCanvasInteractions()
 
-      const wheelEvent = new WheelEvent('wheel', {
-        deltaY: -100
-      })
+      const mockEvent = createMockWheelEvent()
+      handleWheel(mockEvent)
 
-      canvasInteractions.handleWheel(wheelEvent)
-
-      expect(mockCanvas.dispatchEvent).not.toHaveBeenCalled()
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
     })
 
-    it('should forward all wheel events to canvas in legacy mode', () => {
-      mockSettingStore.get.mockReturnValue('legacy')
+    it('should not prevent default for regular wheel events in standard nav mode', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
+      const { handleWheel } = useCanvasInteractions()
 
-      const wheelEvent = new WheelEvent('wheel', {
-        deltaY: -100,
-        cancelable: true
-      })
+      const mockEvent = createMockWheelEvent()
+      handleWheel(mockEvent)
 
-      canvasInteractions.handleWheel(wheelEvent)
-
-      expect(mockCanvas.dispatchEvent).toHaveBeenCalled()
-    })
-
-    it('should handle missing canvas gracefully', () => {
-      ;(app.canvas as any).canvas = null
-      mockSettingStore.get.mockReturnValue('standard')
-
-      const wheelEvent = new WheelEvent('wheel', {
-        ctrlKey: true,
-        deltaY: -100
-      })
-
-      expect(() => {
-        canvasInteractions.handleWheel(wheelEvent)
-      }).not.toThrow()
-    })
-  })
-
-  describe('forwardEventToCanvas', () => {
-    it('should dispatch event to canvas element', () => {
-      const wheelEvent = new WheelEvent('wheel', {
-        deltaY: -100,
-        ctrlKey: true
-      })
-
-      canvasInteractions.forwardEventToCanvas(wheelEvent)
-
-      expect(mockCanvas.dispatchEvent).toHaveBeenCalledWith(
-        expect.any(WheelEvent)
-      )
-    })
-
-    it('should handle missing canvas gracefully', () => {
-      ;(app.canvas as any).canvas = null
-
-      const wheelEvent = new WheelEvent('wheel', {
-        deltaY: -100
-      })
-
-      expect(() => {
-        canvasInteractions.forwardEventToCanvas(wheelEvent)
-      }).not.toThrow()
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
   })
 })

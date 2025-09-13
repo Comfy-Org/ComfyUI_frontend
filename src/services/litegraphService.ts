@@ -41,6 +41,7 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
@@ -483,7 +484,18 @@ export const useLitegraphService = () => {
         ) ?? {}
 
         if (widget) {
-          widget.label = st(nameKey, widget.label ?? inputName)
+          // Check if this is an Asset Browser button widget
+          const isAssetBrowserButton =
+            widget.type === 'button' && widget.value === 'Select model'
+
+          if (isAssetBrowserButton) {
+            // Preserve Asset Browser button label (don't translate)
+            widget.label = String(widget.value)
+          } else {
+            // Apply normal translation for other widgets
+            widget.label = st(nameKey, widget.label ?? inputName)
+          }
+
           widget.options ??= {}
           Object.assign(widget.options, {
             advanced: inputSpec.advanced,
@@ -948,6 +960,25 @@ export const useLitegraphService = () => {
     options: Record<string, any> = {}
   ): LGraphNode {
     options.pos ??= getCanvasCenter()
+
+    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
+      const canvas = canvasStore.getCanvas()
+      const bp = useSubgraphStore().getBlueprint(nodeDef.name)
+      const items: object = {
+        nodes: bp.nodes,
+        subgraphs: bp.definitions?.subgraphs
+      }
+      const results = canvas._deserializeItems(items, {
+        position: options.pos
+      })
+      if (!results) throw new Error('Failed to add subgraph blueprint')
+      const node = results.nodes.values().next().value
+      if (!node)
+        throw new Error(
+          'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+        )
+      return node
+    }
 
     const node = LiteGraph.createNode(
       nodeDef.name,

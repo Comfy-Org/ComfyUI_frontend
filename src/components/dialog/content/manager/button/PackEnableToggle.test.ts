@@ -6,15 +6,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
 // Mock debounce to execute immediately
-vi.mock('es-toolkit/compat', () => ({
-  debounce: <T extends (...args: any[]) => any>(fn: T) => fn
-}))
+vi.mock('es-toolkit/compat', async () => {
+  const actual = await vi.importActual('es-toolkit/compat')
+  return {
+    ...actual,
+    debounce: <T extends (...args: any[]) => any>(fn: T) => fn
+  }
+})
 
 const mockNodePack = {
   id: 'test-pack',

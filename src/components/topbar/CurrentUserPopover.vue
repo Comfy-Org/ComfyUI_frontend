@@ -8,7 +8,7 @@
           class="mb-3"
           :photo-url="userPhotoUrl"
           :pt:icon:class="{
-            '!text-2xl': !userPhotoUrl
+            'text-2xl!': !userPhotoUrl
           }"
           size="large"
         />
@@ -88,7 +88,8 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { userDisplayName, userEmail, userPhotoUrl } = useCurrentUser()
+const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
+  useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
 
@@ -103,7 +104,7 @@ const handleTopUp = () => {
 }
 
 const handleLogout = async () => {
-  await authActions.logout()
+  await handleSignOut()
   emit('close')
 }
 

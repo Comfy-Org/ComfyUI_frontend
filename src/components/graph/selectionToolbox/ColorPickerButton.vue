@@ -147,11 +147,14 @@ watch(
     showColorPicker.value = false
     selectedColorOption.value = null
     currentColorOption.value = getItemsColorOption(newSelectedItems)
-  }
+  },
+  { immediate: true }
 )
 </script>
 
 <style scoped>
+@reference '../../../assets/css/style.css';
+
 .color-picker-container {
   transform: translateX(-50%);
 }

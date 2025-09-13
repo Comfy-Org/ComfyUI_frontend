@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -22,6 +22,22 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const modelToNodeMap = ref<Record<string, ModelNodeProvider[]>>({})
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
+
+  /** Internal computed for reactive caching of registered node types */
+  const registeredNodeTypes = computed(() => {
+    return new Set(
+      Object.values(modelToNodeMap.value)
+        .flat()
+        .map((provider) => provider.nodeDef.name)
+    )
+  })
+
+  /** Get set of all registered node types for efficient lookup */
+  function getRegisteredNodeTypes(): Set<string> {
+    registerDefaults()
+    return registeredNodeTypes.value
+  }
+
   /**
    * Get the node provider for the given model type name.
    * @param modelType The name of the model type to get the node provider for.
@@ -83,10 +99,15 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('loras', 'LoraLoaderModelOnly', 'lora_name')
     quickRegister('vae', 'VAELoader', 'vae_name')
     quickRegister('controlnet', 'ControlNetLoader', 'control_net_name')
+    quickRegister('unet', 'UNETLoader', 'unet_name')
+    quickRegister('upscale_models', 'UpscaleModelLoader', 'model_name')
+    quickRegister('style_models', 'StyleModelLoader', 'style_model')
+    quickRegister('gligen', 'GLIGENLoader', 'gligen_name')
   }
 
   return {
     modelToNodeMap,
+    getRegisteredNodeTypes,
     getNodeProvider,
     getAllNodeProviders,
     registerNodeProvider,

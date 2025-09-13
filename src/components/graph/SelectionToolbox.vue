@@ -1,16 +1,13 @@
 <template>
-  <Transition name="slide-up">
-    <!-- Wrapping panel in div to get correct ref because panel ref is not of raw dom el -->
-    <div
-      v-show="visible"
-      ref="toolboxRef"
-      style="
-        transform: translate(calc(var(--tb-x) - 50%), calc(var(--tb-y) - 120%));
-      "
-      class="selection-toolbox fixed left-0 top-0 z-40"
-    >
+  <div
+    ref="toolboxRef"
+    style="transform: translate(var(--tb-x), var(--tb-y))"
+    class="fixed left-0 top-0 z-40 pointer-events-none"
+  >
+    <Transition name="slide-up">
       <Panel
-        class="rounded-lg"
+        v-if="visible"
+        class="rounded-lg selection-toolbox pointer-events-auto"
         :pt="{
           header: 'hidden',
           content: 'p-0 flex flex-row'
@@ -24,6 +21,7 @@
         <Load3DViewerButton />
         <MaskEditorButton />
         <ConvertToSubgraphButton />
+        <PublishSubgraphButton />
         <DeleteButton />
         <RefreshSelectionButton />
         <ExtensionCommandButton
@@ -33,8 +31,8 @@
         />
         <HelpButton />
       </Panel>
-    </div>
-  </Transition>
+    </Transition>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -52,6 +50,7 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import PinButton from '@/components/graph/selectionToolbox/PinButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
+import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
@@ -84,22 +83,30 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 </script>
 
 <style scoped>
+.selection-toolbox {
+  transform: translateX(-50%) translateY(-120%);
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50%) translateY(-125%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(-50%) translateY(-120%);
+    opacity: 1;
+  }
+}
+
 .slide-up-enter-active {
-  opacity: 1;
-  transition: all 0.3s ease-out;
+  animation: slideUp 125ms ease-out;
 }
 
 .slide-up-leave-active {
-  transition: none;
-}
-
-.slide-up-enter-from {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.slide-up-leave-to {
-  transform: translateY(0);
-  opacity: 0;
+  animation: slideUp 25ms ease-out reverse;
 }
 </style>

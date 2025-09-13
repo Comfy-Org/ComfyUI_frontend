@@ -5,7 +5,7 @@
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
   >
     <div ref="panelRef" class="actionbar-content flex items-center select-none">
-      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2 p-0!" />
+      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2" />
       <ComfyQueueButton />
     </div>
   </Panel>
@@ -37,7 +37,7 @@ const visible = computed(() => position.value !== 'Disabled')
 const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
@@ -228,6 +228,8 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .actionbar {
   pointer-events: all;
   position: fixed;

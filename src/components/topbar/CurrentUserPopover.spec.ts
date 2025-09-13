@@ -4,7 +4,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import enMessages from '@/locales/en/main.json'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
 
@@ -41,11 +41,13 @@ afterAll(() => {
 })
 
 // Mock the useCurrentUser composable
+const mockHandleSignOut = vi.fn()
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: vi.fn(() => ({
     userPhotoUrl: 'https://example.com/avatar.jpg',
     userDisplayName: 'Test User',
-    userEmail: 'test@example.com'
+    userEmail: 'test@example.com',
+    handleSignOut: mockHandleSignOut
   }))
 }))
 
@@ -155,8 +157,8 @@ describe('CurrentUserPopover', () => {
     // Click the logout button
     await logoutButton.trigger('click')
 
-    // Verify logout was called
-    expect(mockLogout).toHaveBeenCalled()
+    // Verify handleSignOut was called
+    expect(mockHandleSignOut).toHaveBeenCalled()
 
     // Verify close event was emitted
     expect(wrapper.emitted('close')).toBeTruthy()

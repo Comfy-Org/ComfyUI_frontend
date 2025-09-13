@@ -6,9 +6,9 @@ import type { ComfyExtension } from '@/types/comfy'
 /**
  * These extensions are always active, even if they are disabled in the setting.
  */
-export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = []
+const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = []
 
-export const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
+const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
   // https://github.com/Comfy-Org/litegraph.js/pull/117
   'pysssss.Locking',

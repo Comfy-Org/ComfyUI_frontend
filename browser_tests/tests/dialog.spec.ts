@@ -36,6 +36,10 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.loadWorkflow('missing/missing_nodes')
   await comfyPage.closeDialog()
 
+  // Wait for any async operations to complete after dialog closes
+  await comfyPage.nextFrame()
+  await comfyPage.page.waitForTimeout(100)
+
   // Make a change to the graph
   await comfyPage.doubleClickCanvas()
   await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
@@ -58,18 +62,6 @@ test.describe('Execution error', () => {
     // Wait for the element with the .comfy-execution-error selector to be visible
     const executionError = comfyPage.page.locator('.comfy-error-report')
     await expect(executionError).toBeVisible()
-  })
-
-  test('Can display Issue Report form', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('nodes/execution_error')
-    await comfyPage.queueButton.click()
-    await comfyPage.nextFrame()
-
-    await comfyPage.page.getByLabel('Help Fix This').click()
-    const issueReportForm = comfyPage.page.getByText(
-      'Submit Error Report (Optional)'
-    )
-    await expect(issueReportForm).toBeVisible()
   })
 })
 
@@ -303,37 +295,16 @@ test.describe('Settings', () => {
   })
 })
 
-test.describe('Feedback dialog', () => {
-  test('Should open from topmenu help command', async ({ comfyPage }) => {
-    // Open feedback dialog from top menu
+test.describe('Support', () => {
+  test('Should open external zendesk link', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
+    const pagePromise = comfyPage.page.context().waitForEvent('page')
+    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
+    const newPage = await pagePromise
 
-    // Verify feedback dialog content is visible
-    const feedbackHeader = comfyPage.page.getByRole('heading', {
-      name: 'Feedback'
-    })
-    await expect(feedbackHeader).toBeVisible()
-  })
-
-  test('Should close when close button clicked', async ({ comfyPage }) => {
-    // Open feedback dialog
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
-
-    const feedbackHeader = comfyPage.page.getByRole('heading', {
-      name: 'Feedback'
-    })
-
-    // Close feedback dialog
-    await comfyPage.page
-      .getByLabel('', { exact: true })
-      .getByLabel('Close')
-      .click()
-    await feedbackHeader.waitFor({ state: 'hidden' })
-
-    // Verify dialog is closed
-    await expect(feedbackHeader).not.toBeVisible()
+    await newPage.waitForLoadState('networkidle')
+    await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
+    await newPage.close()
   })
 })
 
