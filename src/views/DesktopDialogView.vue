@@ -22,6 +22,8 @@ const message = computed(() => (route.query.message as string) || '')
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 .desktop-dialog {
   @apply flex flex-col p-6 rounded-lg;
   width: 100%;
