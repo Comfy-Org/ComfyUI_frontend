@@ -11,7 +11,7 @@
         class="first:mr-auto"
         :label="button.label"
         :severity="button.severity ?? 'secondary'"
-        @click="electronAPI().Dialog.clickButton(button.returnValue)"
+        @click="electronAPI().Dialog.clickButton(button.returnValue ?? '')"
       />
     </div>
   </div>
