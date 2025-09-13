@@ -34,6 +34,7 @@
     "locale": "lobe-i18n locale",
     "collect-i18n": "npx playwright test --config=playwright.i18n.config.ts",
     "json-schema": "tsx scripts/generate-json-schema.ts",
+    "import-map": "tsx scripts/generate-import-map.ts",
     "storybook": "nx storybook -p 6006",
     "build-storybook": "storybook build"
   },
