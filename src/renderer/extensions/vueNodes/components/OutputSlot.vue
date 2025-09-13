@@ -15,7 +15,7 @@
     <!-- Slot Name -->
     <span
       v-if="!dotOnly"
-      class="whitespace-nowrap text-sm font-normal dark-theme:text-[#9FA2BD] text-[#888682]"
+      class="whitespace-nowrap text-sm font-normal dark-theme:text-slate-200 text-stone-200"
     >
       {{ slotData.name || `Output ${index}` }}
     </span>
