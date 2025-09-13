@@ -7,7 +7,10 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
+import {
+  SettingTreeNode,
+  useSettingStore
+} from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'

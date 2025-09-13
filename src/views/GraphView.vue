@@ -46,6 +46,7 @@ import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVers
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -61,7 +62,6 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

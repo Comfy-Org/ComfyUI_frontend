@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
-import type { useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 // Mock dependencies

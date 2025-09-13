@@ -66,10 +66,10 @@ import ReleaseNotificationToast from '@/components/helpcenter/ReleaseNotificatio
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/composables/useConflictDetection'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogService } from '@/services/dialogService'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 

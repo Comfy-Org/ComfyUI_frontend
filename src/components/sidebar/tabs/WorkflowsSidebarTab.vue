@@ -147,7 +147,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'

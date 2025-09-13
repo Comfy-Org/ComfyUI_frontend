@@ -44,7 +44,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'

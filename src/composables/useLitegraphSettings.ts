@@ -5,8 +5,8 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.

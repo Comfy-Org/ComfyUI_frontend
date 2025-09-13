@@ -2,7 +2,7 @@ import { markRaw } from 'vue'
 
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useWorkflowsSidebarTab = (): SidebarTabExtension => {

@@ -1,9 +1,9 @@
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { type StatusWsMessageStatus, TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'

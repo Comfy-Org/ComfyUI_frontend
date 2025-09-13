@@ -3,7 +3,7 @@ import { CSSProperties, ref, watch } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type { Size, Vector2 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 export interface PositionConfig {
   /* The position of the element on litegraph canvas */

@@ -24,12 +24,12 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
 

@@ -5,7 +5,7 @@ import {
   SettingTreeNode,
   getSettingInfo,
   useSettingStore
-} from '@/stores/settingStore'
+} from '@/platform/settings/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 

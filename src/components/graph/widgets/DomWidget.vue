@@ -26,7 +26,7 @@ import { useDomClipping } from '@/composables/element/useDomClipping'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { DomWidgetState } from '@/stores/domWidgetStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const { widgetState } = defineProps<{
   widgetState: DomWidgetState

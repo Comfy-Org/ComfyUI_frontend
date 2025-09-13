@@ -101,9 +101,9 @@ import {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
-import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 
 const { t } = useI18n()

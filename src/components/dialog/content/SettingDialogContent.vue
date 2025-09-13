@@ -69,7 +69,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { useSettingUI } from '@/composables/setting/useSettingUI'
-import { SettingTreeNode } from '@/stores/settingStore'
+import { SettingTreeNode } from '@/platform/settings/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
