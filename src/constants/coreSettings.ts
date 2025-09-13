@@ -818,7 +818,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Canvas', 'CanvasNavigationMode'],
     name: 'Canvas Navigation Mode',
     defaultValue: 'legacy',
-    type: 'combo',
+    type: 'radio',
     options: [
       { value: 'standard', text: 'Standard (New)' },
       { value: 'legacy', text: 'Drag Navigation' }
