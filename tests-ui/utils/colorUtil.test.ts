@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { hexToRgb, hsbToRgb, parseToRgb, rgbToHex } from '@/utils/colorUtil'
+import {
+  hexToRgb,
+  hsbToRgb,
+  normalizeColorToHex,
+  parseToRgb,
+  rgbToHex
+} from '@/utils/colorUtil'
 
 describe('colorUtil conversions', () => {
   describe('hexToRgb / rgbToHex', () => {
@@ -67,6 +73,33 @@ describe('colorUtil conversions', () => {
     it('handles non-100 brightness and clamps/normalizes input', () => {
       const rgb = hsbToRgb({ h: 360, s: 150, b: 50 })
       expect(rgbToHex(rgb)).toBe('#7f0000')
+    })
+  })
+
+  describe('normalizeColorToHex (guard rails)', () => {
+    it('returns #hex for common inputs and falls back to black', () => {
+      expect(normalizeColorToHex('#FFaa00')).toBe('#ffaa00')
+      expect(normalizeColorToHex('ffaa00')).toBe('#ffaa00')
+      expect(normalizeColorToHex('rgb(300, -5, 16)')).toBe('#ff0010')
+      expect(normalizeColorToHex('hsl(0, 100%, 50%)')).toBe('#ff0000')
+      expect(normalizeColorToHex('hsb(120, 100, 100)')).toBe('#00ff00')
+
+      // invalid strings
+      expect(normalizeColorToHex('')).toBe('#000000')
+      expect(normalizeColorToHex('   ')).toBe('#000000')
+      expect(normalizeColorToHex('#12')).toBe('#000000')
+      expect(normalizeColorToHex('#zzzzzz')).toBe('#000000')
+      expect(normalizeColorToHex('not-a-color')).toBe('#000000')
+
+      // HSB object inputs
+      expect(normalizeColorToHex({ h: 240, s: 100, b: 100 } as any)).toBe(
+        '#0000ff'
+      )
+      expect(normalizeColorToHex({ h: NaN, s: 100, b: 100 } as any)).toBe(
+        '#000000'
+      )
+      expect(normalizeColorToHex(null)).toBe('#000000')
+      expect(normalizeColorToHex(undefined)).toBe('#000000')
     })
   })
 })

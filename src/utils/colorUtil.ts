@@ -115,6 +115,73 @@ export function hsbToRgb({ h, s, b }: HSB): RGB {
   }
 }
 
+/**
+ * Normalize various color inputs (hex, rgb/rgba, hsl/hsla, hsb string/object)
+ * into lowercase #rrggbb. Falls back to #000000 on invalid inputs.
+ */
+export function normalizeColorToHex(value: unknown): string {
+  // String inputs
+  if (typeof value === 'string') {
+    const raw = value.trim()
+    if (!raw) return '#000000'
+
+    // Bare hex without '#'
+    if (/^[0-9a-fA-F]{3}$/.test(raw) || /^[0-9a-fA-F]{6}$/.test(raw)) {
+      return `#${raw.toLowerCase()}`
+    }
+
+    // Starts with '#': only accept #rgb or #rrggbb
+    if (raw.startsWith('#')) {
+      const hex = raw.toLowerCase()
+      if (hex.length === 4 || hex.length === 7) return hex
+      return '#000000'
+    }
+
+    // rgb(), rgba(), hsl(), hsla()
+    if (/^(rgb|rgba|hsl|hsla)\(/i.test(raw)) {
+      const rgb = parseToRgb(raw)
+      return rgbToHex(rgb).toLowerCase()
+    }
+
+    // hsb(h,s,b)
+    if (/^hsb\(/i.test(raw)) {
+      const nums = raw.match(/\d+(?:\.\d+)?/g)?.map(Number) || []
+      if (nums.length >= 3) {
+        const [h, s, b] = nums
+        if ([h, s, b].every((n) => Number.isFinite(n))) {
+          const rgb = hsbToRgb({ h, s, b })
+          return rgbToHex(rgb).toLowerCase()
+        }
+      }
+      return '#000000'
+    }
+
+    // Unknown string format -> default
+    return '#000000'
+  }
+
+  // HSB object (PrimeVue)
+  if (
+    value &&
+    typeof value === 'object' &&
+    'h' in (value as any) &&
+    's' in (value as any) &&
+    ('b' in (value as any) || 'v' in (value as any))
+  ) {
+    const h = Number((value as any).h)
+    const s = Number((value as any).s)
+    const b = Number((value as any).b ?? (value as any).v)
+    if ([h, s, b].every((n) => Number.isFinite(n))) {
+      const rgb = hsbToRgb({ h, s, b })
+      return rgbToHex(rgb).toLowerCase()
+    }
+    return '#000000'
+  }
+
+  // Fallback
+  return '#000000'
+}
+
 export function parseToRgb(color: string): RGB {
   const format = identifyColorFormat(color)
   if (!format) return { r: 0, g: 0, b: 0 }
