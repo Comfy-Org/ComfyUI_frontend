@@ -38,11 +38,10 @@ export class VueNodeHelpers {
    * Get all Vue node IDs currently in the DOM
    */
   async getNodeIds(): Promise<string[]> {
-    return await this.nodes.evaluateAll(
-      (nodes) =>
-        nodes
-          .map((n) => n.getAttribute('data-node-id'))
-          .filter((id): id is string => id !== null)
+    return await this.nodes.evaluateAll((nodes) =>
+      nodes
+        .map((n) => n.getAttribute('data-node-id'))
+        .filter((id): id is string => id !== null)
     )
   }
 
