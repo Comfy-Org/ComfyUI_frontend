@@ -4,9 +4,8 @@ import type { ButtonProps } from 'primevue/button'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 describe('WidgetButton Interactions', () => {
   const createMockWidget = (
