@@ -73,7 +73,7 @@ templates_repo/
 vite.config.mts.timestamp-*.mjs
 
 # Linux core dumps
-./core
+core
 
 *storybook.log
 storybook-static
