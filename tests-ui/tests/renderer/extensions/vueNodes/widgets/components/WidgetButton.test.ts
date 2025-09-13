@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetButton from './WidgetButton.vue'
+import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 
 describe('WidgetButton Interactions', () => {
   const createMockWidget = (
