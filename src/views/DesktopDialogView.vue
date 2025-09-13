@@ -43,21 +43,19 @@ const message = computed(() => {
 })
 
 const buttons = computed(() => {
-  try {
-    const buttonsParam = route.query.buttons
-    if (!buttonsParam || typeof buttonsParam !== 'string') {
-      return []
-    }
-    const parsed = JSON.parse(buttonsParam)
-    if (!Array.isArray(parsed)) {
+  const buttonsParam = route.query.buttons
+  if (typeof buttonsParam === 'string') {
+    try {
+      const parsed = JSON.parse(buttonsParam)
+      if (Array.isArray(parsed)) {
+        return parsed as DialogButton[]
+      }
       console.error('Invalid buttons parameter: expected array')
-      return []
+    } catch (error) {
+      console.error('Failed to parse buttons parameter:', error)
     }
-    return parsed as DialogButton[]
-  } catch (error) {
-    console.error('Failed to parse buttons parameter:', error)
-    return []
   }
+  return []
 })
 </script>
 
