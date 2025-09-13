@@ -22,17 +22,6 @@ export const useKeybindingService = () => {
       return false
     }
 
-    // Don't forward if user is typing in an input field or editable element
-    const target = event.composedPath()[0] as HTMLElement
-    if (
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.contentEditable === 'true' ||
-      (target.tagName === 'SPAN' && target.classList.contains('property_value'))
-    ) {
-      return false
-    }
-
     // Keys that LiteGraph handles but aren't in core keybindings
     const canvasKeys = ['Delete', 'Backspace']
 
@@ -51,6 +40,7 @@ export const useKeybindingService = () => {
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
         target.tagName === 'INPUT' ||
+        target.contentEditable === 'true' ||
         (target.tagName === 'SPAN' &&
           target.classList.contains('property_value')))
     ) {
