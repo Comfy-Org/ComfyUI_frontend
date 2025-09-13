@@ -223,7 +223,6 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
       subgraphId,
-
       hasErrors: !!node.has_errors,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
