@@ -1,8 +1,8 @@
-// @ts-nocheck
-// FIXME: typechecking for proxy system
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
 import { disconnectedWidget } from '@/lib/litegraph/src/widgets/DisconnectedWidget'
+import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
@@ -20,21 +20,27 @@ function injectProperty(subgraphNode: SubgraphNode) {
   Object.defineProperty(subgraphNode.properties, 'proxyWidgets', {
     get: () => {
       return subgraphNode.widgets
-        .filter((w) => !!w._overlay)
+        .filter((w) => isProxyWidget(w))
         .map((w) => [w._overlay.nodeId, w._overlay.widgetName])
     },
     set: (property) => {
       const { widgetStates } = useDomWidgetStore()
-      subgraphNode.widgets.forEach((w) => {
-        if (w.id && widgetStates.has(w.id))
-          widgetStates.get(w.id).active = false
-      })
+      for (const w of subgraphNode.widgets ?? []) {
+        if (w instanceof DOMWidgetImpl && widgetStates.has(w.id)) {
+          const widgetState = widgetStates.get(w.id)
+          if (!widgetState) continue
+          widgetState.active = false
+        }
+      }
       //NOTE: This does not apply to pushed entries, only initial load
-      subgraphNode.widgets = subgraphNode.widgets.filter((w) => !w._overlay)
+      subgraphNode.widgets = subgraphNode.widgets.filter(
+        (w) => !isProxyWidget(w)
+      )
       for (const [nodeId, widgetName] of property) {
         const w = addProxyWidget(subgraphNode, `${nodeId}`, widgetName)
-        if (w.id && widgetStates.has(w.id)) {
+        if (w instanceof DOMWidgetImpl) {
           const widgetState = widgetStates.get(w.id)
+          if (!widgetState) continue
           widgetState.active = true
           widgetState.widget = w
         }
@@ -44,55 +50,63 @@ function injectProperty(subgraphNode: SubgraphNode) {
   })
   subgraphNode.properties.proxyWidgets = proxyWidgets
 }
+type Overlay = {
+  graph: LGraph
+  nodeId: string
+  widgetName: string
+  label: string
+  isProxyWidget: boolean
+}
+type ProxyWidget = IBaseWidget & { _overlay: Overlay }
+function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
+  return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
+}
 
 function addProxyWidget(
   subgraphNode: SubgraphNode,
   nodeId: string,
   widgetName: string
 ) {
-  const overlay = { nodeId, widgetName }
-  return addProxyFromOverlay(subgraphNode, { __proto__: overlay })
+  const overlay = {
+    nodeId,
+    widgetName,
+    graph: subgraphNode.subgraph,
+    label: `${nodeId}: ${widgetName}`,
+    isProxyWidget: true
+  }
+  return addProxyFromOverlay(subgraphNode, overlay)
 }
-function resolveLinkedWidget(graph, nodeId = '', widgetName) {
-  const g = graph
-  let n = undefined
+function resolveLinkedWidget(
+  overlay: Overlay
+): [LGraphNode | undefined, IBaseWidget | undefined] {
+  const { graph, nodeId, widgetName } = overlay
+  let g: LGraph | undefined = graph
+  let n: LGraphNode | SubgraphNode | undefined = undefined
   for (const id of nodeId.split(':')) {
     n = g?._nodes_by_id?.[id]
-    graph = n?.subgraph
+    g = n?.isSubgraphNode?.() ? n.subgraph : undefined
   }
-  if (!n) return
-  return n.widgets.find((w) => w.name === widgetName)
+  if (!n) return [undefined, undefined]
+  return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
 }
-function getWidgetRef(overlay) {
-  const lw = resolveLinkedWidget(
-    overlay.graph,
-    overlay.nodeId,
-    overlay.widgetName
-  )
-  if (lw) return new WeakRef(lw)
-  return { deref: () => undefined }
-}
-function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: object) {
-  overlay.label = `${overlay.nodeId}: ${overlay.widgetName}`
-  overlay.graph = subgraphNode.subgraph
-  overlay.isProxyWidget = true
+function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
   //TODO: call toConcrete when resolved and hold reference?
-  //NOTE: From testing, WeakRefs don't appear to actually drop
-  //Memory management doesn't matter here and this is worthless for notification
-  let linkedWidget = getWidgetRef(overlay)
+  //NOTE: From testing, WeakRefs never dropped. May refactor later
+  let [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
   const handler = Object.fromEntries(
     ['get', 'set', 'getPrototypeOf', 'ownKeys', 'has'].map((s) => {
-      const func = function (t, p, ...rest) {
+      const func = function (t: object, p: string, ...rest: object[]) {
         if (s == 'get' && p == '_overlay') return overlay
-        if (!linkedWidget.deref()) linkedWidget = getWidgetRef(overlay)
-        const bw = linkedWidget.deref() ?? disconnectedWidget
+        if (!linkedWidget)
+          [linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
+        const bw = linkedWidget ?? disconnectedWidget
         if (s == 'get' && p == 'node') {
           return subgraphNode
         }
         if (s == 'set' && p == 'computedDisabled') {
           //ignore setting, calc actual
           bw.computedDisabled =
-            bw.disabled || bw.node.getSlotFromWidget(bw)?.link != null
+            bw.disabled || linkedNode!.getSlotFromWidget(bw)?.link != null
           return true
         }
         //NOTE: p may be undefined
@@ -115,12 +129,12 @@ function addProxyFromOverlay(subgraphNode: SubgraphNode, overlay: object) {
           t = bw
           if (p == 'value') r = t
         }
-        return Reflect[s](t, p, ...rest.slice(0, -1), r)
+        return (Reflect as any)[s](t, p, ...rest.slice(0, -1), r)
       }
       return [s, func]
     })
   )
-  const w = new Proxy(overlay, handler)
+  const w = new Proxy(overlay, handler) as unknown as ProxyWidget
   subgraphNode.widgets.push(w)
   return w
 }
