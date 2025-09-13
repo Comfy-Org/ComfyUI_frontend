@@ -1,5 +1,6 @@
 @layer theme, base, primevue, components, utilities;
 
+@import './fonts.css';
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
 @import 'tw-animate-css';
