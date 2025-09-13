@@ -114,7 +114,6 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
     .map((group) => ({
       label: group.label,
       settings: flattenTree<SettingParams>(group).sort((a, b) => {
-        // Sort by priority first, higher priority comes first
         const sortOrderA = a.sortOrder ?? 0
         const sortOrderB = b.sortOrder ?? 0
 
