@@ -7,6 +7,7 @@
 import { computed, inject } from 'vue'
 
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource, type Point } from '@/renderer/core/layout/types'
@@ -20,12 +21,7 @@ export function useNodeLayout(nodeId: string) {
   const mutations = useLayoutMutations()
 
   // Get transform utilities from TransformPane if available
-  const transformState = inject('transformState') as
-    | {
-        canvasToScreen: (point: Point) => Point
-        screenToCanvas: (point: Point) => Point
-      }
-    | undefined
+  const transformState = inject(TransformStateKey)
 
   // Get the customRef for this node (shared write access)
   const layoutRef = store.getNodeLayoutRef(nodeId)

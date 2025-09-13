@@ -72,6 +72,8 @@ export function useSelectionToolboxPosition(
 
     worldPosition.value = {
       x: unionBounds.x + unionBounds.width / 2,
+      // createBounds() applied a default padding of 10px
+      // so adjust Y to maintain visual consistency
       y: unionBounds.y - 10
     }
 
