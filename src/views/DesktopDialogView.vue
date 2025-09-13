@@ -1,11 +1,9 @@
 <template>
-  <div class="desktop-dialog-overlay">
-    <div class="dialog-box">
-      <div class="dialog-title">{{ title }}</div>
-      <div class="dialog-message">{{ message }}</div>
-      <div class="dialog-actions">
-        <button class="dialog-button">{{ t('g.close') }}</button>
-      </div>
+  <div class="desktop-dialog">
+    <div class="dialog-title">{{ title }}</div>
+    <div class="dialog-message">{{ message }}</div>
+    <div class="dialog-actions">
+      <button class="dialog-button">{{ t('g.close') }}</button>
     </div>
   </div>
 </template>
@@ -24,29 +22,12 @@ const message = computed(() => (route.query.message as string) || '')
 </script>
 
 <style scoped>
-.desktop-dialog-overlay {
-  @apply w-full h-full flex items-center justify-center;
-  background: rgba(26, 26, 26, 0.8);
-  backdrop-filter: blur(4px);
-}
-
-.dialog-box {
-  @apply flex flex-col items-start gap-6 rounded-lg p-6;
-  width: 448px;
+.desktop-dialog {
+  @apply flex flex-col p-6 rounded-lg;
+  width: 100%;
+  height: 100%;
   background: #2d2d2d;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  gap: 24px;
 }
 
 .dialog-title {
@@ -70,7 +51,7 @@ const message = computed(() => (route.query.message as string) || '')
 }
 
 .dialog-actions {
-  @apply flex w-full justify-end mt-2;
+  @apply flex w-full justify-end mt-auto;
 }
 
 .dialog-button {
