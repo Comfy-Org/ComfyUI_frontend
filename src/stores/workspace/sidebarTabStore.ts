@@ -1,14 +1,14 @@
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import type { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
+import type { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { useWorkflowsSidebarTab } from '@/composables/sidebarTabs/useWorkflowsSidebarTab'
 import { t, te } from '@/i18n'
-import { useCommandStore } from '@/stores/commandStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
-import { SidebarTabExtension } from '@/types/extensionTypes'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useMenuItemStore } from '@/stores/menuItemStore'
+import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const sidebarTabs = ref<SidebarTabExtension[]>([])

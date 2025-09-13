@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
+import type { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 
 import { getGltfBinaryMetadata } from '../../../../src/scripts/metadata/gltf'
 

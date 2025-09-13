@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
 vi.mock('@/stores/workspace/colorPaletteStore')

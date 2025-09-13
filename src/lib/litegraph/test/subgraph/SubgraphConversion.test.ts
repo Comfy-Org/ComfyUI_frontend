@@ -1,17 +1,9 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import {
-  ISlotType,
-  LGraph,
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { ISlotType, LGraph, LGraphGroup, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 function createNode(
   graph: LGraph,

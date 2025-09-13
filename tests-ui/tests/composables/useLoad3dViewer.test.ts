@@ -5,7 +5,7 @@ import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { useLoad3dService } from '@/services/load3dService'
-import { useToastStore } from '@/stores/toastStore'
+import type { useToastStore } from '@/stores/toastStore'
 
 vi.mock('@/services/load3dService', () => ({
   useLoad3dService: vi.fn()

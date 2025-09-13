@@ -126,14 +126,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
+import type { toRef } from 'vue'
+import { computed, inject, onErrorCaptured, ref, watch } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
-import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
-import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import type { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
+import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'

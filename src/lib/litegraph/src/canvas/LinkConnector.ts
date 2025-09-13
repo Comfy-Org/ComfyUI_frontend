@@ -1,11 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
   ConnectingLink,
@@ -17,27 +14,27 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
-import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
-import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
+import type { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { FloatingRenderLink } from './FloatingRenderLink'
-import { MovingInputLink } from './MovingInputLink'
-import { MovingLinkBase } from './MovingLinkBase'
-import { MovingOutputLink } from './MovingOutputLink'
+import type { FloatingRenderLink } from './FloatingRenderLink'
+import type { MovingInputLink } from './MovingInputLink'
+import type { MovingLinkBase } from './MovingLinkBase'
+import type { MovingOutputLink } from './MovingOutputLink'
 import type { RenderLink } from './RenderLink'
-import { ToInputFromIoNodeLink } from './ToInputFromIoNodeLink'
-import { ToInputRenderLink } from './ToInputRenderLink'
-import { ToOutputFromIoNodeLink } from './ToOutputFromIoNodeLink'
-import { ToOutputFromRerouteLink } from './ToOutputFromRerouteLink'
-import { ToOutputRenderLink } from './ToOutputRenderLink'
+import type { ToInputFromIoNodeLink } from './ToInputFromIoNodeLink'
+import type { ToInputRenderLink } from './ToInputRenderLink'
+import type { ToOutputFromIoNodeLink } from './ToOutputFromIoNodeLink'
+import type { ToOutputFromRerouteLink } from './ToOutputFromRerouteLink'
+import type { ToOutputRenderLink } from './ToOutputRenderLink'
 
 /**
  * A Litegraph state object for the {@link LinkConnector}.

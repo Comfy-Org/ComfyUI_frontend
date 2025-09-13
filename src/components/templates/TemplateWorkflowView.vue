@@ -87,7 +87,7 @@ import TemplateWorkflowCardSkeleton from '@/components/templates/TemplateWorkflo
 import TemplateWorkflowList from '@/components/templates/TemplateWorkflowList.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
-import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import type { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 const { t } = useI18n()

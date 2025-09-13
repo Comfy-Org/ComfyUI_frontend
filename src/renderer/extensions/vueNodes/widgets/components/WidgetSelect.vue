@@ -20,12 +20,9 @@ import Select from 'primevue/select'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import type { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import type { PANEL_EXCLUDED_PROPS, filterWidgetProps } from '@/utils/widgetPropFilter'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

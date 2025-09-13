@@ -6,17 +6,15 @@ import { t } from '@/i18n'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { ComfyApp } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import type { ComfyApp } from '../../scripts/app'
+import type { ComfyDialog } from '../../scripts/ui'
+import { $el } from '../../scripts/ui'
 import { getStorageValue, setStorageValue } from '../../scripts/utils'
 import { hexToRgb } from '../../utils/colorUtil'
 import { parseToRgb } from '../../utils/colorUtil'
-import { ClipspaceDialog } from './clipspace'
-import {
-  imageLayerFilenamesByTimestamp,
-  imageLayerFilenamesIfApplicable
-} from './maskEditorLayerFilenames'
-import { MaskEditorDialogOld } from './maskEditorOld'
+import type { ClipspaceDialog } from './clipspace'
+import { imageLayerFilenamesByTimestamp, imageLayerFilenamesIfApplicable } from './maskEditorLayerFilenames'
+import type { MaskEditorDialogOld } from './maskEditorOld'
 
 var styles = `
   #maskEditorContainer {

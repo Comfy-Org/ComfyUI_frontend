@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { IWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 

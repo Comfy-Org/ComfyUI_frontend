@@ -5,10 +5,11 @@
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
 import log from 'loglevel'
-import { type ComputedRef, type Ref, computed, customRef } from 'vue'
+import type { ComputedRef, Ref, customRef } from 'vue'
+import { computed } from 'vue'
 import * as Y from 'yjs'
 
-import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+import type { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import type {
   CreateLinkOperation,
   CreateNodeOperation,
@@ -23,23 +24,8 @@ import type {
   ResizeNodeOperation,
   SetNodeZIndexOperation
 } from '@/renderer/core/layout/types'
-import {
-  type Bounds,
-  type LayoutChange,
-  LayoutSource,
-  type LayoutStore,
-  type LinkId,
-  type LinkLayout,
-  type LinkSegmentLayout,
-  type NodeId,
-  type NodeLayout,
-  type Point,
-  type RerouteId,
-  type RerouteLayout,
-  type Size,
-  type SlotLayout
-} from '@/renderer/core/layout/types'
-import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
+import type { Bounds, LayoutChange, LayoutSource, LayoutStore, LinkId, LinkLayout, LinkSegmentLayout, NodeId, NodeLayout, Point, RerouteId, RerouteLayout, Size, SlotLayout } from '@/renderer/core/layout/types'
+import type { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
 type YEventChange = {
   action: 'add' | 'update' | 'delete'

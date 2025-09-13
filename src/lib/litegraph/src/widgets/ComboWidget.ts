@@ -1,14 +1,14 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IComboWidget,
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
-import { BaseSteppedWidget } from './BaseSteppedWidget'
+import type { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
 /**

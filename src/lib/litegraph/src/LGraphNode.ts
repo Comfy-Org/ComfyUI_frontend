@@ -1,25 +1,20 @@
-import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
-import {
-  type SlotPositionContext,
-  calculateInputSlotPos,
-  calculateInputSlotPosFromSlot,
-  calculateOutputSlotPos
-} from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
+import type { SlotPositionContext, calculateInputSlotPos, calculateInputSlotPosFromSlot, calculateOutputSlotPos } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
-import { BadgePosition, LGraphBadge } from './LGraphBadge'
-import { LGraphButton, type LGraphButtonOptions } from './LGraphButton'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LLink } from './LLink'
+import type { BadgePosition, LGraphBadge } from './LGraphBadge'
+import type { LGraphButton, LGraphButtonOptions } from './LGraphButton'
+import type { LGraphCanvas } from './LGraphCanvas'
+import type { LLink } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
-import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
+import type { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
-import { NullGraphError } from './infrastructure/NullGraphError'
+import type { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
-import { Rectangle } from './infrastructure/Rectangle'
+import type { Rectangle } from './infrastructure/Rectangle'
 import type {
   ColorOption,
   CompassCorners,
@@ -42,37 +37,17 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import {
-  type LGraphNodeConstructor,
-  LiteGraph,
-  type Subgraph,
-  type SubgraphNode
-} from './litegraph'
-import {
-  createBounds,
-  isInRect,
-  isInRectangle,
-  isPointInRect,
-  snapPoint
-} from './measure'
-import { NodeInputSlot } from './node/NodeInputSlot'
-import { NodeOutputSlot } from './node/NodeOutputSlot'
-import {
-  inputAsSerialisable,
-  isINodeInputSlot,
-  isWidgetInputSlot,
-  outputAsSerialisable
-} from './node/slotUtils'
+import type { LGraphNodeConstructor, LiteGraph, Subgraph, SubgraphNode } from './litegraph'
+import { createBounds, isInRect, isInRectangle, isPointInRect, snapPoint } from './measure'
+import type { NodeInputSlot } from './node/NodeInputSlot'
+import type { NodeOutputSlot } from './node/NodeOutputSlot'
+import type { isINodeInputSlot, isWidgetInputSlot } from './node/slotUtils'
+import { inputAsSerialisable, outputAsSerialisable } from './node/slotUtils'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
-import {
-  LGraphEventMode,
-  NodeSlotType,
-  RenderShape,
-  TitleMode
-} from './types/globalEnums'
+import type { LGraphEventMode, NodeSlotType, RenderShape, TitleMode } from './types/globalEnums'
 import type { ISerialisedNode, SubgraphIO } from './types/serialisation'
 import type {
   IBaseWidget,
@@ -80,13 +55,14 @@ import type {
   TWidgetType,
   TWidgetValue
 } from './types/widgets'
-import { findFreeSlotOfType } from './utils/collections'
+import type { findFreeSlotOfType } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { toClass } from './utils/type'
-import { BaseWidget } from './widgets/BaseWidget'
-import { type WidgetTypeMap, toConcreteWidget } from './widgets/widgetMap'
+import type { BaseWidget } from './widgets/BaseWidget'
+import type { WidgetTypeMap } from './widgets/widgetMap'
+import { toConcreteWidget } from './widgets/widgetMap'
 
 // #region Types
 

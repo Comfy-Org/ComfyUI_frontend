@@ -1,7 +1,7 @@
 import { $el } from '../../ui'
 import { prop } from '../../utils'
-import { ComfyButton } from './button'
-import { ComfyPopup } from './popup'
+import type { ComfyButton } from './button'
+import type { ComfyPopup } from './popup'
 
 export class ComfySplitButton {
   arrow: ComfyButton

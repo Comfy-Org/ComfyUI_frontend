@@ -7,12 +7,13 @@
  * - Adaptive margin computation based on zoom level
  * - Performance optimizations for large graphs
  */
-import { type Ref, computed, readonly, ref } from 'vue'
+import type { Ref } from 'vue'
+import { computed, readonly, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useTransformState } from '@/renderer/core/layout/useTransformState'
+import type { useTransformState } from '@/renderer/core/layout/useTransformState'
 import { app as comfyApp } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
+import type { useCanvasStore } from '@/stores/graphStore'
 
 interface NodeManager {
   getNode: (id: string) => any

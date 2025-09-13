@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useComfyManagerService } from '@/services/comfyManagerService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']

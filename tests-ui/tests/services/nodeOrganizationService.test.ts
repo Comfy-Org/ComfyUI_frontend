@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { NodeSourceType } from '@/types/nodeSource'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { NodeSourceType } from '@/types/nodeSource'
 
 describe('nodeOrganizationService', () => {
   const createMockNodeDef = (overrides: any = {}) => {

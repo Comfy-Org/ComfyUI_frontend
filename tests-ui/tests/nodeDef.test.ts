@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('NodeDef Migration', () => {
   it('should transform a plain object to V2 format', () => {

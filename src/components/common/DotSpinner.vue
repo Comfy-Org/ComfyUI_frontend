@@ -98,7 +98,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const { size = 24, duration = '2s' } = defineProps<{
   size?: number

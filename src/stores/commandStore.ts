@@ -1,10 +1,10 @@
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
+import type { KeybindingImpl, useKeybindingStore } from './keybindingStore'
 
 export interface ComfyCommand {
   id: string

@@ -8,8 +8,8 @@
 import { expect } from 'vitest'
 
 import type { ISlotType, NodeId } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance

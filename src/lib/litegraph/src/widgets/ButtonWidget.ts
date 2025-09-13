@@ -1,11 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
-import {
-  BaseWidget,
-  type DrawWidgetOptions,
-  type WidgetEventOptions
-} from './BaseWidget'
+import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class ButtonWidget
   extends BaseWidget<IButtonWidget>

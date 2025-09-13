@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { PrimeIcons } from '@primevue/core/api'
+import type { PrimeIcons } from '@primevue/core/api'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 

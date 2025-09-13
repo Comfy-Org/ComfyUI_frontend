@@ -1,7 +1,7 @@
 import { markRaw } from 'vue'
 
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import type { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'
 

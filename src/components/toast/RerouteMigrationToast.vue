@@ -25,8 +25,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { WorkflowJSON04 } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
-import { useWorkflowStore } from '@/stores/workflowStore'
-import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
+import type { useWorkflowStore } from '@/stores/workflowStore'
+import type { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 const { t } = useI18n()
 const toast = useToast()

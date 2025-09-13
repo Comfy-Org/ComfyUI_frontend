@@ -1,5 +1,5 @@
 import _ from 'es-toolkit/compat'
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref, toRaw } from 'vue'
 
 import type {
@@ -14,8 +14,8 @@ import type {
 import type { ComfyWorkflowJSON, NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import type { useExtensionService } from '@/services/extensionService'
+import type { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'

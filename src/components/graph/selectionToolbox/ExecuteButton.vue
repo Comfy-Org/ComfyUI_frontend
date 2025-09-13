@@ -24,9 +24,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useCanvasStore } from '@/stores/graphStore'
+import type { isLGraphNode } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()

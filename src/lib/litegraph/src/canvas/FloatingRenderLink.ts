@@ -1,10 +1,7 @@
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+import type { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
@@ -15,7 +12,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { RenderLink } from './RenderLink'
 

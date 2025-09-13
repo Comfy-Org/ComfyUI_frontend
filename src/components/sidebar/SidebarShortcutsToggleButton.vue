@@ -14,8 +14,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCommandStore } from '@/stores/commandStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 

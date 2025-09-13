@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { assetService } from '@/services/assetService'
-import { useModelStore } from '@/stores/modelStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useModelStore } from '@/stores/modelStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({

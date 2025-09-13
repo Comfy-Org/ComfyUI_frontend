@@ -1,10 +1,7 @@
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  EventType,
-  useCustomerEventsService
-} from '@/services/customerEventsService'
+import type { EventType, useCustomerEventsService } from '@/services/customerEventsService'
 
 // Hoist the mocks to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({

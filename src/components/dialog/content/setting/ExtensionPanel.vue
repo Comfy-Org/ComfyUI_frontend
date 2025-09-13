@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { FilterMatchMode } from '@primevue/core/api'
+import type { FilterMatchMode } from '@primevue/core/api'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import ContextMenu from 'primevue/contextmenu'
@@ -92,8 +92,8 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, onMounted, ref } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import { useExtensionStore } from '@/stores/extensionStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useExtensionStore } from '@/stores/extensionStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 import PanelTemplate from './PanelTemplate.vue'
 

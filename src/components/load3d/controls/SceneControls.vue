@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
+import type { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import { ref, watch } from 'vue'
 

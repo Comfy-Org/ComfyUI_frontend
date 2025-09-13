@@ -1,7 +1,7 @@
 import { describe, expect, vi } from 'vitest'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
-import { verifyEventSequence } from './fixtures/subgraphHelpers'
+import type { verifyEventSequence } from './fixtures/subgraphHelpers'
 
 describe('SubgraphEvents - Event Payload Verification', () => {
   subgraphTest(

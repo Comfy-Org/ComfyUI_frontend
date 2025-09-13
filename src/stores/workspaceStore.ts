@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { Settings } from '@/schemas/apiSchema'
@@ -6,15 +6,15 @@ import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 
-import { useApiKeyAuthStore } from './apiKeyAuthStore'
-import { useCommandStore } from './commandStore'
-import { useFirebaseAuthStore } from './firebaseAuthStore'
-import { useQueueSettingsStore } from './queueStore'
-import { useSettingStore } from './settingStore'
-import { useToastStore } from './toastStore'
-import { useWorkflowStore } from './workflowStore'
-import { useBottomPanelStore } from './workspace/bottomPanelStore'
-import { useSidebarTabStore } from './workspace/sidebarTabStore'
+import type { useApiKeyAuthStore } from './apiKeyAuthStore'
+import type { useCommandStore } from './commandStore'
+import type { useFirebaseAuthStore } from './firebaseAuthStore'
+import type { useQueueSettingsStore } from './queueStore'
+import type { useSettingStore } from './settingStore'
+import type { useToastStore } from './toastStore'
+import type { useWorkflowStore } from './workflowStore'
+import type { useBottomPanelStore } from './workspace/bottomPanelStore'
+import type { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const spinner = ref(false)

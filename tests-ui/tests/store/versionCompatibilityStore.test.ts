@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
+import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 
 vi.mock('@/config', () => ({
   default: {

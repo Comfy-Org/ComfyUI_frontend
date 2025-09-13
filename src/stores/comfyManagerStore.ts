@@ -1,19 +1,20 @@
-import { useEventListener, whenever } from '@vueuse/core'
-import { defineStore } from 'pinia'
+import type { useEventListener } from '@vueuse/core'
+import { whenever } from '@vueuse/core'
+import type { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useManagerQueue } from '@/composables/useManagerQueue'
-import { useServerLogs } from '@/composables/useServerLogs'
+import type { useServerLogs } from '@/composables/useServerLogs'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
-import { TaskLog } from '@/types/comfyManagerTypes'
+import type { TaskLog } from '@/types/comfyManagerTypes'
 import { components } from '@/types/generatedManagerTypes'
-import { normalizePackKeys } from '@/utils/packUtils'
+import type { normalizePackKeys } from '@/utils/packUtils'
 
 type InstallPackParams = components['schemas']['InstallPackParams']
 type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']

@@ -22,7 +22,7 @@ import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 const { textClass } = defineProps<{

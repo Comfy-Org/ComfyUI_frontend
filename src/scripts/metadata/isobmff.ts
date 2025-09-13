@@ -1,13 +1,5 @@
-import {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflowSchema'
-import {
-  ASCII,
-  ComfyMetadata,
-  ComfyMetadataTags,
-  IsobmffBoxContentRange
-} from '@/types/metadataTypes'
+import type { ComfyApiWorkflow, ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { ASCII, ComfyMetadata, ComfyMetadataTags, IsobmffBoxContentRange } from '@/types/metadataTypes'
 
 // Set max read high, as atoms are stored near end of file
 // while search is made to be efficient.

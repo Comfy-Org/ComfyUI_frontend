@@ -7,9 +7,9 @@ import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgme
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import type { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
@@ -23,11 +23,7 @@ import type {
   SystemEnvironment
 } from '@/types/conflictDetectionTypes'
 import { normalizePackId } from '@/utils/packUtils'
-import {
-  cleanVersion,
-  satisfiesVersion,
-  utilCheckVersionCompatibility
-} from '@/utils/versionUtil'
+import { cleanVersion, satisfiesVersion, utilCheckVersionCompatibility } from '@/utils/versionUtil'
 
 /**
  * Composable for conflict detection system.

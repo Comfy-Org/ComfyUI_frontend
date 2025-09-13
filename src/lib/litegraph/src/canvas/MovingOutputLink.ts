@@ -11,10 +11,10 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
 
-import { MovingLinkBase } from './MovingLinkBase'
+import type { MovingLinkBase } from './MovingLinkBase'
 
 export class MovingOutputLink extends MovingLinkBase {
   override readonly toType = 'output'

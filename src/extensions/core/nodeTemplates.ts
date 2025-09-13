@@ -1,13 +1,14 @@
 import { t } from '@/i18n'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/stores/toastStore'
+import type { useToastStore } from '@/stores/toastStore'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
-import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
+import type { ComfyDialog } from '../../scripts/ui'
+import { $el } from '../../scripts/ui'
+import type { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:

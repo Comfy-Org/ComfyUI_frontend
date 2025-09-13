@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
 

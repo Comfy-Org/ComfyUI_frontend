@@ -11,7 +11,7 @@ import type {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { RenderLink } from './RenderLink'
 

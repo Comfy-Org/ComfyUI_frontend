@@ -2,11 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import {
-  ModelNodeProvider,
-  useModelToNodeStore
-} from '@/stores/modelToNodeStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ModelNodeProvider, useModelToNodeStore } from '@/stores/modelToNodeStore'
+import type { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 const EXPECTED_DEFAULT_TYPES = [
   'checkpoints',

@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent } from 'vue'
+import type { defineComponent } from 'vue'
 
-import { useDialogStore } from '@/stores/dialogStore'
+import type { useDialogStore } from '@/stores/dialogStore'
 
 const MockComponent = defineComponent({
   name: 'MockComponent',

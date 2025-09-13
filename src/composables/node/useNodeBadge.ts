@@ -1,19 +1,15 @@
 import _ from 'es-toolkit/compat'
 import { computed, onMounted, watch } from 'vue'
 
-import { useNodePricing } from '@/composables/node/useNodePricing'
+import type { useNodePricing } from '@/composables/node/useNodePricing'
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
-import {
-  BadgePosition,
-  LGraphBadge,
-  type LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { BadgePosition, LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useExtensionStore } from '@/stores/extensionStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { NodeBadgeMode } from '@/types/nodeSource'
+import type { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { NodeBadgeMode } from '@/types/nodeSource'
 import { adjustColor } from '@/utils/colorUtil'
 
 /**

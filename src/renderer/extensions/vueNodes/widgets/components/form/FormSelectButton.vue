@@ -42,7 +42,7 @@
 >
 import { cn } from '@/utils/tailwindUtil'
 
-import { WidgetInputBaseClass } from '../layout'
+import type { WidgetInputBaseClass } from '../layout'
 
 interface Props {
   modelValue: string | null | undefined

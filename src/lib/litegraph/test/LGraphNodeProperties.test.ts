@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNodeProperties } from '../src/LGraphNodeProperties'
+import type { LGraphNodeProperties } from '../src/LGraphNodeProperties'
 
 describe('LGraphNodeProperties', () => {
   let mockNode: any

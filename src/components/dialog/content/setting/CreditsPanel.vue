@@ -117,8 +117,8 @@ import UserCredit from '@/components/common/UserCredit.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
 interface CreditHistoryItemData {

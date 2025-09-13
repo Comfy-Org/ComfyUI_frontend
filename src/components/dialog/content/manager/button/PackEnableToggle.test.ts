@@ -1,4 +1,5 @@
-import { VueWrapper, mount } from '@vue/test-utils'
+import type { VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -7,7 +8,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
 
 import PackEnableToggle from './PackEnableToggle.vue'
 

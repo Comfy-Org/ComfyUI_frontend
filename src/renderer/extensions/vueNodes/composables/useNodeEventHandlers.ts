@@ -11,8 +11,8 @@
 import type { Ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { useCanvasStore } from '@/stores/graphStore'
+import type { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import type { useCanvasStore } from '@/stores/graphStore'
 
 interface NodeManager {
   getNode: (id: string) => any

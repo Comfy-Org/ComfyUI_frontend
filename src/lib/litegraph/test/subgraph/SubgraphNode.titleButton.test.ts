@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe('SubgraphNode Title Button', () => {
   describe('Constructor', () => {

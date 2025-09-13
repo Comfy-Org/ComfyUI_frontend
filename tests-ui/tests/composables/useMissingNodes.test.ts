@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
+import type { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 // Mock Vue's onMounted to execute immediately for testing
 vi.mock('vue', async () => {

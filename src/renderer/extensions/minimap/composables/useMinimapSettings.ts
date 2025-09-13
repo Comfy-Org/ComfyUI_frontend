@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 /**
  * Composable for minimap configuration options that are set by the user in the

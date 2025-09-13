@@ -11,10 +11,10 @@ import type {
   INodeOutputSlot,
   Point
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
+import type { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 export interface SlotPositionContext {
   /** Node's X position in graph coordinates */

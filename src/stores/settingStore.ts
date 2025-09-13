@@ -1,5 +1,5 @@
 import _ from 'es-toolkit/compat'
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import type { Settings } from '@/schemas/apiSchema'

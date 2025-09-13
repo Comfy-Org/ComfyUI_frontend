@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+import type { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 
 import HelpCenterMenuContent from '@/components/helpcenter/HelpCenterMenuContent.vue'
@@ -67,9 +67,9 @@ import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useDialogService } from '@/services/dialogService'
-import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useHelpCenterStore } from '@/stores/helpCenterStore'
+import type { useReleaseStore } from '@/stores/releaseStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 

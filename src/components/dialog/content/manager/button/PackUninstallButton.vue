@@ -16,10 +16,10 @@
 
 <script setup lang="ts">
 import IconTextButton from '@/components/button/IconTextButton.vue'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { ButtonSize } from '@/types/buttonTypes'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 

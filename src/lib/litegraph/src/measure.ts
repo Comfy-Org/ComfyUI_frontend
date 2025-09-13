@@ -5,7 +5,8 @@ import type {
   ReadOnlyRect,
   Rect
 } from './interfaces'
-import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
+import type { Alignment, LinkDirection } from './types/globalEnums'
+import { hasFlag } from './types/globalEnums'
 
 /**
  * Calculates the distance between two points (2D vector)

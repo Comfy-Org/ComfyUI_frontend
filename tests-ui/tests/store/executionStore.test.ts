@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '@/scripts/app'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import type { useExecutionStore } from '@/stores/executionStore'
+import type { useWorkflowStore } from '@/stores/workflowStore'
 
 // Mock the workflowStore
 vi.mock('@/stores/workflowStore', () => ({

@@ -1,21 +1,16 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it, vi } from 'vitest'
 
-import { LinkConnector } from '@/lib/litegraph/src/litegraph'
-import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/litegraph'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, type LinkNetwork } from '@/lib/litegraph/src/litegraph'
-import { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
-import { NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
-import {
-  isSubgraphInput,
-  isSubgraphOutput
-} from '@/lib/litegraph/src/litegraph'
+import type { LinkConnector } from '@/lib/litegraph/src/litegraph'
+import type { ToInputFromIoNodeLink } from '@/lib/litegraph/src/litegraph'
+import type { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LinkNetwork } from '@/lib/litegraph/src/litegraph'
+import type { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import type { NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
+import { isSubgraphInput, isSubgraphOutput } from '@/lib/litegraph/src/litegraph'
 
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('Subgraph slot connections', () => {
   describe.skip('SubgraphInput connections', () => {

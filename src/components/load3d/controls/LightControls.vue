@@ -32,13 +32,13 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
+import type { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 const vTooltip = Tooltip
 

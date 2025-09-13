@@ -1,11 +1,8 @@
 import _ from 'es-toolkit/compat'
 
-import { ColorOption, LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraphGroup,
-  LGraphNode,
-  isColorable
-} from '@/lib/litegraph/src/litegraph'
+import type { ColorOption, LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isColorable } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,

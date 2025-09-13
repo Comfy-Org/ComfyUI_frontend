@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeError } from '@/schemas/apiSchema'
 import type {
   ComfyNode,
@@ -16,17 +16,13 @@ import type {
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/services/workflowService'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore } from '@/stores/graphStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
-import { UserFile } from '@/stores/userFileStore'
-import {
-  ComfyWorkflow,
-  LoadedComfyWorkflow,
-  useWorkflowStore
-} from '@/stores/workflowStore'
+import type { useExecutionStore } from '@/stores/executionStore'
+import type { useCanvasStore } from '@/stores/graphStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useToastStore } from '@/stores/toastStore'
+import type { UserFile } from '@/stores/userFileStore'
+import type { ComfyWorkflow, LoadedComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({

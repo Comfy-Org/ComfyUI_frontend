@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isSubgraphIoNode } from '@/utils/typeGuardUtil'
+import type { isSubgraphIoNode } from '@/utils/typeGuardUtil'
 
 describe('typeGuardUtil', () => {
   describe('isSubgraphIoNode', () => {

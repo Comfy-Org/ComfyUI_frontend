@@ -1,15 +1,10 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import {
-  type InputSpec,
-  isIntInputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  type ComfyWidgetConstructorV2,
-  addValueControlWidget
-} from '@/scripts/widgets'
-import { useSettingStore } from '@/stores/settingStore'
+import type { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import type { InputSpec, isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { addValueControlWidget } from '@/scripts/widgets'
+import type { useSettingStore } from '@/stores/settingStore'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step

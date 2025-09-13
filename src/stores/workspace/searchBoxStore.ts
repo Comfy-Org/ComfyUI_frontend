@@ -1,10 +1,11 @@
 import { useMouse } from '@vueuse/core'
-import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import type { defineStore } from 'pinia'
+import type { shallowRef } from 'vue'
+import { computed, ref } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 export const useSearchBoxStore = defineStore('searchBox', () => {
   const settingStore = useSettingStore()

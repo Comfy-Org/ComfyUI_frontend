@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { getSettingInfo, useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import { getSettingInfo } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 
 // Mock the api

@@ -1,6 +1,6 @@
 import QuickLRU from '@alloc/quick-lru'
 
-import { paramsToCacheKey } from '@/utils/formatUtil'
+import type { paramsToCacheKey } from '@/utils/formatUtil'
 
 const DEFAULT_MAX_SIZE = 50
 

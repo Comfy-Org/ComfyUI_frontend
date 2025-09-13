@@ -94,12 +94,12 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
+import type { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
+import type { MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 

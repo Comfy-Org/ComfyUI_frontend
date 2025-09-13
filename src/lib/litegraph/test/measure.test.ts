@@ -1,24 +1,8 @@
 import { test as baseTest } from 'vitest'
 
 import type { Point, Rect } from '../src/interfaces'
-import {
-  addDirectionalOffset,
-  containsCentre,
-  containsRect,
-  createBounds,
-  dist2,
-  distance,
-  findPointOnCurve,
-  getOrientation,
-  isInRect,
-  isInRectangle,
-  isInsideRectangle,
-  isPointInRect,
-  overlapBounding,
-  rotateLink,
-  snapPoint
-} from '../src/measure'
-import { LinkDirection } from '../src/types/globalEnums'
+import { addDirectionalOffset, containsCentre, containsRect, createBounds, dist2, distance, findPointOnCurve, getOrientation, isInRect, isInRectangle, isInsideRectangle, isPointInRect, overlapBounding, rotateLink, snapPoint } from '../src/measure'
+import type { LinkDirection } from '../src/types/globalEnums'
 
 const test = baseTest.extend({})
 

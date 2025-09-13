@@ -1,7 +1,7 @@
 // TODO: Fix these tests after migration
 import { describe } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import { dirtyTest } from './fixtures/testExtensions'
 

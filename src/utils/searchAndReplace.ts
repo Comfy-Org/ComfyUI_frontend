@@ -1,6 +1,6 @@
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { formatDate } from '@/utils/formatUtil'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import type { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 export function applyTextReplacements(
   graph: LGraph | Subgraph,

@@ -38,11 +38,11 @@ import { computed, onUpdated, ref, watch } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useCanvasStore } from '@/stores/graphStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
-import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
+import type { useCanvasStore } from '@/stores/graphStore'
+import type { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import type { useSubgraphStore } from '@/stores/subgraphStore'
+import type { useWorkflowStore } from '@/stores/workflowStore'
+import type { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
 
 const MIN_WIDTH = 28
 const ITEM_GAP = 8

@@ -1,12 +1,9 @@
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraphCanvas,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
-import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
+import type { getWidgetConfig, setWidgetConfig } from './widgetInputs'
+import { mergeIfValid } from './widgetInputs'
 
 // Node that allows you to redirect connections for cleaner graphs
 

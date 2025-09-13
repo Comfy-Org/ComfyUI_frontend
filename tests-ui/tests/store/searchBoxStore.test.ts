@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import type { useSettingStore } from '@/stores/settingStore'
-import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import type { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 // Mock dependencies
 vi.mock('@vueuse/core', () => ({

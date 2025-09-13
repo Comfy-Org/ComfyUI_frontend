@@ -1,17 +1,17 @@
-import { Ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
-import { ComfyModelDef } from '@/stores/modelStore'
-import { ModelNodeProvider } from '@/stores/modelToNodeStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { ComfyModelDef } from '@/stores/modelStore'
+import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
+import type { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyWorkflow } from '@/stores/workflowStore'
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
   const modelToNodeStore = useModelToNodeStore()

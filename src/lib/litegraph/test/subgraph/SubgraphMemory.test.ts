@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe('SubgraphNode Memory Management', () => {
   describe('Event Listener Cleanup', () => {

@@ -1,5 +1,5 @@
 import type { Point, ReadOnlyRect, Rect } from './interfaces'
-import { EaseFunction, Rectangle } from './litegraph'
+import type { EaseFunction, Rectangle } from './litegraph'
 
 export interface DragAndScaleState {
   /**

@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import { UserFile, useUserFileStore } from '@/stores/userFileStore'
+import type { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({

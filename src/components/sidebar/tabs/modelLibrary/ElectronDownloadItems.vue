@@ -11,9 +11,9 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+import type { storeToRefs } from 'pinia'
 
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import type { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 import DownloadItem from './DownloadItem.vue'
 

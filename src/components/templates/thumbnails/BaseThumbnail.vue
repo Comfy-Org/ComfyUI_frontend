@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import type { useEventListener } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 const error = ref(false)

@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 describe('useConflictDetectionStore', () => {

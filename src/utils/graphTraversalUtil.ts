@@ -4,9 +4,9 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { parseNodeLocatorId } from '@/types/nodeIdentification'
 
-import { isSubgraphIoNode } from './typeGuardUtil'
+import type { isSubgraphIoNode } from './typeGuardUtil'
 
 /**
  * Parses an execution ID into its component parts.

@@ -1,6 +1,6 @@
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
   Hoverable,
@@ -9,15 +9,9 @@ import type {
   Point,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import {
-  type CanvasColour,
-  type CanvasPointer,
-  type CanvasPointerEvent,
-  type IContextMenuValue,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { CanvasColour, CanvasPointer, CanvasPointerEvent, IContextMenuValue, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
+import type { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   ExportedSubgraphIONode,
   Serialisable

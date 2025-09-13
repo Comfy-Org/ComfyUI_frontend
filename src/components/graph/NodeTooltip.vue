@@ -10,20 +10,16 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import type { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
 import { st } from '@/i18n'
-import {
-  LiteGraph,
-  isOverNodeInput,
-  isOverNodeOutput
-} from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph, isOverNodeInput, isOverNodeOutput } from '@/lib/litegraph/src/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import type { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()

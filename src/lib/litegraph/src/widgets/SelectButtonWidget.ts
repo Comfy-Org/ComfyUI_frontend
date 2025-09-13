@@ -1,9 +1,5 @@
 import type { ISelectButtonWidget } from '../types/widgets'
-import {
-  BaseWidget,
-  type DrawWidgetOptions,
-  type WidgetEventOptions
-} from './BaseWidget'
+import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 /**
  * Widget for selecting from a group of buttons

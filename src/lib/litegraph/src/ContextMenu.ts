@@ -3,7 +3,7 @@ import type {
   IContextMenuOptions,
   IContextMenuValue
 } from './interfaces'
-import { LiteGraph } from './litegraph'
+import type { LiteGraph } from './litegraph'
 
 // TODO: Replace this pattern with something more modern.
 export interface ContextMenu<TValue = unknown> {

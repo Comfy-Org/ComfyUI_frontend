@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
 
 describe('TaskItemImpl', () => {
   it('should remove animated property from outputs during construction', () => {

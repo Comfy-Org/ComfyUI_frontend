@@ -15,8 +15,8 @@ import { computed, provide } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/graph/useCanvasTransformSync'
 import { useTransformSettling } from '@/composables/graph/useTransformSettling'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useTransformState } from '@/renderer/core/layout/useTransformState'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { useTransformState } from '@/renderer/core/layout/useTransformState'
 
 interface TransformPaneProps {
   canvas?: LGraphCanvas

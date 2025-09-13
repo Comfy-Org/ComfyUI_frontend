@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+import type { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 
 vi.mock('@/renderer/thumbnail/graphThumbnailRenderer', () => ({
   createGraphThumbnail: vi.fn()

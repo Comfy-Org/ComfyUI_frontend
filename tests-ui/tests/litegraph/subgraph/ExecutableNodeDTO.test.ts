@@ -1,14 +1,11 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
 
-import {
-  createNestedSubgraphs,
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createNestedSubgraphs, createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('ExecutableNodeDTO Creation', () => {
   it('should create DTO from regular node', () => {

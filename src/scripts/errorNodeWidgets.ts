@@ -1,5 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'

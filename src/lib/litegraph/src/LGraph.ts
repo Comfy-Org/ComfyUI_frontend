@@ -1,22 +1,19 @@
 import { toString } from 'es-toolkit/compat'
 
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+import type { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScaleState } from './DragAndScale'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode, type NodeId } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
-import { MapProxyHandler } from './MapProxyHandler'
-import { Reroute, type RerouteId } from './Reroute'
-import { CustomEventTarget } from './infrastructure/CustomEventTarget'
+import type { LGraphCanvas } from './LGraphCanvas'
+import type { LGraphGroup } from './LGraphGroup'
+import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LLink, LinkId } from './LLink'
+import type { MapProxyHandler } from './MapProxyHandler'
+import type { Reroute, RerouteId } from './Reroute'
+import type { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
@@ -34,26 +31,14 @@ import type {
   Positionable,
   Size
 } from './interfaces'
-import { LiteGraph, SubgraphNode } from './litegraph'
-import {
-  alignOutsideContainer,
-  alignToContainer,
-  createBounds
-} from './measure'
-import { SubgraphInput } from './subgraph/SubgraphInput'
-import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import { SubgraphOutput } from './subgraph/SubgraphOutput'
-import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import {
-  findUsedSubgraphIds,
-  getBoundaryLinks,
-  groupResolvedByOutput,
-  mapSubgraphInputsAndLinks,
-  mapSubgraphOutputsAndLinks,
-  multiClone,
-  splitPositionables
-} from './subgraph/subgraphUtils'
-import { Alignment, LGraphEventMode } from './types/globalEnums'
+import type { LiteGraph, SubgraphNode } from './litegraph'
+import { alignOutsideContainer, alignToContainer, createBounds } from './measure'
+import type { SubgraphInput } from './subgraph/SubgraphInput'
+import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import type { SubgraphOutput } from './subgraph/SubgraphOutput'
+import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import { findUsedSubgraphIds, getBoundaryLinks, groupResolvedByOutput, mapSubgraphInputsAndLinks, mapSubgraphOutputsAndLinks, multiClone, splitPositionables } from './subgraph/subgraphUtils'
+import type { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -63,7 +48,7 @@ import type {
   SerialisableGraph,
   SerialisableReroute
 } from './types/serialisation'
-import { getAllNestedItems } from './utils/collections'
+import type { getAllNestedItems } from './utils/collections'
 
 export interface LGraphState {
   lastGroupId: number

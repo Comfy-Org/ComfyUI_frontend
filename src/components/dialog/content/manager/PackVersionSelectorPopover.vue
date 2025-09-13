@@ -92,10 +92,10 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
-import { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
+import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import type { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
 import { isSemVer } from '@/utils/formatUtil'
 
 type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']

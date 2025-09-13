@@ -63,7 +63,7 @@ import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useDialogService } from '@/services/dialogService'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import type { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 const bottomPanelStore = useBottomPanelStore()

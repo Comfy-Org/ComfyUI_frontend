@@ -1,13 +1,11 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphButton } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphButton } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphNode Title Button', () => {
   describe.skip('Constructor', () => {

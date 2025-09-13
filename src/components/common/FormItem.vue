@@ -34,7 +34,8 @@ import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { type Component, markRaw } from 'vue'
+import type { Component } from 'vue'
+import { markRaw } from 'vue'
 
 import BackgroundImageUpload from '@/components/common/BackgroundImageUpload.vue'
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
@@ -43,7 +44,7 @@ import FormImageUpload from '@/components/common/FormImageUpload.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
-import { FormItem } from '@/types/settingTypes'
+import type { FormItem } from '@/types/settingTypes'
 
 const formValue = defineModel<any>('formValue')
 const props = defineProps<{

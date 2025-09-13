@@ -1,10 +1,6 @@
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import {
-  BaseWidget,
-  type DrawWidgetOptions,
-  type WidgetEventOptions
-} from './BaseWidget'
+import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 /**
  * Base class for widgets that have increment and decrement buttons.

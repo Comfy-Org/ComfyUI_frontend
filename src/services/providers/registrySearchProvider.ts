@@ -1,4 +1,4 @@
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {

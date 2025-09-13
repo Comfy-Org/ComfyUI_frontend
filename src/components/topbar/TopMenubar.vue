@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventBus } from '@vueuse/core'
+import type { useEventBus } from '@vueuse/core'
 import { computed, onMounted, provide, ref } from 'vue'
 
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -40,8 +40,8 @@ import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()

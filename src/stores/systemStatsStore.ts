@@ -1,5 +1,5 @@
-import { useAsyncState } from '@vueuse/core'
-import { defineStore } from 'pinia'
+import type { useAsyncState } from '@vueuse/core'
+import type { defineStore } from 'pinia'
 
 import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'

@@ -1,12 +1,7 @@
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import {
-  CORE_COLOR_PALETTES,
-  DEFAULT_COLOR_PALETTE,
-  DEFAULT_DARK_COLOR_PALETTE,
-  DEFAULT_LIGHT_COLOR_PALETTE
-} from '@/constants/coreColorPalettes'
+import type { CORE_COLOR_PALETTES, DEFAULT_COLOR_PALETTE, DEFAULT_DARK_COLOR_PALETTE, DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import type {
   ColorPalettes,
   CompletedPalette,

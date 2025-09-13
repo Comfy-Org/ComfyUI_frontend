@@ -3,17 +3,14 @@ import type {
   ExecutionId,
   LGraph
 } from '@/lib/litegraph/src/litegraph'
-import {
-  ExecutableNodeDTO,
-  LGraphEventMode
-} from '@/lib/litegraph/src/litegraph'
+import type { ExecutableNodeDTO, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
 
-import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
-import { compressWidgetInputSlots } from './litegraphUtil'
+import type { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
+import type { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
  * Converts the current graph workflow for sending to the API.

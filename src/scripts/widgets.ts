@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
-import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,
@@ -21,10 +22,10 @@ import { useSelectButtonWidget } from '@/renderer/extensions/vueNodes/widgets/co
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
 import { useTreeSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTreeSelectWidget'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'
 import './domWidget'

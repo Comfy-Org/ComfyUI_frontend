@@ -1,4 +1,4 @@
-import { useExtensionService } from '@/services/extensionService'
+import type { useExtensionService } from '@/services/extensionService'
 import { processDynamicPrompt } from '@/utils/formatUtil'
 
 // Allows for simple dynamic prompt replacement

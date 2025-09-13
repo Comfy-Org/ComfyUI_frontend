@@ -1,9 +1,6 @@
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+import type { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { Reroute, RerouteId } from './Reroute'

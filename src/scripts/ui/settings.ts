@@ -1,11 +1,11 @@
 import { t } from '@/i18n'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useToastStore } from '@/stores/toastStore'
 import type { SettingParams } from '@/types/settingTypes'
 
-import { ComfyDialog } from './dialog'
+import type { ComfyDialog } from './dialog'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp

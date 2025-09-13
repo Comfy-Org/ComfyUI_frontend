@@ -9,9 +9,9 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
-import { VueFire, VueFireAuth } from 'vuefire'
+import type { VueFire, VueFireAuth } from 'vuefire'
 
-import { FIREBASE_CONFIG } from '@/config/firebase'
+import type { FIREBASE_CONFIG } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 

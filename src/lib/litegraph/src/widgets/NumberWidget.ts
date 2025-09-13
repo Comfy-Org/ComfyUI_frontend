@@ -1,7 +1,7 @@
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 
-import { BaseSteppedWidget } from './BaseSteppedWidget'
+import type { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
 export class NumberWidget

@@ -1,7 +1,7 @@
 import { pull } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
   INodeInputSlot,
@@ -9,13 +9,14 @@ import type {
   Point,
   ReadOnlyRect
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
-import { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
+import type { SubgraphSlot } from './SubgraphSlotBase'
+import type { isNodeSlot } from './subgraphUtils'
+import { isSubgraphInput } from './subgraphUtils'
 
 /**
  * An output "slot" from a subgraph to a parent graph.

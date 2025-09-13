@@ -78,10 +78,10 @@ import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { ComfyNode } from '@/schemas/comfyWorkflowSchema'
+import type { ComfyNode } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
-import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemDisplayStatus, TaskItemImpl } from '@/stores/queueStore'
 
 import ResultItem from './ResultItem.vue'
 

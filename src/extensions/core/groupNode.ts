@@ -1,33 +1,22 @@
-import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import type { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import { type NodeId } from '@/lib/litegraph/src/LGraphNode'
-import {
-  type ExecutableLGraphNode,
-  type ExecutionId,
-  LGraphCanvas,
-  LGraphNode,
-  LiteGraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import {
-  ComfyLink,
-  ComfyNode,
-  ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflowSchema'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { ExecutableLGraphNode, ExecutionId, LGraphCanvas, LGraphNode, LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useToastStore } from '@/stores/toastStore'
-import { useWidgetStore } from '@/stores/widgetStore'
-import { ComfyExtension } from '@/types/comfy'
-import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
-import { GROUP } from '@/utils/executableGroupNodeDto'
+import type { useExecutionStore } from '@/stores/executionStore'
+import type { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { useToastStore } from '@/stores/toastStore'
+import type { useWidgetStore } from '@/stores/widgetStore'
+import type { ComfyExtension } from '@/types/comfy'
+import type { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
+import type { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { ManageGroupDialog } from './groupNodeManage'
+import type { ManageGroupDialog } from './groupNodeManage'
 import { mergeIfValid } from './widgetInputs'
 
 type GroupNodeWorkflowData = {

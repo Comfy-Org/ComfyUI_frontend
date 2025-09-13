@@ -128,15 +128,7 @@
 import { whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import Button from 'primevue/button'
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  onUnmounted,
-  ref,
-  watch,
-  watchEffect
-} from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -150,16 +142,16 @@ import PackCard from '@/components/dialog/content/manager/packCard/PackCard.vue'
 import RegistrySearchBar from '@/components/dialog/content/manager/registrySearchBar/RegistrySearchBar.vue'
 import GridSkeleton from '@/components/dialog/content/manager/skeleton/GridSkeleton.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
-import { useManagerStatePersistence } from '@/composables/manager/useManagerStatePersistence'
+import type { useManagerStatePersistence } from '@/composables/manager/useManagerStatePersistence'
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useRegistrySearch } from '@/composables/useRegistrySearch'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
-import { ManagerTab } from '@/types/comfyManagerTypes'
+import type { ManagerTab } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
 const { initialTab } = defineProps<{

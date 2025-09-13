@@ -1,6 +1,6 @@
-import { useEventListener } from '@vueuse/core'
+import type { useEventListener } from '@vueuse/core'
 
-import { useCanvasStore } from '@/stores/graphStore'
+import type { useCanvasStore } from '@/stores/graphStore'
 
 /**
  * Adds a handler on copy that serializes selected nodes to JSON

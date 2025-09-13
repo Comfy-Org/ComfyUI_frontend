@@ -21,10 +21,7 @@ import TabMenu from 'primevue/tabmenu'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  useComfyManagerStore,
-  useManagerProgressDialogStore
-} from '@/stores/comfyManagerStore'
+import type { useComfyManagerStore, useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
 
 const progressDialogContent = useManagerProgressDialogStore()
 const comfyManagerStore = useComfyManagerStore()

@@ -6,24 +6,21 @@ import type {
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { memoize, omit } from 'es-toolkit/compat'
 
-import {
-  MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
-  SEARCH_CACHE_MAX_SIZE
-} from '@/constants/searchConstants'
+import type { MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA, SEARCH_CACHE_MAX_SIZE } from '@/constants/searchConstants'
 import type {
   AlgoliaNodePack,
   NodesIndexSuggestion,
   SearchAttribute,
   SearchNodePacksParams
 } from '@/types/algoliaTypes'
-import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import type { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
   SearchPacksResult,
   SortableField
 } from '@/types/searchServiceTypes'
-import { paramsToCacheKey } from '@/utils/formatUtil'
+import type { paramsToCacheKey } from '@/utils/formatUtil'
 
 type RegistryNodePack = components['schemas']['Node']
 

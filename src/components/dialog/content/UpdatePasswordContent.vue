@@ -17,14 +17,14 @@
 </template>
 
 <script setup lang="ts">
-import { Form, FormSubmitEvent } from '@primevue/forms'
+import type { Form, FormSubmitEvent } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { updatePasswordSchema } from '@/schemas/signInSchema'
+import type { updatePasswordSchema } from '@/schemas/signInSchema'
 
 const authActions = useFirebaseAuthActions()
 const loading = ref(false)

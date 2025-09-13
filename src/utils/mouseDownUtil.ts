@@ -1,4 +1,4 @@
-import { useEventListener } from '@vueuse/core'
+import type { useEventListener } from '@vueuse/core'
 
 export const whileMouseDown = (
   elementOrEvent: HTMLElement | Event,

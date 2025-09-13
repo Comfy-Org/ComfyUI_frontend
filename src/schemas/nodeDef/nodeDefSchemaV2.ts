@@ -1,13 +1,6 @@
 import { z } from 'zod'
 
-import {
-  zBaseInputOptions,
-  zBooleanInputOptions,
-  zComboInputOptions,
-  zFloatInputOptions,
-  zIntInputOptions,
-  zStringInputOptions
-} from '@/schemas/nodeDefSchema'
+import type { zBaseInputOptions, zBooleanInputOptions, zComboInputOptions, zFloatInputOptions, zIntInputOptions, zStringInputOptions } from '@/schemas/nodeDefSchema'
 
 const zIntInputSpec = zIntInputOptions.extend({
   type: z.literal('INT'),

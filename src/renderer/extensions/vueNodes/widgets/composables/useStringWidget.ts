@@ -1,11 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  type InputSpec,
-  isStringInputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec, isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
-import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { useSettingStore } from '@/stores/settingStore'
+import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { useSettingStore } from '@/stores/settingStore'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 

@@ -1,5 +1,5 @@
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { parseSlotTypes } from '@/lib/litegraph/src/strings'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { parseSlotTypes } from '@/lib/litegraph/src/strings'
 
 import type { ISlotType, Positionable } from '../interfaces'
 

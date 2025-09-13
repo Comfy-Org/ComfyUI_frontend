@@ -2,10 +2,10 @@ import { watchDebounced } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/compat'
 import { computed, ref, watch } from 'vue'
 
-import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
+import type { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { SearchAttribute } from '@/types/algoliaTypes'
-import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import type { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 

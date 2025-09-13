@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { FormField } from '@primevue/forms'
+import type { FormField } from '@primevue/forms'
 import Password from 'primevue/password'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

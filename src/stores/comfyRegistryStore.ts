@@ -1,6 +1,6 @@
 import QuickLRU from '@alloc/quick-lru'
 import { partition } from 'es-toolkit/compat'
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'

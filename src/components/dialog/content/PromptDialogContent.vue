@@ -22,7 +22,7 @@ import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
-import { useDialogStore } from '@/stores/dialogStore'
+import type { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   message: string

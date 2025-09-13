@@ -2,18 +2,14 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  Colors,
-  type Palette,
-  paletteSchema
-} from '@/schemas/colorPaletteSchema'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { Colors, Palette, paletteSchema } from '@/schemas/colorPaletteSchema'
 import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()

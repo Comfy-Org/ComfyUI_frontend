@@ -12,19 +12,14 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  useDraggable,
-  useElementBounding,
-  useEventBus,
-  useEventListener,
-  useLocalStorage,
-  watchDebounced
-} from '@vueuse/core'
+import type { useEventBus, useEventListener } from '@vueuse/core'
+import { useDraggable, useElementBounding, useLocalStorage, watchDebounced } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
-import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import type { Ref } from 'vue'
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 

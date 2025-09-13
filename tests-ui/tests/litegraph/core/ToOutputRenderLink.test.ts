@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { ToOutputRenderLink } from '@/lib/litegraph/src/litegraph'
-import { LinkDirection } from '@/lib/litegraph/src/litegraph'
+import type { ToOutputRenderLink } from '@/lib/litegraph/src/litegraph'
+import type { LinkDirection } from '@/lib/litegraph/src/litegraph'
 
 describe('ToOutputRenderLink', () => {
   describe('connectToOutput', () => {

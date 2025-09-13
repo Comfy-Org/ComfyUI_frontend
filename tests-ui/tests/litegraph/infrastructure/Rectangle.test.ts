@@ -1,6 +1,6 @@
 import { test as baseTest, describe, expect, vi } from 'vitest'
 
-import { Rectangle } from '@/lib/litegraph/src/litegraph'
+import type { Rectangle } from '@/lib/litegraph/src/litegraph'
 import type { Point, Size } from '@/lib/litegraph/src/litegraph'
 
 // TODO: If there's a common test context, use it here

@@ -130,24 +130,18 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import {
-  type CSSProperties,
-  type Component,
-  computed,
-  nextTick,
-  onMounted,
-  ref
-} from 'vue'
+import type { CSSProperties, Component } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
-import { useManagerState } from '@/composables/useManagerState'
-import { type ReleaseNote } from '@/services/releaseService'
-import { useCommandStore } from '@/stores/commandStore'
-import { useReleaseStore } from '@/stores/releaseStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { ManagerTab } from '@/types/comfyManagerTypes'
+import type { useManagerState } from '@/composables/useManagerState'
+import type { ReleaseNote } from '@/services/releaseService'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useReleaseStore } from '@/stores/releaseStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { ManagerTab } from '@/types/comfyManagerTypes'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 

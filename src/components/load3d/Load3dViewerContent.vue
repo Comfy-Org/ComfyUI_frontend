@@ -76,9 +76,9 @@ import LightControls from '@/components/load3d/controls/viewer/ViewerLightContro
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
 import { t } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
-import { useDialogStore } from '@/stores/dialogStore'
+import type { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   node: LGraphNode

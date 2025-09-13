@@ -1,29 +1,25 @@
 import _ from 'es-toolkit/compat'
-import { defineStore } from 'pinia'
-import { type Raw, computed, markRaw, ref, shallowRef, watch } from 'vue'
+import type { defineStore } from 'pinia'
+import type { Raw, shallowRef } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
-import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import {
-  createNodeExecutionId,
-  createNodeLocatorId,
-  parseNodeExecutionId,
-  parseNodeLocatorId
-} from '@/types/nodeIdentification'
+import type { createNodeExecutionId, createNodeLocatorId, parseNodeExecutionId, parseNodeLocatorId } from '@/types/nodeIdentification'
 import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
-import { UserFile } from './userFileStore'
+import type { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'

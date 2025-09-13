@@ -1,13 +1,11 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
   subgraphTest(

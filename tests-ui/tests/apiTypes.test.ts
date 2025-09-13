@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, validateComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   input: {

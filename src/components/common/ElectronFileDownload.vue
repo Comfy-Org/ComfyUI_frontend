@@ -81,8 +81,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDownload } from '@/composables/useDownload'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
-import { formatSize } from '@/utils/formatUtil'
+import type { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import type { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   url: string

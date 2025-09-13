@@ -6,7 +6,7 @@ import { nextTick } from 'vue'
 
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock the stores
 vi.mock('@/stores/systemStatsStore', () => ({

@@ -1,46 +1,34 @@
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { ManagerUIState, useManagerState } from '@/composables/useManagerState'
-import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
-import {
-  DEFAULT_DARK_COLOR_PALETTE,
-  DEFAULT_LIGHT_COLOR_PALETTE
-} from '@/constants/coreColorPalettes'
+import type { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import type { ManagerUIState, useManagerState } from '@/composables/useManagerState'
+import type { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
+import type { DEFAULT_DARK_COLOR_PALETTE, DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import { t } from '@/i18n'
-import {
-  LGraphEventMode,
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { Point } from '@/lib/litegraph/src/litegraph'
+import type { LGraphEventMode, LGraphGroup, LGraphNode, LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Point } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
-import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useToastStore } from '@/stores/toastStore'
-import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { ManagerTab } from '@/types/comfyManagerTypes'
-import {
-  getAllNonIoNodesInSubgraph,
-  getExecutionIdsForSelectedNodes
-} from '@/utils/graphTraversalUtil'
-import { filterOutputNodes } from '@/utils/nodeFilterUtil'
+import type { useExecutionStore } from '@/stores/executionStore'
+import type { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import type { useHelpCenterStore } from '@/stores/helpCenterStore'
+import type { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import type { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import type { useSubgraphStore } from '@/stores/subgraphStore'
+import type { useToastStore } from '@/stores/toastStore'
+import type { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+import type { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { ManagerTab } from '@/types/comfyManagerTypes'
+import type { getAllNonIoNodesInSubgraph, getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
+import type { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 

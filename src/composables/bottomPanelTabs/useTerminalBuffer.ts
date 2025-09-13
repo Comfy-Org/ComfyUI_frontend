@@ -1,5 +1,5 @@
-import { SerializeAddon } from '@xterm/addon-serialize'
-import { Terminal } from '@xterm/xterm'
+import type { SerializeAddon } from '@xterm/addon-serialize'
+import type { Terminal } from '@xterm/xterm'
 import { markRaw, onMounted, onUnmounted } from 'vue'
 
 export function useTerminalBuffer() {

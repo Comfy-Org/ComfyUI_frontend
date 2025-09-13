@@ -44,10 +44,11 @@
 </template>
 
 <script setup lang="ts">
-import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
-import { Terminal } from '@xterm/xterm'
+import type { ProgressStatus } from '@comfyorg/comfyui-electron-types'
+import type { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
-import { Ref, onMounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'

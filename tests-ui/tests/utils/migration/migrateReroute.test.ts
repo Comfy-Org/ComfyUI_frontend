@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import type { WorkflowJSON04 } from '@/schemas/comfyWorkflowSchema'
-import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
+import type { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 
 describe('migrateReroute', () => {
   describe('migrateReroute snapshots', () => {

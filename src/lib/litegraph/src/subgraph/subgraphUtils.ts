@@ -1,18 +1,16 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
-import { Reroute } from '@/lib/litegraph/src/Reroute'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type {
   ISerialisedNode,
@@ -23,9 +21,9 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { GraphOrSubgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
-import { SubgraphInputNode } from './SubgraphInputNode'
+import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
-import { SubgraphOutputNode } from './SubgraphOutputNode'
+import type { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface FilteredItems {
   nodes: Set<LGraphNode>

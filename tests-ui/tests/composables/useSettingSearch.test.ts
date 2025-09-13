@@ -4,7 +4,8 @@ import { nextTick } from 'vue'
 
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { st } from '@/i18n'
-import { getSettingInfo, useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import { getSettingInfo } from '@/stores/settingStore'
 
 // Mock dependencies
 vi.mock('@/i18n', () => ({

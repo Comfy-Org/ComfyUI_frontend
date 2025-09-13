@@ -67,10 +67,7 @@ import Chip from 'primevue/chip'
 import ProgressBar from 'primevue/progressbar'
 import { useI18n } from 'vue-i18n'
 
-import {
-  type ElectronDownload,
-  useElectronDownloadStore
-} from '@/stores/electronDownloadStore'
+import type { ElectronDownload, useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 const { t } = useI18n()
 

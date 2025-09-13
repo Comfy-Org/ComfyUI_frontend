@@ -50,16 +50,13 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ColorOption as CanvasColorOption } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraphCanvas,
-  LiteGraph,
-  isColorable
-} from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isColorable } from '@/lib/litegraph/src/litegraph'
+import type { useCanvasStore } from '@/stores/graphStore'
+import type { useWorkflowStore } from '@/stores/workflowStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
-import { getItemsColorOption } from '@/utils/litegraphUtil'
+import type { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()

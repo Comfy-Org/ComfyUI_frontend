@@ -5,9 +5,9 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useWorkflowService } from '@/services/workflowService'
-import { useCommandStore } from '@/stores/commandStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useWorkflowStore } from '@/stores/workflowStore'
 
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()

@@ -1,30 +1,27 @@
 import { toString } from 'es-toolkit/compat'
 
-import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import {
-  type LinkRenderContext,
-  LitegraphLinkAdapter
-} from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import type { LinkRenderContext, LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import type { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import { CanvasPointer } from './CanvasPointer'
+import type { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
-import { type AnimationOptions, DragAndScale } from './DragAndScale'
+import type { AnimationOptions, DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode, type NodeId, type NodeProperty } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
-import { Reroute, type RerouteId } from './Reroute'
-import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
+import type { LGraphGroup } from './LGraphGroup'
+import type { LGraphNode, NodeId, NodeProperty } from './LGraphNode'
+import type { LLink, LinkId } from './LLink'
+import type { Reroute, RerouteId } from './Reroute'
+import type { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import type {
   CustomEventDispatcher,
   ICustomEventTarget
 } from './infrastructure/CustomEventTarget'
 import type { LGraphCanvasEventMap } from './infrastructure/LGraphCanvasEventMap'
-import { NullGraphError } from './infrastructure/NullGraphError'
+import type { NullGraphError } from './infrastructure/NullGraphError'
 import type {
   CanvasColour,
   ColorOption,
@@ -52,43 +49,27 @@ import type {
   Rect,
   Size
 } from './interfaces'
-import { LiteGraph, Rectangle, SubgraphNode, createUuidv4 } from './litegraph'
-import {
-  containsRect,
-  createBounds,
-  distance,
-  isInRect,
-  isInRectangle,
-  isPointInRect,
-  overlapBounding,
-  snapPoint
-} from './measure'
-import { NodeInputSlot } from './node/NodeInputSlot'
-import { Subgraph } from './subgraph/Subgraph'
-import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
-import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import type { LiteGraph, Rectangle, SubgraphNode } from './litegraph'
+import { createUuidv4 } from './litegraph'
+import { containsRect, createBounds, distance, isInRect, isInRectangle, isPointInRect, overlapBounding, snapPoint } from './measure'
+import type { NodeInputSlot } from './node/NodeInputSlot'
+import type { Subgraph } from './subgraph/Subgraph'
+import type { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
+import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
 } from './types/events'
-import {
-  CanvasItem,
-  LGraphEventMode,
-  LinkDirection,
-  LinkMarkerShape,
-  LinkRenderType,
-  RenderShape,
-  TitleMode
-} from './types/globalEnums'
+import type { CanvasItem, LGraphEventMode, LinkDirection, LinkMarkerShape, LinkRenderType, RenderShape, TitleMode } from './types/globalEnums'
 import type { ClipboardItems, SubgraphIO } from './types/serialisation'
 import type { NeverNever } from './types/utility'
 import type { PickNevers } from './types/utility'
 import type { IBaseWidget } from './types/widgets'
-import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
-import { findFirstNode, getAllNestedItems } from './utils/collections'
+import type { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
+import type { findFirstNode, getAllNestedItems } from './utils/collections'
 import type { UUID } from './utils/uuid'
-import { BaseWidget } from './widgets/BaseWidget'
+import type { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 
 interface IShowSearchOptions {

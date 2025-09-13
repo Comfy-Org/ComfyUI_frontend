@@ -1,17 +1,12 @@
 // TODO: Fix these tests after migration
 import { describe, expect, it } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  findUsedSubgraphIds,
-  getDirectSubgraphIds
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { findUsedSubgraphIds, getDirectSubgraphIds } from '@/lib/litegraph/src/litegraph'
 import type { UUID } from '@/lib/litegraph/src/litegraph'
 
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('subgraphUtils', () => {
   describe.skip('getDirectSubgraphIds', () => {

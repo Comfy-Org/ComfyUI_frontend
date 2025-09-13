@@ -1,8 +1,8 @@
 import { clamp } from 'es-toolkit/compat'
 import { beforeEach, describe, expect, vi } from 'vitest'
 
-import { LiteGraphGlobal } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraphGlobal } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './fixtures/testExtensions'
 

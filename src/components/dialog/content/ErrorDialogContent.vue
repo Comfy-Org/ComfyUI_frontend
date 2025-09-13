@@ -63,12 +63,10 @@ import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.v
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import {
-  type ErrorReportData,
-  generateErrorReport
-} from '@/utils/errorReportUtil'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { ErrorReportData } from '@/utils/errorReportUtil'
+import { generateErrorReport } from '@/utils/errorReportUtil'
 
 const { error } = defineProps<{
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {

@@ -1,7 +1,7 @@
 import { onUnmounted, ref } from 'vue'
 
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { useCanvasStore } from '@/stores/graphStore'
 
 interface CanvasTransformSyncOptions {
   /**

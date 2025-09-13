@@ -1,8 +1,8 @@
-import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import type { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 
 import type { LGraph } from './LGraph'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphNode } from './LGraphNode'
+import type { LGraphCanvas } from './LGraphCanvas'
+import type { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import type {
   ColorOption,
@@ -13,15 +13,8 @@ import type {
   Positionable,
   Size
 } from './interfaces'
-import { LiteGraph } from './litegraph'
-import {
-  containsCentre,
-  containsRect,
-  createBounds,
-  isInRectangle,
-  isPointInRect,
-  snapPoint
-} from './measure'
+import type { LiteGraph } from './litegraph'
+import { containsCentre, containsRect, createBounds, isInRectangle, isPointInRect, snapPoint } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
 
 export interface IGraphGroupFlags extends Record<string, unknown> {

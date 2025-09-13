@@ -3,8 +3,8 @@ import { useI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
+import type { useDialogStore } from '@/stores/dialogStore'
+import type { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
 import type {
   TemplateGroup,
   TemplateInfo,

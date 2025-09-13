@@ -20,17 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import { useBreakpoints, useEventListener } from '@vueuse/core'
+import type { useEventListener } from '@vueuse/core'
+import { useBreakpoints } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  watch,
-  watchEffect
-} from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -44,29 +38,26 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVersionMismatchWarning'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
-import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
+import type { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
-import { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingService } from '@/services/keybindingService'
-import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useModelStore } from '@/stores/modelStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import {
-  useQueuePendingTaskCountStore,
-  useQueueStore
-} from '@/stores/queueStore'
-import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { useKeybindingService } from '@/services/keybindingService'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useExecutionStore } from '@/stores/executionStore'
+import type { useMenuItemStore } from '@/stores/menuItemStore'
+import type { useModelStore } from '@/stores/modelStore'
+import type { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { useQueuePendingTaskCountStore, useQueueStore } from '@/stores/queueStore'
+import type { useServerConfigStore } from '@/stores/serverConfigStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
+import type { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()

@@ -87,12 +87,8 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
-import {
-  ComfyNodeDefImpl,
-  useNodeDefStore,
-  useNodeFrequencyStore
-} from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { ComfyNodeDefImpl, useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { useSettingStore } from '@/stores/settingStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import SearchFilterChip from '../common/SearchFilterChip.vue'

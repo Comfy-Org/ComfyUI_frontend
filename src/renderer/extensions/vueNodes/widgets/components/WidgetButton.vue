@@ -17,10 +17,7 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import {
-  BADGE_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import type { BADGE_EXCLUDED_PROPS, filterWidgetProps } from '@/utils/widgetPropFilter'
 
 // Button widgets don't have a v-model value, they trigger actions
 const props = defineProps<{

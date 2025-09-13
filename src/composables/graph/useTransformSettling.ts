@@ -1,4 +1,5 @@
-import { useDebounceFn, useEventListener, useThrottleFn } from '@vueuse/core'
+import type { useEventListener } from '@vueuse/core'
+import { useDebounceFn, useThrottleFn } from '@vueuse/core'
 import { ref } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 

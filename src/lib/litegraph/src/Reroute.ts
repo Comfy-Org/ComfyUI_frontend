@@ -1,9 +1,9 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutSource } from '@/renderer/core/layout/types'
 
-import { LGraphBadge } from './LGraphBadge'
+import type { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode, NodeId } from './LGraphNode'
-import { LLink, type LinkId } from './LLink'
+import type { LLink, LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,

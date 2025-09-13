@@ -1,8 +1,8 @@
 import type { InstallValidation } from '@comfyorg/comfyui-electron-types'
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { DESKTOP_MAINTENANCE_TASKS } from '@/constants/desktopMaintenanceTasks'
+import type { DESKTOP_MAINTENANCE_TASKS } from '@/constants/desktopMaintenanceTasks'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 

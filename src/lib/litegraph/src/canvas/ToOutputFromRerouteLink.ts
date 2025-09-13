@@ -7,8 +7,8 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 
 import type { LinkConnector } from './LinkConnector'
-import { ToInputRenderLink } from './ToInputRenderLink'
-import { ToOutputRenderLink } from './ToOutputRenderLink'
+import type { ToInputRenderLink } from './ToInputRenderLink'
+import type { ToOutputRenderLink } from './ToOutputRenderLink'
 
 /**
  * @internal A workaround class to support connecting to reroutes to node outputs.

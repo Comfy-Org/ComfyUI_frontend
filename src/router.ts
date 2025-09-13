@@ -1,14 +1,9 @@
-import {
-  NavigationGuardNext,
-  RouteLocationNormalized,
-  createRouter,
-  createWebHashHistory,
-  createWebHistory
-} from 'vue-router'
+import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
-import { useUserStore } from './stores/userStore'
+import type { useUserStore } from './stores/userStore'
 import { isElectron } from './utils/envUtil'
 
 const isFileProtocol = window.location.protocol === 'file:'

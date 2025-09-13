@@ -6,8 +6,8 @@ import { nextTick, reactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import { type Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
+import type { LayoutSource } from '@/renderer/core/layout/types'
+import type { Bounds, QuadTree } from '@/renderer/core/spatial/QuadTree'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { SpatialIndexDebugInfo } from '@/types/spatialIndex'
 

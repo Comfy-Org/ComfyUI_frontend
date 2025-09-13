@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify'
-import { Renderer, marked } from 'marked'
+import type { Renderer } from 'marked'
+import { marked } from 'marked'
 
 const ALLOWED_TAGS = ['video', 'source']
 const ALLOWED_ATTRS = [

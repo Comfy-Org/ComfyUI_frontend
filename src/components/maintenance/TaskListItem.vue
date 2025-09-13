@@ -40,15 +40,15 @@
 </template>
 
 <script setup lang="ts">
-import { PrimeIcons } from '@primevue/core/api'
+import type { PrimeIcons } from '@primevue/core/api'
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import type { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
-import { PrimeVueSeverity } from '@/types/primeVueTypes'
-import { useMinLoadingDurationRef } from '@/utils/refUtil'
+import type { PrimeVueSeverity } from '@/types/primeVueTypes'
+import type { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
 

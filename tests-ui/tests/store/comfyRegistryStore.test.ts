@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
 vi.mock('@/services/comfyRegistryService', () => ({

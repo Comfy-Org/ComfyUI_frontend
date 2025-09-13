@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
+import type { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -99,11 +99,7 @@ import ExportControls from '@/components/load3d/controls/ExportControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
-import {
-  CameraType,
-  MaterialMode,
-  UpDirection
-} from '@/extensions/core/load3d/interfaces'
+import type { CameraType, MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 

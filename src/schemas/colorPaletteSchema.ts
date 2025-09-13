@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 const nodeSlotSchema = z.object({
   CLIP: z.string(),

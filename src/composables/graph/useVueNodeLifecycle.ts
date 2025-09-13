@@ -8,21 +8,22 @@
  * - Reactive state management for node data, positions, and sizes
  * - Memory management and proper cleanup
  */
-import { type Ref, computed, readonly, ref, shallowRef, watch } from 'vue'
+import type { Ref, shallowRef } from 'vue'
+import { computed, readonly, ref, watch } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import type { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type {
   NodeState,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { useLinkLayoutSync } from '@/renderer/core/layout/sync/useLinkLayoutSync'
-import { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
+import type { useSlotLayoutSync } from '@/renderer/core/layout/sync/useSlotLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
-import { useCanvasStore } from '@/stores/graphStore'
+import type { useCanvasStore } from '@/stores/graphStore'
 
 export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
   const canvasStore = useCanvasStore()

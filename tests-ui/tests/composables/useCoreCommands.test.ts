@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()

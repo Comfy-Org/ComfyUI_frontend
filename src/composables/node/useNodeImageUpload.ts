@@ -1,10 +1,10 @@
-import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
-import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
-import { useNodePaste } from '@/composables/node/useNodePaste'
+import type { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
+import type { useNodeFileInput } from '@/composables/node/useNodeFileInput'
+import type { useNodePaste } from '@/composables/node/useNodePaste'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/stores/toastStore'
+import type { useToastStore } from '@/stores/toastStore'
 
 const PASTED_IMAGE_EXPIRY_MS = 2000
 

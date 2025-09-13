@@ -7,14 +7,11 @@ import { createI18n } from 'vue-i18n'
 
 import ManagerProgressFooter from '@/components/dialog/footer/ManagerProgressFooter.vue'
 import { useComfyManagerService } from '@/services/comfyManagerService'
-import {
-  useComfyManagerStore,
-  useManagerProgressDialogStore
-} from '@/stores/comfyManagerStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { TaskLog } from '@/types/comfyManagerTypes'
+import type { useComfyManagerStore, useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { useDialogStore } from '@/stores/dialogStore'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { TaskLog } from '@/types/comfyManagerTypes'
 
 // Mock modules
 vi.mock('@/stores/comfyManagerStore')

@@ -3,11 +3,7 @@ import { clamp } from 'es-toolkit/compat'
 import type { IKnobWidget } from '@/lib/litegraph/src/types/widgets'
 import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 
-import {
-  BaseWidget,
-  type DrawWidgetOptions,
-  type WidgetEventOptions
-} from './BaseWidget'
+import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
   override type = 'knob' as const

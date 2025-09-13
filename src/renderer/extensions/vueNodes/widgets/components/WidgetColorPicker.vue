@@ -28,12 +28,9 @@ import { computed } from 'vue'
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import type { PANEL_EXCLUDED_PROPS, filterWidgetProps } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
+import type { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{

@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import type { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 // Mock DOM widget for testing
 const createMockDOMWidget = (id: string) => {

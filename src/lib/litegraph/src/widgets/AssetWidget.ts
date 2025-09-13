@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IAssetWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget, type DrawWidgetOptions } from './BaseWidget'
+import type { BaseWidget, DrawWidgetOptions } from './BaseWidget'
 
 export class AssetWidget
   extends BaseWidget<IAssetWidget>

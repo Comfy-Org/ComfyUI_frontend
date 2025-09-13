@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/stores/graphStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { useCanvasStore } from '@/stores/graphStore'
+import type { useSettingStore } from '@/stores/settingStore'
 
 // Mock stores
 vi.mock('@/stores/graphStore', () => {

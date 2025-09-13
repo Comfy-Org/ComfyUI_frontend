@@ -1,13 +1,8 @@
 import { fromZodError } from 'zod-validation-error'
 
-import {
-  type AssetResponse,
-  type ModelFile,
-  type ModelFolder,
-  assetResponseSchema
-} from '@/schemas/assetSchema'
+import type { AssetResponse, ModelFile, ModelFolder, assetResponseSchema } from '@/schemas/assetSchema'
 import { api } from '@/scripts/api'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import type { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const ASSETS_ENDPOINT = '/assets'
 const MODELS_TAG = 'models'

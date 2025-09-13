@@ -1,10 +1,11 @@
 import { until } from '@vueuse/core'
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { type ReleaseNote, useReleaseService } from '@/services/releaseService'
-import { useSettingStore } from '@/stores/settingStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { ReleaseNote } from '@/services/releaseService'
+import { useReleaseService } from '@/services/releaseService'
+import type { useSettingStore } from '@/stores/settingStore'
+import type { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
 import { compareVersions, stringToLocale } from '@/utils/formatUtil'
 

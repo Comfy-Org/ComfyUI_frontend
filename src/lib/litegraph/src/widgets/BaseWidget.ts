@@ -1,5 +1,5 @@
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type {
   CanvasPointer,
@@ -7,7 +7,7 @@ import type {
   LGraphNode,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 

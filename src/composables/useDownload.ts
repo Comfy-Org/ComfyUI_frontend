@@ -1,8 +1,9 @@
 import { whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
-import { useCivitaiModel } from '@/composables/useCivitaiModel'
-import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
+import type { useCivitaiModel } from '@/composables/useCivitaiModel'
+import type { isCivitaiModelUrl } from '@/utils/formatUtil'
+import { downloadUrlToHfRepoUrl } from '@/utils/formatUtil'
 
 export function useDownload(url: string, fileName?: string) {
   const fileSize = ref<number | null>(null)

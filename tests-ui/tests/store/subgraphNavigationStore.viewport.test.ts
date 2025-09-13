@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { app } from '@/scripts/app'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import type { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import type { useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflow } from '@/stores/workflowStore'
 
 vi.mock('@/scripts/app', () => {

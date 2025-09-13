@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { useNodePricing } from '@/composables/node/useNodePricing'
+import type { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 

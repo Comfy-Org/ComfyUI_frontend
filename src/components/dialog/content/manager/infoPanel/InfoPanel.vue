@@ -72,12 +72,12 @@ import InfoTabs from '@/components/dialog/content/manager/infoPanel/InfoTabs.vue
 import MetadataRow from '@/components/dialog/content/manager/infoPanel/MetadataRow.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import { IsInstallingKey } from '@/types/comfyManagerTypes'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import type { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import { ImportFailedKey } from '@/types/importFailedTypes'
+import type { ImportFailedKey } from '@/types/importFailedTypes'
 
 interface InfoItem {
   key: string

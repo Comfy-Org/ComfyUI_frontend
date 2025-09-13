@@ -38,12 +38,9 @@ import Slider from '@/components/ui/slider/Slider.vue'
 import { useNumberWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-import {
-  STANDARD_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import type { STANDARD_EXCLUDED_PROPS, filterWidgetProps } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
+import type { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { widget, modelValue, readonly } = defineProps<{

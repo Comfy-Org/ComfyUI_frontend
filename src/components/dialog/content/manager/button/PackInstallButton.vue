@@ -30,14 +30,11 @@ import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
-import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { ButtonSize } from '@/types/buttonTypes'
+import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import type { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import {
-  type ConflictDetail,
-  ConflictDetectionResult
-} from '@/types/conflictDetectionTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import type { ConflictDetail, ConflictDetectionResult } from '@/types/conflictDetectionTypes'
+import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type NodePack = components['schemas']['Node']
 

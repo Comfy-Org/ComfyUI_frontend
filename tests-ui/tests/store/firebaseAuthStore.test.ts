@@ -1,11 +1,11 @@
-import { FirebaseError } from 'firebase/app'
+import type { FirebaseError } from 'firebase/app'
 import * as firebaseAuth from 'firebase/auth'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 // Mock fetch
 const mockFetch = vi.fn()

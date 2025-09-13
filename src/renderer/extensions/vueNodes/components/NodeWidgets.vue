@@ -46,14 +46,11 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
-import {
-  getComponent,
-  isEssential,
-  shouldRenderAsVue
-} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import type { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { isEssential, shouldRenderAsVue } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 import InputSlot from './InputSlot.vue'

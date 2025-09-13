@@ -1,5 +1,5 @@
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import type { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { normalizePackId } from '@/utils/packUtils'
 
 export function extractCustomNodeName(

@@ -69,10 +69,11 @@
 
 <script setup lang="ts">
 import { useBreakpoints } from '@vueuse/core'
-import { computed, inject, ref, useSlots, watch } from 'vue'
+import type { useSlots } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
-import { OnCloseKey } from '@/types/widgetTypes'
+import type { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 const { contentTitle } = defineProps<{

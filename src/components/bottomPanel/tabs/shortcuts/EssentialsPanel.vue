@@ -12,11 +12,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import {
-  ESSENTIALS_CONFIG,
-  useCommandSubcategories
-} from '@/composables/bottomPanelTabs/useCommandSubcategories'
-import { useCommandStore } from '@/stores/commandStore'
+import type { ESSENTIALS_CONFIG } from '@/composables/bottomPanelTabs/useCommandSubcategories'
+import { useCommandSubcategories } from '@/composables/bottomPanelTabs/useCommandSubcategories'
+import type { useCommandStore } from '@/stores/commandStore'
 
 import ShortcutsList from './ShortcutsList.vue'
 

@@ -2,14 +2,11 @@
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-import {
-  INPUT_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import type { INPUT_EXCLUDED_PROPS, filterWidgetProps } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
+import type { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{

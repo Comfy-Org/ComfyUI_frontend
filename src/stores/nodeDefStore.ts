@@ -1,10 +1,10 @@
 import axios from 'axios'
 import _ from 'es-toolkit/compat'
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec as InputSpecV2,
@@ -15,13 +15,9 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   ComfyOutputTypesSpec as ComfyOutputSpecV1
 } from '@/schemas/nodeDefSchema'
-import { NodeSearchService } from '@/services/nodeSearchService'
-import { useSubgraphStore } from '@/stores/subgraphStore'
-import {
-  type NodeSource,
-  NodeSourceType,
-  getNodeSource
-} from '@/types/nodeSource'
+import type { NodeSearchService } from '@/services/nodeSearchService'
+import type { useSubgraphStore } from '@/stores/subgraphStore'
+import type { NodeSource, NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'

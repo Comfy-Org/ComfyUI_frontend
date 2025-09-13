@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVersionMismatchWarning'
-import { useToastStore } from '@/stores/toastStore'
-import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
+import type { useToastStore } from '@/stores/toastStore'
+import type { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 
 // Mock globals
 //@ts-expect-error Define global for the test

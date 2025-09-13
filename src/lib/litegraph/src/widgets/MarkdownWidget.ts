@@ -1,9 +1,5 @@
 import type { IMarkdownWidget } from '../types/widgets'
-import {
-  BaseWidget,
-  type DrawWidgetOptions,
-  type WidgetEventOptions
-} from './BaseWidget'
+import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 /**
  * Widget for displaying markdown formatted text

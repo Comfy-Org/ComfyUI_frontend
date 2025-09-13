@@ -2,24 +2,8 @@
 import { test as baseTest } from 'vitest'
 
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
-import {
-  addDirectionalOffset,
-  containsCentre,
-  containsRect,
-  createBounds,
-  dist2,
-  distance,
-  findPointOnCurve,
-  getOrientation,
-  isInRect,
-  isInRectangle,
-  isInsideRectangle,
-  isPointInRect,
-  overlapBounding,
-  rotateLink,
-  snapPoint
-} from '@/lib/litegraph/src/measure'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { addDirectionalOffset, containsCentre, containsRect, createBounds, dist2, distance, findPointOnCurve, getOrientation, isInRect, isInRectangle, isInsideRectangle, isPointInRect, overlapBounding, rotateLink, snapPoint } from '@/lib/litegraph/src/measure'
+import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 const test = baseTest.extend({})
 

@@ -1,9 +1,9 @@
-import { defineStore } from 'pinia'
+import type { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
-import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
-import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import type { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
+import type { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DisplayComponentWsMessage,
@@ -24,12 +24,12 @@ import type {
 } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import type { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { createNodeLocatorId } from '@/types/nodeIdentification'
 
-import { useCanvasStore } from './graphStore'
-import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
+import type { useCanvasStore } from './graphStore'
+import type { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 
 interface QueuedPrompt {
   /**

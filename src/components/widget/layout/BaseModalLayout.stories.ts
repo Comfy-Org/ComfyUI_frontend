@@ -12,7 +12,7 @@ import MultiSelect from '@/components/input/MultiSelect.vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
+import type { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'

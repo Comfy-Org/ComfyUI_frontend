@@ -69,7 +69,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ReleaseNote } from '@/services/releaseService'
-import { useReleaseStore } from '@/stores/releaseStore'
+import type { useReleaseStore } from '@/stores/releaseStore'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 
 const { locale, t } = useI18n()

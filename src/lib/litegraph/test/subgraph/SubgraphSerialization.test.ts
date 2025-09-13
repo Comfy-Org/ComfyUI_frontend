@@ -6,12 +6,10 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe('SubgraphSerialization - Basic Serialization', () => {
   it('should save and load simple subgraphs', () => {

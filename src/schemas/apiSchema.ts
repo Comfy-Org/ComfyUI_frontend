@@ -1,11 +1,12 @@
 import { z } from 'zod'
 
-import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
-import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
-import { zComfyWorkflow, zNodeId } from '@/schemas/comfyWorkflowSchema'
-import { zKeybinding } from '@/schemas/keyBindingSchema'
-import { NodeBadgeMode } from '@/types/nodeSource'
-import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import type { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
+import type { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
+import type { zNodeId } from '@/schemas/comfyWorkflowSchema'
+import { zComfyWorkflow } from '@/schemas/comfyWorkflowSchema'
+import type { zKeybinding } from '@/schemas/keyBindingSchema'
+import type { NodeBadgeMode } from '@/types/nodeSource'
+import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()

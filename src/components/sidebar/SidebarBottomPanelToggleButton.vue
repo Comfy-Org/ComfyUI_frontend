@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import type { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 

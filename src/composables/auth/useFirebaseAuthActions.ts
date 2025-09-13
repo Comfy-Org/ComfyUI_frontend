@@ -1,10 +1,10 @@
-import { FirebaseError } from 'firebase/app'
+import type { FirebaseError } from 'firebase/app'
 import { ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { useToastStore } from '@/stores/toastStore'
+import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { useToastStore } from '@/stores/toastStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**

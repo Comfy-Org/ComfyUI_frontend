@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './fixtures/testExtensions'
 

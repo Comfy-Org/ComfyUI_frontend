@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isReactive, isReadonly } from 'vue'
 
-import {
-  ServerFeatureFlag,
-  useFeatureFlags
-} from '@/composables/useFeatureFlags'
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 
 // Mock the API module

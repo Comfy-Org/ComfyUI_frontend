@@ -2,12 +2,12 @@ import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
-import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import type { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useCanvasStore } from '@/stores/graphStore'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { useCanvasStore } from '@/stores/graphStore'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
 /**

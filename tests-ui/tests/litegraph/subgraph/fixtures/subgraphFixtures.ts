@@ -5,16 +5,12 @@
  * in their test files. Each fixture provides a clean, pre-configured subgraph
  * setup for different testing scenarios.
  */
-import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
 import { test } from '../../core/fixtures/testExtensions'
-import {
-  createEventCapture,
-  createNestedSubgraphs,
-  createTestSubgraph,
-  createTestSubgraphNode
-} from './subgraphHelpers'
+import type { createEventCapture, createTestSubgraphNode } from './subgraphHelpers'
+import { createNestedSubgraphs, createTestSubgraph } from './subgraphHelpers'
 
 interface SubgraphFixtures {
   /** A minimal subgraph with no inputs, outputs, or nodes */

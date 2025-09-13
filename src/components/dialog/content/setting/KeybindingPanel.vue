@@ -129,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { FilterMatchMode } from '@primevue/core/api'
+import type { FilterMatchMode } from '@primevue/core/api'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -142,14 +142,10 @@ import { computed, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import { useKeybindingService } from '@/services/keybindingService'
-import { useCommandStore } from '@/stores/commandStore'
-import {
-  KeyComboImpl,
-  KeybindingImpl,
-  useKeybindingStore
-} from '@/stores/keybindingStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import type { useKeybindingService } from '@/services/keybindingService'
+import type { useCommandStore } from '@/stores/commandStore'
+import type { KeyComboImpl, KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import type { normalizeI18nKey } from '@/utils/formatUtil'
 
 import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
