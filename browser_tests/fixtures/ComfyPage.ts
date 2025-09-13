@@ -11,6 +11,7 @@ import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
+import { LocationMock } from '../helpers/locationMock'
 import { ComfyMouse } from './ComfyMouse'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
@@ -144,6 +145,7 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly locationMock: LocationMock
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -172,6 +174,7 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
+    this.locationMock = new LocationMock(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -272,11 +275,19 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
-    mockReleases = true
+    mockReleases = true,
+    mockLocation = false
   }: {
     clearStorage?: boolean
     mockReleases?: boolean
+    mockLocation?: boolean | Parameters<LocationMock['setupLocationMock']>[0]
   } = {}) {
+    // Setup location mock if requested
+    if (mockLocation) {
+      const config = typeof mockLocation === 'boolean' ? undefined : mockLocation
+      await this.locationMock.setupLocationMock(config)
+    }
+
     await this.goto()
 
     // Mock release endpoint to prevent changelog popups

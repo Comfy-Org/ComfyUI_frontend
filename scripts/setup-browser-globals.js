@@ -6,17 +6,43 @@ if (typeof globalThis.__USE_PROD_CONFIG__ === 'undefined') {
   globalThis.__USE_PROD_CONFIG__ = false;
 }
 
-// Create a happy-dom window instance
+// Create a happy-dom window instance with configurable URL
+const defaultUrl = (typeof globalThis.process !== 'undefined' && globalThis.process.env?.HAPPY_DOM_URL) || 'http://localhost:5173/';
 const window = new Window({
-  url: 'http://localhost:5173/',
+  url: defaultUrl,
   width: 1024,
   height: 768
 });
 
+// Mock location with additional properties for testing
+const mockLocation = {
+  ...window.location,
+  href: defaultUrl,
+  origin: new URL(defaultUrl).origin,
+  protocol: new URL(defaultUrl).protocol,
+  host: new URL(defaultUrl).host,
+  hostname: new URL(defaultUrl).hostname,
+  port: new URL(defaultUrl).port,
+  pathname: new URL(defaultUrl).pathname,
+  search: new URL(defaultUrl).search,
+  hash: new URL(defaultUrl).hash,
+  assign: (url) => {
+    console.log(`[Mock] location.assign called with: ${url}`);
+    mockLocation.href = url;
+  },
+  replace: (url) => {
+    console.log(`[Mock] location.replace called with: ${url}`);
+    mockLocation.href = url;
+  },
+  reload: () => {
+    console.log('[Mock] location.reload called');
+  }
+};
+
 // Expose DOM globals (only set if not already defined)
 if (!globalThis.window) globalThis.window = window;
 if (!globalThis.document) globalThis.document = window.document;
-if (!globalThis.location) globalThis.location = window.location;
+if (!globalThis.location) globalThis.location = mockLocation;
 if (!globalThis.navigator) {
   try {
     globalThis.navigator = window.navigator;
