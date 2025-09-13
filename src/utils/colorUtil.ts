@@ -1,7 +1,7 @@
 import { memoize } from 'es-toolkit/compat'
 
-export type RGB = { r: number; g: number; b: number }
-export type HSB = { h: number; s: number; b: number }
+type RGB = { r: number; g: number; b: number }
+type HSB = { h: number; s: number; b: number }
 type HSL = { h: number; s: number; l: number }
 type HSLA = { h: number; s: number; l: number; a: number }
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
