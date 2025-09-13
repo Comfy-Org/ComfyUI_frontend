@@ -43,7 +43,11 @@ import Panel from 'primevue/panel'
 import { type ModelRef, computed, onMounted, ref } from 'vue'
 
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
-import { PYPI_MIRROR, PYTHON_MIRROR, type UVMirror } from '@/constants/uvMirrors'
+import {
+  PYPI_MIRROR,
+  PYTHON_MIRROR,
+  type UVMirror
+} from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { isInChina } from '@/utils/networkUtil'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
