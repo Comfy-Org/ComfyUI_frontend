@@ -207,7 +207,7 @@ export function isColorFormat(v: unknown): v is ColorFormat {
   return v === 'hex' || v === 'rgb' || v === 'hsb'
 }
 
-export function isHSBObject(v: unknown): v is HSB {
+function isHSBObject(v: unknown): v is HSB {
   if (!v || typeof v !== 'object') return false
   const rec = v as Record<string, unknown>
   return (
@@ -220,7 +220,7 @@ export function isHSBObject(v: unknown): v is HSB {
   )
 }
 
-export function isHSVObject(v: unknown): v is HSV {
+function isHSVObject(v: unknown): v is HSV {
   if (!v || typeof v !== 'object') return false
   const rec = v as Record<string, unknown>
   return (
