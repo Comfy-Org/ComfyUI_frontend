@@ -1,6 +1,7 @@
 import { memoize } from 'es-toolkit/compat'
 
-type RGB = { r: number; g: number; b: number }
+export type RGB = { r: number; g: number; b: number }
+export type HSB = { h: number; s: number; b: number }
 type HSL = { h: number; s: number; l: number }
 type HSLA = { h: number; s: number; l: number; a: number }
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
@@ -57,6 +58,61 @@ export function hexToRgb(hex: string): RGB {
     b = parseInt(hex.slice(5, 7), 16)
   }
   return { r, g, b }
+}
+
+export function rgbToHex({ r, g, b }: RGB): string {
+  const toHex = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+export function hsbToRgb({ h, s, b }: HSB): RGB {
+  // Normalize
+  const hh = ((h % 360) + 360) % 360
+  const ss = Math.max(0, Math.min(100, s)) / 100
+  const vv = Math.max(0, Math.min(100, b)) / 100
+
+  const c = vv * ss
+  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1))
+  const m = vv - c
+
+  let rp = 0,
+    gp = 0,
+    bp = 0
+
+  if (hh < 60) {
+    rp = c
+    gp = x
+    bp = 0
+  } else if (hh < 120) {
+    rp = x
+    gp = c
+    bp = 0
+  } else if (hh < 180) {
+    rp = 0
+    gp = c
+    bp = x
+  } else if (hh < 240) {
+    rp = 0
+    gp = x
+    bp = c
+  } else if (hh < 300) {
+    rp = x
+    gp = 0
+    bp = c
+  } else {
+    rp = c
+    gp = 0
+    bp = x
+  }
+
+  return {
+    r: Math.round((rp + m) * 255),
+    g: Math.round((gp + m) * 255),
+    b: Math.round((bp + m) * 255)
+  }
 }
 
 export function parseToRgb(color: string): RGB {

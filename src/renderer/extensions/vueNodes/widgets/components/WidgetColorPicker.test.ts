@@ -83,6 +83,46 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(emitted).toBeDefined()
       expect(emitted![0]).toContain('#ff00ff')
     })
+
+    it('normalizes bare hex without # to #hex on emit', async () => {
+      const widget = createMockWidget('ff0000')
+      const wrapper = mountComponent(widget, 'ff0000')
+
+      const emitted = await setColorPickerValue(wrapper, '00ff00')
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain('#00ff00')
+    })
+
+    it('normalizes rgb() strings to #hex on emit', async () => {
+      const widget = createMockWidget('#000000')
+      const wrapper = mountComponent(widget, '#000000')
+
+      const emitted = await setColorPickerValue(wrapper, 'rgb(255, 0, 0)')
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain('#ff0000')
+    })
+
+    it('normalizes hsb() strings to #hex on emit', async () => {
+      const widget = createMockWidget('#000000', { format: 'hsb' })
+      const wrapper = mountComponent(widget, '#000000')
+
+      const emitted = await setColorPickerValue(wrapper, 'hsb(120, 100, 100)')
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain('#00ff00')
+    })
+
+    it('normalizes HSB object values to #hex on emit', async () => {
+      const widget = createMockWidget('#000000', { format: 'hsb' })
+      const wrapper = mountComponent(widget, '#000000')
+
+      const emitted = await setColorPickerValue(wrapper, {
+        h: 240,
+        s: 100,
+        b: 100
+      } as any)
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain('#0000ff')
+    })
   })
 
   describe('Component Rendering', () => {
