@@ -23,12 +23,8 @@ class DisconnectedWidget extends BaseWidget<IButtonWidget> {
 
   override onClick() {}
 
-  override get displayName() {
-    return 'Disconnected'
-  }
-
   override get _displayValue() {
-    return this.label ?? ''
+    return 'Disconnected'
   }
 }
 const conf: IButtonWidget = {
