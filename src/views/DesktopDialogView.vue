@@ -28,7 +28,10 @@ import { electronAPI } from '@/utils/envUtil'
 const route = useRoute()
 
 // Get title and message from query parameters
-const title = computed(() => route.query.title ?? 'Quick Setup')
+const title = computed(() => {
+  const { title } = route.query
+  return typeof title === 'string' ? title : ''
+})
 const message = computed(() => {
   const { message } = route.query
   return typeof message === 'string' ? message : ''
