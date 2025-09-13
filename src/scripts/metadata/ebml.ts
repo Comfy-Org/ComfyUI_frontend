@@ -2,14 +2,14 @@ import {
   type ComfyApiWorkflow,
   type ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
-import {
+import type {
   ComfyMetadata,
-  ComfyMetadataTags,
   EbmlElementRange,
   EbmlTagPosition,
   TextRange,
   VInt
 } from '@/types/metadataTypes'
+import { ComfyMetadataTags } from '@/types/metadataTypes'
 
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]
 const MAX_READ_BYTES = 2 * 1024 * 1024

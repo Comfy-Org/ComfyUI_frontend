@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import {
-  CSSProperties,
+  type CSSProperties,
   computed,
   nextTick,
   onMounted,
@@ -32,7 +32,7 @@ import {
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { ComfyModelDef } from '@/stores/modelStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { type RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
 

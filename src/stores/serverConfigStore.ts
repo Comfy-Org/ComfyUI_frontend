@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
+import {
+  type ServerConfig,
+  type ServerConfigValue
+} from '@/constants/serverConfig'
 
 type ServerConfigWithValue<T> = ServerConfig<T> & {
   /**

@@ -170,8 +170,8 @@ import { useI18n } from 'vue-i18n'
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import {
-  ConflictDetail,
-  ConflictDetectionResult
+  type ConflictDetail,
+  type ConflictDetectionResult
 } from '@/types/conflictDetectionTypes'
 import { getConflictMessage } from '@/utils/conflictMessageUtil'
 

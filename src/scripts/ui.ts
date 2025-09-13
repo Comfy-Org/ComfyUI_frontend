@@ -1,5 +1,5 @@
 import { WORKFLOW_ACCEPT_STRING } from '@/constants/supportedWorkflowFormats'
-import { type StatusWsMessageStatus, TaskItem } from '@/schemas/apiSchema'
+import { type StatusWsMessageStatus, type TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'

@@ -75,7 +75,7 @@ import { useImportFailedDetection } from '@/composables/useImportFailedDetection
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import { IsInstallingKey } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/types/importFailedTypes'
 

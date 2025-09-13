@@ -1,16 +1,14 @@
-import {
+import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
-import {
-  ASCII,
+import type {
   ComfyMetadata,
-  ComfyMetadataTags,
   GltfChunkHeader,
   GltfHeader,
-  GltfJsonData,
-  GltfSizeBytes
+  GltfJsonData
 } from '@/types/metadataTypes'
+import { ASCII, ComfyMetadataTags, GltfSizeBytes } from '@/types/metadataTypes'
 
 const MAX_READ_BYTES = 1 << 20
 

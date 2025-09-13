@@ -8,11 +8,11 @@ import type {
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import {
+import type {
   ComboInputSpec,
-  type InputSpec,
-  isComboInputSpec
+  InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   type BaseDOMWidget,
   ComponentWidgetImpl,

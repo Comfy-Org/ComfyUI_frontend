@@ -1,4 +1,4 @@
-import { CSSProperties, ref, watch } from 'vue'
+import { type CSSProperties, ref, watch } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import type { Size, Vector2 } from '@/lib/litegraph/src/litegraph'

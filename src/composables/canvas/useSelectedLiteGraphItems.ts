@@ -1,7 +1,7 @@
 import {
   LGraphEventMode,
   LGraphNode,
-  Positionable,
+  type Positionable,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'

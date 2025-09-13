@@ -34,7 +34,7 @@ import { computed, ref, shallowRef, useId } from 'vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { components, operations } from '@/types/comfyRegistryTypes'
+import { type components, type operations } from '@/types/comfyRegistryTypes'
 import { registryToFrontendV2NodeDef } from '@/utils/mapperUtil'
 
 type ListComfyNodesResponse =

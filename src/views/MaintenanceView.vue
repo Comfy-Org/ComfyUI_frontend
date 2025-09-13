@@ -100,7 +100,7 @@ import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
 import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
-import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
+import { type MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 

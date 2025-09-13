@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { type ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import * as litegraphUtil from '@/utils/litegraphUtil'

@@ -160,7 +160,7 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
 import { ManagerTab } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 
 const { initialTab } = defineProps<{
   initialTab?: ManagerTab

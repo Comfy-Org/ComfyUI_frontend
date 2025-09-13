@@ -6,9 +6,9 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import type { LoadedComfyWorkflow } from '@/stores/workflowStore'
 import {
   ComfyWorkflow,
-  LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'

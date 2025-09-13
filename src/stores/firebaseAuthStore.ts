@@ -26,7 +26,7 @@ import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { type AuthHeader } from '@/types/authTypes'
-import { operations } from '@/types/comfyRegistryTypes'
+import { type operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']

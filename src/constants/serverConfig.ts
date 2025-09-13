@@ -7,7 +7,7 @@ import {
   LogLevel,
   VramManagement
 } from '@/types/serverArgs'
-import { FormItem } from '@/types/settingTypes'
+import { type FormItem } from '@/types/settingTypes'
 
 export type ServerConfigValue = string | number | true | null | undefined
 

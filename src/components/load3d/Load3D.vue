@@ -96,10 +96,10 @@ import RecordingControls from '@/components/load3d/controls/RecordingControls.vu
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
-  CameraType,
-  Load3DNodeType,
-  MaterialMode,
-  UpDirection
+  type CameraType,
+  type Load3DNodeType,
+  type MaterialMode,
+  type UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'

@@ -53,7 +53,8 @@
 </template>
 
 <script setup lang="ts">
-import Select, { SelectPassThroughMethodOptions } from 'primevue/select'
+import Select from 'primevue/select'
+import type { SelectPassThroughMethodOptions } from 'primevue/select'
 import { computed } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
