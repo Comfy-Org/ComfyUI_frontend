@@ -1,14 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Package,
-  Save,
-  Settings,
-  Trash2,
-  X
-} from 'lucide-vue-next'
 
 import IconTextButton from './IconTextButton.vue'
 
@@ -49,14 +39,14 @@ type Story = StoryObj<typeof meta>
 
 export const Primary: Story = {
   render: (args) => ({
-    components: { IconTextButton, Package },
+    components: { IconTextButton },
     setup() {
       return { args }
     },
     template: `
       <IconTextButton v-bind="args">
         <template #icon>
-          <Package :size="16" />
+          <i class="icon-[lucide--package] size-4" />
         </template>
       </IconTextButton>
     `
@@ -70,14 +60,14 @@ export const Primary: Story = {
 
 export const Secondary: Story = {
   render: (args) => ({
-    components: { IconTextButton, Settings },
+    components: { IconTextButton },
     setup() {
       return { args }
     },
     template: `
       <IconTextButton v-bind="args">
         <template #icon>
-          <Settings :size="16" />
+          <i class="icon-[lucide--settings] size-4" />
         </template>
       </IconTextButton>
     `
@@ -91,14 +81,14 @@ export const Secondary: Story = {
 
 export const Transparent: Story = {
   render: (args) => ({
-    components: { IconTextButton, X },
+    components: { IconTextButton },
     setup() {
       return { args }
     },
     template: `
       <IconTextButton v-bind="args">
         <template #icon>
-          <X :size="16" />
+          <i class="icon-[lucide--x] size-4" />
         </template>
       </IconTextButton>
     `
@@ -112,14 +102,14 @@ export const Transparent: Story = {
 
 export const WithIconRight: Story = {
   render: (args) => ({
-    components: { IconTextButton, ChevronRight },
+    components: { IconTextButton },
     setup() {
       return { args }
     },
     template: `
       <IconTextButton v-bind="args">
         <template #icon>
-          <ChevronRight :size="16" />
+          <i class="icon-[lucide--chevron-right] size-4" />
         </template>
       </IconTextButton>
     `
@@ -134,14 +124,14 @@ export const WithIconRight: Story = {
 
 export const Small: Story = {
   render: (args) => ({
-    components: { IconTextButton, Save },
+    components: { IconTextButton },
     setup() {
       return { args }
     },
     template: `
       <IconTextButton v-bind="args">
         <template #icon>
-          <Save :size="12" />
+          <i class="icon-[lucide--save] size-3" />
         </template>
       </IconTextButton>
     `
@@ -156,66 +146,60 @@ export const Small: Story = {
 export const AllVariants: Story = {
   render: () => ({
     components: {
-      IconTextButton,
-      Download,
-      Settings,
-      Trash2,
-      ChevronRight,
-      ChevronLeft,
-      Save
+      IconTextButton
     },
     template: `
       <div class="flex flex-col gap-4">
         <div class="flex gap-2 items-center">
           <IconTextButton label="Download" type="primary" size="sm" @click="() => {}">
             <template #icon>
-              <Download :size="12" />
+              <i class="icon-[lucide--download] size-3" />
             </template>
           </IconTextButton>
           <IconTextButton label="Download" type="primary" size="md" @click="() => {}">
             <template #icon>
-              <Download :size="16" />
+              <i class="icon-[lucide--download] size-4" />
             </template>
           </IconTextButton>
         </div>
         <div class="flex gap-2 items-center">
           <IconTextButton label="Settings" type="secondary" size="sm" @click="() => {}">
             <template #icon>
-              <Settings :size="12" />
+              <i class="icon-[lucide--settings] size-3" />
             </template>
           </IconTextButton>
           <IconTextButton label="Settings" type="secondary" size="md" @click="() => {}">
             <template #icon>
-              <Settings :size="16" />
+              <i class="icon-[lucide--settings] size-4" />
             </template>
           </IconTextButton>
         </div>
         <div class="flex gap-2 items-center">
           <IconTextButton label="Delete" type="transparent" size="sm" @click="() => {}">
             <template #icon>
-              <Trash2 :size="12" />
+              <i class="icon-[lucide--trash-2] size-3" />
             </template>
           </IconTextButton>
           <IconTextButton label="Delete" type="transparent" size="md" @click="() => {}">
             <template #icon>
-              <Trash2 :size="16" />
+              <i class="icon-[lucide--trash-2] size-4" />
             </template>
           </IconTextButton>
         </div>
         <div class="flex gap-2 items-center">
           <IconTextButton label="Next" type="primary" size="md" iconPosition="right" @click="() => {}">
             <template #icon>
-              <ChevronRight :size="16" />
+              <i class="icon-[lucide--chevron-right] size-4" />
             </template>
           </IconTextButton>
           <IconTextButton label="Previous" type="secondary" size="md" @click="() => {}">
             <template #icon>
-              <ChevronLeft :size="16" />
+              <i class="icon-[lucide--chevron-left] size-4" />
             </template>
           </IconTextButton>
           <IconTextButton label="Save File" type="primary" size="md" @click="() => {}">
             <template #icon>
-              <Save :size="16" />
+              <i class="icon-[lucide--save] size-4" />
             </template>
           </IconTextButton>
         </div>

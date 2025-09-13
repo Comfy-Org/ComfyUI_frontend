@@ -1,5 +1,5 @@
 <template>
-  <BaseWidgetLayout :content-title="$t('Checkpoints')">
+  <BaseModalLayout :content-title="$t('Checkpoints')">
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
@@ -12,7 +12,7 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" class="max-w-[384px]" />
+      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
     </template>
 
     <template #header-right-area>
@@ -56,7 +56,7 @@
     </template>
 
     <template #contentFilter>
-      <div class="relative px-6 pt-2 pb-4 flex gap-2">
+      <div class="relative px-6 pb-4 flex gap-2">
         <MultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
@@ -87,14 +87,8 @@
 
     <template #content>
       <!-- Card Examples -->
-      <div class="flex flex-wrap gap-2">
-        <CardContainer
-          v-for="i in 100"
-          :key="i"
-          ratio="square"
-          :max-width="480"
-          :min-width="230"
-        >
+      <div :style="gridStyle">
+        <CardContainer v-for="i in 100" :key="i" ratio="square">
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
@@ -124,22 +118,17 @@
           </template>
         </CardContainer>
       </div>
-      <!-- </div> -->
     </template>
 
     <template #rightPanel>
       <RightSidePanel></RightSidePanel>
     </template>
-  </BaseWidgetLayout>
+  </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
-import { provide, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import DownloadIcon from '~icons/lucide/download'
-import Grid3x3Icon from '~icons/lucide/grid-3-x-3'
-import LayersIcon from '~icons/lucide/layers'
-import TagIcon from '~icons/lucide/tag'
 
 import IconButton from '@/components/button/IconButton.vue'
 import IconTextButton from '@/components/button/IconTextButton.vue'
@@ -151,11 +140,12 @@ import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
-import BaseWidgetLayout from '@/components/widget/layout/BaseWidgetLayout.vue'
+import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
 import { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createGridStyle } from '@/utils/gridUtil'
 
 const frameworkOptions = ref([
   { name: 'Vue', value: 'vue' },
@@ -177,20 +167,20 @@ const sortOptions = ref([
 ])
 
 const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-  { id: 'installed', label: 'Installed', icon: DownloadIcon },
+  { id: 'installed', label: 'Installed', icon: 'icon-[lucide--download]' },
   {
     title: 'TAGS',
     items: [
-      { id: 'tag-sd15', label: 'SD 1.5', icon: TagIcon },
-      { id: 'tag-sdxl', label: 'SDXL', icon: TagIcon },
-      { id: 'tag-utility', label: 'Utility', icon: TagIcon }
+      { id: 'tag-sd15', label: 'SD 1.5', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-sdxl', label: 'SDXL', icon: 'icon-[lucide--tag]' },
+      { id: 'tag-utility', label: 'Utility', icon: 'icon-[lucide--tag]' }
     ]
   },
   {
     title: 'CATEGORIES',
     items: [
-      { id: 'cat-models', label: 'Models', icon: LayersIcon },
-      { id: 'cat-nodes', label: 'Nodes', icon: Grid3x3Icon }
+      { id: 'cat-models', label: 'Models', icon: 'icon-[lucide--layers]' },
+      { id: 'cat-nodes', label: 'Nodes', icon: 'icon-[lucide--grid-3x3]' }
     ]
   }
 ])
@@ -210,6 +200,8 @@ const selectedProjects = ref([])
 const selectedSort = ref<string>('popular')
 
 const selectedNavItem = ref<string | null>('installed')
+
+const gridStyle = computed(() => createGridStyle())
 
 watch(searchText, (newQuery) => {
   console.log('searchText:', searchText.value, newQuery)

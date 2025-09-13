@@ -37,7 +37,7 @@ const visible = computed(() => position.value !== 'Disabled')
 const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0

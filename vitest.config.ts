@@ -25,7 +25,14 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'json', 'html']
     },
-    exclude: ['src/lib/litegraph/test/**']
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
+      'src/lib/litegraph/test/**'
+    ]
   },
   resolve: {
     alias: {
