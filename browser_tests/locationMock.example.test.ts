@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 import { LocationMock } from './helpers/locationMock'
 
@@ -66,9 +67,15 @@ test.describe('Location Mock Example', () => {
     await locationMock.reload()
 
     // Verify mock methods were called
-    expect(consoleMessages.some((msg) => msg.includes('location.assign'))).toBeTruthy()
-    expect(consoleMessages.some((msg) => msg.includes('location.replace'))).toBeTruthy()
-    expect(consoleMessages.some((msg) => msg.includes('location.reload'))).toBeTruthy()
+    expect(
+      consoleMessages.some((msg) => msg.includes('location.assign'))
+    ).toBeTruthy()
+    expect(
+      consoleMessages.some((msg) => msg.includes('location.replace'))
+    ).toBeTruthy()
+    expect(
+      consoleMessages.some((msg) => msg.includes('location.reload'))
+    ).toBeTruthy()
   })
 
   test('should work with Happy DOM globals', async ({ page, comfyPage }) => {

@@ -1,4 +1,3 @@
-import './setup-browser-globals.js'
 import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
@@ -7,6 +6,7 @@ import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
+import './setup-browser-globals.js'
 
 const localePath = './src/locales/en/main.json'
 const commandsPath = './src/locales/en/commands.json'
