@@ -1,12 +1,12 @@
 // Setup browser globals before any other imports that might use them
-import './setup-browser-globals.js'
-
 import * as fs from 'fs'
+
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
 import type { ComfyApi } from '../src/scripts/api'
 import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
+import './setup-browser-globals.js'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
@@ -19,15 +19,15 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     })
   })
 
-  // // Mock the object_info API endpoint to return empty node definitions
-  // // This allows the script to run without a ComfyUI backend
-  await comfyPage.page.route('**/api/object_info', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({})
-    })
-  })
+  // Don't mock the object_info API endpoint - let it hit the actual backend
+  // Comment out the mock to use real backend data
+  // await comfyPage.page.route('**/api/object_info', async (route) => {
+  //   await route.fulfill({
+  //     status: 200,
+  //     contentType: 'application/json',
+  //     body: JSON.stringify({})
+  //   })
+  // })
 
   const nodeDefs: ComfyNodeDefImpl[] = (
     Object.values(
