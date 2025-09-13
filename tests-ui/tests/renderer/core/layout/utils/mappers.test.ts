@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
-import type { NodeLayout } from '@/renderer/core/layout/types'
 import {
   NODE_LAYOUT_DEFAULTS,
+  type NodeLayoutMap,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
 
@@ -19,7 +19,7 @@ describe('mappers', () => {
     }
 
     const doc = new Y.Doc()
-    const ynode = doc.getMap('node') as Y.Map<NodeLayout[keyof NodeLayout]>
+    const ynode = doc.getMap('node') as NodeLayoutMap
     ynode.set('id', layout.id)
     ynode.set('position', layout.position)
     ynode.set('size', layout.size)
@@ -33,7 +33,7 @@ describe('mappers', () => {
 
   it('yNodeToLayout applies defaults for missing fields', () => {
     const doc = new Y.Doc()
-    const ynode = doc.getMap('node') as Y.Map<NodeLayout[keyof NodeLayout]>
+    const ynode = doc.getMap('node') as NodeLayoutMap
     // Don't set any fields - they should all use defaults
 
     const back = yNodeToLayout(ynode)
