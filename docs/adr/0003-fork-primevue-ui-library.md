@@ -4,7 +4,7 @@ Date: 2025-08-27
 
 ## Status
 
-Proposed
+Rejected
 
 ## Context
 
@@ -12,7 +12,7 @@ ComfyUI's frontend requires modifications to PrimeVue components that cannot be 
 
 **Screen Coordinate Hit-Testing Conflicts:**
 - PrimeVue components use `getBoundingClientRect()` for screen coordinate calculations that don't account for CSS transforms
-- The Slider component's `updateDomData()` method (lines 89-94) captures screen coordinates, then `setValue()` (lines 96-110) calculates positions using raw `pageX/pageY` coordinates against these untransformed bounds
+- The Slider component directly uses raw `pageX/pageY` coordinates ([lines 102-103](https://github.com/primefaces/primevue/blob/master/packages/primevue/src/slider/Slider.vue#L102-L103)) without transform-aware positioning
 - This breaks interaction in transformed coordinate spaces where screen coordinates don't match logical element positions
 
 **Virtual Canvas Scroll Interference:**
@@ -32,43 +32,31 @@ ComfyUI's frontend requires modifications to PrimeVue components that cannot be 
 
 ## Decision
 
-We will fork PrimeVue as a workspace package within our existing monorepo using git subtree with `--squash` flag.
+We will **NOT** fork PrimeVue. After evaluation, forking was determined to be unnecessarily complex and costly.
 
-**Implementation:**
-1. Add PrimeVue fork to `packages/@comfyui/primevue/` using git subtree
-2. Use `--squash` flag to avoid polluting contributor graph with upstream history  
-3. Link via pnpm workspace: `"@comfyui/primevue": "workspace:*"`
-4. Mark vendored directory in `.gitattributes` with `linguist-vendored`
+**Rationale for Rejection:**
 
-**Rationale:**
-Following the same pattern established in [ADR-0001](0001-merge-litegraph-into-frontend.md) (except with `squash` this time), this approach allows seamless editing within the monorepo while preserving the ability to sync upstream changes when needed.
+- **Significant Implementation Complexity**: PrimeVue is structured as a monorepo ([primefaces/primevue](https://github.com/primefaces/primevue)) with significant code in a separate monorepo ([PrimeUIX](https://github.com/primefaces/primeuix)). Forking would require importing both repositories whole and selectively pruning or exempting components from our workspace tooling, adding substantial complexity.
+
+- **Alternative Solutions Available**: The modifications we identified (e.g., scroll interference issues, coordinate system conflicts) have less costly solutions that don't require maintaining a full fork. For example, coordinate issues could be addressed through event interception and synthetic event creation with scaled values.
+
+- **Maintenance Burden**: Ongoing maintenance and upgrades would be very painful, requiring manual conflict resolution and keeping pace with upstream changes across multiple repositories.
+
+- **Limited Tooling Support**: There isn't adequate tooling that provides the granularity needed to cleanly manage a PrimeVue fork within our existing infrastructure.
 
 ## Consequences
 
-### Positive
+### Alternative Approach
 
-- **Atomic commits**: Frontend and UI changes can be committed together
-- **Hot reload**: Development workflow remains fast with immediate feedback  
-- **Technical control**: Can modify coordinate calculation methods and scrollIntoView behavior for canvas compatibility
-- **Consistent contributor graph**: Squashed commits prevent upstream authors from appearing in our repository statistics
-- **Upstream sync capability**: Can pull upstream changes using `git subtree pull --squash` (though rarely needed based on update history)
-- **No publishing overhead**: No need to coordinate npm releases across repositories
-- **Future-proofed**: Accommodates ongoing interaction system requirements as canvas architecture evolves
-
-### Negative
-
-- **Repository size increase**: Monorepo will grow with PrimeVue source code
-- **Manual conflict resolution**: Upstream syncs may require manual conflict resolution due to squashed history 
-- **Maintenance responsibility**: Must maintain PrimeVue code directly instead of relying on upstream
-- **Upstream contribution difficulty**: Cannot easily contribute changes back to PrimeVue upstream
-- **Developer onboarding**: All developers need to understand the full monorepo structure
+- **Use PrimeVue as External Dependency**: Continue using PrimeVue as a standard npm dependency
+- **Targeted Workarounds**: Implement specific solutions for identified issues (coordinate system conflicts, scroll interference) without forking the entire library
+- **Selective Component Replacement**: Use libraries like shadcn/ui to replace specific problematic PrimeVue components and adjust them to match our design system
+- **Upstream Engagement**: Continue engaging with PrimeVue community for feature requests and bug reports
+- **Maintain Flexibility**: Preserve ability to upgrade PrimeVue versions without fork maintenance overhead
 
 ## Notes
 
-- Will use same git subtree approach as LiteGraph merge in ADR-0001
-- PrimeVue upstream sync commands:
-  ```bash
-  git subtree pull --prefix=packages/@comfyui/primevue primevue-upstream main --squash
-  ```
-- This decision supports the monorepo structure outlined in [ADR-0002](0002-monorepo-conversion.md)
-- Primary focus on coordinate system compatibility and canvas interaction requirements
+- Technical issues documented in the Context section remain valid concerns
+- Solutions will be pursued through targeted fixes rather than wholesale forking
+- Future re-evaluation possible if PrimeVue's architecture significantly changes or if alternative tooling becomes available
+- This decision prioritizes maintainability and development velocity over maximum customization control
