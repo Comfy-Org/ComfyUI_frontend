@@ -3,7 +3,7 @@
  *
  * Principles:
  * 1. Query DOM directly using data attributes (no cache to maintain)
- * 2. Set display none on element to avoid cascade resolution overheead
+ * 2. Set display none on element to avoid cascade resolution overhead
  * 3. Only run when transform changes (event driven)
  */
 import { type Ref, computed } from 'vue'
@@ -51,18 +51,18 @@ export function useViewportCulling(
     // Update each element's visibility
     for (const element of nodeElements) {
       const nodeId = element.getAttribute('data-node-id')
-      if (!nodeId) return
+      if (!nodeId) continue
 
       const node = manager.getNode(nodeId)
-      if (!node) return
+      if (!node) continue
 
-      // Calculate if in viewport
+      // Calculate if node is outside viewport
       const screen_x = (node.pos[0] + ds.offset[0]) * ds.scale
       const screen_y = (node.pos[1] + ds.offset[1]) * ds.scale
       const screen_width = node.size[0] * ds.scale
       const screen_height = node.size[1] * ds.scale
 
-      const isVisible =
+      const isNodeOutsideiewport =
         screen_x + screen_width < -margin ||
         screen_x > viewport_width + margin ||
         screen_y + screen_height < -margin ||
@@ -70,7 +70,7 @@ export function useViewportCulling(
 
       // Setting display none directly avoid potential cascade resolution
       if (element instanceof HTMLElement) {
-        element.style.display = !isVisible ? '' : 'none'
+        element.style.display = isNodeOutsideiewport ? 'none' : ''
       }
     }
   }
