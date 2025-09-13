@@ -19,15 +19,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     })
   })
 
-  // Don't mock the object_info API endpoint - let it hit the actual backend
-  // Comment out the mock to use real backend data
-  // await comfyPage.page.route('**/api/object_info', async (route) => {
-  //   await route.fulfill({
-  //     status: 200,
-  //     contentType: 'application/json',
-  //     body: JSON.stringify({})
-  //   })
-  // })
+  // Note: Don't mock the object_info API endpoint - let it hit the actual backend
 
   const nodeDefs: ComfyNodeDefImpl[] = (
     Object.values(

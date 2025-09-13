@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref } from 'vue'
 
 import { useNodePacks } from '@/composables/nodePack/useNodePacks'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { type ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
