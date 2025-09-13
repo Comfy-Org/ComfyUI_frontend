@@ -2,7 +2,6 @@ import * as Y from 'yjs'
 
 import type { NodeLayout } from '@/renderer/core/layout/types'
 
-// Named type for performance optimization (TypeScript wiki recommendation)
 export type NodeLayoutMap = Y.Map<NodeLayout[keyof NodeLayout]>
 
 export const NODE_LAYOUT_DEFAULTS: NodeLayout = {
