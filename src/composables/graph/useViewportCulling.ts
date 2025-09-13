@@ -68,7 +68,7 @@ export function useViewportCulling(
         screen_y + screen_height < -margin ||
         screen_y > viewport_height + margin
 
-      // Setting hidden directly avoid cascade resolution
+      // Setting display none directly avoid potential cascade resolution
       if (element instanceof HTMLElement) {
         element.style.display = !isVisible ? '' : 'none'
       }
