@@ -40,7 +40,7 @@
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <VueGraphNode
-      v-for="nodeData in nodesToRender"
+      v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
       :position="nodePositions.get(nodeData.id)"
@@ -183,12 +183,12 @@ const nodeEventHandlers = useNodeEventHandlers(vueNodeLifecycle.nodeManager)
 
 const nodePositions = vueNodeLifecycle.nodePositions
 const nodeSizes = vueNodeLifecycle.nodeSizes
-const nodesToRender = viewportCulling.nodesToRender
+const allNodes = viewportCulling.allNodes
 
 const handleTransformUpdate = () => {
-  viewportCulling.handleTransformUpdate(
-    vueNodeLifecycle.detectChangesInRAF.value
-  )
+  viewportCulling.handleTransformUpdate()
+  // TODO: Fix paste position sync in separate PR
+  vueNodeLifecycle.detectChangesInRAF.value()
 }
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
 const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
