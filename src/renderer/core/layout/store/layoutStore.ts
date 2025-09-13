@@ -56,8 +56,6 @@ type YEventChange = {
 
 const logger = log.getLogger('LayoutStore')
 
-// Constants moved to utils (REROUTE_RADIUS)
-
 // Utility functions
 function asRerouteId(id: string | number): RerouteId {
   return Number(id)
@@ -66,8 +64,6 @@ function asRerouteId(id: string | number): RerouteId {
 function asLinkId(id: string | number): LinkId {
   return Number(id)
 }
-
-// Node layout mapping moved to utils/mappers
 
 interface LinkData {
   id: LinkId
