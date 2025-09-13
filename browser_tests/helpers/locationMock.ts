@@ -74,12 +74,14 @@ export class LocationMock {
   /**
    * Update the mock location during test execution
    */
-  async updateLocation(updates: Partial<{
-    href: string
-    pathname: string
-    search: string
-    hash: string
-  }>) {
+  async updateLocation(
+    updates: Partial<{
+      href: string
+      pathname: string
+      search: string
+      hash: string
+    }>
+  ) {
     await this.page.evaluate((updates) => {
       const location = window.location as any
       Object.keys(updates).forEach((key) => {
