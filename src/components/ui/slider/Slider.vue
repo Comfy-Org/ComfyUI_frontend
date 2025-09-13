@@ -49,7 +49,8 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       :class="
         cn(
           'bg-node-stroke relative grow overflow-hidden rounded-full',
-          'cursor-pointer',
+          'cursor-pointer overflow-visible',
+          `before:absolute before:-inset-2 before:block before:bg-transparent before:z-10`,
           'data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-full',
           'data-[orientation=vertical]:h-full data-[orientation=vertical]:w-0.5'
         )
