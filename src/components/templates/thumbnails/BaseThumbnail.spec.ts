@@ -51,8 +51,9 @@ describe('BaseThumbnail', () => {
     vm.error = true
     await nextTick()
 
-    expect(wrapper.find('.pi-file').exists()).toBe(true)
-    expect(wrapper.find('.transform-gpu').exists()).toBe(false)
+    expect(
+      wrapper.find('img[src="/assets/images/default-template.png"]').exists()
+    ).toBe(true)
   })
 
   it('applies transition classes to content', () => {

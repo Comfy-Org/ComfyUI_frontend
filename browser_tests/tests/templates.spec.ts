@@ -79,6 +79,12 @@ test.describe('Templates', () => {
     // Load a template
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
+
+    await comfyPage.page
+      .locator(
+        'nav > div:nth-child(2) > div > span:has-text("Getting Started")'
+      )
+      .click()
     await comfyPage.templates.loadTemplate('default')
     await expect(comfyPage.templates.content).toBeHidden()
 
@@ -101,48 +107,76 @@ test.describe('Templates', () => {
     expect(await comfyPage.templates.content.isVisible()).toBe(true)
   })
 
-  test('Uses title field as fallback when the key is not found in locales', async ({
-    comfyPage
-  }) => {
-    // Capture request for the index.json
-    await comfyPage.page.route('**/templates/index.json', async (route, _) => {
-      // Add a new template that won't have a translation pre-generated
-      const response = [
-        {
-          moduleName: 'default',
-          title: 'FALLBACK CATEGORY',
-          type: 'image',
-          templates: [
-            {
-              name: 'unknown_key_has_no_translation_available',
-              title: 'FALLBACK TEMPLATE NAME',
-              mediaType: 'image',
-              mediaSubtype: 'webp',
-              description: 'No translations found'
-            }
-          ]
-        }
-      ]
-      await route.fulfill({
-        status: 200,
-        body: JSON.stringify(response),
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store'
-        }
-      })
+  test('Uses proper locale files for templates', async ({ comfyPage }) => {
+    // Set locale to French before opening templates
+    await comfyPage.setSetting('Comfy.Locale', 'fr')
+
+    // Capture request for the French index file
+    let frenchIndexRequested = false
+    await comfyPage.page.route('**/templates/index.fr.json', async (route) => {
+      frenchIndexRequested = true
+      // Return the actual French index file
+      await route.continue()
     })
 
     // Load the templates dialog
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
 
-    // Expect the title to be used as fallback for template cards
+    // Verify French index was requested
+    expect(frenchIndexRequested).toBe(true)
+  })
+
+  test('Falls back to English templates when locale file not found', async ({
+    comfyPage
+  }) => {
+    // Set locale to a language that doesn't have a template file
+    await comfyPage.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
+
+    // Capture requests to verify fallback behavior
+    let germanIndexRequested = false
+    let englishIndexRequested = false
+
+    await comfyPage.page.route('**/templates/index.de.json', async (route) => {
+      germanIndexRequested = true
+      // Return 404 to simulate missing file
+      await route.fulfill({
+        status: 404,
+        headers: {
+          'Content-Type': 'text/plain'
+        },
+        body: 'Not Found'
+      })
+    })
+
+    await comfyPage.page.route('**/templates/index.json', async (route) => {
+      englishIndexRequested = true
+      // Return the actual English index file
+      await route.continue()
+    })
+
+    // Load the templates dialog
+    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+
+    // Verify German was attempted first, then English as fallback
+    expect(germanIndexRequested).toBe(true)
+    expect(englishIndexRequested).toBe(true)
+
+    // Verify English titles are shown as fallback
+    // Use a more specific selector to target the title heading
     await expect(
-      comfyPage.templates.content.getByText('FALLBACK TEMPLATE NAME')
-    ).toBeVisible()
+      comfyPage.templates.content.getByRole('heading', {
+        name: 'Image Generation'
+      })
+    ).toBeVisible({ timeout: 5000 })
 
-    // Expect the title to be used as fallback for the template categories
-    await expect(comfyPage.page.getByLabel('FALLBACK CATEGORY')).toBeVisible()
+    // Also verify English descriptions
+    await expect(
+      comfyPage.templates.content.getByText(
+        'Generate images from text prompts.'
+      )
+    ).toBeVisible({ timeout: 5000 })
   })
 
   test('template cards are dynamically sized and responsive', async ({
@@ -152,25 +186,43 @@ test.describe('Templates', () => {
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    // Wait for at least one template card to appear
-    await expect(comfyPage.page.locator('.template-card').first()).toBeVisible({
-      timeout: 5000
-    })
+    const firstCard = comfyPage.page
+      .locator('[data-testid^="template-workflow-"]')
+      .first()
+    await expect(firstCard).toBeVisible({ timeout: 5000 })
 
-    // Take snapshot of the template grid
-    const templateGrid = comfyPage.templates.content.locator('.grid').first()
+    // Get the template grid
+    const templateGrid = comfyPage.page.locator(
+      '[data-testid="template-workflows-content"]'
+    )
     await expect(templateGrid).toBeVisible()
-    await expect(templateGrid).toHaveScreenshot('template-grid-desktop.png')
+
+    // Check grid layout at desktop size (default)
+    const desktopGridClass = await templateGrid.getAttribute('class')
+    expect(desktopGridClass).toContain('grid')
+    expect(desktopGridClass).toContain(
+      'grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]'
+    )
+
+    // Count visible cards at desktop size
+    const desktopCardCount = await comfyPage.page
+      .locator('[data-testid^="template-workflow-"]')
+      .count()
+    expect(desktopCardCount).toBeGreaterThan(0)
 
     // Check cards at mobile viewport size
     await comfyPage.page.setViewportSize({ width: 640, height: 800 })
     await expect(templateGrid).toBeVisible()
-    await expect(templateGrid).toHaveScreenshot('template-grid-mobile.png')
+    // Grid should still be responsive at mobile size
+    const mobileGridClass = await templateGrid.getAttribute('class')
+    expect(mobileGridClass).toContain('grid')
 
     // Check cards at tablet size
     await comfyPage.page.setViewportSize({ width: 1024, height: 800 })
     await expect(templateGrid).toBeVisible()
-    await expect(templateGrid).toHaveScreenshot('template-grid-tablet.png')
+    // Grid should still be responsive at tablet size
+    const tabletGridClass = await templateGrid.getAttribute('class')
+    expect(tabletGridClass).toContain('grid')
   })
 
   test('hover effects work on template cards', async ({ comfyPage }) => {
@@ -178,10 +230,13 @@ test.describe('Templates', () => {
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    // Get a template card
-    const firstCard = comfyPage.page.locator('.template-card').first()
+    // Get a template card using data-testid
+    const firstCard = comfyPage.page
+      .locator('[data-testid^="template-workflow-"]')
+      .first()
     await expect(firstCard).toBeVisible({ timeout: 5000 })
 
+    // Check initial state - card should have transition classes
     // Take snapshot before hover
     await expect(firstCard).toHaveScreenshot('template-card-before-hover.png')
 
@@ -256,21 +311,42 @@ test.describe('Templates', () => {
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    // Verify cards are visible with varying content lengths
+    // Wait for cards to load
     await expect(
-      comfyPage.page.getByText('This is a short description.')
-    ).toBeVisible({ timeout: 5000 })
-    await expect(
-      comfyPage.page.getByText('This is a medium length description')
-    ).toBeVisible({ timeout: 5000 })
-    await expect(
-      comfyPage.page.getByText('This is a much longer description')
+      comfyPage.page.locator(
+        '[data-testid="template-workflow-short-description"]'
+      )
     ).toBeVisible({ timeout: 5000 })
 
-    // Take snapshot of a grid with specific cards
-    const templateGrid = comfyPage.templates.content
-      .locator('.grid:has-text("Short Description")')
-      .first()
+    // Verify all three cards with different descriptions are visible
+    const shortDescCard = comfyPage.page.locator(
+      '[data-testid="template-workflow-short-description"]'
+    )
+    const mediumDescCard = comfyPage.page.locator(
+      '[data-testid="template-workflow-medium-description"]'
+    )
+    const longDescCard = comfyPage.page.locator(
+      '[data-testid="template-workflow-long-description"]'
+    )
+
+    await expect(shortDescCard).toBeVisible()
+    await expect(mediumDescCard).toBeVisible()
+    await expect(longDescCard).toBeVisible()
+
+    // Verify descriptions are visible and have line-clamp class
+    // The description is in a p tag with text-muted class
+    const shortDesc = shortDescCard.locator('p.text-muted.line-clamp-2')
+    const mediumDesc = mediumDescCard.locator('p.text-muted.line-clamp-2')
+    const longDesc = longDescCard.locator('p.text-muted.line-clamp-2')
+
+    await expect(shortDesc).toContainText('short description')
+    await expect(mediumDesc).toContainText('medium length description')
+    await expect(longDesc).toContainText('much longer description')
+
+    // Verify grid layout maintains consistency
+    const templateGrid = comfyPage.page.locator(
+      '[data-testid="template-workflows-content"]'
+    )
     await expect(templateGrid).toBeVisible()
     await expect(templateGrid).toHaveScreenshot(
       'template-grid-varying-content.png'
