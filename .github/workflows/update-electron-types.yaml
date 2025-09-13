@@ -40,7 +40,7 @@ jobs:
       - name: Get new version
         id: get-version
         run: |
-          NEW_VERSION=$(pnpm list @comfyorg/comfyui-electron-types --json --depth=0 | jq -r '.[0].version')
+          NEW_VERSION=$(pnpm list @comfyorg/comfyui-electron-types --json --depth=0 | jq -r '.[0].dependencies."@comfyorg/comfyui-electron-types".version')
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
