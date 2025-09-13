@@ -1313,7 +1313,6 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   // Helper methods
-  // Node layout mappers moved to utils/mappers
 
   private notifyChange(change: LayoutChange): void {
     this.changeListeners.forEach((listener) => {
