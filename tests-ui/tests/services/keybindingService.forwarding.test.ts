@@ -65,20 +65,14 @@ function createTestKeyboardEvent(
 
 describe('keybindingService - Event Forwarding', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
-  let mockCommandExecute: ReturnType<typeof vi.fn>
-  let mockProcessKey: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
 
-    // Get reference to mocked function
-    mockProcessKey = vi.mocked(app.canvas.processKey)
-
     // Mock command store execute
-    mockCommandExecute = vi.fn()
     const commandStore = useCommandStore()
-    commandStore.execute = mockCommandExecute
+    commandStore.execute = vi.fn()
 
     // Reset dialog store mock to empty
     vi.mocked(useDialogStore).mockReturnValue({
@@ -95,9 +89,9 @@ describe('keybindingService - Event Forwarding', () => {
     await keybindingService.keybindHandler(event)
 
     // Should forward to canvas processKey
-    expect(mockProcessKey).toHaveBeenCalledWith(event)
+    expect(vi.mocked(app.canvas.processKey)).toHaveBeenCalledWith(event)
     // Should not execute any command
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
   it('should forward Backspace key to canvas when no keybinding exists', async () => {
@@ -105,8 +99,8 @@ describe('keybindingService - Event Forwarding', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(mockProcessKey).toHaveBeenCalledWith(event)
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(app.canvas.processKey)).toHaveBeenCalledWith(event)
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
   it('should not forward Delete key when typing in input field', async () => {
@@ -116,8 +110,8 @@ describe('keybindingService - Event Forwarding', () => {
     await keybindingService.keybindHandler(event)
 
     // Should not forward to canvas when in input field
-    expect(mockProcessKey).not.toHaveBeenCalled()
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
   it('should not forward Delete key when typing in textarea', async () => {
@@ -126,8 +120,8 @@ describe('keybindingService - Event Forwarding', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(mockProcessKey).not.toHaveBeenCalled()
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
   it('should not forward Delete key when canvas processKey is not available', async () => {
@@ -139,7 +133,7 @@ describe('keybindingService - Event Forwarding', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
 
     // Restore processKey for other tests
     vi.mocked(app.canvas).processKey = originalProcessKey
@@ -154,7 +148,7 @@ describe('keybindingService - Event Forwarding', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
 
     // Restore canvas for other tests
     vi.mocked(app).canvas = originalCanvas
@@ -166,8 +160,8 @@ describe('keybindingService - Event Forwarding', () => {
     await keybindingService.keybindHandler(event)
 
     // Should not forward Enter key
-    expect(mockProcessKey).not.toHaveBeenCalled()
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
   it('should not forward when modifier keys are pressed', async () => {
@@ -176,7 +170,7 @@ describe('keybindingService - Event Forwarding', () => {
     await keybindingService.keybindHandler(event)
 
     // Should not forward when modifiers are pressed
-    expect(mockProcessKey).not.toHaveBeenCalled()
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(vi.mocked(app.canvas.processKey)).not.toHaveBeenCalled()
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 })
