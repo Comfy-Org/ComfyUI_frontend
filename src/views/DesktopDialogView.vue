@@ -24,6 +24,8 @@ const message = computed(() => (route.query.message as string) || '')
 </script>
 
 <style scoped>
+@reference '../assets/css/style.css';
+
 .desktop-dialog {
   @apply w-screen h-screen flex items-center justify-center;
   background: #1a1a1a;
