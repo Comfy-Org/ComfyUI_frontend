@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 
 const DEFAULT_BANNER = '/assets/images/fallback-gradient-avatar.svg'
 

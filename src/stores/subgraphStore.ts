@@ -24,7 +24,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { UserFile } from '@/stores/userFileStore'
 import {
   ComfyWorkflow,
-  LoadedComfyWorkflow,
+  type LoadedComfyWorkflow,
   useWorkflowStore
 } from '@/stores/workflowStore'
 

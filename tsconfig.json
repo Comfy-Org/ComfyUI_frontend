@@ -6,6 +6,7 @@
     "lib": ["ES2023", "ES2023.Array", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "incremental": true,
+    "verbatimModuleSyntax": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",

@@ -43,7 +43,7 @@ import FormImageUpload from '@/components/common/FormImageUpload.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
-import { FormItem } from '@/types/settingTypes'
+import { type FormItem } from '@/types/settingTypes'
 
 const formValue = defineModel<any>('formValue')
 const props = defineProps<{

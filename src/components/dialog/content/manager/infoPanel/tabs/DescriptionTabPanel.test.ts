@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 
 import DescriptionTabPanel from './DescriptionTabPanel.vue'
 

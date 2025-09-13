@@ -2,11 +2,11 @@ import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
 import {
-  SettingTreeNode,
+  type SettingTreeNode,
   getSettingInfo,
   useSettingStore
 } from '@/stores/settingStore'
-import { ISettingGroup, SettingParams } from '@/types/settingTypes'
+import { type ISettingGroup, type SettingParams } from '@/types/settingTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export function useSettingSearch() {

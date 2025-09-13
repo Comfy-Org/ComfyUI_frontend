@@ -10,6 +10,7 @@ import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
+import { LocationMock } from '../helpers/locationMock'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
@@ -144,6 +145,7 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly locationMock: LocationMock
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -172,6 +174,7 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
+    this.locationMock = new LocationMock(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -272,11 +275,20 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
-    mockReleases = true
+    mockReleases = true,
+    mockLocation = false
   }: {
     clearStorage?: boolean
     mockReleases?: boolean
+    mockLocation?: boolean | Parameters<LocationMock['setupLocationMock']>[0]
   } = {}) {
+    // Setup location mock if requested
+    if (mockLocation) {
+      const config =
+        typeof mockLocation === 'boolean' ? undefined : mockLocation
+      await this.locationMock.setupLocationMock(config)
+    }
+
     await this.goto()
 
     // Mock release endpoint to prevent changelog popups
@@ -1633,28 +1645,39 @@ export const comfyPageFixture = base.extend<{
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
-    const { parallelIndex } = testInfo
-    const username = `playwright-test-${parallelIndex}`
-    const userId = await comfyPage.setupUser(username)
-    comfyPage.userIds[parallelIndex] = userId
+    const { parallelIndex, workerIndex, title } = testInfo
+
+    // Skip user setup for i18n collection tests
+    const isI18nTest = testInfo.file?.includes('collect-i18n')
+
+    let userId: string | undefined
+    if (!isI18nTest) {
+      // Use a combination of workerIndex and test title hash for unique usernames
+      const testHash = title.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8)
+      const username = `playwright-test-${workerIndex}-${testHash}`
+      userId = await comfyPage.setupUser(username)
+      comfyPage.userIds[parallelIndex] = userId!
+    }
 
     try {
-      await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Disabled',
-        // Hide canvas menu/info/selection toolbox by default.
-        'Comfy.Graph.CanvasInfo': false,
-        'Comfy.Graph.CanvasMenu': false,
-        'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
-        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
-        'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
-      })
+      if (!isI18nTest && userId) {
+        await comfyPage.setupSettings({
+          'Comfy.UseNewMenu': 'Disabled',
+          // Hide canvas menu/info/selection toolbox by default.
+          'Comfy.Graph.CanvasInfo': false,
+          'Comfy.Graph.CanvasMenu': false,
+          'Comfy.Canvas.SelectionToolbox': false,
+          // Hide all badges by default.
+          'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+          'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+          // Disable tooltips by default to avoid flakiness.
+          'Comfy.EnableTooltips': false,
+          'Comfy.userId': userId,
+          // Set tutorial completed to true to avoid loading the tutorial workflow.
+          'Comfy.TutorialCompleted': true,
+          'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
+        })
+      }
     } catch (e) {
       console.error(e)
     }
@@ -1673,6 +1696,7 @@ const makeMatcher = function <T>(
   type: string
 ) {
   return async function (
+    this: any,
     node: NodeReference,
     options?: { timeout?: number; intervals?: number[] }
   ) {

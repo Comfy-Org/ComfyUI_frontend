@@ -100,9 +100,9 @@ import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 import {
-  CameraType,
-  MaterialMode,
-  UpDirection
+  type CameraType,
+  type MaterialMode,
+  type UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'

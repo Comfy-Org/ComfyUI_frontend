@@ -1,6 +1,5 @@
+import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import {
-  NavigationGuardNext,
-  RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
   createWebHistory

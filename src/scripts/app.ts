@@ -19,11 +19,13 @@ import type {
   NodeError,
   ResultItem
 } from '@/schemas/apiSchema'
+import type {
+  ComfyWorkflowJSON,
+  ModelFile,
+  NodeId
+} from '@/schemas/comfyWorkflowSchema'
 import {
-  ComfyApiWorkflow,
-  type ComfyWorkflowJSON,
-  type ModelFile,
-  type NodeId,
+  type ComfyApiWorkflow,
   isSubgraphDefinition
 } from '@/schemas/comfyWorkflowSchema'
 import {
@@ -60,9 +62,9 @@ import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { ExtensionManager } from '@/types/extensionTypes'
+import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { type ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 import {

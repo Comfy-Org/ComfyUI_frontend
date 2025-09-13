@@ -4,11 +4,8 @@ import { fromZodError } from 'zod-validation-error'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  Colors,
-  type Palette,
-  paletteSchema
-} from '@/schemas/colorPaletteSchema'
+import type { Palette } from '@/schemas/colorPaletteSchema'
+import { type Colors, paletteSchema } from '@/schemas/colorPaletteSchema'
 import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

@@ -8,7 +8,7 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
-import {
+import type {
   EventManagerInterface,
   LoaderManagerInterface,
   ModelManagerInterface

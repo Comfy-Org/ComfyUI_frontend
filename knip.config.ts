@@ -18,7 +18,16 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@trivago/prettier-plugin-sort-imports',
+    // Babel dependencies used in playwright.i18n.config.ts
+    '@babel/plugin-transform-modules-commonjs',
+    '@babel/plugin-transform-typescript',
+    'babel-helper-vue-jsx-merge-props',
+    'babel-plugin-syntax-jsx',
+    'babel-plugin-transform-import-ignore',
+    'babel-plugin-transform-vue-jsx',
+    'babel-preset-env',
+    'babel-preset-typescript-vue3'
   ],
   ignore: [
     // Auto generated manager types

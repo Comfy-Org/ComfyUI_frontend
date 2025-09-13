@@ -1,0 +1,24 @@
+{
+  "presets": [
+    "@babel/preset-env",
+    [
+      "@babel/preset-typescript",
+      {
+        "allowDeclareFields": true,
+        "onlyRemoveTypeImports": true
+      }
+    ]
+  ],
+  "plugins": [
+    [
+      "babel-plugin-module-resolver",
+      {
+        "root": ["./"],
+        "alias": {
+          "@": "./src"
+        }
+      }
+    ],
+    "@vue/babel-plugin-jsx"
+  ]
+}

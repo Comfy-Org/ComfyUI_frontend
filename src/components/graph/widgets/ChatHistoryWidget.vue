@@ -56,7 +56,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import CopyButton from '@/components/graph/widgets/chatHistory/CopyButton.vue'
 import ResponseBlurb from '@/components/graph/widgets/chatHistory/ResponseBlurb.vue'
-import { ComponentWidget } from '@/scripts/domWidget'
+import { type ComponentWidget } from '@/scripts/domWidget'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const { widget, history = '[]' } = defineProps<{

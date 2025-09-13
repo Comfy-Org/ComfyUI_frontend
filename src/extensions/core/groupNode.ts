@@ -10,9 +10,9 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
-  ComfyLink,
-  ComfyNode,
-  ComfyWorkflowJSON
+  type ComfyLink,
+  type ComfyNode,
+  type ComfyWorkflowJSON
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
@@ -20,7 +20,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { ComfyExtension } from '@/types/comfy'
+import { type ComfyExtension } from '@/types/comfy'
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
 import { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'

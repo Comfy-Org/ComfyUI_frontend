@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 
 const {
   nodePacks,

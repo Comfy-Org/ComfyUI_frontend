@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 
 import {
-  LGraphNode,
+  type LGraphNode,
   Subgraph,
-  SubgraphNode
+  type SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import {
+import type {
   ExecutedWsMessage,
   ResultItem,
   ResultItemType

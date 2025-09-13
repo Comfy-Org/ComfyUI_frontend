@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
-import { AboutPageBadge } from '@/types/comfy'
+import { type AboutPageBadge } from '@/types/comfy'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
 import { useExtensionStore } from './extensionStore'

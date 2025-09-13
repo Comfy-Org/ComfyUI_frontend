@@ -39,7 +39,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import { type components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 
