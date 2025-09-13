@@ -1,5 +1,5 @@
 <template>
-  <div :class="containerClasses">
+  <div :class="containerClasses" :style="containerStyle">
     <slot name="top"></slot>
     <slot name="bottom"></slot>
   </div>
@@ -8,8 +8,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const { ratio = 'square' } = defineProps<{
-  ratio?: 'square' | 'portrait' | 'tallPortrait'
+const {
+  ratio = 'square',
+  maxWidth,
+  minWidth
+} = defineProps<{
+  maxWidth?: number
+  minWidth?: number
+  ratio?: 'square' | 'portrait' | 'tallPortrait' | 'none'
 }>()
 
 const containerClasses = computed(() => {
@@ -25,4 +31,13 @@ const containerClasses = computed(() => {
 
   return `${baseClasses} ${ratioClasses[ratio]}`
 })
+
+const containerStyle = computed(() =>
+  maxWidth || minWidth
+    ? {
+        maxWidth: `${maxWidth}px`,
+        minWidth: `${minWidth}px`
+      }
+    : {}
+)
 </script>

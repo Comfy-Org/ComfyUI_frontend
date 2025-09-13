@@ -141,7 +141,7 @@
             v-for="template in displayTemplates"
             :key="template.name"
             ref="cardRefs"
-            :ratio="undefined"
+            ratio="none"
             :max-width="300"
             :min-width="200"
             class="cursor-pointer transition-all duration-300 hover:scale-[1.02]"
