@@ -119,9 +119,9 @@ export function hsbToRgb({ h, s, b }: HSB): RGB {
   }
 
   return {
-    r: Math.round((rp + m) * 255),
-    g: Math.round((gp + m) * 255),
-    b: Math.round((bp + m) * 255)
+    r: Math.floor((rp + m) * 255),
+    g: Math.floor((gp + m) * 255),
+    b: Math.floor((bp + m) * 255)
   }
 }
 
