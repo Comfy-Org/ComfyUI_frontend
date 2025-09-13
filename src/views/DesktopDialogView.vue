@@ -29,7 +29,7 @@ const message = computed(() => (route.query.message as string) || '')
   width: 100%;
   height: 100%;
   background: #2d2d2d;
-  gap: 24px;
+  gap: 1.5rem; /* 24px - equivalent to gap-6 */
 }
 
 .dialog-title {
