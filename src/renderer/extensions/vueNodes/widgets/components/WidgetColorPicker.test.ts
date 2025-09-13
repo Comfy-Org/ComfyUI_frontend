@@ -166,7 +166,7 @@ describe('WidgetColorPicker Value Binding', () => {
         const wrapper = mountComponent(widget, color)
 
         const colorText = wrapper.find('span')
-        expect(colorText.text()).toBe(color)
+        expect.soft(colorText.text()).toBe(color)
       }
     })
 
