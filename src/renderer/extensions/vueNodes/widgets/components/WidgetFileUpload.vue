@@ -31,7 +31,7 @@
           icon="pi pi-folder"
           size="small"
           class="!w-8 !h-8"
-          :disabled="readonly"
+          :disabled="readonly || false"
           @click="triggerFileInput"
         />
       </div>
@@ -100,7 +100,7 @@
           icon="pi pi-folder"
           size="small"
           class="!w-8 !h-8"
-          :disabled="readonly"
+          :disabled="readonly || false"
           @click="triggerFileInput"
         />
       </div>
@@ -159,7 +159,7 @@
             size="small"
             severity="secondary"
             class="text-xs"
-            :disabled="readonly"
+            :disabled="readonly || false"
             @click="triggerFileInput"
           />
         </div>
