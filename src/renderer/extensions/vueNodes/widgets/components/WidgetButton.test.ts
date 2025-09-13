@@ -234,12 +234,12 @@ describe('WidgetButton Interactions', () => {
       const wrapper = mountComponent(widget)
 
       // Simulate rapid clicks
-      const clickPromises = Array.from({ length: 5 }, () =>
+      const clickPromises = Array.from({ length: 16 }, () =>
         clickButton(wrapper)
       )
       await Promise.all(clickPromises)
 
-      expect(mockCallback).toHaveBeenCalledTimes(5)
+      expect(mockCallback).toHaveBeenCalledTimes(16)
     })
   })
 })
