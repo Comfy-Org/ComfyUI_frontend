@@ -1,9 +1,4 @@
-import type {
-  Bounds,
-  LinkId,
-  Point,
-  RerouteId
-} from '@/renderer/core/layout/types'
+import type { Bounds, Point } from '@/renderer/core/layout/types'
 
 export const REROUTE_RADIUS = 8
 
@@ -23,11 +18,4 @@ export function boundsIntersect(a: Bounds, b: Bounds): boolean {
     a.y + a.height < b.y ||
     b.y + b.height < a.y
   )
-}
-
-export function makeLinkSegmentKey(
-  linkId: LinkId,
-  rerouteId: RerouteId | null
-): string {
-  return `${linkId}:${rerouteId ?? 'final'}`
 }

@@ -40,9 +40,9 @@ import {
 import {
   REROUTE_RADIUS,
   boundsIntersect as boundsIntersectUtil,
-  makeLinkSegmentKey,
   pointInBounds as pointInBoundsUtil
 } from '@/renderer/core/layout/utils/layoutMath'
+import { makeLinkSegmentKey } from '@/renderer/core/layout/utils/layoutUtils'
 import {
   layoutToYNode,
   yNodeToLayout
@@ -543,11 +543,6 @@ class LayoutStoreImpl implements LayoutStore {
   getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null {
     return this.rerouteLayouts.get(rerouteId) || null
   }
-
-  /**
-   * Helper to create internal key for link segment
-   */
-  // makeLinkSegmentKey moved to utils/layoutMath
 
   /**
    * Update link segment layout data
