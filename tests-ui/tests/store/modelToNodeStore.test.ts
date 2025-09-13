@@ -21,45 +21,44 @@ const EXPECTED_DEFAULT_TYPES = [
 
 type NodeDefStoreType = typeof import('@/stores/nodeDefStore')
 
+// Create minimal but valid ComfyNodeDefImpl for testing
+function createMockNodeDef(name: string): ComfyNodeDefImpl {
+  const def: ComfyNodeDefV1 = {
+    name,
+    display_name: name,
+    category: 'test',
+    python_module: 'nodes',
+    description: '',
+    input: { required: {}, optional: {} },
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false
+  }
+  return new ComfyNodeDefImpl(def)
+}
+
+const MOCK_NODE_NAMES = [
+  'CheckpointLoaderSimple',
+  'ImageOnlyCheckpointLoader',
+  'LoraLoader',
+  'LoraLoaderModelOnly',
+  'VAELoader',
+  'ControlNetLoader',
+  'UNETLoader',
+  'UpscaleModelLoader',
+  'StyleModelLoader',
+  'GLIGENLoader'
+] as const
+
+const mockNodeDefsByName = Object.fromEntries(
+  MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
+)
+
 // Mock nodeDefStore dependency - modelToNodeStore relies on this for registration
 // Most tests expect this to be populated; tests that need empty state can override
 vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
   const original = await importOriginal<NodeDefStoreType>()
-  const { ComfyNodeDefImpl } = original
-
-  // Create minimal but valid ComfyNodeDefImpl for testing
-  function createMockNodeDef(name: string): ComfyNodeDefImpl {
-    const def: ComfyNodeDefV1 = {
-      name,
-      display_name: name,
-      category: 'test',
-      python_module: 'nodes',
-      description: '',
-      input: { required: {}, optional: {} },
-      output: [],
-      output_name: [],
-      output_is_list: [],
-      output_node: false
-    }
-    return new ComfyNodeDefImpl(def)
-  }
-
-  const MOCK_NODE_NAMES = [
-    'CheckpointLoaderSimple',
-    'ImageOnlyCheckpointLoader',
-    'LoraLoader',
-    'LoraLoaderModelOnly',
-    'VAELoader',
-    'ControlNetLoader',
-    'UNETLoader',
-    'UpscaleModelLoader',
-    'StyleModelLoader',
-    'GLIGENLoader'
-  ] as const
-
-  const mockNodeDefsByName = Object.fromEntries(
-    MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
-  )
 
   return {
     ...original,
@@ -72,6 +71,7 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
 describe('useModelToNodeStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.clearAllMocks()
   })
 
   describe('modelToNodeMap', () => {
@@ -288,12 +288,58 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should not register when nodeDefStore is empty', () => {
+      // Create fresh Pinia for this test to avoid state persistence
+      setActivePinia(createPinia())
+
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: {}
       })
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('checkpoints')).toBeUndefined()
+
+      // Restore original mock for subsequent tests
+      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
+        nodeDefsByName: mockNodeDefsByName
+      })
+    })
+  })
+
+  describe('getRegisteredNodeTypes', () => {
+    it('should return a Set instance', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      const result = modelToNodeStore.getRegisteredNodeTypes()
+      expect(result).toBeInstanceOf(Set)
+    })
+
+    it('should return empty set when nodeDefStore is empty', () => {
+      // Create fresh Pinia for this test to avoid state persistence
+      setActivePinia(createPinia())
+
+      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
+        nodeDefsByName: {}
+      })
+      const modelToNodeStore = useModelToNodeStore()
+
+      const result = modelToNodeStore.getRegisteredNodeTypes()
+      expect(result.size).toBe(0)
+
+      // Restore original mock for subsequent tests
+      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
+        nodeDefsByName: mockNodeDefsByName
+      })
+    })
+
+    it('should contain node types for efficient Set.has() lookups', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const result = modelToNodeStore.getRegisteredNodeTypes()
+
+      // Test Set.has() functionality which assetService depends on
+      expect(result.has('CheckpointLoaderSimple')).toBe(true)
+      expect(result.has('LoraLoader')).toBe(true)
+      expect(result.has('NonExistentNode')).toBe(false)
     })
   })
 

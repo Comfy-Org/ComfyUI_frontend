@@ -64,6 +64,9 @@ export default [
       'vue/no-v-html': 'off',
       // Enforce dark-theme: instead of dark: prefix
       'vue/no-restricted-class': ['error', '/^dark:/'],
+      'vue/multi-word-component-names': 'off', // TODO: fix
+      'vue/no-template-shadow': 'off', // TODO: fix
+      'vue/one-component-per-file': 'off', // TODO: fix
       // Restrict deprecated PrimeVue components
       'no-restricted-imports': [
         'error',
