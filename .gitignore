@@ -89,4 +89,3 @@ vite.config.*.timestamp*
 vitest.config.*.timestamp*
 
 # Local PR notes (not tracked)
-PR-5472-change-summary.md

@@ -219,7 +219,7 @@ describe('WidgetColorPicker Value Binding', () => {
         const widget = createMockWidget(color)
         const wrapper = mountComponent(widget, color)
 
-        const colorText = wrapper.find('span')
+        const colorText = wrapper.find('[data-testid="widget-color-text"]')
         expect.soft(colorText.text()).toBe(color)
       }
     })
@@ -281,7 +281,17 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(colorPicker.exists()).toBe(true)
     })
 
-    // Invalid formats should fall back gracefully in display; emitted values are normalized
+    it('handles invalid color formats gracefully', async () => {
+      const widget = createMockWidget('invalid-color')
+      const wrapper = mountComponent(widget, 'invalid-color')
+
+      const colorText = wrapper.find('[data-testid="widget-color-text"]')
+      expect(colorText.text()).toBe('#000000')
+
+      const emitted = await setColorPickerValue(wrapper, 'invalid-color')
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain('#000000')
+    })
 
     it('handles widget with no options', () => {
       const widget = createMockWidget('#ff0000')
