@@ -49,7 +49,8 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       :class="
         cn(
           'bg-node-stroke relative grow overflow-hidden rounded-full',
-          'cursor-pointer',
+          'cursor-pointer overflow-visible',
+          `before:absolute before:-inset-2 before:block before:bg-transparent`,
           'data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-full',
           'data-[orientation=vertical]:h-full data-[orientation=vertical]:w-0.5'
         )
@@ -69,6 +70,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         cn(
           'bg-node-component-surface-highlight ring-node-component-surface-selected block size-3.5 shrink-0 rounded-full shadow-sm transition-[color,box-shadow]',
           'cursor-grab',
+          'before:absolute before:-inset-1 before:block before:bg-transparent before:rounded-full',
           'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
           { 'cursor-grabbing': pressed }
         )
