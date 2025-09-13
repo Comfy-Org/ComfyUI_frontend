@@ -24,7 +24,7 @@ import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { UserFile } from '@/stores/userFileStore'
 

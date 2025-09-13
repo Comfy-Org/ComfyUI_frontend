@@ -96,7 +96,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const props = defineProps<{
   message: string

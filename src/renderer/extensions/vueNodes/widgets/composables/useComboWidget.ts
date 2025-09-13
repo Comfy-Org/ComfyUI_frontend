@@ -23,7 +23,7 @@ import {
   addValueControlWidgets
 } from '@/scripts/widgets'
 import { assetService } from '@/services/assetService'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { useRemoteWidget } from './useRemoteWidget'
 

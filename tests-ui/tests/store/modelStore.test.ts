@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 import { assetService } from '@/services/assetService'
 import { useModelStore } from '@/stores/modelStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({
@@ -24,7 +24,7 @@ vi.mock('@/services/assetService', () => ({
 }))
 
 // Mock the settingStore
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn()
 }))
 
