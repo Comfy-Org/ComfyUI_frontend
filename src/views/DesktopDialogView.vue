@@ -1,73 +1,98 @@
 <template>
-  <div class="desktop-dialog">
-    <div class="dialog-title">{{ title }}</div>
-    <div class="dialog-message">{{ message }}</div>
-    <div class="dialog-actions">
-      <button class="dialog-button">{{ t('g.close') }}</button>
+  <div
+    class="w-full h-full flex flex-col rounded-lg p-6 bg-[#2d2d2d] justify-between"
+  >
+    <h1 class="dialog-title font-semibold text-xl m-0 italic">{{ title }}</h1>
+    <p class="whitespace-pre-wrap">{{ message }}</p>
+    <div class="flex w-full gap-2">
+      <Button
+        v-for="button in buttons"
+        :key="button.label"
+        class="first:mr-auto"
+        :label="button.label"
+        :severity="button.severity ?? 'secondary'"
+        @click="electronAPI().Dialog.clickButton(button.returnValue)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { DialogButton } from '@comfyorg/comfyui-electron-types'
+import Button from 'primevue/button'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
+import { electronAPI } from '@/utils/envUtil'
+
 const route = useRoute()
-const { t } = useI18n()
 
 // Get title and message from query parameters
-const title = computed(() => (route.query.title as string) || 'Quick Setup')
-const message = computed(() => (route.query.message as string) || '')
+const title = computed(() => route.query.title ?? 'Quick Setup')
+const message = computed(() => {
+  const { message } = route.query
+  return typeof message === 'string' ? message : ''
+})
+
+const buttons = computed(() => {
+  // Assertion: Not important enough to justify validation... yet.
+  return JSON.parse(route.query.buttons as string) as DialogButton[]
+})
 </script>
 
 <style scoped>
 @reference '../assets/css/style.css';
 
-.desktop-dialog {
-  @apply flex flex-col p-6 rounded-lg gap-6;
-  width: 100%;
-  height: 100%;
-  background: #2d2d2d;
-}
-
 .dialog-title {
-  font-family:
-    'ABC ROM',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  font-style: italic;
-  font-size: 20px;
-  font-weight: 500;
-  color: #ffffff;
-  margin: 0;
+  font-family: 'ABC ROM';
 }
 
-.dialog-message {
-  @apply font-sans text-sm m-0;
-  color: #b0b0b0;
-  line-height: 1.6;
+.p-button {
+  @apply rounded-lg;
 }
 
-.dialog-actions {
-  @apply flex w-full justify-end mt-auto;
+.p-button-secondary {
+  @apply text-white rounded-lg border-none;
+
+  background: var(--color-button-background, rgba(255, 255, 255, 0.15));
 }
 
-.dialog-button {
-  @apply px-6 py-2.5 border-none rounded-md text-sm font-medium font-sans cursor-pointer;
-  @apply transition-all duration-200 ease-in-out;
-  background: #f0ff41;
-  color: #1a1a1a;
+.p-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
-.dialog-button:hover {
-  @apply -translate-y-px;
-  background: #d9e639;
+.p-button-secondary:active {
+  background: rgba(255, 255, 255, 0.35);
 }
 
-.dialog-button:active {
-  @apply translate-y-0;
+.p-button-danger {
+  background: rgba(241, 67, 82, 0.5);
+  border: 0;
+}
+
+.p-button-danger:hover {
+  background: rgba(241, 67, 82, 0.75);
+}
+
+.p-button-danger:active {
+  background: rgba(241, 67, 82, 0.88);
+}
+
+.p-button-warn {
+  background: rgba(23, 45, 215, 0.66);
+  color: #f0ff41;
+  border: 0;
+}
+
+.p-button-warn:hover {
+  background: rgba(23, 45, 215, 0.88);
+  color: #f0ff41;
+  border: 0;
+}
+
+.p-button-warn:active {
+  background: rgba(23, 45, 215, 1);
+  color: #f0ff41;
+  border: 0;
 }
 </style>
