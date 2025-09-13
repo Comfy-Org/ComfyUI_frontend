@@ -1,11 +1,12 @@
-import * as fs from 'fs'
+// Setup browser globals before any other imports that might use them
+import './setup-browser-globals.js'
 
+import * as fs from 'fs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import type { ComfyNodeDef } from '../src/schemas/nodeDefSchema'
 import type { ComfyApi } from '../src/scripts/api'
 import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
-import './setup-browser-globals.js'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'

@@ -1644,13 +1644,22 @@ export const comfyPageFixture = base.extend<{
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
-    const { parallelIndex } = testInfo
-    const username = `playwright-test-${parallelIndex}`
-    const userId = await comfyPage.setupUser(username)
-    comfyPage.userIds[parallelIndex] = userId
+    const { parallelIndex, workerIndex, title } = testInfo
+
+    // Skip user setup for i18n collection tests
+    const isI18nTest = testInfo.file?.includes('collect-i18n')
+
+    if (!isI18nTest) {
+      // Use a combination of workerIndex and test title hash for unique usernames
+      const testHash = title.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8)
+      const username = `playwright-test-${workerIndex}-${testHash}`
+      const userId = await comfyPage.setupUser(username)
+      comfyPage.userIds[parallelIndex] = userId
+    }
 
     try {
-      await comfyPage.setupSettings({
+      if (!isI18nTest) {
+        await comfyPage.setupSettings({
         'Comfy.UseNewMenu': 'Disabled',
         // Hide canvas menu/info/selection toolbox by default.
         'Comfy.Graph.CanvasInfo': false,
@@ -1666,6 +1675,7 @@ export const comfyPageFixture = base.extend<{
         'Comfy.TutorialCompleted': true,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize
       })
+      }
     } catch (e) {
       console.error(e)
     }

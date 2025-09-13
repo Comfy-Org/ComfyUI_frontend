@@ -12,6 +12,7 @@ const config: any = defineConfig({
   },
   reporter: 'list',
   timeout: 60000,
+  workers: 1, // Run tests serially to avoid duplicate user creation
   testMatch: /collect-i18n-.*\.ts/,
   // Start dev server before running tests
   webServer: {
