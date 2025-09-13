@@ -14,7 +14,7 @@ import {
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { TaskLog } from '@/types/comfyManagerTypes'
+import { type TaskLog } from '@/types/comfyManagerTypes'
 
 // Mock modules
 vi.mock('@/stores/comfyManagerStore')

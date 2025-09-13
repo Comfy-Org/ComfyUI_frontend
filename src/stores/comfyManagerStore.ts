@@ -11,8 +11,8 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useDialogService } from '@/services/dialogService'
-import { TaskLog } from '@/types/comfyManagerTypes'
-import { components } from '@/types/generatedManagerTypes'
+import { type TaskLog } from '@/types/comfyManagerTypes'
+import { type components } from '@/types/generatedManagerTypes'
 import { normalizePackKeys } from '@/utils/packUtils'
 
 type InstallPackParams = components['schemas']['InstallPackParams']

@@ -47,7 +47,7 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import Menu, { MenuState } from 'primevue/menu'
+import Menu, { type MenuState } from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'

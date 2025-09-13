@@ -48,7 +48,7 @@ import { computed, inject, ref, watchEffect } from 'vue'
 import DescriptionTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/DescriptionTabPanel.vue'
 import NodesTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/NodesTabPanel.vue'
 import WarningTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/WarningTabPanel.vue'
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/types/importFailedTypes'
 

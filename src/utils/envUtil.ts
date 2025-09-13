@@ -1,4 +1,4 @@
-import { ElectronAPI } from '@comfyorg/comfyui-electron-types'
+import { type ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
 export function isElectron() {
   return 'electronAPI' in window && window.electronAPI !== undefined

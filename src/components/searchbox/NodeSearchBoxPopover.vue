@@ -38,11 +38,11 @@ import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
-import { Point } from '@/lib/litegraph/src/interfaces'
+import { type Point } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphNode,
   LiteGraph,
-  LiteGraphCanvasEvent
+  type LiteGraphCanvasEvent
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -52,7 +52,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
-import { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { type FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBox from './NodeSearchBox.vue'
 

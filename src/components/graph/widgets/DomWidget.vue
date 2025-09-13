@@ -19,12 +19,19 @@
 
 <script setup lang="ts">
 import { useElementBounding, useEventListener } from '@vueuse/core'
-import { CSSProperties, computed, nextTick, onMounted, ref, watch } from 'vue'
+import {
+  type CSSProperties,
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
-import { DomWidgetState } from '@/stores/domWidgetStore'
+import { type DomWidgetState } from '@/stores/domWidgetStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 

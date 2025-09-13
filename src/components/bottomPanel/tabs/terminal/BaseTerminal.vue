@@ -7,7 +7,8 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, onUnmounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 

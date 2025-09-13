@@ -2,7 +2,7 @@ import { groupBy } from 'es-toolkit/compat'
 import { computed, onMounted } from 'vue'
 
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
-import { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { type NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'

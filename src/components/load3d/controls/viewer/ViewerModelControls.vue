@@ -26,7 +26,10 @@
 import Select from 'primevue/select'
 import { computed } from 'vue'
 
-import { MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
+import {
+  type MaterialMode,
+  type UpDirection
+} from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 
 const upDirection = defineModel<UpDirection>('upDirection')

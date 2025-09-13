@@ -6,9 +6,9 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
-  ExecutedWsMessage,
-  ResultItem,
-  ResultItemType
+  type ExecutedWsMessage,
+  type ResultItem,
+  type ResultItemType
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

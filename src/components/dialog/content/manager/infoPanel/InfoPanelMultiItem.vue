@@ -67,7 +67,7 @@ import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
 import { usePacksStatus } from '@/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { components } from '@/types/comfyRegistryTypes'
+import { type components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetail } from '@/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/types/importFailedTypes'
 

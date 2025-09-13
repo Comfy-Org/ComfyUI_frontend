@@ -87,7 +87,7 @@ import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSli
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import { useTemplateWorkflows } from '@/composables/useTemplateWorkflows'
-import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import { type TemplateInfo } from '@/types/workflowTemplateTypes'
 
 const UPSCALE_ZOOM_SCALE = 16 // for upscale templates, exaggerate the hover zoom
 const DEFAULT_ZOOM_SCALE = 5
