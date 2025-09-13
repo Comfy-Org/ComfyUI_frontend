@@ -24,7 +24,7 @@ export function layoutToYNode(layout: NodeLayout): Y.Map<unknown> {
 
 function getOr<T>(map: Y.Map<unknown>, key: string, fallback: T): T {
   const v = map.get(key)
-  return v === undefined || v === null ? fallback : (v as T)
+  return (v ?? fallback) as T
 }
 
 export function yNodeToLayout(ynode: Y.Map<unknown>): NodeLayout {
