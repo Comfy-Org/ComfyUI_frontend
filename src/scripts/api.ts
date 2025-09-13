@@ -296,8 +296,8 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = gloablThis.location.host
-    this.api_base = gloablThis.location.pathname
+    this.api_host = globalThis.location.host
+    this.api_base = globalThis.location.pathname
       .split('/')
       .slice(0, -1)
       .join('/')
