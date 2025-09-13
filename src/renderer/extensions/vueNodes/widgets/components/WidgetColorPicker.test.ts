@@ -118,8 +118,8 @@ describe('WidgetColorPicker Value Binding', () => {
 
       // Need to check the local state update
       const colorText = wrapper.find('span')
-      // Note: The actual text update depends on the component's reactive state
-      expect(colorText.exists()).toBe(true)
+      // Be specific about the displayed value including the leading '#'
+      expect.soft(colorText.text()).toBe('#00ff00')
     })
 
     it('uses default color when no value provided', () => {
