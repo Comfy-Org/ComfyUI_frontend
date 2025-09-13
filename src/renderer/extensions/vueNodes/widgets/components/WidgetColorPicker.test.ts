@@ -138,13 +138,13 @@ describe('WidgetColorPicker Value Binding', () => {
       // Case 1: model value already includes '#'
       let widget = createMockWidget('#ff0000')
       let wrapper = mountComponent(widget, '#ff0000')
-      let colorText = wrapper.find('span')
+      let colorText = wrapper.find('[data-testid="widget-color-text"]')
       expect.soft(colorText.text()).toBe('#ff0000')
 
       // Case 2: model value missing '#'
       widget = createMockWidget('ff0000')
       wrapper = mountComponent(widget, 'ff0000')
-      colorText = wrapper.find('span')
+      colorText = wrapper.find('[data-testid="widget-color-text"]')
       expect.soft(colorText.text()).toBe('#ff0000')
     })
 
@@ -160,7 +160,7 @@ describe('WidgetColorPicker Value Binding', () => {
       const widget = createMockWidget('#ff0000')
       const wrapper = mountComponent(widget, '#ff0000')
 
-      const colorText = wrapper.find('span')
+      const colorText = wrapper.find('[data-testid="widget-color-text"]')
       expect(colorText.text()).toBe('#ff0000')
     })
 
@@ -171,7 +171,7 @@ describe('WidgetColorPicker Value Binding', () => {
       await setColorPickerValue(wrapper, '#00ff00')
 
       // Need to check the local state update
-      const colorText = wrapper.find('span')
+      const colorText = wrapper.find('[data-testid="widget-color-text"]')
       // Be specific about the displayed value including the leading '#'
       expect.soft(colorText.text()).toBe('#00ff00')
     })
@@ -228,7 +228,7 @@ describe('WidgetColorPicker Value Binding', () => {
       const widget = createMockWidget('#fff')
       const wrapper = mountComponent(widget, '#fff')
 
-      const colorText = wrapper.find('span')
+      const colorText = wrapper.find('[data-testid="widget-color-text"]')
       expect(colorText.text()).toBe('#fff')
     })
 
