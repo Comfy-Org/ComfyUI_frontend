@@ -1362,6 +1362,7 @@
     "unet": "unet",
     "gligen": "gligen",
     "video_models": "video_models",
+    "sd": "sd",
     "Ideogram": "Ideogram",
     "v1": "v1",
     "v2": "v2",
