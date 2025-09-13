@@ -11,9 +11,10 @@ import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/Widg
 describe('WidgetButton Interactions', () => {
   const createMockWidget = (
     options: Partial<ButtonProps> = {},
-    callback?: () => void
+    callback?: () => void,
+    name: string = 'test_button'
   ): SimplifiedWidget<void> => ({
-    name: 'test_button',
+    name,
     type: 'button',
     value: undefined,
     options,
@@ -100,8 +101,7 @@ describe('WidgetButton Interactions', () => {
     })
 
     it('does not render label when widget name is empty', () => {
-      const widget = createMockWidget()
-      widget.name = ''
+      const widget = createMockWidget({}, undefined, '')
       const wrapper = mountComponent(widget)
 
       const label = wrapper.find('label')
