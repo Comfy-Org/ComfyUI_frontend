@@ -55,10 +55,15 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+const format = computed<ColorFormat>(() => {
+  const optionFormat = props.widget.options?.format
+  return isColorFormat(optionFormat) ? optionFormat : 'hex'
+})
+
 type PickerValue = string | HSB
 const localValue = ref<PickerValue>(
-  normalizeColorValue(
-    props.modelValue,
+  toHexFromFormat(
+    props.modelValue || '#000000',
     isColorFormat(props.widget.options?.format)
       ? props.widget.options.format
       : 'hex'
@@ -68,28 +73,12 @@ const localValue = ref<PickerValue>(
 watch(
   () => props.modelValue,
   (newVal) => {
-    localValue.value = normalizeColorValue(newVal, format.value)
+    localValue.value = toHexFromFormat(newVal || '#000000', format.value)
   }
 )
 
-const format = computed<ColorFormat>(() => {
-  const optionFormat = props.widget.options?.format
-  return isColorFormat(optionFormat) ? optionFormat : 'hex'
-})
-
-function normalizeColorValue(value: string, colorFormat: ColorFormat): string {
-  if (!value) return '#000000'
-
-  // Use the fancy color parsing but respect the specified format
-  return toHexFromFormat(value, colorFormat)
-}
-
 function onPickerUpdate(val: unknown) {
-  // Store the picker's value directly
   localValue.value = val as PickerValue
-
-  // Convert to hex using the widget's configured format
-  // The picker should emit values in the format we configured it for
   emit('update:modelValue', toHexFromFormat(val, format.value))
 }
 
