@@ -24,8 +24,6 @@ const message = computed(() => (route.query.message as string) || '')
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=ABC+ROM:ital@1&display=swap');
-
 .desktop-dialog {
   @apply w-screen h-screen flex items-center justify-center;
   background: #1a1a1a;
@@ -51,12 +49,7 @@ const message = computed(() => (route.query.message as string) || '')
 }
 
 .dialog-title {
-  font-family:
-    'ABC ROM',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-style: italic;
   font-size: 20px;
   font-weight: 500;
