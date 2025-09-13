@@ -1,5 +1,5 @@
 import {
-  ManagerState,
+  type ManagerState,
   ManagerTab,
   SortableAlgoliaField
 } from '@/types/comfyManagerTypes'

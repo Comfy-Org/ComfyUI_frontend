@@ -5,7 +5,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
-  Colors,
+  type Colors,
   type Palette,
   paletteSchema
 } from '@/schemas/colorPaletteSchema'

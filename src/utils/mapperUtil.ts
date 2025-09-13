@@ -1,10 +1,10 @@
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import {
-  ComfyNodeDef as ComfyNodeDefV2,
-  InputSpec
+  type ComfyNodeDef as ComfyNodeDefV2,
+  type InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { components } from '@/types/comfyRegistryTypes'
+import { type ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { type components } from '@/types/comfyRegistryTypes'
 
 const registryToFrontendV2NodeOutputs = (
   registryDef: components['schemas']['ComfyNode']

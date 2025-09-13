@@ -9,7 +9,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
-  ComboInputSpec,
+  type ComboInputSpec,
   type InputSpec,
   isComboInputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'

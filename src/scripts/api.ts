@@ -39,7 +39,7 @@ import type {
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useToastStore } from '@/stores/toastStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import { type WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string

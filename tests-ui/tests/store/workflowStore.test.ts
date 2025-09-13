@@ -8,7 +8,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import {
   ComfyWorkflow,
-  LoadedComfyWorkflow,
+  type LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'

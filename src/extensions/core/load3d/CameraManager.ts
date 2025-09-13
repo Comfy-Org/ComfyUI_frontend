@@ -2,11 +2,11 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import {
-  CameraManagerInterface,
-  CameraState,
-  CameraType,
-  EventManagerInterface,
-  NodeStorageInterface
+  type CameraManagerInterface,
+  type CameraState,
+  type CameraType,
+  type EventManagerInterface,
+  type NodeStorageInterface
 } from './interfaces'
 
 export class CameraManager implements CameraManagerInterface {

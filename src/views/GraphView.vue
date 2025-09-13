@@ -46,7 +46,7 @@ import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVers
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
-import { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'

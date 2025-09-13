@@ -2,7 +2,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import {
-  ISlotType,
+  type ISlotType,
   LGraph,
   LGraphGroup,
   LGraphNode,

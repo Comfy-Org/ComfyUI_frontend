@@ -11,9 +11,9 @@ import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
 import {
-  CameraType,
-  MaterialMode,
-  UpDirection
+  type CameraType,
+  type MaterialMode,
+  type UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'

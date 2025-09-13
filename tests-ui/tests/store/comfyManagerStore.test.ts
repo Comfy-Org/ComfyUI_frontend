@@ -4,7 +4,7 @@ import { nextTick, ref } from 'vue'
 
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import { type components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']

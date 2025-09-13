@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
@@ -16,11 +16,11 @@ import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
 import {
-  CameraState,
-  CaptureResult,
-  Load3DOptions,
-  MaterialMode,
-  UpDirection
+  type CameraState,
+  type CaptureResult,
+  type Load3DOptions,
+  type MaterialMode,
+  type UpDirection
 } from './interfaces'
 
 class Load3d {
