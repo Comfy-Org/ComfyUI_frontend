@@ -119,11 +119,11 @@ describe('NodeHeader.vue', () => {
 
   it('renders correct chevron icon based on collapsed prop', async () => {
     const wrapper = mountHeader({ collapsed: false })
-    let icon = wrapper.get('i')
-    expect(icon.classes()).toContain('pi-chevron-down')
+    const expandedIcon = wrapper.get('i')
+    expect(expandedIcon.classes()).toContain('pi-chevron-down')
 
     await wrapper.setProps({ collapsed: true })
-    icon = wrapper.get('i')
-    expect(icon.classes()).toContain('pi-chevron-right')
+    const collapsedIcon = wrapper.get('i')
+    expect(collapsedIcon.classes()).toContain('pi-chevron-right')
   })
 })
