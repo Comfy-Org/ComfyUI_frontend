@@ -4,7 +4,7 @@
       <div class="dialog-title">{{ title }}</div>
       <div class="dialog-message">{{ message }}</div>
       <div class="dialog-actions">
-        <button class="dialog-button">{{ t('common.close') }}</button>
+        <button class="dialog-button">{{ t('g.close') }}</button>
       </div>
     </div>
   </div>
