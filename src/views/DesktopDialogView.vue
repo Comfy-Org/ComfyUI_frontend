@@ -1,6 +1,6 @@
 <template>
-  <div class="desktop-dialog">
-    <div class="dialog-container">
+  <div class="desktop-dialog-overlay">
+    <div class="dialog-box">
       <div class="dialog-title">{{ title }}</div>
       <div class="dialog-message">{{ message }}</div>
       <div class="dialog-actions">
@@ -24,14 +24,13 @@ const message = computed(() => (route.query.message as string) || '')
 </script>
 
 <style scoped>
-@reference '../assets/css/style.css';
-
-.desktop-dialog {
-  @apply w-screen h-screen flex items-center justify-center;
-  background: #1a1a1a;
+.desktop-dialog-overlay {
+  @apply w-full h-full flex items-center justify-center;
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(4px);
 }
 
-.dialog-container {
+.dialog-box {
   @apply flex flex-col items-start gap-6 rounded-lg p-6;
   width: 448px;
   background: #2d2d2d;
