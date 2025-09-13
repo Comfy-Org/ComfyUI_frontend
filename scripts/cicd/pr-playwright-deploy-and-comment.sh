@@ -58,6 +58,12 @@ if ! command -v wrangler > /dev/null 2>&1; then
     }
 fi
 
+# Check if tsx is available, install if not
+if ! command -v tsx > /dev/null 2>&1; then
+    echo "Installing tsx..." >&2
+    npm install -g tsx >&2 || echo "Failed to install tsx" >&2
+fi
+
 # Deploy a single browser report, WARN: ensure inputs are sanitized before calling this function
 deploy_report() {
     dir="$1"
@@ -159,12 +165,16 @@ else
     echo "Available reports:"
     ls -la reports/ 2>/dev/null || echo "Reports directory not found"
     
-    # Deploy all reports in parallel and collect URLs
+    # Deploy all reports in parallel and collect URLs + test counts
     temp_dir=$(mktemp -d)
     pids=""
     i=0
     
-    # Start parallel deployments
+    # Store current working directory for absolute paths
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    BASE_DIR="$(pwd)"
+    
+    # Start parallel deployments and count extractions
     for browser in $BROWSERS; do
         if [ -d "reports/playwright-report-$browser" ]; then
             echo "Found report for $browser, deploying in parallel..."
@@ -172,11 +182,26 @@ else
                 url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
                 echo "$url" > "$temp_dir/$i.url"
                 echo "Deployment result for $browser: $url"
+                
+                # Extract test counts using tsx (TypeScript executor)
+                EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
+                REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
+                
+                if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
+                    echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
+                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" 2>&1 || echo '{}')
+                    echo "Extracted counts for $browser: $counts" >&2
+                    echo "$counts" > "$temp_dir/$i.counts"
+                else
+                    echo "Script not found or tsx not available: $EXTRACT_SCRIPT" >&2
+                    echo '{}' > "$temp_dir/$i.counts"
+                fi
             ) &
             pids="$pids $!"
         else
             echo "Report not found for $browser at reports/playwright-report-$browser"
             echo "failed" > "$temp_dir/$i.url"
+            echo '{}' > "$temp_dir/$i.counts"
         fi
         i=$((i + 1))
     done
@@ -186,8 +211,9 @@ else
         wait $pid
     done
     
-    # Collect URLs in order
+    # Collect URLs and counts in order
     urls=""
+    all_counts=""
     i=0
     for browser in $BROWSERS; do
         if [ -f "$temp_dir/$i.url" ]; then
@@ -200,37 +226,147 @@ else
         else
             urls="$urls $url"
         fi
+        
+        if [ -f "$temp_dir/$i.counts" ]; then
+            counts=$(cat "$temp_dir/$i.counts")
+            echo "Read counts for $browser from $temp_dir/$i.counts: $counts" >&2
+        else
+            counts="{}"
+            echo "No counts file found for $browser at $temp_dir/$i.counts" >&2
+        fi
+        if [ -z "$all_counts" ]; then
+            all_counts="$counts"
+        else
+            all_counts="$all_counts|$counts"
+        fi
+        
         i=$((i + 1))
     done
     
     # Clean up temp directory
     rm -rf "$temp_dir"
     
+    # Calculate total test counts across all browsers
+    total_passed=0
+    total_failed=0
+    total_flaky=0
+    total_skipped=0
+    total_tests=0
+    
+    # Parse counts and calculate totals
+    IFS='|'
+    set -- $all_counts
+    for counts_json; do
+        if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
+            # Parse JSON counts using simple grep/sed if jq is not available
+            if command -v jq > /dev/null 2>&1; then
+                passed=$(echo "$counts_json" | jq -r '.passed // 0')
+                failed=$(echo "$counts_json" | jq -r '.failed // 0')
+                flaky=$(echo "$counts_json" | jq -r '.flaky // 0')
+                skipped=$(echo "$counts_json" | jq -r '.skipped // 0')
+                total=$(echo "$counts_json" | jq -r '.total // 0')
+            else
+                # Fallback parsing without jq
+                passed=$(echo "$counts_json" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')
+                failed=$(echo "$counts_json" | sed -n 's/.*"failed":\([0-9]*\).*/\1/p')
+                flaky=$(echo "$counts_json" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')
+                skipped=$(echo "$counts_json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
+                total=$(echo "$counts_json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
+            fi
+            
+            total_passed=$((total_passed + ${passed:-0}))
+            total_failed=$((total_failed + ${failed:-0}))
+            total_flaky=$((total_flaky + ${flaky:-0}))
+            total_skipped=$((total_skipped + ${skipped:-0}))
+            total_tests=$((total_tests + ${total:-0}))
+        fi
+    done
+    unset IFS
+    
+    # Determine overall status
+    if [ $total_failed -gt 0 ]; then
+        status_icon="❌"
+        status_text="Some tests failed"
+    elif [ $total_flaky -gt 0 ]; then
+        status_icon="⚠️"
+        status_text="Tests passed with flaky tests"
+    elif [ $total_tests -gt 0 ]; then
+        status_icon="✅"
+        status_text="All tests passed!"
+    else
+        status_icon="🕵🏻"
+        status_text="No test results found"
+    fi
+    
     # Generate completion comment
     comment="$COMMENT_MARKER
 ## 🎭 Playwright Test Results
 
-✅ **Tests completed successfully!**
+$status_icon **$status_text**
 
-⏰ Completed at: $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC
+⏰ Completed at: $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC"
+
+    # Add summary counts if we have test data
+    if [ $total_tests -gt 0 ]; then
+        comment="$comment
+
+### 📈 Summary
+- **Total Tests:** $total_tests
+- **Passed:** $total_passed ✅
+- **Failed:** $total_failed $([ $total_failed -gt 0 ] && echo '❌' || echo '')
+- **Flaky:** $total_flaky $([ $total_flaky -gt 0 ] && echo '⚠️' || echo '')
+- **Skipped:** $total_skipped $([ $total_skipped -gt 0 ] && echo '⏭️' || echo '')"
+    fi
+    
+    comment="$comment
 
 ### 📊 Test Reports by Browser"
     
-    # Add browser results
+    # Add browser results with individual counts
     i=0
-    for browser in $BROWSERS; do
+    IFS='|'
+    set -- $all_counts
+    for counts_json; do
+        # Get browser name
+        browser=$(echo "$BROWSERS" | cut -d' ' -f$((i + 1)))
         # Get URL at position i
         url=$(echo "$urls" | cut -d' ' -f$((i + 1)))
         
         if [ "$url" != "failed" ] && [ -n "$url" ]; then
+            # Parse individual browser counts
+            if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
+                if command -v jq > /dev/null 2>&1; then
+                    b_passed=$(echo "$counts_json" | jq -r '.passed // 0')
+                    b_failed=$(echo "$counts_json" | jq -r '.failed // 0')
+                    b_flaky=$(echo "$counts_json" | jq -r '.flaky // 0')
+                    b_skipped=$(echo "$counts_json" | jq -r '.skipped // 0')
+                    b_total=$(echo "$counts_json" | jq -r '.total // 0')
+                else
+                    b_passed=$(echo "$counts_json" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')
+                    b_failed=$(echo "$counts_json" | sed -n 's/.*"failed":\([0-9]*\).*/\1/p')
+                    b_flaky=$(echo "$counts_json" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')
+                    b_skipped=$(echo "$counts_json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
+                    b_total=$(echo "$counts_json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
+                fi
+                
+                if [ -n "$b_total" ] && [ "$b_total" != "0" ]; then
+                    counts_str=" • ✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped"
+                else
+                    counts_str=""
+                fi
+            else
+                counts_str=""
+            fi
+            
             comment="$comment
-- ✅ **${browser}**: [View Report](${url})"
+- ✅ **${browser}**: [View Report](${url})${counts_str}"
         else
             comment="$comment
 - ❌ **${browser}**: Deployment failed"
         fi
         i=$((i + 1))
     done
+    unset IFS
     
     comment="$comment
 
