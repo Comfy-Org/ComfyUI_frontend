@@ -27,13 +27,19 @@ jobs:
           i18n-tools-cache-${{ runner.os }}-
     - name: Cache Playwright browsers
       uses: actions/cache@v4
+      id: cache-playwright-browsers
       with:
         path: ~/.cache/ms-playwright
         key: playwright-browsers-${{ runner.os }}-${{ hashFiles('ComfyUI_frontend/pnpm-lock.yaml') }}
         restore-keys: |
           playwright-browsers-${{ runner.os }}-
     - name: Install Playwright Browsers
-      run: npx playwright install chromium --with-deps
+      if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+      run: pnpm exec playwright install chromium --with-deps
+      working-directory: ComfyUI_frontend
+    - name: Install Playwright Browsers (operating system dependencies)
+      if: steps.cache-playwright-browsers.outputs.cache-hit == 'true'
+      run: pnpm exec playwright install-deps
       working-directory: ComfyUI_frontend
     - name: Start dev server
       # Run electron dev server as it is a superset of the web dev server

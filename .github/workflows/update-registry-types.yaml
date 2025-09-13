@@ -68,7 +68,7 @@ jobs:
       - name: Generate API types
         run: |
           echo "Generating TypeScript types from comfy-api@${{ steps.api-info.outputs.commit }}..."
-          npx openapi-typescript ./comfy-api/openapi.yml --output ./src/types/comfyRegistryTypes.ts
+          pnpm dlx openapi-typescript ./comfy-api/openapi.yml --output ./src/types/comfyRegistryTypes.ts
 
       - name: Validate generated types
         run: |
