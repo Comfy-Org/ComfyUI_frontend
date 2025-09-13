@@ -27,8 +27,7 @@
  * <NodeSlots v-if="shouldRenderSlots" />
  * ```
  */
-import { Ref } from 'vue'
-import { computed, readonly } from 'vue'
+import { type Ref, computed, readonly } from 'vue'
 
 export enum LODLevel {
   MINIMAL = 'minimal', // zoom <= 0.4

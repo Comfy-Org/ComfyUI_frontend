@@ -20,7 +20,7 @@ import { t } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
-import type { isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
+import { isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()

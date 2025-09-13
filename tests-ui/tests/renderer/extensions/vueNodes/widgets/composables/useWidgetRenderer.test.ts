@@ -9,8 +9,11 @@ import WidgetMarkdown from '@/renderer/extensions/vueNodes/widgets/components/Wi
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import WidgetTextarea from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
 import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
-import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { isEssential, shouldRenderAsVue } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import {
+  getComponent,
+  isEssential,
+  shouldRenderAsVue
+} from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 
 describe('widgetRegistry', () => {
   describe('getComponent', () => {

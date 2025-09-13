@@ -7,8 +7,7 @@
  * - Adaptive margin computation based on zoom level
  * - Performance optimizations for large graphs
  */
-import { Ref } from 'vue'
-import { computed, readonly, ref } from 'vue'
+import { type Ref, computed, readonly, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useTransformState } from '@/renderer/core/layout/useTransformState'

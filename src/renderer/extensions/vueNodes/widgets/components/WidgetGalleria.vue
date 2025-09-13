@@ -47,9 +47,11 @@
 import Galleria from 'primevue/galleria'
 import { computed, ref } from 'vue'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { GALLERIA_EXCLUDED_PROPS } from '@/utils/widgetPropFilter'
-import { filterWidgetProps } from '@/utils/widgetPropFilter'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  GALLERIA_EXCLUDED_PROPS,
+  filterWidgetProps
+} from '@/utils/widgetPropFilter'
 
 interface GalleryImage {
   itemImageSrc?: string

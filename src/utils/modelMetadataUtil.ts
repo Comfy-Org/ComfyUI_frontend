@@ -1,4 +1,4 @@
-import { ModelFile } from '@/schemas/comfyWorkflowSchema'
+import type { ModelFile } from '@/schemas/comfyWorkflowSchema'
 
 /**
  * Gets models from the node's `properties.models` field, excluding those

@@ -2,10 +2,13 @@ import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Palette, paletteSchema } from '@/schemas/colorPaletteSchema'
-import { Colors } from '@/schemas/colorPaletteSchema'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  Colors,
+  type Palette,
+  paletteSchema
+} from '@/schemas/colorPaletteSchema'
 import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

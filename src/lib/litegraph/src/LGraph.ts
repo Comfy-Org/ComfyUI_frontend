@@ -1,36 +1,68 @@
 import { toString } from 'es-toolkit/compat'
 
-import type { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import type { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
-import type { LGraphNode } from './LGraphNode'
-import { NodeId } from './LGraphNode'
-import type { LLink } from './LLink'
-import { LinkId } from './LLink'
+import { LGraphNode, type NodeId } from './LGraphNode'
+import { LLink, type LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
-import type { RerouteId } from './Reroute'
-import { Reroute } from './Reroute'
+import { Reroute, type RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
-import { LGraphEventMap } from './infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
-import type { DefaultConnectionColors, HasBoundingRect, INodeInputSlot, INodeOutputSlot, LinkNetwork, LinkSegment, OptionalProps, Point, Size } from './interfaces'
-import { Dictionary, IContextMenuValue, MethodNames, Positionable } from './interfaces'
-import type { LiteGraph, SubgraphNode } from './litegraph'
-import { alignOutsideContainer, alignToContainer, createBounds } from './measure'
+import type {
+  DefaultConnectionColors,
+  Dictionary,
+  HasBoundingRect,
+  IContextMenuValue,
+  INodeInputSlot,
+  INodeOutputSlot,
+  LinkNetwork,
+  LinkSegment,
+  MethodNames,
+  OptionalProps,
+  Point,
+  Positionable,
+  Size
+} from './interfaces'
+import { LiteGraph, SubgraphNode } from './litegraph'
+import {
+  alignOutsideContainer,
+  alignToContainer,
+  createBounds
+} from './measure'
 import { SubgraphInput } from './subgraph/SubgraphInput'
-import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
-import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import { findUsedSubgraphIds, getBoundaryLinks, groupResolvedByOutput, mapSubgraphInputsAndLinks, mapSubgraphOutputsAndLinks, multiClone, splitPositionables } from './subgraph/subgraphUtils'
-import type { Alignment, LGraphEventMode } from './types/globalEnums'
-import type { ExportedSubgraph, ISerialisedGraph, ISerialisedNode, SerialisableGraph } from './types/serialisation'
-import { ExposedWidget, Serialisable, SerialisableReroute } from './types/serialisation'
+import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import {
+  findUsedSubgraphIds,
+  getBoundaryLinks,
+  groupResolvedByOutput,
+  mapSubgraphInputsAndLinks,
+  mapSubgraphOutputsAndLinks,
+  multiClone,
+  splitPositionables
+} from './subgraph/subgraphUtils'
+import { Alignment, LGraphEventMode } from './types/globalEnums'
+import type {
+  ExportedSubgraph,
+  ExposedWidget,
+  ISerialisedGraph,
+  ISerialisedNode,
+  Serialisable,
+  SerialisableGraph,
+  SerialisableReroute
+} from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 
 export interface LGraphState {

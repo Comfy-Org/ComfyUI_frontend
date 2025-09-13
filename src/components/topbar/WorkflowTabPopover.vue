@@ -39,8 +39,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { toRefs } from 'vue'
-import { computed, nextTick, ref, useId } from 'vue'
+import { computed, nextTick, ref, toRefs, useId } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
 

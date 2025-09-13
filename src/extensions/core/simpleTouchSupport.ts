@@ -1,4 +1,4 @@
-import type { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
 

@@ -1,8 +1,11 @@
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
-import { components } from '@/types/comfyRegistryTypes'
-import type { NodePackSearchProvider, SearchPacksResult } from '@/types/searchServiceTypes'
-import { SortableField } from '@/types/searchServiceTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+import type {
+  NodePackSearchProvider,
+  SearchPacksResult,
+  SortableField
+} from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 

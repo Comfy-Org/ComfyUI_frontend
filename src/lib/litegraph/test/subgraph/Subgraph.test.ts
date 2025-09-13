@@ -12,8 +12,11 @@ import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
-import { createTestSubgraphData } from './fixtures/subgraphHelpers'
-import { assertSubgraphStructure, createTestSubgraph } from './fixtures/subgraphHelpers'
+import {
+  assertSubgraphStructure,
+  createTestSubgraph,
+  createTestSubgraphData
+} from './fixtures/subgraphHelpers'
 
 describe('Subgraph Construction', () => {
   it('should create a subgraph with minimal data', () => {

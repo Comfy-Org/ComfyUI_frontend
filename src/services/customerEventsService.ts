@@ -2,9 +2,9 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { components, operations } from '@/types/comfyRegistryTypes'
+import { type components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 export enum EventType {

@@ -8,7 +8,11 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
-import type { EventManagerInterface, LoaderManagerInterface, ModelManagerInterface } from './interfaces'
+import {
+  EventManagerInterface,
+  LoaderManagerInterface,
+  ModelManagerInterface
+} from './interfaces'
 
 export class LoaderManager implements LoaderManagerInterface {
   gltfLoader: GLTFLoader

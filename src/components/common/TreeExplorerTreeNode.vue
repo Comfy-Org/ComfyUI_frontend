@@ -41,8 +41,15 @@ import Badge from 'primevue/badge'
 import { computed, inject, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { usePragmaticDraggable, usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
-import type { InjectKeyHandleEditLabelFunction, RenderedTreeExplorerNode, TreeExplorerDragAndDropData } from '@/types/treeExplorerTypes'
+import {
+  usePragmaticDraggable,
+  usePragmaticDroppable
+} from '@/composables/usePragmaticDragAndDrop'
+import {
+  InjectKeyHandleEditLabelFunction,
+  type RenderedTreeExplorerNode,
+  type TreeExplorerDragAndDropData
+} from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode

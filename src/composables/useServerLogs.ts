@@ -1,7 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 import { onUnmounted, ref } from 'vue'
 
-import type { LogsWsMessage } from '@/schemas/apiSchema'
+import { LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { components } from '@/types/generatedManagerTypes'
 

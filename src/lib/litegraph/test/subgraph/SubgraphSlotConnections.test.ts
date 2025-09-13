@@ -1,15 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import type { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
-import type { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import type { LGraphNode, LinkNetwork } from '@/lib/litegraph/src/litegraph'
-import type { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import type { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { isSubgraphInput, isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { LGraphNode, type LinkNetwork } from '@/lib/litegraph/src/litegraph'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import {
+  isSubgraphInput,
+  isSubgraphOutput
+} from '@/lib/litegraph/src/subgraph/subgraphUtils'
 
-import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
-import { createTestSubgraph } from './fixtures/subgraphHelpers'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
 describe('Subgraph slot connections', () => {
   describe('SubgraphInput connections', () => {

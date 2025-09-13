@@ -2,7 +2,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 

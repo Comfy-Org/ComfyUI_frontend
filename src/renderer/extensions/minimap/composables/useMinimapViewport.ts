@@ -1,10 +1,13 @@
 import { computed, ref } from 'vue'
-import { Ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { useCanvasTransformSync } from '@/composables/canvas/useCanvasTransformSync'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
-import { calculateMinimapScale, enforceMinimumBounds } from '@/renderer/core/spatial/boundsCalculator'
+import {
+  calculateMinimapScale,
+  calculateNodeBounds,
+  enforceMinimumBounds
+} from '@/renderer/core/spatial/boundsCalculator'
 
 import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
 

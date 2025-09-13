@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { Reroute } from '@/lib/litegraph/src/Reroute'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
   INodeInputSlot,
@@ -11,10 +11,10 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
 
-import type { MovingLinkBase } from './MovingLinkBase'
+import { MovingLinkBase } from './MovingLinkBase'
 
 export class MovingInputLink extends MovingLinkBase {
   override readonly toType = 'input'

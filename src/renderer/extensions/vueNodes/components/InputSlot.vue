@@ -29,15 +29,23 @@
 </template>
 
 <script setup lang="ts">
-import { ComponentPublicInstance } from 'vue'
-import { computed, inject, onErrorCaptured, ref, watchEffect } from 'vue'
+import {
+  type ComponentPublicInstance,
+  computed,
+  inject,
+  onErrorCaptured,
+  ref,
+  watchEffect
+} from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getSlotColor } from '@/constants/slotColors'
-import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // DOM-based slot registration for arbitrary positioning
-import type { TransformState } from '@/renderer/core/layout/slots/useDomSlotRegistration'
-import { useDomSlotRegistration } from '@/renderer/core/layout/slots/useDomSlotRegistration'
+import {
+  type TransformState,
+  useDomSlotRegistration
+} from '@/renderer/core/layout/slots/useDomSlotRegistration'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 

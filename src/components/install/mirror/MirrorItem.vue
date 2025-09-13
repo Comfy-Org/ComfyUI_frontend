@@ -23,10 +23,10 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import UrlInput from '@/components/common/UrlInput.vue'
-import type { UVMirror } from '@/constants/uvMirrors'
+import { UVMirror } from '@/constants/uvMirrors'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { checkMirrorReachable } from '@/utils/networkUtil'
-import type { ValidationState } from '@/utils/validationUtil'
+import { ValidationState } from '@/utils/validationUtil'
 
 const { item } = defineProps<{
   item: UVMirror

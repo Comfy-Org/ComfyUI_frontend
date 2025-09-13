@@ -55,8 +55,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { toRef } from 'vue'
-import { computed, onUnmounted, provide } from 'vue'
+import { computed, onUnmounted, provide, toRef } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
@@ -69,8 +68,8 @@ import { usePacksStatus } from '@/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components } from '@/types/comfyRegistryTypes'
-import { ConflictDetail } from '@/types/conflictDetectionTypes'
-import type { ImportFailedKey } from '@/types/importFailedTypes'
+import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]

@@ -1,6 +1,9 @@
 import type { IGalleriaWidget } from '../types/widgets'
-import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
-import { BaseWidget } from './BaseWidget'
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
 /**
  * Widget for displaying image galleries

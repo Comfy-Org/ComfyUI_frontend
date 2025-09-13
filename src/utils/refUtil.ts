@@ -1,6 +1,5 @@
 import { useTimeout } from '@vueuse/core'
-import { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { type Ref, computed, ref, watch } from 'vue'
 
 /**
  * Vue boolean ref (writable computed) with one difference: when set to `true` it stays that way for at least {@link minDuration}.

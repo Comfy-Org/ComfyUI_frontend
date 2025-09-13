@@ -7,11 +7,13 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 
-import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
-import { createNestedSubgraphs, createTestSubgraph } from './fixtures/subgraphHelpers'
+import {
+  createNestedSubgraphs,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphEdgeCases - Recursion Detection', () => {
   it('should handle circular subgraph references without crashing', () => {

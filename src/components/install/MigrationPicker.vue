@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MigrationItems } from '@comfyorg/comfyui-electron-types'
+import { MigrationItems } from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'

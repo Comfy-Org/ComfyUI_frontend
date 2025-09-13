@@ -4,8 +4,7 @@
  * This file contains all type definitions for the layout system
  * that manages node positions, bounds, spatial data, and operations.
  */
-import type { ComputedRef } from 'vue'
-import { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 
 // Enum for layout source types
 export enum LayoutSource {

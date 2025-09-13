@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { TWidgetType } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 
-import { createEventCapture, createTestSubgraphNode } from './fixtures/subgraphHelpers'
-import { createTestSubgraph } from './fixtures/subgraphHelpers'
+import {
+  createEventCapture,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
 // Helper to create a node with a widget
 function createNodeWithWidget(

@@ -30,7 +30,7 @@ import { onMounted, ref, watch } from 'vue'
 
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
-import type { ValidationState } from '@/utils/validationUtil'
+import { ValidationState } from '@/utils/validationUtil'
 
 const props = defineProps<{
   modelValue: string

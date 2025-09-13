@@ -1,8 +1,8 @@
-import type { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
-import type { ComfyWidgets } from '../../scripts/widgets'
+import { ComfyWidgets } from '../../scripts/widgets'
 
 // Node that add notes to your project
 

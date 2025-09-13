@@ -4,7 +4,7 @@ import Select from 'primevue/select'
 import type { SelectProps } from 'primevue/select'
 import { describe, expect, it } from 'vitest'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelect from './WidgetSelect.vue'
 

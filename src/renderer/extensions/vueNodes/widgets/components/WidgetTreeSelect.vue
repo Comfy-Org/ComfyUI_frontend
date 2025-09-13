@@ -17,9 +17,11 @@ import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { PANEL_EXCLUDED_PROPS } from '@/utils/widgetPropFilter'
-import { filterWidgetProps } from '@/utils/widgetPropFilter'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  PANEL_EXCLUDED_PROPS,
+  filterWidgetProps
+} from '@/utils/widgetPropFilter'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

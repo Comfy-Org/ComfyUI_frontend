@@ -6,10 +6,10 @@
  */
 import { computed, inject } from 'vue'
 
-import type { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutSource, Point } from '@/renderer/core/layout/types'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource, type Point } from '@/renderer/core/layout/types'
 
 /**
  * Composable for individual Vue node components

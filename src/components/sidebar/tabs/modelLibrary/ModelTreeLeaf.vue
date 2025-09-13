@@ -20,13 +20,19 @@
 </template>
 
 <script setup lang="ts">
-import type { CSSProperties } from 'vue'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import {
+  CSSProperties,
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref
+} from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import type { ComfyModelDef } from '@/stores/modelStore'
+import { ComfyModelDef } from '@/stores/modelStore'
 import { useSettingStore } from '@/stores/settingStore'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
 

@@ -1,4 +1,4 @@
-import type { FirebaseError } from 'firebase/app'
+import { FirebaseError } from 'firebase/app'
 import { ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'

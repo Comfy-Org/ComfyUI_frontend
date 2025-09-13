@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import { Raw, shallowRef } from 'vue'
-import { computed, markRaw, ref } from 'vue'
+import { type Raw, computed, markRaw, ref, shallowRef } from 'vue'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -9,8 +8,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import type { isLGraphNode } from '@/utils/litegraphUtil'
-import { isLGraphGroup, isReroute } from '@/utils/litegraphUtil'
+import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)

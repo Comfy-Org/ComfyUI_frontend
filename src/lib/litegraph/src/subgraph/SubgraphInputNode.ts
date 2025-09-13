@@ -3,7 +3,7 @@ import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import type { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
   INodeInputSlot,
@@ -13,12 +13,12 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
 import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import { SubgraphInput } from './SubgraphInput'
+import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
 
 export class SubgraphInputNode

@@ -1,6 +1,6 @@
 import { useThrottleFn } from '@vueuse/core'
 import { ref } from 'vue'
-import { Ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'

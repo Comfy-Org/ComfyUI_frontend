@@ -1,6 +1,9 @@
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useQueuePendingTaskCountStore, useQueueSettingsStore } from '@/stores/queueStore'
+import {
+  useQueuePendingTaskCountStore,
+  useQueueSettingsStore
+} from '@/stores/queueStore'
 
 export function setupAutoQueueHandler() {
   const queueCountStore = useQueuePendingTaskCountStore()

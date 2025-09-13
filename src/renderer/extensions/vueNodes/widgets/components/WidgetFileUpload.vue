@@ -185,7 +185,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
   widget: SimplifiedWidget<File[] | null>

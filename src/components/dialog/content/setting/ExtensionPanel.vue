@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FilterMatchMode } from '@primevue/core/api'
+import { FilterMatchMode } from '@primevue/core/api'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import ContextMenu from 'primevue/contextmenu'

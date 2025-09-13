@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
-import { components, operations } from '@/types/comfyRegistryTypes'
+import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 const API_BASE_URL = 'https://api.comfy.org'

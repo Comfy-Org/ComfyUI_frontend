@@ -1,7 +1,11 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import type { ControlsManagerInterface, EventManagerInterface, NodeStorageInterface } from './interfaces'
+import {
+  ControlsManagerInterface,
+  EventManagerInterface,
+  NodeStorageInterface
+} from './interfaces'
 
 export class ControlsManager implements ControlsManagerInterface {
   controls: OrbitControls

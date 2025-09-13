@@ -94,7 +94,7 @@ import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
+import { components as ManagerComponents } from '@/types/generatedManagerTypes'
 import { getJoinedConflictMessages } from '@/utils/conflictMessageUtil'
 import { isSemVer } from '@/utils/formatUtil'
 

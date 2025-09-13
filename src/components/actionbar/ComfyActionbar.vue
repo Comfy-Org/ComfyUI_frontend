@@ -12,12 +12,17 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventBus, useEventListener } from '@vueuse/core'
-import { useDraggable, useElementBounding, useLocalStorage, watchDebounced } from '@vueuse/core'
+import {
+  useDraggable,
+  useElementBounding,
+  useEventBus,
+  useEventListener,
+  useLocalStorage,
+  watchDebounced
+} from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import Panel from 'primevue/panel'
-import { Ref } from 'vue'
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
 

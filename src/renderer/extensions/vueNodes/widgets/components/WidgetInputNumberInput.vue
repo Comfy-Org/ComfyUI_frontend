@@ -4,10 +4,12 @@ import { computed } from 'vue'
 
 import { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-import type { INPUT_EXCLUDED_PROPS } from '@/utils/widgetPropFilter'
-import { filterWidgetProps } from '@/utils/widgetPropFilter'
+import {
+  INPUT_EXCLUDED_PROPS,
+  filterWidgetProps
+} from '@/utils/widgetPropFilter'
 
-import type { WidgetInputBaseClass } from './layout'
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{

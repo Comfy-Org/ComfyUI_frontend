@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import FormSelectButton from './form/FormSelectButton.vue'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'

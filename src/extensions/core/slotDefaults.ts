@@ -1,7 +1,7 @@
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
-import type { ComfyWidgets } from '../../scripts/widgets'
+import { ComfyWidgets } from '../../scripts/widgets'
 
 // Adds defaults for quickly adding nodes with middle click on the input/output
 

@@ -14,7 +14,7 @@ import Chart from 'primevue/chart'
 import { computed } from 'vue'
 
 import type { ChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 type ChartWidgetOptions = NonNullable<ChartInputSpec['options']>
 

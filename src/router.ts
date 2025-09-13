@@ -1,5 +1,10 @@
-import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
-import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
+import {
+  NavigationGuardNext,
+  RouteLocationNormalized,
+  createRouter,
+  createWebHashHistory,
+  createWebHistory
+} from 'vue-router'
 
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 

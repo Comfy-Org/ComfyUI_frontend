@@ -1,6 +1,15 @@
-import type { ComfyNodeDef as ComfyNodeDefV2, InputSpec as InputSpecV2, OutputSpec as OutputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1, InputSpec as InputSpecV1 } from '@/schemas/nodeDefSchema'
-import { getComboSpecComboOptions, isComboInputSpec, isComboInputSpecV1 } from '@/schemas/nodeDefSchema'
+import {
+  ComfyNodeDef as ComfyNodeDefV2,
+  InputSpec as InputSpecV2,
+  OutputSpec as OutputSpecV2
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec as InputSpecV1,
+  getComboSpecComboOptions,
+  isComboInputSpec,
+  isComboInputSpecV1
+} from '@/schemas/nodeDefSchema'
 
 /**
  * Transforms a V1 node definition to V2 format

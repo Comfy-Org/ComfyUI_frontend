@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual('vue-i18n')

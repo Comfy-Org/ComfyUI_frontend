@@ -1,4 +1,4 @@
-import type { Form } from '@primevue/forms'
+import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import Button from 'primevue/button'
@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
 
 import ApiKeyForm from './ApiKeyForm.vue'
 

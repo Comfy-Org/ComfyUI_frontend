@@ -2,11 +2,9 @@
  * Composable for managing widget value synchronization between Vue and LiteGraph
  * Provides consistent pattern for immediate UI updates and LiteGraph callbacks
  */
-import { Ref } from 'vue'
-import { ref, watch } from 'vue'
+import { type Ref, ref, watch } from 'vue'
 
-import type { WidgetValue } from '@/types/simplifiedWidget'
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 interface UseWidgetValueOptions<T extends WidgetValue = WidgetValue, U = T> {
   /** The widget configuration from LiteGraph */

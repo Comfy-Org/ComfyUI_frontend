@@ -78,7 +78,10 @@ import { useConflictDetection } from '@/composables/useConflictDetection'
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useWorkflowService } from '@/services/workflowService'
-import { useComfyManagerStore, useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
+import {
+  useComfyManagerStore,
+  useManagerProgressDialogStore
+} from '@/stores/comfyManagerStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSettingStore } from '@/stores/settingStore'

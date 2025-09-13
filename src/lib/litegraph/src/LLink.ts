@@ -1,10 +1,12 @@
-import type { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import type { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
-import type { RerouteId } from './Reroute'
-import { Reroute } from './Reroute'
+import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -14,8 +16,11 @@ import type {
   LinkSegment,
   ReadonlyLinkNetwork
 } from './interfaces'
-import type { SerialisableLLink, SubgraphIO } from './types/serialisation'
-import { Serialisable } from './types/serialisation'
+import type {
+  Serialisable,
+  SerialisableLLink,
+  SubgraphIO
+} from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 

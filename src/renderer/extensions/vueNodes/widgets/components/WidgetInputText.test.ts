@@ -5,7 +5,7 @@ import type { InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import { describe, expect, it } from 'vitest'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
 

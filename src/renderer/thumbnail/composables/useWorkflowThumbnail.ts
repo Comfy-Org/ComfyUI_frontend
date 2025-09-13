@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
 import { createGraphThumbnail } from '@/renderer/thumbnail/graphThumbnailRenderer'
-import type { ComfyWorkflow } from '@/stores/workflowStore'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 
 // Store thumbnails for each workflow
 const workflowThumbnails = ref<Map<string, string>>(new Map())

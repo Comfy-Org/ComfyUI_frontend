@@ -128,7 +128,15 @@
 import { whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import Button from 'primevue/button'
-import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -151,7 +159,7 @@ import { useRegistrySearch } from '@/composables/useRegistrySearch'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { TabItem } from '@/types/comfyManagerTypes'
-import type { ManagerTab } from '@/types/comfyManagerTypes'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 
 const { initialTab } = defineProps<{

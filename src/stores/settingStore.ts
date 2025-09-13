@@ -2,7 +2,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'

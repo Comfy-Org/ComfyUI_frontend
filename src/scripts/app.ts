@@ -5,8 +5,13 @@ import { reactive } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { useWorkflowValidation } from '@/composables/useWorkflowValidation'
 import { st, t } from '@/i18n'
-import type { LGraphEventMode, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type {
@@ -14,10 +19,18 @@ import type {
   NodeError,
   ResultItem
 } from '@/schemas/apiSchema'
-import type { ComfyApiWorkflow, NodeId } from '@/schemas/comfyWorkflowSchema'
-import { ComfyWorkflowJSON, ModelFile, isSubgraphDefinition } from '@/schemas/comfyWorkflowSchema'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
+import {
+  ComfyApiWorkflow,
+  type ComfyWorkflowJSON,
+  type ModelFile,
+  type NodeId,
+  isSubgraphDefinition
+} from '@/schemas/comfyWorkflowSchema'
+import {
+  type ComfyNodeDef as ComfyNodeDefV1,
+  isComboInputSpecV1,
+  isComboInputSpecV2
+} from '@/schemas/nodeDefSchema'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
@@ -36,42 +49,52 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { KeyComboImpl } from '@/stores/keybindingStore'
-import { useKeybindingStore } from '@/stores/keybindingStore'
+import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
-import type { SYSTEM_NODE_DEFS } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import type { ComfyWorkflow } from '@/stores/workflowStore'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import type { ExtensionManager } from '@/types/extensionTypes'
-import { NodeExecutionId } from '@/types/nodeIdentification'
-import type { ColorAdjustOptions } from '@/utils/colorUtil'
-import { adjustColor } from '@/utils/colorUtil'
+import { ExtensionManager } from '@/types/extensionTypes'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
-import { getNodeByExecutionId, triggerCallbackOnAllNodes } from '@/utils/graphTraversalUtil'
-import { fixLinkInputSlots, isImageNode } from '@/utils/litegraphUtil'
-import { executeWidgetsCallback } from '@/utils/litegraphUtil'
-import { findLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
-import { noNativeReroutes } from '@/utils/migration/migrateReroute'
+import {
+  getNodeByExecutionId,
+  triggerCallbackOnAllNodes
+} from '@/utils/graphTraversalUtil'
+import {
+  executeWidgetsCallback,
+  fixLinkInputSlots,
+  isImageNode
+} from '@/utils/litegraphUtil'
+import {
+  findLegacyRerouteNodes,
+  noNativeReroutes
+} from '@/utils/migration/migrateReroute'
 import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import type { ComfyApi, PromptExecutionError } from './api'
-import { api } from './api'
+import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
-import { getAvifMetadata, getFlacMetadata, getLatentMetadata, getPngMetadata, getWebpMetadata, importA1111 } from './pnginfo'
-import { ComfyUI } from './ui'
-import { $el } from './ui'
+import {
+  getAvifMetadata,
+  getFlacMetadata,
+  getLatentMetadata,
+  getPngMetadata,
+  getWebpMetadata,
+  importA1111
+} from './pnginfo'
+import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import type { ComfyWidgetConstructor } from './widgets'
+import { type ComfyWidgetConstructor } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { ModelFile } from '@/schemas/assetSchema'
+import type { ModelFile } from '@/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { assetService } from '@/services/assetService'
 import { useSettingStore } from '@/stores/settingStore'

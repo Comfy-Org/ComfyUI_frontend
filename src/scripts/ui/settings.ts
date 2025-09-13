@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'

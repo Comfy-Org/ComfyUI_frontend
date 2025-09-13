@@ -1,18 +1,28 @@
-import type { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
-import { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { ExecutableLGraphNode, ExecutionId, LGraphCanvas, LGraphNode, LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNode, ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
-import { ComfyLink } from '@/schemas/comfyWorkflowSchema'
+import { type NodeId } from '@/lib/litegraph/src/LGraphNode'
+import {
+  type ExecutableLGraphNode,
+  type ExecutionId,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  ComfyLink,
+  ComfyNode,
+  ComfyWorkflowJSON
+} from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import type { ComfyExtension } from '@/types/comfy'
+import { ComfyExtension } from '@/types/comfy'
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
-import type { GROUP } from '@/utils/executableGroupNodeDto'
+import { GROUP } from '@/utils/executableGroupNodeDto'
 import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'

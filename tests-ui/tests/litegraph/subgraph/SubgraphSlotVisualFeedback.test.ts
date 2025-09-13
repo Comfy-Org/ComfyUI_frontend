@@ -1,7 +1,7 @@
 // TODO: Fix these tests after migration
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createTestSubgraph } from './fixtures/subgraphHelpers'
 

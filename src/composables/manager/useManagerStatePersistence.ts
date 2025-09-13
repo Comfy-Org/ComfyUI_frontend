@@ -1,4 +1,8 @@
-import type { ManagerState, ManagerTab, SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import {
+  ManagerState,
+  ManagerTab,
+  SortableAlgoliaField
+} from '@/types/comfyManagerTypes'
 
 const STORAGE_KEY = 'Comfy.Manager.UI.State'
 

@@ -1,6 +1,10 @@
 import * as THREE from 'three'
 
-import type { AnimationItem, AnimationManagerInterface, EventManagerInterface } from '@/extensions/core/load3d/interfaces'
+import {
+  AnimationItem,
+  AnimationManagerInterface,
+  EventManagerInterface
+} from '@/extensions/core/load3d/interfaces'
 
 export class AnimationManager implements AnimationManagerInterface {
   currentAnimation: THREE.AnimationMixer | null = null

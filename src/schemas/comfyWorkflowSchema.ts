@@ -1,5 +1,4 @@
-import type { SafeParseReturnType } from 'zod'
-import { z } from 'zod'
+import { type SafeParseReturnType, z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 // GroupNode is hacking node id to be a string, so we need to allow that.

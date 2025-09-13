@@ -1,7 +1,7 @@
-import { InjectionKey, Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 
 export type RegistryPack = components['schemas']['Node']
 export type MergedNodePack = RegistryPack & AlgoliaNodePack

@@ -7,9 +7,15 @@
 import log from 'loglevel'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutSource, NodeLayout, Point, RerouteId, Size } from '@/renderer/core/layout/types'
-import { LinkId } from '@/renderer/core/layout/types'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  LayoutSource,
+  type LinkId,
+  type NodeLayout,
+  type Point,
+  type RerouteId,
+  type Size
+} from '@/renderer/core/layout/types'
 
 const logger = log.getLogger('LayoutMutations')
 

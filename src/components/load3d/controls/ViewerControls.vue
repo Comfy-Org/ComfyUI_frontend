@@ -15,12 +15,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Tooltip } from 'primevue'
+import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 

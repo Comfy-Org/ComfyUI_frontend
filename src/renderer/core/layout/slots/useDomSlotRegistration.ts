@@ -10,12 +10,18 @@
  * - Batch DOM reads via requestAnimationFrame
  * - Only remeasure on structural changes (resize, collapse, LOD)
  */
-import type { WatchStopHandle } from 'vue'
-import { Ref } from 'vue'
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  type Ref,
+  type WatchStopHandle,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch
+} from 'vue'
 
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
 import { getSlotKey } from './slotIdentifier'

@@ -8,7 +8,7 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type {
   CanvasColour,
@@ -16,12 +16,24 @@ import type {
   INodeOutputSlot,
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LinkDirection, LinkMarkerShape, LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LinkDirection,
+  LinkMarkerShape,
+  LinkRenderType
+} from '@/lib/litegraph/src/types/globalEnums'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import type { ArrowShape, Direction, DragLinkData, LinkRenderData, RenderContext as PathRenderContext, RenderMode } from '@/renderer/core/canvas/pathRenderer'
-import { CanvasPathRenderer, Point } from '@/renderer/core/canvas/pathRenderer'
-import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  type ArrowShape,
+  CanvasPathRenderer,
+  type Direction,
+  type DragLinkData,
+  type LinkRenderData,
+  type RenderContext as PathRenderContext,
+  type Point,
+  type RenderMode
+} from '@/renderer/core/canvas/pathRenderer'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {

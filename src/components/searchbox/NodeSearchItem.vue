@@ -52,10 +52,9 @@ import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
-import type { NodeSourceType } from '@/types/nodeSource'
+import { NodeSourceType } from '@/types/nodeSource'
 import { highlightQuery } from '@/utils/formatUtil'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'
 

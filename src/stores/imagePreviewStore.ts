@@ -1,7 +1,15 @@
 import { defineStore } from 'pinia'
 
-import type { LGraphNode, Subgraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage, ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import {
+  LGraphNode,
+  Subgraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  ExecutedWsMessage,
+  ResultItem,
+  ResultItemType
+} from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'

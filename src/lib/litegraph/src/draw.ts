@@ -1,7 +1,7 @@
 import type { Rectangle } from './infrastructure/Rectangle'
 import type { CanvasColour, Rect } from './interfaces'
-import type { LiteGraph } from './litegraph'
-import type { RenderShape, TitleMode } from './types/globalEnums'
+import { LiteGraph } from './litegraph'
+import { RenderShape, TitleMode } from './types/globalEnums'
 
 const ELLIPSIS = '\u2026'
 const TWO_DOT_LEADER = '\u2025'

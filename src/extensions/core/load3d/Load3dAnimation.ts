@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { AnimationManager } from './AnimationManager'
 import Load3d from './Load3d'
-import type { Load3DOptions } from './interfaces'
+import { Load3DOptions } from './interfaces'
 
 class Load3dAnimation extends Load3d {
   private animationManager: AnimationManager

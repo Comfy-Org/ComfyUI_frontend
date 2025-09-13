@@ -2,7 +2,7 @@ import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/brow
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
-import type { SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 
 // Mock global Algolia constants
 

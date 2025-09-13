@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Form, FormSubmitEvent } from '@primevue/forms'
+import { Form, FormSubmitEvent } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -87,8 +87,8 @@ import Message from 'primevue/message'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
-import type { apiKeySchema } from '@/schemas/signInSchema'
+import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 

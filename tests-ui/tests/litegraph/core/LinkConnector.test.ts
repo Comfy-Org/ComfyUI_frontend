@@ -2,12 +2,17 @@ import { test as baseTest, describe, expect, vi } from 'vitest'
 
 import { LinkConnector } from '@/lib/litegraph/src/litegraph'
 import type { MovingInputLink } from '@/lib/litegraph/src/litegraph'
-import type { ToInputRenderLink } from '@/lib/litegraph/src/litegraph'
-import { LinkNetwork } from '@/lib/litegraph/src/litegraph'
+import { ToInputRenderLink } from '@/lib/litegraph/src/litegraph'
+import type { LinkNetwork } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, RerouteId } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LLink, Reroute } from '@/lib/litegraph/src/litegraph'
-import type { LinkDirection } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LLink,
+  Reroute,
+  type RerouteId
+} from '@/lib/litegraph/src/litegraph'
+import { LinkDirection } from '@/lib/litegraph/src/litegraph'
 
 interface TestContext {
   network: LinkNetwork & { add(node: LGraphNode): void }

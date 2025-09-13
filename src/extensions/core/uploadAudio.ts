@@ -1,4 +1,4 @@
-import type { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
+import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
@@ -12,10 +12,10 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { DOMWidget } from '@/scripts/domWidget'
+import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import { useToastStore } from '@/stores/toastStore'
-import type { NodeLocatorId } from '@/types'
+import { NodeLocatorId } from '@/types'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'

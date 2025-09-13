@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import type { PrimeIcons } from '@primevue/core/api'
+import { PrimeIcons } from '@primevue/core/api'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import Toast from 'primevue/toast'
@@ -100,7 +100,7 @@ import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
 import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
-import type { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
+import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 

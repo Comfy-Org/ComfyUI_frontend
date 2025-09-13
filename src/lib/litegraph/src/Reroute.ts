@@ -1,10 +1,9 @@
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import type { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode, NodeId } from './LGraphNode'
-import type { LinkId } from './LLink'
-import { LLink } from './LLink'
+import { LLink, type LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -17,8 +16,7 @@ import type {
   ReadonlyLinkNetwork
 } from './interfaces'
 import { distance, isPointInRect } from './measure'
-import type { SerialisableReroute } from './types/serialisation'
-import { Serialisable } from './types/serialisation'
+import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 

@@ -129,11 +129,10 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
-import { Ref } from 'vue'
-import { computed, h, nextTick, ref, render } from 'vue'
+import { Ref, computed, h, nextTick, ref, render } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
+import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
@@ -142,8 +141,11 @@ import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { DEFAULT_GROUPING_ID, DEFAULT_SORTING_ID } from '@/services/nodeOrganizationService'
-import { nodeOrganizationService } from '@/services/nodeOrganizationService'
+import {
+  DEFAULT_GROUPING_ID,
+  DEFAULT_SORTING_ID,
+  nodeOrganizationService
+} from '@/services/nodeOrganizationService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'

@@ -14,8 +14,11 @@ import { useEventListener } from '@vueuse/core'
 import { nextTick, ref } from 'vue'
 
 import { st } from '@/i18n'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isOverNodeInput, isOverNodeOutput } from '@/lib/litegraph/src/litegraph'
+import {
+  LiteGraph,
+  isOverNodeInput,
+  isOverNodeOutput
+} from '@/lib/litegraph/src/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

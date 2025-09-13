@@ -29,8 +29,7 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { shallowRef } from 'vue'
-import { computed, ref, useId } from 'vue'
+import { computed, ref, shallowRef, useId } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import NodePreview from '@/components/node/NodePreview.vue'

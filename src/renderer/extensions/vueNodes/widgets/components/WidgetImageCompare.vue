@@ -28,7 +28,7 @@
 import ImageCompare from 'primevue/imagecompare'
 import { computed } from 'vue'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 interface ImageCompareValue {
   before: string

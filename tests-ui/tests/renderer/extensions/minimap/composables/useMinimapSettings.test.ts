@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMinimapSettings } from '@/renderer/extensions/minimap/composables/useMinimapSettings'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 vi.mock('@/stores/settingStore')
 vi.mock('@/stores/workspace/colorPaletteStore')

@@ -4,8 +4,7 @@ import { computed, ref } from 'vue'
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
 import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DisplayComponentWsMessage,
   ExecutedWsMessage,
@@ -18,8 +17,11 @@ import type {
   ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
-import type { ComfyNode, ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
-import { NodeId } from '@/schemas/comfyWorkflowSchema'
+import type {
+  ComfyNode,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -27,8 +29,7 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { useCanvasStore } from './graphStore'
-import type { ComfyWorkflow } from './workflowStore'
-import { useWorkflowStore } from './workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 
 interface QueuedPrompt {
   /**

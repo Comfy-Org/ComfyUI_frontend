@@ -1,4 +1,7 @@
-import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import {
+  draggable,
+  dropTargetForElements
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { onBeforeUnmount, onMounted } from 'vue'
 
 export function usePragmaticDroppable(

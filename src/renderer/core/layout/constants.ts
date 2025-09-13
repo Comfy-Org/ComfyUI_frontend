@@ -4,7 +4,7 @@
  * Centralized configuration values for the layout system.
  * These values control spatial indexing, performance, and behavior.
  */
-import type { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 /**
  * QuadTree configuration for spatial indexing

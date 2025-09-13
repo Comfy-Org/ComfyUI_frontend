@@ -2,7 +2,7 @@ import { computed, onMounted } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 /**

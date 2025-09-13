@@ -54,7 +54,7 @@ import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSub
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
-import { ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
+import { type ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 
 const commandStore = useCommandStore()

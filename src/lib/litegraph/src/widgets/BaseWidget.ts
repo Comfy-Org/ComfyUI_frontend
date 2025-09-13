@@ -7,9 +7,9 @@ import type {
   LGraphNode,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */

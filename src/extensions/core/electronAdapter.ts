@@ -1,6 +1,6 @@
 import log from 'loglevel'
 
-import type { PYTHON_MIRROR } from '@/constants/uvMirrors'
+import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'

@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ComfyModelDef } from '@/stores/modelStore'
+import { ComfyModelDef } from '@/stores/modelStore'
 
 const props = defineProps({
   modelDef: {

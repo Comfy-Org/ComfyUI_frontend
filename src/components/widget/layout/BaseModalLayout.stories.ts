@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'
@@ -12,7 +12,7 @@ import MultiSelect from '@/components/input/MultiSelect.vue'
 import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import type { OnCloseKey } from '@/types/widgetTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'

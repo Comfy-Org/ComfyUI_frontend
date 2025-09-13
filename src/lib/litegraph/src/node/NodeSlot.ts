@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
+import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
   CanvasColour,
   DefaultConnectionColors,
@@ -11,15 +11,17 @@ import type {
   Point,
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { Rectangle } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { getCentre } from '@/lib/litegraph/src/measure'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import type { LinkDirection, RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LinkDirection,
+  RenderShape
+} from '@/lib/litegraph/src/types/globalEnums'
 
-import type { NodeInputSlot } from './NodeInputSlot'
-import type { SlotBase } from './SlotBase'
+import { NodeInputSlot } from './NodeInputSlot'
+import { SlotBase } from './SlotBase'
 
 export interface IDrawOptions {
   colorContext: DefaultConnectionColors

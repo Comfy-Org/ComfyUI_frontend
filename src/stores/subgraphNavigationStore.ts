@@ -1,7 +1,6 @@
 import QuickLRU from '@alloc/quick-lru'
 import { defineStore } from 'pinia'
-import { shallowRef } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'

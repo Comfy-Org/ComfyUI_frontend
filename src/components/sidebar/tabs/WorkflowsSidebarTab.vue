@@ -143,11 +143,14 @@ import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLe
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useWorkflowService } from '@/services/workflowService'
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowBookmarkStore, useWorkflowStore } from '@/stores/workflowStore'
+import {
+  useWorkflowBookmarkStore,
+  useWorkflowStore
+} from '@/stores/workflowStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 

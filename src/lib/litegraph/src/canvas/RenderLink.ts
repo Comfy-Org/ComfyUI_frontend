@@ -1,10 +1,14 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type { LinkNetwork, Point } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot, INodeOutputSlot, LLink } from '@/lib/litegraph/src/litegraph'
-import { Reroute } from '@/lib/litegraph/src/litegraph'
-import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  LLink,
+  Reroute
+} from '@/lib/litegraph/src/litegraph'
+import type { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'

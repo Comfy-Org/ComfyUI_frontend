@@ -1,8 +1,11 @@
-import type { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
+import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { KeyComboImpl } from '@/stores/keybindingStore'
-import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import {
+  KeyComboImpl,
+  KeybindingImpl,
+  useKeybindingStore
+} from '@/stores/keybindingStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 export const useKeybindingService = () => {

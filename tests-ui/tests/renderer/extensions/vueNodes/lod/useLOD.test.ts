@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
-import type { LODLevel, LOD_THRESHOLDS } from '@/renderer/extensions/vueNodes/lod/useLOD'
-import { supportsFeatureAtZoom, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import {
+  LODLevel,
+  LOD_THRESHOLDS,
+  supportsFeatureAtZoom,
+  useLOD
+} from '@/renderer/extensions/vueNodes/lod/useLOD'
 
 describe('useLOD', () => {
   describe('LOD level detection', () => {

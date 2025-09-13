@@ -74,10 +74,17 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { whenever } from '@vueuse/core'
-import { shallowRef } from 'vue'
-import { computed, onMounted, onUnmounted, provide, ref, watch, watchEffect } from 'vue'
+import { useEventListener, whenever } from '@vueuse/core'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  shallowRef,
+  watch,
+  watchEffect
+} from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -103,20 +110,18 @@ import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useWorkflowAutoSave } from '@/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
-import type { CORE_SETTINGS } from '@/constants/coreSettings'
+import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n, t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import TransformPane from '@/renderer/core/layout/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import VueGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import type { UnauthorizedError } from '@/scripts/api'
-import { api } from '@/scripts/api'
+import { UnauthorizedError, api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import type { ChangeTracker } from '@/scripts/changeTracker'
-import type { IS_CONTROL_WIDGET } from '@/scripts/widgets'
-import { updateControlWidgetLabel } from '@/scripts/widgets'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { newUserService } from '@/services/newUserService'
 import { useWorkflowService } from '@/services/workflowService'

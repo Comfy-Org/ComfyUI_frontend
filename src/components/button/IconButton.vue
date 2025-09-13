@@ -15,8 +15,12 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import type { BaseButtonProps } from '@/types/buttonTypes'
-import { getBorderButtonTypeClasses, getButtonTypeClasses, getIconButtonSizeClasses } from '@/types/buttonTypes'
-import { getBaseButtonClasses } from '@/types/buttonTypes'
+import {
+  getBaseButtonClasses,
+  getBorderButtonTypeClasses,
+  getButtonTypeClasses,
+  getIconButtonSizeClasses
+} from '@/types/buttonTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 interface IconButtonProps extends BaseButtonProps {

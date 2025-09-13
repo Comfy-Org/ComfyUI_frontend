@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import type { resultItemType } from '@/schemas/apiSchema'
+import { resultItemType } from '@/schemas/apiSchema'
 
 const zComboOption = z.union([z.string(), z.number()])
 const zRemoteWidgetConfig = z.object({

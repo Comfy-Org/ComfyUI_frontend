@@ -57,8 +57,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import type { ComfyWorkflow } from '@/stores/workflowStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
 interface Props {

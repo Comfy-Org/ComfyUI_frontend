@@ -99,19 +99,21 @@ import type { MenuItem } from 'primevue/menuitem'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { shallowRef } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import type { ComfyNode } from '@/schemas/comfyWorkflowSchema'
+import { ComfyNode } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
-import type { TaskItemImpl } from '@/stores/queueStore'
-import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  ResultItemImpl,
+  TaskItemImpl,
+  useQueueStore
+} from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 
 import SidebarTabTemplate from './SidebarTabTemplate.vue'

@@ -2,11 +2,16 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { findUsedSubgraphIds, getDirectSubgraphIds } from '@/lib/litegraph/src/litegraph'
+import {
+  findUsedSubgraphIds,
+  getDirectSubgraphIds
+} from '@/lib/litegraph/src/litegraph'
 import type { UUID } from '@/lib/litegraph/src/litegraph'
 
-import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
-import { createTestSubgraph } from './fixtures/subgraphHelpers'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
 describe.skip('subgraphUtils', () => {
   describe.skip('getDirectSubgraphIds', () => {

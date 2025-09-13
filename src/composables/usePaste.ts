@@ -1,8 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Tooltip } from 'primevue'
+import { Tooltip } from 'primevue'
 import Button from 'primevue/button'
 import Slider from 'primevue/slider'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'

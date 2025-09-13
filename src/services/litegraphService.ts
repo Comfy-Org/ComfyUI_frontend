@@ -5,9 +5,19 @@ import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st, t } from '@/i18n'
-import type { LGraphCanvas, LGraphEventMode, LGraphNode, LiteGraph, RenderShape, Subgraph, SubgraphNode, Vector2 } from '@/lib/litegraph/src/litegraph'
-import { IContextMenuValue, LGraphBadge } from '@/lib/litegraph/src/litegraph'
-import { createBounds } from '@/lib/litegraph/src/litegraph'
+import {
+  type IContextMenuValue,
+  LGraphBadge,
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph,
+  RenderShape,
+  type Subgraph,
+  SubgraphNode,
+  type Vector2,
+  createBounds
+} from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
@@ -22,10 +32,8 @@ import type {
   OutputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
-import { app } from '@/scripts/app'
-import { isComponentWidget } from '@/scripts/domWidget'
-import { isDOMWidget } from '@/scripts/domWidget'
+import { ComfyApp, app } from '@/scripts/app'
+import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -38,8 +46,11 @@ import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
-import { migrateWidgetsValues } from '@/utils/litegraphUtil'
+import {
+  isImageNode,
+  isVideoNode,
+  migrateWidgetsValues
+} from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'

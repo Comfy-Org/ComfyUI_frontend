@@ -1,7 +1,7 @@
-import type { Component } from 'vue'
+import { Component } from 'vue'
 
 import type { useDialogService } from '@/services/dialogService'
-import { ComfyCommand } from '@/stores/commandStore'
+import type { ComfyCommand } from '@/stores/commandStore'
 
 interface BaseSidebarTabExtension {
   id: string

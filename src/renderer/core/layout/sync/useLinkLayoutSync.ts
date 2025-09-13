@@ -10,14 +10,14 @@ import { onUnmounted } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { ReadOnlyPoint } from '@/lib/litegraph/src/interfaces'
-import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 
 const logger = log.getLogger('useLinkLayoutSync')

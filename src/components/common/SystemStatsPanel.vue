@@ -42,7 +42,7 @@ import TabView from 'primevue/tabview'
 import { computed } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
-import { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/schemas/apiSchema'
 import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{

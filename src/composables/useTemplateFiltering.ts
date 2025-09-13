@@ -1,7 +1,6 @@
-import { Ref } from 'vue'
-import { computed, ref } from 'vue'
+import { type Ref, computed, ref } from 'vue'
 
-import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 // @ts-expect-error unused (To be used later?)
 interface TemplateFilterOptions {

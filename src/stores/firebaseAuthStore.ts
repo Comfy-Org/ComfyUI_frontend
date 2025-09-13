@@ -1,16 +1,31 @@
-import type { FirebaseError } from 'firebase/app'
-import type { Auth, AuthErrorCodes, User, UserCredential } from 'firebase/auth'
-import { GithubAuthProvider, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth'
-import { browserLocalPersistence, createUserWithEmailAndPassword, deleteUser, sendPasswordResetEmail, setPersistence, signInWithEmailAndPassword, signInWithPopup, signOut, updatePassword } from 'firebase/auth'
+import { FirebaseError } from 'firebase/app'
+import {
+  type Auth,
+  AuthErrorCodes,
+  GithubAuthProvider,
+  GoogleAuthProvider,
+  type User,
+  type UserCredential,
+  browserLocalPersistence,
+  createUserWithEmailAndPassword,
+  deleteUser,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updatePassword
+} from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
-import type { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import { COMFY_API_BASE_URL } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import type { AuthHeader } from '@/types/authTypes'
+import { type AuthHeader } from '@/types/authTypes'
 import { operations } from '@/types/comfyRegistryTypes'
 
 type CreditPurchaseResponse =

@@ -6,10 +6,9 @@
 </template>
 
 <script setup lang="ts">
-import type { PrimeIcons } from '@primevue/core/api'
+import { PrimeIcons } from '@primevue/core/api'
 import ProgressSpinner from 'primevue/progressspinner'
-import type { MaybeRef } from 'vue'
-import { computed } from 'vue'
+import { MaybeRef, computed } from 'vue'
 
 import { t } from '@/i18n'
 

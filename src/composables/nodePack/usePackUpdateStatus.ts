@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import { compareVersions, isSemVer } from '@/utils/formatUtil'
 
 export const usePackUpdateStatus = (

@@ -3,15 +3,17 @@ import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
-import type { BadgePosition, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
+import {
+  BadgePosition,
+  LGraphBadge,
+  type LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import type { NodeBadgeMode } from '@/types/nodeSource'
+import { NodeBadgeMode } from '@/types/nodeSource'
 import { adjustColor } from '@/utils/colorUtil'
 
 /**

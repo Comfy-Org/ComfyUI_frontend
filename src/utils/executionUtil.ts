@@ -1,8 +1,16 @@
-import type { ExecutableLGraphNode, ExecutionId, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
-import { ComfyApiWorkflow } from '@/schemas/comfyWorkflowSchema'
+import type {
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraph
+} from '@/lib/litegraph/src/litegraph'
+import {
+  ExecutableNodeDTO,
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/schemas/comfyWorkflowSchema'
 
 import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'

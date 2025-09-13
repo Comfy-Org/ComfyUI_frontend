@@ -1,7 +1,15 @@
-import type { LGraphEventMode, LGraphNode, Positionable, Reroute } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
+  Positionable,
+  Reroute
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
-import { collectFromNodes, traverseNodesDepthFirst } from '@/utils/graphTraversalUtil'
+import {
+  collectFromNodes,
+  traverseNodesDepthFirst
+} from '@/utils/graphTraversalUtil'
 
 /**
  * Composable for handling selected LiteGraph items filtering and operations.

@@ -1,7 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 import { pickBy } from 'es-toolkit/compat'
-import { Ref } from 'vue'
-import { computed, ref } from 'vue'
+import { Ref, computed, ref } from 'vue'
 
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'

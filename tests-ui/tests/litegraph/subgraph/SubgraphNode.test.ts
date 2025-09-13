@@ -7,12 +7,13 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
-import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
-import { createTestSubgraph } from './fixtures/subgraphHelpers'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphNode Construction', () => {
   it('should create a SubgraphNode from a subgraph definition', () => {

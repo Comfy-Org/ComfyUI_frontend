@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeError } from '@/schemas/apiSchema'
 import type {
   ComfyNode,
@@ -21,9 +21,12 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import type { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflow, LoadedComfyWorkflow } from '@/stores/workflowStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { UserFile } from '@/stores/userFileStore'
+import {
+  ComfyWorkflow,
+  LoadedComfyWorkflow,
+  useWorkflowStore
+} from '@/stores/workflowStore'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({

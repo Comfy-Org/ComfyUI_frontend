@@ -2,8 +2,8 @@ import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
-import type { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
-import type { ComfyExtension } from '@/types/comfy'
+import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
+import { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 

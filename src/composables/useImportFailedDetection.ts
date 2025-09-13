@@ -1,11 +1,10 @@
-import type { ComputedRef } from 'vue'
-import { computed, unref } from 'vue'
+import { type ComputedRef, computed, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import { ConflictDetail } from '@/types/conflictDetectionTypes'
+import type { ConflictDetail } from '@/types/conflictDetectionTypes'
 
 /**
  * Extracting import failed conflicts from conflict list

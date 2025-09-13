@@ -1,6 +1,9 @@
 import type { IFileUploadWidget } from '../types/widgets'
-import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
-import { BaseWidget } from './BaseWidget'
+import {
+  BaseWidget,
+  type DrawWidgetOptions,
+  type WidgetEventOptions
+} from './BaseWidget'
 
 /**
  * Widget for handling file uploads

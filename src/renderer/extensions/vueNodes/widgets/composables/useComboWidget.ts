@@ -8,12 +8,20 @@ import type {
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { BaseDOMWidget, ComponentWidgetImpl } from '@/scripts/domWidget'
-import { addWidget } from '@/scripts/domWidget'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { addValueControlWidgets } from '@/scripts/widgets'
+import {
+  ComboInputSpec,
+  type InputSpec,
+  isComboInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import {
+  type BaseDOMWidget,
+  ComponentWidgetImpl,
+  addWidget
+} from '@/scripts/domWidget'
+import {
+  type ComfyWidgetConstructorV2,
+  addValueControlWidgets
+} from '@/scripts/widgets'
 import { assetService } from '@/services/assetService'
 import { useSettingStore } from '@/stores/settingStore'
 

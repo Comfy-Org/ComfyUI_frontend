@@ -126,7 +126,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import { useZoomControls } from '@/composables/useZoomControls'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'

@@ -9,15 +9,14 @@ import type {
   Point,
   ReadOnlyRect
 } from '@/lib/litegraph/src/interfaces'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
-import type { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot } from './subgraphUtils'
-import { isSubgraphOutput } from './subgraphUtils'
+import { SubgraphSlot } from './SubgraphSlotBase'
+import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
 
 /**
  * An input "slot" from a parent graph into a subgraph.

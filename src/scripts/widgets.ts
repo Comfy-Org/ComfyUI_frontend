@@ -1,8 +1,10 @@
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget, IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import { IStringWidget } from '@/lib/litegraph/src/types/widgets'
+import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IComboWidget,
+  IStringWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'

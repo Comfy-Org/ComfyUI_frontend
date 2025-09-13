@@ -1,7 +1,6 @@
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { NodeSourceType } from '@/types/nodeSource'
-import { getNodeSource } from '@/types/nodeSource'
+import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/utils/nodeHelpUtil'
 
 class NodeHelpService {

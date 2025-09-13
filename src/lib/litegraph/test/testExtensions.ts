@@ -1,7 +1,7 @@
 import { test as baseTest } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type {
   ISerialisedGraph,
@@ -11,8 +11,11 @@ import floatingBranch from './assets/floatingBranch.json' with { type: 'json' }
 import floatingLink from './assets/floatingLink.json' with { type: 'json' }
 import linkedNodes from './assets/linkedNodes.json' with { type: 'json' }
 import reroutesComplex from './assets/reroutesComplex.json' with { type: 'json' }
-import type { oldSchemaGraph } from './assets/testGraphs'
-import { basicSerialisableGraph, minimalSerialisableGraph } from './assets/testGraphs'
+import {
+  basicSerialisableGraph,
+  minimalSerialisableGraph,
+  oldSchemaGraph
+} from './assets/testGraphs'
 
 interface LitegraphFixtures {
   minimalGraph: LGraph

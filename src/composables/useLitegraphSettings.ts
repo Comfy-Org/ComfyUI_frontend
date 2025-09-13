@@ -1,6 +1,10 @@
 import { watchEffect } from 'vue'
 
-import type { CanvasPointer, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  CanvasPointer,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 

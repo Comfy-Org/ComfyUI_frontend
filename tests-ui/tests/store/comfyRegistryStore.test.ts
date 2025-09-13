@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { components, operations } from '@/types/comfyRegistryTypes'
+import type { components, operations } from '@/types/comfyRegistryTypes'
 
 vi.mock('@/services/comfyRegistryService', () => ({
   useComfyRegistryService: vi.fn()

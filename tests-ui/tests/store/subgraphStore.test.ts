@@ -1,8 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createTestSubgraphNode } from '@/lib/litegraph/test/subgraph/fixtures/subgraphHelpers'
-import { createTestSubgraph } from '@/lib/litegraph/test/subgraph/fixtures/subgraphHelpers'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/test/subgraph/fixtures/subgraphHelpers'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'

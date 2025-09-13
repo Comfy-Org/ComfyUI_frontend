@@ -6,7 +6,7 @@ import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/stores/settingStore'
 
-import type { LiteGraph } from '../lib/litegraph/src/litegraph'
+import { LiteGraph } from '../lib/litegraph/src/litegraph'
 
 export const useVueFeatureFlags = () => {
   const settingStore = useSettingStore()

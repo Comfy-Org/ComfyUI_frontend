@@ -9,11 +9,19 @@ import type {
   Point,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
-import type { CanvasColour, CanvasPointer, CanvasPointerEvent, IContextMenuValue, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  type CanvasColour,
+  type CanvasPointer,
+  type CanvasPointerEvent,
+  type IContextMenuValue,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
-import type { ExportedSubgraphIONode } from '@/lib/litegraph/src/types/serialisation'
-import { Serialisable } from '@/lib/litegraph/src/types/serialisation'
+import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
+import type {
+  ExportedSubgraphIONode,
+  Serialisable
+} from '@/lib/litegraph/src/types/serialisation'
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'

@@ -1,8 +1,7 @@
 import glob from 'fast-glob'
 import fs from 'fs-extra'
 import { dirname, join } from 'node:path'
-import type { HtmlTagDescriptor, Plugin } from 'vite'
-import { normalizePath } from 'vite'
+import { HtmlTagDescriptor, Plugin, normalizePath } from 'vite'
 
 interface ImportMapSource {
   name: string

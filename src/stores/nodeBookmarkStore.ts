@@ -6,8 +6,7 @@ import type { BookmarkCustomization } from '@/schemas/apiSchema'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
 import { useNodeDefStore } from './nodeDefStore'
-import type { ComfyNodeDefImpl } from './nodeDefStore'
-import { createDummyFolderNodeDef } from './nodeDefStore'
+import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'
 import { buildNodeDefTree } from './nodeDefStore'
 import { useSettingStore } from './settingStore'
 

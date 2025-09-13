@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import SearchBox from './SearchBox.vue'

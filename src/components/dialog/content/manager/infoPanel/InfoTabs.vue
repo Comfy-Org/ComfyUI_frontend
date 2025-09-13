@@ -50,7 +50,7 @@ import NodesTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/No
 import WarningTabPanel from '@/components/dialog/content/manager/infoPanel/tabs/WarningTabPanel.vue'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import type { ImportFailedKey } from '@/types/importFailedTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePack, hasCompatibilityIssues, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']

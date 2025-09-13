@@ -1,5 +1,4 @@
-import type { CSSProperties } from 'vue'
-import { ref } from 'vue'
+import { CSSProperties, ref } from 'vue'
 
 interface Rect {
   x: number

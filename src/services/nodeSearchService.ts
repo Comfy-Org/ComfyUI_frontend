@@ -1,8 +1,7 @@
-import type { FuseSearchOptions } from 'fuse.js'
+import { FuseSearchOptions } from 'fuse.js'
 
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { FuseFilter } from '@/utils/fuseUtil'
-import { FuseFilterWithValue, FuseSearch } from '@/utils/fuseUtil'
+import { FuseFilter, FuseFilterWithValue, FuseSearch } from '@/utils/fuseUtil'
 
 export class NodeSearchService {
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>

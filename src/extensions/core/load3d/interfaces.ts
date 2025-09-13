@@ -1,14 +1,14 @@
 import * as THREE from 'three'
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
-import type { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import type { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import type { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
-import type { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
-import type { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 export type Load3DNodeType = 'Load3D' | 'Preview3D'
 

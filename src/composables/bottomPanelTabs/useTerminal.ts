@@ -2,8 +2,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { debounce } from 'es-toolkit/compat'
-import { Ref } from 'vue'
-import { markRaw, onMounted, onUnmounted } from 'vue'
+import { Ref, markRaw, onMounted, onUnmounted } from 'vue'
 
 export function useTerminal(element: Ref<HTMLElement | undefined>) {
   const fitAddon = new FitAddon()

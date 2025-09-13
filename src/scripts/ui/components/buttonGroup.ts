@@ -1,6 +1,6 @@
 import { $el } from '../../ui'
 import { prop } from '../../utils'
-import type { ComfyButton } from './button'
+import { ComfyButton } from './button'
 
 export class ComfyButtonGroup {
   element = $el('div.comfyui-button-group')

@@ -1,8 +1,7 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { Rect } from './interfaces'
-import { Point } from './interfaces'
-import type { LGraphCanvas } from './litegraph'
+import type { Point, Rect } from './interfaces'
+import { LGraphCanvas } from './litegraph'
 import { distance } from './measure'
 
 // used by some widgets to render a curve editor

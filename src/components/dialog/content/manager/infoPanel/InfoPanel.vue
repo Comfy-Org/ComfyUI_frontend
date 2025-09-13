@@ -74,10 +74,10 @@ import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import type { IsInstallingKey } from '@/types/comfyManagerTypes'
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import type { ImportFailedKey } from '@/types/importFailedTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 interface InfoItem {
   key: string

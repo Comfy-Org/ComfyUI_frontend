@@ -2,11 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ManagerUIState } from '@/composables/useManagerState'
-import { useManagerState } from '@/composables/useManagerState'
+import { ManagerUIState, useManagerState } from '@/composables/useManagerState'
 import { api } from '@/scripts/api'
-import type { useExtensionStore } from '@/stores/extensionStore'
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock dependencies
 vi.mock('@/scripts/api', () => ({

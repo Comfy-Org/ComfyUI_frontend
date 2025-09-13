@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 // Mock the workflowStore
 vi.mock('@/stores/workflowStore', () => ({

@@ -51,8 +51,8 @@ import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
-import { ConflictDetail } from '@/types/conflictDetectionTypes'
-import type { ImportFailedKey } from '@/types/importFailedTypes'
+import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePacks, hasConflict } = defineProps<{
   nodePacks: components['schemas']['Node'][]

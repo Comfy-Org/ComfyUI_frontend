@@ -2,9 +2,11 @@ import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { isFloatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import {
+  type InputSpec,
+  isFloatInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { type ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useSettingStore } from '@/stores/settingStore'
 
 function onFloatValueChange(this: INumericWidget, v: number) {

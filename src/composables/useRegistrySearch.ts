@@ -2,13 +2,12 @@ import { watchDebounced } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/compat'
 import { computed, ref, watch } from 'vue'
 
-import type { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
+import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import { SearchAttribute } from '@/types/algoliaTypes'
-import type { SortableAlgoliaField } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
-import type { SearchMode } from '@/types/searchServiceTypes'
-import { QuerySuggestion } from '@/types/searchServiceTypes'
+import type { SearchAttribute } from '@/types/algoliaTypes'
+import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 

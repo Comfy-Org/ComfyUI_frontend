@@ -17,8 +17,7 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import type { ComfyWorkflow } from '@/stores/workflowStore'
-import { useWorkflowBookmarkStore } from '@/stores/workflowStore'
+import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const { node } = defineProps<{

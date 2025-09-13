@@ -143,8 +143,8 @@ import SingleSelect from '@/components/input/SingleSelect.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import type { OnCloseKey } from '@/types/widgetTypes'
+import { NavGroupData, NavItemData } from '@/types/navTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 const frameworkOptions = ref([

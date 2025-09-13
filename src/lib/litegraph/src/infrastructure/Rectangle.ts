@@ -1,5 +1,12 @@
-import type { CompassCorners, Point, ReadOnlyPoint, ReadOnlyRect, ReadOnlySize, Size } from '@/lib/litegraph/src/interfaces'
-import { ReadOnlyTypedArray } from '@/lib/litegraph/src/interfaces'
+import type {
+  CompassCorners,
+  Point,
+  ReadOnlyPoint,
+  ReadOnlyRect,
+  ReadOnlySize,
+  ReadOnlyTypedArray,
+  Size
+} from '@/lib/litegraph/src/interfaces'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**

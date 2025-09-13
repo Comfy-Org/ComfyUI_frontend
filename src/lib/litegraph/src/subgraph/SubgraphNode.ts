@@ -1,13 +1,15 @@
 import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
-import { NodeId } from '@/lib/litegraph/src/litegraph'
+import {
+  type INodeInputSlot,
+  type ISlotType,
+  type NodeId
+} from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import type {
@@ -18,12 +20,15 @@ import type {
   ExportedSubgraphInstance,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 
-import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
-import { ExecutableNodeDTO } from './ExecutableNodeDTO'
+import {
+  type ExecutableLGraphNode,
+  ExecutableNodeDTO,
+  type ExecutionId
+} from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
 
 /**

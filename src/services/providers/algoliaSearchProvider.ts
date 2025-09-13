@@ -1,15 +1,28 @@
 import QuickLRU from '@alloc/quick-lru'
-import { SearchQuery, SearchResponse } from 'algoliasearch/dist/lite/browser'
+import type {
+  SearchQuery,
+  SearchResponse
+} from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { memoize, omit } from 'es-toolkit/compat'
 
-import type { MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA, SEARCH_CACHE_MAX_SIZE } from '@/constants/searchConstants'
-import type { AlgoliaNodePack, NodesIndexSuggestion, SearchNodePacksParams } from '@/types/algoliaTypes'
-import { SearchAttribute } from '@/types/algoliaTypes'
-import type { SortableAlgoliaField } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
-import type { NodePackSearchProvider, SearchPacksResult } from '@/types/searchServiceTypes'
-import { SortableField } from '@/types/searchServiceTypes'
+import {
+  MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
+  SEARCH_CACHE_MAX_SIZE
+} from '@/constants/searchConstants'
+import type {
+  AlgoliaNodePack,
+  NodesIndexSuggestion,
+  SearchAttribute,
+  SearchNodePacksParams
+} from '@/types/algoliaTypes'
+import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+import type {
+  NodePackSearchProvider,
+  SearchPacksResult,
+  SortableField
+} from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
 
 type RegistryNodePack = components['schemas']['Node']

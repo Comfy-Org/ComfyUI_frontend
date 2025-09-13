@@ -48,7 +48,7 @@ import { computed, ref, watch } from 'vue'
 import PackVersionSelectorPopover from '@/components/dialog/content/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import { components } from '@/types/comfyRegistryTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import { isSemVer } from '@/utils/formatUtil'
 
 const TRUNCATED_HASH_LENGTH = 7

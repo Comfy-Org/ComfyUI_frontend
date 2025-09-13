@@ -1,21 +1,27 @@
-import type { ContextMenu } from './ContextMenu'
-import type { CurveEditor } from './CurveEditor'
-import type { DragAndScale } from './DragAndScale'
-import type { LGraph } from './LGraph'
-import type { LGraphCanvas } from './LGraphCanvas'
-import type { LGraphGroup } from './LGraphGroup'
-import type { LGraphNode } from './LGraphNode'
-import type { LLink } from './LLink'
-import type { Reroute } from './Reroute'
+import { ContextMenu } from './ContextMenu'
+import { CurveEditor } from './CurveEditor'
+import { DragAndScale } from './DragAndScale'
+import { LGraph } from './LGraph'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
+import { LLink } from './LLink'
+import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
-import type { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
+import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 import { Rectangle } from './infrastructure/Rectangle'
-import type { ISlotType, Rect } from './interfaces'
-import { Dictionary, WhenNullish } from './interfaces'
+import type { Dictionary, ISlotType, Rect, WhenNullish } from './interfaces'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
-import type { LGraphEventMode, LinkDirection, LinkRenderType, NodeSlotType, RenderShape, TitleMode } from './types/globalEnums'
+import {
+  LGraphEventMode,
+  LinkDirection,
+  LinkRenderType,
+  NodeSlotType,
+  RenderShape,
+  TitleMode
+} from './types/globalEnums'
 import { createUuidv4 } from './utils/uuid'
 
 /**

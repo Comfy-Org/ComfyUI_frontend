@@ -1,4 +1,4 @@
-import type { PrimeIcons } from '@primevue/core'
+import { PrimeIcons } from '@primevue/core'
 
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'

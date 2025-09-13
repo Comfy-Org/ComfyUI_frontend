@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { EventType } from '@/services/customerEventsService'
+import { EventType } from '@/services/customerEventsService'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 

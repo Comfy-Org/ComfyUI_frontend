@@ -26,12 +26,14 @@ import ColorPicker from 'primevue/colorpicker'
 import { computed } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-import type { PANEL_EXCLUDED_PROPS } from '@/utils/widgetPropFilter'
-import { filterWidgetProps } from '@/utils/widgetPropFilter'
+import {
+  PANEL_EXCLUDED_PROPS,
+  filterWidgetProps
+} from '@/utils/widgetPropFilter'
 
-import type { WidgetInputBaseClass } from './layout'
+import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const props = defineProps<{

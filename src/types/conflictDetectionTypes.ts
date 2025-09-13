@@ -5,7 +5,7 @@
  * This file extends and uses types from comfyRegistryTypes.ts to maintain consistency
  * with the Registry API schema.
  */
-import { components } from './comfyRegistryTypes'
+import type { components } from './comfyRegistryTypes'
 
 // Re-export core types from Registry API
 export type Node = components['schemas']['Node']

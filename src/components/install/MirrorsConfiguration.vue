@@ -34,18 +34,19 @@
 </template>
 
 <script setup lang="ts">
-import type { TorchDeviceType, TorchMirrorUrl } from '@comfyorg/comfyui-electron-types'
+import {
+  TorchDeviceType,
+  TorchMirrorUrl
+} from '@comfyorg/comfyui-electron-types'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
-import type { ModelRef } from 'vue'
-import { computed, onMounted, ref } from 'vue'
+import { ModelRef, computed, onMounted, ref } from 'vue'
 
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
-import type { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
+import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { isInChina } from '@/utils/networkUtil'
-import type { ValidationState } from '@/utils/validationUtil'
-import { mergeValidationStates } from '@/utils/validationUtil'
+import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
 const showMirrorInputs = ref(false)
 const { device } = defineProps<{ device: TorchDeviceType | null }>()

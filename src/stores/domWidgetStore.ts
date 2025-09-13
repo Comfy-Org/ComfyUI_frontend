@@ -2,11 +2,10 @@
  * Stores all DOM widgets that are used in the canvas.
  */
 import { defineStore } from 'pinia'
-import { Raw } from 'vue'
-import { computed, markRaw, ref } from 'vue'
+import { type Raw, computed, markRaw, ref } from 'vue'
 
 import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
-import { BaseDOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/scripts/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   // Raw widget instance

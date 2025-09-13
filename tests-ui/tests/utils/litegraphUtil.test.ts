@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import { IWidget } from '@/lib/litegraph/src/types/widgets'
+import { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { compressWidgetInputSlots } from '@/utils/litegraphUtil'
-import { migrateWidgetsValues } from '@/utils/litegraphUtil'
+import {
+  compressWidgetInputSlots,
+  migrateWidgetsValues
+} from '@/utils/litegraphUtil'
 
 describe('migrateWidgetsValues', () => {
   it('should remove widget values for forceInput inputs', () => {

@@ -147,8 +147,8 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import type { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
-import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'

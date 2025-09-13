@@ -20,7 +20,7 @@ import Message from 'primevue/message'
 import { computed, inject } from 'vue'
 
 import { components } from '@/types/comfyRegistryTypes'
-import type { ImportFailedKey } from '@/types/importFailedTypes'
+import { ImportFailedKey } from '@/types/importFailedTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']

@@ -5,7 +5,7 @@ import type {
   INodeInputSlot,
   IWidget
 } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 /**

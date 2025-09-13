@@ -5,7 +5,7 @@
  * Integrates with the layout system to ensure proper visual ordering.
  */
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import type { LayoutSource } from '@/renderer/core/layout/types'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
 
 interface NodeZIndexOptions {

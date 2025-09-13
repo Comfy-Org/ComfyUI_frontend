@@ -1,5 +1,7 @@
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
-import { ComfyApiWorkflow } from '@/schemas/comfyWorkflowSchema'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/schemas/comfyWorkflowSchema'
 
 /**
  * Tag names used in ComfyUI metadata

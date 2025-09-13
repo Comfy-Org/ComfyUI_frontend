@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import EssentialsPanel from '@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue'
 import ShortcutsList from '@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'
-import { ComfyCommandImpl } from '@/stores/commandStore'
+import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 // Mock ShortcutsList component
 vi.mock('@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue', () => ({

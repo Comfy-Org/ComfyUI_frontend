@@ -29,9 +29,9 @@ import PackEnableToggle from '@/components/dialog/content/manager/button/PackEna
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { IsInstallingKey } from '@/types/comfyManagerTypes'
-import { components } from '@/types/comfyRegistryTypes'
-import { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { IsInstallingKey } from '@/types/comfyManagerTypes'
+import type { components } from '@/types/comfyRegistryTypes'
+import type { ConflictDetail } from '@/types/conflictDetectionTypes'
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']

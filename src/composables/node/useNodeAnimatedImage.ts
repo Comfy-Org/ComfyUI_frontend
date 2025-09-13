@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ANIM_PREVIEW_WIDGET } from '@/scripts/app'
+import { ANIM_PREVIEW_WIDGET } from '@/scripts/app'
 import { createImageHost } from '@/scripts/ui/imagePreview'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 

@@ -4,7 +4,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import type { ToggleSwitchProps } from 'primevue/toggleswitch'
 import { describe, expect, it } from 'vitest'
 
-import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 

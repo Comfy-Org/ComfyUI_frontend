@@ -1,9 +1,8 @@
-import { useAsyncState } from '@vueuse/core'
-import { get } from '@vueuse/core'
+import { get, useAsyncState } from '@vueuse/core'
 import { Ref } from 'vue'
 
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import type { UseNodePacksOptions } from '@/types/comfyManagerTypes'
+import { UseNodePacksOptions } from '@/types/comfyManagerTypes'
 
 /**
  * Handles fetching node packs from the registry given a list of node pack IDs

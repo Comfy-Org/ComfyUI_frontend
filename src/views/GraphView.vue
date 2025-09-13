@@ -20,11 +20,17 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { useBreakpoints } from '@vueuse/core'
+import { useBreakpoints, useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, nextTick, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  watch,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -38,9 +44,9 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFrontendVersionMismatchWarning } from '@/composables/useFrontendVersionMismatchWarning'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
-import type { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
+import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n } from '@/i18n'
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
@@ -50,7 +56,10 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import { useQueuePendingTaskCountStore, useQueueStore } from '@/stores/queueStore'
+import {
+  useQueuePendingTaskCountStore,
+  useQueueStore
+} from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'

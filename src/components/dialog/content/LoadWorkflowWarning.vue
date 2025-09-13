@@ -64,7 +64,7 @@ import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { MissingNodeType } from '@/types/comfy'
-import type { ManagerTab } from '@/types/comfyManagerTypes'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 
 import PackInstallButton from './manager/button/PackInstallButton.vue'
 

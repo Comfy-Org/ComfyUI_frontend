@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import type { PrimeIcons } from '@primevue/core/api'
+import { PrimeIcons } from '@primevue/core/api'
 import { useConfirm, useToast } from 'primevue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Divider from 'primevue/divider'

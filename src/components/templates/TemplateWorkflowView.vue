@@ -88,7 +88,7 @@ import TemplateWorkflowList from '@/components/templates/TemplateWorkflowList.vu
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
-import { TemplateInfo } from '@/types/workflowTemplateTypes'
+import type { TemplateInfo } from '@/types/workflowTemplateTypes'
 
 const { t } = useI18n()
 

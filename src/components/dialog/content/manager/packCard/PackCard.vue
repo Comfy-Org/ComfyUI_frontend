@@ -80,8 +80,12 @@ import PackBanner from '@/components/dialog/content/manager/packBanner/PackBanne
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
 import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import type { IsInstallingKey, MergedNodePack, RegistryPack } from '@/types/comfyManagerTypes'
-import { isMergedNodePack } from '@/types/comfyManagerTypes'
+import {
+  IsInstallingKey,
+  type MergedNodePack,
+  type RegistryPack,
+  isMergedNodePack
+} from '@/types/comfyManagerTypes'
 
 const { nodePack, isSelected = false } = defineProps<{
   nodePack: MergedNodePack | RegistryPack

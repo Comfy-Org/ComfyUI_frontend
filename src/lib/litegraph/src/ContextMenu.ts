@@ -1,6 +1,9 @@
-import type { IContextMenuOptions } from './interfaces'
-import { ContextMenuDivElement, IContextMenuValue } from './interfaces'
-import type { LiteGraph } from './litegraph'
+import type {
+  ContextMenuDivElement,
+  IContextMenuOptions,
+  IContextMenuValue
+} from './interfaces'
+import { LiteGraph } from './litegraph'
 
 // TODO: Replace this pattern with something more modern.
 export interface ContextMenu<TValue = unknown> {

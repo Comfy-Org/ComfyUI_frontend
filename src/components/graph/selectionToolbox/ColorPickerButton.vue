@@ -50,8 +50,11 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ColorOption as CanvasColorOption } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isColorable } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  isColorable
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

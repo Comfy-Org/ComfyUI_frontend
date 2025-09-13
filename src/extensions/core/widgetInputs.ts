@@ -1,15 +1,21 @@
-import type { CallbackParams } from '@/composables/functional/useChainCallback'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot, INodeOutputSlot, ISlotType, Vector2 } from '@/lib/litegraph/src/litegraph'
-import { LLink } from '@/lib/litegraph/src/litegraph'
+import {
+  type CallbackParams,
+  useChainCallback
+} from '@/composables/functional/useChainCallback'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISlotType,
+  LLink,
+  Vector2
+} from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { ComfyWidgets } from '@/scripts/widgets'
-import { addValueControlWidgets } from '@/scripts/widgets'
-import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { ComfyWidgets, addValueControlWidgets } from '@/scripts/widgets'
+import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/utils/typeGuardUtil'

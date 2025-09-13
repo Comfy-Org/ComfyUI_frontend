@@ -81,7 +81,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCommandStore } from '@/stores/commandStore'
-import { useQueuePendingTaskCountStore, useQueueSettingsStore } from '@/stores/queueStore'
+import {
+  useQueuePendingTaskCountStore,
+  useQueueSettingsStore
+} from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import BatchCountEdit from './BatchCountEdit.vue'

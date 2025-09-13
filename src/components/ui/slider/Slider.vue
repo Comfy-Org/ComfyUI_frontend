@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { reactiveOmit } from '@vueuse/core'
 import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
-import type { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
-import { useForwardPropsEmits } from 'reka-ui'
-import { HTMLAttributes } from 'vue'
-import { ref } from 'vue'
+import {
+  SliderRange,
+  SliderRoot,
+  SliderThumb,
+  SliderTrack,
+  useForwardPropsEmits
+} from 'reka-ui'
+import { type HTMLAttributes, ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import type { EventManagerInterface, PreviewManagerInterface } from './interfaces'
+import { EventManagerInterface, PreviewManagerInterface } from './interfaces'
 
 export class PreviewManager implements PreviewManagerInterface {
   previewCamera: THREE.Camera

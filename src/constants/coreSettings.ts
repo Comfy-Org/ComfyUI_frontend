@@ -1,8 +1,8 @@
-import type { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import { Keybinding } from '@/schemas/keyBindingSchema'
-import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import type { Keybinding } from '@/schemas/keyBindingSchema'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
 
 /**

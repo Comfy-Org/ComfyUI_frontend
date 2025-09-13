@@ -1,12 +1,16 @@
 import _ from 'es-toolkit/compat'
-import type { Component } from 'vue'
-import { toRaw } from 'vue'
+import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LegacyWidget } from '@/lib/litegraph/src/litegraph'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-import { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import {
+  LGraphNode,
+  LegacyWidget,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'

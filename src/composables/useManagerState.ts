@@ -7,7 +7,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useToastStore } from '@/stores/toastStore'
-import type { ManagerTab } from '@/types/comfyManagerTypes'
+import { ManagerTab } from '@/types/comfyManagerTypes'
 
 export enum ManagerUIState {
   DISABLED = 'disabled',

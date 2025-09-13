@@ -1,5 +1,5 @@
 import { merge } from 'es-toolkit/compat'
-import type { Component } from 'vue'
+import { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
@@ -25,8 +25,11 @@ import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsCo
 import TemplateWorkflowsDialogHeader from '@/components/templates/TemplateWorkflowsDialogHeader.vue'
 import { t } from '@/i18n'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import type { DialogComponentProps, ShowDialogOptions } from '@/stores/dialogStore'
-import { useDialogStore } from '@/stores/dialogStore'
+import {
+  type DialogComponentProps,
+  type ShowDialogOptions,
+  useDialogStore
+} from '@/stores/dialogStore'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 export type ConfirmationDialogType =

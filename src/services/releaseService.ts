@@ -1,8 +1,8 @@
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { ref } from 'vue'
 
-import type { COMFY_API_BASE_URL } from '@/config/comfyApi'
-import { components, operations } from '@/types/comfyRegistryTypes'
+import { COMFY_API_BASE_URL } from '@/config/comfyApi'
+import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 const releaseApiClient = axios.create({

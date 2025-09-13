@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import ShortcutsList from '@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'
-import { ComfyCommandImpl } from '@/stores/commandStore'
+import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 // Mock vue-i18n
 const mockT = vi.fn((key: string) => {

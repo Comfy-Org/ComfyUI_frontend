@@ -3,9 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { MovingOutputLink } from '@/lib/litegraph/src/canvas/MovingOutputLink'
 import { ToOutputRenderLink } from '@/lib/litegraph/src/canvas/ToOutputRenderLink'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LLink } from '@/lib/litegraph/src/litegraph'
-import type { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 
 import { createTestSubgraph } from '../subgraph/fixtures/subgraphHelpers'
 

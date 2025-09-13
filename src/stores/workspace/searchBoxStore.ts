@@ -1,7 +1,6 @@
 import { useMouse } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { shallowRef } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
