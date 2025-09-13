@@ -43,9 +43,9 @@ export interface SettingParams<TValue = unknown> extends FormItem {
   versionAdded?: string
   // Version of the setting when it was last modified
   versionModified?: string
-  // Priority for sorting settings within a group. Higher values appear first.
+  // sortOrder for sorting settings within a group. Higher values appear first.
   // Default is 0 if not specified.
-  priority?: number
+  sortOrder?: number
 }
 
 /**
