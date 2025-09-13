@@ -1,18 +1,10 @@
 <template>
-  <div class="w-screen h-screen flex items-center justify-center bg-[#1a1a1a]">
-    <div
-      class="flex w-[448px] flex-col items-start gap-6 rounded-lg p-6 bg-[#2d2d2d] shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-slideIn"
-    >
+  <div class="desktop-dialog">
+    <div class="dialog-container">
       <div class="dialog-title">{{ title }}</div>
-      <div class="font-sans text-sm text-[#b0b0b0] leading-[1.6] m-0">
-        {{ message }}
-      </div>
-      <div class="flex w-full justify-end mt-2">
-        <button
-          class="px-6 py-2.5 border-none rounded-md text-sm font-medium font-sans cursor-pointer transition-all duration-200 ease-in-out bg-[#f0ff41] text-[#1a1a1a] hover:bg-[#d9e639] hover:-translate-y-px active:translate-y-0"
-        >
-          {{ t('g.close') }}
-        </button>
+      <div class="dialog-message">{{ message }}</div>
+      <div class="dialog-actions">
+        <button class="dialog-button">{{ t('g.close') }}</button>
       </div>
     </div>
   </div>
@@ -34,6 +26,19 @@ const message = computed(() => (route.query.message as string) || '')
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=ABC+ROM:ital@1&display=swap');
 
+.desktop-dialog {
+  @apply w-screen h-screen flex items-center justify-center;
+  background: #1a1a1a;
+}
+
+.dialog-container {
+  @apply flex flex-col items-start gap-6 rounded-lg p-6;
+  width: 448px;
+  background: #2d2d2d;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease-out;
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -45,11 +50,6 @@ const message = computed(() => (route.query.message as string) || '')
   }
 }
 
-.animate-slideIn {
-  animation: slideIn 0.3s ease-out;
-}
-
-/* Custom styles that can't be precisely replicated with Tailwind */
 .dialog-title {
   font-family:
     'ABC ROM',
@@ -62,5 +62,31 @@ const message = computed(() => (route.query.message as string) || '')
   font-weight: 500;
   color: #ffffff;
   margin: 0;
+}
+
+.dialog-message {
+  @apply font-sans text-sm m-0;
+  color: #b0b0b0;
+  line-height: 1.6;
+}
+
+.dialog-actions {
+  @apply flex w-full justify-end mt-2;
+}
+
+.dialog-button {
+  @apply px-6 py-2.5 border-none rounded-md text-sm font-medium font-sans cursor-pointer;
+  @apply transition-all duration-200 ease-in-out;
+  background: #f0ff41;
+  color: #1a1a1a;
+}
+
+.dialog-button:hover {
+  @apply -translate-y-px;
+  background: #d9e639;
+}
+
+.dialog-button:active {
+  @apply translate-y-0;
 }
 </style>
