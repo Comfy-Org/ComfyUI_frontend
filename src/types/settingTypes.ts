@@ -6,6 +6,7 @@ type SettingInputType =
   | 'slider'
   | 'knob'
   | 'combo'
+  | 'radio'
   | 'text'
   | 'image'
   | 'color'
