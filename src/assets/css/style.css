@@ -2,8 +2,9 @@
 
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
+@import 'tw-animate-css';
 
-@plugin "tailwindcss-primeui";
+@plugin 'tailwindcss-primeui';
 
 @config '../../../tailwind.config.ts';
 
@@ -112,6 +113,14 @@
   /* Special Colors (temporary) */
   --color-dark-elevation-1.5: rgba(from white r g b/ 0.015);
   --color-dark-elevation-2: rgba(from white r g b / 0.03);
+}
+
+@theme inline {
+  --color-node-component-surface: var(--color-charcoal-300);
+  --color-node-component-surface-highlight: var(--color-slate-100);
+  --color-node-component-surface-hovered: var(--color-charcoal-500);
+  --color-node-component-surface-selected: var(--color-charcoal-700);
+  --color-node-stroke: var(--color-stone-100);
 }
 
 @custom-variant dark-theme {

@@ -1,4 +1,6 @@
-export const WidgetInputBaseClass = [
+import { cn } from '@/utils/tailwindUtil'
+
+export const WidgetInputBaseClass = cn([
   // Background
   'bg-zinc-500/10',
   // Outline
@@ -11,4 +13,4 @@ export const WidgetInputBaseClass = [
   '!rounded-lg',
   // Hover
   'hover:outline-blue-500/80'
-].join(' ')
+])
