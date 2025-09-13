@@ -16,22 +16,21 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.waitForNodes()
 
     // Get initial Vue node count
-    const initialNodeCount = await comfyPage.vueNodes.nodes.count()
+    const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(initialNodeCount).toBeGreaterThan(0)
 
     // Select all Vue nodes
     await comfyPage.ctrlA()
 
     // Verify all Vue nodes are selected
-    const selectedCount = await comfyPage.vueNodes.selectedNodes.count()
+    const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()
     expect(selectedCount).toBe(initialNodeCount)
 
     // Delete with Delete key
-    await comfyPage.page.locator('#graph-canvas').focus()
-    await comfyPage.page.keyboard.press('Delete')
+    await comfyPage.vueNodes.deleteSelected()
 
     // Verify all Vue nodes were deleted
-    const finalNodeCount = await comfyPage.vueNodes.nodes.count()
+    const finalNodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(finalNodeCount).toBe(0)
   })
 
@@ -39,7 +38,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.waitForNodes()
 
     // Get initial Vue node count
-    const initialNodeCount = await comfyPage.vueNodes.nodes.count()
+    const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(initialNodeCount).toBeGreaterThan(0)
 
     // Get first Vue node ID and select it
@@ -47,15 +46,14 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.selectNode(nodeIds[0])
 
     // Verify selection
-    const selectedCount = await comfyPage.vueNodes.selectedNodes.count()
+    const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()
     expect(selectedCount).toBe(1)
 
     // Delete with Delete key
-    await comfyPage.page.locator('#graph-canvas').focus()
-    await comfyPage.page.keyboard.press('Delete')
+    await comfyPage.vueNodes.deleteSelected()
 
     // Verify one Vue node was deleted
-    const finalNodeCount = await comfyPage.vueNodes.nodes.count()
+    const finalNodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(finalNodeCount).toBe(initialNodeCount - 1)
   })
 
@@ -64,18 +62,17 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
   }) => {
     await comfyPage.vueNodes.waitForNodes()
 
-    const initialNodeCount = await comfyPage.vueNodes.nodes.count()
+    const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
 
     // Select first Vue node
     const nodeIds = await comfyPage.vueNodes.getNodeIds()
     await comfyPage.vueNodes.selectNode(nodeIds[0])
 
     // Delete with Backspace key instead of Delete
-    await comfyPage.page.locator('#graph-canvas').focus()
-    await comfyPage.page.keyboard.press('Backspace')
+    await comfyPage.vueNodes.deleteSelectedWithBackspace()
 
     // Verify Vue node was deleted
-    const finalNodeCount = await comfyPage.vueNodes.nodes.count()
+    const finalNodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(finalNodeCount).toBe(initialNodeCount - 1)
   })
 
@@ -108,14 +105,14 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
 
     // Ensure no Vue nodes are selected
     await comfyPage.vueNodes.clearSelection()
-    const selectedCount = await comfyPage.vueNodes.selectedNodes.count()
+    const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()
     expect(selectedCount).toBe(0)
 
     // Press Delete key - should not crash and should handle gracefully
     await comfyPage.page.keyboard.press('Delete')
 
     // Vue node count should remain the same
-    const nodeCount = await comfyPage.vueNodes.nodes.count()
+    const nodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(nodeCount).toBeGreaterThan(0)
   })
 
@@ -123,7 +120,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     comfyPage
   }) => {
     await comfyPage.vueNodes.waitForNodes()
-    const initialNodeCount = await comfyPage.vueNodes.nodes.count()
+    const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
 
     // Multi-select first two Vue nodes using Ctrl+click
     const nodeIds = await comfyPage.vueNodes.getNodeIds()
@@ -131,15 +128,14 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.selectNodes(nodesToSelect)
 
     // Verify expected nodes are selected
-    const selectedCount = await comfyPage.vueNodes.selectedNodes.count()
+    const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()
     expect(selectedCount).toBe(nodesToSelect.length)
 
     // Delete selected Vue nodes
-    await comfyPage.page.locator('#graph-canvas').focus()
-    await comfyPage.page.keyboard.press('Delete')
+    await comfyPage.vueNodes.deleteSelected()
 
     // Verify expected nodes were deleted
-    const finalNodeCount = await comfyPage.vueNodes.nodes.count()
+    const finalNodeCount = await comfyPage.vueNodes.getNodeCount()
     expect(finalNodeCount).toBe(initialNodeCount - nodesToSelect.length)
   })
 })
