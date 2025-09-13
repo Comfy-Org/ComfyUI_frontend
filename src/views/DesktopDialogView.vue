@@ -1,10 +1,18 @@
 <template>
-  <div class="desktop-dialog">
-    <div class="dialog-container">
+  <div class="w-screen h-screen flex items-center justify-center bg-[#1a1a1a]">
+    <div
+      class="flex w-[448px] flex-col items-start gap-6 rounded-lg p-6 bg-[#2d2d2d] shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-slideIn"
+    >
       <div class="dialog-title">{{ title }}</div>
-      <div class="dialog-message">{{ message }}</div>
-      <div class="dialog-actions">
-        <button class="dialog-button">{{ t('g.close') }}</button>
+      <div class="font-sans text-sm text-[#b0b0b0] leading-[1.6] m-0">
+        {{ message }}
+      </div>
+      <div class="flex w-full justify-end mt-2">
+        <button
+          class="px-6 py-2.5 border-none rounded-md text-sm font-medium font-sans cursor-pointer transition-all duration-200 ease-in-out bg-[#f0ff41] text-[#1a1a1a] hover:bg-[#d9e639] hover:-translate-y-px active:translate-y-0"
+        >
+          {{ t('g.close') }}
+        </button>
       </div>
     </div>
   </div>
@@ -26,28 +34,6 @@ const message = computed(() => (route.query.message as string) || '')
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=ABC+ROM:ital@1&display=swap');
 
-.desktop-dialog {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1a1a1a;
-}
-
-.dialog-container {
-  display: flex;
-  width: 448px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  border-radius: 8px;
-  padding: 24px;
-  background: #2d2d2d;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  animation: slideIn 0.3s ease-out;
-}
-
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -59,6 +45,11 @@ const message = computed(() => (route.query.message as string) || '')
   }
 }
 
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Custom styles that can't be precisely replicated with Tailwind */
 .dialog-title {
   font-family:
     'ABC ROM',
@@ -71,42 +62,5 @@ const message = computed(() => (route.query.message as string) || '')
   font-weight: 500;
   color: #ffffff;
   margin: 0;
-}
-
-.dialog-message {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 14px;
-  color: #b0b0b0;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.dialog-actions {
-  display: flex;
-  width: 100%;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
-.dialog-button {
-  padding: 10px 24px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: #f0ff41;
-  color: #1a1a1a;
-}
-
-.dialog-button:hover {
-  background: #d9e639;
-  transform: translateY(-1px);
-}
-
-.dialog-button:active {
-  transform: translateY(0);
 }
 </style>
