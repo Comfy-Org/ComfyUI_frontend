@@ -7,12 +7,12 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import type { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
+import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
-import type { createTestSubgraphData } from './fixtures/subgraphHelpers'
+import { createTestSubgraphData } from './fixtures/subgraphHelpers'
 import { assertSubgraphStructure, createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe('Subgraph Construction', () => {

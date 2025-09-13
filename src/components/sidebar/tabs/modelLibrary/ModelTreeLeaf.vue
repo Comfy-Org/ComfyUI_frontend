@@ -25,7 +25,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { ComfyModelDef } from '@/stores/modelStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'

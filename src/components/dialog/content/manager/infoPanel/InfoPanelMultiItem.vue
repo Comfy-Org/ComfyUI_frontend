@@ -54,8 +54,8 @@
 </template>
 
 <script setup lang="ts">
-import type { useAsyncState } from '@vueuse/core'
-import type { toRef } from 'vue'
+import { useAsyncState } from '@vueuse/core'
+import { toRef } from 'vue'
 import { computed, onUnmounted, provide } from 'vue'
 
 import PackStatusMessage from '@/components/dialog/content/manager/PackStatusMessage.vue'
@@ -67,9 +67,9 @@ import PackIconStacked from '@/components/dialog/content/manager/packIcon/PackIc
 import { usePacksSelection } from '@/composables/nodePack/usePacksSelection'
 import { usePacksStatus } from '@/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/composables/useConflictDetection'
-import type { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { ConflictDetail } from '@/types/conflictDetectionTypes'
 import type { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePacks } = defineProps<{

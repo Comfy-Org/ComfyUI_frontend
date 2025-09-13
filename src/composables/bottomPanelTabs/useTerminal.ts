@@ -1,8 +1,8 @@
-import type { FitAddon } from '@xterm/addon-fit'
-import type { Terminal } from '@xterm/xterm'
+import { FitAddon } from '@xterm/addon-fit'
+import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { debounce } from 'es-toolkit/compat'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { markRaw, onMounted, onUnmounted } from 'vue'
 
 export function useTerminal(element: Ref<HTMLElement | undefined>) {

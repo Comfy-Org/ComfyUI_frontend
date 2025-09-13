@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
 vi.mock('@/scripts/api', () => ({
   api: {

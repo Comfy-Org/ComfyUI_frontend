@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 describe('LGraphCanvas Title Button Rendering', () => {

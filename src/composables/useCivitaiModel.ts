@@ -1,4 +1,4 @@
-import type { useAsyncState } from '@vueuse/core'
+import { useAsyncState } from '@vueuse/core'
 import { computed } from 'vue'
 
 type ModelType =

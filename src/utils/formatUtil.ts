@@ -1,5 +1,5 @@
 import type { ResultItem } from '@/schemas/apiSchema'
-import type { operations } from '@/types/comfyRegistryTypes'
+import { operations } from '@/types/comfyRegistryTypes'
 
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case

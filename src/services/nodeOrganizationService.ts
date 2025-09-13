@@ -1,9 +1,6 @@
-import type { ComfyNodeDefImpl, buildNodeDefTree } from '@/stores/nodeDefStore'
-import type {
-  NodeGroupingStrategy,
-  NodeOrganizationOptions,
-  NodeSortStrategy
-} from '@/types/nodeOrganizationTypes'
+import { ComfyNodeDefImpl, buildNodeDefTree } from '@/stores/nodeDefStore'
+import type { NodeOrganizationOptions } from '@/types/nodeOrganizationTypes'
+import { NodeGroupingStrategy, NodeSortStrategy } from '@/types/nodeOrganizationTypes'
 import type { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { sortedTree } from '@/utils/treeUtil'

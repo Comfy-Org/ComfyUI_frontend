@@ -95,7 +95,7 @@ import RecordingControls from '@/components/load3d/controls/RecordingControls.vu
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { AnimationItem, CameraType, Load3DAnimationNodeType, MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import { ComponentWidget } from '@/scripts/domWidget'
 
 const { widget } = defineProps<{
   widget: ComponentWidget<string[]>

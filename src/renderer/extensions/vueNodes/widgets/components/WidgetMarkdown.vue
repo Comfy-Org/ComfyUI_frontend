@@ -36,7 +36,7 @@ import Textarea from 'primevue/textarea'
 import { computed, nextTick, ref } from 'vue'
 
 import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 const props = defineProps<{

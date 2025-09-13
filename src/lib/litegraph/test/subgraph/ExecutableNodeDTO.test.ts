@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ExecutableNodeDTO } from '@/lib/litegraph/src/subgraph/ExecutableNodeDTO'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { ExecutableNodeDTO } from '@/lib/litegraph/src/subgraph/ExecutableNodeDTO'
 
-import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
 import { createNestedSubgraphs, createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe('ExecutableNodeDTO Creation', () => {

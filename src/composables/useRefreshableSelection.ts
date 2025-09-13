@@ -1,7 +1,7 @@
 import { computed, ref, watchEffect } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { useCanvasStore } from '@/stores/graphStore'
+import { useCanvasStore } from '@/stores/graphStore'
 import type { isLGraphNode } from '@/utils/litegraphUtil'
 
 interface RefreshableItem {

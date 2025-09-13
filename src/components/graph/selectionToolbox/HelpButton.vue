@@ -17,13 +17,13 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
-import type { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import type { useCanvasStore } from '@/stores/graphStore'
+import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import { useCanvasStore } from '@/stores/graphStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
-import type { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import type { isLGraphNode } from '@/utils/litegraphUtil'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 const canvasStore = useCanvasStore()
 const nodeDefStore = useNodeDefStore()

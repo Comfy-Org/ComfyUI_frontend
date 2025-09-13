@@ -2,44 +2,18 @@ import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
-import type {
-  DisplayComponentWsMessage,
-  EmbeddingsResponse,
-  ExecutedWsMessage,
-  ExecutingWsMessage,
-  ExecutionCachedWsMessage,
-  ExecutionErrorWsMessage,
-  ExecutionInterruptedWsMessage,
-  ExecutionStartWsMessage,
-  ExecutionSuccessWsMessage,
-  ExtensionsResponse,
-  FeatureFlagsWsMessage,
-  HistoryTaskItem,
-  LogsRawResponse,
-  LogsWsMessage,
-  PendingTaskItem,
-  ProgressStateWsMessage,
-  ProgressTextWsMessage,
-  ProgressWsMessage,
-  PromptResponse,
-  RunningTaskItem,
-  Settings,
-  StatusWsMessage,
-  StatusWsMessageStatus,
-  SystemStats,
-  User,
-  UserDataFullInfo
-} from '@/schemas/apiSchema'
-import type { ModelFile, ModelFolderInfo } from '@/schemas/assetSchema'
+import type { DisplayComponentWsMessage, EmbeddingsResponse, ExecutedWsMessage, ExecutingWsMessage, ExecutionCachedWsMessage, ExecutionErrorWsMessage, ExecutionInterruptedWsMessage, ExecutionStartWsMessage, ExecutionSuccessWsMessage, ExtensionsResponse, FeatureFlagsWsMessage, HistoryTaskItem, LogsRawResponse, LogsWsMessage, PendingTaskItem, ProgressStateWsMessage, ProgressTextWsMessage, ProgressWsMessage, PromptResponse, RunningTaskItem, StatusWsMessage, StatusWsMessageStatus, SystemStats, User } from '@/schemas/apiSchema'
+import { Settings, UserDataFullInfo } from '@/schemas/apiSchema'
+import { ModelFile, ModelFolderInfo } from '@/schemas/assetSchema'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
   NodeId
 } from '@/schemas/comfyWorkflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { useToastStore } from '@/stores/toastStore'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import { useToastStore } from '@/stores/toastStore'
+import { NodeExecutionId } from '@/types/nodeIdentification'
+import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 interface QueuePromptRequestBody {
   client_id: string

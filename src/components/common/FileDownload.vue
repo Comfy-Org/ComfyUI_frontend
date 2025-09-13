@@ -49,7 +49,7 @@ import { computed } from 'vue'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
-import type { formatSize } from '@/utils/formatUtil'
+import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   url: string

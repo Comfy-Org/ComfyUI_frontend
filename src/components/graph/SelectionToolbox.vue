@@ -53,9 +53,9 @@ import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshS
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
-import type { useExtensionService } from '@/services/extensionService'
-import type { ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
-import type { useCanvasStore } from '@/stores/graphStore'
+import { useExtensionService } from '@/services/extensionService'
+import { ComfyCommandImpl, useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/stores/graphStore'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()

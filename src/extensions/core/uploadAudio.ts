@@ -1,9 +1,9 @@
 import type { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
-import type { useNodeFileInput } from '@/composables/node/useNodeFileInput'
-import type { useNodePaste } from '@/composables/node/useNodePaste'
+import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
+import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
+import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -12,11 +12,11 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { DOMWidget } from '@/scripts/domWidget'
+import { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
-import type { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { NodeLocatorId } from '@/types'
-import type { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'

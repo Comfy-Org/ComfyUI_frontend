@@ -8,9 +8,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const props = defineProps<{
   result: ResultItemImpl

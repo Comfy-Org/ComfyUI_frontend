@@ -1,4 +1,4 @@
-import type { mapKeys } from 'es-toolkit/compat'
+import { mapKeys } from 'es-toolkit/compat'
 
 /**
  * Normalizes a pack ID by removing the version suffix.

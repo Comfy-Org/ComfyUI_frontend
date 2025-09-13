@@ -1,11 +1,11 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
 import { nodeHelpService } from '@/services/nodeHelpService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import type { getNodeHelpBaseUrl } from '@/utils/nodeHelpUtil'
+import { getNodeHelpBaseUrl } from '@/utils/nodeHelpUtil'
 
 export const useNodeHelpStore = defineStore('nodeHelp', () => {
   const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)

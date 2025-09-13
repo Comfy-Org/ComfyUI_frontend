@@ -6,9 +6,10 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import type { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 
-import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
 import { createNestedSubgraphs, createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe('SubgraphEdgeCases - Recursion Detection', () => {

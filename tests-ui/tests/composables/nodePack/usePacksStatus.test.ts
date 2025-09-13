@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { usePacksStatus } from '@/composables/nodePack/usePacksStatus'
-import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import type { components } from '@/types/comfyRegistryTypes'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
 
 type NodePack = components['schemas']['Node']

@@ -1,5 +1,6 @@
 import type { IChartWidget } from '../types/widgets'
-import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
 
 /**
  * Widget for displaying charts and data visualizations

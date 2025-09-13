@@ -97,9 +97,9 @@ import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { CameraType, Load3DNodeType, MaterialMode, UpDirection } from '@/extensions/core/load3d/interfaces'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/scripts/domWidget'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useToastStore } from '@/stores/toastStore'
+import { ComponentWidget } from '@/scripts/domWidget'
+import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
 
 const { t } = useI18n()
 const { widget } = defineProps<{

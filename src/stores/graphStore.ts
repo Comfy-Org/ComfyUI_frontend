@@ -1,5 +1,5 @@
-import type { defineStore } from 'pinia'
-import type { Raw, shallowRef } from 'vue'
+import { defineStore } from 'pinia'
+import { Raw, shallowRef } from 'vue'
 import { computed, markRaw, ref } from 'vue'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'

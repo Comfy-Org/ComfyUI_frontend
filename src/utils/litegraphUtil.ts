@@ -3,15 +3,10 @@ import _ from 'es-toolkit/compat'
 import type { ColorOption, LGraph, Reroute } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isColorable } from '@/lib/litegraph/src/litegraph'
-import type {
-  ExportedSubgraph,
-  ISerialisableNodeInput,
-  ISerialisedGraph
-} from '@/lib/litegraph/src/types/serialisation'
-import type {
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { ISerialisableNodeInput, ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }

@@ -7,11 +7,12 @@
  */
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { SlotPositionContext, calculateInputSlotPos, calculateOutputSlotPos } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { calculateInputSlotPos, calculateOutputSlotPos } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 
-import type { getSlotKey } from './slotIdentifier'
+import { getSlotKey } from './slotIdentifier'
 
 /**
  * Register slot layout with the layout store for hit testing

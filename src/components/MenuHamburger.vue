@@ -25,8 +25,8 @@ import type { CSSProperties } from 'vue'
 import { computed, watchEffect } from 'vue'
 
 import { app } from '@/scripts/app'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { showNativeSystemMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()

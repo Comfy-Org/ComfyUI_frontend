@@ -8,7 +8,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
-import type { BaseSteppedWidget } from './BaseSteppedWidget'
+import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 
 /**

@@ -1,5 +1,5 @@
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   CanvasColour,
   DefaultConnectionColors,

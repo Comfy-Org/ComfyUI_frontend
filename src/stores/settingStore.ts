@@ -1,8 +1,8 @@
 import _ from 'es-toolkit/compat'
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { Settings } from '@/schemas/apiSchema'
+import { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { SettingParams } from '@/types/settingTypes'

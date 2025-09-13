@@ -1,9 +1,10 @@
 import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
-import type { ContextMenu } from './ContextMenu'
+import { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeId } from './LGraphNode'
-import type { LLink, LinkId } from './LLink'
+import type { LLink } from './LLink'
+import { LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'

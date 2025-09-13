@@ -99,10 +99,10 @@ import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
 import { t } from '@/i18n'
-import type { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
-import type { useMinLoadingDurationRef } from '@/utils/refUtil'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 

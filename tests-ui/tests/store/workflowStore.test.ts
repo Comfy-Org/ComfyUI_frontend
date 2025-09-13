@@ -6,7 +6,8 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
-import type { ComfyWorkflow, LoadedComfyWorkflow, useWorkflowBookmarkStore, useWorkflowStore } from '@/stores/workflowStore'
+import type { ComfyWorkflow, LoadedComfyWorkflow } from '@/stores/workflowStore'
+import { useWorkflowBookmarkStore, useWorkflowStore } from '@/stores/workflowStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Add mock for api at the top of the file

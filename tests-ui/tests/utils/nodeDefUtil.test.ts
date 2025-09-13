@@ -7,7 +7,7 @@ import type {
   InputSpec,
   IntInputSpec
 } from '@/schemas/nodeDefSchema'
-import type { mergeInputSpec } from '@/utils/nodeDefUtil'
+import { mergeInputSpec } from '@/utils/nodeDefUtil'
 
 describe('nodeDefUtil', () => {
   describe('mergeInputSpec', () => {

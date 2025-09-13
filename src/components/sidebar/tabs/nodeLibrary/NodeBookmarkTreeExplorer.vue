@@ -32,8 +32,8 @@ import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type {
   RenderedTreeExplorerNode,

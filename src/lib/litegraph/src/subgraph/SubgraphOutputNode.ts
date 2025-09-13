@@ -14,12 +14,12 @@ import type {
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
-import type { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
+import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
-import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
-import type { SubgraphIONodeBase } from './SubgraphIONodeBase'
+import { EmptySubgraphOutput } from './EmptySubgraphOutput'
+import { SubgraphIONodeBase } from './SubgraphIONodeBase'
 import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
+import { SubgraphOutput } from './SubgraphOutput'
 
 export class SubgraphOutputNode
   extends SubgraphIONodeBase<SubgraphOutput>

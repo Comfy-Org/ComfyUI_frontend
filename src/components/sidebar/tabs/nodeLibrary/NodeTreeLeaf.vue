@@ -77,10 +77,10 @@ import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
-import type { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useSubgraphStore } from '@/stores/subgraphStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const { t } = useI18n()

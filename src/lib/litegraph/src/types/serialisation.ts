@@ -3,20 +3,12 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import type { LGraphConfig, LGraphExtra, LGraphState } from '../LGraph'
 import type { IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeId, NodeProperty } from '../LGraphNode'
-import type { LinkId, SerialisedLLinkArray } from '../LLink'
+import { LinkId, SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
-import type {
-  Dictionary,
-  INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlot,
-  ISlotType,
-  Point,
-  Size
-} from '../interfaces'
+import type { INodeFlags, INodeInputSlot, INodeOutputSlot, INodeSlot, ISlotType, Point, Size } from '../interfaces'
+import { Dictionary } from '../interfaces'
 import type { LiteGraph } from '../litegraph'
-import type { TWidgetValue } from '../types/widgets'
+import { TWidgetValue } from '../types/widgets'
 import type { RenderShape } from './globalEnums'
 
 /**

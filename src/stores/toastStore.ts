@@ -1,7 +1,7 @@
 // Within Vue component context, you can directly call useToast().add()
 // instead of going through the store.
 // The store is useful when you need to call it from outside the Vue component context.
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { ref } from 'vue'
 

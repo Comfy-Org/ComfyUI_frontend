@@ -52,7 +52,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
-import type { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()
 

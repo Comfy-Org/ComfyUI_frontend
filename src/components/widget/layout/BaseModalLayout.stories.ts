@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'

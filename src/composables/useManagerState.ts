@@ -1,12 +1,12 @@
-import type { storeToRefs } from 'pinia'
+import { storeToRefs } from 'pinia'
 import { computed, readonly } from 'vue'
 
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { useToastStore } from '@/stores/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { ManagerTab } from '@/types/comfyManagerTypes'
 
 export enum ManagerUIState {

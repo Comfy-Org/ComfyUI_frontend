@@ -184,8 +184,8 @@ import Select from 'primevue/select'
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useWidgetValue } from '@/composables/graph/useWidgetValue'
-import type { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
   widget: SimplifiedWidget<File[] | null>

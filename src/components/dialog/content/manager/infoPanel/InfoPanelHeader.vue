@@ -49,9 +49,9 @@ import PackInstallButton from '@/components/dialog/content/manager/button/PackIn
 import PackUninstallButton from '@/components/dialog/content/manager/button/PackUninstallButton.vue'
 import PackIcon from '@/components/dialog/content/manager/packIcon/PackIcon.vue'
 import { useConflictDetection } from '@/composables/useConflictDetection'
-import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
 import { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { ConflictDetail } from '@/types/conflictDetectionTypes'
 import type { ImportFailedKey } from '@/types/importFailedTypes'
 
 const { nodePacks, hasConflict } = defineProps<{

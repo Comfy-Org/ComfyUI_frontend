@@ -1,12 +1,12 @@
-import type { useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { pickBy } from 'es-toolkit/compat'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { computed, ref } from 'vue'
 
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { components } from '@/types/generatedManagerTypes'
-import type { normalizePackKeys } from '@/utils/packUtils'
+import { normalizePackKeys } from '@/utils/packUtils'
 
 type ManagerTaskHistory = Record<
   string,

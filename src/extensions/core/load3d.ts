@@ -12,13 +12,13 @@ import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
-import type { ComponentWidgetImpl } from '@/scripts/domWidget'
+import { ComponentWidgetImpl } from '@/scripts/domWidget'
 import { addWidget } from '@/scripts/domWidget'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
-import type { useDialogStore } from '@/stores/dialogStore'
-import type { useToastStore } from '@/stores/toastStore'
-import type { isLoad3dNode } from '@/utils/litegraphUtil'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useToastStore } from '@/stores/toastStore'
+import { isLoad3dNode } from '@/utils/litegraphUtil'
 
 async function handleModelUpload(files: FileList, node: any) {
   if (!files?.length) return

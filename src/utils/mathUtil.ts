@@ -1,4 +1,4 @@
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
 /**

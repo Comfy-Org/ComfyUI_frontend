@@ -1,6 +1,7 @@
 import { describe } from 'vitest'
 
-import type { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './fixtures/testExtensions'

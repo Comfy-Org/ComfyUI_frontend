@@ -36,9 +36,9 @@ import { useI18n } from 'vue-i18n'
 
 import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgment'
 import { useDialogService } from '@/services/dialogService'
-import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import type { components } from '@/types/comfyRegistryTypes'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { components } from '@/types/comfyRegistryTypes'
 import type { components as ManagerComponents } from '@/types/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256

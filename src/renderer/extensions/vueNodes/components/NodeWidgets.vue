@@ -49,7 +49,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 // Import widget components directly
 import WidgetInputText from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
-import type { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { isEssential, shouldRenderAsVue } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 

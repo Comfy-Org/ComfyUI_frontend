@@ -128,10 +128,10 @@ import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions
 import { useZoomControls } from '@/composables/useZoomControls'
 import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useCanvasStore } from '@/stores/graphStore'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import ZoomControlsModal from './modals/ZoomControlsModal.vue'
 

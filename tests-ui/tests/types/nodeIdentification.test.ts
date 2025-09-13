@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
-import type { NodeLocatorId, createNodeExecutionId, createNodeLocatorId, isNodeExecutionId, isNodeLocatorId, parseNodeExecutionId, parseNodeLocatorId } from '@/types/nodeIdentification'
+import { NodeId } from '@/schemas/comfyWorkflowSchema'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeExecutionId, createNodeLocatorId, isNodeExecutionId, isNodeLocatorId, parseNodeExecutionId, parseNodeLocatorId } from '@/types/nodeIdentification'
 
 describe('nodeIdentification', () => {
   describe('NodeLocatorId', () => {

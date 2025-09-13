@@ -2,7 +2,7 @@
 import { describe, expect, vi } from 'vitest'
 
 import { subgraphTest } from './fixtures/subgraphFixtures'
-import type { verifyEventSequence } from './fixtures/subgraphHelpers'
+import { verifyEventSequence } from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphEvents - Event Payload Verification', () => {
   subgraphTest(

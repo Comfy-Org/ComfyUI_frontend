@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import type { useElementSize } from '@vueuse/core'
+import { useElementSize } from '@vueuse/core'
 import { useScroll, whenever } from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
 import type { CSSProperties } from 'vue'

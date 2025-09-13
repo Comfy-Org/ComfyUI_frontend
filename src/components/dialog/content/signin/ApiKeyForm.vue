@@ -89,8 +89,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
 import type { apiKeySchema } from '@/schemas/signInSchema'
-import type { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 const authStore = useFirebaseAuthStore()
 const apiKeyStore = useApiKeyAuthStore()

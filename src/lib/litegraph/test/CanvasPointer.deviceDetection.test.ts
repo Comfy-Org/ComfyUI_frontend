@@ -27,7 +27,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CanvasPointer } from '../src/CanvasPointer'
+import { CanvasPointer } from '../src/CanvasPointer'
 
 describe('CanvasPointer Device Detection - Efficient Timestamp-Based TDD Tests', () => {
   let element: HTMLDivElement

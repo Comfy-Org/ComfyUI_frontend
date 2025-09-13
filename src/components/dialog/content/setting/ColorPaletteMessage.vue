@@ -38,14 +38,14 @@
 </template>
 
 <script setup lang="ts">
-import type { storeToRefs } from 'pinia'
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const settingStore = useSettingStore()
 const colorPaletteStore = useColorPaletteStore()

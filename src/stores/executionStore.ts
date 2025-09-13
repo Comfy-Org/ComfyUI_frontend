@@ -1,10 +1,11 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type ChatHistoryWidget from '@/components/graph/widgets/ChatHistoryWidget.vue'
-import type { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
-import type { useNodeProgressText } from '@/composables/node/useNodeProgressText'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useNodeChatHistory } from '@/composables/node/useNodeChatHistory'
+import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DisplayComponentWsMessage,
   ExecutedWsMessage,
@@ -17,19 +18,17 @@ import type {
   ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/schemas/apiSchema'
-import type {
-  ComfyNode,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/schemas/comfyWorkflowSchema'
+import type { ComfyNode, ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import { NodeId } from '@/schemas/comfyWorkflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import type { createNodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
-import type { useCanvasStore } from './graphStore'
-import type { ComfyWorkflow, useWorkflowStore } from './workflowStore'
+import { useCanvasStore } from './graphStore'
+import type { ComfyWorkflow } from './workflowStore'
+import { useWorkflowStore } from './workflowStore'
 
 interface QueuedPrompt {
   /**

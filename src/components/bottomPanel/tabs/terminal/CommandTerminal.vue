@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import type { IDisposable } from '@xterm/xterm'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'

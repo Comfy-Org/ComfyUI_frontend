@@ -7,21 +7,13 @@ import { useConflictAcknowledgment } from '@/composables/useConflictAcknowledgme
 import config from '@/config'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
-import type { components } from '@/types/comfyRegistryTypes'
-import type {
-  ConflictDetail,
-  ConflictDetectionResponse,
-  ConflictDetectionResult,
-  ConflictDetectionSummary,
-  ConflictType,
-  Node,
-  NodePackRequirements,
-  SystemEnvironment
-} from '@/types/conflictDetectionTypes'
+import { components } from '@/types/comfyRegistryTypes'
+import type { ConflictDetectionResponse, ConflictDetectionResult, ConflictDetectionSummary, ConflictType, SystemEnvironment } from '@/types/conflictDetectionTypes'
+import { ConflictDetail, Node, NodePackRequirements } from '@/types/conflictDetectionTypes'
 import { normalizePackId } from '@/utils/packUtils'
 import { cleanVersion, satisfiesVersion, utilCheckVersionCompatibility } from '@/utils/versionUtil'
 

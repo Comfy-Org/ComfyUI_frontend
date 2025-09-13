@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import WhatsNewPopup from '@/components/helpcenter/WhatsNewPopup.vue'
-import type { components } from '@/types/comfyRegistryTypes'
+import { components } from '@/types/comfyRegistryTypes'
 
 type ReleaseNote = components['schemas']['ReleaseNote']
 

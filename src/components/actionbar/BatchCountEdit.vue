@@ -33,12 +33,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { storeToRefs } from 'pinia'
+import { storeToRefs } from 'pinia'
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 
-import type { useQueueSettingsStore } from '@/stores/queueStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const queueSettingsStore = useQueueSettingsStore()
 const { batchCount } = storeToRefs(queueSettingsStore)

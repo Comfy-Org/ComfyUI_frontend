@@ -1,10 +1,10 @@
 import * as THREE from 'three'
-import type { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
-import type { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
-import type { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
+import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
+import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
 import { t } from '@/i18n'
-import type { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/stores/toastStore'
 
 export class ModelExporter {
   static detectFormatFromURL(url: string): string | null {

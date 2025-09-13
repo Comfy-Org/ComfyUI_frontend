@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import type { useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -78,10 +78,10 @@ import { useConflictDetection } from '@/composables/useConflictDetection'
 import { api } from '@/scripts/api'
 import { useComfyManagerService } from '@/services/comfyManagerService'
 import { useWorkflowService } from '@/services/workflowService'
-import type { useComfyManagerStore, useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useDialogStore } from '@/stores/dialogStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useComfyManagerStore, useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()

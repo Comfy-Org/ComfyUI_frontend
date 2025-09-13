@@ -14,7 +14,7 @@ import { computed } from 'vue'
 
 import type { VIEW_CONTROLS_CONFIG } from '@/composables/bottomPanelTabs/useCommandSubcategories'
 import { useCommandSubcategories } from '@/composables/bottomPanelTabs/useCommandSubcategories'
-import type { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 import ShortcutsList from './ShortcutsList.vue'
 

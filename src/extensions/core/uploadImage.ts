@@ -1,4 +1,5 @@
-import type { ComfyNodeDef, InputSpec, isComboInputSpecV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import { isComboInputSpecV1 } from '@/schemas/nodeDefSchema'
 
 import { app } from '../../scripts/app'
 

@@ -1,6 +1,6 @@
 import type { BaseSearchParamsWithoutQuery } from 'algoliasearch/dist/lite/browser'
 
-import type { components } from '@/types/comfyRegistryTypes'
+import { components } from '@/types/comfyRegistryTypes'
 
 type SafeNestedProperty<
   T,

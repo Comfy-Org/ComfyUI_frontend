@@ -30,10 +30,8 @@
 import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
 
-import type {
-  TemplateGroup,
-  WorkflowTemplates
-} from '@/types/workflowTemplateTypes'
+import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import { TemplateGroup } from '@/types/workflowTemplateTypes'
 
 defineProps<{
   tabs: TemplateGroup[]

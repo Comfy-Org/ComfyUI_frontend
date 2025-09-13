@@ -1,8 +1,8 @@
-import type { useAsyncState } from '@vueuse/core'
+import { useAsyncState } from '@vueuse/core'
 import { get } from '@vueuse/core'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 
-import type { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { UseNodePacksOptions } from '@/types/comfyManagerTypes'
 
 /**

@@ -1,5 +1,5 @@
 import { useTimeout } from '@vueuse/core'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 /**

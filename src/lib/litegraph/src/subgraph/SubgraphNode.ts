@@ -2,12 +2,14 @@ import type { BaseLGraph, LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
-import type { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot, ISlotType, NodeId } from '@/lib/litegraph/src/litegraph'
-import type { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import type { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
+import { NodeId } from '@/lib/litegraph/src/litegraph'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import type {
   GraphOrSubgraph,
   Subgraph
@@ -16,11 +18,12 @@ import type {
   ExportedSubgraphInstance,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 
-import type { ExecutableLGraphNode, ExecutableNodeDTO, ExecutionId } from './ExecutableNodeDTO'
+import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { SubgraphInput } from './SubgraphInput'
 
 /**

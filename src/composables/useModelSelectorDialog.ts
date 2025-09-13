@@ -1,6 +1,6 @@
 import SampleModelSelector from '@/components/widget/SampleModelSelector.vue'
 import { useDialogService } from '@/services/dialogService'
-import type { useDialogStore } from '@/stores/dialogStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-model-selector'
 

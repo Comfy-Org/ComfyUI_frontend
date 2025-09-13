@@ -85,7 +85,7 @@ import Button from 'primevue/button'
 import Panel from 'primevue/panel'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import type { useComfyManagerStore, useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
+import { useComfyManagerStore, useManagerProgressDialogStore } from '@/stores/comfyManagerStore'
 
 const comfyManagerStore = useComfyManagerStore()
 const progressDialogContent = useManagerProgressDialogStore()

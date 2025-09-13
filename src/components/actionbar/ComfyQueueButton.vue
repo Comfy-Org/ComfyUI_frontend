@@ -73,16 +73,16 @@
 </template>
 
 <script setup lang="ts">
-import type { storeToRefs } from 'pinia'
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import SplitButton from 'primevue/splitbutton'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useQueuePendingTaskCountStore, useQueueSettingsStore } from '@/stores/queueStore'
-import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useQueuePendingTaskCountStore, useQueueSettingsStore } from '@/stores/queueStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import BatchCountEdit from './BatchCountEdit.vue'
 

@@ -1,11 +1,12 @@
 import _ from 'es-toolkit/compat'
 
-import type { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import type { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
-import type { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
-import type { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
+import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
+import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { st, t } from '@/i18n'
-import type { IContextMenuValue, LGraphBadge, LGraphCanvas, LGraphEventMode, LGraphNode, LiteGraph, RenderShape, Subgraph, SubgraphNode, Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphEventMode, LGraphNode, LiteGraph, RenderShape, Subgraph, SubgraphNode, Vector2 } from '@/lib/litegraph/src/litegraph'
+import { IContextMenuValue, LGraphBadge } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,
@@ -14,7 +15,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/schemas/comfyWorkflowSchema'
-import type { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec,
@@ -23,25 +24,25 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
-import type { isComponentWidget } from '@/scripts/domWidget'
+import { isComponentWidget } from '@/scripts/domWidget'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
-import type { useDomWidgetStore } from '@/stores/domWidgetStore'
-import type { useExecutionStore } from '@/stores/executionStore'
-import type { useCanvasStore } from '@/stores/graphStore'
-import type { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useSubgraphStore } from '@/stores/subgraphStore'
-import type { useToastStore } from '@/stores/toastStore'
-import type { useWidgetStore } from '@/stores/widgetStore'
-import type { useWorkflowStore } from '@/stores/workflowStore'
-import type { normalizeI18nKey } from '@/utils/formatUtil'
-import type { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useToastStore } from '@/stores/toastStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+import { isImageNode, isVideoNode } from '@/utils/litegraphUtil'
 import { migrateWidgetsValues } from '@/utils/litegraphUtil'
-import type { getOrderedInputSpecs } from '@/utils/nodeDefOrderingUtil'
+import { getOrderedInputSpecs } from '@/utils/nodeDefOrderingUtil'
 
-import type { useExtensionService } from './extensionService'
+import { useExtensionService } from './extensionService'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()

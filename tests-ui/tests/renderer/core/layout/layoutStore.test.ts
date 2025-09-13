@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutChange, LayoutSource, NodeLayout } from '@/renderer/core/layout/types'
+import type { LayoutSource, NodeLayout } from '@/renderer/core/layout/types'
+import { LayoutChange } from '@/renderer/core/layout/types'
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {

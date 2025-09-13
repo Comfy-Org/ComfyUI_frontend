@@ -1,10 +1,11 @@
 // TODO: Fix these tests after migration
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LinkConnector } from '@/lib/litegraph/src/litegraph'
-import type { MovingOutputLink } from '@/lib/litegraph/src/litegraph'
-import type { ToOutputRenderLink } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { LinkConnector } from '@/lib/litegraph/src/litegraph'
+import { MovingOutputLink } from '@/lib/litegraph/src/litegraph'
+import { ToOutputRenderLink } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LLink } from '@/lib/litegraph/src/litegraph'
 import type { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
 
 import { createTestSubgraph } from '../subgraph/fixtures/subgraphHelpers'

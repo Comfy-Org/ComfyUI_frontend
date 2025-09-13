@@ -46,7 +46,7 @@ import Message from 'primevue/message'
 import { computed } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { compareVersions } from '@/utils/formatUtil'
 
 const props = defineProps<{

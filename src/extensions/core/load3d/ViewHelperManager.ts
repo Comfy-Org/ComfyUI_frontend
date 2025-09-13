@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
+import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 
 import type { NodeStorageInterface, ViewHelperManagerInterface } from './interfaces'
 

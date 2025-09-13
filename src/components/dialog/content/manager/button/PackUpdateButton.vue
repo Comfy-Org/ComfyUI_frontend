@@ -22,8 +22,8 @@ import { ref } from 'vue'
 
 import IconTextButton from '@/components/button/IconTextButton.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { components } from '@/types/comfyRegistryTypes'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 

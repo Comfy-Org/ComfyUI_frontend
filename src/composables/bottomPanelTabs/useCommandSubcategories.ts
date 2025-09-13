@@ -1,7 +1,7 @@
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
 
-import type { ComfyCommandImpl } from '@/stores/commandStore'
+import { ComfyCommandImpl } from '@/stores/commandStore'
 
 type SubcategoryRule = {
   pattern: string | RegExp

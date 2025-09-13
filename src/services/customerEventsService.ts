@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { COMFY_API_BASE_URL } from '@/config/comfyApi'
-import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 

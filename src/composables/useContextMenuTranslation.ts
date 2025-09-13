@@ -6,7 +6,7 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 /**
  * Add translation for litegraph context menu.

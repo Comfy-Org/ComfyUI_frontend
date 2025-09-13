@@ -18,8 +18,9 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkDirection, LinkMarkerShape, LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
-import type { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import type { ArrowShape, CanvasPathRenderer, Direction, DragLinkData, LinkRenderData, RenderContext as PathRenderContext, Point, RenderMode } from '@/renderer/core/canvas/pathRenderer'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { ArrowShape, Direction, DragLinkData, LinkRenderData, RenderContext as PathRenderContext, RenderMode } from '@/renderer/core/canvas/pathRenderer'
+import { CanvasPathRenderer, Point } from '@/renderer/core/canvas/pathRenderer'
 import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 

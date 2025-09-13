@@ -4,7 +4,7 @@ import InputNumber from 'primevue/inputnumber'
 import { describe, expect, it } from 'vitest'
 
 import Slider from '@/components/ui/slider/Slider.vue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 

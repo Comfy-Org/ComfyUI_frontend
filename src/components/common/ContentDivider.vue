@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const colorPaletteStore = useColorPaletteStore()
 const { orientation = 'horizontal', width = 0.3 } = defineProps<{

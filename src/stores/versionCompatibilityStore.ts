@@ -1,10 +1,10 @@
 import { until, useStorage } from '@vueuse/core'
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import * as semver from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 

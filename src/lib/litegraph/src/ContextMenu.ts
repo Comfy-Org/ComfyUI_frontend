@@ -1,8 +1,5 @@
-import type {
-  ContextMenuDivElement,
-  IContextMenuOptions,
-  IContextMenuValue
-} from './interfaces'
+import type { IContextMenuOptions } from './interfaces'
+import { ContextMenuDivElement, IContextMenuValue } from './interfaces'
 import type { LiteGraph } from './litegraph'
 
 // TODO: Replace this pattern with something more modern.

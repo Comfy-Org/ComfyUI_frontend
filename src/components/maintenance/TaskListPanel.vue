@@ -46,7 +46,7 @@ import ConfirmPopup from 'primevue/confirmpopup'
 import Divider from 'primevue/divider'
 
 import { t } from '@/i18n'
-import type { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type {
   MaintenanceFilter,
   MaintenanceTask

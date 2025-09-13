@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // We don't strictly need RenderLink interface import for the mock
-import type { LinkConnector } from '@/lib/litegraph/src/litegraph'
+import { LinkConnector } from '@/lib/litegraph/src/litegraph'
 
 // Mocks
 const mockSetConnectingLinks = vi.fn()

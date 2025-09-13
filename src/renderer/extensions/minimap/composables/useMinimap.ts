@@ -2,9 +2,9 @@ import { useRafFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { useCanvasStore } from '@/stores/graphStore'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useWorkflowStore } from '@/stores/workflowStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'

@@ -1,7 +1,7 @@
 import { markRaw } from 'vue'
 
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
-import type { useQueuePendingTaskCountStore } from '@/stores/queueStore'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export const useQueueSidebarTab = (): SidebarTabExtension => {

@@ -1,4 +1,4 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { CORE_COLOR_PALETTES, DEFAULT_COLOR_PALETTE, DEFAULT_DARK_COLOR_PALETTE, DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'

@@ -96,7 +96,8 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
-import type { AuditLog, EventType, useCustomerEventsService } from '@/services/customerEventsService'
+import type { AuditLog, EventType } from '@/services/customerEventsService'
+import { useCustomerEventsService } from '@/services/customerEventsService'
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)

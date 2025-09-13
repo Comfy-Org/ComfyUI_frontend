@@ -1,18 +1,11 @@
-import type { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 
 import type { LGraph } from './LGraph'
 import type { LGraphCanvas } from './LGraphCanvas'
 import type { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
-import type {
-  ColorOption,
-  IColorable,
-  IContextMenuValue,
-  IPinnable,
-  Point,
-  Positionable,
-  Size
-} from './interfaces'
+import type { ColorOption, IColorable, IPinnable, Point, Positionable, Size } from './interfaces'
+import { IContextMenuValue } from './interfaces'
 import type { LiteGraph } from './litegraph'
 import { containsCentre, containsRect, createBounds, isInRectangle, isPointInRect, snapPoint } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'

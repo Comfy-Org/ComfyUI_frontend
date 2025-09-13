@@ -9,14 +9,14 @@
 </template>
 
 <script setup lang="ts">
-import type { useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
-import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { useConflictDetection } from './composables/useConflictDetection'
 import { electronAPI, isElectron } from './utils/envUtil'

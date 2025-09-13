@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import type { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/stores/toastStore'
 
 export function useErrorHandling() {
   const toast = useToastStore()

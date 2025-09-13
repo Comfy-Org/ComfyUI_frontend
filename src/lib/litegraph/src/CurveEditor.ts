@@ -1,6 +1,7 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { Point, Rect } from './interfaces'
+import type { Rect } from './interfaces'
+import { Point } from './interfaces'
 import type { LGraphCanvas } from './litegraph'
 import { distance } from './measure'
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import type { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
+import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/composables/nodePack/useWorkflowPacks'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'

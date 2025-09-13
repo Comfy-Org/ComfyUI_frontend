@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { normalizePackKeys } from '@/utils/packUtils'
+import { normalizePackKeys } from '@/utils/packUtils'
 import { normalizePackId } from '@/utils/packUtils'
 
 describe('packUtils', () => {

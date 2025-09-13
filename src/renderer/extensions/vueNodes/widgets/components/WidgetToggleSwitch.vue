@@ -14,8 +14,9 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 
 import { useBooleanWidgetValue } from '@/composables/graph/useWidgetValue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { STANDARD_EXCLUDED_PROPS, filterWidgetProps } from '@/utils/widgetPropFilter'
+import { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { STANDARD_EXCLUDED_PROPS } from '@/utils/widgetPropFilter'
+import { filterWidgetProps } from '@/utils/widgetPropFilter'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

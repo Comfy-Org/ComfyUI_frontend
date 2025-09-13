@@ -1,5 +1,6 @@
 import type { ITreeSelectWidget } from '../types/widgets'
-import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
 
 /**
  * Widget for hierarchical tree selection

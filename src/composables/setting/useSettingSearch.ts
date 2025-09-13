@@ -1,10 +1,12 @@
 import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
-import type { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
+import type { SettingTreeNode } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { getSettingInfo } from '@/stores/settingStore'
-import type { ISettingGroup, SettingParams } from '@/types/settingTypes'
-import type { normalizeI18nKey } from '@/utils/formatUtil'
+import type { SettingParams } from '@/types/settingTypes'
+import { ISettingGroup } from '@/types/settingTypes'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export function useSettingSearch() {
   const settingStore = useSettingStore()

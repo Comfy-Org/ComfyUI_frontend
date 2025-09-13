@@ -1,7 +1,7 @@
 import { useCanvasInteractions } from '@/composables/graph/useCanvasInteractions'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import type { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {

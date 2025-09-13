@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
 import type {
   INodeInputSlot,
@@ -11,12 +11,12 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import type { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import type { SubgraphSlot } from './SubgraphSlotBase'
-import type { isNodeSlot } from './subgraphUtils'
+import { isNodeSlot } from './subgraphUtils'
 import { isSubgraphOutput } from './subgraphUtils'
 
 /**

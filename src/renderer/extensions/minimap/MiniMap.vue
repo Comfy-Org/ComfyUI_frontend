@@ -77,7 +77,7 @@ import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import type { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 

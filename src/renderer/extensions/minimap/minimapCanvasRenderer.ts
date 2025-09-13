@@ -1,5 +1,5 @@
 import type { LGraph, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
 import type { MinimapRenderContext } from './types'

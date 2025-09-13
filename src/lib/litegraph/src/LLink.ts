@@ -3,7 +3,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import type { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
-import type { Reroute, RerouteId } from './Reroute'
+import type { RerouteId } from './Reroute'
+import { Reroute } from './Reroute'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -13,11 +14,8 @@ import type {
   LinkSegment,
   ReadonlyLinkNetwork
 } from './interfaces'
-import type {
-  Serialisable,
-  SerialisableLLink,
-  SubgraphIO
-} from './types/serialisation'
+import type { SerialisableLLink, SubgraphIO } from './types/serialisation'
+import { Serialisable } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 

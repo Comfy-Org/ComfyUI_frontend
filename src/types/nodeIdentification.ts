@@ -1,4 +1,4 @@
-import type { NodeId } from '@/schemas/comfyWorkflowSchema'
+import { NodeId } from '@/schemas/comfyWorkflowSchema'
 
 /**
  * A globally unique identifier for nodes that maintains consistency across

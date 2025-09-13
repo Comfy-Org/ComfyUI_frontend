@@ -6,7 +6,7 @@ import type {
   ExecutionId,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
+import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
 
 describe('ExecutableGroupNodeChildDTO', () => {
   let mockNode: LGraphNode

@@ -71,15 +71,13 @@ import { useI18n } from 'vue-i18n'
 import PackInstallButton from '@/components/dialog/content/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/components/dialog/content/manager/button/PackUpdateButton.vue'
 import SearchFilterDropdown from '@/components/dialog/content/manager/registrySearchBar/SearchFilterDropdown.vue'
-import type { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
-import type { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
-import type { SearchOption, SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import { useMissingNodes } from '@/composables/nodePack/useMissingNodes'
+import { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
+import type { SortableAlgoliaField } from '@/types/comfyManagerTypes'
+import { SearchOption } from '@/types/comfyManagerTypes'
 import { components } from '@/types/comfyRegistryTypes'
-import type {
-  QuerySuggestion,
-  SearchMode,
-  SortableField
-} from '@/types/searchServiceTypes'
+import type { SearchMode } from '@/types/searchServiceTypes'
+import { QuerySuggestion, SortableField } from '@/types/searchServiceTypes'
 
 const { searchResults, sortOptions } = defineProps<{
   searchResults?: components['schemas']['Node'][]

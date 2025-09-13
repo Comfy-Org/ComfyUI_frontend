@@ -1,4 +1,4 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import type { User as UserConfig } from '@/schemas/apiSchema'

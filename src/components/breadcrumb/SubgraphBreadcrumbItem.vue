@@ -55,9 +55,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/services/workflowService'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import type { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import type { ComfyWorkflow } from '@/stores/workflowStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 
 interface Props {

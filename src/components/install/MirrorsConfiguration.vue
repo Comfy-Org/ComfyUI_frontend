@@ -44,7 +44,8 @@ import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
 import type { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { isInChina } from '@/utils/networkUtil'
-import type { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
+import type { ValidationState } from '@/utils/validationUtil'
+import { mergeValidationStates } from '@/utils/validationUtil'
 
 const showMirrorInputs = ref(false)
 const { device } = defineProps<{ device: TorchDeviceType | null }>()

@@ -84,13 +84,13 @@
 </template>
 
 <script setup lang="ts">
-import type { storeToRefs } from 'pinia'
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
 

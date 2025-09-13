@@ -2,7 +2,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import type { BaseWidget, DrawWidgetOptions } from './BaseWidget'
+import type { DrawWidgetOptions } from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
 
 /**
  * Wraps a legacy POJO custom widget, so that all widgets may be called via the same internal interface.

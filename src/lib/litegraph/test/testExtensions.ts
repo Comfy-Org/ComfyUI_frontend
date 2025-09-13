@@ -1,6 +1,6 @@
 import { test as baseTest } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type {

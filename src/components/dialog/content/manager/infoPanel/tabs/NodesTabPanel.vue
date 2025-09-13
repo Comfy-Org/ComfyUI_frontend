@@ -29,14 +29,14 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import type { shallowRef } from 'vue'
+import { shallowRef } from 'vue'
 import { computed, ref, useId } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
-import type { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { components, operations } from '@/types/comfyRegistryTypes'
-import type { registryToFrontendV2NodeDef } from '@/utils/mapperUtil'
+import { registryToFrontendV2NodeDef } from '@/utils/mapperUtil'
 
 type ListComfyNodesResponse =
   operations['ListComfyNodes']['responses'][200]['content']['application/json']['comfy_nodes']

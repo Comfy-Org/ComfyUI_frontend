@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 
-import type { useDialogStore } from '@/stores/dialogStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
 </script>

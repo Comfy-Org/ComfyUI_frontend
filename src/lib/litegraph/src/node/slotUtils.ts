@@ -1,7 +1,5 @@
-import type {
-  IWidgetInputSlot,
-  SharedIntersection
-} from '@/lib/litegraph/src/interfaces'
+import type { IWidgetInputSlot } from '@/lib/litegraph/src/interfaces'
+import { SharedIntersection } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot,

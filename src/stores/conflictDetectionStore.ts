@@ -1,4 +1,4 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'

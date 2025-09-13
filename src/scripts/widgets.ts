@@ -1,11 +1,8 @@
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IComboWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
@@ -22,10 +19,10 @@ import { useSelectButtonWidget } from '@/renderer/extensions/vueNodes/widgets/co
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
 import { useTreeSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTreeSelectWidget'
-import type { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'
 import './domWidget'

@@ -6,14 +6,11 @@
  * calculation logic while providing their own position data.
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  Point
-} from '@/lib/litegraph/src/interfaces'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import { INodeInputSlot, INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import type { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 export interface SlotPositionContext {

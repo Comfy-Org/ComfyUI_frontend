@@ -1,9 +1,9 @@
-import type { MockedFunction } from 'vitest'
+import { MockedFunction } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useBooleanWidgetValue, useNumberWidgetValue, useStringWidgetValue, useWidgetValue } from '@/composables/graph/useWidgetValue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 describe('useWidgetValue', () => {
   let mockWidget: SimplifiedWidget<string>

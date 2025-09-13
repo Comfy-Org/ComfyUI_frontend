@@ -8,11 +8,11 @@
  * - Layout mutations for visual feedback
  * - Integration with LiteGraph canvas selection system
  */
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import type { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import type { useCanvasStore } from '@/stores/graphStore'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import { useCanvasStore } from '@/stores/graphStore'
 
 interface NodeManager {
   getNode: (id: string) => any

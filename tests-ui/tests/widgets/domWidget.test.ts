@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
+import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
 // Mock dependencies
 vi.mock('@/stores/domWidgetStore', () => ({

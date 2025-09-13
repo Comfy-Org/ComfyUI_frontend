@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SpaceRequest } from '@/lib/litegraph/src/litegraph'
+import { SpaceRequest } from '@/lib/litegraph/src/litegraph'
 import { distributeSpace } from '@/lib/litegraph/src/litegraph'
 
 describe('distributeSpace', () => {

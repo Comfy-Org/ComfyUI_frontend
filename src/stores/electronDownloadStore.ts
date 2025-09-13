@@ -1,5 +1,5 @@
 import type { DownloadState, DownloadStatus } from '@comfyorg/comfyui-electron-types'
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { electronAPI, isElectron } from '@/utils/envUtil'

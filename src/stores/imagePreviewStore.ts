@@ -1,14 +1,14 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 
 import type { LGraphNode, Subgraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage, ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { useExecutionStore } from '@/stores/executionStore'
-import type { useWorkflowStore } from '@/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
-import type { isVideoNode } from '@/utils/litegraphUtil'
+import { isVideoNode } from '@/utils/litegraphUtil'
 
 const createOutputs = (
   filenames: string[],

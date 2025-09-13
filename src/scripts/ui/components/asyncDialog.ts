@@ -1,5 +1,5 @@
 import { $el } from '../../ui'
-import type { ComfyDialog } from '../dialog'
+import { ComfyDialog } from '../dialog'
 
 export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
   // @ts-expect-error fixme ts strict error

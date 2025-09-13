@@ -1,7 +1,7 @@
 import { pull } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
   INodeInputSlot,
@@ -15,7 +15,7 @@ import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutputNode } from './SubgraphOutputNode'
 import type { SubgraphSlot } from './SubgraphSlotBase'
-import type { isNodeSlot } from './subgraphUtils'
+import { isNodeSlot } from './subgraphUtils'
 import { isSubgraphInput } from './subgraphUtils'
 
 /**

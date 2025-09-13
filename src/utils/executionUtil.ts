@@ -1,16 +1,11 @@
-import type {
-  ExecutableLGraphNode,
-  ExecutionId,
-  LGraph
-} from '@/lib/litegraph/src/litegraph'
-import type { ExecutableNodeDTO, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/schemas/comfyWorkflowSchema'
+import type { ExecutableLGraphNode, ExecutionId, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import { ComfyApiWorkflow } from '@/schemas/comfyWorkflowSchema'
 
-import type { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
-import type { compressWidgetInputSlots } from './litegraphUtil'
+import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
+import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
  * Converts the current graph workflow for sending to the API.

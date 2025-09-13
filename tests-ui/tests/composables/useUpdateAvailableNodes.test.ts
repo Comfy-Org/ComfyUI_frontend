@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useInstalledPacks } from '@/composables/nodePack/useInstalledPacks'
-import type { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
+import { useUpdateAvailableNodes } from '@/composables/nodePack/useUpdateAvailableNodes'
 import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
 // Import mocked utils
 import { compareVersions, isSemVer } from '@/utils/formatUtil'

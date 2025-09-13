@@ -50,9 +50,9 @@ import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>

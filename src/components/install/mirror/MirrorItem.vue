@@ -24,7 +24,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import UrlInput from '@/components/common/UrlInput.vue'
 import type { UVMirror } from '@/constants/uvMirrors'
-import type { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { checkMirrorReachable } from '@/utils/networkUtil'
 import type { ValidationState } from '@/utils/validationUtil'
 

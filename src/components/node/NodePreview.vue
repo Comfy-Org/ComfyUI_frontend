@@ -86,8 +86,8 @@ import _ from 'es-toolkit/compat'
 import { computed } from 'vue'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { useWidgetStore } from '@/stores/widgetStore'
-import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 const { nodeDef } = defineProps<{

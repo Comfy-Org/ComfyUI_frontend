@@ -17,9 +17,9 @@ import Button from 'primevue/button'
 import { computed } from 'vue'
 
 import { t } from '@/i18n'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useCanvasStore } from '@/stores/graphStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 import type { isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()

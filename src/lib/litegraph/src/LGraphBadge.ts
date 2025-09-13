@@ -1,4 +1,5 @@
-import type { LGraphIcon, LGraphIconOptions } from './LGraphIcon'
+import type { LGraphIconOptions } from './LGraphIcon'
+import { LGraphIcon } from './LGraphIcon'
 
 export enum BadgePosition {
   TopLeft = 'top-left',

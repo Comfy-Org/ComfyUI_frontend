@@ -140,9 +140,9 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useCanvasStore } from '@/stores/graphStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const { t } = useI18n()
 const minimap = useMinimap()

@@ -3,9 +3,9 @@ import { computed } from 'vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { t } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
-import type { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 export const useCurrentUser = () => {
   const authStore = useFirebaseAuthStore()

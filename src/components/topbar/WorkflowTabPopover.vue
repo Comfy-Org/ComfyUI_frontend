@@ -39,10 +39,10 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import type { toRefs } from 'vue'
+import { toRefs } from 'vue'
 import { computed, nextTick, ref, useId } from 'vue'
 
-import type { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const POPOVER_WIDTH = 250
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 
-import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 
 describe('Rectangle resize functionality', () => {
   let rect: Rectangle

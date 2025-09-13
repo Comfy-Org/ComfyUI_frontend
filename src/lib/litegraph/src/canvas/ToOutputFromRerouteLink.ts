@@ -7,7 +7,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 
 import type { LinkConnector } from './LinkConnector'
-import type { ToInputRenderLink } from './ToInputRenderLink'
+import { ToInputRenderLink } from './ToInputRenderLink'
 import type { ToOutputRenderLink } from './ToOutputRenderLink'
 
 /**

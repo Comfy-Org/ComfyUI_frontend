@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import type { ControlsManagerInterface, EventManagerInterface, NodeStorageInterface } from './interfaces'
 

@@ -16,7 +16,7 @@
 import MultiSelect from 'primevue/multiselect'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import { ComponentWidget } from '@/scripts/domWidget'
 
 const selectedItems = defineModel<string[]>({ required: true })
 const { widget } = defineProps<{

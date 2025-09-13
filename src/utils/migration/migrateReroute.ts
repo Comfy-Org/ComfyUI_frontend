@@ -1,12 +1,7 @@
 import _ from 'es-toolkit/compat'
 
-import type {
-  ComfyLinkObject,
-  ComfyNode,
-  NodeId,
-  Reroute,
-  WorkflowJSON04
-} from '@/schemas/comfyWorkflowSchema'
+import type { ComfyNode, NodeId, WorkflowJSON04 } from '@/schemas/comfyWorkflowSchema'
+import { ComfyLinkObject, Reroute } from '@/schemas/comfyWorkflowSchema'
 
 type RerouteNode = ComfyNode & {
   type: 'Reroute'

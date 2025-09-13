@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { filterOutputNodes, isOutputNode } from '@/utils/nodeFilterUtil'
+import type { isOutputNode } from '@/utils/nodeFilterUtil'
+import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 describe('nodeFilterUtil', () => {
   // Helper to create a mock node

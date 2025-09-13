@@ -1,11 +1,11 @@
 import { useLocalStorage } from '@vueuse/core'
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import type { useToastStore } from '@/stores/toastStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useToastStore } from '@/stores/toastStore'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import { operations } from '@/types/comfyRegistryTypes'
 

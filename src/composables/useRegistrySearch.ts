@@ -4,10 +4,11 @@ import { computed, ref, watch } from 'vue'
 
 import type { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { SearchAttribute } from '@/types/algoliaTypes'
+import { SearchAttribute } from '@/types/algoliaTypes'
 import type { SortableAlgoliaField } from '@/types/comfyManagerTypes'
-import type { components } from '@/types/comfyRegistryTypes'
-import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
+import { components } from '@/types/comfyRegistryTypes'
+import type { SearchMode } from '@/types/searchServiceTypes'
+import { QuerySuggestion } from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 

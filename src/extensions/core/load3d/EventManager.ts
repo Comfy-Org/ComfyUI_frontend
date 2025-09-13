@@ -1,4 +1,5 @@
-import type { EventCallback, EventManagerInterface } from './interfaces'
+import type { EventManagerInterface } from './interfaces'
+import { EventCallback } from './interfaces'
 
 export class EventManager implements EventManagerInterface {
   private listeners: { [key: string]: EventCallback[] } = {}

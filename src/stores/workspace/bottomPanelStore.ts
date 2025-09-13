@@ -1,10 +1,10 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
-import type { useLogsTerminalTab } from '@/composables/bottomPanelTabs/useTerminalTabs'
+import { useLogsTerminalTab } from '@/composables/bottomPanelTabs/useTerminalTabs'
 import { useCommandTerminalTab } from '@/composables/bottomPanelTabs/useTerminalTabs'
-import type { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'

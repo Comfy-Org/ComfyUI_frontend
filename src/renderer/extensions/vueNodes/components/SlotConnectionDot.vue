@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { useTemplateRef } from 'vue'
+import { useTemplateRef } from 'vue'
 
 import type { ClassValue } from '@/utils/tailwindUtil'
 import { cn } from '@/utils/tailwindUtil'

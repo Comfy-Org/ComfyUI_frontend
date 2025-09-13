@@ -18,18 +18,18 @@
 </template>
 
 <script setup lang="ts">
-import type { useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { useElementBounding } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
-import type { isComponentWidget } from '@/scripts/domWidget'
+import { isComponentWidget } from '@/scripts/domWidget'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
-import type { useCanvasStore } from '@/stores/graphStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const { widgetState } = defineProps<{
   widgetState: DomWidgetState

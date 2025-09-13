@@ -34,7 +34,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
-import type { isSlotObject } from '@/utils/typeGuardUtil'
+import { isSlotObject } from '@/utils/typeGuardUtil'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'

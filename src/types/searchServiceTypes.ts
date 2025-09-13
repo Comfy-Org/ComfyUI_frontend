@@ -1,5 +1,5 @@
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
-import type { components } from '@/types/comfyRegistryTypes'
+import { components } from '@/types/comfyRegistryTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 

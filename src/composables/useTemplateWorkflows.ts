@@ -3,13 +3,10 @@ import { useI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { useDialogStore } from '@/stores/dialogStore'
-import type { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
-import type {
-  TemplateGroup,
-  TemplateInfo,
-  WorkflowTemplates
-} from '@/types/workflowTemplateTypes'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
+import type { TemplateInfo, WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import { TemplateGroup } from '@/types/workflowTemplateTypes'
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()

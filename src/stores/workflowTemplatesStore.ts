@@ -1,16 +1,12 @@
 import { groupBy } from 'es-toolkit/compat'
-import type { defineStore } from 'pinia'
-import type { shallowRef } from 'vue'
+import { defineStore } from 'pinia'
+import { shallowRef } from 'vue'
 import { computed, ref } from 'vue'
 
 import { st } from '@/i18n'
 import { api } from '@/scripts/api'
-import type {
-  TemplateGroup,
-  TemplateInfo,
-  WorkflowTemplates
-} from '@/types/workflowTemplateTypes'
-import type { normalizeI18nKey } from '@/utils/formatUtil'
+import { TemplateGroup, TemplateInfo, WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const SHOULD_SORT_CATEGORIES = new Set([
   // API Node templates should be strictly sorted by name to avoid any

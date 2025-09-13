@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
   INodeInputSlot,

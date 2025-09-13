@@ -125,11 +125,11 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
-import type { storeToRefs } from 'pinia'
+import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { computed, h, nextTick, ref, render } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -144,17 +144,17 @@ import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { DEFAULT_GROUPING_ID, DEFAULT_SORTING_ID } from '@/services/nodeOrganizationService'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import type { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type {
   GroupingStrategyId,
   SortingStrategyId
 } from '@/types/nodeOrganizationTypes'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
-import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 

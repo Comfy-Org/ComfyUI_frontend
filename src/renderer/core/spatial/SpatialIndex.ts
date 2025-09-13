@@ -5,9 +5,10 @@
  * Uses QuadTree for fast spatial lookups with caching for performance.
  */
 import type { PERFORMANCE_CONFIG, QUADTREE_CONFIG } from '@/renderer/core/layout/constants'
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import type { Bounds } from '@/renderer/core/layout/types'
+import { NodeId } from '@/renderer/core/layout/types'
 
-import type { QuadTree } from './QuadTree'
+import { QuadTree } from './QuadTree'
 
 /**
  * Cache entry for spatial queries

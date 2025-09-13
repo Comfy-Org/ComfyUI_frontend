@@ -47,7 +47,7 @@
 import type { ProgressStatus } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

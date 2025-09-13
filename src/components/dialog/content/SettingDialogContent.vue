@@ -70,7 +70,8 @@ import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthAction
 import { useSettingSearch } from '@/composables/setting/useSettingSearch'
 import { useSettingUI } from '@/composables/setting/useSettingUI'
 import type { SettingTreeNode } from '@/stores/settingStore'
-import type { ISettingGroup, SettingParams } from '@/types/settingTypes'
+import type { SettingParams } from '@/types/settingTypes'
+import { ISettingGroup } from '@/types/settingTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
 import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'

@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import type { toRef } from 'vue'
+import { toRef } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -56,9 +56,10 @@ import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/Electr
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyModelDef, ModelFolder, ResourceState, useModelStore } from '@/stores/modelStore'
-import type { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import type { ComfyModelDef, ModelFolder, ResourceState } from '@/stores/modelStore'
+import { useModelStore } from '@/stores/modelStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useSettingStore } from '@/stores/settingStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isElectron } from '@/utils/envUtil'

@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 // Mock dependencies

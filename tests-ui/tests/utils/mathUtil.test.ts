@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { computeUnionBounds, gcd, lcm } from '@/utils/mathUtil'
 
 describe('mathUtil', () => {

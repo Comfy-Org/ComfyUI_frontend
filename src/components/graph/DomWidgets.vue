@@ -16,8 +16,8 @@ import { computed } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { useDomWidgetStore } from '@/stores/domWidgetStore'
-import type { useCanvasStore } from '@/stores/graphStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useCanvasStore } from '@/stores/graphStore'
 
 const domWidgetStore = useDomWidgetStore()
 

@@ -27,7 +27,7 @@
  * <NodeSlots v-if="shouldRenderSlots" />
  * ```
  */
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { computed, readonly } from 'vue'
 
 export enum LODLevel {

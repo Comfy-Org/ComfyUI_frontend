@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { Meta, StoryObj } from '@storybook/vue3-vite'
 import type { MultiSelectProps } from 'primevue/multiselect'
 import { ref } from 'vue'
 

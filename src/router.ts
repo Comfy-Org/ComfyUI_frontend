@@ -3,7 +3,7 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
 
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
-import type { useUserStore } from './stores/userStore'
+import { useUserStore } from './stores/userStore'
 import { isElectron } from './utils/envUtil'
 
 const isFileProtocol = window.location.protocol === 'file:'

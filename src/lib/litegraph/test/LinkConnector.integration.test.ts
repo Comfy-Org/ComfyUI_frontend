@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraph, LGraphNode, LLink, Reroute, RerouteId } from '@/lib/litegraph/src/litegraph'
-import type { LinkConnector } from '@/lib/litegraph/src/litegraph'
+import { LinkConnector } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
 import { test as baseTest } from './testExtensions'

@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { useBreakpoints } from '@vueuse/core'
-import type { useSlots } from 'vue'
+import { useSlots } from 'vue'
 import { computed, inject, ref, watch } from 'vue'
 
 import IconButton from '@/components/button/IconButton.vue'

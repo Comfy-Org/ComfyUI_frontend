@@ -1,6 +1,7 @@
 import type { MenuItem } from 'primevue/menuitem'
 import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
-import type { InjectionKey, ModelRef } from 'vue'
+import type { ModelRef } from 'vue'
+import { InjectionKey } from 'vue'
 
 export interface TreeNode extends PrimeVueTreeNode {
   label: string

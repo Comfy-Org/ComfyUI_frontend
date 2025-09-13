@@ -1,7 +1,8 @@
 // TODO: Fix these tests after migration
 import { afterEach, describe, expect, vi } from 'vitest'
 
-import type { CanvasPointerEvent, LGraph, LGraphNode, LLink, LinkConnector, Reroute, RerouteId } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent, LGraph, LGraphNode, LLink, Reroute, RerouteId } from '@/lib/litegraph/src/litegraph'
+import { LinkConnector } from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from './fixtures/testExtensions'
 

@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
 
 // Mock the API

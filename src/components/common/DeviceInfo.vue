@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 import type { DeviceStats } from '@/schemas/apiSchema'
-import type { formatSize } from '@/utils/formatUtil'
+import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   device: DeviceStats

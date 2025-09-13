@@ -37,7 +37,7 @@ import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
 import { api } from '@/scripts/api'
-import type { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/stores/toastStore'
 
 const modelValue = defineModel<string>()
 

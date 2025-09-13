@@ -1,4 +1,4 @@
-import type { useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { onUnmounted, ref } from 'vue'
 
 import type { LogsWsMessage } from '@/schemas/apiSchema'

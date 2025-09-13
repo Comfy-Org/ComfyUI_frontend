@@ -1,14 +1,15 @@
 import _ from 'es-toolkit/compat'
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import type { BookmarkCustomization } from '@/schemas/apiSchema'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
-import type { useNodeDefStore } from './nodeDefStore'
-import type { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'
-import type { buildNodeDefTree } from './nodeDefStore'
-import type { useSettingStore } from './settingStore'
+import { useNodeDefStore } from './nodeDefStore'
+import type { ComfyNodeDefImpl } from './nodeDefStore'
+import { createDummyFolderNodeDef } from './nodeDefStore'
+import { buildNodeDefTree } from './nodeDefStore'
+import { useSettingStore } from './settingStore'
 
 const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 

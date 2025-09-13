@@ -1,4 +1,4 @@
-import type { Ref, shallowRef } from 'vue'
+import { Ref, shallowRef } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 interface LazyPaginationOptions {

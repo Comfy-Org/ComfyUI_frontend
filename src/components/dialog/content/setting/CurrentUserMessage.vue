@@ -19,7 +19,7 @@
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 
-import type { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '@/stores/userStore'
 
 const userStore = useUserStore()
 const logout = async () => {

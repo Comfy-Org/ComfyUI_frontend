@@ -9,7 +9,7 @@ import { onUnmounted } from 'vue'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import type { registerNodeSlots } from '@/renderer/core/layout/slots/register'
+import { registerNodeSlots } from '@/renderer/core/layout/slots/register'
 import type { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 /**

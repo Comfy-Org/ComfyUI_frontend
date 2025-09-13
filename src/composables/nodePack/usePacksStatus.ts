@@ -1,8 +1,8 @@
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { computed } from 'vue'
 
-import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import type { components } from '@/types/comfyRegistryTypes'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']
 type NodeStatus = components['schemas']['NodeStatus']

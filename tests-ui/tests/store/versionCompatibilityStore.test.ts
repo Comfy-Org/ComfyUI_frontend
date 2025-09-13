@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
+import { useVersionCompatibilityStore } from '@/stores/versionCompatibilityStore'
 
 vi.mock('@/config', () => ({
   default: {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraphButton } from '@/lib/litegraph/src/litegraph'
+import { LGraphButton } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 

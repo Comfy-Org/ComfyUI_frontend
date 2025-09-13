@@ -1,4 +1,4 @@
-import type { VueWrapper } from '@vue/test-utils'
+import { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import Button from 'primevue/button'

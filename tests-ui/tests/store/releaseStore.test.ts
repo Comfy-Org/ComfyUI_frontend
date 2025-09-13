@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { useReleaseStore } from '@/stores/releaseStore'
+import { useReleaseStore } from '@/stores/releaseStore'
 
 // Mock the dependencies
 vi.mock('@/utils/formatUtil')

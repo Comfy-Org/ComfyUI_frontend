@@ -11,7 +11,8 @@ import type {
   Point,
   ReadOnlyPoint
 } from '@/lib/litegraph/src/interfaces'
-import type { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
+import type { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { Rectangle } from '@/lib/litegraph/src/litegraph'
 import { getCentre } from '@/lib/litegraph/src/measure'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'

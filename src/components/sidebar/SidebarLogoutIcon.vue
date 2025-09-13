@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '@/stores/userStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 

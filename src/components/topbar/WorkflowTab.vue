@@ -39,10 +39,10 @@ import { useI18n } from 'vue-i18n'
 import { usePragmaticDraggable, usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
 import { useWorkflowThumbnail } from '@/renderer/thumbnail/composables/useWorkflowThumbnail'
 import { useWorkflowService } from '@/services/workflowService'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 import type { ComfyWorkflow } from '@/stores/workflowStore'
-import type { useWorkflowStore } from '@/stores/workflowStore'
-import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 

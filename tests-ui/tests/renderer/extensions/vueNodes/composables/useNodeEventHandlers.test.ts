@@ -5,7 +5,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import type { useCanvasStore } from '@/stores/graphStore'
 
 vi.mock('@/stores/graphStore', () => ({

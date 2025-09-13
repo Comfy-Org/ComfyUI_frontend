@@ -38,7 +38,7 @@ import Slider from 'primevue/slider'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const vTooltip = Tooltip
 

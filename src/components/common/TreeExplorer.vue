@@ -46,7 +46,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { InjectKeyExpandedKeys, InjectKeyHandleEditLabelFunction, RenderedTreeExplorerNode, TreeExplorerNode } from '@/types/treeExplorerTypes'
-import type { findNodeByKey } from '@/utils/treeUtil'
+import { findNodeByKey } from '@/utils/treeUtil'
 import { combineTrees } from '@/utils/treeUtil'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys', {

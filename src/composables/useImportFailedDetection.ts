@@ -3,9 +3,9 @@ import { computed, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDialogService } from '@/services/dialogService'
-import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/stores/conflictDetectionStore'
+import { ConflictDetail } from '@/types/conflictDetectionTypes'
 
 /**
  * Extracting import failed conflicts from conflict list

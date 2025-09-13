@@ -1,4 +1,4 @@
-import type { ConflictDetail } from '@/types/conflictDetectionTypes'
+import { ConflictDetail } from '@/types/conflictDetectionTypes'
 
 /**
  * Generates a localized conflict message for a given conflict detail.

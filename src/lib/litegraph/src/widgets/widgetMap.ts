@@ -7,7 +7,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { toClass } from '@/lib/litegraph/src/utils/type'
 
-import type { AssetWidget } from './AssetWidget'
+import { AssetWidget } from './AssetWidget'
 import type { BaseWidget } from './BaseWidget'
 import type { BooleanWidget } from './BooleanWidget'
 import type { ButtonWidget } from './ButtonWidget'

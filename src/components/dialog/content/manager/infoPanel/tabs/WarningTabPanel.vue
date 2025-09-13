@@ -31,7 +31,7 @@ import { useImportFailedDetection } from '@/composables/useImportFailedDetection
 import { t } from '@/i18n'
 import { components } from '@/types/comfyRegistryTypes'
 import type { ConflictDetectionResult } from '@/types/conflictDetectionTypes'
-import type { getConflictMessage } from '@/utils/conflictMessageUtil'
+import { getConflictMessage } from '@/utils/conflictMessageUtil'
 
 const { nodePack, conflictResult } = defineProps<{
   nodePack: components['schemas']['Node']

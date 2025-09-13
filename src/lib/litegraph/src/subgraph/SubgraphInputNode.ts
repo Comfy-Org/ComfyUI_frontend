@@ -1,6 +1,6 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -14,11 +14,11 @@ import type {
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
+import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
-import type { EmptySubgraphInput } from './EmptySubgraphInput'
-import type { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import type { SubgraphInput } from './SubgraphInput'
+import { EmptySubgraphInput } from './EmptySubgraphInput'
+import { SubgraphIONodeBase } from './SubgraphIONodeBase'
+import { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
 
 export class SubgraphInputNode

@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ServerConfig } from '@/constants/serverConfig'
-import type { useServerConfigStore } from '@/stores/serverConfigStore'
+import { useServerConfigStore } from '@/stores/serverConfigStore'
 import type { FormItem } from '@/types/settingTypes'
 
 const dummyFormItem: FormItem = {

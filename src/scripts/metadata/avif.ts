@@ -1,4 +1,5 @@
-import type { AvifIinfBox, AvifIlocBox, AvifInfeBox, ComfyMetadata, ComfyMetadataTags, IsobmffBoxContentRange } from '@/types/metadataTypes'
+import type { AvifIinfBox, AvifIlocBox, ComfyMetadata, ComfyMetadataTags, IsobmffBoxContentRange } from '@/types/metadataTypes'
+import { AvifInfeBox } from '@/types/metadataTypes'
 
 const readNullTerminatedString = (
   dataView: DataView,

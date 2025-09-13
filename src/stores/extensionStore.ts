@@ -1,4 +1,4 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 
 import type { ComfyExtension } from '@/types/comfy'

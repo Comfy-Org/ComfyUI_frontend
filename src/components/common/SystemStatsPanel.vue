@@ -42,8 +42,8 @@ import TabView from 'primevue/tabview'
 import { computed } from 'vue'
 
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
-import type { SystemStats } from '@/schemas/apiSchema'
-import type { formatSize } from '@/utils/formatUtil'
+import { SystemStats } from '@/schemas/apiSchema'
+import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   stats: SystemStats

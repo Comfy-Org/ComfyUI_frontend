@@ -13,15 +13,15 @@
 
 <script setup lang="ts">
 import { until } from '@vueuse/core'
-import type { storeToRefs } from 'pinia'
+import { storeToRefs } from 'pinia'
 import ProgressSpinner from 'primevue/progressspinner'
-import type { Ref } from 'vue'
+import { Ref } from 'vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import type { LogEntry, LogsWsMessage, TerminalSize } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import type { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionStore } from '@/stores/executionStore'
 
 import BaseTerminal from './BaseTerminal.vue'
 

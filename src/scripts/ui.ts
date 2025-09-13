@@ -2,15 +2,15 @@ import type { WORKFLOW_ACCEPT_STRING } from '@/constants/supportedWorkflowFormat
 import type { StatusWsMessageStatus, TaskItem } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { useCommandStore } from '@/stores/commandStore'
-import type { useSettingStore } from '@/stores/settingStore'
-import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
 import type { ComfyApp } from './app'
 import { app } from './app'
 import type { ComfyDialog as _ComfyDialog } from './ui/dialog'
-import type { ComfySettingsDialog } from './ui/settings'
+import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog

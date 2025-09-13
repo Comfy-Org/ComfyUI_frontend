@@ -1,4 +1,5 @@
-import type { ComputedRef, InjectionKey } from 'vue'
+import type { ComputedRef } from 'vue'
+import { InjectionKey } from 'vue'
 
 interface ImportFailedContext {
   importFailed: ComputedRef<boolean>

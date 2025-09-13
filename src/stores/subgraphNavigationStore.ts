@@ -1,6 +1,6 @@
 import QuickLRU from '@alloc/quick-lru'
-import type { defineStore } from 'pinia'
-import type { shallowRef } from 'vue'
+import { defineStore } from 'pinia'
+import { shallowRef } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
@@ -9,8 +9,8 @@ import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
-import type { useCanvasStore } from './graphStore'
-import type { useWorkflowStore } from './workflowStore'
+import { useCanvasStore } from './graphStore'
+import { useWorkflowStore } from './workflowStore'
 
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph

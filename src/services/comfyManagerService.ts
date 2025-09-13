@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
-import type { useManagerState } from '@/composables/useManagerState'
+import { useManagerState } from '@/composables/useManagerState'
 import { api } from '@/scripts/api'
 import { components } from '@/types/generatedManagerTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'

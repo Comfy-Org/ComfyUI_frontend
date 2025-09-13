@@ -92,8 +92,8 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, onMounted, ref } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import type { useExtensionStore } from '@/stores/extensionStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 import PanelTemplate from './PanelTemplate.vue'
 

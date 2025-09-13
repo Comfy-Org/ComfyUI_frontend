@@ -1,7 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 
-import type { BaseWidget, DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
 
 export class TextWidget
   extends BaseWidget<IStringWidget>

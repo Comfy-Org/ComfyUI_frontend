@@ -21,7 +21,7 @@ import Divider from 'primevue/divider'
 
 import SettingItem from '@/components/dialog/content/setting/SettingItem.vue'
 import type { SettingParams } from '@/types/settingTypes'
-import type { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{
   group: {

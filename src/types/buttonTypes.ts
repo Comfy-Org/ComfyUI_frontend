@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'vue'
+import { HTMLAttributes } from 'vue'
 
 export type ButtonSize = 'fit-content' | 'sm' | 'md'
 type ButtonType = 'primary' | 'secondary' | 'transparent'

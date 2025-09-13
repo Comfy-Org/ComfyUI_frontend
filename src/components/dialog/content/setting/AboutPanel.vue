@@ -36,8 +36,8 @@ import Divider from 'primevue/divider'
 import Tag from 'primevue/tag'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
-import type { useAboutPanelStore } from '@/stores/aboutPanelStore'
-import type { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useAboutPanelStore } from '@/stores/aboutPanelStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 import PanelTemplate from './PanelTemplate.vue'
 

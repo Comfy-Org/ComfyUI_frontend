@@ -1,6 +1,6 @@
 import _ from 'es-toolkit/compat'
-import type { defineStore } from 'pinia'
-import type { Ref } from 'vue'
+import { defineStore } from 'pinia'
+import { Ref } from 'vue'
 import { computed, ref, toRaw } from 'vue'
 
 import type { RESERVED_BY_TEXT_INPUT } from '@/constants/reservedKeyCombos'

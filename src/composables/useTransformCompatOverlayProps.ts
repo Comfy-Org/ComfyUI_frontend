@@ -1,4 +1,4 @@
-import type { HintedString } from '@primevue/core'
+import { HintedString } from '@primevue/core'
 import { computed } from 'vue'
 
 /**

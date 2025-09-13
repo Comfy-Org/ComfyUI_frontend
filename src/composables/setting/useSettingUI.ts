@@ -1,11 +1,13 @@
-import type { Component, defineAsyncComponent } from 'vue'
+import type { Component } from 'vue'
+import { defineAsyncComponent } from 'vue'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
+import type { SettingTreeNode } from '@/stores/settingStore'
+import { useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 import { isElectron } from '@/utils/envUtil'
-import type { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
 import { useCurrentUser } from '../auth/useCurrentUser'

@@ -53,9 +53,9 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed } from 'vue'
 
-import type { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
-import type { useMinLoadingDurationRef } from '@/utils/refUtil'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 const taskStore = useMaintenanceTaskStore()
 const runner = computed(() => taskStore.getRunner(props.task))

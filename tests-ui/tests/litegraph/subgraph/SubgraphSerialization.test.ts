@@ -7,9 +7,9 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 
-import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
 import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphSerialization - Basic Serialization', () => {

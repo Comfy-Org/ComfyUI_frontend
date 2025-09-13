@@ -1,7 +1,7 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
 import { validateComfyWorkflow } from '@/schemas/comfyWorkflowSchema'
-import type { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/stores/toastStore'
 import { fixBadLinks } from '@/utils/linkFixer'
 
 interface ValidationResult {

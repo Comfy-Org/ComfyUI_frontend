@@ -1,4 +1,4 @@
-import type { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useHelpCenterStore = defineStore('helpCenter', () => {

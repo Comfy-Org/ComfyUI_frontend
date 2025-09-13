@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { LGraphButton } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
-import type { createTestSubgraphNode } from './fixtures/subgraphHelpers'
+import { createTestSubgraphNode } from './fixtures/subgraphHelpers'
 import { createTestSubgraph } from './fixtures/subgraphHelpers'
 
 describe.skip('SubgraphNode Title Button', () => {

@@ -78,9 +78,10 @@ import { useI18n } from 'vue-i18n'
 import PackVersionBadge from '@/components/dialog/content/manager/PackVersionBadge.vue'
 import PackBanner from '@/components/dialog/content/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/components/dialog/content/manager/packCard/PackCardFooter.vue'
-import type { useComfyManagerStore } from '@/stores/comfyManagerStore'
-import type { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import type { IsInstallingKey, MergedNodePack, RegistryPack, isMergedNodePack } from '@/types/comfyManagerTypes'
+import { useComfyManagerStore } from '@/stores/comfyManagerStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import type { IsInstallingKey, MergedNodePack, RegistryPack } from '@/types/comfyManagerTypes'
+import { isMergedNodePack } from '@/types/comfyManagerTypes'
 
 const { nodePack, isSelected = false } = defineProps<{
   nodePack: MergedNodePack | RegistryPack

@@ -1,7 +1,7 @@
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
-import type { components } from '@/types/comfyRegistryTypes'
+import { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
   SearchPacksResult

@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '@/scripts/app'
-import type { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { useWorkflowStore } from '@/stores/workflowStore'
 
 // Mock the workflowStore

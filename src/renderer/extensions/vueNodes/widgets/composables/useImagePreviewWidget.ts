@@ -7,8 +7,8 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { calculateImageGrid } from '@/scripts/ui/imagePreview'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import type { useCanvasStore } from '@/stores/graphStore'
-import type { useSettingStore } from '@/stores/settingStore'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 const renderPreview = (

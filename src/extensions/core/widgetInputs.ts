@@ -1,23 +1,18 @@
 import type { CallbackParams } from '@/composables/functional/useChainCallback'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  ISlotType,
-  LLink,
-  Vector2
-} from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot, INodeOutputSlot, ISlotType, Vector2 } from '@/lib/litegraph/src/litegraph'
+import { LLink } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import type { ComfyWidgets } from '@/scripts/widgets'
+import { ComfyWidgets } from '@/scripts/widgets'
 import { addValueControlWidgets } from '@/scripts/widgets'
 import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
-import type { mergeInputSpec } from '@/utils/nodeDefUtil'
+import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import type { isPrimitiveNode } from '@/utils/typeGuardUtil'
+import { isPrimitiveNode } from '@/utils/typeGuardUtil'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {

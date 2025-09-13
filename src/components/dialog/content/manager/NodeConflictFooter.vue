@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 
-import type { useDialogStore } from '@/stores/dialogStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 interface Props {
   buttonText?: string

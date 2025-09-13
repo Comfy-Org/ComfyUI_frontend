@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ToOutputRenderLink } from '@/lib/litegraph/src/canvas/ToOutputRenderLink'
+import { ToOutputRenderLink } from '@/lib/litegraph/src/canvas/ToOutputRenderLink'
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 describe('ToOutputRenderLink', () => {

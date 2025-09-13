@@ -1,15 +1,15 @@
 import * as THREE from 'three'
-import type { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
-import type { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
-import type { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils'
 
-import type { ColoredShadowMaterial } from './conditional-lines/ColoredShadowMaterial'
-import type { ConditionalEdgesGeometry } from './conditional-lines/ConditionalEdgesGeometry'
+import { ColoredShadowMaterial } from './conditional-lines/ColoredShadowMaterial'
+import { ConditionalEdgesGeometry } from './conditional-lines/ConditionalEdgesGeometry'
 import type { ConditionalEdgesShader } from './conditional-lines/ConditionalEdgesShader.js'
-import type { ConditionalLineMaterial } from './conditional-lines/Lines2/ConditionalLineMaterial'
-import type { ConditionalLineSegmentsGeometry } from './conditional-lines/Lines2/ConditionalLineSegmentsGeometry'
+import { ConditionalLineMaterial } from './conditional-lines/Lines2/ConditionalLineMaterial'
+import { ConditionalLineSegmentsGeometry } from './conditional-lines/Lines2/ConditionalLineSegmentsGeometry'
 import type { EventManagerInterface, Load3DOptions, MaterialMode, ModelManagerInterface, UpDirection } from './interfaces'
 
 export class SceneModelManager implements ModelManagerInterface {

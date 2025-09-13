@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import type { useAsyncState } from '@vueuse/core'
+import { useAsyncState } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'

@@ -78,7 +78,7 @@ import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneContro
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
-import type { useDialogStore } from '@/stores/dialogStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   node: LGraphNode

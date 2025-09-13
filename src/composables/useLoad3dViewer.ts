@@ -6,7 +6,7 @@ import type { CameraType, MaterialMode, UpDirection } from '@/extensions/core/lo
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
-import type { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from '@/stores/toastStore'
 
 interface Load3dViewerState {
   backgroundColor: string
