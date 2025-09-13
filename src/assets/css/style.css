@@ -53,6 +53,12 @@
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
 
+  /* Font Families */
+  --font-abc-rom: "ABC ROM", sans-serif;
+  --font-abc-rom-regular: "ABC ROM Regular", sans-serif;
+  --font-abc-rom-medium: "ABC ROM Medium", sans-serif;
+  --font-abc-rom-black-italic: "ABC ROM Black Italic", sans-serif;
+
   /* Palette Colors */
   --color-charcoal-100: #171718;
   --color-charcoal-200: #202121;
