@@ -103,6 +103,7 @@ import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
+import { useExecutionErrorProvider } from '@/composables/useExecutionErrorProvider'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useLitegraphSettings } from '@/composables/useLitegraphSettings'
 import { usePaste } from '@/composables/usePaste'
@@ -193,6 +194,8 @@ const handleTransformUpdate = () => {
 const handleNodeSelect = nodeEventHandlers.handleNodeSelect
 const handleNodeCollapse = nodeEventHandlers.handleNodeCollapse
 const handleNodeTitleUpdate = nodeEventHandlers.handleNodeTitleUpdate
+
+useExecutionErrorProvider()
 
 // Provide selection state to all Vue nodes
 const selectedNodeIds = computed(

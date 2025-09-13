@@ -220,6 +220,12 @@ export const useExecutionStore = defineStore('execution', () => {
     return total > 0 ? done / total : 0
   })
 
+  const lastExecutionErrorNodeLocatorId = computed(() => {
+    const err = lastExecutionError.value
+    if (!err) return null
+    return executionIdToNodeLocatorId(String(err.node_id))
+  })
+
   function bindExecutionEvents() {
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
@@ -426,6 +432,10 @@ export const useExecutionStore = defineStore('execution', () => {
      * The error from the previous execution.
      */
     lastExecutionError,
+    /**
+     * NodeLocatorId for the most recent execution error.
+     */
+    lastExecutionErrorNodeLocatorId,
     /**
      * The id of the node that is currently being executed (backward compatibility)
      */

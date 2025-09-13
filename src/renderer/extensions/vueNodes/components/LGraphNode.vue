@@ -13,8 +13,7 @@
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
         !!executing && 'border-blue-500 dark-theme:border-blue-500',
-        !!(error || nodeData.hasErrors) &&
-          'border-error dark-theme:border-error',
+        hasAnyError && 'border-error dark-theme:border-error',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         // Selected
@@ -22,8 +21,7 @@
         !!isSelected && 'outline-black dark-theme:outline-white',
         !!(isSelected && executing) &&
           'outline-blue-500 dark-theme:outline-blue-500',
-        !!(isSelected && (error || nodeData.hasErrors)) &&
-          'outline-error dark-theme:outline-error',
+        isSelected && hasAnyError && 'outline-error dark-theme:outline-error',
         {
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
@@ -148,6 +146,7 @@ import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayo
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -205,6 +204,17 @@ const isSelected = computed(() => {
 
 // Use execution state composable
 const { executing, progress } = useNodeExecutionState(props.nodeData.id)
+
+// Direct access to execution store for error state
+const executionStore = useExecutionStore()
+const hasExecutionError = computed(
+  () => executionStore.lastExecutionErrorNodeLocatorId === props.nodeData.id
+)
+
+// Computed error states for styling
+const hasAnyError = computed(
+  () => hasExecutionError.value || props.nodeData.hasErrors || props.error
+)
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => props.zoomLevel ?? 1)
