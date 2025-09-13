@@ -74,15 +74,23 @@ const isEditing = ref(false)
 
 const nodeInfo = computed(() => props.nodeData || props.node)
 
-// Local state for title to provide immediate feedback
-const displayTitle = ref(nodeInfo.value?.title || 'Untitled')
+const resolveTitle = (info: LGraphNode | VueNodeData | undefined) => {
+  const title = (info?.title ?? '').trim()
+  if (title.length > 0) return title
+  const type = (info?.type ?? '').trim()
+  return type.length > 0 ? type : 'Untitled'
+}
 
-// Watch for external changes to the node title
+// Local state for title to provide immediate feedback
+const displayTitle = ref(resolveTitle(nodeInfo.value))
+
+// Watch for external changes to the node title or type
 watch(
-  () => nodeInfo.value?.title,
-  (newTitle) => {
-    if (newTitle && newTitle !== displayTitle.value) {
-      displayTitle.value = newTitle
+  () => [nodeInfo.value?.title, nodeInfo.value?.type] as const,
+  () => {
+    const next = resolveTitle(nodeInfo.value)
+    if (next !== displayTitle.value) {
+      displayTitle.value = next
     }
   }
 )
