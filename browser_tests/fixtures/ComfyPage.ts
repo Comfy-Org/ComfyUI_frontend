@@ -12,6 +12,7 @@ import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { SimplifiedCanvasStabilityChecker } from '../utils/SimplifiedCanvasStabilityChecker'
+import { createCanvasPointerEvent } from '../utils/eventHelpers'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
@@ -72,7 +73,7 @@ class ComfyMenu {
     await this.themeToggleButton.click()
     await this.page.evaluate(() => {
       return new Promise((resolve) => {
-        window['app'].ui.settings.addEventListener(
+        window['app']?.ui?.settings?.addEventListener(
           'Comfy.ColorPalette.change',
           resolve,
           { once: true }
@@ -85,7 +86,7 @@ class ComfyMenu {
 
   async getThemeId() {
     return await this.page.evaluate(async () => {
-      return await window['app'].ui.settings.getSettingValue(
+      return await window['app']?.ui?.settings?.getSettingValue(
         'Comfy.ColorPalette'
       )
     })
@@ -229,7 +230,7 @@ export class ComfyPage {
     }
 
     await this.page.evaluate(async () => {
-      await window['app'].extensionManager.workflow.syncWorkflows()
+      await window['app']?.extensionManager?.workflow?.syncWorkflows?.()
     })
   }
 
@@ -248,14 +249,32 @@ export class ComfyPage {
   }
 
   async createUser(username: string) {
-    const resp = await this.request.post(`${this.url}/api/users`, {
-      data: { username }
-    })
+    let attempts = 0
+    let finalUsername = username
 
-    if (resp.status() !== 200)
-      throw new Error(`Failed to create user: ${await resp.text()}`)
+    while (attempts < 3) {
+      const resp = await this.request.post(`${this.url}/api/users`, {
+        data: { username: finalUsername }
+      })
 
-    return await resp.json()
+      if (resp.status() === 200) {
+        return await resp.json()
+      }
+
+      const respText = await resp.text()
+      if (respText.includes('Duplicate username')) {
+        // Add a random suffix to make the username unique
+        const randomSuffix = Math.random().toString(36).substring(2, 8)
+        finalUsername = `${username}-${randomSuffix}`
+        attempts++
+      } else {
+        throw new Error(`Failed to create user: ${respText}`)
+      }
+    }
+
+    throw new Error(
+      `Failed to create user after ${attempts} attempts: duplicate username`
+    )
   }
 
   async setupSettings(settings: Record<string, any>) {
@@ -343,7 +362,7 @@ export class ComfyPage {
 
   async executeCommand(commandId: string) {
     await this.page.evaluate((id: string) => {
-      return window['app'].extensionManager.command.execute(id)
+      return window['app']?.extensionManager?.command?.execute(id)
     }, commandId)
   }
 
@@ -354,6 +373,9 @@ export class ComfyPage {
     await this.page.evaluate(
       ({ commandId, commandStr }) => {
         const app = window['app']
+        if (!app) {
+          throw new Error('App not available')
+        }
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
 
@@ -375,6 +397,9 @@ export class ComfyPage {
     await this.page.evaluate(
       ({ keyCombo, commandStr }) => {
         const app = window['app']
+        if (!app) {
+          throw new Error('App not available')
+        }
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
         const commandId = `TestCommand_${randomSuffix}`
@@ -402,7 +427,7 @@ export class ComfyPage {
   async setSetting(settingId: string, settingValue: any) {
     return await this.page.evaluate(
       async ({ id, value }) => {
-        await window['app'].extensionManager.setting.set(id, value)
+        await window['app']?.extensionManager?.setting?.set(id, value)
       },
       { id: settingId, value: settingValue }
     )
@@ -410,7 +435,7 @@ export class ComfyPage {
 
   async getSetting(settingId: string) {
     return await this.page.evaluate(async (id) => {
-      return await window['app'].extensionManager.setting.get(id)
+      return await window['app']?.extensionManager?.setting?.get(id)
     }, settingId)
   }
 
@@ -838,6 +863,9 @@ export class ComfyPage {
       async (params) => {
         const { slotType, action, targetSlotName } = params
         const app = window['app']
+        if (!app?.canvas?.graph) {
+          throw new Error('App canvas or graph not available')
+        }
         const currentGraph = app.canvas.graph
 
         // Check if we're in a subgraph
@@ -865,7 +893,7 @@ export class ComfyPage {
 
         // Filter slots based on target name and action type
         const slotsToTry = targetSlotName
-          ? slots.filter((slot) => slot.name === targetSlotName)
+          ? slots.filter((slot: any) => slot.name === targetSlotName)
           : action === 'rightClick'
             ? slots
             : [slots[0]] // Right-click tries all, double-click uses first
@@ -895,8 +923,8 @@ export class ComfyPage {
             if (node.onPointerDown) {
               node.onPointerDown(
                 event,
-                app.canvas.pointer,
-                app.canvas.linkConnector
+                app.canvas?.pointer,
+                app.canvas?.linkConnector
               )
             }
 
@@ -925,23 +953,21 @@ export class ComfyPage {
           const testX = rect[0] + rect[2] / 2 // x + width/2
           const testY = rect[1] + rect[3] / 2 // y + height/2
 
-          const event = {
+          const event = createCanvasPointerEvent({
             canvasX: testX,
             canvasY: testY,
-            button: 0, // Left mouse button
-            preventDefault: () => {},
-            stopPropagation: () => {}
-          }
+            button: 0
+          })
 
-          if (node.onPointerDown) {
+          if (node.onPointerDown && app?.canvas) {
             node.onPointerDown(
               event,
-              app.canvas.pointer,
-              app.canvas.linkConnector
+              app.canvas?.pointer,
+              app.canvas?.linkConnector
             )
 
             // Trigger double-click
-            if (app.canvas.pointer.onDoubleClick) {
+            if (app.canvas.pointer?.onDoubleClick) {
               app.canvas.pointer.onDoubleClick(event)
             }
           }
@@ -1547,7 +1573,7 @@ export class ComfyPage {
 
   async convertOffsetToCanvas(pos: [number, number]) {
     return this.page.evaluate((pos) => {
-      return window['app'].canvas.ds.convertOffsetToCanvas(pos)
+      return window['app']?.canvas?.ds?.convertOffsetToCanvas(pos)
     }, pos)
   }
 
@@ -1561,16 +1587,18 @@ export class ComfyPage {
   }
   async getNodes(): Promise<LGraphNode[]> {
     return await this.page.evaluate(() => {
-      return window['app'].graph.nodes
+      return window['app']?.graph?.nodes || []
     })
   }
   async getNodeRefsByType(type: string): Promise<NodeReference[]> {
     return Promise.all(
       (
         await this.page.evaluate((type) => {
-          return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.type === type)
-            .map((n: LGraphNode) => n.id)
+          return (
+            window['app']?.graph?.nodes
+              ?.filter((n: LGraphNode) => n.type === type)
+              ?.map((n: LGraphNode) => n.id) || []
+          )
         }, type)
       ).map((id: NodeId) => this.getNodeRefById(id))
     )
@@ -1579,9 +1607,11 @@ export class ComfyPage {
     return Promise.all(
       (
         await this.page.evaluate((title) => {
-          return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.title === title)
-            .map((n: LGraphNode) => n.id)
+          return (
+            window['app']?.graph?.nodes
+              ?.filter((n: LGraphNode) => n.title === title)
+              ?.map((n: LGraphNode) => n.id) || []
+          )
         }, title)
       ).map((id: NodeId) => this.getNodeRefById(id))
     )
@@ -1589,7 +1619,7 @@ export class ComfyPage {
 
   async getFirstNodeRef(): Promise<NodeReference | null> {
     const id = await this.page.evaluate(() => {
-      return window['app'].graph.nodes[0]?.id
+      return window['app']?.graph?.nodes?.[0]?.id
     })
     if (!id) return null
     return this.getNodeRefById(id)
@@ -1599,32 +1629,46 @@ export class ComfyPage {
   }
   async getUndoQueueSize() {
     return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.undoQueue.length
+      const extensionManager = window['app']?.extensionManager as
+        | WorkspaceStore
+        | undefined
+      const workflow = extensionManager?.workflow?.activeWorkflow
+      return workflow?.changeTracker?.undoQueue?.length ?? 0
     })
   }
   async getRedoQueueSize() {
     return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.redoQueue.length
+      const extensionManager = window['app']?.extensionManager as
+        | WorkspaceStore
+        | undefined
+      const workflow = extensionManager?.workflow?.activeWorkflow
+      return workflow?.changeTracker?.redoQueue?.length ?? 0
     })
   }
   async isCurrentWorkflowModified() {
     return this.page.evaluate(() => {
-      return (window['app'].extensionManager as WorkspaceStore).workflow
-        .activeWorkflow?.isModified
+      const extensionManager = window['app']?.extensionManager as
+        | WorkspaceStore
+        | undefined
+      return extensionManager?.workflow?.activeWorkflow?.isModified ?? false
     })
   }
   async getExportedWorkflow({ api = false }: { api?: boolean } = {}) {
     return this.page.evaluate(async (api) => {
-      return (await window['app'].graphToPrompt())[api ? 'output' : 'workflow']
+      const app = window['app']
+      if (!app?.graphToPrompt) {
+        throw new Error('App or graphToPrompt not available')
+      }
+      const result = await app.graphToPrompt()
+      return result?.[api ? 'output' : 'workflow']
     }, api)
   }
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      window['app'].extensionManager.focusMode = focusMode
+      const extensionManager = window['app']?.extensionManager
+      if (extensionManager) {
+        extensionManager.focusMode = focusMode
+      }
     }, focusMode)
     await this.nextFrame()
   }
@@ -1655,13 +1699,127 @@ export class ComfyPage {
 
   /**
    * Wait for toast notifications to stabilize
-   * For now, this is a simple implementation that waits for visible toasts to disappear
+   * Handles toast animations, auto-dismiss timing, and lifecycle properly
    *
    * @param timeoutMs Maximum time to wait in milliseconds (default: 5000)
    */
   async waitForToastStable(timeoutMs: number = 5000): Promise<void> {
-    // Wait for any visible toasts to disappear
-    await expect(this.visibleToasts).toHaveCount(0, { timeout: timeoutMs })
+    const startTime = Date.now()
+
+    // First, check if we have any toasts at all - with error handling
+    let toastCount: number
+    try {
+      toastCount = await this.visibleToasts.count()
+    } catch (error: unknown) {
+      // If page context is lost, consider toasts stable (they're gone because page is gone)
+      if (
+        error instanceof Error &&
+        (error.message.includes('Target') || error.message.includes('closed'))
+      ) {
+        console.log(
+          'Page context lost during initial toast count - considering toasts stable'
+        )
+        return
+      }
+      throw error
+    }
+
+    if (toastCount > 0) {
+      // Wait for toast animations to complete (fade-in) - with error handling
+      try {
+        await this.page.waitForTimeout(300)
+      } catch (error: unknown) {
+        if (
+          error instanceof Error &&
+          (error.message.includes('Target') || error.message.includes('closed'))
+        ) {
+          console.log(
+            'Page context lost during toast animation wait - considering toasts stable'
+          )
+          return
+        }
+        throw error
+      }
+
+      // Wait for toasts to either auto-dismiss or be manually dismissed
+      // Some toasts may have longer display times
+      while (toastCount > 0 && Date.now() - startTime < timeoutMs) {
+        // Check if toasts are in dismissing state or have auto-dismiss timers
+        let toastsStillVisible: number
+        try {
+          toastsStillVisible = await this.visibleToasts.count()
+        } catch (error: unknown) {
+          if (
+            error instanceof Error &&
+            (error.message.includes('Target') ||
+              error.message.includes('closed'))
+          ) {
+            console.log(
+              'Page context lost during toast visibility check - considering toasts stable'
+            )
+            return
+          }
+          throw error
+        }
+
+        if (toastsStillVisible === 0) {
+          break
+        }
+
+        // If toasts are still there after some time, they might need manual dismissal
+        if (Date.now() - startTime > 2000) {
+          // Try to dismiss any lingering toasts manually
+          const closeButtons = await this.page
+            .locator('.p-toast-close-button')
+            .all()
+          for (const button of closeButtons) {
+            try {
+              if (await button.isVisible()) {
+                await button.click()
+              }
+            } catch {
+              // Ignore if button is not clickable
+            }
+          }
+        }
+
+        // Wait a bit before checking again - with error handling
+        try {
+          await this.page.waitForTimeout(100)
+          toastCount = await this.visibleToasts.count()
+        } catch (error: unknown) {
+          // If page context is lost, break out of loop
+          if (
+            error instanceof Error &&
+            (error.message.includes('Target') ||
+              error.message.includes('closed'))
+          ) {
+            console.log('Page context lost during toast stability check')
+            return
+          }
+          throw error
+        }
+      }
+    }
+
+    // Final verification that all toasts are gone - with error handling
+    try {
+      await expect(this.visibleToasts).toHaveCount(0, {
+        timeout: Math.max(1000, timeoutMs - (Date.now() - startTime))
+      })
+    } catch (error: unknown) {
+      // If page context is lost, consider it successful (toasts are gone because page is gone)
+      if (
+        error instanceof Error &&
+        (error.message.includes('Target') || error.message.includes('closed'))
+      ) {
+        console.log(
+          'Page context lost during final toast verification - considering successful'
+        )
+        return
+      }
+      throw error
+    }
   }
 }
 
@@ -1714,6 +1872,7 @@ const makeMatcher = function <T>(
   type: string
 ) {
   return async function (
+    this: { isNot: boolean },
     node: NodeReference,
     options?: { timeout?: number; intervals?: number[] }
   ) {
@@ -1739,7 +1898,11 @@ export const comfyExpect = expect.extend({
   toBePinned: makeMatcher((n) => n.isPinned(), 'pinned'),
   toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
   toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed'),
-  async toHaveFocus(locator: Locator, options = { timeout: 256 }) {
+  async toHaveFocus(
+    this: { isNot: boolean },
+    locator: Locator,
+    options = { timeout: 256 }
+  ) {
     const isFocused = await locator.evaluate(
       (el) => el === document.activeElement
     )

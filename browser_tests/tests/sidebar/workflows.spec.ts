@@ -141,7 +141,7 @@ test.describe('Workflows sidebar', () => {
       api: false
     })
     expect(exportedWorkflow).toBeDefined()
-    for (const node of exportedWorkflow.nodes) {
+    for (const node of exportedWorkflow.nodes as any) {
       for (const slot of node.inputs) {
         expect(slot.localized_name).toBeUndefined()
         expect(slot.label).toBeUndefined()

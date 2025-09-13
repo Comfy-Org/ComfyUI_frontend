@@ -7,7 +7,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 test.describe('Node Badge', () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window['LGraphBadge']
+      const LGraphBadge = (window as any)['LGraphBadge']
       const app = window['app'] as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
@@ -24,7 +24,7 @@ test.describe('Node Badge', () => {
 
   test('Can add multiple badges', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window['LGraphBadge']
+      const LGraphBadge = (window as any)['LGraphBadge']
       const app = window['app'] as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
@@ -44,7 +44,7 @@ test.describe('Node Badge', () => {
 
   test('Can add badge left-side', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window['LGraphBadge']
+      const LGraphBadge = (window as any)['LGraphBadge']
       const app = window['app'] as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes

@@ -76,7 +76,7 @@ const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
 }>()
 const overlayValue = computed(() =>
-  typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge
+  typeof iconBadge === 'function' ? iconBadge() ?? '' : iconBadge
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
 const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)

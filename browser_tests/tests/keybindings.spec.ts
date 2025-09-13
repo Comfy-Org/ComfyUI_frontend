@@ -7,23 +7,23 @@ test.describe('Keybindings', () => {
     comfyPage
   }) => {
     await comfyPage.registerKeybinding({ key: 'k' }, () => {
-      window['TestCommand'] = true
+      ;(window as any).TestCommand = true
     })
 
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.fill('k')
     await expect(textBox).toHaveValue('k')
-    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
-      undefined
-    )
+    expect(
+      await comfyPage.page.evaluate(() => (window as any).TestCommand)
+    ).toBe(undefined)
   })
 
   test('Should not trigger modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
     await comfyPage.registerKeybinding({ key: 'k', ctrl: true }, () => {
-      window['TestCommand'] = true
+      ;(window as any).TestCommand = true
     })
 
     const textBox = comfyPage.widgetTextBox
@@ -31,24 +31,24 @@ test.describe('Keybindings', () => {
     await textBox.fill('q')
     await textBox.press('Control+k')
     await expect(textBox).toHaveValue('q')
-    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
-      true
-    )
+    expect(
+      await comfyPage.page.evaluate(() => (window as any).TestCommand)
+    ).toBe(true)
   })
 
   test('Should not trigger keybinding reserved by text input when typing in input fields', async ({
     comfyPage
   }) => {
     await comfyPage.registerKeybinding({ key: 'Ctrl+v' }, () => {
-      window['TestCommand'] = true
+      ;(window as any).TestCommand = true
     })
 
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.press('Control+v')
     await expect(textBox).toBeFocused()
-    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
-      undefined
-    )
+    expect(
+      await comfyPage.page.evaluate(() => (window as any).TestCommand)
+    ).toBe(undefined)
   })
 })

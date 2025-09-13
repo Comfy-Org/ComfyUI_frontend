@@ -23,7 +23,7 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "typeRoots": ["src/types", "node_modules/@types"],
+    "typeRoots": ["src/types", "browser_tests/types", "node_modules/@types"],
     "outDir": "./dist",
     "rootDir": "./"
   },
@@ -31,6 +31,8 @@
     "src/**/*",
     "src/**/*.vue",
     "src/types/**/*.d.ts",
+    "browser_tests/**/*",
+    "browser_tests/types/**/*.d.ts",
     "tests-ui/**/*",
     "global.d.ts",
     "vite.config.mts",

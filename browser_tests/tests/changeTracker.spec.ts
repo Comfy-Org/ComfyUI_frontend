@@ -6,12 +6,12 @@ import {
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window['app'].canvas.emitBeforeChange()
+    window['app']?.canvas.emitBeforeChange()
   })
 }
 async function afterChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window['app'].canvas.emitAfterChange()
+    window['app']?.canvas.emitAfterChange()
   })
 }
 
@@ -152,7 +152,9 @@ test.describe('Change Tracker', () => {
   test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
     await comfyPage.page.evaluate(() => {
-      window['app'].graph.extra.foo = 'bar'
+      if (window['app']?.graph) {
+        window['app'].graph.extra.foo = 'bar'
+      }
     })
     // Click empty space to trigger a change detection.
     await comfyPage.clickEmptySpace()

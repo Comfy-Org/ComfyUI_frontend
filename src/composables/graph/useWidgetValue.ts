@@ -124,7 +124,7 @@ export function useNumberWidgetValue(
     transform: (value: number | number[]) => {
       // Handle PrimeVue Slider which can emit number | number[]
       if (Array.isArray(value)) {
-        return value.length > 0 ? (value[0] ?? 0) : 0
+        return value.length > 0 ? value[0] ?? 0 : 0
       }
       return Number(value) || 0
     }

@@ -126,7 +126,10 @@ test.describe('Node search box', () => {
   })
 
   test.describe('Filtering', () => {
-    const expectFilterChips = async (comfyPage, expectedTexts: string[]) => {
+    const expectFilterChips = async (
+      comfyPage: any,
+      expectedTexts: string[]
+    ) => {
       const chips = comfyPage.searchBox.filterChips
 
       // Check that the number of chips matches the expected count

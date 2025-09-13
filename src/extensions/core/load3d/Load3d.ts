@@ -370,7 +370,7 @@ class Load3d {
           await ModelExporter.exportOBJ(model, filename, originalURL)
           break
         case 'stl':
-          ;(await ModelExporter.exportSTL(model, filename), originalURL)
+          await ModelExporter.exportSTL(model, filename), originalURL
           break
         default:
           throw new Error(`Unsupported export format: ${format}`)

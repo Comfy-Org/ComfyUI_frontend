@@ -45,7 +45,7 @@ export class Topbar {
   async isMenuItemActive(menuItem: Locator): Promise<boolean> {
     const checkmark = menuItem.locator('.pi-check')
     const classes = await checkmark.getAttribute('class')
-    return classes ? !classes.includes('invisible') : false
+    return classes != null ? !classes.includes('invisible') : false
   }
 
   getWorkflowTab(tabName: string): Locator {
@@ -85,7 +85,10 @@ export class Topbar {
 
     // Wait for workflow service to finish saving
     await this.page.waitForFunction(
-      () => !window['app'].extensionManager.workflow.isBusy,
+      () => {
+        const app = window['app']
+        return app?.extensionManager?.workflow?.isBusy !== true
+      },
       undefined,
       { timeout: 3000 }
     )
@@ -148,6 +151,10 @@ export class Topbar {
 
     const menu = await this.openTopbarMenu()
     const tabName = path[0]
+    if (!tabName) {
+      throw new Error('First path element cannot be empty')
+    }
+
     const topLevelMenuItem = this.getMenuItem(tabName)
     const topLevelMenu = menu
       .locator('.p-tieredmenu-item')
@@ -165,6 +172,10 @@ export class Topbar {
     let currentMenu = topLevelMenu
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
+      if (!commandName) {
+        throw new Error(`Path element at index ${i} cannot be empty`)
+      }
+
       const menuItem = currentMenu
         .locator(
           `.p-tieredmenu-submenu .p-tieredmenu-item:has-text("${commandName}")`

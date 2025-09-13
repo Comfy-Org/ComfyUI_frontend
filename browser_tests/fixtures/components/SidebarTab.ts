@@ -31,7 +31,7 @@ class SidebarTab {
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'node-library')
   }
 
@@ -55,12 +55,12 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     return this.tabContainer.locator('.new-folder-button')
   }
 
-  async open() {
+  override async open() {
     await super.open()
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
-  async close() {
+  override async close() {
     if (!this.tabButton.isVisible()) {
       return
     }
@@ -87,7 +87,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'workflows')
   }
 
@@ -150,7 +150,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
 }
 
 export class QueueSidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'queue')
   }
 
@@ -191,12 +191,12 @@ export class QueueSidebarTab extends SidebarTab {
     return this.root.locator(`.toggle-expanded-button ${iconSelector}`)
   }
 
-  async open() {
+  override async open() {
     await super.open()
     return this.root.waitFor({ state: 'visible' })
   }
 
-  async close() {
+  override async close() {
     await super.close()
     await this.root.waitFor({ state: 'hidden' })
   }
@@ -263,7 +263,11 @@ export class QueueSidebarTab extends SidebarTab {
   /** Trigger the queue store and tasks to update */
   async triggerTasksUpdate() {
     await this.page.evaluate(() => {
-      window['app']['api'].dispatchCustomEvent('status', {
+      const app = window['app']
+      if (!app?.api) {
+        throw new Error('App API not available')
+      }
+      app.api.dispatchCustomEvent('status', {
         exec_info: { queue_remaining: 0 }
       })
     })

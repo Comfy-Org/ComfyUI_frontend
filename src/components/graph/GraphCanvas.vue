@@ -409,7 +409,7 @@ onMounted(async () => {
   workspaceStore.spinner = false
   useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
-  window.app = comfyApp
+  window.app = comfyApp as any
   window.graph = comfyApp.graph
 
   comfyAppReady.value = true

@@ -553,8 +553,8 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     this.element.replaceChildren(outer)
     this.changeGroup(
       type
-        ? (groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === type) ??
-            groupNodes[0])
+        ? groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === type) ??
+            groupNodes[0]
         : groupNodes[0]
     )
     this.element.showModal()

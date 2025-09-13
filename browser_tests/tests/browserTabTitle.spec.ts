@@ -10,7 +10,8 @@ test.describe('Browser tab title', () => {
 
     test('Can display workflow name', async ({ comfyPage }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.filename
+        return window['app']?.extensionManager?.workflow?.activeWorkflow
+          ?.filename
       })
       expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
     })
@@ -21,7 +22,8 @@ test.describe('Browser tab title', () => {
       comfyPage
     }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.filename
+        return window['app']?.extensionManager?.workflow?.activeWorkflow
+          ?.filename
       })
       expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
 
@@ -35,7 +37,9 @@ test.describe('Browser tab title', () => {
 
       // Delete the saved workflow for cleanup.
       await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.delete()
+        return window[
+          'app'
+        ]?.extensionManager?.workflow?.activeWorkflow?.delete?.()
       })
     })
   })

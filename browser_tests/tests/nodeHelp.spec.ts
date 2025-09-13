@@ -8,8 +8,8 @@ import {
 async function selectNodeWithPan(comfyPage: any, nodeRef: any) {
   const nodePos = await nodeRef.getPosition()
 
-  await comfyPage.page.evaluate((pos) => {
-    const app = window['app']
+  await comfyPage.page.evaluate((pos: any) => {
+    const app = window['app']!
     const canvas = app.canvas
     canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
     canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
@@ -340,7 +340,7 @@ This is documentation for a custom node.
 
       // Find and select a custom/group node
       const nodeRefs = await comfyPage.page.evaluate(() => {
-        return window['app'].graph.nodes.map((n: any) => n.id)
+        return window['app']!.graph.nodes.map((n: any) => n.id)
       })
       if (nodeRefs.length > 0) {
         const firstNode = await comfyPage.getNodeRefById(nodeRefs[0])

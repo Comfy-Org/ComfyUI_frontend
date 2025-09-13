@@ -38,13 +38,16 @@ class ComfyQueueButtonOptions {
 
   public async setMode(mode: AutoQueueMode) {
     await this.page.evaluate((mode) => {
-      window['app'].extensionManager.queueSettings.mode = mode
+      const app = window['app']
+      if (app?.extensionManager?.queueSettings) {
+        app.extensionManager.queueSettings.mode = mode
+      }
     }, mode)
   }
 
   public async getMode() {
     return await this.page.evaluate(() => {
-      return window['app'].extensionManager.queueSettings.mode
+      return window['app']?.extensionManager?.queueSettings?.mode
     })
   }
 }

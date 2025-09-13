@@ -46,8 +46,10 @@ test.describe('Optional input', () => {
     await comfyPage.loadWorkflow('inputs/old_workflow_converted_input')
     const node = await comfyPage.getNodeRefById('1')
     const inputs = await node.getProperty('inputs')
-    const vaeInput = inputs.find((w) => w.name === 'vae')
-    const convertedInput = inputs.find((w) => w.name === 'strength')
+    const vaeInput = (inputs as any).find((w: any) => w.name === 'vae')
+    const convertedInput = (inputs as any).find(
+      (w: any) => w.name === 'strength'
+    )
 
     expect(vaeInput).toBeDefined()
     expect(convertedInput).toBeDefined()
@@ -58,7 +60,7 @@ test.describe('Optional input', () => {
     await comfyPage.loadWorkflow('inputs/renamed_converted_widget')
     const node = await comfyPage.getNodeRefById('3')
     const inputs = await node.getProperty('inputs')
-    const renamedInput = inputs.find((w) => w.name === 'breadth')
+    const renamedInput = (inputs as any).find((w: any) => w.name === 'breadth')
     expect(renamedInput).toBeUndefined()
   })
   test('slider', async ({ comfyPage }) => {
