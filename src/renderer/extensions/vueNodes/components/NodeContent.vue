@@ -5,28 +5,42 @@
   <div v-else class="lg-node-content">
     <!-- Default slot for custom content -->
     <slot>
-      <!-- This component serves as a placeholder for future extensibility -->
-      <!-- Currently all node content is rendered through the widget system -->
+      <ImagePreview
+        v-if="hasImages"
+        :image-urls="props.imageUrls || []"
+        :node-id="nodeId"
+        class="mt-2"
+      />
     </slot>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LODLevel } from '@/renderer/extensions/vueNodes/lod/useLOD'
 
+import ImagePreview from './ImagePreview.vue'
+
 interface NodeContentProps {
   node?: LGraphNode // For backwards compatibility
   nodeData?: VueNodeData // New clean data structure
   readonly?: boolean
   lodLevel?: LODLevel
+  imageUrls?: string[]
 }
 
-defineProps<NodeContentProps>()
+const props = defineProps<NodeContentProps>()
+
+const hasImages = computed(() => props.imageUrls && props.imageUrls.length > 0)
+
+// Get node ID from nodeData or node prop
+const nodeId = computed(() => {
+  return props.nodeData?.id?.toString() || props.node?.id?.toString()
+})
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
