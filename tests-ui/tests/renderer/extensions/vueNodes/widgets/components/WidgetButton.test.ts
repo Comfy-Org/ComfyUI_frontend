@@ -182,35 +182,30 @@ describe('WidgetButton Interactions', () => {
       expect(button.props('icon')).toBe('pi pi-save')
     })
 
-    it('handles different button severities', () => {
-      const severities = [
-        'secondary',
-        'success',
-        'info',
-        'warning',
-        'danger',
-        'help',
-        'contrast'
-      ] as const
-
-      severities.forEach((severity) => {
-        const widget = createMockWidget({ severity })
-        const wrapper = mountComponent(widget)
-        const button = wrapper.findComponent({ name: 'Button' })
-        expect(button.props('severity')).toBe(severity)
-      })
+    it.for([
+      'secondary',
+      'success',
+      'info',
+      'warning',
+      'danger',
+      'help',
+      'contrast'
+    ] as const)('handles button severity: %s', (severity) => {
+      const widget = createMockWidget({ severity })
+      const wrapper = mountComponent(widget)
+      const button = wrapper.findComponent({ name: 'Button' })
+      expect(button.props('severity')).toBe(severity)
     })
 
-    it('handles button variants', () => {
-      const variants = ['outlined', 'text'] as const
-
-      variants.forEach((variant) => {
+    it.for(['outlined', 'text'] as const)(
+      'handles button variant: %s',
+      (variant) => {
         const widget = createMockWidget({ variant })
         const wrapper = mountComponent(widget)
         const button = wrapper.findComponent({ name: 'Button' })
         expect(button.props('variant')).toBe(variant)
-      })
-    })
+      }
+    )
   })
 
   describe('Edge Cases', () => {
