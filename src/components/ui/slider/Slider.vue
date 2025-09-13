@@ -1,4 +1,3 @@
-<!-- eslint-disable vue/no-template-shadow vue/multi-word-component-names -->
 <script setup lang="ts">
 import { reactiveOmit } from '@vueuse/core'
 import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
@@ -9,13 +8,19 @@ import {
   SliderTrack,
   useForwardPropsEmits
 } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
+import { type HTMLAttributes, ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<
   SliderRootProps & { class?: HTMLAttributes['class'] }
 >()
+
+const pressed = ref(false)
+const setPressed = (val: boolean) => {
+  pressed.value = val
+}
+
 const emits = defineEmits<SliderRootEmits>()
 
 const delegatedProps = reactiveOmit(props, 'class')
@@ -35,6 +40,9 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       )
     "
     v-bind="forwarded"
+    @slide-start="() => setPressed(true)"
+    @slide-move="() => setPressed(true)"
+    @slide-end="() => setPressed(false)"
   >
     <SliderTrack
       data-slot="slider-track"
@@ -57,12 +65,12 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       v-for="(_, key) in modelValue"
       :key="key"
       data-slot="slider-thumb"
-      tabindex="0"
       :class="
         cn(
           'bg-node-component-surface-highlight ring-node-component-surface-selected block size-3.5 shrink-0 rounded-full shadow-sm transition-[color,box-shadow]',
           'cursor-grab',
-          'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50'
+          'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
+          { 'cursor-grabbing': pressed }
         )
       "
     />
