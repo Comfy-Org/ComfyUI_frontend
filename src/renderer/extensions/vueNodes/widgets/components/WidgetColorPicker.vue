@@ -32,8 +32,6 @@ import {
   type ColorFormat,
   type HSB,
   isColorFormat,
-  isHSBObject,
-  isHSVObject,
   toHexFromFormat
 } from '@/utils/colorUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -58,12 +56,19 @@ const emit = defineEmits<{
 }>()
 
 type PickerValue = string | HSB
-const localValue = ref<PickerValue>(props.modelValue ?? '#000000')
+const localValue = ref<PickerValue>(
+  normalizeColorValue(
+    props.modelValue,
+    isColorFormat(props.widget.options?.format)
+      ? props.widget.options.format
+      : 'hex'
+  )
+)
 
 watch(
   () => props.modelValue,
   (newVal) => {
-    localValue.value = newVal ?? '#000000'
+    localValue.value = normalizeColorValue(newVal, format.value)
   }
 )
 
@@ -72,14 +77,19 @@ const format = computed<ColorFormat>(() => {
   return isColorFormat(optionFormat) ? optionFormat : 'hex'
 })
 
+function normalizeColorValue(value: string, colorFormat: ColorFormat): string {
+  if (!value) return '#000000'
+
+  // Use the fancy color parsing but respect the specified format
+  return toHexFromFormat(value, colorFormat)
+}
+
 function onPickerUpdate(val: unknown) {
-  if (typeof val === 'string') {
-    localValue.value = val
-  } else if (isHSBObject(val)) {
-    localValue.value = val
-  } else if (isHSVObject(val)) {
-    localValue.value = { h: val.h, s: val.s, b: val.v }
-  }
+  // Store the picker's value directly
+  localValue.value = val as PickerValue
+
+  // Convert to hex using the widget's configured format
+  // The picker should emit values in the format we configured it for
   emit('update:modelValue', toHexFromFormat(val, format.value))
 }
 
