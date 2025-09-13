@@ -17,8 +17,19 @@ export const useKeybindingService = () => {
 
   // Helper function to determine if an event should be forwarded to canvas
   const shouldForwardToCanvas = (event: KeyboardEvent): boolean => {
-    // Don't forward if modifier keys are pressed
+    // Don't forward if modifier keys are pressed (except shift)
     if (event.ctrlKey || event.altKey || event.metaKey) {
+      return false
+    }
+
+    // Don't forward if user is typing in an input field or editable element
+    const target = event.composedPath()[0] as HTMLElement
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.contentEditable === 'true' ||
+      (target.tagName === 'SPAN' && target.classList.contains('property_value'))
+    ) {
       return false
     }
 
