@@ -190,7 +190,9 @@ test.describe('Remote COMBO Widget', () => {
       await comfyPage.page.keyboard.press('Control+A')
 
       await expect(
-        comfyPage.page.locator('.selection-toolbox .pi-refresh')
+        comfyPage.page.locator(
+          '.selection-toolbox button[data-testid="refresh-button"]'
+        )
       ).toBeVisible()
     })
 

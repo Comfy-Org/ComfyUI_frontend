@@ -1,0 +1,113 @@
+import { useI18n } from 'vue-i18n'
+
+import type { Direction } from '@/lib/litegraph/src/interfaces'
+import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
+import { useCanvasStore } from '@/stores/graphStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+
+interface AlignOption {
+  name: string
+  localizedName: string
+  value: Direction
+  icon: string
+}
+
+interface DistributeOption {
+  name: string
+  localizedName: string
+  value: boolean // true for horizontal, false for vertical
+  icon: string
+}
+
+/**
+ * Composable for handling node alignment and distribution
+ */
+export function useNodeArrangement() {
+  const { t } = useI18n()
+  const canvasStore = useCanvasStore()
+  const workflowStore = useWorkflowStore()
+
+  const alignOptions: AlignOption[] = [
+    {
+      name: 'top',
+      localizedName: t('contextMenu.Top'),
+      value: 'top',
+      icon: 'icon-[lucide--align-start-vertical]'
+    },
+    {
+      name: 'bottom',
+      localizedName: t('contextMenu.Bottom'),
+      value: 'bottom',
+      icon: 'icon-[lucide--align-end-vertical]'
+    },
+    {
+      name: 'left',
+      localizedName: t('contextMenu.Left'),
+      value: 'left',
+      icon: 'icon-[lucide--align-start-horizontal]'
+    },
+    {
+      name: 'right',
+      localizedName: t('contextMenu.Right'),
+      value: 'right',
+      icon: 'icon-[lucide--align-end-horizontal]'
+    }
+  ]
+
+  const distributeOptions: DistributeOption[] = [
+    {
+      name: 'horizontal',
+      localizedName: t('contextMenu.Horizontal'),
+      value: true,
+      icon: 'icon-[lucide--align-center-horizontal]'
+    },
+    {
+      name: 'vertical',
+      localizedName: t('contextMenu.Vertical'),
+      value: false,
+      icon: 'icon-[lucide--align-center-vertical]'
+    }
+  ]
+
+  const applyAlign = (alignOption: AlignOption) => {
+    const selectedNodes = Array.from(canvasStore.selectedItems).filter((item) =>
+      isLGraphNode(item)
+    )
+
+    if (selectedNodes.length === 0) {
+      return
+    }
+
+    canvasStore.canvas?.emitBeforeChange()
+    alignNodes(selectedNodes, alignOption.value)
+    canvasStore.canvas?.setDirty(true, true)
+    canvasStore.canvas?.graph?.afterChange()
+    canvasStore.canvas?.emitAfterChange()
+    workflowStore.activeWorkflow?.changeTracker?.checkState()
+  }
+
+  const applyDistribute = (distributeOption: DistributeOption) => {
+    const selectedNodes = Array.from(canvasStore.selectedItems).filter((item) =>
+      isLGraphNode(item)
+    )
+
+    if (selectedNodes.length < 2) {
+      return
+    }
+
+    canvasStore.canvas?.emitBeforeChange()
+    distributeNodes(selectedNodes, distributeOption.value)
+    canvasStore.canvas?.setDirty(true, true)
+    canvasStore.canvas?.graph?.afterChange()
+    canvasStore.canvas?.emitAfterChange()
+    workflowStore.activeWorkflow?.changeTracker?.checkState()
+  }
+
+  return {
+    alignOptions,
+    distributeOptions,
+    applyAlign,
+    applyDistribute
+  }
+}

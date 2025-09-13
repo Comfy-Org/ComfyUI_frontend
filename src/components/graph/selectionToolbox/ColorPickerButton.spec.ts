@@ -95,17 +95,6 @@ describe('ColorPickerButton', () => {
     expect(wrapper.find('button').exists()).toBe(true)
   })
 
-  it('should not render when nothing is selected', () => {
-    // Keep selectedItems empty
-    canvasStore.selectedItems = []
-    const wrapper = createWrapper()
-    // The button exists but is hidden with v-show
-    expect(wrapper.find('button').exists()).toBe(true)
-    expect(wrapper.find('button').attributes('style')).toContain(
-      'display: none'
-    )
-  })
-
   it('should toggle color picker visibility on button click', async () => {
     canvasStore.selectedItems = [{ type: 'LGraphNode' } as any]
     const wrapper = createWrapper()

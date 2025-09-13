@@ -7,28 +7,21 @@
     }"
     severity="secondary"
     text
-    icon="pi pi-pencil"
     @click="openMaskEditor"
-  />
+  >
+    <i-comfy:mask class="!w-4 !h-4" />
+  </Button>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { computed } from 'vue'
 
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { t } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
-import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 
 const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
-
-const isSingleImageNode = computed(() => {
-  const { selectedItems } = canvasStore
-  const item = selectedItems[0]
-  return selectedItems.length === 1 && isLGraphNode(item) && isImageNode(item)
-})
+const { isSingleImageNode } = useSelectionState()
 
 const openMaskEditor = () => {
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
