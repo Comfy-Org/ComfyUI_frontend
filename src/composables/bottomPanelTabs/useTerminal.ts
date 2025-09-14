@@ -13,79 +13,26 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
   )
   terminal.loadAddon(fitAddon)
 
-  let currentSelection = ''
-  let terminalHasFocus = false
-
-  terminal.onSelectionChange(() => {
-    currentSelection = terminal.getSelection()
+  terminal.attachCustomKeyEventHandler((event) => {
+    // Allow default browser copy/paste handling
+    if (
+      event.type === 'keydown' &&
+      (event.ctrlKey || event.metaKey) &&
+      ((event.key === 'c' && terminal.hasSelection()) || event.key === 'v')
+    ) {
+      // TODO: Deselect text after copy/paste; use IPC.
+      return false
+    }
+    return true
   })
-
-  // Don't use attachCustomKeyEventHandler as it might interfere with DOM events
-  // We'll handle everything through DOM event listeners instead
 
   onMounted(async () => {
     if (element.value) {
       terminal.open(element.value)
-
-      element.value.addEventListener('focusin', () => {
-        terminalHasFocus = true
-      })
-
-      element.value.addEventListener('focusout', () => {
-        terminalHasFocus = false
-      })
-
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (!terminalHasFocus) {
-          return
-        }
-
-        if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-          if (currentSelection) {
-            event.preventDefault()
-            event.stopPropagation()
-            event.stopImmediatePropagation()
-            void navigator.clipboard.writeText(currentSelection)
-            terminal.clearSelection()
-            currentSelection = ''
-            return false
-          }
-        }
-
-        if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
-          event.preventDefault()
-          event.stopPropagation()
-          event.stopImmediatePropagation()
-          void navigator.clipboard.readText().then((text) => {
-            if (text) {
-              terminal.write(text)
-            }
-          })
-          return false
-        }
-      }
-
-      document.addEventListener('keydown', handleKeyDown, true)
-
-      setTimeout(() => {
-        const textarea = element.value?.querySelector(
-          '.xterm-helper-textarea'
-        ) as HTMLTextAreaElement
-        if (textarea) {
-          textarea.focus()
-        }
-      }, 100)
-      ;(element.value as any)._terminalKeyHandler = handleKeyDown
     }
   })
 
   onUnmounted(() => {
-    if (element.value && (element.value as any)._terminalKeyHandler) {
-      const handler = (element.value as any)._terminalKeyHandler
-      document.removeEventListener('keydown', handler, true)
-      delete (element.value as any)._terminalKeyHandler
-    }
-
     terminal.dispose()
   })
 
