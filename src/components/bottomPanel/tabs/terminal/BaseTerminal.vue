@@ -10,6 +10,10 @@
     </div>
     <Button
       v-if="showCopyButton"
+      v-tooltip.top="{
+        value: t('serverStart.copyAllTooltip'),
+        showDelay: 300
+      }"
       icon="pi pi-copy"
       severity="secondary"
       size="small"
