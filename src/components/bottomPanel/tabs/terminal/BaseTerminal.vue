@@ -50,14 +50,21 @@ emit('created', terminalData, rootEl)
 const handleCopy = async () => {
   const { terminal } = terminalData
 
-  terminal.selectAll()
+  let selectedText = terminal.getSelection()
+  let shouldClearSelection = false
 
-  const selectedText = terminal.getSelection()
+  if (!selectedText) {
+    terminal.selectAll()
+    selectedText = terminal.getSelection()
+    shouldClearSelection = true
+  }
 
   if (selectedText) {
     await navigator.clipboard.writeText(selectedText)
 
-    terminal.clearSelection()
+    if (shouldClearSelection) {
+      terminal.clearSelection()
+    }
   }
 }
 
