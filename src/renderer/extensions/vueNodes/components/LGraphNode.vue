@@ -9,18 +9,11 @@
       cn(
         'bg-white dark-theme:bg-charcoal-100',
         'lg-node absolute rounded-2xl',
-        // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
-        !!executing && 'border-blue-100 dark-theme:border-blue-100',
-        hasAnyError && 'border-error',
-        // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
-        // Selected
         'outline-transparent -outline-offset-2 outline-2',
-        !!isSelected && 'outline-black dark-theme:outline-white',
-        !!(isSelected && executing) &&
-          'outline-blue-100 dark-theme:outline-blue-100',
-        isSelected && hasAnyError && 'outline-error',
+        borderClass,
+        outlineClass,
         {
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
@@ -324,6 +317,29 @@ const shouldShowWidgets = computed(
 const shouldShowContent = computed(
   () => shouldRenderContent.value && hasCustomContent.value
 )
+
+const borderClass = computed(() => {
+  if (hasAnyError.value) {
+    return 'border-error'
+  }
+  if (executing.value) {
+    return 'border-blue-500'
+  }
+  return undefined
+})
+
+const outlineClass = computed(() => {
+  if (!isSelected.value) {
+    return undefined
+  }
+  if (hasAnyError.value) {
+    return 'outline-error'
+  }
+  if (executing.value) {
+    return 'outline-blue-500'
+  }
+  return 'outline-black dark-theme:outline-white'
+})
 
 // Event handlers
 const handlePointerDown = (event: PointerEvent) => {
