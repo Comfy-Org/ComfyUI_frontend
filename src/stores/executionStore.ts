@@ -226,6 +226,13 @@ export const useExecutionStore = defineStore('execution', () => {
     return executionIdToNodeLocatorId(String(err.node_id))
   })
 
+  const lastExecutionErrorNodeId = computed(() => {
+    const locator = lastExecutionErrorNodeLocatorId.value
+    if (!locator) return null
+    const localId = workflowStore.nodeLocatorIdToNodeId(locator)
+    return localId != null ? String(localId) : null
+  })
+
   function bindExecutionEvents() {
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
@@ -436,6 +443,10 @@ export const useExecutionStore = defineStore('execution', () => {
      * NodeLocatorId for the most recent execution error.
      */
     lastExecutionErrorNodeLocatorId,
+    /**
+     * Local node ID for the most recent execution error.
+     */
+    lastExecutionErrorNodeId,
     /**
      * The id of the node that is currently being executed (backward compatibility)
      */
