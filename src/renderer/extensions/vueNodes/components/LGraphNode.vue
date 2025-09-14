@@ -23,7 +23,7 @@
         !!(isSelected && executing) &&
           'outline-blue-500 dark-theme:outline-blue-500',
         !!(isSelected && (error || nodeData.hasErrors)) &&
-          'outline-error dark-theme:outline-error',
+          'outline-error',
         {
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
