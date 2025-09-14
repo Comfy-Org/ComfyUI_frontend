@@ -8,7 +8,6 @@
     :class="
       cn(
         'bg-white dark-theme:bg-charcoal-100',
-        'min-w-[445px]',
         'lg-node absolute rounded-2xl',
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
@@ -131,6 +130,7 @@ import {
   computed,
   inject,
   onErrorCaptured,
+  onMounted,
   provide,
   ref,
   toRef,
@@ -196,6 +196,21 @@ if (!selectedNodeIds) {
   )
 }
 
+// Inject transform state for coordinate conversion
+const transformState = inject('transformState') as
+  | {
+      camera: { z: number }
+      canvasToScreen: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+      screenToCanvas: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+    }
+  | undefined
+
 // Computed selection state - only this node re-evaluates when its selection changes
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(props.nodeData.id)
@@ -213,6 +228,17 @@ const {
   shouldRenderContent,
   lodCssClass
 } = useLOD(zoomRef)
+
+onMounted(() => {
+  if (props.size && transformState) {
+    const scale = transformState.camera.z
+    const screenSize = {
+      width: props.size.width * scale,
+      height: props.size.height * scale
+    }
+    resize(screenSize)
+  }
+})
 
 // Computed properties for template usage
 const isMinimalLOD = computed(() => lodLevel.value === LODLevel.MINIMAL)
@@ -233,7 +259,8 @@ const {
   zIndex,
   startDrag,
   handleDrag: handleLayoutDrag,
-  endDrag
+  endDrag,
+  resize
 } = useNodeLayout(props.nodeData.id)
 
 // Drag state for styling
@@ -379,3 +406,5 @@ watch(
 // Provide nodeImageUrls to child components
 provide('nodeImageUrls', nodeImageUrls)
 </script>
+
+<style scoped></style>
