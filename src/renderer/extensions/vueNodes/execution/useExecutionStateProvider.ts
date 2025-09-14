@@ -1,3 +1,4 @@
+import { storeToRefs } from 'pinia'
 import { computed, provide } from 'vue'
 
 import {
@@ -16,13 +17,13 @@ import { useExecutionStore } from '@/stores/executionStore'
  */
 export const useExecutionStateProvider = () => {
   const executionStore = useExecutionStore()
+  const { executingNodeIds: storeExecutingNodeIds, nodeProgressStates } =
+    storeToRefs(executionStore)
 
   // Convert execution store data to the format expected by Vue nodes
   const executingNodeIds = computed(
-    () => new Set(executionStore.executingNodeIds.map(String))
+    () => new Set(storeExecutingNodeIds.value.map(String))
   )
-
-  const nodeProgressStates = computed(() => executionStore.nodeProgressStates)
 
   // Provide the execution state to all child Vue nodes
   provide(ExecutingNodeIdsKey, executingNodeIds)
