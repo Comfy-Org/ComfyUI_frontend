@@ -47,11 +47,6 @@
       :size="nodeSizes.get(nodeData.id)"
       :readonly="false"
       :executing="executionStore.executingNodeId === nodeData.id"
-      :error="
-        executionStore.lastExecutionError?.node_id === nodeData.id
-          ? 'Execution error'
-          : null
-      "
       :zoom-level="canvasStore.canvas?.ds?.scale || 1"
       :data-node-id="nodeData.id"
       @node-click="handleNodeSelect"

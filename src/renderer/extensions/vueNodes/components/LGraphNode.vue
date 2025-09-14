@@ -13,7 +13,7 @@
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
         !!executing && 'border-blue-500 dark-theme:border-blue-500',
-        !!(error || nodeData.hasErrors) && 'border-error',
+        !!hasAnyError && 'border-error',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         // Selected
@@ -21,7 +21,7 @@
         !!isSelected && 'outline-black dark-theme:outline-white',
         !!(isSelected && executing) &&
           'outline-blue-500 dark-theme:outline-blue-500',
-        !!(isSelected && (error || nodeData.hasErrors)) && 'outline-error',
+        !!(isSelected && hasAnyError) && 'outline-error',
         {
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
@@ -134,6 +134,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
@@ -151,7 +152,6 @@ interface LGraphNodeProps {
   readonly?: boolean
   executing?: boolean
   progress?: number
-  error?: string | null
   zoomLevel?: number
 }
 
@@ -175,6 +175,17 @@ const emit = defineEmits<{
 }>()
 
 useVueElementTracking(props.nodeData.id, 'node')
+
+// Execution error state from store (direct ref access as suggested by @DrJKL)
+const executionStore = useExecutionStore()
+const hasExecutionError = computed(
+  () => executionStore.currentErrorNodeId === props.nodeData.id
+)
+
+// Computed error states for styling
+const hasAnyError = computed(
+  (): boolean => hasExecutionError.value || !!props.nodeData.hasErrors
+)
 
 // Inject selection state from parent
 const selectedNodeIds = inject(SelectedNodeIdsKey)

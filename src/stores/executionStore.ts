@@ -407,6 +407,20 @@ export const useExecutionStore = defineStore('execution', () => {
     return executionId
   }
 
+  const lastExecutionErrorNodeLocatorId = computed(() => {
+    const err = lastExecutionError.value
+    if (!err) return null
+    return executionIdToNodeLocatorId(String(err.node_id))
+  })
+
+  // Computed ref for current error node ID - components can use this directly
+  const currentErrorNodeId = computed<string | null>(() => {
+    const locator = lastExecutionErrorNodeLocatorId.value
+    if (!locator) return null
+    const localId = workflowStore.nodeLocatorIdToNodeId(locator)
+    return localId != null ? String(localId) : null
+  })
+
   return {
     isIdle,
     clientId,
@@ -426,6 +440,10 @@ export const useExecutionStore = defineStore('execution', () => {
      * The error from the previous execution.
      */
     lastExecutionError,
+    /**
+     * NodeLocatorId for the most recent execution error.
+     */
+    lastExecutionErrorNodeLocatorId,
     /**
      * The id of the node that is currently being executed (backward compatibility)
      */
@@ -470,6 +488,10 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress,
     // NodeLocatorId conversion helpers
     executionIdToNodeLocatorId,
-    nodeLocatorIdToExecutionId
+    nodeLocatorIdToExecutionId,
+    /**
+     * The node ID that currently has an execution error (as string)
+     */
+    currentErrorNodeId
   }
 })
