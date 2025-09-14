@@ -7,6 +7,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import {
   ComboInputSpec,
@@ -23,7 +24,6 @@ import {
   addValueControlWidgets
 } from '@/scripts/widgets'
 import { assetService } from '@/services/assetService'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { useRemoteWidget } from './useRemoteWidget'
 

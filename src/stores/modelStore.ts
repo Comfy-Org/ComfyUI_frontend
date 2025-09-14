@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ModelFile } from '@/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { assetService } from '@/services/assetService'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
