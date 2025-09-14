@@ -53,14 +53,14 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-interface GalleryImage {
+export interface GalleryImage {
   itemImageSrc?: string
   thumbnailImageSrc?: string
   src?: string
   alt?: string
 }
 
-type GalleryValue = string[] | GalleryImage[]
+export type GalleryValue = string[] | GalleryImage[]
 
 const value = defineModel<GalleryValue>({ required: true })
 
@@ -87,7 +87,7 @@ const galleryImages = computed(() => {
         return {
           itemImageSrc: item,
           thumbnailImageSrc: item,
-          alt: `Image ${index + 1}`
+          alt: `Image ${index}`
         }
       }
       return item ?? {} // Ensure we have at least an empty object

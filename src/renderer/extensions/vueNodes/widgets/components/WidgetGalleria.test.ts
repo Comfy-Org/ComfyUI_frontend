@@ -7,17 +7,10 @@ import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetGalleria from './WidgetGalleria.vue'
-
-// Import types from the component file
-type GalleryImage = {
-  itemImageSrc?: string
-  thumbnailImageSrc?: string
-  src?: string
-  alt?: string
-}
-
-type GalleryValue = string[] | GalleryImage[]
+import WidgetGalleria, {
+  type GalleryImage,
+  type GalleryValue
+} from './WidgetGalleria.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -29,7 +22,29 @@ const i18n = createI18n({
   }
 })
 
-// Test data constants can be added here for better test isolation when needed
+// Test data constants for better test isolation
+const TEST_IMAGES_SMALL: readonly string[] = Object.freeze([
+  'https://example.com/image0.jpg',
+  'https://example.com/image1.jpg',
+  'https://example.com/image2.jpg'
+])
+
+const TEST_IMAGES_SINGLE: readonly string[] = Object.freeze([
+  'https://example.com/single.jpg'
+])
+
+const TEST_IMAGE_OBJECTS: readonly GalleryImage[] = Object.freeze([
+  {
+    itemImageSrc: 'https://example.com/image0.jpg',
+    thumbnailImageSrc: 'https://example.com/thumb0.jpg',
+    alt: 'Test image 0'
+  },
+  {
+    itemImageSrc: 'https://example.com/image1.jpg',
+    thumbnailImageSrc: 'https://example.com/thumb1.jpg',
+    alt: 'Test image 1'
+  }
+])
 
 // Helper functions outside describe blocks for better clarity
 function createMockWidget(
@@ -62,14 +77,6 @@ function mountComponent(
   })
 }
 
-function createImageObjects(count: number): GalleryImage[] {
-  return Array.from({ length: count }, (_, i) => ({
-    itemImageSrc: `https://example.com/image${i}.jpg`,
-    thumbnailImageSrc: `https://example.com/thumb${i}.jpg`,
-    alt: `Test image ${i}`
-  }))
-}
-
 function createImageStrings(count: number): string[] {
   return Array.from(
     { length: count },
@@ -82,9 +89,8 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('Component Rendering', () => {
     it('renders galleria component', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SMALL])
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.exists()).toBe(true)
@@ -109,9 +115,8 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('String Array Input', () => {
     it('converts string array to image objects', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SMALL])
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       const value = galleria.props('value')
@@ -120,14 +125,13 @@ describe('WidgetGalleria Image Display', () => {
       expect(value[0]).toEqual({
         itemImageSrc: 'https://example.com/image0.jpg',
         thumbnailImageSrc: 'https://example.com/image0.jpg',
-        alt: 'Image 1'
+        alt: 'Image 0'
       })
     })
 
     it('handles single string image', () => {
-      const images = ['https://example.com/single.jpg']
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SINGLE])
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SINGLE])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       const value = galleria.props('value')
@@ -136,21 +140,20 @@ describe('WidgetGalleria Image Display', () => {
       expect(value[0]).toEqual({
         itemImageSrc: 'https://example.com/single.jpg',
         thumbnailImageSrc: 'https://example.com/single.jpg',
-        alt: 'Image 1'
+        alt: 'Image 0'
       })
     })
   })
 
   describe('Object Array Input', () => {
     it('preserves image objects as-is', () => {
-      const images = createImageObjects(2)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGE_OBJECTS])
+      const wrapper = mountComponent(widget, [...TEST_IMAGE_OBJECTS])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       const value = galleria.props('value')
 
-      expect(value).toEqual(images)
+      expect(value).toEqual([...TEST_IMAGE_OBJECTS])
     })
 
     it('handles mixed object properties', () => {
@@ -171,36 +174,36 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('Thumbnail Display', () => {
     it('shows thumbnails when multiple images present', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SMALL])
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.props('showThumbnails')).toBe(true)
     })
 
     it('hides thumbnails for single image', () => {
-      const images = createImageStrings(1)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SINGLE])
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SINGLE])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.props('showThumbnails')).toBe(false)
     })
 
     it('respects widget option to hide thumbnails', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images, { showThumbnails: false })
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SMALL], {
+        showThumbnails: false
+      })
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.props('showThumbnails')).toBe(false)
     })
 
     it('shows thumbnails when explicitly enabled for multiple images', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images, { showThumbnails: true })
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SMALL], {
+        showThumbnails: true
+      })
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.props('showThumbnails')).toBe(true)
@@ -209,18 +212,16 @@ describe('WidgetGalleria Image Display', () => {
 
   describe('Navigation Buttons', () => {
     it('shows navigation buttons when multiple images present', () => {
-      const images = createImageStrings(3)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SMALL])
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SMALL])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.props('showItemNavigators')).toBe(true)
     })
 
     it('hides navigation buttons for single image', () => {
-      const images = createImageStrings(1)
-      const widget = createMockWidget(images)
-      const wrapper = mountComponent(widget, images)
+      const widget = createMockWidget([...TEST_IMAGES_SINGLE])
+      const wrapper = mountComponent(widget, [...TEST_IMAGES_SINGLE])
 
       const galleria = wrapper.findComponent({ name: 'Galleria' })
       expect(galleria.props('showItemNavigators')).toBe(false)
