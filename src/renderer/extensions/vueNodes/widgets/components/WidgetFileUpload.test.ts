@@ -183,7 +183,7 @@ describe('WidgetFileUpload File Handling', () => {
       )
       const wrapper = mountComponent(widget, [imageFile])
 
-      const select = wrapper.findComponent({ name: 'Select' })
+      const select = wrapper.getComponent({ name: 'Select' })
       expect(select.props('modelValue')).toBe('test.jpg')
       expect(select.props('options')).toEqual(['test.jpg'])
       expect(select.props('disabled')).toBe(true)
@@ -419,10 +419,7 @@ describe('WidgetFileUpload File Handling', () => {
       const clickSpy = vi.spyOn(inputElement, 'click')
 
       // Find PrimeVue Button component with folder icon
-      const folderButton = wrapper.findComponent(Button)
-      if (!folderButton.exists()) {
-        throw new Error('Folder button not found')
-      }
+      const folderButton = wrapper.getComponent(Button)
 
       await folderButton.trigger('click')
 
@@ -537,9 +534,7 @@ describe('WidgetFileUpload File Handling', () => {
 
       // Should not throw error when method exists
       const vm = wrapper.vm as any
-      if (vm.triggerFileInput) {
-        expect(() => vm.triggerFileInput()).not.toThrow()
-      }
+      expect(() => vm.triggerFileInput?.()).not.toThrow()
     })
 
     it('handles clearing file when no file input exists', async () => {
