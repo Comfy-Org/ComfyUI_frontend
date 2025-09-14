@@ -8,21 +8,10 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
+import { createMockFile, createMockWidget } from '../testUtils'
 import WidgetFileUpload from './WidgetFileUpload.vue'
 
 describe('WidgetFileUpload File Handling', () => {
-  const createMockWidget = (
-    value: File[] | null = null,
-    options: Record<string, any> = {},
-    callback?: (value: File[] | null) => void
-  ): SimplifiedWidget<File[] | null> => ({
-    name: 'test_file_upload',
-    type: 'file',
-    value,
-    options,
-    callback
-  })
-
   const mountComponent = (
     widget: SimplifiedWidget<File[] | null>,
     modelValue: File[] | null,
@@ -52,15 +41,6 @@ describe('WidgetFileUpload File Handling', () => {
     })
   }
 
-  const createMockFile = (name: string, type: string, size = 1024): File => {
-    const file = new File(['mock content'], name, { type })
-    Object.defineProperty(file, 'size', {
-      value: size,
-      writable: false
-    })
-    return file
-  }
-
   const mockObjectURL = 'blob:mock-url'
 
   beforeEach(() => {
@@ -71,7 +51,10 @@ describe('WidgetFileUpload File Handling', () => {
 
   describe('Initial States', () => {
     it('shows upload UI when no file is selected', () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null)
 
       expect(wrapper.text()).toContain('Drop your file or')
@@ -80,7 +63,15 @@ describe('WidgetFileUpload File Handling', () => {
     })
 
     it('renders file input with correct attributes', () => {
-      const widget = createMockWidget(null, { accept: 'image/*' })
+      const widget = createMockWidget<File[] | null>(
+        null,
+        { accept: 'image/*' },
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, null)
 
       const fileInput = wrapper.find('input[type="file"]')
@@ -92,11 +83,18 @@ describe('WidgetFileUpload File Handling', () => {
 
   describe('File Selection', () => {
     it('triggers file input when browse button is clicked', async () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null)
 
       const fileInput = wrapper.find('input[type="file"]')
-      const clickSpy = vi.spyOn(fileInput.element as HTMLInputElement, 'click')
+      const inputElement = fileInput.element
+      if (!(inputElement instanceof HTMLInputElement)) {
+        throw new Error('Expected HTMLInputElement')
+      }
+      const clickSpy = vi.spyOn(inputElement, 'click')
 
       const browseButton = wrapper.find('button')
       await browseButton.trigger('click')
@@ -106,7 +104,10 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('handles file selection', async () => {
       const mockCallback = vi.fn()
-      const widget = createMockWidget(null, {}, mockCallback)
+      const widget = createMockWidget<File[] | null>(null, {}, mockCallback, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null)
 
       const file = createMockFile('test.jpg', 'image/jpeg')
@@ -125,7 +126,10 @@ describe('WidgetFileUpload File Handling', () => {
     })
 
     it('resets file input after selection', async () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null)
 
       const file = createMockFile('test.jpg', 'image/jpeg')
@@ -138,14 +142,26 @@ describe('WidgetFileUpload File Handling', () => {
 
       await fileInput.trigger('change')
 
-      expect((fileInput.element as HTMLInputElement).value).toBe('')
+      const inputElement = fileInput.element
+      if (!(inputElement instanceof HTMLInputElement)) {
+        throw new Error('Expected HTMLInputElement')
+      }
+      expect(inputElement.value).toBe('')
     })
   })
 
   describe('Image File Display', () => {
     it('shows image preview for image files', () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       const img = wrapper.find('img')
@@ -156,7 +172,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('shows select dropdown with filename for images', () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       const select = wrapper.findComponent({ name: 'Select' })
@@ -167,7 +191,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('shows edit and delete buttons on hover for images', () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       // The pi-pencil and pi-times classes are on the <i> elements inside the buttons
@@ -180,7 +212,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('hides control buttons in readonly mode', () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile], true)
 
       const controlButtons = wrapper.find('.absolute.top-2.right-2')
@@ -191,7 +231,15 @@ describe('WidgetFileUpload File Handling', () => {
   describe('Audio File Display', () => {
     it('shows audio player for audio files', () => {
       const audioFile = createMockFile('test.mp3', 'audio/mpeg')
-      const widget = createMockWidget([audioFile])
+      const widget = createMockWidget<File[] | null>(
+        [audioFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [audioFile])
 
       expect(wrapper.find('.pi-volume-up').exists()).toBe(true)
@@ -201,7 +249,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('shows file size for audio files', () => {
       const audioFile = createMockFile('test.mp3', 'audio/mpeg', 2048)
-      const widget = createMockWidget([audioFile])
+      const widget = createMockWidget<File[] | null>(
+        [audioFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [audioFile])
 
       expect(wrapper.text()).toContain('2.0 KB')
@@ -209,7 +265,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('shows delete button for audio files', () => {
       const audioFile = createMockFile('test.mp3', 'audio/mpeg')
-      const widget = createMockWidget([audioFile])
+      const widget = createMockWidget<File[] | null>(
+        [audioFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [audioFile])
 
       const deleteIcon = wrapper.find('i.pi-times')
@@ -218,38 +282,76 @@ describe('WidgetFileUpload File Handling', () => {
   })
 
   describe('File Type Detection', () => {
-    const testCases = [
-      { name: 'image.jpg', type: 'image/jpeg', expected: 'image' },
-      { name: 'image.png', type: 'image/png', expected: 'image' },
-      { name: 'audio.mp3', type: 'audio/mpeg', expected: 'audio' },
-      { name: 'audio.wav', type: 'audio/wav', expected: 'audio' },
-      { name: 'video.mp4', type: 'video/mp4', expected: 'normal' }, // falls back to normal UI
-      { name: 'document.pdf', type: 'application/pdf', expected: 'normal' }
+    const imageFiles = [
+      { name: 'image.jpg', type: 'image/jpeg' },
+      { name: 'image.png', type: 'image/png' }
     ]
 
-    testCases.forEach(({ name, type, expected }) => {
-      it(`correctly handles ${type} files`, () => {
+    const audioFiles = [
+      { name: 'audio.mp3', type: 'audio/mpeg' },
+      { name: 'audio.wav', type: 'audio/wav' }
+    ]
+
+    const normalFiles = [
+      { name: 'video.mp4', type: 'video/mp4' },
+      { name: 'document.pdf', type: 'application/pdf' }
+    ]
+
+    it.for(imageFiles)(
+      'shows image preview for $type files',
+      ({ name, type }) => {
         const file = createMockFile(name, type)
-        const widget = createMockWidget([file])
+        const widget = createMockWidget<File[] | null>([file], {}, undefined, {
+          name: 'test_file_upload',
+          type: 'file'
+        })
         const wrapper = mountComponent(widget, [file])
 
-        if (expected === 'image') {
-          expect(wrapper.find('img').exists()).toBe(true)
-        } else if (expected === 'audio') {
-          expect(wrapper.find('.pi-volume-up').exists()).toBe(true)
-        } else {
-          // Should show normal upload UI when no specific preview is available
-          expect(wrapper.find('img').exists()).toBe(false)
-          expect(wrapper.find('.pi-volume-up').exists()).toBe(false)
-        }
+        expect(wrapper.find('img').exists()).toBe(true)
+        expect(wrapper.find('.pi-volume-up').exists()).toBe(false)
+      }
+    )
+
+    it.for(audioFiles)(
+      'shows audio player for $type files',
+      ({ name, type }) => {
+        const file = createMockFile(name, type)
+        const widget = createMockWidget<File[] | null>([file], {}, undefined, {
+          name: 'test_file_upload',
+          type: 'file'
+        })
+        const wrapper = mountComponent(widget, [file])
+
+        expect(wrapper.find('.pi-volume-up').exists()).toBe(true)
+        expect(wrapper.find('img').exists()).toBe(false)
+      }
+    )
+
+    it.for(normalFiles)('shows normal UI for $type files', ({ name, type }) => {
+      const file = createMockFile(name, type)
+      const widget = createMockWidget<File[] | null>([file], {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
       })
+      const wrapper = mountComponent(widget, [file])
+
+      expect(wrapper.find('img').exists()).toBe(false)
+      expect(wrapper.find('.pi-volume-up').exists()).toBe(false)
     })
   })
 
   describe('File Actions', () => {
     it('clears file when delete button is clicked', async () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       // Find button that contains the times icon
@@ -271,7 +373,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('handles edit button click', async () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       // Find button that contains the pencil icon
@@ -290,11 +400,23 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('triggers file input when folder button is clicked', async () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       const fileInput = wrapper.find('input[type="file"]')
-      const clickSpy = vi.spyOn(fileInput.element as HTMLInputElement, 'click')
+      const inputElement = fileInput.element
+      if (!(inputElement instanceof HTMLInputElement)) {
+        throw new Error('Expected HTMLInputElement')
+      }
+      const clickSpy = vi.spyOn(inputElement, 'click')
 
       // Find PrimeVue Button component with folder icon
       const folderButton = wrapper.findComponent(Button)
@@ -310,7 +432,10 @@ describe('WidgetFileUpload File Handling', () => {
 
   describe('Readonly Mode', () => {
     it('disables browse button in readonly mode', () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null, true)
 
       const browseButton = wrapper.find('button')
@@ -318,16 +443,31 @@ describe('WidgetFileUpload File Handling', () => {
     })
 
     it('disables file input in readonly mode', () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null, true)
 
       const fileInput = wrapper.find('input[type="file"]')
-      expect((fileInput.element as HTMLInputElement).disabled).toBe(true)
+      const inputElement = fileInput.element
+      if (!(inputElement instanceof HTMLInputElement)) {
+        throw new Error('Expected HTMLInputElement')
+      }
+      expect(inputElement.disabled).toBe(true)
     })
 
     it('disables folder button for images in readonly mode', () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile], true)
 
       const buttons = wrapper.findAll('button')
@@ -343,7 +483,10 @@ describe('WidgetFileUpload File Handling', () => {
     })
 
     it('does not handle file changes in readonly mode', async () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null, true)
 
       const file = createMockFile('test.jpg', 'image/jpeg')
@@ -363,7 +506,10 @@ describe('WidgetFileUpload File Handling', () => {
 
   describe('Edge Cases', () => {
     it('handles empty file selection gracefully', async () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null)
 
       const fileInput = wrapper.find('input[type="file"]')
@@ -380,7 +526,10 @@ describe('WidgetFileUpload File Handling', () => {
     })
 
     it('handles missing file input gracefully', () => {
-      const widget = createMockWidget()
+      const widget = createMockWidget<File[] | null>(null, {}, undefined, {
+        name: 'test_file_upload',
+        type: 'file'
+      })
       const wrapper = mountComponent(widget, null)
 
       // Remove file input ref to simulate missing element
@@ -395,7 +544,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('handles clearing file when no file input exists', async () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       // Remove file input ref to simulate missing element
@@ -417,7 +574,15 @@ describe('WidgetFileUpload File Handling', () => {
 
     it('cleans up object URLs on unmount', () => {
       const imageFile = createMockFile('test.jpg', 'image/jpeg')
-      const widget = createMockWidget([imageFile])
+      const widget = createMockWidget<File[] | null>(
+        [imageFile],
+        {},
+        undefined,
+        {
+          name: 'test_file_upload',
+          type: 'file'
+        }
+      )
       const wrapper = mountComponent(widget, [imageFile])
 
       wrapper.unmount()
