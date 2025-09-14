@@ -1,14 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
-import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 
 vi.mock(
   '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
@@ -42,19 +41,6 @@ vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
   }),
   LODLevel: { MINIMAL: 0 }
 }))
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/execution/useNodeExecutionState',
-  () => ({
-    useNodeExecutionState: vi.fn(() => ({
-      executing: computed(() => false),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined as any),
-      executionState: computed(() => 'idle' as const)
-    }))
-  })
-)
 
 const i18n = createI18n({
   legacy: false,
@@ -106,14 +92,6 @@ describe('LGraphNode', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset to default mock
-    vi.mocked(useNodeExecutionState).mockReturnValue({
-      executing: computed(() => false),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined as any),
-      executionState: computed(() => 'idle' as const)
-    })
   })
 
   it('should call resize tracking composable with node ID', () => {
@@ -162,21 +140,6 @@ describe('LGraphNode', () => {
     expect(wrapper.classes()).toContain('outline-2')
     expect(wrapper.classes()).toContain('outline-black')
     expect(wrapper.classes()).toContain('dark-theme:outline-white')
-  })
-
-  it('should apply executing animation when executing prop is true', () => {
-    // Mock the execution state to return executing: true
-    vi.mocked(useNodeExecutionState).mockReturnValue({
-      executing: computed(() => true),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined as any),
-      executionState: computed(() => 'running' as const)
-    })
-
-    const wrapper = mountLGraphNode({ nodeData: mockNodeData })
-
-    expect(wrapper.classes()).toContain('animate-pulse')
   })
 
   it('should emit node-click event on pointer up', async () => {

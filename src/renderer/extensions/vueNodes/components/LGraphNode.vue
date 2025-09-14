@@ -23,7 +23,6 @@
           'outline-blue-100 dark-theme:outline-blue-100',
         !!(isSelected && (error || nodeData.hasErrors)) && 'outline-error',
         {
-          'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
           'will-change-transform': isDragging
         },
