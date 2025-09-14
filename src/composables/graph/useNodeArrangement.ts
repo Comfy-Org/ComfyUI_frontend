@@ -3,8 +3,9 @@ import { useI18n } from 'vue-i18n'
 import type { Direction } from '@/lib/litegraph/src/interfaces'
 import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+
+import { useCanvasRefresh } from './useCanvasRefresh'
 
 interface AlignOption {
   name: string
@@ -26,8 +27,7 @@ interface DistributeOption {
 export function useNodeArrangement() {
   const { t } = useI18n()
   const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
-
+  const canvasRefresh = useCanvasRefresh()
   const alignOptions: AlignOption[] = [
     {
       name: 'top',
@@ -79,12 +79,9 @@ export function useNodeArrangement() {
       return
     }
 
-    canvasStore.canvas?.emitBeforeChange()
     alignNodes(selectedNodes, alignOption.value)
-    canvasStore.canvas?.setDirty(true, true)
-    canvasStore.canvas?.graph?.afterChange()
-    canvasStore.canvas?.emitAfterChange()
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+
+    canvasRefresh.refreshCanvas()
   }
 
   const applyDistribute = (distributeOption: DistributeOption) => {
@@ -96,12 +93,8 @@ export function useNodeArrangement() {
       return
     }
 
-    canvasStore.canvas?.emitBeforeChange()
     distributeNodes(selectedNodes, distributeOption.value)
-    canvasStore.canvas?.setDirty(true, true)
-    canvasStore.canvas?.graph?.afterChange()
-    canvasStore.canvas?.emitAfterChange()
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    canvasRefresh.refreshCanvas()
   }
 
   return {

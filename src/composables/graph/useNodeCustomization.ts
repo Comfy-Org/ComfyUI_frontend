@@ -9,9 +9,10 @@ import {
   isColorable
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
+
+import { useCanvasRefresh } from './useCanvasRefresh'
 
 interface ColorOption {
   name: string
@@ -34,9 +35,8 @@ interface ShapeOption {
 export function useNodeCustomization() {
   const { t } = useI18n()
   const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
   const colorPaletteStore = useColorPaletteStore()
-
+  const canvasRefresh = useCanvasRefresh()
   const isLightTheme = computed(
     () => colorPaletteStore.completedActivePalette.light_theme
   )
@@ -98,12 +98,7 @@ export function useNodeCustomization() {
       }
     }
 
-    // Use canvasStore.canvas for consistency and add proper change events
-    canvasStore.canvas?.emitBeforeChange()
-    canvasStore.canvas?.setDirty(true, true)
-    canvasStore.canvas?.graph?.afterChange()
-    canvasStore.canvas?.emitAfterChange()
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    canvasRefresh.refreshCanvas()
   }
 
   const applyShape = (shapeOption: ShapeOption) => {
@@ -119,12 +114,7 @@ export function useNodeCustomization() {
       node.shape = shapeOption.value
     })
 
-    // Use canvasStore.canvas for consistency and add proper change events
-    canvasStore.canvas?.emitBeforeChange()
-    canvasStore.canvas?.setDirty(true, true)
-    canvasStore.canvas?.graph?.afterChange()
-    canvasStore.canvas?.emitAfterChange()
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    canvasRefresh.refreshCanvas()
   }
 
   const getCurrentColor = (): ColorOption | null => {

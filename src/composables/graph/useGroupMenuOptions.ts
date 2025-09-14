@@ -9,6 +9,7 @@ import { useCanvasStore } from '@/stores/graphStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 
+import { useCanvasRefresh } from './useCanvasRefresh'
 import type { MenuOption } from './useMoreOptionsMenu'
 import { useNodeCustomization } from './useNodeCustomization'
 
@@ -20,6 +21,7 @@ export function useGroupMenuOptions() {
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
+  const canvasRefresh = useCanvasRefresh()
   const { shapeOptions, colorOptions, isLightTheme } = useNodeCustomization()
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
@@ -53,11 +55,7 @@ export function useGroupMenuOptions() {
       action: () => {
         const nodes = (groupContext.nodes || []) as LGraphNode[]
         nodes.forEach((node) => (node.shape = shape.value))
-        canvasStore.canvas?.emitBeforeChange()
-        canvasStore.canvas?.setDirty(true, true)
-        canvasStore.canvas?.graph?.afterChange()
-        canvasStore.canvas?.emitAfterChange()
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        canvasRefresh.refreshCanvas()
         bump()
       }
     }))
@@ -79,11 +77,7 @@ export function useGroupMenuOptions() {
         groupContext.color = isLightTheme.value
           ? colorOption.value.light
           : colorOption.value.dark
-        canvasStore.canvas?.emitBeforeChange()
-        canvasStore.canvas?.setDirty(true, true)
-        canvasStore.canvas?.graph?.afterChange()
-        canvasStore.canvas?.emitAfterChange()
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        canvasRefresh.refreshCanvas()
         bump()
       }
     }))
