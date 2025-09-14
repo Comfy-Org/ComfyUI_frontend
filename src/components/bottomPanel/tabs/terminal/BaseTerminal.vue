@@ -19,7 +19,7 @@
       size="small"
       class="absolute top-2 right-8 opacity-0 animate-fade-in"
       :class="{ 'opacity-100': showCopyButton }"
-      :aria-label="t('serverStart.copyTerminal')"
+      :aria-label="tooltipText"
       @click="handleCopy"
     />
   </div>
