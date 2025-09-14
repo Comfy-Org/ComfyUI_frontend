@@ -31,6 +31,7 @@ import {
   isComboInputSpecV1,
   isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
+import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
 import { getFromWebmFile } from '@/scripts/metadata/ebml'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
@@ -840,19 +841,23 @@ export class ComfyApp {
         // Assertion: Not yet defined in litegraph.
         const { newGraph } = e.detail
 
-        const nodeSet = new Set(newGraph.nodes)
+        const widgetIds: Record<string, BaseDOMWidget<object | string>> = {}
         const widgetStore = useDomWidgetStore()
 
-        // Assertions: UnwrapRef
-        for (const { widget } of widgetStore.activeWidgetStates) {
-          if (!nodeSet.has(widget.node)) {
-            widgetStore.deactivateWidget(widget.id)
-          }
-        }
+        for (const node of newGraph.nodes)
+          for (const w of node.widgets ?? [])
+            if (w instanceof DOMWidgetImpl && w.id) widgetIds[w.id] = w
 
-        for (const { widget } of widgetStore.inactiveWidgetStates) {
-          if (nodeSet.has(widget.node)) {
-            widgetStore.activateWidget(widget.id)
+        // Assertions: UnwrapRef
+        for (const widgetId of widgetStore.widgetStates.keys()) {
+          const widgetState = widgetStore.widgetStates.get(widgetId)
+          //Unreachable, but required for type safety
+          if (!widgetState) continue
+          if (widgetId in widgetIds) {
+            widgetState.active = true
+            widgetState.widget = widgetIds[widgetId]
+          } else {
+            widgetState.active = false
           }
         }
       }
