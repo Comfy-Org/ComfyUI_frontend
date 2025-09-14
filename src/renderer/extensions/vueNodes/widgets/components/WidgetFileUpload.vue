@@ -187,7 +187,11 @@ import { useWidgetValue } from '@/composables/graph/useWidgetValue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const props = defineProps<{
+const {
+  widget,
+  modelValue,
+  readonly = false
+} = defineProps<{
   widget: SimplifiedWidget<File[] | null>
   modelValue: File[] | null
   readonly?: boolean
@@ -198,8 +202,8 @@ const emit = defineEmits<{
 }>()
 
 const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
+  widget,
+  modelValue,
   defaultValue: null,
   emit
 })
@@ -280,7 +284,7 @@ const triggerFileInput = () => {
 
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (!props.readonly && target.files && target.files.length > 0) {
+  if (!readonly && target.files && target.files.length > 0) {
     // Since we only support single file, take the first one
     const file = target.files[0]
 

@@ -18,7 +18,7 @@
     >
       <i
         :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
-        class="text-xs leading-none relative top-[1px] text-[#888682] dark-theme:text-[#5B5E7D]"
+        class="text-xs leading-none relative top-px text-stone-200 dark-theme:text-slate-300"
       ></i>
     </button>
 
@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -74,18 +74,18 @@ const isEditing = ref(false)
 
 const nodeInfo = computed(() => props.nodeData || props.node)
 
-// Local state for title to provide immediate feedback
-const displayTitle = ref(nodeInfo.value?.title || 'Untitled')
+const EMPTY_STRING = ''
+const DEFAULT_TITLE = 'Untitled'
 
-// Watch for external changes to the node title
-watch(
-  () => nodeInfo.value?.title,
-  (newTitle) => {
-    if (newTitle && newTitle !== displayTitle.value) {
-      displayTitle.value = newTitle
-    }
-  }
-)
+const resolveTitle = (info: LGraphNode | VueNodeData | undefined) => {
+  const title = (info?.title ?? EMPTY_STRING).trim()
+  if (title.length > 0) return title
+  const type = (info?.type ?? EMPTY_STRING).trim()
+  return type.length > 0 ? type : DEFAULT_TITLE
+}
+
+// Computed title that provides reactive updates
+const displayTitle = computed(() => resolveTitle(nodeInfo.value))
 
 // Event handlers
 const handleCollapse = () => {
@@ -109,7 +109,5 @@ const handleTitleEdit = (newTitle: string) => {
 
 const handleTitleCancel = () => {
   isEditing.value = false
-  // Reset displayTitle to the current node title
-  displayTitle.value = nodeInfo.value?.title || 'Untitled'
 }
 </script>
