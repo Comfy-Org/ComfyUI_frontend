@@ -139,6 +139,104 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.Canvas.NavigationMode',
+    category: ['LiteGraph', 'Canvas Navigation', 'NavigationMode'],
+    name: 'Navigation Mode',
+    defaultValue: 'legacy',
+    type: 'combo',
+    sortOrder: 100,
+    options: [
+      { value: 'standard', text: 'Standard (New)' },
+      { value: 'legacy', text: 'Drag Navigation' },
+      { value: 'custom', text: 'Custom' }
+    ],
+    versionAdded: '1.25.0',
+    defaultsByInstallVersion: {
+      '1.25.0': 'legacy'
+    },
+    onChange: async (newValue: string) => {
+      const { useSettingStore } = await import(
+        '@/platform/settings/settingStore'
+      )
+      const settingStore = useSettingStore()
+
+      if (newValue === 'standard') {
+        // Update related settings to match standard mode - select + panning
+        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'select')
+        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'panning')
+      } else if (newValue === 'legacy') {
+        // Update related settings to match legacy mode - panning + zoom
+        await settingStore.set('Comfy.Canvas.LeftMouseClickBehavior', 'panning')
+        await settingStore.set('Comfy.Canvas.MouseWheelScroll', 'zoom')
+      }
+    }
+  },
+  {
+    id: 'Comfy.Canvas.LeftMouseClickBehavior',
+    category: ['LiteGraph', 'Canvas Navigation', 'LeftMouseClickBehavior'],
+    name: 'Left Mouse Click Behavior',
+    defaultValue: 'panning',
+    type: 'radio',
+    sortOrder: 50,
+    options: [
+      { value: 'panning', text: 'Panning' },
+      { value: 'select', text: 'Select' }
+    ],
+    versionAdded: '1.27.4',
+    onChange: async (newValue: string) => {
+      const { useSettingStore } = await import(
+        '@/platform/settings/settingStore'
+      )
+      const settingStore = useSettingStore()
+
+      const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
+
+      if (navigationMode !== 'custom') {
+        if (
+          (newValue === 'select' && navigationMode === 'standard') ||
+          (newValue === 'panning' && navigationMode === 'legacy')
+        ) {
+          return
+        }
+
+        // only set to custom if it doesn't match the preset modes
+        await settingStore.set('Comfy.Canvas.NavigationMode', 'custom')
+      }
+    }
+  },
+  {
+    id: 'Comfy.Canvas.MouseWheelScroll',
+    category: ['LiteGraph', 'Canvas Navigation', 'MouseWheelScroll'],
+    name: 'Mouse Wheel Scroll',
+    defaultValue: 'panning',
+    type: 'radio',
+    options: [
+      { value: 'panning', text: 'Panning' },
+      { value: 'zoom', text: 'Zoom in/out' }
+    ],
+    versionAdded: '1.27.4',
+    onChange: async (newValue: string) => {
+      const { useSettingStore } = await import(
+        '@/platform/settings/settingStore'
+      )
+      const settingStore = useSettingStore()
+
+      const navigationMode = settingStore.get('Comfy.Canvas.NavigationMode')
+
+      if (navigationMode !== 'custom') {
+        if (
+          (newValue === 'panning' && navigationMode === 'standard') ||
+          (newValue === 'zoom' && navigationMode === 'legacy')
+        ) {
+          return
+        }
+
+        // only set to custom if it doesn't match the preset modes
+        await settingStore.set('Comfy.Canvas.NavigationMode', 'custom')
+      }
+    }
+  },
+  {
     id: 'Comfy.Graph.CanvasInfo',
     category: ['LiteGraph', 'Canvas', 'CanvasInfo'],
     name: 'Show canvas info on bottom left corner (fps, etc.)',
@@ -812,21 +910,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 8,
     versionAdded: '1.26.7'
-  },
-  {
-    id: 'Comfy.Canvas.NavigationMode',
-    category: ['LiteGraph', 'Canvas', 'CanvasNavigationMode'],
-    name: 'Canvas Navigation Mode',
-    defaultValue: 'legacy',
-    type: 'combo',
-    options: [
-      { value: 'standard', text: 'Standard (New)' },
-      { value: 'legacy', text: 'Drag Navigation' }
-    ],
-    versionAdded: '1.25.0',
-    defaultsByInstallVersion: {
-      '1.25.0': 'legacy'
-    }
   },
   {
     id: 'Comfy.Canvas.SelectionToolbox',
