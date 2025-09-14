@@ -17,8 +17,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
-import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
+import type { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
+import type { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
@@ -673,7 +673,7 @@ export class LinkConnector {
         link.connectToSubgraphOutput(targetSlot, this.events)
 
         // If we just connected to an EmptySubgraphOutput, check if we should reuse the slot
-        if (output instanceof EmptySubgraphOutput && ioNode.slots.length > 0) {
+        if (output === ioNode.emptySlot && ioNode.slots.length > 0) {
           // Get the last created slot (newest one)
           const createdSlot = ioNode.slots[ioNode.slots.length - 1]
 
@@ -719,7 +719,7 @@ export class LinkConnector {
         link.connectToSubgraphInput(targetSlot, this.events)
 
         // If we just connected to an EmptySubgraphInput, check if we should reuse the slot
-        if (input instanceof EmptySubgraphInput && ioNode.slots.length > 0) {
+        if (input === ioNode.emptySlot && ioNode.slots.length > 0) {
           // Get the last created slot (newest one)
           const createdSlot = ioNode.slots[ioNode.slots.length - 1]
 

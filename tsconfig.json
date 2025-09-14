@@ -18,6 +18,7 @@
     "noFallthroughCasesInSwitch": true,
     "downlevelIteration": true,
     "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
     "allowJs": true,
     "baseUrl": ".",
     "paths": {

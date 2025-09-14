@@ -16,10 +16,12 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
-import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
 import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
+
+// Import the type only to avoid circular dependency at runtime
+import type { EmptySubgraphInput } from './EmptySubgraphInput'
 
 export class SubgraphInputNode
   extends SubgraphIONodeBase<SubgraphInput>
@@ -27,7 +29,16 @@ export class SubgraphInputNode
 {
   readonly id: NodeId = SUBGRAPH_INPUT_ID
 
-  readonly emptySlot: EmptySubgraphInput = new EmptySubgraphInput(this)
+  #emptySlot?: EmptySubgraphInput
+
+  get emptySlot(): EmptySubgraphInput {
+    if (!this.#emptySlot) {
+      // Lazy initialization to break circular dependency
+      // Import is deferred until first access
+      this.#emptySlot = createEmptySubgraphInput(this)
+    }
+    return this.#emptySlot
+  }
 
   get slots() {
     return this.subgraph.inputs
@@ -263,4 +274,13 @@ export class SubgraphInputNode
 
     this.drawSlots(ctx, colorContext, fromSlot, editorAlpha)
   }
+}
+
+// Factory function to break circular dependency
+// This is defined outside the class to avoid module loading issues
+function createEmptySubgraphInput(parent: SubgraphInputNode): EmptySubgraphInput {
+  // Import here is safe because it happens after module initialization
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  const { EmptySubgraphInput } = require('./EmptySubgraphInput') as typeof import('./EmptySubgraphInput')
+  return new EmptySubgraphInput(parent)
 }
