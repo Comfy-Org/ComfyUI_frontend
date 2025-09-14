@@ -9,6 +9,16 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetGalleria from './WidgetGalleria.vue'
 
+// Import types from the component file
+type GalleryImage = {
+  itemImageSrc?: string
+  thumbnailImageSrc?: string
+  src?: string
+  alt?: string
+}
+
+type GalleryValue = string[] | GalleryImage[]
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -19,58 +29,56 @@ const i18n = createI18n({
   }
 })
 
-type GalleryImage = {
-  itemImageSrc?: string
-  thumbnailImageSrc?: string
-  src?: string
-  alt?: string
-}
+// Test data constants can be added here for better test isolation when needed
 
-type GalleryValue = string[] | GalleryImage[]
-
-describe('WidgetGalleria Image Display', () => {
-  const createMockWidget = (
-    value: GalleryValue = [],
-    options: Partial<GalleriaProps> = {}
-  ): SimplifiedWidget<GalleryValue> => ({
+// Helper functions outside describe blocks for better clarity
+function createMockWidget(
+  value: GalleryValue = [],
+  options: Partial<GalleriaProps> = {}
+): SimplifiedWidget<GalleryValue> {
+  return {
     name: 'test_galleria',
     type: 'array',
     value,
     options
+  }
+}
+
+function mountComponent(
+  widget: SimplifiedWidget<GalleryValue>,
+  modelValue: GalleryValue,
+  readonly = false
+) {
+  return mount(WidgetGalleria, {
+    global: {
+      plugins: [PrimeVue, i18n],
+      components: { Galleria }
+    },
+    props: {
+      widget,
+      readonly,
+      modelValue
+    }
   })
+}
 
-  const mountComponent = (
-    widget: SimplifiedWidget<GalleryValue>,
-    modelValue: GalleryValue,
-    readonly = false
-  ) => {
-    return mount(WidgetGalleria, {
-      global: {
-        plugins: [PrimeVue, i18n],
-        components: { Galleria }
-      },
-      props: {
-        widget,
-        readonly,
-        modelValue // This sets up the v-model binding
-      }
-    })
-  }
+function createImageObjects(count: number): GalleryImage[] {
+  return Array.from({ length: count }, (_, i) => ({
+    itemImageSrc: `https://example.com/image${i}.jpg`,
+    thumbnailImageSrc: `https://example.com/thumb${i}.jpg`,
+    alt: `Test image ${i}`
+  }))
+}
 
-  const createImageObjects = (count: number): GalleryImage[] => {
-    return Array.from({ length: count }, (_, i) => ({
-      itemImageSrc: `https://example.com/image${i + 1}.jpg`,
-      thumbnailImageSrc: `https://example.com/thumb${i + 1}.jpg`,
-      alt: `Test image ${i + 1}`
-    }))
-  }
+function createImageStrings(count: number): string[] {
+  return Array.from(
+    { length: count },
+    (_, i) => `https://example.com/image${i}.jpg`
+  )
+}
 
-  const createImageStrings = (count: number): string[] => {
-    return Array.from(
-      { length: count },
-      (_, i) => `https://example.com/image${i + 1}.jpg`
-    )
-  }
+describe('WidgetGalleria Image Display', () => {
+  // Group tests using the readonly constants where appropriate
 
   describe('Component Rendering', () => {
     it('renders galleria component', () => {
@@ -110,8 +118,8 @@ describe('WidgetGalleria Image Display', () => {
 
       expect(value).toHaveLength(3)
       expect(value[0]).toEqual({
-        itemImageSrc: 'https://example.com/image1.jpg',
-        thumbnailImageSrc: 'https://example.com/image1.jpg',
+        itemImageSrc: 'https://example.com/image0.jpg',
+        thumbnailImageSrc: 'https://example.com/image0.jpg',
         alt: 'Image 1'
       })
     })
