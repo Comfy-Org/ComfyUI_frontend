@@ -66,3 +66,50 @@ export type MinimapSettingsKey =
   | 'Comfy.Minimap.ShowGroups'
   | 'Comfy.Minimap.RenderBypassState'
   | 'Comfy.Minimap.RenderErrorState'
+
+/**
+ * Node data required for minimap rendering
+ */
+export interface MinimapNodeData {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  bgcolor?: string
+  mode?: number
+  hasErrors?: boolean
+}
+
+/**
+ * Link data required for minimap rendering
+ */
+export interface MinimapLinkData {
+  sourceNode: MinimapNodeData
+  targetNode: MinimapNodeData
+  sourceSlot: number
+  targetSlot: number
+}
+
+/**
+ * Group data required for minimap rendering
+ */
+export interface MinimapGroupData {
+  x: number
+  y: number
+  width: number
+  height: number
+  color?: string
+}
+
+/**
+ * Interface for minimap data sources (Dependency Inversion Principle)
+ */
+export interface IMinimapDataSource {
+  getNodes(): MinimapNodeData[]
+  getLinks(): MinimapLinkData[]
+  getGroups(): MinimapGroupData[]
+  getBounds(): MinimapBounds
+  getNodeCount(): number
+  hasData(): boolean
+}
