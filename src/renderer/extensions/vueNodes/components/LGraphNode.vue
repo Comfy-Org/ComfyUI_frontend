@@ -49,6 +49,7 @@
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
         @update:title="handleTitleUpdate"
+        @enter-subgraph="handleEnterSubgraph"
       />
     </div>
 
@@ -417,6 +418,33 @@ const handleSlotClick = (
 
 const handleTitleUpdate = (newTitle: string) => {
   emit('update:title', nodeData.id, newTitle)
+}
+
+const handleEnterSubgraph = () => {
+  // Get the underlying LiteGraph node
+  const graph = app.graph?.rootGraph || app.graph
+  if (!graph) {
+    console.warn('LGraphNode: No graph available for subgraph navigation')
+    return
+  }
+
+  const locatorId = props.nodeData.subgraphId
+    ? `${props.nodeData.subgraphId}:${String(props.nodeData.id)}`
+    : String(props.nodeData.id)
+
+  const litegraphNode = getNodeByLocatorId(graph, locatorId)
+
+  if (litegraphNode?.isSubgraphNode() && 'subgraph' in litegraphNode) {
+    // Use the canvas to open the subgraph, similar to how LiteGraph does it
+    const canvas = app.canvas
+    if (canvas && typeof canvas.openSubgraph === 'function') {
+      canvas.openSubgraph(litegraphNode.subgraph)
+    } else {
+      console.warn('LGraphNode: Canvas or openSubgraph method not available')
+    }
+  } else {
+    console.warn('LGraphNode: Node is not a valid subgraph node', litegraphNode)
+  }
 }
 
 const nodeOutputs = useNodeOutputStore()

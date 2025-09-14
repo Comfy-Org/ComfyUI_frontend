@@ -57,10 +57,12 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
   const isNodeManagerReady = computed(() => nodeManager.value !== null)
 
   const initializeNodeManager = () => {
-    if (!comfyApp.graph || nodeManager.value) return
+    // Use canvas graph if available (handles subgraph contexts), fallback to app graph
+    const activeGraph = comfyApp.canvas?.graph || comfyApp.graph
+    if (!activeGraph || nodeManager.value) return
 
     // Initialize the core node manager
-    const manager = useGraphNodeManager(comfyApp.graph)
+    const manager = useGraphNodeManager(activeGraph)
     nodeManager.value = manager
     cleanupNodeManager.value = manager.cleanup
 
@@ -71,8 +73,8 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
     nodeSizes.value = manager.nodeSizes
     detectChangesInRAF.value = manager.detectChangesInRAF
 
-    // Initialize layout system with existing nodes
-    const nodes = comfyApp.graph._nodes.map((node: LGraphNode) => ({
+    // Initialize layout system with existing nodes from active graph
+    const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
       id: node.id.toString(),
       pos: [node.pos[0], node.pos[1]] as [number, number],
       size: [node.size[0], node.size[1]] as [number, number]
@@ -80,7 +82,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
     layoutStore.initializeFromLiteGraph(nodes)
 
     // Seed reroutes into the Layout Store so hit-testing uses the new path
-    for (const reroute of comfyApp.graph.reroutes.values()) {
+    for (const reroute of activeGraph.reroutes.values()) {
       const [x, y] = reroute.pos
       const parent = reroute.parentId ?? undefined
       const linkIds = Array.from(reroute.linkIds)
@@ -88,7 +90,7 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
     }
 
     // Seed existing links into the Layout Store (topology only)
-    for (const link of comfyApp.graph._links.values()) {
+    for (const link of activeGraph._links.values()) {
       layoutMutations.createLink(
         link.id,
         link.origin_id,
@@ -142,7 +144,9 @@ export function useVueNodeLifecycle(isVueNodesEnabled: Ref<boolean>) {
 
   // Watch for Vue nodes enabled state changes
   watch(
-    () => isVueNodesEnabled.value && Boolean(comfyApp.graph),
+    () =>
+      isVueNodesEnabled.value &&
+      Boolean(comfyApp.canvas?.graph || comfyApp.graph),
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
