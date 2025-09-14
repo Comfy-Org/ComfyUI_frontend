@@ -9,6 +9,7 @@
 import { type Ref, computed } from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { app as comfyApp } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 
 interface NodeManager {
@@ -34,7 +35,7 @@ export function useViewportCulling(
    * Queries DOM directly - no cache maintenance needed
    */
   const updateVisibility = () => {
-    if (!nodeManager.value || !canvasStore.canvas) return
+    if (!nodeManager.value || !canvasStore.canvas || !comfyApp.canvas) return
 
     const canvas = canvasStore.canvas
     const manager = nodeManager.value
@@ -62,7 +63,7 @@ export function useViewportCulling(
       const screen_width = node.size[0] * ds.scale
       const screen_height = node.size[1] * ds.scale
 
-      const isNodeOutsideiewport =
+      const isNodeOutsideViewport =
         screen_x + screen_width < -margin ||
         screen_x > viewport_width + margin ||
         screen_y + screen_height < -margin ||
@@ -70,7 +71,7 @@ export function useViewportCulling(
 
       // Setting display none directly avoid potential cascade resolution
       if (element instanceof HTMLElement) {
-        element.style.display = isNodeOutsideiewport ? 'none' : ''
+        element.style.display = isNodeOutsideViewport ? 'none' : ''
       }
     }
   }
