@@ -42,7 +42,7 @@ export class VueNodeHelpers {
       (nodes) =>
         nodes
           .map((n) => n.getAttribute('data-node-id'))
-          .filter(Boolean) as string[]
+          .filter((id): id is string => id !== null)
     )
   }
 
