@@ -44,7 +44,7 @@
       >
         {{ t('auth.signup.personalDataConsentLabel') }}
       </label>
-      <small v-if="$field.error" class="text-red-500 -mt-4">{{
+      <small v-if="$field.error" class="text-red-500 mt-4">{{
         $field.error.message
       }}</small>
     </FormField>
@@ -58,7 +58,7 @@
     <Button
       type="submit"
       :label="t('auth.signup.signUpButton')"
-      class="h-10 font-medium mt-4"
+      class="h-10 font-medium mt-4 text-white"
     />
   </Form>
 </template>

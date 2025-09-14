@@ -1,11 +1,20 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
-  <BaseViewTemplate dark>
-    <div class="flex items-center justify-center min-h-screen p-8">
+  <CloudTemplate>
+    <div class="h-full flex items-center justify-center p-8">
       <div class="w-96 p-2">
+        <div class="bg-[#2d2e32] p-4 rounded-lg">
+          <h4 class="m-0 pb-2 text-lg">
+            {{ t('cloudOnboarding.privateBeta.title') }}
+          </h4>
+          <p class="m-0 text-base leading-6">
+            {{ t('cloudOnboarding.privateBeta.desc') }}
+          </p>
+        </div>
+
         <!-- Header -->
-        <div class="flex flex-col gap-4 mb-8">
-          <h1 class="text-2xl font-medium leading-normal my-0">
+        <div class="flex flex-col gap-4 mt-6 mb-8">
+          <h1 class="text-xl font-medium leading-normal my-0">
             {{ t('auth.login.title') }}
           </h1>
           <p class="text-base my-0">
@@ -34,9 +43,8 @@
         <div class="flex flex-col gap-6">
           <Button
             type="button"
-            class="h-10"
+            class="h-10 bg-[#2d2e32]"
             severity="secondary"
-            outlined
             @click="signInWithGoogle"
           >
             <i class="pi pi-google mr-2"></i>
@@ -45,9 +53,8 @@
 
           <Button
             type="button"
-            class="h-10"
+            class="h-10 bg-[#2d2e32]"
             severity="secondary"
-            outlined
             @click="signInWithGithub"
           >
             <i class="pi pi-github mr-2"></i>
@@ -56,36 +63,20 @@
         </div>
 
         <!-- Terms & Contact -->
-        <p class="text-xs text-muted mt-8">
-          {{ t('auth.login.termsText') }}
-          <a
-            href="https://www.comfy.org/terms-of-service"
-            target="_blank"
-            class="text-blue-500 cursor-pointer"
-          >
-            {{ t('auth.login.termsLink') }}
-          </a>
-          {{ t('auth.login.andText') }}
-          <a
-            href="https://www.comfy.org/privacy"
-            target="_blank"
-            class="text-blue-500 cursor-pointer"
-          >
-            {{ t('auth.login.privacyLink') }} </a
-          >.
-          {{ t('auth.login.questionsContactPrefix') }}
+        <p class="mt-5 text-sm text-gray-600">
+          Questions? Contact us
           <a
             href="https://support.comfy.org"
-            class="text-blue-500 cursor-pointer"
+            class="text-blue-400 no-underline cursor-pointer"
             target="_blank"
             rel="noopener noreferrer"
           >
-            support.comfy.org
-          </a>
+            here</a
+          >.
         </p>
       </div>
     </div>
-  </BaseViewTemplate>
+  </CloudTemplate>
 </template>
 
 <script setup lang="ts">
@@ -98,9 +89,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
+import CloudTemplate from '@/platform/onboarding/cloud/components/CloudTemplate.vue'
 import { type SignInData } from '@/schemas/signInSchema'
 import { translateAuthError } from '@/utils/authErrorTranslation'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()

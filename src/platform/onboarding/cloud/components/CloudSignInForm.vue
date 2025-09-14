@@ -33,12 +33,6 @@
         >
           {{ t('auth.login.passwordLabel') }}
         </label>
-        <router-link
-          :to="{ name: 'cloud-forgot-password' }"
-          class="text-muted text-base font-medium hover:text-blue-500 transition-colors"
-        >
-          {{ t('auth.login.forgotPassword') }}
-        </router-link>
       </div>
       <Password
         input-id="cloud-sign-in-password"
@@ -54,6 +48,13 @@
       <small v-if="$form.password?.invalid" class="text-red-500">{{
         $form.password.error.message
       }}</small>
+
+      <router-link
+        :to="{ name: 'cloud-forgot-password' }"
+        class="text-muted text-sm font-medium no-underline"
+      >
+        {{ t('auth.login.forgotPassword') }}
+      </router-link>
     </div>
 
     <!-- Auth Error Message -->
@@ -67,7 +68,7 @@
       v-else
       type="submit"
       :label="t('auth.login.loginButton')"
-      class="h-10 font-medium mt-4"
+      class="h-10 font-medium mt-4 text-white"
     />
   </Form>
 </template>
@@ -107,3 +108,19 @@ const onSubmit = (event: FormSubmitEvent) => {
   }
 }
 </script>
+<style scoped>
+:deep(.p-inputtext) {
+  border: none !important;
+  box-shadow: none !important;
+  background: #2d2e32 !important;
+}
+
+:deep(.p-password input) {
+  border: none !important;
+  box-shadow: none !important;
+}
+:deep(.p-checkbox-checked .p-checkbox-box) {
+  background-color: #f0ff41 !important;
+  border-color: #f0ff41 !important;
+}
+</style>

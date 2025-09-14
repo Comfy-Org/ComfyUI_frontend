@@ -1,11 +1,11 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
-  <BaseViewTemplate dark>
-    <div class="flex items-center justify-center min-h-screen p-8">
+  <CloudTemplate>
+    <div class="h-full flex items-center justify-center p-8">
       <div class="w-96 p-2">
         <!-- Header -->
         <div class="flex flex-col gap-4 mb-8">
-          <h1 class="text-2xl font-medium leading-normal my-0">
+          <h1 class="text-xl font-medium leading-normal my-0">
             {{ t('cloudOnboarding.forgotPassword.title') }}
           </h1>
           <p class="text-base my-0 text-muted">
@@ -49,35 +49,34 @@
               :label="t('cloudOnboarding.forgotPassword.sendResetLink')"
               :loading="loading"
               :disabled="!email || loading"
-              class="h-10 font-medium"
+              class="h-10 font-medium text-white"
             />
 
             <Button
               type="button"
               :label="t('cloudOnboarding.forgotPassword.backToLogin')"
               severity="secondary"
-              outlined
-              class="h-10"
+              class="h-10 bg-[#2d2e32]"
               @click="navigateToLogin"
             />
           </div>
         </form>
 
         <!-- Help text -->
-        <p class="text-xs text-muted mt-8 text-center">
+        <p class="mt-5 text-sm text-gray-600">
           {{ t('cloudOnboarding.forgotPassword.didntReceiveEmail') }}
           <a
             href="https://support.comfy.org"
-            class="text-blue-500 cursor-pointer"
+            class="text-blue-400 no-underline cursor-pointer"
             target="_blank"
             rel="noopener noreferrer"
           >
-            support.comfy.org
-          </a>
+            here</a
+          >.
         </p>
       </div>
     </div>
-  </BaseViewTemplate>
+  </CloudTemplate>
 </template>
 
 <script setup lang="ts">
@@ -89,7 +88,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+import CloudTemplate from '@/platform/onboarding/cloud/components/CloudTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -132,3 +131,10 @@ const handleSubmit = async () => {
   }
 }
 </script>
+<style scoped>
+:deep(.p-inputtext) {
+  border: none !important;
+  box-shadow: none !important;
+  background: #2d2e32 !important;
+}
+</style>

@@ -1549,15 +1549,15 @@
       "whitelistInfo": "About non-whitelisted sites"
     },
     "login": {
-      "title": "Log in to your account",
+      "title": "Sign in",
       "useApiKey": "Comfy API Key",
       "signInOrSignUp": "Sign In / Sign Up",
       "forgotPasswordError": "Failed to send password reset email",
       "passwordResetSent": "Password reset email sent",
       "passwordResetSentDetail": "Please check your email for a link to reset your password.",
-      "newUser": "New here?",
+      "newUser": "Don’t have an account yet?",
       "userAvatar": "User Avatar",
-      "signUp": "Sign up",
+      "signUp": "Sign up instead",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -1570,7 +1570,7 @@
       "backToLogin": "Back to login",
       "didntReceiveEmail": "Didn't receive an email? Contact us at",
       "passwordResetError": "Failed to send password reset email. Please try again.",
-      "loginButton": "Log in",
+      "loginButton": "Sign in",
       "orContinueWith": "Or continue with",
       "loginWithGoogle": "Log in with Google",
       "loginWithGithub": "Log in with Github",
@@ -1794,6 +1794,18 @@
       "passwordResetSent": "Password reset email sent",
       "passwordResetError": "Failed to send password reset email. Please try again.",
       "emailRequired": "Email is required"
+    },
+    "privateBeta": {
+      "title": "Cloud is currently in private beta",
+      "desc": "Sign in to join the waitlist. We’ll notify you when it’s your turn. Already been notified? Sign in start using Cloud."
+    },
+    "start": {
+      "title": "start creating in seconds",
+      "desc": "Zero setup required. Works on any device.",
+      "explain": "Generate multiple outputs at once. Share workflows with ease.",
+      "learnAboutButton": "Learn about Cloud",
+      "wantToRun": "Want to run comfyUI locally instead?",
+      "download": "Download ComfyUI"
     }
   }
 }

@@ -9,7 +9,7 @@
       {{ t('auth.login.termsLink') }}
     </a>
     <a
-      href="https://www.comfy.org/privacy"
+      href="https://www.comfy.org/privacy-policy"
       target="_blank"
       class="text-sm text-gray-600 no-underline cursor-pointer"
     >
@@ -31,7 +31,3 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 </script>
-
-<style scoped>
-/* Add any additional styling if needed */
-</style>

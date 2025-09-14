@@ -1,11 +1,11 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
-  <BaseViewTemplate dark>
-    <div class="flex items-center justify-center min-h-screen p-8">
+  <CloudTemplate>
+    <div class="h-full flex items-center justify-center p-8">
       <div class="w-96 p-2">
         <!-- Header -->
         <div class="flex flex-col gap-4 mb-8">
-          <h1 class="text-2xl font-medium leading-normal my-0">
+          <h1 class="text-xl font-medium leading-normal my-0">
             {{ t('auth.signup.title') }}
           </h1>
           <p class="text-base my-0">
@@ -39,9 +39,8 @@
         <div class="flex flex-col gap-6">
           <Button
             type="button"
-            class="h-10"
+            class="h-10 bg-[#2d2e32]"
             severity="secondary"
-            outlined
             @click="signInWithGoogle"
           >
             <i class="pi pi-google mr-2"></i>
@@ -50,9 +49,8 @@
 
           <Button
             type="button"
-            class="h-10"
+            class="h-10 bg-[#2d2e32]"
             severity="secondary"
-            outlined
             @click="signInWithGithub"
           >
             <i class="pi pi-github mr-2"></i>
@@ -61,36 +59,38 @@
         </div>
 
         <!-- Terms & Contact -->
-        <p class="text-xs text-muted mt-8">
+        <div class="mt-5 text-sm text-gray-600">
           {{ t('auth.login.termsText') }}
           <a
             href="https://www.comfy.org/terms-of-service"
             target="_blank"
-            class="text-blue-500 cursor-pointer"
+            class="text-blue-400 no-underline cursor-pointer"
           >
             {{ t('auth.login.termsLink') }}
           </a>
           {{ t('auth.login.andText') }}
           <a
-            href="https://www.comfy.org/privacy"
+            href="/privacy-policy"
             target="_blank"
-            class="text-blue-500 cursor-pointer"
+            class="text-blue-400 no-underline cursor-pointer"
           >
             {{ t('auth.login.privacyLink') }} </a
           >.
-          {{ t('auth.login.questionsContactPrefix') }}
-          <a
-            href="https://support.comfy.org"
-            class="text-blue-500 cursor-pointer"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            support.comfy.org
-          </a>
-        </p>
+          <p class="mt-2">
+            Questions? Contact us
+            <a
+              href="https://support.comfy.org"
+              class="text-blue-400 no-underline cursor-pointer"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              here</a
+            >.
+          </p>
+        </div>
       </div>
     </div>
-  </BaseViewTemplate>
+  </CloudTemplate>
 </template>
 
 <script setup lang="ts">
@@ -103,10 +103,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import CloudTemplate from '@/platform/onboarding/cloud/components/CloudTemplate.vue'
 import { SignUpData } from '@/schemas/signInSchema'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 import { isInChina } from '@/utils/networkUtil'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -163,3 +163,19 @@ onMounted(async () => {
   userIsInChina.value = await isInChina()
 })
 </script>
+<style scoped>
+:deep(.p-inputtext) {
+  border: none !important;
+  box-shadow: none !important;
+  background: #2d2e32 !important;
+}
+
+:deep(.p-password input) {
+  border: none !important;
+  box-shadow: none !important;
+}
+:deep(.p-checkbox-checked .p-checkbox-box) {
+  background-color: #f0ff41 !important;
+  border-color: #f0ff41 !important;
+}
+</style>

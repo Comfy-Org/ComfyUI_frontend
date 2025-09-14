@@ -1,8 +1,5 @@
 <template>
-  <BaseViewTemplate dark>
-    <template #header>
-      <CloudLogo />
-    </template>
+  <CloudTemplate>
     <div>
       <Stepper value="1" class="flex flex-col min-h-[638px] min-w-[320px]">
         <ProgressBar
@@ -200,10 +197,7 @@
         </StepPanels>
       </Stepper>
     </div>
-    <template #footer>
-      <CloudTemplateFooter />
-    </template>
-  </BaseViewTemplate>
+  </CloudTemplate>
 </template>
 
 <script setup lang="ts">
@@ -220,10 +214,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { submitSurvey } from '@/api/auth'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
-import CloudLogo from './components/CloudLogo.vue'
-import CloudTemplateFooter from './components/CloudTemplateFooter.vue'
+import CloudTemplate from './components/CloudTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()
