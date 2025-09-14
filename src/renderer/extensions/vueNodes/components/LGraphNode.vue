@@ -13,8 +13,7 @@
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
         !!executing && 'border-blue-500 dark-theme:border-blue-500',
-        !!(error || nodeData.hasErrors) &&
-          'border-error dark-theme:border-error',
+        !!(error || nodeData.hasErrors) && 'border-error',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         // Selected
@@ -22,8 +21,7 @@
         !!isSelected && 'outline-black dark-theme:outline-white',
         !!(isSelected && executing) &&
           'outline-blue-500 dark-theme:outline-blue-500',
-        !!(isSelected && (error || nodeData.hasErrors)) &&
-          'outline-error dark-theme:outline-error',
+        !!(isSelected && (error || nodeData.hasErrors)) && 'outline-error',
         {
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
