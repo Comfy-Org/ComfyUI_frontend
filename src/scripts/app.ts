@@ -636,12 +636,12 @@ export class ComfyApp {
         this.editor_alpha = 0.4
       }
 
-      let bgColor: string
+      let bgColor: string | undefined
       if (node.mode === LGraphEventMode.BYPASS) {
         bgColor = app.bypassBgColor
         this.editor_alpha = 0.2
       } else {
-        bgColor = old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+        bgColor = old_bgcolor
       }
 
       const adjustments: ColorAdjustOptions = {}
@@ -658,8 +658,8 @@ export class ComfyApp {
         }
       }
 
-      if (old_bgcolor) {
-        node.bgcolor = adjustColor(old_bgcolor, adjustments)
+      if (bgColor) {
+        node.bgcolor = adjustColor(bgColor, adjustments)
       }
 
       // @ts-expect-error fixme ts strict error
