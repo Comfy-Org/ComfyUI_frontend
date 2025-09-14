@@ -12,16 +12,16 @@
         'lg-node absolute rounded-2xl',
         // border
         'border border-solid border-sand-100 dark-theme:border-charcoal-300',
-        !!executing && 'border-blue-500 dark-theme:border-blue-500',
-        !!error && 'border-red-700 dark-theme:border-red-300',
+        !!executing && 'border-blue-100 dark-theme:border-blue-100',
+        !!(error || nodeData.hasErrors) && 'border-error',
         // hover
         'hover:ring-7 ring-gray-500/50 dark-theme:ring-gray-500/20',
         // Selected
         'outline-transparent -outline-offset-2 outline-2',
         !!isSelected && 'outline-black dark-theme:outline-white',
         !!(isSelected && executing) &&
-          'outline-blue-500 dark-theme:outline-blue-500',
-        !!(isSelected && error) && 'outline-red-500 dark-theme:outline-red-500',
+          'outline-blue-100 dark-theme:outline-blue-100',
+        !!(isSelected && (error || nodeData.hasErrors)) && 'outline-error',
         {
           'animate-pulse': executing,
           'opacity-50': nodeData.mode === 4,
@@ -119,6 +119,7 @@
           :node-data="nodeData"
           :readonly="readonly"
           :lod-level="lodLevel"
+          :image-urls="nodeImageUrls"
         />
       </div>
     </template>
@@ -126,14 +127,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onErrorCaptured, ref, toRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  onErrorCaptured,
+  provide,
+  ref,
+  toRef,
+  watch
+} from 'vue'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SelectedNodeIdsKey } from '@/renderer/core/canvas/injectionKeys'
+import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { LODLevel, useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
+import { ExecutedWsMessage } from '@/schemas/apiSchema'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useVueElementTracking } from '../composables/useVueNodeResizeTracking'
@@ -149,8 +163,6 @@ interface LGraphNodeProps {
   position?: { x: number; y: number }
   size?: { width: number; height: number }
   readonly?: boolean
-  executing?: boolean
-  progress?: number
   error?: string | null
   zoomLevel?: number
 }
@@ -188,6 +200,9 @@ if (!selectedNodeIds) {
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(props.nodeData.id)
 })
+
+// Use execution state composable
+const { executing, progress } = useNodeExecutionState(props.nodeData.id)
 
 // LOD (Level of Detail) system based on zoom level
 const zoomRef = toRef(() => props.zoomLevel ?? 1)
@@ -244,11 +259,10 @@ watch(
   }
 )
 
-// Check if node has custom content
+// Check if node has custom content (like image outputs)
 const hasCustomContent = computed(() => {
-  // Currently all content is handled through widgets
-  // This remains false but provides extensibility point
-  return false
+  // Show custom content if node has image outputs
+  return nodeImageUrls.value.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -318,4 +332,50 @@ const handleSlotClick = (
 const handleTitleUpdate = (newTitle: string) => {
   emit('update:title', props.nodeData.id, newTitle)
 }
+
+const nodeOutputs = useNodeOutputStore()
+
+const nodeImageUrls = ref<string[]>([])
+const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
+  // Construct proper locator ID using subgraph ID from VueNodeData
+  const locatorId = props.nodeData.subgraphId
+    ? `${props.nodeData.subgraphId}:${props.nodeData.id}`
+    : props.nodeData.id
+
+  // Use root graph for getNodeByLocatorId since it needs to traverse from root
+  const rootGraph = app.graph?.rootGraph || app.graph
+  if (!rootGraph) {
+    nodeImageUrls.value = []
+    return
+  }
+
+  const node = getNodeByLocatorId(rootGraph, locatorId)
+
+  if (node && newOutputs?.images?.length) {
+    const urls = nodeOutputs.getNodeImageUrls(node)
+    if (urls) {
+      nodeImageUrls.value = urls
+    }
+  } else {
+    // Clear URLs if no outputs or no images
+    nodeImageUrls.value = []
+  }
+}
+
+const nodeOutputLocatorId = computed(() =>
+  props.nodeData.subgraphId
+    ? `${props.nodeData.subgraphId}:${props.nodeData.id}`
+    : props.nodeData.id
+)
+
+watch(
+  () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
+  (newOutputs) => {
+    onNodeOutputsUpdate(newOutputs)
+  },
+  { deep: true }
+)
+
+// Provide nodeImageUrls to child components
+provide('nodeImageUrls', nodeImageUrls)
 </script>
