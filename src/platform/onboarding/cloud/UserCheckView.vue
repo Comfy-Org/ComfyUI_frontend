@@ -6,7 +6,7 @@
 import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getMe } from '@/api/auth'
+import { getSurveyStatus, getUserCloudStatus } from '@/api/auth'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const router = useRouter()
@@ -22,21 +22,20 @@ onMounted(async () => {
   // Wait for next tick to ensure component is fully mounted
   await nextTick()
 
-  // Get user status from API (synchronous)
-  const user = getMe()
+  const cloudUserStats = await getUserCloudStatus()
+  const surveyStatus = await getSurveyStatus()
 
   try {
-    if (!user) {
-      // No user data, redirect to login
+    if (!cloudUserStats) {
       await router.replace({ name: 'cloud-login' })
       return
     }
 
     // Check onboarding status and redirect accordingly
-    if (!user.surveyCompleted) {
+    if (!surveyStatus) {
       // User hasn't completed survey
       await router.replace({ name: 'cloud-survey' })
-    } else if (!user.whitelisted) {
+    } else if (cloudUserStats.status !== 'active') {
       // User completed survey but not whitelisted
       await router.replace({ name: 'cloud-waitlist' })
     } else {

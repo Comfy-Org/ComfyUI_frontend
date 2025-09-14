@@ -53,7 +53,7 @@
             label="Submit Survey"
             :disabled="!isFormValid"
             class="w-full"
-            @click="submitSurvey"
+            @click="onSubmitSurvey"
           />
         </div>
       </div>
@@ -68,7 +68,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { submitSurvey as submitSurveyAPI } from '@/api/survey'
+import { submitSurvey } from '@/api/auth'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const { t } = useI18n()
@@ -110,8 +110,8 @@ const isFormValid = computed(() => {
   )
 })
 
-const submitSurvey = async () => {
-  await submitSurveyAPI(surveyData.value)
+const onSubmitSurvey = async () => {
+  await submitSurvey(surveyData.value)
 
   // After survey completion, go back to user check
   // User check will handle routing based on updated status

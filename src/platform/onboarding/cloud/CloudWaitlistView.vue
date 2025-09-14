@@ -16,21 +16,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const { t } = useI18n()
-const router = useRouter()
-
-onMounted(() => {
-  // Check if user is whitelisted
-  const whitelisted = localStorage.getItem('whitelisted') === 'true'
-  if (whitelisted) {
-    // User is whitelisted, redirect to main app
-    void router.push('/')
-  }
-})
 </script>

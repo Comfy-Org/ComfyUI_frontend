@@ -4,24 +4,27 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { getInviteStatus } from '@/api/auth'
+import { getInviteCodeStatus } from '@/api/auth'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const router = useRouter()
-const status = getInviteStatus()
+const route = useRoute()
 
 onMounted(async () => {
   await nextTick()
 
-  // TODO: should be deleted when api is ready
-  if (!status.emailVerified) {
-    await router.push({ name: 'cloud-verify-email' })
-    return
-  }
+  const inviteCode = route.query.inviteCode as string
+  const inviteCodeStatus = await getInviteCodeStatus(inviteCode)
 
-  if (status.alreadyClaimed) {
+  // TODO: should be deleted when api is ready
+  // if (!status.emailVerified) {
+  //   await router.push({ name: 'cloud-verify-email' })
+  //   return
+  // }
+
+  if (inviteCodeStatus.expired) {
     await router.push({ name: 'cloud-sorry-contact-support' })
     return
   }

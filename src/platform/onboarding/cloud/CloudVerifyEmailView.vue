@@ -8,11 +8,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-import { verifyEmail } from '@/api/auth'
+// import { verifyEmail } from '@/api/auth'
 import router from '@/router'
 
 onMounted(async () => {
-  verifyEmail()
+  // verifyEmail()
   await router.push({ name: 'cloud-invite-check' })
 })
 </script>
