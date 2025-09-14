@@ -209,16 +209,29 @@ import RadioButton from 'primevue/radiobutton'
 import StepPanel from 'primevue/steppanel'
 import StepPanels from 'primevue/steppanels'
 import Stepper from 'primevue/stepper'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { submitSurvey } from '@/api/auth'
+import { getSurveyCompletedStatus, submitSurvey } from '@/api/auth'
 
 import CloudTemplate from './components/CloudTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+
+// Check if survey is already completed on mount
+onMounted(async () => {
+  try {
+    const surveyCompleted = await getSurveyCompletedStatus()
+    if (surveyCompleted) {
+      // User already completed survey, redirect to waitlist
+      await router.replace({ name: 'cloud-waitlist' })
+    }
+  } catch (error) {
+    console.error('Failed to check survey status:', error)
+  }
+})
 
 const activeStep = ref(1)
 const totalSteps = 4

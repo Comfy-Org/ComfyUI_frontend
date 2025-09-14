@@ -1,3 +1,5 @@
+import { isEmpty } from 'es-toolkit/compat'
+
 import { api } from '@/scripts/api'
 
 export interface UserCloudStatus {
@@ -39,22 +41,29 @@ export async function getInviteCodeStatus(
   return response.json()
 }
 
-export async function getSurveyStatus(): Promise<boolean> {
-  const response = await api.fetchApi(
-    `/settings?keys=${ONBOARDING_SURVEY_KEY}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+export async function getSurveyCompletedStatus(): Promise<boolean> {
+  const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
     }
-  )
+  })
   if (!response.ok) {
     return false
   }
-  const json = await response.json()
-  // The settings API returns an object with keys as requested
-  return Object.prototype.hasOwnProperty.call(json, ONBOARDING_SURVEY_KEY)
+  const data = await response.json()
+  // Check if data exists and is not empty
+  return !isEmpty(data.value)
+}
+
+export async function postSurveyStatus(): Promise<void> {
+  await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ [ONBOARDING_SURVEY_KEY]: undefined })
+  })
 }
 
 export async function submitSurvey(

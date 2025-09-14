@@ -29,9 +29,25 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { getUserCloudStatus } from '@/api/auth'
 
 import CloudTemplate from './components/CloudTemplate.vue'
 
 const { t } = useI18n()
+
+// Check if user is whitelisted on mount
+onMounted(async () => {
+  try {
+    const userStatus = await getUserCloudStatus()
+    if (userStatus.status === 'active') {
+      // User is whitelisted, redirect to main app
+      window.location.href = '/'
+    }
+  } catch (error) {
+    console.error('Failed to check user status:', error)
+  }
+})
 </script>

@@ -228,6 +228,35 @@ router.beforeEach(async (to, _from, next) => {
     return next({ name: 'cloud-login' })
   }
 
+  // User is logged in - check if they need onboarding
+  // For root path, check actual user status to handle waitlisted users
+  if (!isElectron() && isLoggedIn && to.path === '/') {
+    try {
+      // Import auth functions dynamically to avoid circular dependency
+      const { getUserCloudStatus, getSurveyCompletedStatus } = await import(
+        '@/api/auth'
+      )
+
+      // Check user's actual status
+      const userStatus = await getUserCloudStatus()
+      const surveyCompleted = await getSurveyCompletedStatus()
+
+      // If user is not active (waitlisted), redirect based on survey status
+      if (userStatus.status !== 'active') {
+        if (!surveyCompleted) {
+          return next({ name: 'cloud-survey' })
+        } else {
+          return next({ name: 'cloud-waitlist' })
+        }
+      }
+      // User is active, allow access to root
+    } catch (error) {
+      console.error('Failed to check user status:', error)
+      // On error, redirect to user-check as fallback
+      return next({ name: 'cloud-user-check' })
+    }
+  }
+
   // User is logged in and accessing protected route
   return next()
 })

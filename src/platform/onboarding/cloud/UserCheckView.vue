@@ -1,13 +1,14 @@
 <template>
-  <BaseViewTemplate dark />
+  <CloudTemplate />
 </template>
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getSurveyStatus, getUserCloudStatus } from '@/api/auth'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+import { getSurveyCompletedStatus, getUserCloudStatus } from '@/api/auth'
+
+import CloudTemplate from './components/CloudTemplate.vue'
 
 const router = useRouter()
 const isNavigating = ref(false)
@@ -23,7 +24,7 @@ onMounted(async () => {
   await nextTick()
 
   const cloudUserStats = await getUserCloudStatus()
-  const surveyStatus = await getSurveyStatus()
+  const surveyStatus = await getSurveyCompletedStatus()
 
   try {
     if (!cloudUserStats) {

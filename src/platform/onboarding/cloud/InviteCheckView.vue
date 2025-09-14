@@ -1,5 +1,5 @@
 <template>
-  <BaseViewTemplate dark />
+  <CloudTemplate />
 </template>
 
 <script setup lang="ts">
@@ -7,7 +7,8 @@ import { nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getInviteCodeStatus } from '@/api/auth'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+
+import CloudTemplate from './components/CloudTemplate.vue'
 
 const router = useRouter()
 const route = useRoute()
