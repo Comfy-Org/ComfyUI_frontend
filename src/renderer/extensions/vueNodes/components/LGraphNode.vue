@@ -306,8 +306,14 @@ const onNodeOutputsUpdate = (newOutputs: ExecutedWsMessage['output']) => {
     : props.nodeData.id
 
   // Use root graph for getNodeByLocatorId since it needs to traverse from root
-  const rootGraph = app.graph.rootGraph
+  const rootGraph = app.graph?.rootGraph || app.graph
+  if (!rootGraph) {
+    nodeImageUrls.value = []
+    return
+  }
+
   const node = getNodeByLocatorId(rootGraph, locatorId)
+
   if (node && newOutputs?.images?.length) {
     const urls = nodeOutputs.getNodeImageUrls(node)
     if (urls) {
@@ -329,7 +335,8 @@ watch(
   () => nodeOutputs.nodeOutputs[nodeOutputLocatorId.value],
   (newOutputs) => {
     onNodeOutputsUpdate(newOutputs)
-  }
+  },
+  { deep: true }
 )
 
 // Provide nodeImageUrls to child components

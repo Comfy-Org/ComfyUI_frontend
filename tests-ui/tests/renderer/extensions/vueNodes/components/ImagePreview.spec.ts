@@ -21,7 +21,14 @@ const i18n = createI18n({
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
         removeImage: 'Remove image',
-        viewImageOfTotal: 'View image {index} of {total}'
+        viewImageOfTotal: 'View image {index} of {total}',
+        imagePreview:
+          'Image preview - Use arrow keys to navigate between images',
+        errorLoadingImage: 'Error loading image',
+        failedToDownloadImage: 'Failed to download image',
+        calculatingDimensions: 'Calculating dimensions',
+        imageFailedToLoad: 'Image failed to load',
+        loading: 'Loading'
       }
     }
   }
@@ -48,7 +55,9 @@ describe('ImagePreview', () => {
         stubs: {
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
-          'i-lucide:x': true
+          'i-lucide:x': true,
+          'i-lucide:image-off': true,
+          Skeleton: true
         }
       }
     })
@@ -70,10 +79,10 @@ describe('ImagePreview', () => {
     expect(wrapper.find('.image-preview').exists()).toBe(false)
   })
 
-  it('displays loading text initially', () => {
+  it('displays calculating dimensions text initially', () => {
     const wrapper = mountImagePreview()
 
-    expect(wrapper.text()).toContain('Loading...')
+    expect(wrapper.text()).toContain('Calculating dimensions')
   })
 
   it('shows navigation dots for multiple images', () => {
@@ -194,10 +203,19 @@ describe('ImagePreview', () => {
     await navigationDots[1].trigger('click')
     await nextTick()
 
-    // Should now show second image
-    expect(wrapper.find('img').attributes('src')).toBe(
-      defaultProps.imageUrls[1]
-    )
+    // After clicking, component shows loading state (Skeleton), not img
+    expect(wrapper.find('skeleton-stub').exists()).toBe(true)
+    expect(wrapper.find('img').exists()).toBe(false)
+
+    // Simulate image load event to clear loading state
+    const component = wrapper.vm as any
+    component.isLoading = false
+    await nextTick()
+
+    // Now should show second image
+    const imgElement = wrapper.find('img')
+    expect(imgElement.exists()).toBe(true)
+    expect(imgElement.attributes('src')).toBe(defaultProps.imageUrls[1])
   })
 
   it('applies correct classes to navigation dots based on current image', async () => {
@@ -246,7 +264,14 @@ describe('ImagePreview', () => {
     await navigationDots[1].trigger('click')
     await nextTick()
 
+    // Simulate image load event to clear loading state
+    const component = wrapper.vm as any
+    component.isLoading = false
+    await nextTick()
+
     // Alt text should update
-    expect(wrapper.find('img').attributes('alt')).toBe('Node output 2')
+    const imgElement = wrapper.find('img')
+    expect(imgElement.exists()).toBe(true)
+    expect(imgElement.attributes('alt')).toBe('Node output 2')
   })
 })
