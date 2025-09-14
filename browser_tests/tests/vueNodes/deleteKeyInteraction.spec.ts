@@ -6,7 +6,6 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Enable Vue nodes rendering
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    // await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', false)
     await comfyPage.setup()
   })
