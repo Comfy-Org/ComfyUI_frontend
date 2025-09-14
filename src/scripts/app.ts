@@ -658,7 +658,9 @@ export class ComfyApp {
         }
       }
 
-      node.bgcolor = adjustColor(bgColor, adjustments)
+      if (old_bgcolor) {
+        node.bgcolor = adjustColor(old_bgcolor, adjustments)
+      }
 
       // @ts-expect-error fixme ts strict error
       const res = origDrawNode.apply(this, arguments)
