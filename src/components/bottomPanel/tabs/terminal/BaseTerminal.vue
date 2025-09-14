@@ -11,7 +11,7 @@
     <Button
       v-if="showCopyButton"
       v-tooltip.top="{
-        value: t('serverStart.copyAllTooltip'),
+        value: tooltipText,
         showDelay: 300
       }"
       icon="pi pi-copy"
@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import Button from 'primevue/button'
-import { Ref, onUnmounted, ref } from 'vue'
+import { Ref, computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
@@ -43,9 +43,21 @@ const emit = defineEmits<{
 const terminalEl = ref<HTMLElement | undefined>()
 const rootEl = ref<HTMLElement | undefined>()
 const showCopyButton = ref(false)
+const hasSelection = ref(false)
 
 const terminalData = useTerminal(terminalEl)
 emit('created', terminalData, rootEl)
+
+const { terminal } = terminalData
+terminal.onSelectionChange(() => {
+  hasSelection.value = terminal.getSelection().length > 0
+})
+
+const tooltipText = computed(() => {
+  return hasSelection.value
+    ? t('serverStart.copySelectionTooltip')
+    : t('serverStart.copyAllTooltip')
+})
 
 const handleCopy = async () => {
   const { terminal } = terminalData

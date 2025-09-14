@@ -496,7 +496,8 @@
     "openLogs": "Open Logs",
     "showTerminal": "Show Terminal",
     "copyTerminal": "Copy Terminal",
-    "copyAllTooltip": "Copy selection or all",
+    "copySelectionTooltip": "Copy selection",
+    "copyAllTooltip": "Copy all",
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",
