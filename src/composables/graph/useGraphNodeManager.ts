@@ -208,14 +208,22 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       }
     })
 
+    const nodeType =
+      node.type ||
+      node.constructor?.comfyClass ||
+      node.constructor?.title ||
+      node.constructor?.name ||
+      'Unknown'
+
     return {
       id: String(node.id),
-      title: node.title || 'Untitled',
-      type: node.type || 'Unknown',
+      title: typeof node.title === 'string' ? node.title : '',
+      type: nodeType,
       mode: node.mode || 0,
       selected: node.selected || false,
       executing: false, // Will be updated separately based on execution state
       subgraphId,
+
       hasErrors: !!node.has_errors,
       widgets: safeWidgets,
       inputs: node.inputs ? [...node.inputs] : undefined,
@@ -619,7 +627,7 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
     // Set up widget callbacks BEFORE extracting data (critical order)
     setupNodeWidgetCallbacks(node)
 
-    // Extract safe data for Vue
+    // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
 
     // Set up reactive tracking state
@@ -664,7 +672,11 @@ export const useGraphNodeManager = (graph: LGraph): GraphNodeManager => {
       // Chain our callback with any existing onAfterGraphConfigured callback
       node.onAfterGraphConfigured = useChainCallback(
         node.onAfterGraphConfigured,
-        initializeVueNodeLayout
+        () => {
+          // Re-extract data now that configure() has populated title/slots/widgets/etc.
+          vueNodeData.set(id, extractVueNodeData(node))
+          initializeVueNodeLayout()
+        }
       )
     } else {
       // Not during workflow loading - initialize layout immediately
