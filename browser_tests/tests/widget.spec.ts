@@ -264,6 +264,12 @@ test.describe('Animated image widget', () => {
     expect(filename).toContain('animated_webp.webp')
   })
 
+  // FIXME: This test keeps flip-flopping because it relies on animated webp timing,
+  // which is inherently unreliable in CI environments. The test asset is an animated
+  // webp with 2 frames, and the test depends on animation frame timing to verify that
+  // animated webp images are properly displayed (as opposed to being treated as static webp).
+  // While the underlying functionality works (animated webp are correctly distinguished
+  // from static webp), the test is flaky due to timing dependencies with webp animation frames.
   test.fixme('Can preview saved animated webp image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/save_animated_webp')
 
