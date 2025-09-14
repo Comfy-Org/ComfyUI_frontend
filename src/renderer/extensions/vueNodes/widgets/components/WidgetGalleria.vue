@@ -90,7 +90,7 @@ const galleryImages = computed(() => {
           alt: `Image ${index + 1}`
         }
       }
-      return item || {} // Ensure we have at least an empty object
+      return item ?? {} // Ensure we have at least an empty object
     })
 })
 
