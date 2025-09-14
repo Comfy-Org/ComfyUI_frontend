@@ -1,203 +1,201 @@
 <template>
-  <CloudTemplate>
-    <div>
-      <Stepper value="1" class="flex flex-col min-h-[638px] min-w-[320px]">
-        <ProgressBar
-          :value="progressPercent"
-          :show-value="false"
-          class="h-2 mb-8"
-        />
+  <div>
+    <Stepper value="1" class="flex flex-col min-h-[638px] min-w-[320px]">
+      <ProgressBar
+        :value="progressPercent"
+        :show-value="false"
+        class="h-2 mb-8"
+      />
 
-        <StepPanels class="p-0 flex-1 flex flex-col">
-          <StepPanel
-            v-slot="{ activateCallback }"
-            value="1"
-            class="flex-1 min-h-full flex flex-col justify-between"
-          >
-            <div>
-              <label class="text-lg font-medium block mb-8">{{
-                t('cloudOnboarding.survey.steps.familiarity')
-              }}</label>
-              <div class="flex flex-col gap-6">
-                <div
-                  v-for="opt in familiarityOptions"
-                  :key="opt.value"
-                  class="flex items-center gap-3"
-                >
-                  <RadioButton
-                    v-model="surveyData.familiarity"
-                    :input-id="`fam-${opt.value}`"
-                    name="familiarity"
-                    :value="opt.value"
-                  />
-                  <label
-                    :for="`fam-${opt.value}`"
-                    class="text-sm cursor-pointer"
-                    >{{ opt.label }}</label
-                  >
-                </div>
-              </div>
-            </div>
-
-            <div class="flex justify-between pt-4">
-              <span />
-              <Button
-                label="Next"
-                :disabled="!validStep1"
-                class="w-full h-10 bg-gray-800 border-none text-white"
-                @click="goTo(2, activateCallback)"
-              />
-            </div>
-          </StepPanel>
-
-          <StepPanel
-            v-slot="{ activateCallback }"
-            value="2"
-            class="flex-1 min-h-full flex flex-col justify-between"
-          >
-            <div>
-              <label class="text-lg font-medium block mb-8">{{
-                t('cloudOnboarding.survey.steps.purpose')
-              }}</label>
-              <div class="flex flex-col gap-6">
-                <div
-                  v-for="opt in purposeOptions"
-                  :key="opt.value"
-                  class="flex items-center gap-3"
-                >
-                  <RadioButton
-                    v-model="surveyData.useCase"
-                    :input-id="`purpose-${opt.value}`"
-                    name="purpose"
-                    :value="opt.value"
-                  />
-                  <label
-                    :for="`purpose-${opt.value}`"
-                    class="text-sm cursor-pointer"
-                    >{{ opt.label }}</label
-                  >
-                </div>
-              </div>
-            </div>
-
-            <div class="flex gap-6 pt-4">
-              <Button
-                label="Back"
-                severity="secondary"
-                class="border border-white text-white flex-1"
-                @click="goTo(1, activateCallback)"
-              />
-              <Button
-                label="Next"
-                :disabled="!validStep2"
-                class="flex-1 h-10 bg-gray-800 border-none text-white"
-                @click="goTo(3, activateCallback)"
-              />
-            </div>
-          </StepPanel>
-
-          <StepPanel
-            v-slot="{ activateCallback }"
-            value="3"
-            class="flex-1 min-h-full flex flex-col justify-between"
-          >
-            <div>
-              <label class="text-lg font-medium block mb-8">{{
-                t('cloudOnboarding.survey.steps.industry')
-              }}</label>
-              <div class="flex flex-col gap-6">
-                <div
-                  v-for="opt in industryOptions"
-                  :key="opt.value"
-                  class="flex items-center gap-3"
-                >
-                  <RadioButton
-                    v-model="surveyData.industry"
-                    :input-id="`industry-${opt.value}`"
-                    name="industry"
-                    :value="opt.value"
-                  />
-                  <label
-                    :for="`industry-${opt.value}`"
-                    class="text-sm cursor-pointer"
-                    >{{ opt.label }}</label
-                  >
-                </div>
-              </div>
-              <div v-if="surveyData.industry === 'other'" class="mt-4 ml-8">
-                <InputText
-                  v-model="surveyData.industryOther"
-                  class="w-full"
-                  placeholder="Please specify"
+      <StepPanels class="p-0 flex-1 flex flex-col">
+        <StepPanel
+          v-slot="{ activateCallback }"
+          value="1"
+          class="flex-1 min-h-full flex flex-col justify-between"
+        >
+          <div>
+            <label class="text-lg font-medium block mb-8">{{
+              t('cloudOnboarding.survey.steps.familiarity')
+            }}</label>
+            <div class="flex flex-col gap-6">
+              <div
+                v-for="opt in familiarityOptions"
+                :key="opt.value"
+                class="flex items-center gap-3"
+              >
+                <RadioButton
+                  v-model="surveyData.familiarity"
+                  :input-id="`fam-${opt.value}`"
+                  name="familiarity"
+                  :value="opt.value"
                 />
-              </div>
-            </div>
-
-            <div class="flex gap-6 pt-4">
-              <Button
-                label="Back"
-                severity="secondary"
-                class="border border-white text-white flex-1"
-                @click="goTo(2, activateCallback)"
-              />
-              <Button
-                label="Next"
-                :disabled="!validStep3"
-                class="flex-1 h-10 bg-gray-800 border-none text-white"
-                @click="goTo(4, activateCallback)"
-              />
-            </div>
-          </StepPanel>
-
-          <StepPanel
-            v-slot="{ activateCallback }"
-            value="4"
-            class="flex-1 min-h-full flex flex-col justify-between"
-          >
-            <div>
-              <label class="text-lg font-medium block mb-8">{{
-                t('cloudOnboarding.survey.steps.making')
-              }}</label>
-              <div class="flex flex-col gap-6">
-                <div
-                  v-for="opt in makingOptions"
-                  :key="opt.value"
-                  class="flex items-center gap-3"
+                <label
+                  :for="`fam-${opt.value}`"
+                  class="text-sm cursor-pointer"
+                  >{{ opt.label }}</label
                 >
-                  <Checkbox
-                    v-model="surveyData.making"
-                    :input-id="`making-${opt.value}`"
-                    :value="opt.value"
-                  />
-                  <label
-                    :for="`making-${opt.value}`"
-                    class="text-sm cursor-pointer"
-                    >{{ opt.label }}</label
-                  >
-                </div>
               </div>
             </div>
+          </div>
 
-            <div class="flex gap-6 pt-4">
-              <Button
-                label="Back"
-                severity="secondary"
-                class="border border-white text-white flex-1"
-                @click="goTo(3, activateCallback)"
-              />
-              <Button
-                label="Submit"
-                :disabled="!validStep4 || isSubmitting"
-                :loading="isSubmitting"
-                class="flex-1 h-10 bg-gray-800 border-none text-white"
-                @click="onSubmitSurvey"
+          <div class="flex justify-between pt-4">
+            <span />
+            <Button
+              label="Next"
+              :disabled="!validStep1"
+              class="w-full h-10 bg-gray-800 border-none text-white"
+              @click="goTo(2, activateCallback)"
+            />
+          </div>
+        </StepPanel>
+
+        <StepPanel
+          v-slot="{ activateCallback }"
+          value="2"
+          class="flex-1 min-h-full flex flex-col justify-between"
+        >
+          <div>
+            <label class="text-lg font-medium block mb-8">{{
+              t('cloudOnboarding.survey.steps.purpose')
+            }}</label>
+            <div class="flex flex-col gap-6">
+              <div
+                v-for="opt in purposeOptions"
+                :key="opt.value"
+                class="flex items-center gap-3"
+              >
+                <RadioButton
+                  v-model="surveyData.useCase"
+                  :input-id="`purpose-${opt.value}`"
+                  name="purpose"
+                  :value="opt.value"
+                />
+                <label
+                  :for="`purpose-${opt.value}`"
+                  class="text-sm cursor-pointer"
+                  >{{ opt.label }}</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-6 pt-4">
+            <Button
+              label="Back"
+              severity="secondary"
+              class="border border-white text-white flex-1"
+              @click="goTo(1, activateCallback)"
+            />
+            <Button
+              label="Next"
+              :disabled="!validStep2"
+              class="flex-1 h-10 bg-gray-800 border-none text-white"
+              @click="goTo(3, activateCallback)"
+            />
+          </div>
+        </StepPanel>
+
+        <StepPanel
+          v-slot="{ activateCallback }"
+          value="3"
+          class="flex-1 min-h-full flex flex-col justify-between"
+        >
+          <div>
+            <label class="text-lg font-medium block mb-8">{{
+              t('cloudOnboarding.survey.steps.industry')
+            }}</label>
+            <div class="flex flex-col gap-6">
+              <div
+                v-for="opt in industryOptions"
+                :key="opt.value"
+                class="flex items-center gap-3"
+              >
+                <RadioButton
+                  v-model="surveyData.industry"
+                  :input-id="`industry-${opt.value}`"
+                  name="industry"
+                  :value="opt.value"
+                />
+                <label
+                  :for="`industry-${opt.value}`"
+                  class="text-sm cursor-pointer"
+                  >{{ opt.label }}</label
+                >
+              </div>
+            </div>
+            <div v-if="surveyData.industry === 'other'" class="mt-4 ml-8">
+              <InputText
+                v-model="surveyData.industryOther"
+                class="w-full"
+                placeholder="Please specify"
               />
             </div>
-          </StepPanel>
-        </StepPanels>
-      </Stepper>
-    </div>
-  </CloudTemplate>
+          </div>
+
+          <div class="flex gap-6 pt-4">
+            <Button
+              label="Back"
+              severity="secondary"
+              class="border border-white text-white flex-1"
+              @click="goTo(2, activateCallback)"
+            />
+            <Button
+              label="Next"
+              :disabled="!validStep3"
+              class="flex-1 h-10 bg-gray-800 border-none text-white"
+              @click="goTo(4, activateCallback)"
+            />
+          </div>
+        </StepPanel>
+
+        <StepPanel
+          v-slot="{ activateCallback }"
+          value="4"
+          class="flex-1 min-h-full flex flex-col justify-between"
+        >
+          <div>
+            <label class="text-lg font-medium block mb-8">{{
+              t('cloudOnboarding.survey.steps.making')
+            }}</label>
+            <div class="flex flex-col gap-6">
+              <div
+                v-for="opt in makingOptions"
+                :key="opt.value"
+                class="flex items-center gap-3"
+              >
+                <Checkbox
+                  v-model="surveyData.making"
+                  :input-id="`making-${opt.value}`"
+                  :value="opt.value"
+                />
+                <label
+                  :for="`making-${opt.value}`"
+                  class="text-sm cursor-pointer"
+                  >{{ opt.label }}</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-6 pt-4">
+            <Button
+              label="Back"
+              severity="secondary"
+              class="border border-white text-white flex-1"
+              @click="goTo(3, activateCallback)"
+            />
+            <Button
+              label="Submit"
+              :disabled="!validStep4 || isSubmitting"
+              :loading="isSubmitting"
+              class="flex-1 h-10 bg-gray-800 border-none text-white"
+              @click="onSubmitSurvey"
+            />
+          </div>
+        </StepPanel>
+      </StepPanels>
+    </Stepper>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -214,8 +212,6 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { getSurveyCompletedStatus, submitSurvey } from '@/api/auth'
-
-import CloudTemplate from './components/CloudTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()

@@ -1,82 +1,80 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
-  <CloudTemplate>
-    <div class="h-full flex items-center justify-center p-8">
-      <div class="w-96 p-2">
-        <div class="bg-[#2d2e32] p-4 rounded-lg">
-          <h4 class="m-0 pb-2 text-lg">
-            {{ t('cloudOnboarding.privateBeta.title') }}
-          </h4>
-          <p class="m-0 text-base leading-6">
-            {{ t('cloudOnboarding.privateBeta.desc') }}
-          </p>
-        </div>
-
-        <!-- Header -->
-        <div class="flex flex-col gap-4 mt-6 mb-8">
-          <h1 class="text-xl font-medium leading-normal my-0">
-            {{ t('auth.login.title') }}
-          </h1>
-          <p class="text-base my-0">
-            <span class="text-muted">{{ t('auth.login.newUser') }}</span>
-            <span
-              class="ml-1 cursor-pointer text-blue-500"
-              @click="navigateToSignup"
-              >{{ t('auth.login.signUp') }}</span
-            >
-          </p>
-        </div>
-
-        <Message v-if="!isSecureContext" severity="warn" class="mb-4">
-          {{ t('auth.login.insecureContextWarning') }}
-        </Message>
-
-        <!-- Form -->
-        <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
-
-        <!-- Divider -->
-        <Divider align="center" layout="horizontal" class="my-8">
-          <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
-        </Divider>
-
-        <!-- Social Login Buttons -->
-        <div class="flex flex-col gap-6">
-          <Button
-            type="button"
-            class="h-10 bg-[#2d2e32]"
-            severity="secondary"
-            @click="signInWithGoogle"
-          >
-            <i class="pi pi-google mr-2"></i>
-            {{ t('auth.login.loginWithGoogle') }}
-          </Button>
-
-          <Button
-            type="button"
-            class="h-10 bg-[#2d2e32]"
-            severity="secondary"
-            @click="signInWithGithub"
-          >
-            <i class="pi pi-github mr-2"></i>
-            {{ t('auth.login.loginWithGithub') }}
-          </Button>
-        </div>
-
-        <!-- Terms & Contact -->
-        <p class="mt-5 text-sm text-gray-600">
-          Questions? Contact us
-          <a
-            href="https://support.comfy.org"
-            class="text-blue-400 no-underline cursor-pointer"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            here</a
-          >.
+  <div class="h-full flex items-center justify-center p-8">
+    <div class="w-96 p-2">
+      <div class="bg-[#2d2e32] p-4 rounded-lg">
+        <h4 class="m-0 pb-2 text-lg">
+          {{ t('cloudOnboarding.privateBeta.title') }}
+        </h4>
+        <p class="m-0 text-base leading-6">
+          {{ t('cloudOnboarding.privateBeta.desc') }}
         </p>
       </div>
+
+      <!-- Header -->
+      <div class="flex flex-col gap-4 mt-6 mb-8">
+        <h1 class="text-xl font-medium leading-normal my-0">
+          {{ t('auth.login.title') }}
+        </h1>
+        <p class="text-base my-0">
+          <span class="text-muted">{{ t('auth.login.newUser') }}</span>
+          <span
+            class="ml-1 cursor-pointer text-blue-500"
+            @click="navigateToSignup"
+            >{{ t('auth.login.signUp') }}</span
+          >
+        </p>
+      </div>
+
+      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+        {{ t('auth.login.insecureContextWarning') }}
+      </Message>
+
+      <!-- Form -->
+      <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
+
+      <!-- Divider -->
+      <Divider align="center" layout="horizontal" class="my-8">
+        <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
+      </Divider>
+
+      <!-- Social Login Buttons -->
+      <div class="flex flex-col gap-6">
+        <Button
+          type="button"
+          class="h-10 bg-[#2d2e32]"
+          severity="secondary"
+          @click="signInWithGoogle"
+        >
+          <i class="pi pi-google mr-2"></i>
+          {{ t('auth.login.loginWithGoogle') }}
+        </Button>
+
+        <Button
+          type="button"
+          class="h-10 bg-[#2d2e32]"
+          severity="secondary"
+          @click="signInWithGithub"
+        >
+          <i class="pi pi-github mr-2"></i>
+          {{ t('auth.login.loginWithGithub') }}
+        </Button>
+      </div>
+
+      <!-- Terms & Contact -->
+      <p class="mt-5 text-sm text-gray-600">
+        Questions? Contact us
+        <a
+          href="https://support.comfy.org"
+          class="text-blue-400 no-underline cursor-pointer"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          here</a
+        >.
+      </p>
     </div>
-  </CloudTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -89,7 +87,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/onboarding/cloud/components/CloudSignInForm.vue'
-import CloudTemplate from '@/platform/onboarding/cloud/components/CloudTemplate.vue'
 import { type SignInData } from '@/schemas/signInSchema'
 import { translateAuthError } from '@/utils/authErrorTranslation'
 

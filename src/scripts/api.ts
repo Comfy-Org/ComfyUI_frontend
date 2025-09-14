@@ -455,7 +455,13 @@ export class ComfyApi extends EventTarget {
     } else {
       options.headers['Comfy-User'] = this.user
     }
-    return fetch(this.apiURL(route), options)
+
+    // If we're on a /cloud route, ensure API calls still go to the root API endpoint
+    const apiUrl = window.location.pathname.startsWith('/cloud')
+      ? `/api${route}`
+      : this.apiURL(route)
+
+    return fetch(apiUrl, options)
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(

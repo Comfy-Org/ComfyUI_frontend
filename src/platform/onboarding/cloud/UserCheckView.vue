@@ -1,5 +1,5 @@
 <template>
-  <CloudTemplate />
+  <div />
 </template>
 
 <script setup lang="ts">
@@ -7,8 +7,6 @@ import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { getSurveyCompletedStatus, getUserCloudStatus } from '@/api/auth'
-
-import CloudTemplate from './components/CloudTemplate.vue'
 
 const router = useRouter()
 const isNavigating = ref(false)

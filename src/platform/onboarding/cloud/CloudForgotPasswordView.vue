@@ -1,82 +1,78 @@
 <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <template>
-  <CloudTemplate>
-    <div class="h-full flex items-center justify-center p-8">
-      <div class="w-96 p-2">
-        <!-- Header -->
-        <div class="flex flex-col gap-4 mb-8">
-          <h1 class="text-xl font-medium leading-normal my-0">
-            {{ t('cloudOnboarding.forgotPassword.title') }}
-          </h1>
-          <p class="text-base my-0 text-muted">
-            {{ t('cloudOnboarding.forgotPassword.instructions') }}
-          </p>
-        </div>
-
-        <!-- Form -->
-        <form class="flex flex-col gap-6" @submit.prevent="handleSubmit">
-          <div class="flex flex-col gap-2">
-            <label
-              class="opacity-80 text-base font-medium mb-2"
-              for="reset-email"
-            >
-              {{ t('cloudOnboarding.forgotPassword.emailLabel') }}
-            </label>
-            <InputText
-              id="reset-email"
-              v-model="email"
-              type="email"
-              :placeholder="
-                t('cloudOnboarding.forgotPassword.emailPlaceholder')
-              "
-              class="h-10"
-              :invalid="!!errorMessage && !email"
-              autocomplete="email"
-              required
-            />
-            <small v-if="errorMessage" class="text-red-500">
-              {{ errorMessage }}
-            </small>
-          </div>
-
-          <Message v-if="successMessage" severity="success">
-            {{ successMessage }}
-          </Message>
-
-          <div class="flex flex-col gap-4">
-            <Button
-              type="submit"
-              :label="t('cloudOnboarding.forgotPassword.sendResetLink')"
-              :loading="loading"
-              :disabled="!email || loading"
-              class="h-10 font-medium text-white"
-            />
-
-            <Button
-              type="button"
-              :label="t('cloudOnboarding.forgotPassword.backToLogin')"
-              severity="secondary"
-              class="h-10 bg-[#2d2e32]"
-              @click="navigateToLogin"
-            />
-          </div>
-        </form>
-
-        <!-- Help text -->
-        <p class="mt-5 text-sm text-gray-600">
-          {{ t('cloudOnboarding.forgotPassword.didntReceiveEmail') }}
-          <a
-            href="https://support.comfy.org"
-            class="text-blue-400 no-underline cursor-pointer"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            here</a
-          >.
+  <div class="h-full flex items-center justify-center p-8">
+    <div class="w-96 p-2">
+      <!-- Header -->
+      <div class="flex flex-col gap-4 mb-8">
+        <h1 class="text-xl font-medium leading-normal my-0">
+          {{ t('cloudOnboarding.forgotPassword.title') }}
+        </h1>
+        <p class="text-base my-0 text-muted">
+          {{ t('cloudOnboarding.forgotPassword.instructions') }}
         </p>
       </div>
+
+      <!-- Form -->
+      <form class="flex flex-col gap-6" @submit.prevent="handleSubmit">
+        <div class="flex flex-col gap-2">
+          <label
+            class="opacity-80 text-base font-medium mb-2"
+            for="reset-email"
+          >
+            {{ t('cloudOnboarding.forgotPassword.emailLabel') }}
+          </label>
+          <InputText
+            id="reset-email"
+            v-model="email"
+            type="email"
+            :placeholder="t('cloudOnboarding.forgotPassword.emailPlaceholder')"
+            class="h-10"
+            :invalid="!!errorMessage && !email"
+            autocomplete="email"
+            required
+          />
+          <small v-if="errorMessage" class="text-red-500">
+            {{ errorMessage }}
+          </small>
+        </div>
+
+        <Message v-if="successMessage" severity="success">
+          {{ successMessage }}
+        </Message>
+
+        <div class="flex flex-col gap-4">
+          <Button
+            type="submit"
+            :label="t('cloudOnboarding.forgotPassword.sendResetLink')"
+            :loading="loading"
+            :disabled="!email || loading"
+            class="h-10 font-medium text-white"
+          />
+
+          <Button
+            type="button"
+            :label="t('cloudOnboarding.forgotPassword.backToLogin')"
+            severity="secondary"
+            class="h-10 bg-[#2d2e32]"
+            @click="navigateToLogin"
+          />
+        </div>
+      </form>
+
+      <!-- Help text -->
+      <p class="mt-5 text-sm text-gray-600">
+        {{ t('cloudOnboarding.forgotPassword.didntReceiveEmail') }}
+        <a
+          href="https://support.comfy.org"
+          class="text-blue-400 no-underline cursor-pointer"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          here</a
+        >.
+      </p>
     </div>
-  </CloudTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -88,7 +84,6 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import CloudTemplate from '@/platform/onboarding/cloud/components/CloudTemplate.vue'
 
 const { t } = useI18n()
 const router = useRouter()
