@@ -1549,15 +1549,15 @@
       "whitelistInfo": "About non-whitelisted sites"
     },
     "login": {
-      "title": "Log in to your account",
+      "title": "Sign in",
       "useApiKey": "Comfy API Key",
       "signInOrSignUp": "Sign In / Sign Up",
       "forgotPasswordError": "Failed to send password reset email",
       "passwordResetSent": "Password reset email sent",
       "passwordResetSentDetail": "Please check your email for a link to reset your password.",
-      "newUser": "New here?",
+      "newUser": "Don’t have an account yet?",
       "userAvatar": "User Avatar",
-      "signUp": "Sign up",
+      "signUp": "Sign up instead",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -1565,7 +1565,12 @@
       "confirmPasswordLabel": "Confirm Password",
       "confirmPasswordPlaceholder": "Enter the same password again",
       "forgotPassword": "Forgot password?",
-      "loginButton": "Log in",
+      "passwordResetInstructions": "Enter your email address and we'll send you a link to reset your password.",
+      "sendResetLink": "Send reset link",
+      "backToLogin": "Back to login",
+      "didntReceiveEmail": "Didn't receive an email? Contact us at",
+      "passwordResetError": "Failed to send password reset email. Please try again.",
+      "loginButton": "Sign in",
       "orContinueWith": "Or continue with",
       "loginWithGoogle": "Log in with Google",
       "loginWithGithub": "Log in with Github",
@@ -1721,5 +1726,86 @@
     "showGroups": "Show Frames/Groups",
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
+  },
+  "cloudOnboarding": {
+    "survey": {
+      "title": "Cloud Survey",
+      "placeholder": "Survey questions placeholder",
+      "steps": {
+        "familiarity": "How familiar are you with ComfyUI?",
+        "purpose": "What will you primarily use ComfyUI for?",
+        "industry": "What's your primary industry?",
+        "making": "What do you plan on making?"
+      },
+      "questions": {
+        "familiarity": "How familiar are you with ComfyUI?",
+        "purpose": "What will you primarily use ComfyUI for?",
+        "industry": "What's your primary industry?",
+        "making": "What do you plan on making?"
+      },
+      "options": {
+        "familiarity": {
+          "new": "New to ComfyUI (never used it before)",
+          "starting": "Just getting started (following tutorials)",
+          "basics": "Comfortable with basics",
+          "advanced": "Advanced user (custom workflows)",
+          "expert": "Expert (help others)"
+        },
+        "purpose": {
+          "personal": "Personal projects / hobby",
+          "community": "Community contributions (nodes, workflows, etc.)",
+          "client": "Client work (freelance)",
+          "inhouse": "My own workplace (in-house)",
+          "research": "Academic research"
+        },
+        "industry": {
+          "film_tv_animation": "Film, TV, & animation",
+          "gaming": "Gaming",
+          "marketing": "Marketing & advertising",
+          "architecture": "Architecture",
+          "product_design": "Product & graphic design",
+          "fine_art": "Fine art & illustration",
+          "software": "Software & technology",
+          "education": "Education",
+          "other": "Other",
+          "otherPlaceholder": "Please specify"
+        },
+        "making": {
+          "images": "Images",
+          "video": "Video & animation",
+          "3d": "3D assets",
+          "audio": "Audio / music",
+          "custom_nodes": "Custom nodes & workflows"
+        }
+      }
+    },
+    "waitlist": {
+      "title": "Cloud Waitlist",
+      "message": "You have been added to the waitlist. We will notify you when access is available."
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "instructions": "Enter your email address and we'll send you a link to reset your password.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "sendResetLink": "Send reset link",
+      "backToLogin": "Back to login",
+      "didntReceiveEmail": "Didn't receive an email? Contact us at",
+      "passwordResetSent": "Password reset email sent",
+      "passwordResetError": "Failed to send password reset email. Please try again.",
+      "emailRequired": "Email is required"
+    },
+    "privateBeta": {
+      "title": "Cloud is currently in private beta",
+      "desc": "Sign in to join the waitlist. We’ll notify you when it’s your turn. Already been notified? Sign in start using Cloud."
+    },
+    "start": {
+      "title": "start creating in seconds",
+      "desc": "Zero setup required. Works on any device.",
+      "explain": "Generate multiple outputs at once. Share workflows with ease.",
+      "learnAboutButton": "Learn about Cloud",
+      "wantToRun": "Want to run comfyUI locally instead?",
+      "download": "Download ComfyUI"
+    }
   }
 }
